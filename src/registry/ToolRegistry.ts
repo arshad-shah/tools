@@ -69,6 +69,8 @@ import PasswordGenerator from '../tools/PasswordGenerator/Generator';
 import RegexTester from '../tools/regexTester/RegexStudio';
 import NumberConverter from '../tools/NumberConverter/NumberConverter';
 import QrCodeGenerator from '../tools/QrCodeGenerator/QRCodeGenerator';
+import JsonViewer from '../tools/JsonViewer/components/JsonViewer';
+import Pomodoro from '../tools/pomodoro/main';
 
 // Register all tool components
 toolRegistry.registerTools({
@@ -77,6 +79,8 @@ toolRegistry.registerTools({
   'regex-tester': RegexTester,
   'number-converter': NumberConverter,
   'qr-code-generator': QrCodeGenerator,
+  'json-and-xml-viewer': JsonViewer,
+  'pomodoro': Pomodoro,
 });
 
 // Convenience function to get a tool component by ID
