@@ -46,7 +46,6 @@ const ColorTester: React.FC = () => {
   const [colorMood, setColorMood] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabType>('harmony');
   const [contrastRatios, setContrastRatios] = useState<{white: number, black: number}>({ white: 0, black: 0 });
-  const [hoveredColor, setHoveredColor] = useState<string | null>(null);
   const [showEditorsPanel, setShowEditorsPanel] = useState<boolean>(true);
   
   // Calculate the hex code from RGB values
@@ -440,47 +439,10 @@ const ColorTester: React.FC = () => {
     
     copyToClipboard('Palette successfully exported!', 'export');
   };
+
   
-  // Handle color slider mouse events for hover effects
-  const handleSliderMouseEnter = (colorName: string): void => {
-    setHoveredColor(colorName);
-  };
+
   
-  const handleSliderMouseLeave = (): void => {
-    setHoveredColor(null);
-  };
-  
-  // Custom slider styles based on RGB values
-  const getSliderStyle = (color: string): React.CSSProperties => {
-    let gradient;
-    
-    switch(color) {
-      case 'red':
-        gradient = `linear-gradient(to right, rgb(0, ${green}, ${blue}), rgb(255, ${green}, ${blue}))`;
-        break;
-      case 'green':
-        gradient = `linear-gradient(to right, rgb(${red}, 0, ${blue}), rgb(${red}, 255, ${blue}))`;
-        break;
-      case 'blue':
-        gradient = `linear-gradient(to right, rgb(${red}, ${green}, 0), rgb(${red}, ${green}, 255))`;
-        break;
-      default:
-        gradient = 'linear-gradient(to right, transparent, black)';
-    }
-    
-    const isHovered = hoveredColor === color;
-    
-    return {
-      background: gradient,
-      height: '10px',
-      borderRadius: '5px',
-      outline: 'none',
-      WebkitAppearance: 'none',
-      appearance: 'none',
-      boxShadow: isHovered ? '0 0 0 2px rgba(79, 70, 229, 0.3)' : 'none',
-      transition: 'all 0.2s ease'
-    };
-  };
 
   // CSS Animation classes
   const pulseAnimation = `

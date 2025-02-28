@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Search, X, BookOpen, Star } from 'lucide-react';
+import { Search, X, Star } from 'lucide-react';
 import { getEnabledTools } from '../data/ToolDefinitions';
 import { ToolDefinition } from '../types/ToolTypes';
 

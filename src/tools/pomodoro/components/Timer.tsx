@@ -1,5 +1,5 @@
 // Timer.tsx (main component)
-import React, { useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '../hook';
 import { updateTimer, updateStats, updateTask } from '../store';
 import { Card, CardContent } from '../../../components/Card';
@@ -13,8 +13,6 @@ import { TimerHeader } from './TimerHeader';
 import { TIMER_THEMES } from './constants';
 import { AUDIO_BASE_64 } from '../Audio';
 import usePomodoroTimer from '../hooks/usePomodoro';
-
-type TimerMode = keyof typeof TIMER_THEMES;
 
 export const Timer: React.FC = () => {
   const timer = useAppSelector(state => {

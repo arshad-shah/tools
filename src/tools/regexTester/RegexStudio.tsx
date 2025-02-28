@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Part 5: Main Component Assembly
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   AlertCircle, Check, Copy, Info, 
   Code, Maximize2, X, Sun, Moon,
-  GitBranch, Sparkles,
+  GitBranch,
   BookOpen, Save, Command, Bookmark,
   Award, Share2, PanelRight, Zap,
   ChevronDown
@@ -383,11 +384,7 @@ const RegexTester: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-white tracking-tight flex items-center">
-                    RegEx Studio
-                    <div className="ml-2 text-xs bg-indigo-600 px-2 py-1 rounded-md font-normal flex items-center">
-                      <span className="mr-1">PRO</span>
-                      <Sparkles size={12} className="text-yellow-300" />
-                    </div>
+                    RegEx Tester
                   </h1>
                   <p className="text-indigo-100 mt-0.5 text-sm">Build, test, and debug regular expressions with real-time feedback</p>
                 </div>
@@ -878,7 +875,7 @@ const RegexTester: React.FC = () => {
                           
                           // Show temporary toast
                           const toast = document.createElement('div');
-                          toast.className = `fixed bottom-4 right-4 ${theme.tooltipBg} text-${theme.text} px-4 py-2 rounded-md shadow-lg z-50 flex items-center`;
+                          toast.className = `fixed bottom-4 right-4 text-${theme.text} px-4 py-2 rounded-md shadow-lg z-50 flex items-center`;
                           toast.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Pattern copied!';
                           document.body.appendChild(toast);
                           setTimeout(() => {
@@ -1041,7 +1038,7 @@ const RegexTester: React.FC = () => {
               </Card>
               
               {/* Activity Log */}
-              <Card theme={theme} className={`p-5 ${theme.glassEffect}`} hover>
+              <Card theme={theme} className={`p-5`} hover>
                 <h3 className={`font-medium ${theme.text} text-lg mb-3 flex items-center justify-between`}>
                   <div className="flex items-center">
                     <span className={`${theme.accentColor} mr-2`}>
@@ -1090,10 +1087,10 @@ const RegexTester: React.FC = () => {
                       logActivity("Reset all fields");
                     }}
                     className="w-full"
-                    icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  >
+                    {<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
                     </svg>}
-                  >
                     Reset All
                   </Button>
                   
@@ -1116,7 +1113,7 @@ const RegexTester: React.FC = () => {
                         
                         // Show toast
                         const toast = document.createElement('div');
-                        toast.className = `fixed bottom-4 right-4 ${theme.tooltipBg} ${theme.text} px-4 py-2 rounded-md shadow-lg z-50 flex items-center`;
+                        toast.className = `fixed bottom-4 right-4 ${theme.text} px-4 py-2 rounded-md shadow-lg z-50 flex items-center`;
                         toast.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Code copied to clipboard!';
                         document.body.appendChild(toast);
                         setTimeout(() => {
@@ -1127,10 +1124,10 @@ const RegexTester: React.FC = () => {
                       }
                     }}
                     className="w-full"
-                    icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  >
+                    {<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>}
-                  >
                     Export Code
                   </Button>
                 </div>
@@ -1291,6 +1288,6 @@ const RegexTester: React.FC = () => {
 };
 
 // Mock for compilation - replace with actual saved colors in your implementation
-const savedColors: any[] = [];
+const savedColors: string[] = [];
 
 export default RegexTester;

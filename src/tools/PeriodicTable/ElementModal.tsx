@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { Element } from '../../types/PeriodicTableTypes';
 import { colorMap } from './Data';
 import ElementModel3D from './ElementModal3D';
-import ElementModel2D from './ElementModel2d';
-import { X, Maximize, Minimize } from 'lucide-react';
+import ElementModel2D from './ElementModel2D';
+import { X } from 'lucide-react';
 
 interface ElementModalProps {
   element: Element;

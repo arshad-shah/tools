@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Split, Copy, Download, Trash, RotateCcw, ArrowRightLeft, Check, Settings, Play, Save, Eye, EyeOff, Code, BarChart2, AlertTriangle, Loader, Maximize2, FileUp, MoveRight } from 'lucide-react';
 import * as Diff from 'diff';
 
@@ -85,48 +85,6 @@ const TextDiffChecker: React.FC = () => {
     { id: 'inline', name: 'Inline Highlight', icon: <Code className="h-4 w-4 mr-1" /> }
   ];
   
-  // Memoized file type detection
-  const detectFileType = useMemo(() => {
-    const detectType = (text: string): string => {
-      if (!text) return 'plain';
-      
-      if (/^[\[\{]/.test(text.trim()) && (text.includes('"') || text.includes("'"))) {
-        try {
-          JSON.parse(text);
-          return 'json';
-        } catch (e) {
-          // Not valid JSON
-        }
-      }
-      
-      // Check for common programming languages patterns
-      if (text.includes('function') && (text.includes('{') || text.includes('=>'))) {
-        return 'javascript';
-      }
-      if (text.includes('import') && text.includes('from') && text.includes(';')) {
-        return 'typescript';
-      }
-      if (text.includes('<html') || text.includes('<!DOCTYPE html')) {
-        return 'html';
-      }
-      if (text.includes('class') && text.includes('public') && text.includes('{')) {
-        return 'java';
-      }
-      if (text.includes('def ') && text.includes(':')) {
-        return 'python';
-      }
-      if (text.includes('#include') && text.includes('<stdio.h>')) {
-        return 'c';
-      }
-      
-      return 'plain';
-    };
-    
-    return {
-      left: detectType(leftText),
-      right: detectType(rightText)
-    };
-  }, [leftText, rightText]);
   
   // Function to pre-process text based on settings
   const preprocessText = useCallback((text: string): string => {
@@ -445,7 +403,6 @@ const TextDiffChecker: React.FC = () => {
           // Handle unchanged lines
           mergedText += segment.text;
           if (!segment.text.endsWith('\n')) mergedText += '\n';
-          prevOriginalLineNum = segment.originalLineNumber!;
           prevModifiedLineNum = segment.modifiedLineNumber!;
         }
         // Skip removed lines in the merge process
@@ -977,7 +934,7 @@ const TextDiffChecker: React.FC = () => {
           {['character', 'word', 'line'].map((mode) => (
             <button
               key={mode}
-              onClick={() => setHighlightMode(mode as any)}
+              onClick={() => setHighlightMode(mode as 'character' | 'word' | 'line')}
               className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 
                 ${highlightMode === mode 
                   ? 'bg-violet-600 text-white' 

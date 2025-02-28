@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { elements, colorMap } from './Data';
+import { colorMap } from './Data';
 import { Element } from '../../types/PeriodicTableTypes';
 import ElementGrid from './ElementGrid';
 import ElementDetails from './ElementDetails';

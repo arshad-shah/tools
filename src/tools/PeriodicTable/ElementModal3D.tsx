@@ -400,7 +400,7 @@ const ElementModel3D: React.FC<ElementModel3DProps> = ({
         const time = Date.now() * 0.001;
         
         // Animate electron orbits - electrons should follow the orbital rings
-        electronsRef.current.forEach((orbit, index) => {
+        electronsRef.current.forEach((orbit) => {
           if (orbit.userData && typeof orbit.userData.shellIndex === 'number') {
             const shellIndex = orbit.userData.shellIndex;
             const electronIndex = orbit.userData.electronIndex || 0;

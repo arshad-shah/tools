@@ -1,6 +1,6 @@
 // src/data/ToolDefinitions.ts
 
-import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, PenTool, FileCode, Lock, Calendar, Link, Dice1, Code, Table, Image, FileText, Split } from 'lucide-react';
+import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, PenTool, FileCode, Lock, Calendar, Link, Dice1, Code, Table, Image  , Split } from 'lucide-react';
 import { ToolDefinition } from '../types/ToolTypes';
 import { TOOL_IDS } from '../constants';
 
