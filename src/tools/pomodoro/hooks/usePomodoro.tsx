@@ -45,7 +45,7 @@ const usePomodoroTimer = ({ timer, handleTimerComplete, formatTime }: UsePomodor
         workerRef.current.postMessage({ type: "STOP" });
       }
     }
-  }, [timer.isActive, timer.timeLeft]);
+  }, [timer.isActive]);
 
   return;
 };

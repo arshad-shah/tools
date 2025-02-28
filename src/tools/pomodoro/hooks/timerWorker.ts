@@ -2,29 +2,68 @@
 let timerInterval: ReturnType<typeof setInterval> | null = null;
 let startTime: number;
 let timeLeft: number;
+let isRunning = false; // Track if the timer is active
+
+const log = (message: string, data?: Record<string, unknown>) => {
+    console.log(`[TimerWorker] ${message}`, data ? data : '');
+};
 
 self.onmessage = (event: MessageEvent) => {
-  const { type, payload } = event.data;
+    const { type, payload } = event.data;
+    log(`Received message of type: ${type}`, payload);
 
-  if (type === "START") {
-    startTime = Date.now();
-    timeLeft = payload.timeLeft;
+    if (type === "STOP") {
+        if (timerInterval) {
+            log('Stopping timer...', {
+                currentTime: new Date().toISOString(),
+                timerActive: timerInterval !== null
+            });
+            
+            clearInterval(timerInterval);
+            timerInterval = null;
+            isRunning = false; // Mark timer as stopped
 
-    timerInterval = setInterval(() => {
-      const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-      const newTimeLeft = Math.max(0, timeLeft - elapsedTime);
+            log('Timer stopped successfully');
+        }
+    }
 
-      self.postMessage({ type: "TICK", timeLeft: newTimeLeft });
+    if (type === "START") {
+        if (isRunning) {
+            log("Timer is already running, ignoring duplicate START request.");
+            return; // Prevent multiple intervals
+        }
 
-      if (newTimeLeft === 0) {
-        clearInterval(timerInterval!);
-        self.postMessage({ type: "COMPLETE" });
-      }
-    }, 1000);
-  }
+        log('Initializing timer...', {
+            currentTime: new Date().toISOString(),
+            initialTimeLeft: payload.timeLeft
+        });
 
-  if (type === "STOP") {
-    clearInterval(timerInterval!);
-    timerInterval = null;
-  }
+        startTime = Date.now();
+        timeLeft = payload.timeLeft;
+        isRunning = true; // Mark timer as active
+
+        log('Timer initialized', { startTime, timeLeft });
+
+        timerInterval = setInterval(() => {
+            const currentTime = Date.now();
+            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+            const newTimeLeft = Math.max(0, timeLeft - elapsedTime);
+
+            log('Timer tick', {
+                currentTime: new Date(currentTime).toISOString(),
+                elapsedTime,
+                newTimeLeft
+            });
+
+            self.postMessage({ type: "TICK", timeLeft: newTimeLeft });
+
+            if (newTimeLeft === 0) {
+                log('Timer completed');
+                clearInterval(timerInterval!);
+                timerInterval = null;
+                isRunning = false;
+                self.postMessage({ type: "COMPLETE" });
+            }
+        }, 1000);
+    }
 };

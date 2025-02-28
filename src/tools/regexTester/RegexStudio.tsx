@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   AlertCircle, Check, Copy, Info, 
   Code, Maximize2, X, Sun, Moon,
-  GitBranch, Heart, Star, Sparkles,
+  GitBranch, Sparkles,
   BookOpen, Save, Command, Bookmark,
   Award, Share2, PanelRight, Zap,
   ChevronDown
@@ -728,7 +728,7 @@ const RegexTester: React.FC = () => {
           {/* Sidebar */}
           {!sidebarCollapsed && (
             <div className="md:w-80 lg:w-96 space-y-6">
-              <Card theme={theme} className={`${theme.elevatedCard} p-5 relative overflow-hidden`} hover>
+              <Card theme={theme} className={` p-5 relative overflow-hidden`} hover>
                 <h3 className={`font-medium ${theme.text} text-lg mb-3 flex items-center`}>
                   <span className={`${theme.accentColor} mr-2`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -1148,8 +1148,8 @@ const RegexTester: React.FC = () => {
                       }
                     }}
                     className="w-full"
-                    icon={<Save size={14} />}
                   >
+                    <Save size={14} />
                     Save This Pattern
                   </Button>
                 </div>
@@ -1160,11 +1160,11 @@ const RegexTester: React.FC = () => {
         
         {/* Keyboard shortcuts help */}
         <div className={`fixed bottom-6 right-6 ${isFullscreen ? '' : 'hidden md:block'}`}>
-          <div className={`${theme.glassEffect} p-1.5 rounded-full shadow-lg cursor-pointer group relative`}>
+          <div className={` p-1.5 rounded-full shadow-lg cursor-pointer group relative`}>
             <Command size={18} className={theme.accentColor} />
             
             <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block">
-              <div className={`${theme.tooltipBg} ${theme.text} shadow-lg rounded-lg p-3 w-64 text-xs`}>
+              <div className={` ${theme.text} shadow-lg rounded-lg p-3 w-64 text-xs`}>
                 <p className="font-medium mb-2">Keyboard Shortcuts</p>
                 <div className="space-y-1.5">
                   <div className="flex justify-between">

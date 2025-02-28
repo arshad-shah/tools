@@ -427,7 +427,6 @@ const TextDiffChecker: React.FC = () => {
     try {
       // Apply a more sophisticated merge strategy that respects line-by-line changes
       let mergedText = '';
-      let prevOriginalLineNum = -1;
       let prevModifiedLineNum = -1;
       
       // Iterate through segments and construct the merged result
@@ -680,7 +679,7 @@ const TextDiffChecker: React.FC = () => {
         try {
           return content
             .replace(/></g, '>\n<')
-            .replace(/<(\/?)([\w-]+)(.*?)>/g, (match, slash, tag, attrs) => {
+            .replace(/<(\/?)([\w-]+)(.*?)>/g, ( slash, tag, attrs) => {
               return `<${slash}${tag}${attrs}>`;
             });
         } catch (e) {
@@ -1365,7 +1364,7 @@ const TextDiffChecker: React.FC = () => {
       </div>
       
       {/* Custom CSS for animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
