@@ -12,7 +12,7 @@ const MenuPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
   const [activeTab, setActiveTab] = useState<'tasks' | 'stats' | 'settings'>('tasks');
 
   return (
-    <div 
+    <>{isOpen ? (<div 
       className={`fixed inset-y-0 right-0 w-full sm:w-[400px] lg:w-[500px] bg-white/90 backdrop-blur-xl 
                   shadow-2xl transform transition-transform duration-300 ease-in-out z-50
                   ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
@@ -75,7 +75,8 @@ const MenuPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
         {activeTab === 'stats' && <Stats />}
         {activeTab === 'settings' && <Settings />}
       </div>
-    </div>
+    </div>): null}
+    </>
   );
 };
 
@@ -88,7 +89,7 @@ function Main() {
         <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
           {/* Menu Toggle Button */}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => setIsMenuOpen(true)}
             className="fixed top-6 right-6 z-50 bg-white/80 backdrop-blur-sm shadow-lg 

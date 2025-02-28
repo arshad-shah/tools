@@ -74,6 +74,7 @@ import Pomodoro from '../tools/pomodoro/main';
 import UnitConverter from '../tools/UnitConverter/UnitConverter';
 import { TOOL_IDS } from '../constants';
 import PeriodicTable from '../tools/PeriodicTable/PeriodicTable';
+import TextDiffChecker from '../tools/TextDiffChecker/TextDiffChecker';
 
 // Register all tool components
 toolRegistry.registerTools({
@@ -86,6 +87,7 @@ toolRegistry.registerTools({
   [TOOL_IDS.POMODORO]: Pomodoro,
   [TOOL_IDS.UNIT_CONVERTER]: UnitConverter,
   [TOOL_IDS.PERIODIC_TABLE]: PeriodicTable,
+  [TOOL_IDS.TEXT_DIFF_CHECKER]: TextDiffChecker,
 });
 
 // Convenience function to get a tool component by ID

@@ -8,4 +8,15 @@ export const TOOL_IDS = {
     POMODORO: 'pomodoro',
     UNIT_CONVERTER: 'unit-converter',
     PERIODIC_TABLE: 'periodic-table',
+    TEXT_DIFF_CHECKER: 'text-diff-checker',
+    MARKDOWN_EDITOR: 'markdown-editor',
+    IMAGE_OPTIMIZER: 'image-optimizer',
+    CSV_VIEWER: 'csv-viewer',
+    CODE_FORMATTER: 'code-formatter',
+    RANDOM_DATA_GENERATOR: 'random-data-generator',
+    URL_ENCODER: 'url-encoder-decoder',
+    DATE_CALCULATOR: 'date-calculator',
+    HASH_GENERATOR: 'hash-generator',
+    NOTE_TAKING: 'note-taking',
+    BASE64_CONVERTER: 'base64-converter'
 } as const;

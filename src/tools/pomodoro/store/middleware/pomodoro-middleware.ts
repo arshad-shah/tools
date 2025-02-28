@@ -4,6 +4,7 @@ import { updateTimer } from '../slices/timerSlice';
 import { updateStats, resetDailyStats } from '../slices/statsSlice';
 import { updateTask } from '../slices/tasksSlice';
 import { TimerState } from '../../../../types/PomodoroTypes';
+import { AUDIO_BASE_64 } from '../../Audio';
 
 // Create the middleware instance
 export const pomodoroMiddleware = createListenerMiddleware();
@@ -68,7 +69,7 @@ startAppListening({
       // Play completion sound if enabled
       if (settings.soundEnabled) {
         try {
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10...');
+          const audio = new Audio(AUDIO_BASE_64);
           await audio.play();
         } catch (error) {
           console.error('Error playing sound:', error);

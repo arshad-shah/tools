@@ -11,11 +11,16 @@ import { TimerProgress } from './TimerProgress';
 import { TimerControls } from './TimerControls';
 import { TimerHeader } from './TimerHeader';
 import { TIMER_THEMES } from './constants';
+import { AUDIO_BASE_64 } from '../Audio';
+import usePomodoroTimer from '../hooks/usePomodoro';
 
 type TimerMode = keyof typeof TIMER_THEMES;
 
 export const Timer: React.FC = () => {
-  const timer = useAppSelector(state => state.timer as { mode: TimerMode, timeLeft: number, isActive: boolean, currentTask?: string });
+  const timer = useAppSelector(state => {
+    const { mode, timeLeft, isActive, currentTask } = state.timer;
+    return { mode, timeLeft, isActive, currentTask: currentTask ?? null };
+  });
   const settings = useAppSelector(state => state.settings);
   const stats = useAppSelector(state => state.stats);
   const currentTask = useAppSelector(state => 
@@ -78,7 +83,8 @@ export const Timer: React.FC = () => {
 
     if (settings.soundEnabled) {
       try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10...');
+        const audio = new Audio(AUDIO_BASE_64);
+        audio.play();
         audio.play().catch(console.error);
       } catch (error) {
         console.error('Error playing sound:', error);
@@ -86,20 +92,7 @@ export const Timer: React.FC = () => {
     }
   }, [timer.mode, settings, stats, dispatch, currentTask]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (timer.isActive && timer.timeLeft > 0) {
-      interval = setInterval(() => {
-        dispatch(updateTimer({ timeLeft: timer.timeLeft - 1 }));
-        document.title = `Pomodoro - ${timer.mode === 'work' ? 'Work' : 'Break'} - ${formatTime(timer.timeLeft)}`;
-      }, 1000);
-    } else if (timer.timeLeft === 0) {
-      handleTimerComplete();
-    }
-
-    return () => clearInterval(interval);
-  }, [timer.isActive, timer.timeLeft, handleTimerComplete, dispatch, formatTime, timer.mode]);
+  usePomodoroTimer({ timer, handleTimerComplete, formatTime });
 
   const handleTimerToggle = () => {
     if (!timer.isActive && timer.mode === 'work' && !timer.currentTask) {
