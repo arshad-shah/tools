@@ -10,13 +10,17 @@ import {
   Palette, 
   Heart, 
   Sparkles, 
-  Search, 
-  Zap, 
-  Layers, 
+  Search,
   Star, 
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  Info,
+  Download,
+  Trash2
 } from 'lucide-react';
 import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
+import { Input } from '../../components/input';
+import { Slider } from '../../components/Slider';
 
 const ColorTester: React.FC = () => {
   // Base color state
@@ -41,9 +45,9 @@ const ColorTester: React.FC = () => {
   const [colorHarmony, setColorHarmony] = useState<ColorHarmony | null>(null);
   const [colorMood, setColorMood] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabType>('harmony');
-  const [showWelcomeTooltip, setShowWelcomeTooltip] = useState<boolean>(true);
   const [contrastRatios, setContrastRatios] = useState<{white: number, black: number}>({ white: 0, black: 0 });
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
+  const [showEditorsPanel, setShowEditorsPanel] = useState<boolean>(true);
   
   // Calculate the hex code from RGB values
   const hexCode = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
@@ -56,6 +60,7 @@ const ColorTester: React.FC = () => {
   // Calculate text color for contrast
   const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
   const textColor = luminance > 0.5 ? '#1a202c' : '#ffffff';
+
   // Utility color conversion functions
   const calculateHSL = (r: number, g: number, b: number): { h: number, s: number, l: number } => {
     r /= 255;
@@ -324,15 +329,7 @@ const ColorTester: React.FC = () => {
     const blackRatio = calculateContrastRatio([red, green, blue], [0, 0, 0]);
     setContrastRatios({ white: whiteRatio, black: blackRatio });
   }, [red, green, blue]);
-  
-  // Hide welcome tooltip after delay
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setShowWelcomeTooltip(false);
-    }, 5000);
-    
-    return () => clearTimeout(timeout);
-  }, []);
+
   
   // Event handlers
   
@@ -475,8 +472,8 @@ const ColorTester: React.FC = () => {
     
     return {
       background: gradient,
-      height: '8px',
-      borderRadius: '4px',
+      height: '10px',
+      borderRadius: '5px',
       outline: 'none',
       WebkitAppearance: 'none',
       appearance: 'none',
@@ -503,496 +500,646 @@ const ColorTester: React.FC = () => {
     .highlight-animation {
       animation: highlight 1s ease;
     }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .slider-thumb::before {
+      content: '';
+      width: 16px;
+      height: 16px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      cursor: pointer;
+      margin-top: -6px;
+      border: 2px solid rgba(79, 70, 229, 0.8);
+      transition: all 0.2s ease;
+    }
+    
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .depth-effect {
+      box-shadow: 
+        0 2px 10px rgba(0, 0, 0, 0.05),
+        0 10px 20px rgba(79, 70, 229, 0.1);
+    }
+    
+    .ripple-bg {
+      background-image: radial-gradient(
+        circle at center,
+        rgba(79, 70, 229, 0.1) 0%, 
+        rgba(79, 70, 229, 0.05) 25%, 
+        rgba(79, 70, 229, 0.01) 70%, 
+        transparent 100%
+      );
+    }
   `;
 
   return (
-    <div className="p-6 mx-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-xl">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900/5 via-slate-50 to-purple-900/5 p-6">
       <style>{pulseAnimation}</style>
       
-      {/* Header */}
-      <div className="mb-6 text-center relative">
-        <div className="flex justify-center mb-2">
-          <div className="relative">
-            <Palette size={32} className="text-indigo-600" />
-            <div className="absolute -top-1 -right-1 text-amber-500">
-              <Sparkles size={16} />
-            </div>
-          </div>
-        </div>
-        <h1 className="text-3xl font-bold mb-1 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          Smart Color Lab
-        </h1>
-        <p className="text-gray-600">Create, analyze, and harmonize beautiful colors</p>
+      <div className="max-w-6xl mx-auto backdrop-blur-sm bg-white/70 rounded-2xl overflow-hidden shadow-xl border border-indigo-100 depth-effect">
         
-        {showWelcomeTooltip && (
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-indigo-50 border border-indigo-200 text-indigo-700 p-3 rounded-lg shadow-lg z-10 animate-pulse max-w-xs">
-            <div className="flex items-center">
-              <Zap size={16} className="text-amber-500 mr-2" />
-              <p className="text-sm">Try our intelligent color harmony and psychology features!</p>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      {/* Color Display */}
-      <div 
-        className="w-full h-40 rounded-xl shadow-lg mb-6 flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden color-display"
-        style={{ backgroundColor: rgbString }}
-      >
-        <div className="backdrop-blur-sm px-5 py-3 rounded-lg shadow-inner">
-          <span style={{ color: textColor }} className="font-mono text-xl font-bold tracking-wide">
-            {hexCode}
-          </span>
-        </div>
-        
-        <div 
-          className="absolute bottom-2 right-2 px-3 py-1 rounded-full text-xs font-medium shadow-sm"
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)', color: 'rgba(0, 0, 0, 0.75)' }}
-        >
-          <div className="flex items-center">
-            <Search size={10} className="mr-1" />
-            {colorNameSuggestion}
-          </div>
-        </div>
-        
-        <button 
-          className="absolute top-2 right-2 bg-white bg-opacity-30 p-2 rounded-full hover:bg-opacity-50 transition-all duration-200 shadow-sm"
-          onClick={generateRandomColor}
-          title="Generate random color"
-        >
-          <RefreshCw size={18} className="text-gray-800" />
-        </button>
-        
-        <div className="absolute top-2 left-2">
-          <div className="flex space-x-1">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-            <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          {/* Color Picker */}
-          <div className="mb-6">
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Droplet size={16} className="mr-1 text-indigo-500" />
-              Color Picker
-            </label>
-            <div className="relative rounded-lg overflow-hidden shadow-sm">
-              <input
-                type="color"
-                value={hexCode}
-                onChange={handleColorPicker}
-                className="mt-1 p-2 block w-full h-12 text-black cursor-pointer border-0"
-              />
-            </div>
-          </div>
-          
-          {/* RGB Sliders */}
-          <div className="space-y-4 bg-white p-4 rounded-lg shadow-sm">
-            <div>
-              <div className="flex justify-between mb-1">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-red-500 mr-1"></div>
-                  Red
-                </label>
-                <span className="text-sm font-mono text-red-600 bg-red-50 px-2 py-0.5 rounded">
-                  {red}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="255"
-                value={red}
-                onChange={(e) => setRed(parseInt(e.target.value))}
-                onMouseEnter={() => handleSliderMouseEnter('red')}
-                onMouseLeave={handleSliderMouseLeave}
-                className="w-full"
-                style={getSliderStyle('red')}
-              />
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-green-500 mr-1"></div>
-                  Green
-                </label>
-                <span className="text-sm font-mono text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                  {green}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="255"
-                value={green}
-                onChange={(e) => setGreen(parseInt(e.target.value))}
-                onMouseEnter={() => handleSliderMouseEnter('green')}
-                onMouseLeave={handleSliderMouseLeave}
-                className="w-full"
-                style={getSliderStyle( 'green')}
-              />
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 mr-1"></div>
-                  Blue
-                </label>
-                <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                  {blue}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="255"
-                value={blue}
-                onChange={(e) => setBlue(parseInt(e.target.value))}
-                onMouseEnter={() => handleSliderMouseEnter('blue')}
-                onMouseLeave={handleSliderMouseLeave}
-                className="w-full"
-                style={getSliderStyle('blue')}
-              />
-            </div>
-            
-            <div>
-              <div className="flex justify-between mb-1">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  <Eye size={14} className="mr-1 text-gray-500" />
-                  Opacity
-                </label>
-                <span className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-                  {(alpha * 100).toFixed(0)}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={alpha}
-                onChange={(e) => setAlpha(parseFloat(e.target.value))}
-                className="w-full"
-              />
-            </div>
-          </div>
-          
-        {/* Color Values */}
-        <div className="mt-6">
-        <h2 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-            <Clipboard size={16} className="mr-1.5 text-indigo-500" />
-            Color Values
-            {copiedValue && (
-            <span className="ml-2 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse shadow-sm">
-                <Check size={12} className="mr-1" />
-                Copied!
-            </span>
-            )}
-        </h2>
-        <div className="space-y-2.5 bg-gradient-to-br from-gray-50 to-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <div className="bg-white rounded-lg p-3.5 shadow-sm border border-indigo-50 hover:border-indigo-100 transition-all duration-200 relative group">
-            <span className="text-xs font-medium text-indigo-400 block mb-1 uppercase tracking-wide">HEX</span>
-            <div className="flex justify-between items-center">
-                <span className="font-mono text-gray-800 text-sm select-all">{hexCode}</span>
-                <button 
-                onClick={() => copyToClipboard(hexCode, 'hex')}
-                className="text-gray-400 hover:text-indigo-500 transition-colors p-1.5 rounded-full hover:bg-indigo-50"
-                title="Copy HEX code"
-                >
-                {copiedValue === 'hex' ? 
-                    <Check size={18} className="text-green-500" /> : 
-                    <Copy size={18} className="opacity-80 group-hover:opacity-100" />}
-                </button>
-            </div>
-            <div className="w-1 h-full absolute left-0 top-0 bg-indigo-400 rounded-l-lg opacity-60"></div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-3.5 shadow-sm border border-green-50 hover:border-green-100 transition-all duration-200 relative group">
-            <span className="text-xs font-medium text-green-400 block mb-1 uppercase tracking-wide">RGB</span>
-            <div className="flex justify-between items-center">
-                <span className="font-mono text-gray-800 text-sm select-all">{rgbString}</span>
-                <button 
-                onClick={() => copyToClipboard(rgbString, 'rgb')}
-                className="text-gray-400 hover:text-green-500 transition-colors p-1.5 rounded-full hover:bg-green-50"
-                title="Copy RGB value"
-                >
-                {copiedValue === 'rgb' ? 
-                    <Check size={18} className="text-green-500" /> : 
-                    <Copy size={18} className="opacity-80 group-hover:opacity-100" />}
-                </button>
-            </div>
-            <div className="w-1 h-full absolute left-0 top-0 bg-green-400 rounded-l-lg opacity-60"></div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-3.5 shadow-sm border border-amber-50 hover:border-amber-100 transition-all duration-200 relative group">
-            <span className="text-xs font-medium text-amber-400 block mb-1 uppercase tracking-wide">CSS</span>
-            <div className="flex justify-between items-center">
-                <span className="font-mono text-gray-800 text-sm select-all">color: {rgbString};</span>
-                <button 
-                onClick={() => copyToClipboard(`color: ${rgbString};`, 'css')}
-                className="text-gray-400 hover:text-amber-500 transition-colors p-1.5 rounded-full hover:bg-amber-50"
-                title="Copy CSS declaration"
-                >
-                {copiedValue === 'css' ? 
-                    <Check size={18} className="text-green-500" /> : 
-                    <Copy size={18} className="opacity-80 group-hover:opacity-100" />}
-                </button>
-            </div>
-            <div className="w-1 h-full absolute left-0 top-0 bg-amber-400 rounded-l-lg opacity-60"></div>
-            </div>
-        </div>
-        </div>
-        </div>
-        
-        <div>
-          {/* Tabs for Harmony, Mood, Preview */}
-          <div className="mb-4">
-            <div className="flex border-b border-gray-200 bg-white rounded-t-lg shadow-sm">
-              <button
-                className={`py-2 px-4 text-sm font-medium flex items-center ${activeTab === 'harmony' ? 'text-indigo-600 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('harmony')}
+        <div className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Main color display - Takes up 2 columns */}
+            <div className="lg:col-span-2 flex flex-col">
+              {/* Color Display */}
+              <div 
+                className="w-full h-64 rounded-2xl shadow-lg mb-4 flex flex-col items-center justify-center transition-all duration-300 relative overflow-hidden color-display group"
+                style={{ backgroundColor: rgbString }}
               >
-                <Sparkles size={14} className="mr-1" />
-                Harmony
-              </button>
-              <button
-                className={`py-2 px-4 text-sm font-medium flex items-center ${activeTab === 'psychology' ? 'text-indigo-600 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('psychology')}
-              >
-                <Heart size={14} className="mr-1" />
-                Psychology
-              </button>
-              <button
-                className={`py-2 px-4 text-sm font-medium flex items-center ${activeTab === 'preview' ? 'text-indigo-600 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('preview')}
-              >
-                <Eye size={14} className="mr-1" />
-                Preview
-              </button>
-              <button
-                className={`py-2 px-4 text-sm font-medium flex items-center ${activeTab === 'accessibility' ? 'text-indigo-600 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('accessibility')}
-              >
-                <ShieldCheck size={14} className="mr-1" />
-                A11y
-              </button>
-            </div>
-          </div>
-          
-          {/* Color Harmony */}
-          {activeTab === 'harmony' && colorHarmony && (
-            <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-              <h2 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                <Sparkles size={16} className="mr-1 text-indigo-500" />
-                Harmonious Colors
-                <span className="ml-2 bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
-                  Color Theory
-                </span>
-              </h2>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(colorHarmony).map(([key, color]) => (
-                  <button
-                    key={key}
-                    className="bg-white rounded-lg p-2 border border-gray-100 shadow-sm flex items-center space-x-2 hover:bg-gray-50 transition-colors"
-                    onClick={() => loadHarmonyColor(color.rgb)}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-md"
-                      style={{ backgroundColor: color.rgb }}
-                    ></div>
-                    <div className="flex-1 text-left">
-                      <div className="text-xs text-gray-500">{color.name}</div>
-                      <div className="text-xs font-mono text-gray-700 truncate">{color.hex}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Color Psychology */}
-          {activeTab === 'psychology' && (
-            <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-              <h2 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                <Heart size={16} className="mr-1 text-indigo-500" />
-                Color Psychology
-                <span className="ml-2 bg-pink-100 text-pink-800 text-xs px-2 py-0.5 rounded-full">
-                  Emotional Impact
-                </span>
-              </h2>
-              <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-4 shadow-sm">
-                <div className="flex items-start space-x-3">
-                  <div 
-                    className="w-12 h-12 rounded-md shadow-inner flex-shrink-0 mt-1"
-                    style={{ backgroundColor: rgbString }}
-                  ></div>
-                  <div>
-                    <h3 className="font-medium text-sm flex items-center">
-                      {colorNameSuggestion}
-                      <Star size={12} className="ml-1 text-amber-400" />
-                    </h3>
-                    <p className="text-sm text-gray-700 mt-1">{colorMood}</p>
-                    
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {colorMood.split(',').map((trait, index) => (
-                        <span 
-                          key={index}
-                          className="px-2 py-1 rounded-full text-xs bg-indigo-50 text-indigo-800 shadow-sm"
-                        >
-                          {trait.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                <div className="backdrop-blur-sm bg-black/10 px-5 py-3 rounded-xl shadow-sm border border-white/20">
+                  <span style={{ color: textColor }} className="font-mono text-xl font-bold tracking-wide">
+                    {hexCode}
+                  </span>
                 </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Text Preview */}
-          {activeTab === 'preview' && (
-            <div className="mb-6">
-              <h2 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                <Eye size={16} className="mr-1 text-indigo-500" />
-                Text Preview
-                <span className="ml-2 bg-cyan-100 text-cyan-800 text-xs px-2 py-0.5 rounded-full">
-                  Visual Test
-                </span>
-              </h2>
-              <div className="rounded-lg p-4 shadow-sm flex flex-col items-center justify-center"
-                  style={{ backgroundColor: rgbString }}>
-                <h3 style={{ color: textColor }} className="font-bold text-lg mb-1">Heading Text</h3>
-                <p style={{ color: textColor }} className="text-sm mb-3 text-center">
-                  This is how your text will appear against this background color. Good contrast ensures readability.
-                </p>
+                
                 <div 
-                  className="mt-2 px-3 py-1 rounded-full text-xs font-medium shadow-sm"
+                  className="absolute bottom-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm shadow-sm border border-white/20"
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: textColor }}
                 >
-                  {luminance > 0.5 ? 'Dark text recommended' : 'Light text recommended'}
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Accessibility */}
-          {activeTab === 'accessibility' && (
-            <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-              <h2 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                <ShieldCheck size={16} className="mr-1 text-indigo-500" />
-                Accessibility
-                <span className="ml-2 bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full">
-                  WCAG Standards
-                </span>
-              </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                  <h3 className="font-medium text-xs text-gray-500 mb-2">White Text</h3>
-                  <div className="rounded overflow-hidden mb-2">
-                    <div style={{ backgroundColor: rgbString }} className="p-2 flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">Sample Text</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs">Contrast: {contrastRatios.white}:1</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${getAccessibilityLevel(contrastRatios.white).color} bg-opacity-20`}>
-                      {getAccessibilityLevel(contrastRatios.white).level}
-                    </span>
+                  <div className="flex items-center">
+                    <Search size={14} className="mr-1.5" />
+                    {colorNameSuggestion}
                   </div>
                 </div>
                 
-                <div className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                  <h3 className="font-medium text-xs text-gray-500 mb-2">Black Text</h3>
-                  <div className="rounded overflow-hidden mb-2">
-                    <div style={{ backgroundColor: rgbString }} className="p-2 flex items-center justify-center">
-                      <span className="text-black text-sm font-medium">Sample Text</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs">Contrast: {contrastRatios.black}:1</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${getAccessibilityLevel(contrastRatios.black).color} bg-opacity-20`}>
-                      {getAccessibilityLevel(contrastRatios.black).level}
-                    </span>
+                <div className="absolute top-0 right-0 p-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-all duration-200 shadow-sm border border-white/30 text-white"
+                    onClick={generateRandomColor}
+                    title="Generate random color"
+                  >
+                    <RefreshCw size={18} />
+                  </button>
+                  
+                  <button 
+                    className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-all duration-200 shadow-sm border border-white/30 text-white"
+                    onClick={saveColor}
+                    title="Save to palette"
+                  >
+                    <Save size={18} />
+                  </button>
+                </div>
+                
+                <div className="absolute top-4 left-4 pointer-events-none">
+                  <div className="flex space-x-1.5">
+                    <div className="w-3 h-3 bg-red-500 rounded-full opacity-80"></div>
+                    <div className="w-3 h-3 bg-amber-500 rounded-full opacity-80"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full opacity-80"></div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          {/* Actions */}
-          <div className="flex space-x-2">
-            <button
-              className="flex-1 py-3 px-4 mb-6 rounded-lg font-medium text-white transition-all bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md hover:shadow-lg flex items-center justify-center"
-              onClick={saveColor}
-            >
-              <Save size={18} className="mr-2" />
-              Save to Palette
-            </button>
-            <button
-              className="py-3 px-4 mb-6 rounded-lg font-medium text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-              onClick={generateRandomColor}
-            >
-              <RefreshCw size={18} className="mr-2" />
-              Random
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Saved Colors */}
-      <div id="palette-section" className="mt-6 p-4 bg-white rounded-lg shadow-sm transition-all duration-300">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-sm font-medium text-gray-700 flex items-center">
-            <Palette size={16} className="mr-1 text-indigo-500" />
-            Color Palette
-            <span className="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
-              {savedColors.length} colors
-            </span>
-          </h2>
-          <button 
-            onClick={exportPalette}
-            className="text-xs flex items-center text-indigo-600 hover:text-indigo-800"
-            title="Export palette"
-          >
-            <Layers size={14} className="mr-1" />
-            Export
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-          {savedColors.map((color, index) => (
-            <div key={index} className="relative group">
-              <button
-                className="w-full pt-full relative rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 group-hover:scale-105 duration-200"
-                style={{ 
-                  backgroundColor: color.rgb,
-                  paddingTop: '100%'
-                }}
-                onClick={() => loadColor(color)}
-                title={color.hex}
-              >
-                <span className="sr-only">Load color {color.hex}</span>
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 p-1 rounded-b-lg text-center">
-                <span className="text-white text-xs truncate block">{color.hex}</span>
+              
+              {/* Color Values */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-medium text-gray-700 flex items-center">
+                    <Clipboard size={15} className="mr-1.5 text-indigo-500" />
+                    Color Values
+                  </h2>
+                  
+                  {copiedValue && (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse shadow-sm">
+                      <Check size={12} className="mr-1" />
+                      Copied!
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex flex-col space-y-2">
+                  <div className="bg-white rounded-lg p-3 shadow-sm border border-indigo-100 hover:border-indigo-200 transition-all duration-200 relative group flex items-center">
+                    <div className="w-1.5 h-full absolute left-0 top-0 bg-indigo-400 rounded-l-lg opacity-70"></div>
+                    <div className="pl-2 flex-1">
+                      <span className="text-xs font-medium text-indigo-500 block uppercase tracking-wide">HEX</span>
+                      <span className="font-mono text-gray-800 text-sm select-all">{hexCode}</span>
+                    </div>
+                    <button 
+                      onClick={() => copyToClipboard(hexCode, 'hex')}
+                      className="text-gray-400 hover:text-indigo-500 transition-colors p-1.5 rounded-full hover:bg-indigo-50"
+                      title="Copy HEX code"
+                    >
+                      {copiedValue === 'hex' ? 
+                        <Check size={18} className="text-green-500" /> : 
+                        <Copy size={18} className="opacity-80 group-hover:opacity-100" />}
+                    </button>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-3 shadow-sm border border-green-100 hover:border-green-200 transition-all duration-200 relative group flex items-center">
+                    <div className="w-1.5 h-full absolute left-0 top-0 bg-green-400 rounded-l-lg opacity-70"></div>
+                    <div className="pl-2 flex-1">
+                      <span className="text-xs font-medium text-green-500 block uppercase tracking-wide">RGB</span>
+                      <span className="font-mono text-gray-800 text-sm select-all">{rgbString}</span>
+                    </div>
+                    <button 
+                      onClick={() => copyToClipboard(rgbString, 'rgb')}
+                      className="text-gray-400 hover:text-green-500 transition-colors p-1.5 rounded-full hover:bg-green-50"
+                      title="Copy RGB value"
+                    >
+                      {copiedValue === 'rgb' ? 
+                        <Check size={18} className="text-green-500" /> : 
+                        <Copy size={18} className="opacity-80 group-hover:opacity-100" />}
+                    </button>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-3 shadow-sm border border-amber-100 hover:border-amber-200 transition-all duration-200 relative group flex items-center">
+                    <div className="w-1.5 h-full absolute left-0 top-0 bg-amber-400 rounded-l-lg opacity-70"></div>
+                    <div className="pl-2 flex-1">
+                      <span className="text-xs font-medium text-amber-500 block uppercase tracking-wide">CSS</span>
+                      <span className="font-mono text-gray-800 text-sm select-all">color: {rgbString};</span>
+                    </div>
+                    <button 
+                      onClick={() => copyToClipboard(`color: ${rgbString};`, 'css')}
+                      className="text-gray-400 hover:text-amber-500 transition-colors p-1.5 rounded-full hover:bg-amber-50"
+                      title="Copy CSS declaration"
+                    >
+                      {copiedValue === 'css' ? 
+                        <Check size={18} className="text-green-500" /> : 
+                        <Copy size={18} className="opacity-80 group-hover:opacity-100" />}
+                    </button>
+                  </div>
+                </div>
               </div>
+              
+              {/* Color Controls */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-medium text-gray-700 flex items-center">
+                    <Droplet size={15} className="mr-1.5 text-indigo-500" />
+                    Quick Actions
+                  </h2>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <button
+                    className="flex-1 py-2.5 px-4 rounded-lg font-medium text-white transition-all bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md hover:shadow-lg flex items-center justify-center"
+                    onClick={saveColor}
+                  >
+                    <Save size={16} className="mr-2" />
+                    Save Color
+                  </button>
+                  <button
+                    className="flex-1 py-2.5 px-4 rounded-lg font-medium text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm hover:shadow transition-all flex items-center justify-center"
+                    onClick={generateRandomColor}
+                  >
+                    <RefreshCw size={16} className="mr-2" />
+                    Random
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Editor Panel - Takes up 3 columns */}
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                <div className="flex items-center border-b border-gray-100">
+                  <button
+                    className={`flex-1 py-3 text-sm font-medium relative ${activeTab === 'harmony' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab('harmony')}
+                  >
+                    <div className="flex items-center justify-center">
+                      <Sparkles size={15} className="mr-1.5" />
+                      Harmony
+                    </div>
+                    {activeTab === 'harmony' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"></div>
+                    )}
+                  </button>
+                  
+                  <button
+                    className={`flex-1 py-3 text-sm font-medium relative ${activeTab === 'psychology' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab('psychology')}
+                  >
+                    <div className="flex items-center justify-center">
+                      <Heart size={15} className="mr-1.5" />
+                      Psychology
+                    </div>
+                    {activeTab === 'psychology' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"></div>
+                    )}
+                  </button>
+                  
+                  <button
+                    className={`flex-1 py-3 text-sm font-medium relative ${activeTab === 'preview' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab('preview')}
+                  >
+                    <div className="flex items-center justify-center">
+                      <Eye size={15} className="mr-1.5" />
+                      Preview
+                    </div>
+                    {activeTab === 'preview' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"></div>
+                    )}
+                  </button>
+                  
+                  <button
+                    className={`flex-1 py-3 text-sm font-medium relative ${activeTab === 'accessibility' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab('accessibility')}
+                  >
+                    <div className="flex items-center justify-center">
+                      <ShieldCheck size={15} className="mr-1.5" />
+                      Accessibility
+                    </div>
+                    {activeTab === 'accessibility' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"></div>
+                    )}
+                  </button>
+                </div>
+                
+                <div className="p-5">
+                  {/* Color Harmony */}
+                  {activeTab === 'harmony' && colorHarmony && (
+                    <div className="fade-in">
+                      <div className="flex items-center mb-4">
+                        <Sparkles size={16} className="mr-1.5 text-indigo-500" />
+                        <h2 className="text-sm font-medium text-gray-700">Harmonious Colors</h2>
+                        <span className="ml-2 bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">
+                          Color Theory
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        {Object.entries(colorHarmony).map(([key, color]) => (
+                          <button
+                            key={key}
+                            className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm flex items-center space-x-3 hover:border-indigo-200 hover:shadow transition-all duration-200 group"
+                            onClick={() => loadHarmonyColor(color.rgb)}
+                          >
+                            <div 
+                              className="w-10 h-10 rounded-lg shadow-inner group-hover:scale-110 transition-transform duration-200"
+                              style={{ backgroundColor: color.rgb }}
+                            ></div>
+                            <div className="flex-1 text-left">
+                              <div className="text-sm font-medium">{color.name}</div>
+                              <div className="text-xs font-mono text-gray-500">{color.hex}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Color Psychology */}
+                  {activeTab === 'psychology' && (
+                    <div className="fade-in">
+                      <div className="flex items-center mb-4">
+                        <Heart size={16} className="mr-1.5 text-indigo-500" />
+                        <h2 className="text-sm font-medium text-gray-700">Color Psychology</h2>
+                        <span className="ml-2 bg-pink-100 text-pink-800 text-xs px-2 py-0.5 rounded-full">
+                          Emotional Impact
+                        </span>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-4 shadow-sm border border-gray-100">
+                        <div className="flex items-start space-x-4">
+                          <div 
+                            className="w-16 h-16 rounded-lg shadow-inner flex-shrink-0"
+                            style={{ backgroundColor: rgbString }}
+                          ></div>
+                          <div className="flex-1">
+                            <h3 className="font-medium text-base flex items-center">
+                              {colorNameSuggestion}
+                              <Star size={14} className="ml-1.5 text-amber-400" />
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1 mb-3">{colorMood}</p>
+                            
+                            <div className="flex flex-wrap gap-1.5">
+                              {colorMood.split(',').map((trait, index) => (
+                                <span 
+                                  key={index}
+                                  className="px-2 py-1 rounded-full text-xs bg-indigo-50 text-indigo-700"
+                                >
+                                  {trait.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Text Preview */}
+                  {activeTab === 'preview' && (
+                    <div className="fade-in">
+                      <div className="flex items-center mb-4">
+                        <Eye size={16} className="mr-1.5 text-indigo-500" />
+                        <h2 className="text-sm font-medium text-gray-700">Text Preview</h2>
+                        <span className="ml-2 bg-cyan-100 text-cyan-800 text-xs px-2 py-0.5 rounded-full">
+                          Visual Test
+                        </span>
+                      </div>
+                      
+                      <div className="rounded-lg p-6 shadow-sm flex flex-col items-center justify-center space-y-4"
+                        style={{ backgroundColor: rgbString }}>
+                        <div>
+                          <h3 style={{ color: textColor }} className="font-bold text-2xl mb-1 text-center">Heading Text</h3>
+                          <p style={{ color: textColor }} className="text-base mb-2 text-center">
+                            This is a subheading that explains the main content
+                          </p>
+                          <p style={{ color: textColor }} className="text-sm mb-4 text-center max-w-lg">
+                            This is how your text will appear on this background color. Good contrast ensures proper readability for your users. This paragraph demonstrates typical body text.
+                          </p>
+                          
+                          <div className="flex justify-center space-x-3">
+                            <button 
+                              className="px-4 py-1.5 rounded-lg text-sm font-medium"
+                              style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: textColor, border: `1px solid rgba(${textColor === '#ffffff' ? '255, 255, 255' : '0, 0, 0'}, 0.1)` }}
+                            >
+                              Primary Button
+                            </button>
+                            <button 
+                              className="px-4 py-1.5 rounded-lg text-sm font-medium border"
+                              style={{ color: textColor, borderColor: `rgba(${textColor === '#ffffff' ? '255, 255, 255' : '0, 0, 0'}, 0.2)` }}
+                            >
+                              Secondary Button
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Accessibility */}
+                  {activeTab === 'accessibility' && (
+                    <div className="fade-in">
+                      <div className="flex items-center mb-4">
+                        <ShieldCheck size={16} className="mr-1.5 text-indigo-500" />
+                        <h2 className="text-sm font-medium text-gray-700">Accessibility</h2>
+                        <span className="ml-2 bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full">
+                          WCAG Standards
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+                          <h3 className="font-medium text-sm text-gray-700 mb-3 flex items-center">
+                            <span className="w-3 h-3 bg-white border border-gray-300 rounded-full mr-2"></span>
+                            White Text
+                          </h3>
+                          <div className="rounded-lg overflow-hidden mb-3 shadow-sm">
+                            <div style={{ backgroundColor: rgbString }} className="p-4 flex flex-col items-center justify-center">
+                              <span className="text-white text-lg font-semibold mb-1">Heading</span>
+                              <span className="text-white text-sm">Normal text</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Contrast: {contrastRatios.white}:1</span>
+                            <span className={`text-xs px-2.5 py-1 rounded-full ${getAccessibilityLevel(contrastRatios.white).color} bg-opacity-20 font-medium`}>
+                              {getAccessibilityLevel(contrastRatios.white).level}
+                            </span>
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">
+                            {getAccessibilityLevel(contrastRatios.white).passes ? 
+                              "Passes accessibility requirements" : 
+                              "Does not meet accessibility standards"}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+                          <h3 className="font-medium text-sm text-gray-700 mb-3 flex items-center">
+                            <span className="w-3 h-3 bg-black rounded-full mr-2"></span>
+                            Black Text
+                          </h3>
+                          <div className="rounded-lg overflow-hidden mb-3 shadow-sm">
+                            <div style={{ backgroundColor: rgbString }} className="p-4 flex flex-col items-center justify-center">
+                              <span className="text-black text-lg font-semibold mb-1">Heading</span>
+                              <span className="text-black text-sm">Normal text</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Contrast: {contrastRatios.black}:1</span>
+                            <span className={`text-xs px-2.5 py-1 rounded-full ${getAccessibilityLevel(contrastRatios.black).color} bg-opacity-20 font-medium`}>
+                              {getAccessibilityLevel(contrastRatios.black).level}
+                            </span>
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">
+                            {getAccessibilityLevel(contrastRatios.black).passes ? 
+                              "Passes accessibility requirements" : 
+                              "Does not meet accessibility standards"}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                        <div className="flex items-start">
+                          <Info size={16} className="text-indigo-500 mt-0.5 mr-2 flex-shrink-0" />
+                          <div className="text-xs text-indigo-700">
+                            <p className="font-medium mb-1">WCAG Compliance Guidelines:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                              <li>AA standard requires at least 4.5:1 for normal text</li>
+                              <li>AAA standard requires at least 7:1 for normal text</li>
+                              <li>Large text (18pt+) only needs 3:1 for AA standard</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* RGB Controls */}
+              <div className="mt-4 bg-white p-5 rounded-xl shadow-md border border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-medium text-gray-700 flex items-center">
+                    <Droplet size={15} className="mr-1.5 text-indigo-500" />
+                    Color Editor
+                  </h2>
+                  
+                  <button
+                    onClick={() => setShowEditorsPanel(!showEditorsPanel)}
+                    className="text-xs flex items-center text-gray-500 hover:text-indigo-600 transition-colors"
+                  >
+                    <ChevronDown size={14} className={`mr-1 transform ${showEditorsPanel ? '' : 'rotate-180'}`} />
+                    {showEditorsPanel ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                
+                {showEditorsPanel && (
+                  <div className="space-y-4 fade-in">
+                    <div className="bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                      <Input
+                        type="color"
+                        value={hexCode}
+                        onChange={handleColorPicker}
+                        className="w-full h-12 cursor-pointer border-0 rounded-lg p-1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <label className="text-sm font-medium text-gray-700 flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-red-500 mr-1.5"></div>
+                          Red
+                        </label>
+                        <span className="text-sm font-mono text-red-600 bg-red-50 px-2 py-0.5 rounded">
+                          {red}
+                        </span>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={255}
+                        value={[red]}
+                        onValueChange={(value) => setRed(value[0])}
+                        className="w-full"
+                        variant='red'
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <label className="text-sm font-medium text-gray-700 flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-green-500 mr-1.5"></div>
+                          Green
+                        </label>
+                        <span className="text-sm font-mono text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                          {green}
+                        </span>
+                      </div>
+
+                      <Slider
+                        min={0}
+                        max={255}
+                        value={[green]}
+                        onValueChange={(value) => setGreen(value[0])}
+                        className="w-full"
+                        variant='green'
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <label className="text-sm font-medium text-gray-700 flex items-center">
+                          <div className="w-3 h-3 rounded-full bg-blue-500 mr-1.5"></div>
+                          Blue
+                        </label>
+                        <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                          {blue}
+                        </span>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={255}
+                        value={[blue]}
+                        onValueChange={(value) => setBlue(value[0])}
+                        className="w-full"
+                        variant='blue'
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <label className="text-sm font-medium text-gray-700 flex items-center">
+                          <Eye size={14} className="mr-1.5 text-gray-500" />
+                          Opacity
+                        </label>
+                        <span className="text-sm font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                          {(alpha * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={[alpha]}
+                        onValueChange={(value) => setAlpha(parseFloat(value[0].toFixed(2)))}
+                        className="w-full"
+                        variant='alpha'
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Saved Colors Palette */}
+          <div id="palette-section" className="mt-8 p-5 bg-white rounded-xl shadow-md border border-gray-100 transition-all duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center">
+                <Palette size={16} className="mr-1.5 text-indigo-500" />
+                <h2 className="text-sm font-medium text-gray-700">Color Palette</h2>
+                <span className="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  {savedColors.length} colors
+                </span>
+              </div>
+              
               <button 
-                className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => deleteColor(index, e)}
-                title="Remove color"
+                onClick={exportPalette}
+                className="text-xs flex items-center text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
+                title="Export palette"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
+                <Download size={14} className="mr-1.5" />
+                Export Palette
               </button>
             </div>
-          ))}
+            
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-3">
+              {savedColors.map((color, index) => (
+                <div key={index} className="relative group">
+                  <button
+                    className="w-full aspect-square rounded-lg shadow-sm hover:shadow transition-shadow border border-gray-200 group-hover:scale-105 duration-200"
+                    style={{ backgroundColor: color.rgb }}
+                    onClick={() => loadColor(color)}
+                    title={color.hex}
+                  >
+                    <span className="sr-only">Load color {color.hex}</span>
+                  </button>
+                  
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 bg-white px-2 py-1 rounded shadow-md text-center z-10 whitespace-nowrap text-xs">
+                    {color.hex}
+                  </div>
+                  
+                  <button 
+                    className="absolute -top-1 -right-1 bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+                    onClick={(e) => deleteColor(index, e)}
+                    title="Remove color"
+                  >
+                    <Trash2 size={12} className="text-red-500" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

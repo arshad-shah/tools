@@ -71,16 +71,21 @@ import NumberConverter from '../tools/NumberConverter/NumberConverter';
 import QrCodeGenerator from '../tools/QrCodeGenerator/QRCodeGenerator';
 import JsonViewer from '../tools/JsonViewer/components/JsonViewer';
 import Pomodoro from '../tools/pomodoro/main';
+import UnitConverter from '../tools/UnitConverter/UnitConverter';
+import { TOOL_IDS } from '../constants';
+import PeriodicTable from '../tools/PeriodicTable/PeriodicTable';
 
 // Register all tool components
 toolRegistry.registerTools({
-  'color-tester': ColorTester,
-  'password-generator': PasswordGenerator,
-  'regex-tester': RegexTester,
-  'number-converter': NumberConverter,
-  'qr-code-generator': QrCodeGenerator,
-  'json-and-xml-viewer': JsonViewer,
-  'pomodoro': Pomodoro,
+  [TOOL_IDS.COLOR_TESTER]: ColorTester,
+  [TOOL_IDS.PASSWORD_GENERATOR]: PasswordGenerator,
+  [TOOL_IDS.REGEX_TESTER]: RegexTester,
+  [TOOL_IDS.NUMBER_CONVERTER]: NumberConverter,
+  [TOOL_IDS.QR_CODE_GENERATOR]: QrCodeGenerator,
+  [TOOL_IDS.JSON_AND_XML_VIEWER]: JsonViewer,
+  [TOOL_IDS.POMODORO]: Pomodoro,
+  [TOOL_IDS.UNIT_CONVERTER]: UnitConverter,
+  [TOOL_IDS.PERIODIC_TABLE]: PeriodicTable,
 });
 
 // Convenience function to get a tool component by ID

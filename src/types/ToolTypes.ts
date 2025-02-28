@@ -6,7 +6,7 @@ import { ComponentType } from 'react';
 /**
  * Available tool categories
  */
-export type ToolCategory = 'design' | 'development' | 'security' | 'productivity' | 'utility';
+export type ToolCategory = 'design' | 'development' | 'security' | 'productivity' | 'utility' | 'science';
 
 /**
  * Core tool metadata definition

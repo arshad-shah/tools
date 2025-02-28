@@ -8,7 +8,6 @@ import { Stats } from './components/Stats';
 import { Settings } from './components/Settings';
 import { Menu, X, BarChart2, ListTodo, Settings2 } from 'lucide-react';
 import { Button } from '../../components/Button';
-
 const MenuPanel: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'tasks' | 'stats' | 'settings'>('tasks');
 

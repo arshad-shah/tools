@@ -8,7 +8,7 @@ import {
 import { Input } from '../../../components/input';
 import { Button } from '../../../components/Button';
 import { cn } from '../../../lib/utils';
-import { Alert} from '../../../components/Alert';
+import Alert from '../../../components/Alert';
 import TaskItem from './TaskItem';
 import { Task } from '../../../types/PomodoroTypes';
 

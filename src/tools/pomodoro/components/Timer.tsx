@@ -65,7 +65,6 @@ export const Timer: React.FC = () => {
         isActive: settings.autoStartPomodoros
       }));
     }
-
     if (currentTask) {
       const newCompletedPomodoros = currentTask.completedPomodoros + 1;
       dispatch(updateTask({
@@ -93,13 +92,14 @@ export const Timer: React.FC = () => {
     if (timer.isActive && timer.timeLeft > 0) {
       interval = setInterval(() => {
         dispatch(updateTimer({ timeLeft: timer.timeLeft - 1 }));
+        document.title = `Pomodoro - ${timer.mode === 'work' ? 'Work' : 'Break'} - ${formatTime(timer.timeLeft)}`;
       }, 1000);
     } else if (timer.timeLeft === 0) {
       handleTimerComplete();
     }
 
     return () => clearInterval(interval);
-  }, [timer.isActive, timer.timeLeft, handleTimerComplete, dispatch]);
+  }, [timer.isActive, timer.timeLeft, handleTimerComplete, dispatch, formatTime, timer.mode]);
 
   const handleTimerToggle = () => {
     if (!timer.isActive && timer.mode === 'work' && !timer.currentTask) {
