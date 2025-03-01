@@ -36,6 +36,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.476.0",
     "next-themes": "^0.4.4",
+    "papaparse": "^5.5.2",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -53,16 +54,24 @@
     "@types/dagre": "^0.7.52",
     "@types/diff": "^7.0.1",
     "@types/node": "^22.13.5",
+    "@types/papaparse": "^5.3.15",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/recharts": "^1.8.29",
     "@types/three": "^0.174.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "recharts": "^2.15.1",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

@@ -3,19 +3,18 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   AlertCircle, Check, Copy, Info, 
-  Code, Maximize2, X, Sun, Moon,
+  Code, Sun, Moon,
   GitBranch,
   BookOpen, Save, Command, Bookmark,
   Award, Share2, PanelRight, Zap,
   ChevronDown
 } from 'lucide-react';
-import { Card, Flags, Match, RegexTemplate, Theme } from './InterfaceAndUtilities';
+import { Flags, Match, RegexTemplate, Theme } from './InterfaceAndUtilities';
 import { 
   useTemplateChangeHandler, 
   useFlagChangeHandler, 
   useCopyToClipboard,
   useCopyMatchData,
-  useToggleFullscreen,
   useSyntaxHighlighter,
   useHighlightedTextRenderer,
   useDifficultyBadge,
@@ -30,6 +29,8 @@ import {
 } from './internalComponents';
 import { Dropdown } from '../../components/DropDown';
 import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import { Textarea } from '../../components/textarea';
 
 const RegexTester: React.FC = () => {
   // State definitions
@@ -50,9 +51,7 @@ const RegexTester: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'matches' | 'preview'>('matches');
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [expandedMatch, setExpandedMatch] = useState<number | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [visualMode, setVisualMode] = useState<boolean>(true);
   const [tooManyMatches, setTooManyMatches] = useState<boolean>(false);
   const [openDropdown, setOpenDropdown] = useState<boolean>(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
@@ -125,8 +124,8 @@ const RegexTester: React.FC = () => {
   // Memoized theme based on dark mode to avoid recreation on each render
   const theme: Theme = useMemo(() => ({
     bg: darkMode ? 'bg-gray-950' : 'bg-gray-50',
-    text: darkMode ? 'text-white' : 'text-gray-800',
-    textSecondary: darkMode ? 'text-gray-300' : 'text-gray-500',
+    text: darkMode ? 'text-white' : 'text-black',
+    textSecondary: darkMode ? 'text-white' : 'text-black',
     border: darkMode ? 'border-gray-800' : 'border-gray-200',
     sidebar: darkMode ? 'bg-gray-900' : 'bg-white',
     input: darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300',
@@ -297,12 +296,7 @@ const RegexTester: React.FC = () => {
         e.preventDefault();
         setDarkMode(prev => !prev);
       }
-      
-      // CMD/CTRL + F to toggle fullscreen
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault();
-        toggleFullscreen();
-      }
+    
       
       // CMD/CTRL + S to toggle sidebar
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -320,7 +314,6 @@ const RegexTester: React.FC = () => {
   const handleFlagChange = useFlagChangeHandler(setFlags);
   const copyToClipboard = useCopyToClipboard(pattern, flags, setCopied);
   const copyMatchData = useCopyMatchData();
-  const toggleFullscreen = useToggleFullscreen(setIsFullscreen);
   const syntaxHighlight = useSyntaxHighlighter(tokenPatterns);
   const renderHighlightedText = useHighlightedTextRenderer(
     testString,
@@ -351,10 +344,10 @@ const RegexTester: React.FC = () => {
   // Main render
   return (
     <div 
-      className={`${isFullscreen ? 'fixed inset-0 z-50' : ''} ${theme.bg} transition-colors duration-300 ease-in-out min-h-screen`}
+      className={` ${theme.bg} transition-colors duration-300 ease-in-out min-h-screen`}
       ref={mainContainerRef}
     >
-      <div className={`relative ${isFullscreen ? 'h-full overflow-hidden' : 'max-w-7xl mx-auto'}`}>
+      <div className={`relative max-w-7xl mx-auto`}>
         {/* Enhanced header with animated gradient background */}
         <header className={`${theme.headerGradient} mb-6 rounded-xl shadow-lg text-white relative overflow-hidden transition-all duration-300 p-0`}>
           <div className="absolute inset-0 bg-black opacity-30"></div>
@@ -420,16 +413,7 @@ const RegexTester: React.FC = () => {
                 >
                   <PanelRight size={18} />
                 </Button>
-                
-                <Button
-                  variant="outline"
-                  onClick={toggleFullscreen}
-                  className="!bg-white/10 !border-white/20 !text-white hover:!bg-white/20"
-                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                  size='icon'
-                >
-                  {isFullscreen ? <X size={18} /> : <Maximize2 size={18} />}
-                </Button>
+              
               </div>
             </div>
             
@@ -437,8 +421,6 @@ const RegexTester: React.FC = () => {
               isValid={isValid}
               matches={matches}
               flags={flags}
-              visualMode={visualMode}
-              setVisualMode={setVisualMode}
               theme={theme}
             />
           </div>
@@ -517,7 +499,7 @@ const RegexTester: React.FC = () => {
         
         <div className="flex flex-col md:flex-row gap-6 px-4 md:px-6">
           <div className={`md:flex-1 space-y-6 ${sidebarCollapsed ? 'md:w-full' : ''}`}>
-            <Card theme={theme} className="p-5 overflow-hidden" hover>
+            <Card className="p-5 overflow-hidden">
               <div className="flex items-center mb-4 justify-between">
                 <label className={`font-medium ${theme.text} text-lg flex items-center`}>
                   <GitBranch size={18} className={`mr-2 ${theme.accentColor}`} />
@@ -559,7 +541,7 @@ const RegexTester: React.FC = () => {
               )}
             </Card>
             
-            <Card theme={theme} className="p-5" hover>
+            <Card className="p-5">
               <label className={`block font-medium ${theme.text} text-lg mb-3 flex items-center`}>
                 <span className={`${theme.accentColor} mr-2`}>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -569,10 +551,10 @@ const RegexTester: React.FC = () => {
                 </span>
                 Test String
               </label>
-              <textarea
+              <Textarea
                 value={testString}
                 onChange={(e) => setTestString(e.target.value)}
-                className={`w-full p-3 border ${theme.input} rounded-md min-h-32 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono transition-colors`}
+                className={`w-full p-3 border ${theme.input} ${theme.text} rounded-md min-h-32 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono transition-colors`}
                 placeholder="Enter text to test against your regex..."
               />
               
@@ -613,7 +595,7 @@ const RegexTester: React.FC = () => {
               )}
             </Card>
             
-            <Card theme={theme} className="p-5" hover>
+            <Card className="p-5" >
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`font-medium ${theme.text} text-lg flex items-center`}>
                   <span className={`${theme.accentColor} mr-2`}>
@@ -725,7 +707,7 @@ const RegexTester: React.FC = () => {
           {/* Sidebar */}
           {!sidebarCollapsed && (
             <div className="md:w-80 lg:w-96 space-y-6">
-              <Card theme={theme} className={` p-5 relative overflow-hidden`} hover>
+              <Card className={` p-5 relative overflow-hidden`}>
                 <h3 className={`font-medium ${theme.text} text-lg mb-3 flex items-center`}>
                   <span className={`${theme.accentColor} mr-2`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -907,7 +889,7 @@ const RegexTester: React.FC = () => {
                 )}
               </Card>
               
-              <Card theme={theme} className="p-5" hover>
+              <Card className="p-5">
                 <h3 className={`font-medium ${theme.text} text-lg mb-3 flex items-center`}>
                   <span className={`${theme.accentColor} mr-2`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -1029,7 +1011,7 @@ const RegexTester: React.FC = () => {
                     </div>
                     <div className="ml-3">
                       <h3 className={`text-sm font-medium ${theme.accentColor}`}>Pro Tip</h3>
-                      <div className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                      <div className="mt-1 text-xs dark:text-gray-200">
                         <p>Use non-capturing groups <code className="font-mono px-1 bg-black/10 rounded">(?:pattern)</code> when you don't need to reference the group later for better performance.</p>
                       </div>
                     </div>
@@ -1038,7 +1020,7 @@ const RegexTester: React.FC = () => {
               </Card>
               
               {/* Activity Log */}
-              <Card theme={theme} className={`p-5`} hover>
+              <Card className={`p-5`}>
                 <h3 className={`font-medium ${theme.text} text-lg mb-3 flex items-center justify-between`}>
                   <div className="flex items-center">
                     <span className={`${theme.accentColor} mr-2`}>
@@ -1156,7 +1138,7 @@ const RegexTester: React.FC = () => {
         </div>
         
         {/* Keyboard shortcuts help */}
-        <div className={`fixed bottom-6 right-6 ${isFullscreen ? '' : 'hidden md:block'}`}>
+        <div className={`fixed bottom-6 right-6 hidden md:block`}>
           <div className={` p-1.5 rounded-full shadow-lg cursor-pointer group relative`}>
             <Command size={18} className={theme.accentColor} />
             
@@ -1171,10 +1153,6 @@ const RegexTester: React.FC = () => {
                   <div className="flex justify-between">
                     <span>Toggle dark mode</span>
                     <kbd className={`px-1.5 py-0.5 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>⌘D</kbd>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Toggle fullscreen</span>
-                    <kbd className={`px-1.5 py-0.5 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>⌘F</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>Toggle sidebar</span>

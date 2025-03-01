@@ -75,6 +75,13 @@ import UnitConverter from '../tools/UnitConverter/UnitConverter';
 import { TOOL_IDS } from '../constants';
 import PeriodicTable from '../tools/PeriodicTable/PeriodicTable';
 import TextDiffChecker from '../tools/TextDiffChecker/TextDiffChecker';
+import ImageOptimiser from '../tools/ImageOptimiser/ImageOptimiser';
+import CSVTSVViewer from '../tools/CSVViewer/Csv-Tsv-viewer';
+import RandomDataGenerator from '../tools/RandomDataGenerator/RandomDataGenerator';
+import URLEncoderDecoder from '../tools/URLEncoderDecoder/URLEncoderDecoder';
+import DateCalculator from '../tools/DateCalculator/DateCalculator';
+import HashGenerator from '../tools/HashGenerator/HashGenerator';
+import Base64Converter from '../tools/Base64Convertor/Base64Convertor';
 
 // Register all tool components
 toolRegistry.registerTools({
@@ -88,6 +95,13 @@ toolRegistry.registerTools({
   [TOOL_IDS.UNIT_CONVERTER]: UnitConverter,
   [TOOL_IDS.PERIODIC_TABLE]: PeriodicTable,
   [TOOL_IDS.TEXT_DIFF_CHECKER]: TextDiffChecker,
+  [TOOL_IDS.IMAGE_OPTIMIZER]: ImageOptimiser,
+  [TOOL_IDS.CSV_VIEWER]: CSVTSVViewer,
+  [TOOL_IDS.RANDOM_DATA_GENERATOR]: RandomDataGenerator,
+  [TOOL_IDS.URL_ENCODER]: URLEncoderDecoder,
+  [TOOL_IDS.DATE_CALCULATOR]: DateCalculator,
+  [TOOL_IDS.HASH_GENERATOR]: HashGenerator,
+  [TOOL_IDS.BASE64_CONVERTER]: Base64Converter,
 });
 
 // Convenience function to get a tool component by ID

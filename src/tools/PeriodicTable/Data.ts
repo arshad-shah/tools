@@ -145,16 +145,16 @@ import { ColorMap, Element } from "../../types/PeriodicTableTypes";
 
   // Color mapping for element groups
   const colorMap: ColorMap = {
-    alkali: '#ff8a65',        // Orange-red
-    alkaline: '#ffb74d',      // Orange-yellow
-    transition: '#64b5f6',    // Blue
-    'post-transition': '#4db6ac', // Teal
-    metalloid: '#81c784',     // Green
-    nonmetal: '#fff176',      // Yellow
-    halogen: '#9575cd',       // Purple
-    noble: '#f06292',         // Pink
-    lanthanide: '#7986cb',    // Indigo
-    actinide: '#4dd0e1'       // Cyan
+    alkali: "#ff8a65", // Orange-red
+    alkaline: "#ffb74d", // Orange-yellow
+    transition: "#64b5f6", // Blue
+    "post-transition": "#4db6ac", // Teal
+    metalloid: "#81c784", // Green
+    nonmetal: "#fff176", // Yellow
+    halogen: "#9575cd", // Purple
+    noble: "#f06292", // Pink
+    lanthanide: "#8ec5ff", // Indigo
+    actinide: "#c27aff", // Cyan
   };
 
 

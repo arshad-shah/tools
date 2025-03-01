@@ -1,6 +1,6 @@
 // src/data/ToolDefinitions.ts
 
-import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, PenTool, FileCode, Lock, Calendar, Link, Dice1, Code, Table, Image  , Split } from 'lucide-react';
+import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split } from 'lucide-react';
 import { ToolDefinition } from '../types/ToolTypes';
 import { TOOL_IDS } from '../constants';
 
@@ -117,27 +117,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: 'Compress and optimize images for web usage',
     icon: Image,
     color: 'bg-fuchsia-500',
-    enabled: false,
+    enabled: true,
     category: 'design',
     version: '1.0.0',
   },
   {
     id: TOOL_IDS.CSV_VIEWER,
-    name: 'CSV Viewer',
-    description: 'View and manipulate CSV data with sorting and filtering',
+    name: 'CSV/TSV Viewer',
+    description: 'View and manipulate CSV/TSV data with sorting and filtering',
     icon: Table,
     color: 'bg-lime-500',
-    enabled: false,
-    category: 'development',
-    version: '1.0.0',
-  },
-  {
-    id: TOOL_IDS.CODE_FORMATTER,
-    name: 'Code Formatter',
-    description: 'Format and beautify code for different languages',
-    icon: Code,
-    color: 'bg-pink-500',
-    enabled: false,
+    enabled: true,
     category: 'development',
     version: '1.0.0',
   },
@@ -147,7 +137,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: 'Generate test data like names, emails, and addresses',
     icon: Dice1,
     color: 'bg-rose-500',
-    enabled: false,
+    enabled: true,
     category: 'development',
     version: '1.0.0',
   },
@@ -157,7 +147,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: 'Encode and decode URL parameters',
     icon: Link,
     color: 'bg-amber-600',
-    enabled: false,
+    enabled: true,
     category: 'development',
     version: '1.0.0',
   },
@@ -167,7 +157,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: 'Calculate time between dates, add or subtract time periods',
     icon: Calendar,
     color: 'bg-green-600',
-    enabled: false,
+    enabled: true,
     category: 'productivity',
     version: '1.0.0',
   },
@@ -177,18 +167,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: 'Generate MD5, SHA-256, and other hash algorithms',
     icon: Lock,
     color: 'bg-yellow-600',
-    enabled: false,
+    enabled: true,
     category: 'security',
-    version: '1.0.0',
-  },
-  {
-    id: TOOL_IDS.NOTE_TAKING,
-    name: 'Note Taking',
-    description: 'Simple note-taking tool with local storage',
-    icon: PenTool,
-    color: 'bg-blue-600',
-    enabled: false,
-    category: 'productivity',
     version: '1.0.0',
   },
   {
@@ -197,7 +177,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: 'Convert text and files to and from Base64 encoding',
     icon: FileCode,
     color: 'bg-teal-600',
-    enabled: false,
+    enabled: true,
     category: 'development',
     version: '1.0.0',
   }

@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/Card';
-import { Archive, Columns, List, Maximize2, MinimizeIcon, MonitorIcon, Network } from 'lucide-react';
+import { Columns, List, MonitorIcon, Network } from 'lucide-react';
 import { ScrollArea } from "../../../components/scroll-area";
 import { useTheme } from 'next-themes';
 import { cn } from '../../../lib/utils';
@@ -31,7 +31,6 @@ const DataViewer = () => {
   const [error, setError] = useState('');
   const [format, setFormat] = useState<FormatType>('json');
   const [searchTerm, setSearchTerm] = useState('');
-  const [fullScreen, setFullScreen] = useState(false);
   const [highlightedLines, setHighlightedLines] = useState<number[]>([]);
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
@@ -51,7 +50,7 @@ const DataViewer = () => {
     const baseStyles = {
       fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
       fontSize: '14px',
-      minHeight: fullScreen ? 'calc(100vh - 16rem)' : '24rem',
+      minHeight: '24rem',
       borderRadius: '0.75rem',
     };
 
@@ -232,7 +231,7 @@ const DataViewer = () => {
           <div className={cn(
             "border border-gray-200  rounded-xl overflow-hidden bg-gray-50 ",
             "shadow-sm hover:shadow-md transition-shadow duration-200",
-            fullScreen ? "h-[calc(100vh-20rem)]" : "h-96"
+            "h-full"
           )}>
             <ScrollArea className="h-full">
               {renderEditor()}
@@ -243,7 +242,7 @@ const DataViewer = () => {
             <div className={cn(
               "border border-gray-200 rounded-xl overflow-hidden",
               "bg-white  shadow-sm hover:shadow-md transition-shadow duration-200",
-              fullScreen ? "h-[calc(100vh-20rem)]" : "h-96"
+              "h-full"
             )}>
               <ScrollArea className="h-full p-4">
                 {viewMode === 'tree' ? (
@@ -262,7 +261,7 @@ const DataViewer = () => {
       <div className={cn(
         "border border-gray-200  rounded-xl overflow-hidden",
         "shadow-sm hover:shadow-md transition-shadow duration-200",
-        fullScreen ? "h-[calc(100vh-16rem)]" : "h-96"
+        "h-full"
       )}>
         <ScrollArea className="h-full">
           {activePane === 'editor' ? (
@@ -285,18 +284,12 @@ const DataViewer = () => {
     <TooltipProvider>
     <Card className={cn(
       "w-full transition-all duration-300 ease-in-out backdrop-blur-sm bg-white/80",
-      fullScreen ? "fixed inset-0 z-50" : "max-w-4xl",
+      "w-full",
       "shadow-lg hover:shadow-xl"
     )}>
       <CardHeader className="border-b border-gray-200 ">
         <CardTitle className="flex items-center justify-between">
           <div className="flex justify-between xss:flex-col items-center gap-3">
-            <div className="flex items-center gap-3">
-              <Archive className="w-6 h-6 text-indigo-600 " />
-              <span className="text-xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Data Viewer
-              </span>
-            </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center space-x-1 rounded-lg border border-gray-200  bg-gray-50">
                 <Toggle 
@@ -350,17 +343,6 @@ const DataViewer = () => {
                   <Network className="w-4 h-4 text-indigo-600 " />
                 </Toggle>
               </div>
-
-              <button
-                onClick={() => setFullScreen(!fullScreen)}
-                className="p-2 hover:bg-indigo-100  rounded-lg transition-colors"
-              >
-                {fullScreen ? (
-                  <MinimizeIcon className="w-4 h-4 text-indigo-600 " />
-                ) : (
-                  <Maximize2 className="w-4 h-4 text-indigo-600 " />
-                )}
-              </button>
             </div>
           </div>
         </CardTitle>
