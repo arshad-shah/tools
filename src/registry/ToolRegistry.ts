@@ -82,6 +82,10 @@ import URLEncoderDecoder from '../tools/URLEncoderDecoder/URLEncoderDecoder';
 import DateCalculator from '../tools/DateCalculator/DateCalculator';
 import HashGenerator from '../tools/HashGenerator/HashGenerator';
 import Base64Converter from '../tools/Base64Convertor/Base64Convertor';
+import JWTDecoder from '../tools/JWTDecoder/JwtDecoder';
+import URLParser from '../tools/UrlParser/UrlParser';
+import ApiTester from '../tools/ApiTester/ApiTester';
+import Calculator from '../tools/Calculator/Calculator';
 
 // Register all tool components
 toolRegistry.registerTools({
@@ -102,6 +106,10 @@ toolRegistry.registerTools({
   [TOOL_IDS.DATE_CALCULATOR]: DateCalculator,
   [TOOL_IDS.HASH_GENERATOR]: HashGenerator,
   [TOOL_IDS.BASE64_CONVERTER]: Base64Converter,
+  [TOOL_IDS.JWT_DECODE]: JWTDecoder,
+  [TOOL_IDS.URL_PARSER]: URLParser,
+  [TOOL_IDS.API_REQUEST]: ApiTester,
+  [TOOL_IDS.CALCULATOR]: Calculator,
 });
 
 // Convenience function to get a tool component by ID
