@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { elements, colorMap } from './Data';
 import { Element } from '../../types/PeriodicTableTypes';
 
@@ -24,32 +25,33 @@ const ElementGrid: React.FC<ElementGridProps> = ({ selectedElement, onElementCli
             (period === 7 && column >= 3 && column <= 17)) {
           if (column === 3) {
             // Add lanthanide/actinide placeholder cell
-            const style = {
-              gridRow: period,
-              gridColumn: `3 / span 15`,
-              backgroundColor: period === 6 ? colorMap.lanthanide : colorMap.actinide,
-              color: 'white',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontWeight: 'bold'
-            };
+            const isLanthanide = period === 6;
             
             grid.push(
-              <div 
+              <motion.div 
                 key={`placeholder-${period}`} 
-                style={style}
-                className="element-placeholder"
+                className={`col-span-15 flex justify-center items-center font-bold text-black rounded-md shadow-md ${
+                  isLanthanide ? 'bg-blue-300' : 'bg-purple-400'
+                }`}
+                style={{
+                  gridRow: period,
+                  gridColumn: '3 / span 15',
+                }}
+                whileHover={{ 
+                  scale: 1.02,
+                  boxShadow: "0px 5px 15px rgba(0,0,0,0.1)" 
+                }}
+                transition={{ duration: 0.2 }}
               >
-                {period === 6 ? 'Lanthanides (57-71)' : 'Actinides (89-103)'}
-              </div>
+                {isLanthanide ? 'Lanthanides (57-71)' : 'Actinides (89-103)'}
+              </motion.div>
             );
           }
           continue; // Skip individual cells in the lanthanide/actinide rows
         }
         
         // Position in the grid based on period and column
-        const style = {
+        const gridPosition = {
           gridRow: period,
           gridColumn: column
         };
@@ -58,25 +60,36 @@ const ElementGrid: React.FC<ElementGridProps> = ({ selectedElement, onElementCli
           const isSelected = selectedElement && selectedElement.symbol === element.symbol;
           
           grid.push(
-            <div
+            <motion.div
               key={element.symbol}
-              className={`element ${element.group} ${isSelected ? 'selected' : ''}`}
+              className={`element flex flex-col rounded-md p-1 cursor-pointer relative min-h-16 shadow-sm ${isSelected ? 'border-2 border-black z-10' : 'z-0'}`}
               style={{
-                ...style,
+                ...gridPosition,
                 backgroundColor: colorMap[element.group],
-                zIndex: isSelected ? 2 : 1
               }}
               onClick={() => onElementClick(isSelected ? null : element as Element)}
+              whileHover={{ 
+                y: -2, 
+                boxShadow: "0px 3px 10px rgba(0,0,0,0.15)" 
+              }}
+              whileTap={{ scale: 0.98 }}
+              animate={isSelected ? { 
+                y: -5, 
+                scale: 1.05,
+                boxShadow: "0px 5px 15px rgba(0,0,0,0.2)",
+                transition: { type: 'spring', stiffness: 400, damping: 17 }
+              } : {}}
             >
-              <div className="element-number">{element.number}</div>
-              <div className="element-symbol">{element.symbol}</div>
-              <div className="element-name">{element.name}</div>
-              <div className="element-mass">{typeof element.mass === 'number' ? element.mass.toFixed(1) : element.mass}</div>
-            </div>
+              <div className="text-xs text-left">{element.number}</div>
+              <div className="text-lg font-bold text-center">{element.symbol}</div>
+              <div className="text-xs text-center truncate">{element.name}</div>
+              <div className="text-xs text-right">{typeof element.mass === 'number' ? element.mass.toFixed(1) : element.mass}</div>
+            
+            </motion.div>
           );
         } else {
           // Empty cell
-          grid.push(<div key={`empty-${period}-${column}`} className="element-empty" style={style}></div>);
+          grid.push(<div key={`empty-${period}-${column}`} className="element-empty" style={gridPosition}></div>);
         }
       }
     }
@@ -84,73 +97,24 @@ const ElementGrid: React.FC<ElementGridProps> = ({ selectedElement, onElementCli
   };
 
   return (
-    <div className="periodic-table">
-      {renderGrid()}
+    <div className="space-y-6">
+      {/* Periodic Table Grid */}
+      <div className="grid grid-cols-18 gap-1 mb-5 periodic-table">
+        {renderGrid()}
+      </div>
       
+      {/* CSS Styles with TailwindCSS */}
       <style>{`
-        .periodic-table {
-          display: grid;
+        .grid-cols-18 {
           grid-template-columns: repeat(18, minmax(48px, 1fr));
+        }
+        
+        .periodic-table {
           grid-template-rows: repeat(9, minmax(48px, auto));
-          gap: 3px;
-          margin-bottom: 20px;
         }
         
-        .element {
-          border-radius: 4px;
-          padding: 4px;
-          position: relative;
-          transition: all 0.2s ease;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          min-height: 60px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .element.selected {
-          transform: translateY(-5px) scale(1.05);
-          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-          outline: 3px solid #333;
-        }
-        
-        .element:hover:not(.selected) {
-          transform: translateY(-2px);
-          box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-        }
-        
-        .element-number {
-          font-size: 10px;
-          text-align: left;
-        }
-        
-        .element-symbol {
-          font-size: 18px;
-          font-weight: bold;
-          text-align: center;
-        }
-        
-        .element-name {
-          font-size: 9px;
-          text-align: center;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        
-        .element-mass {
-          font-size: 9px;
-          text-align: right;
-        }
-        
-        .element-empty {
-          background: transparent;
-        }
-        
-        .element-placeholder {
-          border-radius: 4px;
-          padding: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .col-span-15 {
+          grid-column-end: span 15;
         }
       `}</style>
     </div>

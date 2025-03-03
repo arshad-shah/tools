@@ -180,8 +180,9 @@ export const Slider = React.forwardRef<
                   <div 
                     key={i}
                     className={cn(
-                      "absolute h-1.5 w-0.5 rounded-full",
-                      styles.tickMark
+                      "absolute h-1.5 w-0.5 rounded-full transition-all duration-300 ease-out",
+                      styles.tickMark,
+                      "opacity-50 group-hover:opacity-100 group-hover:h-2"
                     )}
                     style={{ left: `${percent}%` }}
                   />
@@ -192,18 +193,18 @@ export const Slider = React.forwardRef<
           
           <SliderPrimitive.Track 
             className={cn(
-              "relative h-2 w-full grow overflow-hidden rounded-full transition-all",
+              "relative h-2 w-full grow overflow-hidden rounded-full transition-all duration-200",
               styles.track,
-              "after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_50px,rgba(255,255,255,0.1)_0%,transparent_50%)] after:opacity-0 after:transition-opacity group-hover:after:opacity-100",
-              "shadow-sm"
+              "shadow-sm group-hover:shadow-md",
+              "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:opacity-0 before:translate-x-full group-hover:before:animate-shine"
             )}
           >
             <SliderPrimitive.Range 
               className={cn(
-                "absolute h-full shadow-sm transition-all",
+                "absolute h-full transition-all duration-200 ease-out",
                 styles.range,
-                "group-hover:shadow-md after:absolute after:inset-0 after:bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] after:opacity-0 group-hover:after:opacity-100 after:animate-shimmer",
-                "after:bg-no-repeat"
+                "shadow-inner group-hover:shadow-md",
+                "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/30 after:to-transparent after:opacity-0 group-hover:after:opacity-100 group-active:after:opacity-0 after:transition-opacity after:duration-1000"
               )}
             />
           </SliderPrimitive.Track>
@@ -213,12 +214,13 @@ export const Slider = React.forwardRef<
               "block h-5 w-5 rounded-full border-2 shadow-md",
               styles.thumb,
               styles.focusRing,
-              "transition-transform duration-100 ease-out-expo",
-              "hover:scale-110 active:scale-125 hover:shadow-lg",
+              "transition-all duration-150 ease-out",
+              "hover:scale-110 active:scale-105",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
               "disabled:pointer-events-none disabled:opacity-50",
               "z-10",
-              "before:absolute before:inset-0 before:rounded-full before:opacity-0 before:transition-opacity group-hover:before:opacity-100 before:bg-[radial-gradient(circle,rgba(255,255,255,0.6)_0%,transparent_60%)]"
+              "group-active:shadow-lg",
+              "before:absolute before:inset-0 before:rounded-full before:opacity-0 before:bg-white/20 before:transition-opacity group-hover:before:opacity-100 group-active:before:opacity-0"
             )} 
           />
         </SliderPrimitive.Root>
@@ -227,10 +229,11 @@ export const Slider = React.forwardRef<
         {showTooltip && hoveredValue !== null && (
           <div 
             className={cn(
-              "absolute -top-8 px-2 py-1 rounded text-xs font-medium transition-all pointer-events-none shadow-md",
+              "absolute -top-8 px-2 py-1 rounded text-xs font-medium shadow-md",
               styles.tooltip,
-              "transform -translate-x-1/2",
-              "animate-in fade-in zoom-in-95 duration-100",
+              "transform -translate-x-1/2 transition-all duration-75",
+              "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100", 
+              isDragging ? "opacity-100 scale-100" : "",
               "after:content-[''] after:absolute after:left-1/2 after:top-full after:transform after:-translate-x-1/2 after:border-4 after:border-transparent",
               `after:border-t-[var(--tooltip-color)]`
             )}
@@ -248,7 +251,7 @@ export const Slider = React.forwardRef<
       
       {/* Value labels if needed */}
       {props.value && showLabels && Array.isArray(props.value) && (
-        <div className="text-sm font-medium text-center">
+        <div className="text-sm font-medium text-center transition-opacity duration-200">
           Current: {formatValue(props.value[0])}{unit}
         </div>
       )}

@@ -1,7 +1,11 @@
 // Part 4: Help Content and UI Components
 import React from 'react';
 import { Info, Star } from 'lucide-react';
-import { Badge, Button, Card, Match, Theme } from './InterfaceAndUtilities';
+import { Match, Theme } from './InterfaceAndUtilities';
+import { Card } from '../../components/Card';
+import { Button } from '../../components/Button';
+import { Badge } from '../../components/Badge';
+import { Input } from '../../components/input';
 
 /**
  * Component for rendering the regex help content
@@ -15,7 +19,7 @@ export const RegexHelpContent: React.FC<{ theme: Theme }> = ({ theme }) => {
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card theme={theme} className="p-3">
+        <Card  className="p-3">
           <h4 className={`font-semibold mb-2 ${theme.text} ${theme.accentColor}`}>
             Basic Patterns
           </h4>
@@ -47,7 +51,7 @@ export const RegexHelpContent: React.FC<{ theme: Theme }> = ({ theme }) => {
           </ul>
         </Card>
         
-        <Card theme={theme} className="p-3">
+        <Card  className="p-3">
           <h4 className={`font-semibold mb-2 ${theme.text} ${theme.accentColor}`}>
             Character Classes
           </h4>
@@ -79,7 +83,7 @@ export const RegexHelpContent: React.FC<{ theme: Theme }> = ({ theme }) => {
           </ul>
         </Card>
         
-        <Card theme={theme} className="p-3 md:col-span-2">
+        <Card  className="p-3 md:col-span-2">
           <h4 className={`font-semibold mb-2 ${theme.text} ${theme.accentColor}`}>
             Groups and Assertions
           </h4>
@@ -115,8 +119,8 @@ export const RegexHelpContent: React.FC<{ theme: Theme }> = ({ theme }) => {
           </svg>
           Pro tip: Use the syntax highlighting to identify different parts of your regex pattern!
         </span>
-        <Button 
-          theme={theme} 
+        <Button
+           
           variant="outline" 
           size="sm" 
           onClick={() => window.open('https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions', '_blank')}
@@ -152,11 +156,10 @@ export const MatchItem: React.FC<{
     >
       <div className="flex items-center justify-between">
         <div className={`font-medium ${theme.text} flex items-center`}>
-          <Badge 
-            variant="info" 
-            size="sm"
-            icon={<Star size={10} />}
+          <Badge
+            variant="neutral" 
           >
+            {<Star size={10} />}
             Match #{index + 1}
           </Badge>
           <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -165,20 +168,21 @@ export const MatchItem: React.FC<{
         </div>
         <div className="flex items-center">
           <Button 
-            theme={theme}
+            
             variant="ghost"
             size="sm"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               onCopyMatch(match);
             }}
-            icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
-              <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z" />
-            </svg>}
+            
             title="Copy match"
             className="!p-1"
           />
+          {<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
+              <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z" />
+            </svg>}
           {isExpanded ? 
             <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${theme.textSecondary}`} viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -217,7 +221,7 @@ export const MatchItem: React.FC<{
               <div className={`${theme.sidebar} rounded-md p-2 border ${theme.border}`}>
                 {match.groups.map((group, i) => (
                   <div key={i} className={`flex justify-between items-center py-1.5 border-b last:border-0 border-dashed ${theme.border}`}>
-                    <Badge variant="default" size="sm">Group {i + 1}</Badge>
+                    <Badge variant="neutral">Group {i + 1}</Badge>
                     <span className={`${theme.text} font-mono ${theme.codeBlock} px-2 py-0.5 rounded`}>
                       {group || <span className="text-gray-400 italic">empty</span>}
                     </span>
@@ -317,13 +321,13 @@ export const PatternInputSection: React.FC<{
     <div className="flex items-center space-x-1">
       <span className={`text-xl font-mono ${theme.textSecondary}`}>/</span>
       <div className="flex-grow relative">
-        <input
+        <Input
           type="text"
           value={pattern}
           onChange={(e) => setPattern(e.target.value)}
           className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono ${
             isValid 
-              ? `${theme.input}`
+              ? `${theme.input} ${theme.text}`
               : `${theme.bg === 'bg-gray-900' ? 'border-red-700 bg-red-900/30' : 'border-red-300 bg-red-50'}`
           } transition-colors`}
           placeholder="Enter regex pattern..."
@@ -338,13 +342,15 @@ export const PatternInputSection: React.FC<{
         )}
       </div>
       <span className={`text-xl font-mono ${theme.textSecondary}`}>/</span>
-      <FlagButtons flags={flags} onFlagChange={onFlagChange} theme={theme} />
+      <FlagButtons theme={theme} flags={flags} onFlagChange={onFlagChange}  />
       <Button
-        theme={theme}
+        
         variant="ghost"
         onClick={onCopyToClipboard}
         className="ml-2"
-        icon={copied ? 
+        title="Copy regex"
+      >
+        {copied ? 
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg> : 
@@ -353,8 +359,7 @@ export const PatternInputSection: React.FC<{
             <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" />
           </svg>
         }
-        title="Copy regex"
-      />
+      </Button>
     </div>
   );
 };
@@ -408,10 +413,8 @@ export const VisualMetrics: React.FC<{
   isValid: boolean;
   matches: Match[];
   flags: { global: boolean; ignoreCase: boolean; multiline: boolean; sticky: boolean; unicode: boolean };
-  visualMode: boolean;
-  setVisualMode: React.Dispatch<React.SetStateAction<boolean>>;
   theme: Theme;
-}> = ({ isValid, matches, flags, visualMode, setVisualMode, theme }) => {
+}> = ({ isValid, matches, flags}) => {
   return (
     <div className="flex flex-wrap mt-4 -mx-2">
       <div className="px-2 py-1">
@@ -444,27 +447,6 @@ export const VisualMetrics: React.FC<{
              (flags.unicode ? 'u' : '') || 'none'}
           </span>
         </div>
-      </div>
-      
-      <div className="px-2 py-1 ml-auto">
-        <Button
-          theme={theme}
-          variant="outline"
-          onClick={() => setVisualMode(!visualMode)}
-          className="!bg-white/10 !border-white/20 !text-white hover:!bg-white/20"
-          icon={visualMode ? 
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-            </svg> : 
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-              <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
-            </svg>
-          }
-        >
-          Visual Mode
-        </Button>
       </div>
     </div>
   );

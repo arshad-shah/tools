@@ -1,22 +1,25 @@
 import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Info, HelpCircle } from 'lucide-react';
 import { Element } from '../../types/PeriodicTableTypes';
 import { colorMap } from './Data';
 import ElementModel3D from './ElementModal3D';
 import ElementModel2D from './ElementModel2D';
-import { X } from 'lucide-react';
 
 interface ElementModalProps {
   element: Element;
   onClose: () => void;
   use3D: boolean;
   onToggle3D: () => void;
+  darkMode: boolean;
 }
 
 const ElementModal: React.FC<ElementModalProps> = ({ 
   element, 
   onClose, 
   use3D,
-  onToggle3D
+  onToggle3D,
+  darkMode
 }) => {
   // Prevent scrolling when modal is open
   useEffect(() => {
@@ -38,295 +41,277 @@ const ElementModal: React.FC<ElementModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Helper function to determine text contrast color
+  const getTextColor = (hexColor: string): string => {
+    // Convert hex to RGB
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    // Calculate contrast
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? 'text-gray-900' : 'text-white';
+  };
+
+  // Format element properties for display
+  const elementProperties = [
+    { label: 'Atomic Number', value: element.number },
+    { label: 'Group', value: element.group.charAt(0).toUpperCase() + element.group.slice(1) },
+    { label: 'Period', value: element.period },
+    { label: 'Atomic Mass', value: typeof element.mass === 'number' ? element.mass.toFixed(3) + ' u' : element.mass + ' u' },
+    { label: 'Electron Configuration', value: element.electrons }
+  ];
+
+  // 3D Model color legend
+  const colorLegend = [
+    { color: '#f44336', label: 'Nucleus (protons and neutrons)' },
+    { color: '#2196f3', label: 'First shell electrons' },
+    { color: '#4caf50', label: 'Second shell electrons' },
+    { color: '#ffeb3b', label: 'Third shell electrons' },
+    { color: '#ff9800', label: 'Fourth shell electrons' }
+  ];
+
+  // Animation variants
+  const overlayVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { duration: 0.2 }
+    },
+    exit: { 
+      opacity: 0,
+      transition: { duration: 0.2 }
+    }
+  };
+
+  const modalVariants = {
+    hidden: { 
+      opacity: 0,
+      scale: 0.95,
+      y: 20
+    },
+    visible: { 
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30,
+        delay: 0.1
+      }
+    },
+    exit: { 
+      opacity: 0,
+      scale: 0.95,
+      y: 20,
+      transition: { duration: 0.2 }
+    }
+  };
+
+  const staggerItems = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.07
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header" style={{ backgroundColor: colorMap[element.group] }}>
-          <div className="element-header-content">
-            <div className="element-number">{element.number}</div>
-            <div className="element-symbol">{element.symbol}</div>
-            <div className="element-name">{element.name}</div>
-            <div className="element-mass">
-              {typeof element.mass === 'number' ? element.mass.toFixed(2) : element.mass} u
-            </div>
-          </div>
-          <button className="close-button" onClick={onClose}>
-            <X size={24} />
-          </button>
-        </div>
-        
-        <div className="visualization-container">
-          {use3D ? (
-            <ElementModel3D 
-              element={element}
-              containerSize={{ width: 600, height: 400 }}
-            />
-          ) : (
-            <ElementModel2D 
-              element={element} 
-              containerSize={{ width: 600, height: 400 }} 
-            />
-          )}
-        </div>
-        
-        <div className="model-controls">
-          <label className="toggle-container">
-            <input 
-              type="checkbox" 
-              checked={use3D}
-              onChange={onToggle3D}
-            />
-            <div className="toggle-switch"></div>
-            <span className="toggle-text">{use3D ? '3D Model' : '2D Model'}</span>
-          </label>
-          
-          <div className="element-info">
-            <div className="info-section">
-              <h3>Element Information</h3>
-              <p><strong>Atomic Number:</strong> {element.number}</p>
-              <p><strong>Group:</strong> {element.group.charAt(0).toUpperCase() + element.group.slice(1)}</p>
-              <p><strong>Period:</strong> {element.period}</p>
-              <p><strong>Atomic Mass:</strong> {typeof element.mass === 'number' ? element.mass.toFixed(2) : element.mass} u</p>
-              <p><strong>Electron Configuration:</strong> {element.electrons.replace(/,/g, '-')}</p>
+    <AnimatePresence>
+      <motion.div 
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        variants={overlayVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        onClick={onClose}
+      >
+        <motion.div 
+          className={`w-full max-w-4xl max-h-[90vh] rounded-xl overflow-hidden shadow-2xl flex flex-col ${
+            darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-800'
+          }`}
+          variants={modalVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div 
+            className={`relative px-6 py-4 ${getTextColor(colorMap[element.group])} flex justify-between items-center`}
+            style={{ backgroundColor: colorMap[element.group] }}
+          >
+            <div className="grid grid-cols-[auto_1fr_auto] gap-x-4 items-center">
+              <div className="text-2xl font-bold opacity-80">
+                {element.number}
+              </div>
+              <div className="flex flex-col">
+                <div className="text-4xl font-bold tracking-tight">
+                  {element.symbol}
+                </div>
+                <div className="text-xl font-medium">
+                  {element.name}
+                </div>
+              </div>
+              <div className="text-lg font-medium text-right">
+                {typeof element.mass === 'number' ? element.mass.toFixed(3) : element.mass} u
+              </div>
             </div>
             
-            <div className="info-section">
-              <h3>Description</h3>
-              <p>{element.description}</p>
+            <motion.button 
+              className={`p-2 rounded-full ${getTextColor(colorMap[element.group]) === 'text-white' ? 'hover:bg-white/20' : 'hover:bg-black/10'} transition-colors`}
+              onClick={onClose}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <X size={24} />
+            </motion.button>
+
+            {/* Decorative element */}
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-white/30 to-transparent"></div>
+          </div>
+
+          {/* Visualization Container */}
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-gray-100'} p-4`}>
+            <div className="relative">
+              {/* Model display */}
+              <div className={`flex justify-center items-center w-full h-[400px] rounded-lg overflow-hidden ${
+                darkMode ? 'bg-gray-700' : 'bg-white'
+              } shadow-md`}>
+                {use3D ? (
+                  <ElementModel3D 
+                    element={element}
+                    containerSize={{ width: 800, height: 400 }}
+                  />
+                ) : (
+                  <ElementModel2D 
+                    element={element} 
+                    containerSize={{ width: 800, height: 400 }} 
+                  />
+                )}
+              </div>
+            </div>
+            
+            {/* Controls */}
+            <div className="flex flex-wrap items-center justify-between mt-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={use3D} 
+                  onChange={onToggle3D}
+                />
+                <div className={`w-11 h-6 rounded-full peer 
+                  ${darkMode ? 'bg-gray-700' : 'bg-gray-300'} 
+                  peer-checked:after:translate-x-full after:content-[''] 
+                  after:absolute after:top-[2px] after:left-[2px] 
+                  after:bg-white after:border-gray-300 after:border 
+                  after:rounded-full after:h-5 after:w-5 after:transition-all 
+                  peer-checked:bg-blue-600`}>
+                </div>
+                <span className="ml-3 text-sm font-medium">
+                  {use3D ? '3D Model' : '2D Model'}
+                </span>
+              </label>
             </div>
           </div>
-        </div>
-        
-        {use3D && (
-          <div className="interaction-help">
-            <h4>3D Model Legend:</h4>
-            <ul>
-              <li><span className="help-dot" style={{ backgroundColor: '#f44336' }}></span> Nucleus (protons and neutrons)</li>
-              <li><span className="help-dot" style={{ backgroundColor: '#2196f3' }}></span> First shell electrons</li>
-              <li><span className="help-dot" style={{ backgroundColor: '#4caf50' }}></span> Second shell electrons</li>
-              <li><span className="help-dot" style={{ backgroundColor: '#ffeb3b' }}></span> Third shell electrons</li>
-              <li><span className="help-dot" style={{ backgroundColor: '#ff9800' }}></span> Fourth shell electrons</li>
-            </ul>
-            <p><small>Note: The model is a simplified representation of the atomic structure.</small></p>
-          </div>
-        )}
-      </div>
 
-      <style>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.7);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-        }
-        
-        .modal-content {
-          background-color: white;
-          border-radius: 8px;
-          box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
-          width: 90%;
-          max-width: 800px;
-          max-height: 90vh;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .modal-header {
-          padding: 15px 20px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          color: white;
-        }
-        
-        .element-header-content {
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          grid-template-rows: auto auto;
-          grid-template-areas:
-            "number symbol mass"
-            "number name mass";
-          align-items: center;
-          width: 100%;
-        }
-        
-        .element-number {
-          grid-area: number;
-          font-size: 24px;
-          padding-right: 15px;
-        }
-        
-        .element-symbol {
-          grid-area: symbol;
-          font-size: 42px;
-          font-weight: bold;
-        }
-        
-        .element-name {
-          grid-area: name;
-          font-size: 20px;
-        }
-        
-        .element-mass {
-          grid-area: mass;
-          font-size: 16px;
-          text-align: right;
-        }
-        
-        .close-button {
-          background: none;
-          border: none;
-          color: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-left: 15px;
-          padding: 5px;
-          border-radius: 4px;
-          transition: background-color 0.2s;
-        }
-        
-        .close-button:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        .visualization-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 20px;
-          background-color: #f5f5f5;
-        }
-        
-        .model-controls {
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        
-        .toggle-container {
-          display: flex;
-          align-items: center;
-          cursor: pointer;
-          user-select: none;
-        }
-        
-        .toggle-switch {
-          position: relative;
-          width: 50px;
-          height: 24px;
-          background-color: #ccc;
-          border-radius: 12px;
-          margin: 0 10px;
-          transition: background-color 0.3s;
-        }
-        
-        .toggle-switch:before {
-          content: '';
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          width: 20px;
-          height: 20px;
-          background-color: white;
-          border-radius: 50%;
-          transition: transform 0.3s;
-        }
-        
-        input:checked + .toggle-switch {
-          background-color: #4a6fff;
-        }
-        
-        input:checked + .toggle-switch:before {
-          transform: translateX(26px);
-        }
-        
-        input[type="checkbox"] {
-          display: none;
-        }
-        
-        .toggle-text {
-          font-weight: bold;
-        }
-        
-        .element-info {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-        }
-        
-        .info-section {
-          border: 1px solid #eee;
-          border-radius: 6px;
-          padding: 15px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .info-section h3 {
-          margin-top: 0;
-          color: #333;
-          border-bottom: 1px solid #eee;
-          padding-bottom: 8px;
-        }
-        
-        .interaction-help {
-          padding: 15px 20px;
-          border-top: 1px solid #eee;
-          background-color: #f9f9f9;
-        }
-        
-        .interaction-help h4 {
-          margin-bottom: 10px;
-          color: #333;
-        }
-        
-        .interaction-help ul {
-          list-style: none;
-          padding: 0;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-        
-        .interaction-help li {
-          display: flex;
-          align-items: center;
-          margin-right: 15px;
-          background-color: white;
-          padding: 5px 10px;
-          border-radius: 4px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .help-dot {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          margin-right: 8px;
-          display: inline-block;
-        }
-        
-        @media (max-width: 768px) {
-          .element-info {
-            grid-template-columns: 1fr;
-          }
-          
-          .interaction-help ul {
-            flex-direction: column;
-          }
-        }
-      `}</style>
-    </div>
+          {/* Information Section - Now Scrollable */}
+          <div className={`p-6 overflow-y-auto ${darkMode ? 'bg-gray-900' : 'bg-white'} flex-1`}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <motion.div
+                variants={staggerItems}
+                initial="hidden"
+                animate="visible"
+                className={`p-5 rounded-lg ${
+                  darkMode ? 'bg-gray-800' : 'bg-gray-50'
+                }`}
+              >
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Info size={18} className="mr-2 opacity-70" />
+                  Element Information
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  {elementProperties.map((prop) => (
+                    <motion.div 
+                      key={prop.label}
+                      variants={itemVariants}
+                      className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 py-2"
+                    >
+                      <span className="font-medium">{prop.label}</span>
+                      <span className={`px-2 py-1 rounded ${
+                        darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                      }`}>
+                        {prop.value}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+
+              <div className={`p-5 rounded-lg ${
+                darkMode ? 'bg-gray-800' : 'bg-gray-50'
+              }`}>
+                <h3 className="text-lg font-semibold mb-4">Description</h3>
+                <p className="leading-relaxed">{element.description}</p>
+              </div>
+            </div>
+            
+            {/* 3D Model Legend */}
+            {use3D && (
+              <motion.div 
+                className={`mt-6 p-5 rounded-lg ${
+                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
+                }`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              >
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <HelpCircle size={18} className="mr-2 opacity-70" />
+                  3D Model Legend
+                </h3>
+                
+                <div className="flex flex-wrap gap-3">
+                  {colorLegend.map((item, index) => (
+                    <motion.div 
+                      key={index}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                        darkMode ? 'bg-gray-700' : 'bg-white'
+                      } shadow-sm`}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className="text-sm">{item.label}</span>
+                    </motion.div>
+                  ))}
+                </div>
+                
+                <div className="mt-4 text-xs opacity-70 italic">
+                  Note: The model is a simplified representation of the atomic structure.
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 

@@ -110,17 +110,6 @@ export const useCopyMatchData = () => {
 };
 
 /**
- * Toggle fullscreen mode
- */
-export const useToggleFullscreen = (
-  setIsFullscreen: React.Dispatch<React.SetStateAction<boolean>>
-) => {
-  return useCallback((): void => {
-    setIsFullscreen(prev => !prev);
-  }, [setIsFullscreen]);
-};
-
-/**
  * Get difficulty badge
  */
 export const useDifficultyBadge = (theme: Theme) => {
