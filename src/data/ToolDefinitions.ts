@@ -1,6 +1,6 @@
 // src/data/ToolDefinitions.ts
 
-import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split } from 'lucide-react';
+import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split, FileText } from 'lucide-react';
 import { ToolDefinition } from '../types/ToolTypes';
 import { TOOL_IDS } from '../constants';
 
@@ -211,7 +211,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     category: "development",
     version: "1.0.0",
   },
-  //calculator
   {
     id: TOOL_IDS.CALCULATOR,
     name: "Calculator",
@@ -222,6 +221,16 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     category: "development",
     version: "1.0.0",
   },
+  {
+  id: TOOL_IDS.LOG_PARSER,
+  name: "Log Parser",
+  description: "Parse and analyze multiple types of development logs",
+  icon: FileText,
+  color: "bg-indigo-600",
+  enabled: true,
+  category: "development",
+  version: "1.0.0",
+}
 ];
 
 /**

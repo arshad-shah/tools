@@ -4,6 +4,11 @@
 import { LucideIcon } from 'lucide-react';
 import { ComponentType } from 'react';
 
+
+// New type for lazy-loaded components
+export interface LazyToolComponent {
+  loader: () => Promise<{ default: ToolComponent }>;
+}
 /**
  * Available tool categories
  */

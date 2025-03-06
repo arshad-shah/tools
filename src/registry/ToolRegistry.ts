@@ -1,13 +1,15 @@
 // src/registry/ToolRegistry.ts
 
-import { ToolComponent, ToolRegistry } from '../types/ToolTypes';
+import { ToolComponent, LazyToolComponent } from '../types/ToolTypes';
+import { TOOL_IDS } from '../constants';
 
 /**
- * Singleton class that manages tool component registration
+ * Singleton class that manages tool component registration with lazy loading support
  */
 class ToolRegistryManager {
   private static instance: ToolRegistryManager;
-  private registry: ToolRegistry = {};
+  private registry: Record<string, LazyToolComponent> = {};
+  private loadedComponents: Record<string, ToolComponent> = {};
 
   /**
    * Get the singleton instance
@@ -20,28 +22,54 @@ class ToolRegistryManager {
   }
 
   /**
-   * Register a tool component
+   * Register a lazy-loaded tool component
    * @param id Tool ID
-   * @param component Tool component
+   * @param loader Function that imports the component
    */
-  public register(id: string, component: ToolComponent): void {
-    this.registry[id] = component;
+  public register(id: string, loader: () => Promise<{ default: ToolComponent }>): void {
+    this.registry[id] = { loader };
   }
 
   /**
-   * Register multiple tools at once
-   * @param tools Object mapping tool IDs to components
+   * Register multiple lazy-loaded tools at once
+   * @param tools Object mapping tool IDs to loader functions
    */
-  public registerTools(tools: ToolRegistry): void {
-    this.registry = { ...this.registry, ...tools };
+  public registerTools(tools: Record<string, () => Promise<{ default: ToolComponent }>>): void {
+    const lazyTools: Record<string, LazyToolComponent> = {};
+    for (const [id, loader] of Object.entries(tools)) {
+      lazyTools[id] = { loader };
+    }
+    this.registry = { ...this.registry, ...lazyTools };
   }
 
   /**
-   * Get a tool component by ID
+   * Get a tool component by ID, loading it if necessary
    * @param id Tool ID
    */
-  public getComponent(id: string): ToolComponent | undefined {
-    return this.registry[id];
+  public async getComponent(id: string): Promise<ToolComponent | undefined> {
+    // If already loaded, return from cache
+    if (this.loadedComponents[id]) {
+      return this.loadedComponents[id];
+    }
+    
+    // If not registered, return undefined
+    if (!this.registry[id]) {
+      return undefined;
+    }
+    
+    try {
+      // Load the component dynamically
+      const module = await this.registry[id].loader();
+      const component = module.default;
+      
+      // Cache the loaded component
+      this.loadedComponents[id] = component;
+      
+      return component;
+    } catch (error) {
+      console.error(`Failed to load tool component: ${id}`, error);
+      return undefined;
+    }
   }
 
   /**
@@ -53,66 +81,48 @@ class ToolRegistryManager {
   }
 
   /**
-   * Get the entire registry
+   * Get the entire registry (IDs only, not the actual components)
    */
-  public getRegistry(): ToolRegistry {
-    return { ...this.registry };
+  public getRegistryIds(): string[] {
+    return Object.keys(this.registry);
   }
 }
 
 // Export the singleton instance
 export const toolRegistry = ToolRegistryManager.getInstance();
 
-// Initialize with default tools
-import ColorTester from '../tools/ColorTester/ColorTester';
-import PasswordGenerator from '../tools/PasswordGenerator/Generator';
-import RegexTester from '../tools/regexTester/RegexStudio';
-import NumberConverter from '../tools/NumberConverter/NumberConverter';
-import QrCodeGenerator from '../tools/QrCodeGenerator/QRCodeGenerator';
-import JsonViewer from '../tools/JsonViewer/components/JsonViewer';
-import Pomodoro from '../tools/pomodoro/main';
-import UnitConverter from '../tools/UnitConverter/UnitConverter';
-import { TOOL_IDS } from '../constants';
-import PeriodicTable from '../tools/PeriodicTable/PeriodicTable';
-import TextDiffChecker from '../tools/TextDiffChecker/TextDiffChecker';
-import ImageOptimiser from '../tools/ImageOptimiser/ImageOptimiser';
-import CSVTSVViewer from '../tools/CSVViewer/Csv-Tsv-viewer';
-import RandomDataGenerator from '../tools/RandomDataGenerator/RandomDataGenerator';
-import URLEncoderDecoder from '../tools/URLEncoderDecoder/URLEncoderDecoder';
-import DateCalculator from '../tools/DateCalculator/DateCalculator';
-import HashGenerator from '../tools/HashGenerator/HashGenerator';
-import Base64Converter from '../tools/Base64Convertor/Base64Convertor';
-import JWTDecoder from '../tools/JWTDecoder/JwtDecoder';
-import URLParser from '../tools/UrlParser/UrlParser';
-import ApiTester from '../tools/ApiTester/ApiTester';
-import Calculator from '../tools/Calculator/Calculator';
-
-// Register all tool components
+// Initialize with lazy-loaded tools
 toolRegistry.registerTools({
-  [TOOL_IDS.COLOR_TESTER]: ColorTester,
-  [TOOL_IDS.PASSWORD_GENERATOR]: PasswordGenerator,
-  [TOOL_IDS.REGEX_TESTER]: RegexTester,
-  [TOOL_IDS.NUMBER_CONVERTER]: NumberConverter,
-  [TOOL_IDS.QR_CODE_GENERATOR]: QrCodeGenerator,
-  [TOOL_IDS.JSON_AND_XML_VIEWER]: JsonViewer,
-  [TOOL_IDS.POMODORO]: Pomodoro,
-  [TOOL_IDS.UNIT_CONVERTER]: UnitConverter,
-  [TOOL_IDS.PERIODIC_TABLE]: PeriodicTable,
-  [TOOL_IDS.TEXT_DIFF_CHECKER]: TextDiffChecker,
-  [TOOL_IDS.IMAGE_OPTIMIZER]: ImageOptimiser,
-  [TOOL_IDS.CSV_VIEWER]: CSVTSVViewer,
-  [TOOL_IDS.RANDOM_DATA_GENERATOR]: RandomDataGenerator,
-  [TOOL_IDS.URL_ENCODER]: URLEncoderDecoder,
-  [TOOL_IDS.DATE_CALCULATOR]: DateCalculator,
-  [TOOL_IDS.HASH_GENERATOR]: HashGenerator,
-  [TOOL_IDS.BASE64_CONVERTER]: Base64Converter,
-  [TOOL_IDS.JWT_DECODE]: JWTDecoder,
-  [TOOL_IDS.URL_PARSER]: URLParser,
-  [TOOL_IDS.API_REQUEST]: ApiTester,
-  [TOOL_IDS.CALCULATOR]: Calculator,
+  [TOOL_IDS.COLOR_TESTER]: () => import('../tools/ColorTester/ColorTester'),
+  [TOOL_IDS.PASSWORD_GENERATOR]: () => import('../tools/PasswordGenerator/Generator'),
+  [TOOL_IDS.REGEX_TESTER]: () => import('../tools/regexTester/RegexStudio'),
+  [TOOL_IDS.NUMBER_CONVERTER]: () => import('../tools/NumberConverter/NumberConverter'),
+  [TOOL_IDS.QR_CODE_GENERATOR]: () => import('../tools/QrCodeGenerator/QRCodeGenerator'),
+  [TOOL_IDS.JSON_AND_XML_VIEWER]: () => import('../tools/JsonViewer/components/JsonViewer'),
+  [TOOL_IDS.POMODORO]: () => import('../tools/pomodoro/main'),
+  [TOOL_IDS.UNIT_CONVERTER]: () => import('../tools/UnitConverter/UnitConverter'),
+  [TOOL_IDS.PERIODIC_TABLE]: () => import('../tools/PeriodicTable/PeriodicTable'),
+  [TOOL_IDS.TEXT_DIFF_CHECKER]: () => import('../tools/TextDiffChecker/TextDiffChecker'),
+  [TOOL_IDS.IMAGE_OPTIMIZER]: () => import('../tools/ImageOptimiser/ImageOptimiser'),
+  [TOOL_IDS.CSV_VIEWER]: () => import('../tools/CSVViewer/Csv-Tsv-viewer'),
+  [TOOL_IDS.RANDOM_DATA_GENERATOR]: () => import('../tools/RandomDataGenerator/RandomDataGenerator'),
+  [TOOL_IDS.URL_ENCODER]: () => import('../tools/URLEncoderDecoder/URLEncoderDecoder'),
+  [TOOL_IDS.DATE_CALCULATOR]: () => import('../tools/DateCalculator/DateCalculator'),
+  [TOOL_IDS.HASH_GENERATOR]: () => import('../tools/HashGenerator/HashGenerator'),
+  [TOOL_IDS.BASE64_CONVERTER]: () => import('../tools/Base64Convertor/Base64Convertor'),
+  [TOOL_IDS.JWT_DECODE]: () => import('../tools/JWTDecoder/JwtDecoder'),
+  [TOOL_IDS.URL_PARSER]: () => import('../tools/UrlParser/UrlParser'),
+  [TOOL_IDS.API_REQUEST]: () => import('../tools/ApiTester/ApiTester'),
+  [TOOL_IDS.CALCULATOR]: () => import('../tools/Calculator/Calculator'),
+  [TOOL_IDS.LOG_PARSER]: () => import('../tools/LogParser/LogParser'),
 });
 
-// Convenience function to get a tool component by ID
-export function getToolComponent(id: string): ToolComponent | undefined {
+// Convenience function to get a tool component by ID (async)
+export async function getToolComponent(id: string): Promise<ToolComponent | undefined> {
   return toolRegistry.getComponent(id);
+}
+
+// For synchronous checks (just to see if a tool is registered)
+export function hasToolComponent(id: string): boolean {
+  return toolRegistry.hasComponent(id);
 }

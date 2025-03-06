@@ -23,4 +23,5 @@ export const TOOL_IDS = {
   URL_PARSER: "url-parser",
   API_REQUEST: "api-request",
   CALCULATOR: "calculator",
+  LOG_PARSER: "log-parser",
 } as const;

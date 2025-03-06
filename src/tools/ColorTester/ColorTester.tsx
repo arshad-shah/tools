@@ -3,7 +3,7 @@ import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
 import { calculateHSL, hexToRgb } from './utils/ColorConverters';
 import { calculateContrastRatio, determineColorMood, determineColorName, generateHarmonyColors } from './utils/CalculationUtils';
 
-// Import our components
+// Import components
 import ColorDisplay from './components/ColorDisplay';
 import ColorValues from './components/ColorValues';
 import QuickActions from './components/QuickActions';
@@ -42,21 +42,13 @@ const ColorTester: React.FC = () => {
   const [contrastRatios, setContrastRatios] = useState<{white: number, black: number}>({ white: 0, black: 0 });
   const [showEditorsPanel, setShowEditorsPanel] = useState<boolean>(true);
   
-  // Calculate the hex code from RGB values
+  // Calculate derived color values
   const hexCode = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
-  
-  // Calculate RGB/RGBA string
-  const rgbString = alpha < 1 
-    ? `rgba(${red}, ${green}, ${blue}, ${alpha})` 
-    : `rgb(${red}, ${green}, ${blue})`;
-  
-  // Calculate text color for contrast
+  const rgbString = alpha < 1 ? `rgba(${red}, ${green}, ${blue}, ${alpha})` : `rgb(${red}, ${green}, ${blue})`;
   const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
   const textColor = luminance > 0.5 ? '#1a202c' : '#ffffff';
 
-  // Effects for color analysis and UI state management
-  
-  // Generate color harmony
+  // Calculate color harmony
   useEffect(() => {
     const hsl = calculateHSL(red, green, blue);
     setColorHarmony(generateHarmonyColors(hsl.h, hsl.s, hsl.l));
@@ -79,16 +71,10 @@ const ColorTester: React.FC = () => {
   // Function to copy text to clipboard
   const copyToClipboard = (text: string, label: string): void => {
     navigator.clipboard.writeText(text).then(() => {
-      // Clear any existing timeout
-      if (copiedTimeout) {
-        clearTimeout(copiedTimeout);
-      }
+      if (copiedTimeout) clearTimeout(copiedTimeout);
       
-      // Set the copied value and create a new timeout
       setCopiedValue(label);
-      const timeout = setTimeout(() => {
-        setCopiedValue(null);
-      }, 2000);
+      const timeout = setTimeout(() => setCopiedValue(null), 2000);
       setCopiedTimeout(timeout);
     });
   };
@@ -103,21 +89,16 @@ const ColorTester: React.FC = () => {
     const element = document.querySelector('.color-display');
     if (element) {
       element.classList.add('pulse-animation');
-      setTimeout(() => {
-        element.classList.remove('pulse-animation');
-      }, 500);
+      setTimeout(() => element.classList.remove('pulse-animation'), 500);
     }
   };
   
-  // Function to save the current color
+  // Save the current color
   const saveColor = (): void => {
     const colorInfo: ColorInfo = {
       hex: hexCode,
       rgb: rgbString,
-      red, 
-      green, 
-      blue, 
-      alpha,
+      red, green, blue, alpha,
       name: colorNameSuggestion
     };
     setSavedColors([...savedColors, colorInfo]);
@@ -126,13 +107,11 @@ const ColorTester: React.FC = () => {
     const element = document.getElementById('palette-section');
     if (element) {
       element.classList.add('highlight-animation');
-      setTimeout(() => {
-        element.classList.remove('highlight-animation');
-      }, 1000);
+      setTimeout(() => element.classList.remove('highlight-animation'), 1000);
     }
   };
   
-  // Function to load a saved color
+  // Load a saved color
   const loadColor = (colorInfo: ColorInfo): void => {
     setRed(colorInfo.red);
     setGreen(colorInfo.green);
@@ -142,7 +121,6 @@ const ColorTester: React.FC = () => {
   
   // Load a suggested harmony color
   const loadHarmonyColor = (rgb: string): void => {
-    // Extract RGB values from the rgb string
     const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (match) {
       setRed(parseInt(match[1]));
@@ -184,16 +162,40 @@ const ColorTester: React.FC = () => {
     copyToClipboard('Palette successfully exported!', 'export');
   };
 
+  // Common props for ColorEditor component
+  const colorEditorProps = {
+    red, green, blue, alpha, hexCode,
+    setRed, setGreen, setBlue, setAlpha,
+    handleColorPicker,
+    showEditorsPanel, setShowEditorsPanel
+  };
+
+  // Props for active tab content
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case 'harmony':
+        return colorHarmony && <HarmonyTab colorHarmony={colorHarmony} loadHarmonyColor={loadHarmonyColor} />;
+      case 'psychology':
+        return <PsychologyTab rgbString={rgbString} colorNameSuggestion={colorNameSuggestion} colorMood={colorMood} />;
+      case 'preview':
+        return <PreviewTab rgbString={rgbString} textColor={textColor} />;
+      case 'accessibility':
+        return <AccessibilityTab rgbString={rgbString} contrastRatios={contrastRatios} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen py-8">
       <AnimationStyles />
       
-      <div className="max-w-6xl mx-auto backdrop-blur-sm bg-white/70 rounded-2xl overflow-hidden shadow-xl border border-indigo-100 depth-effect">
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            {/* Main color display - Takes up 2 columns */}
-            <div className="lg:col-span-2 flex flex-col">
-              {/* Color Display */}
+      <div className="max-w-6xl mx-auto backdrop-blur-sm bg-white/70 rounded-2xl shadow-xl border border-indigo-100 depth-effect">
+        <div className="p-4 md:p-6">
+          {/* Main Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            {/* Sidebar: Color Display & Basic Controls */}
+            <div className="md:col-span-4 lg:col-span-3">
               <ColorDisplay 
                 hexCode={hexCode}
                 rgbString={rgbString}
@@ -203,23 +205,31 @@ const ColorTester: React.FC = () => {
                 saveColor={saveColor}
               />
               
-              {/* Color Values */}
-              <ColorValues 
-                hexCode={hexCode}
-                rgbString={rgbString}
-                copiedValue={copiedValue}
-                copyToClipboard={copyToClipboard}
-              />
+              <div className="mt-4">
+                <ColorValues 
+                  hexCode={hexCode}
+                  rgbString={rgbString}
+                  copiedValue={copiedValue}
+                  copyToClipboard={copyToClipboard}
+                />
+              </div>
               
-              {/* Quick Actions */}
-              <QuickActions 
-                saveColor={saveColor}
-                generateRandomColor={generateRandomColor}
-              />
+              <div className="mt-4">
+                <QuickActions 
+                  saveColor={saveColor}
+                  generateRandomColor={generateRandomColor}
+                />
+              </div>
+              
+              {/* Mobile-only ColorEditor */}
+              <div className="md:hidden mt-4">
+                <ColorEditor {...colorEditorProps} />
+              </div>
             </div>
             
-            {/* Editor Panel - Takes up 3 columns */}
-            <div className="lg:col-span-3">
+            {/* Main Content */}
+            <div className="md:col-span-8 lg:col-span-9">
+              {/* Tab Content */}
               <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
                 <TabNavigation 
                   activeTab={activeTab}
@@ -227,61 +237,19 @@ const ColorTester: React.FC = () => {
                 />
                 
                 <div className="p-5">
-                  {/* Color Harmony */}
-                  {activeTab === 'harmony' && colorHarmony && (
-                    <HarmonyTab 
-                      colorHarmony={colorHarmony}
-                      loadHarmonyColor={loadHarmonyColor}
-                    />
-                  )}
-                  
-                  {/* Color Psychology */}
-                  {activeTab === 'psychology' && (
-                    <PsychologyTab 
-                      rgbString={rgbString}
-                      colorNameSuggestion={colorNameSuggestion}
-                      colorMood={colorMood}
-                    />
-                  )}
-                  
-                  {/* Text Preview */}
-                  {activeTab === 'preview' && (
-                    <PreviewTab 
-                      rgbString={rgbString}
-                      textColor={textColor}
-                    />
-                  )}
-                  
-                  {/* Accessibility */}
-                  {activeTab === 'accessibility' && (
-                    <AccessibilityTab 
-                      rgbString={rgbString}
-                      contrastRatios={contrastRatios}
-                    />
-                  )}
+                  {renderActiveTabContent()}
                 </div>
               </div>
               
-              {/* RGB Controls */}
-              <ColorEditor 
-                red={red}
-                green={green}
-                blue={blue}
-                alpha={alpha}
-                hexCode={hexCode}
-                setRed={setRed}
-                setGreen={setGreen}
-                setBlue={setBlue}
-                setAlpha={setAlpha}
-                handleColorPicker={handleColorPicker}
-                showEditorsPanel={showEditorsPanel}
-                setShowEditorsPanel={setShowEditorsPanel}
-              />
+              {/* Desktop-only ColorEditor */}
+              <div className="hidden md:block mt-4">
+                <ColorEditor {...colorEditorProps} />
+              </div>
             </div>
           </div>
           
           {/* Saved Colors Palette */}
-          <div className="mt-8">
+          <div className="mt-8" id="palette-section">
             <ColorPalette
               savedColors={savedColors}
               loadColor={loadColor}

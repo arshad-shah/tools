@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, Suspense } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Star, Shield, Clock } from 'lucide-react';
 import { ToolComponent, ToolDefinition } from '../types/ToolTypes';
 import { motion, AnimatePresence } from 'framer-motion';
+import ToolErrorBoundary from './ToolErrorBoundary';
 
 interface ToolLayoutProps {
   definition: ToolDefinition;
-  ToolComponent: ToolComponent;
+  ToolComponent: React.LazyExoticComponent<ToolComponent> | ToolComponent;
 }
 
 // Badge variants based on tool status
@@ -14,6 +15,47 @@ interface BadgeProps {
   type: 'new' | 'beta' | 'stable' | 'pro';
   label?: string;
 }
+
+// Loading component that matches the design aesthetic
+const ToolLoadingFallback: React.FC<{ definition: ToolDefinition }> = ({ definition }) => {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen w-full">
+      <div 
+        className={`${definition.color} p-3 rounded-lg text-white shadow-lg mb-4 opacity-80`}
+      >
+        <definition.icon size={28} />
+      </div>
+      
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="text-slate-300 text-lg font-medium"
+      >
+        Loading {definition.name}...
+      </motion.div>
+      
+      <motion.div 
+        className="w-64 h-1 mt-6 bg-slate-700 rounded-full overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        <motion.div 
+          className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 background-size-200"
+          animate={{ 
+            x: ["-100%", "100%"],
+            transition: { 
+              repeat: Infinity, 
+              duration: 1.5, 
+              ease: "easeInOut" 
+            }
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+};
 
 const Badge: React.FC<BadgeProps> = ({ type, label }) => {
   const getVariant = () => {
@@ -57,11 +99,13 @@ const Badge: React.FC<BadgeProps> = ({ type, label }) => {
 /**
  * Enhanced shared layout wrapper for all tools
  * Provides consistent header and navigation with modern design elements,
- * animations, and visual improvements
+ * animations, and visual improvements with lazy loading support
  */
 const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showBgElements, setShowBgElements] = useState(false);
+  const [key, setKey] = useState<number>(Date.now()); // Used for forcing re-render on error retry
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Stagger animations
@@ -92,6 +136,15 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) =>
       return `bg-${baseColor}-500 hover:bg-${baseColor}-400`;
     }
     return 'bg-blue-500 hover:bg-blue-400';
+  };
+  
+  const handleRetry = () => {
+    // Reset the component key to force a re-mount
+    setKey(Date.now());
+  };
+  
+  const handleNavigateHome = () => {
+    navigate('/');
   };
   
   return (
@@ -246,7 +299,20 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) =>
               transition={{ duration: 0.4 }}
               className="bg-slate-900 bg-opacity-70 backdrop-blur-md rounded-xl shadow-xl border border-slate-700/50 p-4 overflow-hidden"
             >
-              <ToolComponent definition={definition} />
+              <ToolErrorBoundary 
+                toolName={definition.name}
+                toolId={definition.id}
+                onRetry={handleRetry}
+                onNavigateHome={handleNavigateHome}
+              >
+                <Suspense fallback={<ToolLoadingFallback definition={definition} />}>
+                  {React.isValidElement(ToolComponent) ? (
+                    ToolComponent
+                  ) : (
+                    <ToolComponent key={key} definition={definition} />
+                  )}
+                </Suspense>
+              </ToolErrorBoundary>
             </motion.div>
           )}
         </AnimatePresence>
