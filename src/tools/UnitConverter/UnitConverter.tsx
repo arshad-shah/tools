@@ -3,7 +3,6 @@ import {
   ArrowRightLeft, 
   X, 
   Clock, 
-  ChevronDown, 
   Zap, 
   History,
   Ruler, 
@@ -14,7 +13,9 @@ import {
   Timer, 
   HardDrive, 
   Gauge, 
-  Battery
+  Battery,
+  Search,
+  RefreshCw
 } from 'lucide-react';
 import { Category, Conversion, Unit } from '../../types/UnitConverterTypes';
 
@@ -23,7 +24,7 @@ const UnitConverter: React.FC = () => {
   const categories: Category[] = [
     {
       name: 'Length',
-      icon: <Ruler className="text-blue-500" />,
+      icon: <Ruler className="text-white" />,
       baseUnit: 'meters',
       units: [
         { name: 'Kilometers', symbol: 'km', factor: 1000 },
@@ -38,7 +39,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Weight',
-      icon: <Scale className="text-green-500" />,
+      icon: <Scale className="text-white" />,
       baseUnit: 'grams',
       units: [
         { name: 'Tonnes', symbol: 't', factor: 1000000 },
@@ -51,7 +52,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Volume',
-      icon: <Droplet className="text-cyan-500" />,
+      icon: <Droplet className="text-white" />,
       baseUnit: 'liters',
       units: [
         { name: 'Cubic Meters', symbol: 'm³', factor: 1000 },
@@ -66,7 +67,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Temperature',
-      icon: <Thermometer className="text-red-500" />,
+      icon: <Thermometer className="text-white" />,
       baseUnit: 'kelvin',
       units: [
         { name: 'Kelvin', symbol: 'K', factor: 1 },
@@ -76,7 +77,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Area',
-      icon: <Square className="text-purple-500" />,
+      icon: <Square className="text-white" />,
       baseUnit: 'square meters',
       units: [
         { name: 'Square Kilometers', symbol: 'km²', factor: 1000000 },
@@ -90,7 +91,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Speed',
-      icon: <Zap className="text-yellow-500" />,
+      icon: <Zap className="text-white" />,
       baseUnit: 'meters per second',
       units: [
         { name: 'Meters per Second', symbol: 'm/s', factor: 1 },
@@ -102,7 +103,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Time',
-      icon: <Timer className="text-amber-500" />,
+      icon: <Timer className="text-white" />,
       baseUnit: 'seconds',
       units: [
         { name: 'Years', symbol: 'yr', factor: 31536000 },
@@ -117,7 +118,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Data',
-      icon: <HardDrive className="text-indigo-500" />,
+      icon: <HardDrive className="text-white" />,
       baseUnit: 'bytes',
       units: [
         { name: 'Terabytes', symbol: 'TB', factor: 1099511627776 },
@@ -130,7 +131,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Pressure',
-      icon: <Gauge className="text-teal-500" />,
+      icon: <Gauge className="text-white" />,
       baseUnit: 'pascals',
       units: [
         { name: 'Gigapascals', symbol: 'GPa', factor: 1000000000 },
@@ -144,7 +145,7 @@ const UnitConverter: React.FC = () => {
     },
     {
       name: 'Energy',
-      icon: <Battery className="text-orange-500" />,
+      icon: <Battery className="text-white" />,
       baseUnit: 'joules',
       units: [
         { name: 'Kilojoules', symbol: 'kJ', factor: 1000 },
@@ -167,7 +168,8 @@ const UnitConverter: React.FC = () => {
   const [toValue, setToValue] = useState<string>('');
   const [recentConversions, setRecentConversions] = useState<Conversion[]>([]);
   const [activeTab, setActiveTab] = useState<'converter' | 'saved'>('converter');
-  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [showSettings, setShowSettings] = useState<boolean>(false);
 
   // Handle category change
   useEffect(() => {
@@ -312,26 +314,30 @@ const UnitConverter: React.FC = () => {
     setFromValue(e.target.value);
   };
 
-  return (
-    <div className="min-h-screen p-4 md:p-8 bg-gradient-to-b from-gray-900 to-gray-800 text-white transition-all duration-300">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            Unit Converter
-          </h1>
-          <p className="text-gray-300 text-lg">Convert between any units with precision</p>
-        </div>
+  // Filter categories based on search term
+  const filteredCategories = categories.filter(category => 
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+return (
+  <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white transition-all duration-300">
+    {/* Header with Glass Morphism */}
+    <div className="bg-purple-500 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full opacity-10">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -mt-24 -mr-24 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-300 rounded-full -mb-20 -ml-20 blur-3xl"></div>
+      </div>
+      
+      <div className="container mx-auto p-4 relative z-10">
         
         {/* Main Tabs */}
-        <div className="flex justify-center mb-6">
-          <div className="p-1 rounded-lg bg-gray-800 shadow-lg">
+        <div className="flex justify-center align-center items-center">
+          <div className="bg-white/10 backdrop-blur-lg p-1 rounded-xl shadow-lg">
             <button
               onClick={() => setActiveTab('converter')}
-              className={`px-6 py-2 rounded-md font-medium transition-all duration-300 flex items-center ${
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center ${
                 activeTab === 'converter' 
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transform scale-105' 
-                  : 'bg-transparent hover:bg-gray-700'
+                  ? 'bg-white text-purple-600 shadow-lg' 
+                  : 'bg-transparent text-white hover:bg-white/20'
               }`}
             >
               <Zap size={18} className="mr-2" />
@@ -339,89 +345,87 @@ const UnitConverter: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('saved')}
-              className={`px-6 py-2 rounded-md font-medium transition-all duration-300 flex items-center ${
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center ${
                 activeTab === 'saved' 
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transform scale-105' 
-                  : 'bg-transparent hover:bg-gray-700'
+                  ? 'bg-white text-purple-600 shadow-lg' 
+                  : 'bg-transparent text-white hover:bg-white/20'
               }`}
             >
               <History size={18} className="mr-2" />
-              Recent
+              History
               {recentConversions.length > 0 && (
-                <span className="ml-2 bg-blue-500 text-xs font-bold px-2 py-1 rounded-full">
+                <span className="ml-2 bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                   {recentConversions.length}
                 </span>
               )}
             </button>
           </div>
         </div>
-        
+      </div>
+    </div>
+    
+    {/* Main Content */}
+    <div className="container mx-auto px-4 py-8 -mt-6">
+      <div className="max-w-5xl mx-auto">
         {activeTab === 'converter' && (
-          <>
-            {/* Category Selection Dropdown */}
-            <div className="mb-8 relative">
-              <button 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full p-4 bg-gray-800 rounded-xl flex items-center justify-between shadow-lg transition-all duration-300 hover:bg-gray-700 border border-gray-700"
-              >
-                <div className="flex items-center">
-                  <div className="w-10 h-10 flex items-center justify-center mr-3">
-                    {selectedCategory.icon}
-                  </div>
-                  <span className="text-xl font-medium">{selectedCategory.name}</span>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 md:p-8">
+            {/* Category Selection */}
+            <div className="mb-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold mb-2 md:mb-0">Select Category</h2>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search categories..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 w-full md:w-64"
+                  />
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                 </div>
-                <ChevronDown 
-                  size={20} 
-                  className={`transition-transform duration-300 ${dropdownOpen ? 'transform rotate-180' : ''}`} 
-                />
-              </button>
+              </div>
               
-              {dropdownOpen && (
-                <div className="absolute z-10 mt-2 w-full bg-gray-800 rounded-xl shadow-xl border border-gray-700 max-h-64 overflow-y-auto animate-slideDown">
-                  {categories.map((category, index) => (
-                    <button
-                      key={category.name}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setDropdownOpen(false);
-                      }}
-                      className={`w-full p-3 flex items-center hover:bg-gray-700 transition-colors duration-200 ${
-                        index !== 0 ? 'border-t border-gray-700' : ''
-                      }`}
-                    >
-                      <div className="w-8 h-8 flex items-center justify-center mr-3">
-                        {category.icon}
-                      </div>
-                      <span>{category.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {filteredCategories.map((category) => (
+                  <button
+                    key={category.name}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`p-3 rounded-xl flex flex-col items-center justify-center transition-all duration-300 text-center h-28 ${
+                      selectedCategory.name === category.name
+                        ? 'bg-purple-500 text-white shadow-lg scale-105'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:shadow hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                    }`}
+                  >
+                    <div className={`p-3 rounded-full mb-2 ${
+                      selectedCategory.name === category.name
+                        ? 'bg-purple-400/30'
+                        : 'bg-purple-100 dark:bg-gray-600'
+                    }`}>
+                      {category.icon}
+                    </div>
+                    <span className="text-sm font-medium">{category.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             
             {/* Conversion Card */}
-            <div className="p-6 rounded-xl mb-8 bg-gray-800 shadow-xl relative overflow-hidden">
-              {/* Decorative background elements */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-xl" 
-                   style={{ background: 'linear-gradient(45deg, #4f46e5, #9333ea)', opacity: 0.2 }}></div>
-              <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full blur-xl"
-                   style={{ background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)', opacity: 0.1 }}></div>
-              
-              <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6 backdrop-blur-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
                 {/* From Unit */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center">
-                    <label className="block text-lg font-medium text-gray-300">From</label>
-                    <div className="ml-2 px-2 py-1 bg-blue-600 text-xs font-bold rounded-md animate-pulse">
+                    <h3 className="text-lg font-bold">From</h3>
+                    <div className="ml-2 px-2 py-0.5 bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 text-xs font-bold rounded-md">
                       INPUT
                     </div>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-gray-700 border border-opacity-20 border-gray-500 transition-all duration-300 hover:bg-gray-600">
+                  <div className="p-4 rounded-xl bg-white dark:bg-gray-700 shadow">
                     <select 
                       value={fromUnit.name}
                       onChange={handleFromUnitChange}
-                      className="w-full bg-gray-700 p-3 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-opacity-50 border-gray-600 border focus:border-blue-500 transition-all duration-300"
+                      className="w-full bg-gray-50 dark:bg-gray-600 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 border"
                     >
                       {selectedCategory.units.map(unit => (
                         <option key={unit.name} value={unit.name}>
@@ -436,40 +440,50 @@ const UnitConverter: React.FC = () => {
                         value={fromValue}
                         onChange={handleInputChange}
                         onBlur={addToRecent}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md p-4 pr-16 text-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                        className="w-full bg-gray-50 dark:bg-gray-600 border dark:border-gray-600 rounded-lg p-4 pr-16 text-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:border-purple-500"
                         placeholder="Enter value"
                       />
-                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-300 text-xl font-medium">
+                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-300 text-lg font-medium">
                         {fromUnit.symbol}
                       </span>
                     </div>
                   </div>
                 </div>
                 
-                {/* Swap Button */}
-                <div className="flex items-center justify-center h-0 md:h-auto">
+                {/* Swap Button for Mobile */}
+                <div className="flex md:hidden justify-center -my-2">
                   <button 
                     onClick={swapUnits}
-                    className="p-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-110 shadow-lg z-10 animate-bounce"
+                    className="p-3 rounded-full bg-purple-500 text-white shadow-lg transform transition-all duration-300 hover:rotate-180"
+                  >
+                    <RefreshCw className="text-white" size={20} />
+                  </button>
+                </div>
+                
+                {/* Swap Button for Desktop */}
+                <div className="hidden md:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                  <button 
+                    onClick={swapUnits}
+                    className="p-4 rounded-full bg-purple-500 text-white shadow-lg transform transition-all duration-300 hover:rotate-180"
                   >
                     <ArrowRightLeft className="text-white" size={24} />
                   </button>
                 </div>
                 
                 {/* To Unit */}
-                <div className="space-y-3 md:col-start-2 md:row-start-1">
+                <div className="space-y-4">
                   <div className="flex items-center">
-                    <label className="block text-lg font-medium text-gray-300">To</label>
-                    <div className="ml-2 px-2 py-1 bg-green-600 text-xs font-bold rounded-md">
+                    <h3 className="text-lg font-bold">To</h3>
+                    <div className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-300 text-xs font-bold rounded-md">
                       RESULT
                     </div>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-gray-700 border border-opacity-20 border-gray-500 transition-all duration-300 hover:shadow-lg">
+                  <div className="p-4 rounded-xl bg-white dark:bg-gray-700 shadow">
                     <select 
                       value={toUnit.name}
                       onChange={handleToUnitChange}
-                      className="w-full bg-gray-700 p-3 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-opacity-50 border-gray-600 border focus:border-green-500 transition-all duration-300"
+                      className="w-full bg-gray-50 dark:bg-gray-600 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 border"
                     >
                       {selectedCategory.units.map(unit => (
                         <option key={unit.name} value={unit.name}>
@@ -483,10 +497,10 @@ const UnitConverter: React.FC = () => {
                         type="text"
                         value={formatNumber(toValue)}
                         readOnly
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md p-4 pr-16 text-xl focus:outline-none transition-all duration-300"
+                        className="w-full bg-gray-50 dark:bg-gray-600 border dark:border-gray-600 rounded-lg p-4 pr-16 text-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:border-purple-500"
                         placeholder="Result"
                       />
-                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-300 text-xl font-medium">
+                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-300 text-lg font-medium">
                         {toUnit.symbol}
                       </span>
                     </div>
@@ -494,60 +508,82 @@ const UnitConverter: React.FC = () => {
                 </div>
               </div>
               
-              {/* Conversion Formula Card */}
-              <div className="mt-8 p-5 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-filter backdrop-blur-sm animate-fadeIn">
-                <div className="flex items-center justify-center">
-                  <div className="px-4 py-2 rounded-lg bg-gray-700 mr-4 shadow-inner">
-                    {fromValue ? formatNumber(fromValue) : '0'} {fromUnit.symbol}
+              {/* Conversion Formula Display */}
+              <div className="mt-8 p-5 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-700/20 text-center">
+                <div className="flex flex-col sm:flex-row items-center justify-center">
+                  <div className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 shadow mb-2 sm:mb-0 sm:mr-4">
+                    <span className="font-mono">{fromValue ? formatNumber(fromValue) : '0'} {fromUnit.symbol}</span>
                   </div>
-                  <span className="mx-2">=</span>
-                  <div className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 shadow-md">
-                    {toValue ? formatNumber(toValue) : '0'} {toUnit.symbol}
+                  <span className="mx-2 text-2xl">=</span>
+                  <div className="px-4 py-2 rounded-lg bg-purple-500 text-white shadow">
+                    <span className="font-mono">{toValue ? formatNumber(toValue) : '0'} {toUnit.symbol}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
         
         {/* Recent Conversions Tab */}
         {activeTab === 'saved' && recentConversions.length > 0 && (
-          <div className="p-6 rounded-xl bg-gray-800 shadow-xl">
-            <h3 className="text-2xl font-bold mb-4 flex items-center">
-              <Clock size={20} className="mr-2" />
-              Recent Conversions
-            </h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 md:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <Clock size={22} className="mr-2 text-purple-500" />
+                Conversion History
+              </h2>
+              <button
+                onClick={() => setRecentConversions([])}
+                className="flex items-center px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <X size={16} className="mr-1" /> Clear All
+              </button>
+            </div>
+            
             <div className="space-y-3">
               {recentConversions.map((conversion) => (
                 <div 
                   key={conversion.id}
                   onClick={() => recentConversion(conversion)}
-                  className="p-4 rounded-lg bg-gray-700 hover:bg-gray-600 border border-opacity-10 border-gray-500 flex justify-between items-center cursor-pointer transition-all duration-300 transform hover:scale-102 hover:shadow-lg"
+                  className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-gray-100 dark:border-gray-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 cursor-pointer transition-all duration-300 hover:shadow-md"
                 >
                   <div className="flex items-center">
-                    <div className="w-10 h-10 flex items-center justify-center mr-3 bg-gray-800 rounded-full">
+                    <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-500/20 mr-3">
                       {conversion.categoryIcon}
                     </div>
                     <div>
-                      <div className="flex items-center">
-                        <span className="text-gray-300 text-sm">{conversion.category}</span>
-                        <span className="ml-2 text-xs bg-gray-600 px-2 py-1 rounded-full">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <span className="text-gray-700 dark:text-gray-200 font-medium">
+                          {conversion.category}
+                        </span>
+                        <span className="text-xs bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded-full">
                           {getTimeSince(conversion.timestamp)}
                         </span>
                       </div>
-                      <div className="flex items-center">
-                        <span>{conversion.from}</span>
+                      <div className="flex items-center flex-wrap mt-1">
+                        <span className="font-medium">{conversion.from}</span>
                         <span className="mx-2 text-gray-400">→</span>
-                        <span className="font-medium">{conversion.to}</span>
+                        <span className="font-medium text-purple-500">{conversion.to}</span>
                       </div>
                     </div>
                   </div>
-                  <button 
-                    onClick={(e) => clearRecentConversion(conversion.id, e)}
-                    className="p-2 rounded-full hover:bg-gray-800 transition-colors duration-200"
-                  >
-                    <X size={16} />
-                  </button>
+                  <div className="flex items-center gap-2 self-end md:self-auto">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        recentConversion(conversion);
+                      }}
+                      className="p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors duration-200"
+                    >
+                      <RefreshCw size={16} className="text-purple-500" />
+                    </button>
+                    <button 
+                      onClick={(e) => clearRecentConversion(conversion.id, e)}
+                      className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors duration-200"
+                    >
+                      <X size={16} className="text-red-500" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -555,50 +591,41 @@ const UnitConverter: React.FC = () => {
         )}
         
         {activeTab === 'saved' && recentConversions.length === 0 && (
-          <div className="p-10 rounded-xl bg-gray-800 text-center shadow-xl">
-            <div className="mb-4 flex justify-center">
-              <History size={48} className="text-gray-400" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 rounded-full bg-purple-100 dark:bg-purple-900/20">
+                <History size={48} className="text-purple-500" />
+              </div>
             </div>
-            <p className="text-xl mb-4">No recent conversions yet</p>
+            <h3 className="text-2xl font-bold mb-2">No conversion history yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Your recent conversions will appear here</p>
             <button 
               onClick={() => setActiveTab('converter')}
-              className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 font-medium transition-all duration-300 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105"
+              className="px-6 py-3 rounded-lg bg-purple-500 text-white font-medium transition-all duration-300 hover:bg-purple-600 shadow-md"
             >
               Start Converting
             </button>
           </div>
         )}
-        
-        {/* Footer */}
-        <div className="mt-10 text-center">
-          <p className="text-gray-400 text-sm">
-            Precise unit conversions across multiple categories
-          </p>
-        </div>
-      </div>
       
-      {/* Custom animations */}
-      <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
         
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out forwards;
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-      `}</style>
+      </div>
     </div>
-  );
+  
+    
+    {/* Custom animations */}
+    <style>{`
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+    `}</style>
+  </div>
+);
 };
 
 export default UnitConverter;

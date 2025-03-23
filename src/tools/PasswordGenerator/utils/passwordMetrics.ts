@@ -1,6 +1,5 @@
 import { PasswordMetrics } from "../../../types/PasswordGeneratorTypes";
 
-
 // Calculate password metrics and security estimates
 export const calculateMetrics = (pass: string): PasswordMetrics | null => {
   if (!pass) return null;
@@ -14,11 +13,11 @@ export const calculateMetrics = (pass: string): PasswordMetrics | null => {
   const guessesPerSecond = {
     desktop: 1e9,        // 1 billion/second
     distributed: 1e12,   // 1 trillion/second
-    quantum: 1e12 * 2   // Grover's algorithm gives quadratic speedup
+    quantum: 1e12 * 1000 // 1 quadrillion/second (more realistic for future quantum)
   };
   
   const combinations = Math.pow(2, totalEntropy);
-  const crackTimes = {
+  const crackTimes: { desktop: string; distributed: string; quantum: string; } = {
     desktop: '',
     distributed: '',
     quantum: ''
@@ -38,28 +37,29 @@ export const calculateMetrics = (pass: string): PasswordMetrics | null => {
   };
 };
 
-// Get color class based on password strength
+// Get color class based on password strength - updated to orange theme
 export const getStrengthColor = (strength: number): string => {
   if (strength < 0.3) return 'bg-red-500';
-  if (strength < 0.6) return 'bg-yellow-500';
-  if (strength < 0.8) return 'bg-blue-500';
+  if (strength < 0.6) return 'bg-amber-500';
+  if (strength < 0.8) return 'bg-orange-500';
   return 'bg-green-500';
 };
 
-// Get description based on password strength
+// Get description based on password strength - enhanced descriptions
 export const getStrengthDescription = (strength: number): string => {
-  if (strength < 0.3) return 'Weak - easily crackable';
-  if (strength < 0.6) return 'Moderate - might resist simple attacks';
+  if (strength < 0.3) return 'Weak - vulnerable to basic attacks';
+  if (strength < 0.6) return 'Moderate - resistant to casual attacks';
   if (strength < 0.8) return 'Strong - good for most purposes';
   return 'Very Strong - excellent protection';
 };
 
-// Convert number to words
+// Convert number to words with improved formatting
 const numberToWords = (num: number): string => {
   if (num === Infinity) return "infinite";
+  if (isNaN(num)) return "unknown";
   if (num >= 1e30) return "trillions upon trillions of";
   
-  const units = ["", "thousand", "million", "billion", "trillion", "quadrillion", "quintillion"];
+  const units = ["", "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion"];
   let unitIndex = 0;
   
   while (num >= 1000 && unitIndex < units.length - 1) {
@@ -67,39 +67,41 @@ const numberToWords = (num: number): string => {
     unitIndex++;
   }
   
-  return `${Math.floor(num)} ${units[unitIndex]}`;
+  // Format with appropriate precision
+  let formatted: string;
+  if (num >= 100) {
+    formatted = Math.floor(num).toString();
+  } else if (num >= 10) {
+    formatted = num.toFixed(1).replace(/\.0$/, '');
+  } else {
+    formatted = num.toFixed(2).replace(/\.00$/, '');
+  }
+  
+  return `${formatted} ${units[unitIndex]}`;
 };
 
 // Format time in human-readable format with words
 const formatTime = (seconds: number): string => {
-  if (seconds === Infinity) return "infinite time";
-  if (seconds < 1) return "instant";
+  if (seconds === Infinity || seconds > 1e32) return "infinite time";
+  if (seconds < 0.001) return "instant";
   if (seconds > 1e30) return "trillions upon trillions of years";
   
-  const years = seconds / 31536000;
-  if (years >= 1) {
-    return `${numberToWords(years)} years`;
+  const timeUnits = [
+    { unit: 'years', seconds: 31536000 },
+    { unit: 'months', seconds: 2592000 },
+    { unit: 'weeks', seconds: 604800 },
+    { unit: 'days', seconds: 86400 },
+    { unit: 'hours', seconds: 3600 },
+    { unit: 'minutes', seconds: 60 },
+    { unit: 'seconds', seconds: 1 }
+  ];
+  
+  for (const { unit, seconds: unitSeconds } of timeUnits) {
+    const value = seconds / unitSeconds;
+    if (value >= 1) {
+      return `${numberToWords(value)} ${unit}`;
+    }
   }
   
-  const months = seconds / 2592000;
-  if (months >= 1) {
-    return `${numberToWords(months)} months`;
-  }
-  
-  const days = seconds / 86400;
-  if (days >= 1) {
-    return `${numberToWords(days)} days`;
-  }
-  
-  const hours = seconds / 3600;
-  if (hours >= 1) {
-    return `${numberToWords(hours)} hours`;
-  }
-  
-  const minutes = seconds / 60;
-  if (minutes >= 1) {
-    return `${numberToWords(minutes)} minutes`;
-  }
-  
-  return `${numberToWords(seconds)} seconds`;
+  return `less than a second`;
 };
