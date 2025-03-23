@@ -6,7 +6,6 @@ import { calculateContrastRatio, determineColorMood, determineColorName, generat
 // Import enhanced components
 import ColorDisplay from './components/ColorDisplay';
 import ColorValues from './components/ColorValues';
-import QuickActions from './components/QuickActions';
 import TabNavigation from './components/TabNavigation';
 import HarmonyTab from './components/HarmonyTab';
 import PsychologyTab from './components/PsychologyTab';
@@ -270,11 +269,6 @@ const ColorTester: React.FC = () => {
                     rgbString={rgbString}
                     copiedValue={copiedValue}
                     copyToClipboard={copyToClipboard}
-                  />
-                  
-                  <QuickActions 
-                    saveColor={saveColor}
-                    generateRandomColor={generateRandomColor}
                   />
                   
                   {/* Mobile-only ColorEditor */}
