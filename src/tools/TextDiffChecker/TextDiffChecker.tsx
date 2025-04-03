@@ -1059,7 +1059,7 @@ const TextDiffChecker: React.FC = () => {
           </div>
           <textarea
             ref={rightTextareaRef}
-            className="w-full h-48 min-h-0 flex-grow p-3 bg-indigo-950 bg-opacity-50 text-white rounded-lg border border-indigo-600 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none font-mono text-sm"
+            className="w-full h-48 min-h-52 flex-grow p-3 bg-indigo-950 bg-opacity-50 text-white rounded-lg border border-indigo-600 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none font-mono text-sm"
             value={rightText}
             onChange={(e) => setRightText(e.target.value)}
             placeholder="Paste your modified text here or upload a file..."
