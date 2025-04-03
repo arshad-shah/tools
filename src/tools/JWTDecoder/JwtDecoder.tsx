@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Copy, CheckCircle, AlertCircle, Clock, Calendar, User, FileJson, RefreshCw, Trash2, Info, Shield, EyeOff, Eye, Mail } from 'lucide-react';
+import  { useState, useEffect } from 'react';
+import { Copy, CheckCircle, AlertCircle, Clock, FileJson, RefreshCw, Trash2, Info, Shield } from 'lucide-react';
 import PayloadViewer from './components/PayloadViewer';
 
 // Define types for JWT components
@@ -37,9 +37,8 @@ const JWTDecoder = () => {
   const [activeTab, setActiveTab] = useState('payload');
   const [copied, setCopied] = useState(false);
   const [tokenParts, setTokenParts] = useState<string[]>([]);
-  const [showAll, setShowAll] = useState(false);
 
-  const decodeJWT = (token) => {
+  const decodeJWT = (token : string) => {
     setError('');
     setHeader({} as JWTHeader);
     setPayload({} as JWTPayload);
@@ -93,8 +92,8 @@ const JWTDecoder = () => {
           }
         }
       }
-    } catch (e) {
-      setError('Failed to decode JWT: ' + e.message);
+    } catch (e: unknown) { 
+      setError('Failed to decode JWT: ' + (e instanceof Error ? e.message : String(e)));
     }
   };
 

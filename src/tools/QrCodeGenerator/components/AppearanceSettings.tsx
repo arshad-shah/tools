@@ -9,8 +9,7 @@ import {
   Settings, 
   Image, 
   FileType2, 
-  Grid,
-  CheckSquare
+  Grid
 } from 'lucide-react';
 
 interface AppearanceSettingsProps {

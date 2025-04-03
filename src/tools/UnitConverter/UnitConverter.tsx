@@ -169,7 +169,6 @@ const UnitConverter: React.FC = () => {
   const [recentConversions, setRecentConversions] = useState<Conversion[]>([]);
   const [activeTab, setActiveTab] = useState<'converter' | 'saved'>('converter');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showSettings, setShowSettings] = useState<boolean>(false);
 
   // Handle category change
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, Copy, Check, AlertCircle, Award, Info, Hash, Zap } from 'lucide-react';
+import { Sun, Moon, Copy, Check, AlertCircle, Award, Info, Hash } from 'lucide-react';
 
 // TypeScript interfaces
 interface NumberType {

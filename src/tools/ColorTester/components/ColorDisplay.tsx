@@ -4,7 +4,6 @@ import { RefreshCw, Save, Search } from 'lucide-react';
 interface ColorDisplayProps {
   hexCode: string;
   rgbString: string;
-  textColor: string;
   colorNameSuggestion: string;
   generateRandomColor: () => void;
   saveColor: () => void;
@@ -12,8 +11,7 @@ interface ColorDisplayProps {
 
 const ColorDisplay: React.FC<ColorDisplayProps> = ({ 
   hexCode, 
-  rgbString, 
-  textColor, 
+  rgbString,
   colorNameSuggestion, 
   generateRandomColor, 
   saveColor 

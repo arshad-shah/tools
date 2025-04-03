@@ -257,7 +257,6 @@ const ColorTester: React.FC = () => {
                 <ColorDisplay 
                   hexCode={hexCode}
                   rgbString={rgbString}
-                  textColor={textColor}
                   colorNameSuggestion={colorNameSuggestion}
                   generateRandomColor={generateRandomColor}
                   saveColor={saveColor}

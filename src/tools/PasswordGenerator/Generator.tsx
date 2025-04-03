@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import OrangeSlider from './OrangeSlider';
-import { Button } from '../../components/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/Card';
-import { Copy, Shield, Key, Check, Lock, Zap, RulerIcon } from 'lucide-react';
+import {  Shield, Key, Lock, RulerIcon } from 'lucide-react';
 import { charSets, getSecureRandom, secureShuffle } from './utils/utils';
 import PasswordDisplay from './PasswordDisplay';
 import PasswordProperties from './PasswordProperties';
