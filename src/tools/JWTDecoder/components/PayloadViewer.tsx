@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Copy, CheckCircle, AlertCircle, Clock, Calendar, User, Shield, EyeOff, Eye, Mail, Info, Globe, Target } from 'lucide-react';
 
@@ -226,7 +227,7 @@ const PayloadViewer: React.FC<PayloadViewerProps> = ({
                     ? <CheckCircle className="w-5 h-5 mr-3 text-green-500" />
                     : getClaimIcon(key)}
                   
-                  <div className="flex-1">
+                  <div className="flex-1 pl-2">
                     <div className="text-sm font-medium">{getClaimLabel(key)}</div>
                     <div className="text-xs">
                       {formatTimestamp(payload[key])}
