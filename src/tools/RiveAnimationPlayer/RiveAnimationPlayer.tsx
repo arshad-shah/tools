@@ -420,7 +420,7 @@ export default function RiveAnimationPlayer() {
             setRiveInfo({
                 ...riveInfo,
                 artboardCount: 1,
-                version: riveAnimation?.file?.version || 'Unknown',
+                version: 'Unknown',
                 fps: riveAnimation?.fps || 'Unknown',
             });
         }
@@ -904,22 +904,10 @@ export default function RiveAnimationPlayer() {
                       <span className="font-medium mr-2">File:</span> 
                       {filename}
                   </div>
-                  {riveInfo.version !== 'Unknown' && (
-                      <div className="flex items-center">
-                          <span className="font-medium mr-2">Rive Version:</span> 
-                          {riveInfo.version}
-                      </div>
-                  )}
                   <div className="flex items-center">
                       <span className="font-medium mr-2">Size:</span> 
                       {fileSize}
                   </div>
-                  {riveInfo.fps !== 'Unknown' && (
-                      <div className="flex items-center">
-                          <span className="font-medium mr-2">FPS:</span> 
-                          {riveInfo.fps}
-                      </div>
-                  )}
                   {riveInfo.artboardCount > 0 && (
                       <div className="flex items-center">
                           <span className="font-medium mr-2">Artboards:</span> 
