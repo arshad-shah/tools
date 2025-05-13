@@ -24,4 +24,5 @@ export const TOOL_IDS = {
   API_REQUEST: "api-request",
   CALCULATOR: "calculator",
   LOG_PARSER: "log-parser",
+  RIVE_ANIMATION_PLAYER: "rive-animation-player",
 } as const;

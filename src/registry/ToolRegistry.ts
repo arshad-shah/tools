@@ -115,6 +115,7 @@ toolRegistry.registerTools({
   [TOOL_IDS.API_REQUEST]: () => import('../tools/ApiTester/ApiTester'),
   [TOOL_IDS.CALCULATOR]: () => import('../tools/Calculator/Calculator'),
   [TOOL_IDS.LOG_PARSER]: () => import('../tools/LogParser/LogParser'),
+  [TOOL_IDS.RIVE_ANIMATION_PLAYER]: () => import('../tools/RiveAnimationPlayer/RiveAnimationPlayer'),
 });
 
 // Convenience function to get a tool component by ID (async)

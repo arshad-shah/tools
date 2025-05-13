@@ -1,6 +1,6 @@
 // src/data/ToolDefinitions.ts
 
-import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split, FileText } from 'lucide-react';
+import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split, FileText, Play } from 'lucide-react';
 import { ToolDefinition } from '../types/ToolTypes';
 import { TOOL_IDS } from '../constants';
 
@@ -229,6 +229,16 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   color: "bg-indigo-600",
   enabled: true,
   category: "development",
+  version: "1.0.0",
+},
+{
+  id: TOOL_IDS.RIVE_ANIMATION_PLAYER,
+  name: "Rive Animation Player",
+  description: "Preview and control Rive animations with state machines and artboards",
+  icon: Play,
+  color: "bg-sky-500",
+  enabled: true,
+  category: "design",
   version: "1.0.0",
 }
 ];
