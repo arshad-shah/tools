@@ -1,5 +1,3 @@
-// src/components/Dashboard.tsx
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Star } from 'lucide-react';
@@ -100,10 +98,10 @@ const Dashboard: React.FC = () => {
       <div className="relative w-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-6 py-16 relative z-10">
           <h1 className="text-5xl font-bold tracking-tight text-white mb-4">
-            Tool <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Dashboard</span>
+            Tools <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Dashboard</span>
           </h1>
           <p className="text-slate-300 text-xl max-w-2xl">
-            Access all your essential tools in one beautiful, intuitive interface
+            A curated collection of essential development utilities and productivity tools, crafted with precision
           </p>
         </div>
       </div>
@@ -243,7 +241,7 @@ const Dashboard: React.FC = () => {
         
         <div className="p-6">
           <div className="flex justify-between items-start mb-5">
-            <div className={`p-3 rounded-xl ${tool.color} bg-opacity-20 transition-transform group-hover:scale-110 duration-300`}>
+            <div className={`p-3 rounded-xl ${tool.color} bg-opacity-20 transition-transform group-hover:scale-110 duration-300 `}>
               <tool.icon size={24} className="text-white" />
             </div>
             
@@ -256,7 +254,7 @@ const Dashboard: React.FC = () => {
               
               <button
                 onClick={(e) => toggleFavorite(e, tool.id)}
-                className="p-1.5 rounded-full hover:bg-slate-700/70 transition-colors"
+                className="p-1.5 rounded-full hover:bg-slate-700/70 transition-colors hover:cursor-pointer"
               >
                 <Star 
                   size={16} 
