@@ -176,7 +176,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     name: "Base64 Converter",
     description: "Convert text and files to and from Base64 encoding",
     icon: FileCode,
-    color: "bg-teal-600",
+    color: "bg-teal-700",
     enabled: true,
     category: "development",
     version: "1.0.0",

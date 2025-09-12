@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, RefreshCw, Lock } from 'lucide-react';
 import * as CryptoJS from 'crypto-js';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '../../components/select';
+import { Card, CardContent } from '../../components/Card';
+import { Button } from '../../components/Button';
 import { Textarea } from '../../components/textarea';
+import { Label } from '../../components/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/select';
+import Alert from '../../components/Alert';
+import { Copy, Check, X } from 'lucide-react';
+import useClipboard from '../../hooks/useClipboard';
 
-// TypeScript interfaces
 interface Algorithm {
   id: string;
   name: string;
@@ -15,29 +19,13 @@ interface HashResult {
   [key: string]: string;
 }
 
-// Tool definition constants
-const TOOL_IDS = {
-  HASH_GENERATOR: 'hash-generator'
-};
-
-const toolConfig = {
-  id: TOOL_IDS.HASH_GENERATOR,
-  name: 'Hash Generator',
-  description: 'Generate MD5, SHA-256, and other hash algorithms',
-  icon: Lock,
-  color: 'bg-yellow-600',
-  enabled: true,
-  category: 'security',
-  version: '1.0.0',
-};
-
 const HashGenerator: React.FC = () => {
   const [input, setInput] = useState<string>('');
   const [hashes, setHashes] = useState<HashResult>({});
-  const [copied, setCopied] = useState<string | null>(null);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('all');
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);
+  const { copy } = useClipboard();
 
-  // Define all available hash algorithms using crypto-js
   const algorithms: Algorithm[] = [
     { id: 'md5', name: 'MD5', function: (input: string) => CryptoJS.MD5(input).toString() },
     { id: 'sha1', name: 'SHA-1', function: (input: string) => CryptoJS.SHA1(input).toString() },
@@ -80,11 +68,12 @@ const HashGenerator: React.FC = () => {
     setHashes(newHashes);
   };
 
-  const copyToClipboard = (text: string, algorithm: string): void => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(algorithm);
-      setTimeout(() => setCopied(null), 2000);
-    });
+  const copyToClipboard = (text: string, algorithmId: string): void => {
+    copy(text);
+    setCopiedHash(algorithmId);
+    setTimeout(() => {
+      setCopiedHash(null);
+    }, 2000);
   };
 
   useEffect(() => {
@@ -98,110 +87,112 @@ const HashGenerator: React.FC = () => {
   const clearInput = (): void => {
     setInput('');
     setHashes({});
+    setCopiedHash(null);
   };
 
   return (
-    <div className="flex flex-col w-full mx-auto p-6 rounded-lg shadow-lg bg-gray-50">
-      <div className="flex items-center mb-6 gap-3">
-        <div className={`p-2 rounded-md ${toolConfig.color} text-white`}>
-          <Lock size={24} />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-800">{toolConfig.name}</h1>
-      </div>
-      
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-grow">
-          <label htmlFor="text-input" className="block text-sm font-medium text-gray-700 mb-2">
-            Enter text to hash
-          </label>
-          <div className="relative">
-            <Textarea
-              id="text-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="w-full h-24 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
-              placeholder="Type or paste text here..."
-            />
-            {input && (
-              <button
-                onClick={clearInput}
-                className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-200"
-                aria-label="Clear input"
-              >
-                <RefreshCw size={16} className="text-gray-500" />
-              </button>
-            )}
-          </div>
-        </div>
-        
-        <div className="w-full md:w-48 ">
-          <label htmlFor="algorithm-select" className="block text-sm font-medium text-gray-700 mb-2">
-            Hash Algorithm
-          </label>
-            <Select value={selectedAlgorithm} onValueChange={setSelectedAlgorithm}>
-              <SelectTrigger className="flex items-center justify-between w-full h-10 px-3 border border-gray-200 bg-white rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent focus:outline-none">
-                  <span className="text-gray-700 flex items-center gap-1 font-medium">
-                    {selectedAlgorithm === 'all' ? 'All Algorithms' : algorithms.find(algo => algo.id === selectedAlgorithm)?.name}</span>
-              </SelectTrigger>
-              <SelectContent className="bg-white rounded-md shadow-md border border-gray-200">
-                <SelectItem value="all" className="font-medium text-gray-700 flex items-center gap-1">
-                  All Algorithms
-                  </SelectItem>
-                {algorithms.map(algo => (
-                  <SelectItem key={algo.id} value={algo.id} className="text-gray-700 flex items-center gap-1">
-                    {algo.name}
-                    </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <Card className="border-yellow-200">
+          <CardContent className="space-y-6">
+            {/* Input Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="input-text" className="text-gray-700">Text to hash</Label>
+                {input && (
+                  <Button
+                    onClick={clearInput}
+                    className="bg-transparent hover:bg-yellow-50 text-gray-600 border-0 h-8"
+                    size="sm"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+              <Textarea
+                id="input-text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Enter text to generate hashes..."
+                className="min-h-[100px] border-gray-300 focus:border-yellow-600 focus:ring-yellow-600"
+              />
+            </div>
 
-      {Object.keys(hashes).length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-700">Hash Results</h2>
-          <div className="bg-white rounded-md shadow overflow-hidden">
-            {Object.entries(hashes).map(([algorithm, hash]) => {
-              const algoInfo = algorithms.find(algo => algo.id === algorithm);
-              return (
-                <div key={algorithm} className="p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-gray-700">{algoInfo?.name || algorithm.toUpperCase()}</span>
-                    <button
-                      onClick={() => copyToClipboard(hash, algorithm)}
-                      className="text-yellow-600 hover:text-yellow-800 focus:outline-none flex items-center"
-                    >
-                      {copied === algorithm ? (
-                        <>
-                          <Check size={16} className="mr-1" />
-                          <span className="text-sm">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={16} className="mr-1" />
-                          <span className="text-sm">Copy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <div className="font-mono text-sm bg-gray-100 p-2 rounded overflow-x-auto">
-                    {hash}
-                  </div>
+            {/* Algorithm Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="algorithm-select" className="text-gray-700">Hash Algorithm</Label>
+              <Select value={selectedAlgorithm} onValueChange={setSelectedAlgorithm}>
+                <SelectTrigger id="algorithm-select" className="border-gray-300 focus:border-yellow-600 focus:ring-yellow-600">
+                  <SelectValue placeholder="Select an algorithm" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all" className="font-medium hover:bg-yellow-50">
+                    All Algorithms
+                  </SelectItem>
+                  {algorithms.map(algo => (
+                    <SelectItem key={algo.id} value={algo.id} className="font-medium hover:bg-yellow-50">
+                      {algo.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Results */}
+            {Object.keys(hashes).length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800">Hash Results</h3>
+                <div className="space-y-3">
+                  {Object.entries(hashes).map(([algorithm, hash]) => {
+                    const algoInfo = algorithms.find(algo => algo.id === algorithm);
+                    const isError = hash.startsWith('Error');
+                    const isCopied = copiedHash === algorithm;
+                    
+                    return (
+                      <Card key={algorithm} className="overflow-hidden border-gray-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-medium text-gray-700">
+                              {algoInfo?.name || algorithm.toUpperCase()}
+                            </span>
+                            <Button
+                              onClick={() => copyToClipboard(hash, algorithm)}
+                              size="sm"
+                              variant={isCopied ? "success" : "secondary"}
+                              className={isCopied 
+                                ? "bg-green-600 hover:bg-green-700 text-white" 
+                                : "bg-yellow-600 hover:bg-yellow-700 text-white"}
+                              disabled={isError}
+                              leftIcon={isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            >
+                              {isCopied ? 'Copied' : 'Copy'}
+                            </Button>
+                          </div>
+                          {isError ? (
+                            <Alert variant="error" className="bg-red-50 text-red-700 border-red-200">
+                              {hash}
+                            </Alert>
+                          ) : (
+                            <div className="font-mono text-sm p-3 bg-gray-100 text-gray-700 rounded-md overflow-x-auto break-all">
+                              {hash}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      
-      {!input && (
-        <div className="mt-6 text-center text-gray-500 italic">
-          Enter text above to generate hash values
-        </div>
-      )}
-      
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <p className="text-sm text-gray-600">{toolConfig.description} • v{toolConfig.version}</p>
+              </div>
+            )}
+
+            {!input && (
+              <Alert className="bg-yellow-50 text-yellow-800 border-yellow-200">
+                Enter text above to generate hash values
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

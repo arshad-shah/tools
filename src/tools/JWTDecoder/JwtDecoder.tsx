@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getExpiryInfo } from "./utils/utils";
 import useJWTDecoder from "./hooks/useJWTDecoder";
-import useClipboard from "./hooks/useClipboard";
 import TokenInput from "./components/TokenInput";
 import { Card } from "../../components/Card";
 import Alert from "../../components/Alert";
@@ -11,6 +10,7 @@ import ExpiryStatus from "./components/ExpiryStatus";
 import PayloadSection from "./components/PayloadSection";
 import HeaderSection from "./components/HeaderSection";
 import SignatureSection from "./components/SignatureSection";
+import useClipboard from "../../hooks/useClipboard";
 
 const JWTDecoder: React.FC = () => {
   const { jwt, setJwt, decoded, error, decode, clear } = useJWTDecoder();
