@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X, Star } from 'lucide-react';
 import { getEnabledTools } from '../data/ToolDefinitions';
 import { ToolDefinition } from '../types/ToolTypes';
+import { Button } from './Button';
 
 /**
  * Dashboard component that displays all available tools
@@ -252,15 +253,20 @@ const Dashboard: React.FC = () => {
                 </span>
               )}
               
-              <button
+              <Button
+                variant='ghost'
+                size='icon'
+                leftIcon={
+                  <Star 
+                    size={16} 
+                    className={isFavorite ? "fill-yellow-400 text-yellow-400" : "text-slate-400"} 
+                  />
+                }
                 onClick={(e) => toggleFavorite(e, tool.id)}
                 className="p-1.5 rounded-full hover:bg-slate-700/70 transition-colors hover:cursor-pointer"
               >
-                <Star 
-                  size={16} 
-                  className={isFavorite ? "fill-yellow-400 text-yellow-400" : "text-slate-400"} 
-                />
-              </button>
+                {isFavorite ? "Remove from favorites" : "Add to favorites"}
+              </Button>
             </div>
           </div>
           

@@ -5,7 +5,7 @@ import * as SliderPrimitive from "@radix-ui/react-slider"
 import { cn } from "../lib/utils"
 
 interface SliderProps extends React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> {
-  variant?: 'default' | 'violet' | 'blue' | 'green' | 'red' | 'alpha';
+  variant?: 'default' | 'violet' | 'blue' | 'green' | 'red' | 'alpha' | 'orange';
   showLabels?: boolean;
   showTooltip?: boolean;
   showTickMarks?: boolean;
@@ -16,52 +16,60 @@ interface SliderProps extends React.ComponentPropsWithoutRef<typeof SliderPrimit
 const getVariantStyles = (variant: SliderProps['variant'] = 'default') => {
   const variants = {
     default: {
-      track: 'bg-primary/20',
-      range: 'bg-primary',
-      thumb: 'border-primary/50 bg-background',
-      focusRing: 'focus-visible:ring-ring',
-      tooltip: 'bg-primary text-primary-foreground',
-      tickMark: 'bg-primary/40'
+      track: 'bg-gray-200 dark:bg-gray-700',
+      range: 'bg-indigo-600 dark:bg-indigo-500',
+      thumb: 'border-2 border-indigo-600 bg-white dark:bg-gray-900 dark:border-indigo-500',
+      focusRing: 'focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400',
+      tooltip: 'bg-indigo-600 text-white dark:bg-indigo-500',
+      tickMark: 'bg-indigo-400 dark:bg-indigo-500'
     },
     violet: {
-      track: 'bg-violet-100 dark:bg-violet-950/30',
-      range: 'bg-gradient-to-r from-violet-500 to-violet-600',
-      thumb: 'border-violet-500 bg-white dark:bg-gray-950',
-      focusRing: 'focus-visible:ring-violet-500',
-      tooltip: 'bg-violet-600 text-white',
-      tickMark: 'bg-violet-400'
+      track: 'bg-violet-100 dark:bg-violet-900/20',
+      range: 'bg-violet-600 dark:bg-violet-500',
+      thumb: 'border-2 border-violet-600 bg-white dark:bg-gray-900 dark:border-violet-500',
+      focusRing: 'focus-visible:ring-violet-500 dark:focus-visible:ring-violet-400',
+      tooltip: 'bg-violet-600 text-white dark:bg-violet-500',
+      tickMark: 'bg-violet-400 dark:bg-violet-500'
     },
     blue: {
-      track: 'bg-blue-100 dark:bg-blue-950/30',
-      range: 'bg-gradient-to-r from-blue-500 to-blue-600',
-      thumb: 'border-blue-500 bg-white dark:bg-gray-950',
-      focusRing: 'focus-visible:ring-blue-500',
-      tooltip: 'bg-blue-600 text-white',
-      tickMark: 'bg-blue-400'
+      track: 'bg-blue-100 dark:bg-blue-900/20',
+      range: 'bg-blue-600 dark:bg-blue-500',
+      thumb: 'border-2 border-blue-600 bg-white dark:bg-gray-900 dark:border-blue-500',
+      focusRing: 'focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400',
+      tooltip: 'bg-blue-600 text-white dark:bg-blue-500',
+      tickMark: 'bg-blue-400 dark:bg-blue-500'
     },
     green: {
-      track: 'bg-green-100 dark:bg-green-950/30',
-      range: 'bg-gradient-to-r from-green-500 to-green-600',
-      thumb: 'border-green-500 bg-white dark:bg-gray-950',
-      focusRing: 'focus-visible:ring-green-500',
-      tooltip: 'bg-green-600 text-white',
-      tickMark: 'bg-green-400'
+      track: 'bg-green-100 dark:bg-green-900/20',
+      range: 'bg-green-600 dark:bg-green-500',
+      thumb: 'border-2 border-green-600 bg-white dark:bg-gray-900 dark:border-green-500',
+      focusRing: 'focus-visible:ring-green-500 dark:focus-visible:ring-green-400',
+      tooltip: 'bg-green-600 text-white dark:bg-green-500',
+      tickMark: 'bg-green-400 dark:bg-green-500'
     },
     red: {
-      track: 'bg-red-100 dark:bg-red-950/30',
-      range: 'bg-gradient-to-r from-red-500 to-red-600',
-      thumb: 'border-red-500 bg-white dark:bg-gray-950',
-      focusRing: 'focus-visible:ring-red-500',
-      tooltip: 'bg-red-600 text-white',
-      tickMark: 'bg-red-400'
+      track: 'bg-red-100 dark:bg-red-900/20',
+      range: 'bg-red-600 dark:bg-red-500',
+      thumb: 'border-2 border-red-600 bg-white dark:bg-gray-900 dark:border-red-500',
+      focusRing: 'focus-visible:ring-red-500 dark:focus-visible:ring-red-400',
+      tooltip: 'bg-red-600 text-white dark:bg-red-500',
+      tickMark: 'bg-red-400 dark:bg-red-500'
+    },
+    orange: {
+      track: 'bg-orange-100 dark:bg-orange-900/20',
+      range: 'bg-orange-600 dark:bg-orange-500',
+      thumb: 'border-2 border-orange-600 bg-white dark:bg-gray-900 dark:border-orange-500',
+      focusRing: 'focus-visible:ring-orange-500 dark:focus-visible:ring-orange-400',
+      tooltip: 'bg-orange-600 text-white dark:bg-orange-500',
+      tickMark: 'bg-orange-400 dark:bg-orange-500'
     },
     alpha: {
-      track: 'bg-neutral-200 dark:bg-neutral-700 backdrop-blur-sm',
-      range: 'bg-gradient-to-r from-transparent to-primary/90',
-      thumb: 'border-2 border-primary/70 bg-white dark:bg-gray-900',
-      focusRing: 'focus-visible:ring-primary/40',
-      tooltip: 'bg-primary/90 text-white backdrop-blur-md',
-      tickMark: 'bg-primary/50'
+      track: 'bg-gray-200/60 dark:bg-gray-700/60 backdrop-blur-sm',
+      range: 'bg-gradient-to-r from-transparent to-gray-900/80 dark:from-transparent dark:to-gray-100/80',
+      thumb: 'border-2 border-gray-600 bg-white dark:bg-gray-900 dark:border-gray-400',
+      focusRing: 'focus-visible:ring-gray-500 dark:focus-visible:ring-gray-400',
+      tooltip: 'bg-gray-800/90 text-white backdrop-blur-sm dark:bg-gray-100/90 dark:text-black',
+      tickMark: 'bg-gray-500 dark:bg-gray-400'
     },
   };
   return variants[variant];
@@ -73,7 +81,7 @@ export const Slider = React.forwardRef<
 >(({ 
   className, 
   variant = 'default', 
-  showLabels, 
+  showLabels = false, 
   showTooltip = false,
   showTickMarks = false,
   tickMarks,
@@ -86,31 +94,46 @@ export const Slider = React.forwardRef<
   const styles = getVariantStyles(variant);
   const [hoveredValue, setHoveredValue] = React.useState<number | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [isHovering, setIsHovering] = React.useState(false);
   const trackRef = React.useRef<HTMLDivElement>(null);
   
   // Generate tick marks based on min, max, step if no explicit tickMarks provided
   const calculatedTickMarks = React.useMemo(() => {
     if (tickMarks) return tickMarks;
-    
-    // Only generate default ticks if showing tick marks and step is reasonable
     if (!showTickMarks) return [];
-    if ((max - min) / step > 20) {
-      // Too many potential ticks, generate 5 evenly spaced ones
+    
+    const range = max - min;
+    const stepCount = range / step;
+    
+    // Smart tick generation based on range
+    if (stepCount <= 10) {
+      // Show all steps if 10 or fewer
+      const ticks = [];
+      for (let i = min; i <= max; i += step) {
+        ticks.push(Number(i.toFixed(10))); // Avoid floating point precision issues
+      }
+      return ticks;
+    } else if (stepCount <= 50) {
+      // Show every 5th step for medium ranges
+      const interval = Math.ceil(stepCount / 10) * step;
+      const ticks = [];
+      for (let i = min; i <= max; i += interval) {
+        ticks.push(Number(i.toFixed(10)));
+      }
+      if (!ticks.includes(max)) ticks.push(max);
+      return ticks;
+    } else {
+      // Show 5 evenly distributed ticks for large ranges
       const ticks = [];
       for (let i = 0; i <= 4; i++) {
-        ticks.push(min + ((max - min) / 4) * i);
+        const value = min + (range / 4) * i;
+        ticks.push(Number(value.toFixed(10)));
       }
       return ticks;
     }
-    
-    const ticks = [];
-    for (let i = min; i <= max; i += step) {
-      ticks.push(i);
-    }
-    return ticks;
   }, [min, max, step, tickMarks, showTickMarks]);
   
-  // Handle mouse hover to show value tooltip
+  // Handle mouse movement for tooltip
   const handleMouseMove = React.useCallback(
     (e: React.MouseEvent) => {
       if (!trackRef.current || !showTooltip) return;
@@ -120,42 +143,52 @@ export const Slider = React.forwardRef<
       const rawValue = min + percent * (max - min);
       
       // Snap to nearest step
-      const value = Math.round(rawValue / step) * step;
-      setHoveredValue(value);
+      const steppedValue = Math.round(rawValue / step) * step;
+      const clampedValue = Math.min(Math.max(steppedValue, min), max);
+      
+      setHoveredValue(Number(clampedValue.toFixed(10)));
     },
     [min, max, step, showTooltip]
   );
   
-  // Update tooltip on value changes
-  React.useEffect(() => {
-    if (!showTooltip || !props.value) return;
+  // Format value for display
+  const formatValue = React.useCallback((value: number) => {
+    if (value % 1 === 0) return value.toString();
     
-    // For controlled component, show the actual value in tooltip when dragging
-    if (isDragging && Array.isArray(props.value)) {
-      setHoveredValue(props.value[0]);
-    }
-  }, [props.value, isDragging, showTooltip]);
+    // Smart decimal formatting
+    const decimals = step < 1 ? Math.max(0, -Math.floor(Math.log10(step))) : 0;
+    return value.toFixed(decimals);
+  }, [step]);
   
-  // Format a number value for display
-  const formatValue = (value: number) => {
-    return value % 1 === 0 ? value : value.toFixed(2);
+  // Get current value for display
+  const getCurrentValue = () => {
+    if (isDragging && hoveredValue !== null) return hoveredValue;
+    if (props.value && Array.isArray(props.value)) return props.value[0];
+    if (props.defaultValue && Array.isArray(props.defaultValue)) return props.defaultValue[0];
+    return min;
   };
   
+  const currentValue = getCurrentValue();
+  
   return (
-    <div className="space-y-1 touch-none select-none py-3">
-      {/* Labels row */}
+    <div className="w-full space-y-2">
+      {/* Top labels */}
       {showLabels && (
-        <div className="flex justify-between text-xs text-muted-foreground px-1.5">
-          <span>{formatValue(min)}{unit}</span>
-          <span>{formatValue(max)}{unit}</span>
+        <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 px-1">
+          <span className="font-medium">{formatValue(min)}{unit}</span>
+          <span className="font-medium">{formatValue(max)}{unit}</span>
         </div>
       )}
       
       {/* Slider container */}
       <div 
-        className="relative group"
+        className="relative py-2"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => {
+          setIsHovering(false);
+          setHoveredValue(null);
+        }}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoveredValue(null)}
         ref={trackRef}
       >
         <SliderPrimitive.Root
@@ -164,99 +197,100 @@ export const Slider = React.forwardRef<
           max={max}
           step={step}
           className={cn(
-            "relative flex w-full touch-none select-none items-center",
+            "relative flex w-full touch-none select-none items-center group",
             className
           )}
           onPointerDown={() => setIsDragging(true)}
           onPointerUp={() => setIsDragging(false)}
           {...props}
         >
-          {/* Tick marks */}
-          {showTickMarks && (
-            <div className="absolute inset-0 flex items-center justify-between pointer-events-none">
-              {calculatedTickMarks.map((tick, i) => {
-                const percent = ((tick - min) / (max - min)) * 100;
-                return (
-                  <div 
-                    key={i}
-                    className={cn(
-                      "absolute h-1.5 w-0.5 rounded-full transition-all duration-300 ease-out",
-                      styles.tickMark,
-                      "opacity-50 group-hover:opacity-100 group-hover:h-2"
-                    )}
-                    style={{ left: `${percent}%` }}
-                  />
-                );
-              })}
-            </div>
-          )}
-          
+          {/* Track */}
           <SliderPrimitive.Track 
             className={cn(
-              "relative h-2 w-full grow overflow-hidden rounded-full transition-all duration-200",
+              "relative h-2.5 w-full overflow-hidden rounded-full transition-all duration-200 ease-out",
               styles.track,
-              "shadow-sm group-hover:shadow-md",
-              "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:opacity-0 before:translate-x-full group-hover:before:animate-shine"
+              "shadow-inner",
+              isHovering && "h-3"
             )}
           >
+            {/* Range (filled portion) */}
             <SliderPrimitive.Range 
               className={cn(
-                "absolute h-full transition-all duration-200 ease-out",
+                "absolute h-full transition-all duration-200 ease-out rounded-full",
                 styles.range,
-                "shadow-inner group-hover:shadow-md",
-                "after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/30 after:to-transparent after:opacity-0 group-hover:after:opacity-100 group-active:after:opacity-0 after:transition-opacity after:duration-1000"
+                "shadow-sm"
               )}
             />
+            
+            {/* Tick marks */}
+            {showTickMarks && calculatedTickMarks.map((tick, index) => {
+              const percent = ((tick - min) / (max - min)) * 100;
+              const isInRange = tick <= currentValue;
+              
+              return (
+                <div
+                  key={`${tick}-${index}`}
+                  className={cn(
+                    "absolute top-1/2 -translate-y-1/2 w-0.5 rounded-full transition-all duration-200",
+                    isInRange 
+                      ? "bg-white/80 h-1.5" 
+                      : `h-1 ${styles.tickMark}`,
+                    isHovering && (isInRange ? "h-2" : "h-1.5")
+                  )}
+                  style={{ left: `${percent}%` }}
+                />
+              );
+            })}
           </SliderPrimitive.Track>
           
+          {/* Thumb */}
           <SliderPrimitive.Thumb 
             className={cn(
-              "block h-5 w-5 rounded-full border-2 shadow-md",
+              "block h-5 w-5 rounded-full shadow-lg transition-all duration-200 ease-out",
               styles.thumb,
               styles.focusRing,
-              "transition-all duration-150 ease-out",
-              "hover:scale-110 active:scale-105",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+              "hover:scale-110 focus-visible:scale-110",
+              "active:scale-105",
               "disabled:pointer-events-none disabled:opacity-50",
-              "z-10",
-              "group-active:shadow-lg",
-              "before:absolute before:inset-0 before:rounded-full before:opacity-0 before:bg-white/20 before:transition-opacity group-hover:before:opacity-100 group-active:before:opacity-0"
+              isDragging && "scale-110 shadow-xl",
+              "cursor-pointer"
             )} 
           />
         </SliderPrimitive.Root>
         
-        {/* Value tooltip */}
-        {showTooltip && hoveredValue !== null && (
+        {/* Tooltip */}
+        {showTooltip && (hoveredValue !== null || isDragging) && (
           <div 
             className={cn(
-              "absolute -top-8 px-2 py-1 rounded text-xs font-medium shadow-md",
+              "absolute -top-10 px-2.5 py-1.5 rounded-md text-xs font-semibold shadow-lg transition-all duration-150 ease-out z-10",
               styles.tooltip,
-              "transform -translate-x-1/2 transition-all duration-75",
-              "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100", 
-              isDragging ? "opacity-100 scale-100" : "",
-              "after:content-[''] after:absolute after:left-1/2 after:top-full after:transform after:-translate-x-1/2 after:border-4 after:border-transparent",
-              `after:border-t-[var(--tooltip-color)]`
+              "transform -translate-x-1/2",
+              "opacity-0 scale-95 translate-y-1",
+              (isHovering || isDragging) && "opacity-100 scale-100 translate-y-0",
+              // Tooltip arrow
+              "after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2",
+              "after:border-4 after:border-transparent after:border-t-current"
             )}
             style={{ 
-              left: `${((hoveredValue - min) / (max - min)) * 100}%`,
-              "--tooltip-color": variant === 'default' 
-                ? 'hsl(var(--primary))' 
-                : `var(--${variant}-tooltip-color, var(--tooltip-color, #333))` 
-            } as React.CSSProperties}
+              left: `${((hoveredValue ?? currentValue) - min) / (max - min) * 100}%`
+            }}
           >
-            {formatValue(hoveredValue)}{unit}
+            {formatValue(hoveredValue ?? currentValue)}{unit}
           </div>
         )}
       </div>
       
-      {/* Value labels if needed */}
-      {props.value && showLabels && Array.isArray(props.value) && (
-        <div className="text-sm font-medium text-center transition-opacity duration-200">
-          Current: {formatValue(props.value[0])}{unit}
+      {/* Current value display */}
+      {showLabels && (
+        <div className="text-center">
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+            {formatValue(currentValue)}{unit}
+          </span>
         </div>
       )}
     </div>
   );
 });
 
-Slider.displayName = SliderPrimitive.Root.displayName
+Slider.displayName = SliderPrimitive.Root.displayName;

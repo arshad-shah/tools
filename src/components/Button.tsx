@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, forwardRef } from "react";
+import React, { ButtonHTMLAttributes, forwardRef, ReactNode } from "react";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
@@ -14,6 +14,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "sm" | "md" | "lg" | "icon";
   isLoading?: boolean;
   fullWidth?: boolean;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -24,6 +26,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "md",
       isLoading = false,
       fullWidth = false,
+      leftIcon,
+      rightIcon,
       children,
       disabled,
       ...props
@@ -31,96 +35,132 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const baseStyles = [
-      "inline-flex items-center justify-center rounded-lg font-medium",
-      "transition-all duration-200 ease-in-out",
-      "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-      "disabled:cursor-not-allowed disabled:opacity-50",
-      "relative overflow-hidden",
-      "active:scale-95 transform",
+      "inline-flex items-center justify-center font-semibold rounded-lg",
+      "transition-all duration-150 ease-in-out",
+      "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+      "disabled:cursor-not-allowed disabled:opacity-60",
+      "cursor-pointer", // Added cursor pointer
+      "relative",
+      "select-none",
     ].join(" ");
 
     const variants = {
       primary: [
-        "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white",
-        "hover:from-indigo-700 hover:to-indigo-800",
-        "active:from-indigo-800 active:to-indigo-900",
+        "bg-indigo-600 text-white border border-transparent",
+        "hover:bg-indigo-700",
+        "active:bg-indigo-800",
         "focus-visible:ring-indigo-500",
-        "shadow-md hover:shadow-lg",
-        "disabled:from-indigo-400 disabled:to-indigo-500",
+        "shadow-sm hover:shadow-md",
+        "disabled:bg-indigo-400 disabled:hover:bg-indigo-400",
       ].join(" "),
       secondary: [
-        "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-900",
-        "hover:from-gray-200 hover:to-gray-300",
-        "active:from-gray-300 active:to-gray-400",
-        "focus-visible:ring-gray-400",
+        "bg-white text-gray-900 border border-gray-300",
+        "hover:bg-gray-50 hover:border-gray-400",
+        "active:bg-gray-100",
+        "focus-visible:ring-gray-500",
         "shadow-sm hover:shadow",
-        "border border-gray-200",
+        "disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200",
       ].join(" "),
       outline: [
-        "border-2 border-indigo-600 text-indigo-600",
+        "bg-transparent border-2 border-indigo-600 text-indigo-600",
         "hover:bg-indigo-50 hover:border-indigo-700 hover:text-indigo-700",
         "active:bg-indigo-100 active:border-indigo-800 active:text-indigo-800",
         "focus-visible:ring-indigo-500",
+        "disabled:border-indigo-300 disabled:text-indigo-300 disabled:hover:bg-transparent",
       ].join(" "),
       danger: [
-        "bg-gradient-to-r from-red-600 to-red-700 text-white",
-        "hover:from-red-700 hover:to-red-800",
-        "active:from-red-800 active:to-red-900",
+        "bg-red-600 text-white border border-transparent",
+        "hover:bg-red-700",
+        "active:bg-red-800",
         "focus-visible:ring-red-500",
-        "shadow-md hover:shadow-lg",
-        "disabled:from-red-400 disabled:to-red-500",
+        "shadow-sm hover:shadow-md",
+        "disabled:bg-red-400 disabled:hover:bg-red-400",
       ].join(" "),
       success: [
-        "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white",
-        "hover:from-emerald-700 hover:to-emerald-800",
-        "active:from-emerald-800 active:to-emerald-900",
+        "bg-emerald-600 text-white border border-transparent",
+        "hover:bg-emerald-700",
+        "active:bg-emerald-800",
         "focus-visible:ring-emerald-500",
-        "shadow-md hover:shadow-lg",
-        "disabled:from-emerald-400 disabled:to-emerald-500",
+        "shadow-sm hover:shadow-md",
+        "disabled:bg-emerald-400 disabled:hover:bg-emerald-400",
       ].join(" "),
       warning: [
-        "bg-gradient-to-r from-amber-500 to-amber-600 text-white",
-        "hover:from-amber-600 hover:to-amber-700",
-        "active:from-amber-700 active:to-amber-800",
+        "bg-amber-500 text-white border border-transparent",
+        "hover:bg-amber-600",
+        "active:bg-amber-700",
         "focus-visible:ring-amber-400",
-        "shadow-md hover:shadow-lg",
-        "disabled:from-amber-300 disabled:to-amber-400",
+        "shadow-sm hover:shadow-md",
+        "disabled:bg-amber-300 disabled:hover:bg-amber-300",
       ].join(" "),
       info: [
-        "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white",
-        "hover:from-cyan-600 hover:to-cyan-700",
-        "active:from-cyan-700 active:to-cyan-800",
+        "bg-cyan-500 text-white border border-transparent",
+        "hover:bg-cyan-600",
+        "active:bg-cyan-700",
         "focus-visible:ring-cyan-400",
-        "shadow-md hover:shadow-lg",
-        "disabled:from-cyan-300 disabled:to-cyan-400",
+        "shadow-sm hover:shadow-md",
+        "disabled:bg-cyan-300 disabled:hover:bg-cyan-300",
       ].join(" "),
       link: [
-        "text-indigo-600 hover:text-indigo-700 hover:underline",
+        "bg-transparent text-indigo-600 border border-transparent p-0 h-auto",
+        "hover:text-indigo-700 hover:underline",
         "active:text-indigo-800",
-        "focus-visible:ring-indigo-500",
-        "disabled:text-indigo-400",
+        "focus-visible:ring-indigo-500 focus-visible:rounded",
+        "disabled:text-indigo-400 disabled:hover:no-underline",
       ].join(" "),
       ghost: [
-        "text-gray-700 bg-transparent hover:bg-gray-100 hover:text-gray-900",
+        "bg-transparent text-gray-700 border border-transparent",
+        "hover:bg-gray-100 hover:text-gray-900",
         "active:bg-gray-200",
-        "focus-visible:ring-gray-400",
-        "disabled:text-gray-400",
-        "hover:shadow-sm",
+        "focus-visible:ring-gray-500",
+        "disabled:text-gray-400 disabled:hover:bg-transparent",
       ].join(" "),
     };
 
     const sizes = {
-      sm: "h-8 px-3 text-sm gap-1.5 min-w-[4rem]",
-      md: "h-10 px-4 text-base gap-2 min-w-[5rem]",
-      lg: "h-12 px-6 text-lg gap-2.5 min-w-[6rem]",
-      icon: "h-10 w-10 p-2",
+      sm: "h-8 px-3 text-sm",
+      md: "h-10 px-4 text-sm",
+      lg: "h-12 px-6 text-base",
+      icon: "h-10 w-10 p-0",
     };
 
-    // Loading spinner SVG component
+    // Icon size mapping based on button size
+    const getIconSize = (buttonSize: string) => {
+      const iconSizes = {
+        sm: "w-4 h-4",
+        md: "w-4 h-4", 
+        lg: "w-5 h-5",
+        icon: "w-5 h-5"
+      };
+      return iconSizes[buttonSize as keyof typeof iconSizes] || "w-4 h-4";
+    };
+
+    // Get proper spacing between elements
+    const getSpacing = (buttonSize: string) => {
+      if (buttonSize === 'icon') return "";
+      
+      const baseGap = {
+        sm: "gap-1.5",
+        md: "gap-2",
+        lg: "gap-2.5"
+      }[buttonSize] || "gap-2";
+      
+      return baseGap;
+    };
+
+    const iconSize = getIconSize(size);
+    const spacing = getSpacing(size);
+
+    // Render icon with proper sizing - removed the wrapper span that was causing positioning issues
+    const renderIcon = (icon: ReactNode) => {
+      if (!icon) return null;
+      return icon;
+    };
+
+    // Loading spinner component
     const LoadingSpinner = () => (
-      <div className="absolute inset-0 flex items-center justify-center bg-inherit">
+      <div className="absolute inset-0 flex items-center justify-center">
         <svg
-          className="animate-spin h-5 w-5"
+          className="animate-spin h-4 w-4"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
@@ -142,25 +182,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       </div>
     );
 
-    // Ripple effect styles
-    const rippleStyles =
-      !isLoading && variant !== "link"
-        ? [
-            "after:content-['']",
-            "after:absolute after:inset-0",
-            "after:rounded-lg",
-            "after:transition-[transform,opacity]",
-            "after:duration-500",
-            "after:bg-white/20",
-            "after:opacity-0",
-            "after:scale-x-75",
-            "hover:after:opacity-100",
-            "hover:after:scale-x-100",
-            "active:after:opacity-0",
-            "active:after:scale-x-95",
-            "after:origin-center",
-          ].join(" ")
-        : "";
+    // Override size for link variant to prevent fixed height
+    const sizeClasses = variant === 'link' ? '' : sizes[size];
 
     return (
       <button
@@ -168,21 +191,35 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={`
           ${baseStyles}
           ${variants[variant]}
-          ${sizes[size]}
+          ${sizeClasses}
           ${fullWidth ? "w-full" : ""}
-          ${isLoading ? "text-transparent relative" : ""}
-          ${rippleStyles}
           ${className}
-        `}
+        `.trim()}
         disabled={disabled || isLoading}
         {...props}
       >
-        <span
-          className={`flex items-center justify-center gap-2 ${isLoading ? "opacity-0" : "opacity-100"}`}
-        >
-          {children}
-        </span>
         {isLoading && <LoadingSpinner />}
+        <span
+          className={`flex items-center justify-center ${spacing} ${
+            isLoading ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          {leftIcon && (
+            <span className={`${iconSize} flex-shrink-0`}>
+              {renderIcon(leftIcon)}
+            </span>
+          )}
+          {children && (
+            <span className={size === 'icon' && !isLoading ? 'sr-only' : ''}>
+              {children}
+            </span>
+          )}
+          {rightIcon && (
+            <span className={`${iconSize} flex-shrink-0`}>
+              {renderIcon(rightIcon)}
+            </span>
+          )}
+        </span>
       </button>
     );
   },
