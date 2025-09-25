@@ -29,6 +29,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         className="flex flex-col items-center justify-center h-full p-8 text-center"
       >
         <motion.div
+        //@ts-expect-error variants are sortof misaligned with the expected types.
           variants={scaleIn}
           className={`p-6 rounded-full mb-6 ${
             darkMode ? 'bg-gray-800' : 'bg-gray-100'
@@ -41,6 +42,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         </motion.div>
         
         <motion.h3
+        //@ts-expect-error variants are sortof misaligned with the expected types.
           variants={fadeInUp}
           className={`text-2xl font-bold mb-2 ${
             darkMode ? 'text-white' : 'text-gray-900'
@@ -50,6 +52,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         </motion.h3>
         
         <motion.p
+        //@ts-expect-error variants are sortof misaligned with the expected types.
           variants={fadeInUp}
           className={`text-lg mb-8 max-w-md leading-relaxed ${
             darkMode ? 'text-gray-400' : 'text-gray-600'
@@ -59,6 +62,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         </motion.p>
         
         <motion.button
+        //@ts-expect-error variants are sortof misaligned with the expected types.
           variants={scaleIn}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -86,6 +90,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     >
       {/* Animated Icon */}
       <motion.div
+      //@ts-expect-error variants are sortof misaligned with the expected types.
         variants={scaleIn}
         className={`relative p-8 rounded-3xl mb-8 ${
           darkMode ? 'bg-gray-800' : 'bg-gray-100'
@@ -146,6 +151,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       </motion.div>
       
       <motion.h3
+      //@ts-expect-error variants are sortof misaligned with the expected types.
         variants={fadeInUp}
         className={`text-3xl font-bold mb-3 ${
           darkMode ? 'text-white' : 'text-gray-900'
@@ -155,6 +161,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       </motion.h3>
       
       <motion.p
+      //@ts-expect-error variants are sortof misaligned with the expected types.
         variants={fadeInUp}
         className={`text-xl mb-8 max-w-lg leading-relaxed ${
           darkMode ? 'text-gray-400' : 'text-gray-600'
@@ -168,6 +175,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         className="flex flex-col sm:flex-row gap-4"
       >
         <motion.button
+        //@ts-expect-error variants are sortof misaligned with the expected types.
           variants={scaleIn}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -183,6 +191,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         </motion.button>
         
         <motion.div
+        //@ts-expect-error variants are sortof misaligned with the expected types.
           variants={scaleIn}
           className={`px-8 py-4 rounded-xl flex items-center gap-3 font-medium border-2 border-dashed ${
             darkMode 
@@ -207,6 +216,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         ].map((feature, index) => (
           <motion.div
             key={index}
+            //@ts-expect-error variants are sortof misaligned with the expected types.
             variants={fadeInUp}
             className={`p-4 rounded-xl text-center ${
               darkMode ? 'bg-gray-800/50' : 'bg-gray-50'

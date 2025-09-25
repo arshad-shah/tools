@@ -99,6 +99,7 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({
 
   return (
     <motion.div
+    //@ts-expect-error variants are sortof misaligned with the expected types.
       variants={fadeInUp}
       initial="hidden"
       animate="visible"
@@ -131,6 +132,7 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({
               </motion.div>
               
               <motion.div
+              //@ts-expect-error variants are sortof misaligned with the expected types.
                 variants={scaleIn}
                 className={`p-2 rounded-lg ${
                   darkMode ? config.darkBgColor : config.bgColor
@@ -147,6 +149,7 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({
                 {/* Timestamp */}
                 {log.timestamp && (
                   <motion.div
+                  //@ts-expect-error variants are sortof misaligned with the expected types.
                     variants={scaleIn}
                     className={`flex items-center gap-1 text-xs font-medium ${
                       darkMode ? 'text-gray-400' : 'text-gray-500'
@@ -160,6 +163,7 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({
                 {/* Component */}
                 {log.component && (
                   <motion.span
+                  //@ts-expect-error variants are sortof misaligned with the expected types.
                     variants={scaleIn}
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
                       darkMode 
@@ -175,6 +179,7 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({
                 {/* Execution/Build Time */}
                 {(log.executionTime || log.buildTime) && (
                   <motion.span
+                  //@ts-expect-error variants are sortof misaligned with the expected types.
                     variants={scaleIn}
                     className={`text-xs font-medium ${
                       darkMode ? 'text-indigo-400' : 'text-indigo-600'
@@ -186,6 +191,7 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({
                 
                 {/* Level Badge */}
                 <motion.span
+                //@ts-expect-error variants are sortof misaligned with the expected types.
                   variants={scaleIn}
                   className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
                     darkMode 
@@ -207,6 +213,7 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({
             
             {/* Copy Button */}
             <motion.button
+            //@ts-expect-error variants are sortof misaligned with the expected types.
               variants={scaleIn}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}

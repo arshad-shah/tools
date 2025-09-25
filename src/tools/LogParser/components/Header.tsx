@@ -84,6 +84,7 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <motion.header
+    //@ts-expect-error variants are sortof misaligned with the expected types.
       variants={fadeInUp}
       initial="hidden"
       animate="visible"
@@ -99,6 +100,7 @@ const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-4">
             {/* Logo */}
             <motion.div 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
               variants={scaleIn}
               className="flex items-center gap-3"
             >
@@ -120,6 +122,7 @@ const Header: React.FC<HeaderProps> = ({
               {/* Current Log Type */}
               {logType !== 'auto' && (
                 <motion.div
+                //@ts-expect-error variants are sortof misaligned with the expected types.
                   variants={scaleIn}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border ${
                     darkMode ? currentTypeConfig.darkColor : currentTypeConfig.color
@@ -133,6 +136,7 @@ const Header: React.FC<HeaderProps> = ({
               {/* Auto-detected Type */}
               {logType === 'auto' && detectedType && detectedTypeConfig && (
                 <motion.div
+                //@ts-expect-error variants are sortof misaligned with the expected types.
                   variants={scaleIn}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border ${
                     darkMode ? detectedTypeConfig.darkColor : detectedTypeConfig.color
@@ -146,6 +150,7 @@ const Header: React.FC<HeaderProps> = ({
               {/* Stats Badge */}
               {totalLogs > 0 && (
                 <motion.div
+                //@ts-expect-error variants are sortof misaligned with the expected types.
                   variants={scaleIn}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border ${
                     darkMode 

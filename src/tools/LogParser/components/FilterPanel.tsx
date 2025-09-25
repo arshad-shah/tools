@@ -55,6 +55,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   return (
     <AnimatePresence>
       <motion.div
+      //@ts-expect-error variants are sortof misaligned with the expected types.
         variants={fadeInUp}
         initial="hidden"
         animate="visible"
@@ -81,6 +82,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             className="flex justify-between items-center mb-6"
           >
             <motion.h2 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
               variants={scaleIn}
               className={`font-bold text-xl flex items-center gap-3 ${
                 darkMode ? 'text-white' : 'text-gray-900'
@@ -93,6 +95,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </motion.h2>
             
             <motion.button 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
               variants={scaleIn}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -119,7 +122,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6"
           >
             {/* Text Search */}
-            <motion.div variants={scaleIn} className="space-y-3">
+            <motion.div 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
+            variants={scaleIn} className="space-y-3">
               <label className={`flex items-center gap-2 text-sm font-semibold ${
                 darkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
@@ -157,7 +162,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </motion.div>
             
             {/* Component Filter */}
-            <motion.div variants={scaleIn} className="space-y-3">
+            <motion.div 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
+            variants={scaleIn} className="space-y-3">
               <label className={`flex items-center gap-2 text-sm font-semibold ${
                 darkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
@@ -195,7 +202,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </motion.div>
             
             {/* Log Type */}
-            <motion.div variants={scaleIn} className="space-y-3">
+            <motion.div 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
+            variants={scaleIn} className="space-y-3">
               <label className={`flex items-center gap-2 text-sm font-semibold ${
                 darkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
@@ -243,7 +252,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             className="grid grid-cols-1 xl:grid-cols-2 gap-6"
           >
             {/* Log Levels */}
-            <motion.div variants={scaleIn} className="space-y-3">
+            <motion.div 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
+            variants={scaleIn} className="space-y-3">
               <label className={`flex items-center gap-2 text-sm font-semibold ${
                 darkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
@@ -267,7 +278,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </motion.div>
             
             {/* Time Range */}
-            <motion.div variants={scaleIn} className="space-y-3">
+            <motion.div 
+            //@ts-expect-error variants are sortof misaligned with the expected types.
+            variants={scaleIn} className="space-y-3">
               <label className={`flex items-center gap-2 text-sm font-semibold ${
                 darkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>

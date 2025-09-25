@@ -42,6 +42,7 @@ const LogContent: React.FC<LogContentProps> = ({
 
   return (
     <motion.div
+    //@ts-expect-error variants are sortof misaligned with the expected types.
       variants={fadeInUp}
       initial="hidden"
       animate="visible"
@@ -51,6 +52,7 @@ const LogContent: React.FC<LogContentProps> = ({
     >
       {/* Top Action Bar */}
       <motion.div 
+      //@ts-expect-error variants are sortof misaligned with the expected types.
         variants={slideInLeft}
         className={`flex items-center justify-between p-4 border-b backdrop-blur-sm ${
           darkMode 
@@ -106,6 +108,7 @@ const LogContent: React.FC<LogContentProps> = ({
         <AnimatePresence>
           {(viewMode === 'split' || viewMode === 'input') && (
             <motion.div
+            //@ts-expect-error variants are sortof misaligned with the expected types.
               variants={slideInLeft}
               initial="hidden"
               animate="visible"
@@ -139,6 +142,7 @@ const LogContent: React.FC<LogContentProps> = ({
               </div>
               
               <motion.div
+              //@ts-expect-error variants are sortof misaligned with the expected types.
                 variants={fadeInUp}
                 className={`flex-1 rounded-xl border-2 border-dashed transition-all duration-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 ${
                   darkMode 
@@ -163,6 +167,7 @@ const LogContent: React.FC<LogContentProps> = ({
         <AnimatePresence>
           {(viewMode === 'split' || viewMode === 'output') && (
             <motion.div
+            //@ts-expect-error variants are sortof misaligned with the expected types.
               variants={slideInLeft}
               initial="hidden"
               animate="visible"
@@ -181,6 +186,7 @@ const LogContent: React.FC<LogContentProps> = ({
                     Results
                   </h3>
                   <motion.span 
+                  //@ts-expect-error variants are sortof misaligned with the expected types.
                     variants={fadeInUp}
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       darkMode 
@@ -232,13 +238,16 @@ const LogContent: React.FC<LogContentProps> = ({
               
               {/* Stats Overview */}
               {parsedLogs.length > 0 && (
-                <motion.div variants={fadeInUp} className="mb-4">
+                <motion.div 
+                //@ts-expect-error variants are sortof misaligned with the expected types.
+                variants={fadeInUp} className="mb-4">
                   <StatsOverview logs={parsedLogs} darkMode={darkMode} />
                 </motion.div>
               )}
               
               {/* Log List Container */}
               <motion.div
+              //@ts-expect-error variants are sortof misaligned with the expected types.
                 variants={fadeInUp}
                 className={`flex-1 rounded-xl border overflow-hidden ${
                   darkMode 

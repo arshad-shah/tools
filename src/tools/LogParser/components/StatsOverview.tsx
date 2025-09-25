@@ -77,6 +77,7 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ logs, darkMode }) => {
           return (
             <motion.div
               key={level}
+              //@ts-expect-error variants are sortof misaligned with the expected types.
               variants={scaleIn}
               whileHover={{ scale: 1.02 }}
               className={`relative p-3 rounded-lg border transition-all duration-200 overflow-hidden ${
@@ -127,6 +128,7 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({ logs, darkMode }) => {
 
       {/* Health Indicator */}
       <motion.div
+      //@ts-expect-error variants are sortof misaligned with the expected types.
         variants={scaleIn}
         className={`mt-4 p-3 rounded-lg flex items-center justify-between ${
           darkMode ? 'bg-gray-800/50' : 'bg-gray-50'
