@@ -1,9 +1,8 @@
 // src/tools/PdfSplitter/PdfSplitter.tsx
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { 
-  Upload, 
   Scissors, 
   Download, 
   FileText,
@@ -22,6 +21,8 @@ import {
 import { Button } from '../../components/Button';
 import { Card, CardContent } from '../../components/Card';
 import Alert from '../../components/Alert';
+import { FileDropzone } from '../../components/FileDropzone';
+import { SortableList } from '../../components/SortableList';
 import { ToolProps } from '../../types/ToolTypes';
 import {
   SplitMode,
@@ -53,12 +54,11 @@ const PdfSplitter: React.FC<ToolProps> = () => {
     pdfDoc: null,
     pageCount: 0,
     splitMode: 'selection',
-    ranges: [{ start: '', end: '' }],
+    ranges: [{ id: '1', start: '', end: '' }],
     everyN: 2,
     processingState: 'idle',
     splitResults: [],
     error: null,
-    isDragging: false,
     pagePreviewUrls: [],
     currentPreviewPage: 0,
     previewLoading: false,
@@ -66,7 +66,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
     previewMode: 'grid',
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   /**
    * Formats file size in bytes to human readable format
@@ -217,7 +217,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
         pdfDoc: pdf,
         pageCount: pages,
         splitResults: [],
-        ranges: [{ start: '', end: '' }],
+        ranges: [{ id: '1', start: '', end: '' }],
         currentPreviewPage: 0,
       }));
       
@@ -234,63 +234,41 @@ const PdfSplitter: React.FC<ToolProps> = () => {
   }, [generatePagePreviews]);
 
   /**
-   * Drag and drop handlers
+   * Enhanced file drop handler using react-dropzone
    */
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setState(prev => ({ ...prev, isDragging: false }));
-    const file = e.dataTransfer.files[0];
+  const handleFileDrop = useCallback((files: File[]) => {
+    const file = files[0];
     if (file) {
       handleFileSelect(file);
     }
   }, [handleFileSelect]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-  }, []);
-
-  const handleDragEnter = useCallback(() => {
-    setState(prev => ({ ...prev, isDragging: true }));
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isLeavingDropzone = 
-      e.clientX < rect.left || 
-      e.clientX > rect.right || 
-      e.clientY < rect.top || 
-      e.clientY > rect.bottom;
-    
-    if (isLeavingDropzone) {
-      setState(prev => ({ ...prev, isDragging: false }));
-    }
-  }, []);
-
   /**
    * Range management functions
    */
   const addRange = () => {
+    const newId = Date.now().toString();
     setState(prev => ({
       ...prev,
-      ranges: [...prev.ranges, { start: '', end: '' }],
+      ranges: [...prev.ranges, { id: newId, start: '', end: '' }],
     }));
   };
 
-  const updateRange = (index: number, field: 'start' | 'end', value: string) => {
+  const updateRange = (id: string, field: 'start' | 'end', value: string) => {
     setState(prev => {
-      const newRanges = [...prev.ranges];
-      newRanges[index][field] = value;
+      const newRanges = prev.ranges.map(range => 
+        range.id === id ? { ...range, [field]: value } : range
+      );
       return { ...prev, ranges: newRanges };
     });
   };
 
-  const removeRange = (index: number) => {
+  const removeRange = (id: string) => {
     setState(prev => {
       if (prev.ranges.length > 1) {
         return {
           ...prev,
-          ranges: prev.ranges.filter((_, i) => i !== index),
+          ranges: prev.ranges.filter(range => range.id !== id),
         };
       }
       return prev;
@@ -490,12 +468,11 @@ const PdfSplitter: React.FC<ToolProps> = () => {
       pdfDoc: null,
       pageCount: 0,
       splitMode: 'selection',
-      ranges: [{ start: '', end: '' }],
+      ranges: [{ id: '1', start: '', end: '' }],
       everyN: 2,
       processingState: 'idle',
       splitResults: [],
       error: null,
-      isDragging: false,
       pagePreviewUrls: [],
       currentPreviewPage: 0,
       previewLoading: false,
@@ -785,45 +762,21 @@ const PdfSplitter: React.FC<ToolProps> = () => {
 
           {/* Upload Section */}
           {!state.pdfFile && (
-            <div
-              className={`
-                border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer
-                ${state.isDragging 
-                  ? 'border-purple-400 bg-purple-400/10' 
-                  : 'border-slate-600 hover:border-slate-500 hover:bg-slate-800/30'
-                }
-              `}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
+            <FileDropzone
+              onFileDrop={handleFileDrop}
+              accept={{
+                'application/pdf': ['.pdf']
               }}
-              aria-label="Drop PDF file here or click to select"
-            >
-              <Upload size={48} className="mx-auto mb-4 text-slate-400" />
-              <h3 className="text-lg font-semibold mb-2 text-slate-900">
-                {state.isDragging ? 'Drop PDF file here' : 'Select or drop PDF file'}
-              </h3>
-              <p className="text-slate-600">
-                Upload a PDF to split into multiple documents
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept="application/pdf"
-                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-                aria-hidden="true"
-              />
-            </div>
+              maxFiles={1}
+              multiple={false}
+              placeholder="Select or drop PDF file"
+              description="Upload a PDF file to split into multiple documents"
+              showFileTypes={true}
+              fileTypes={['PDF']}
+              className="bg-white border-slate-300 hover:border-purple-400 hover:bg-purple-50/50"
+              loading={state.previewLoading}
+              error={state.error?.message || null}
+            />
           )}
 
           {/* PDF Loaded - Split Options */}
@@ -899,40 +852,67 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                 {/* Range Inputs */}
                 {state.splitMode === 'range' && (
                   <div className="space-y-3 mt-6">
-                    {state.ranges.map((range, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="flex-1 flex items-center gap-3">
-                          <input
-                            type="number"
-                            placeholder="From"
-                            min="1"
-                            max={state.pageCount}
-                            value={range.start}
-                            onChange={(e) => updateRange(index, 'start', e.target.value)}
-                            className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
-                          />
-                          <span className="text-slate-500">to</span>
-                          <input
-                            type="number"
-                            placeholder="To"
-                            min="1"
-                            max={state.pageCount}
-                            value={range.end}
-                            onChange={(e) => updateRange(index, 'end', e.target.value)}
-                            className="flex-1 px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
-                          />
+                    <SortableList
+                      items={state.ranges}
+                      getItemId={(range) => range.id}
+                      onReorder={(reorderedRanges) => {
+                        setState(prev => ({ ...prev, ranges: reorderedRanges }));
+                      }}
+                      renderItem={(range, _index, isDragging, attributes) => (
+                        <div 
+                          className={`flex items-center p-3 rounded-lg transition-all duration-200 min-h-[80px] ${
+                            isDragging ? 'bg-white shadow-lg border border-purple-200' : 'bg-slate-50 border border-slate-200'
+                          }`}
+                          {...attributes}
+                        >
+                          <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3 pl-10 pr-20 md:pl-8 md:pr-4">
+                            {/* Mobile: Stack inputs vertically, Desktop: Side by side */}
+                            <div className="w-full sm:w-auto sm:flex-1">
+                              <label className="block text-xs text-slate-500 mb-1 sm:hidden">From Page</label>
+                              <input
+                                type="number"
+                                placeholder="From"
+                                min="1"
+                                max={state.pageCount}
+                                value={range.start}
+                                onChange={(e) => updateRange(range.id, 'start', e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all text-sm"
+                              />
+                            </div>
+                            <span className="hidden sm:block text-slate-500 font-medium">to</span>
+                            <div className="w-full sm:w-auto sm:flex-1">
+                              <label className="block text-xs text-slate-500 mb-1 sm:hidden">To Page</label>
+                              <input
+                                type="number"
+                                placeholder="To"
+                                min="1"
+                                max={state.pageCount}
+                                value={range.end}
+                                onChange={(e) => updateRange(range.id, 'end', e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all text-sm"
+                              />
+                            </div>
+                          </div>
+                          {/* Remove button with proper spacing */}
+                          {state.ranges.length > 1 && (
+                            <div className="flex-shrink-0 pl-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeRange(range.id)}
+                                className="text-slate-500 hover:text-red-600 hover:bg-red-50 p-2 min-w-[40px] min-h-[40px]"
+                                aria-label="Remove range"
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        {state.ranges.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeRange(index)}
-                            leftIcon={<Trash2 size={16} />}
-                            className="text-slate-500 hover:text-red-600 hover:bg-red-50 p-2"
-                          />
-                        )}
-                      </div>
-                    ))}
+                      )}
+                      className="space-y-2"
+                      gap="sm"
+                      mobileReorderButtons={true}
+                    />
                     <Button
                       variant="outline"
                       onClick={addRange}

@@ -1,12 +1,10 @@
 // src/tools/PdfMerger/PdfMerger.tsx
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { 
-  Upload, 
   Trash2, 
   Download, 
-  GripVertical, 
   FileText,
   ArrowDownUp,
   RefreshCw
@@ -15,6 +13,8 @@ import {
 import { Button } from '../../components/Button';
 import { Card, CardContent } from '../../components/Card';
 import Alert from '../../components/Alert';
+import { FileDropzone } from '../../components/FileDropzone';
+import { SortableList } from '../../components/SortableList';
 import { ToolProps } from '../../types/ToolTypes';
 import {
   PDFFile,
@@ -41,12 +41,9 @@ const PdfMerger: React.FC<ToolProps> = () => {
     processingState: 'idle',
     mergedPDF: null,
     error: null,
-    isDragging: false,
-    draggedItemIndex: null,
-    dragOverItemIndex: null,
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   /**
    * Formats file size in bytes to human readable format
@@ -92,42 +89,16 @@ const PdfMerger: React.FC<ToolProps> = () => {
   };
 
   /**
-   * Drag and drop handlers
+   * Enhanced file drop handler using react-dropzone
    */
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setState(prev => ({ ...prev, isDragging: false }));
+  const handleFilesDrop = useCallback((files: File[]) => {
+    // Create a FileList-like object for the existing handler
+    const fileListLike = Object.assign(files, { 
+      item: (index: number) => files[index],
+      length: files.length
+    });
     
-    const droppedFiles = e.dataTransfer.files;
-    handleFileSelect(droppedFiles);
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setState(prev => ({ ...prev, isDragging: true }));
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Only set dragging to false if we're leaving the drop zone entirely
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isLeavingDropzone = 
-      e.clientX < rect.left || 
-      e.clientX > rect.right || 
-      e.clientY < rect.top || 
-      e.clientY > rect.bottom;
-    
-    if (isLeavingDropzone) {
-      setState(prev => ({ ...prev, isDragging: false }));
-    }
+    handleFileSelect(fileListLike as FileList);
   }, []);
 
   /**
@@ -142,50 +113,10 @@ const PdfMerger: React.FC<ToolProps> = () => {
     }));
   };
 
-  /**
-   * Moves a file to a new position in the queue
-   */
-  const moveFile = (fromIndex: number, toIndex: number) => {
-    setState(prev => {
-      const updatedFiles = [...prev.files];
-      const [movedFile] = updatedFiles.splice(fromIndex, 1);
-      updatedFiles.splice(toIndex, 0, movedFile);
-      return {
-        ...prev,
-        files: updatedFiles,
-        mergedPDF: null,
-      };
-    });
-  };
+  // File reordering is now handled by SortableList component
 
-  /**
-   * File item drag handlers
-   */
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setState(prev => ({ ...prev, draggedItemIndex: index }));
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragEnterItem = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setState(prev => ({ ...prev, dragOverItemIndex: index }));
-  };
-
-  const handleDragEnd = () => {
-    const { draggedItemIndex, dragOverItemIndex } = state;
-    if (
-      draggedItemIndex !== null && 
-      dragOverItemIndex !== null && 
-      draggedItemIndex !== dragOverItemIndex
-    ) {
-      moveFile(draggedItemIndex, dragOverItemIndex);
-    }
-    setState(prev => ({
-      ...prev,
-      draggedItemIndex: null,
-      dragOverItemIndex: null,
-    }));
-  };
+  // Note: Drag and drop is now handled by SortableList component
+  // Old drag handlers removed to prevent conflicts with mobile touch
 
   /**
    * Merges all PDF files into a single document
@@ -277,15 +208,12 @@ const PdfMerger: React.FC<ToolProps> = () => {
   /**
    * Resets the component state
    */
-  const resetState = () => {
+  const reset = () => {
     setState({
       files: [],
       processingState: 'idle',
       mergedPDF: null,
       error: null,
-      isDragging: false,
-      draggedItemIndex: null,
-      dragOverItemIndex: null,
     });
   };
 
@@ -310,46 +238,20 @@ const PdfMerger: React.FC<ToolProps> = () => {
           )}
 
           {/* Drop Zone */}
-          <div
-            className={`
-              border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer
-              ${state.isDragging 
-                ? 'border-blue-400 bg-blue-400/10' 
-                : 'border-slate-600 hover:border-slate-500 hover:bg-slate-800/30'
-              }
-            `}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                fileInputRef.current?.click();
-              }
+          <FileDropzone
+            onFileDrop={handleFilesDrop}
+            accept={{
+              'application/pdf': ['.pdf']
             }}
-            aria-label="Drop PDF files here or click to select"
-          >
-            <Upload size={48} className="mx-auto mb-4 text-slate-400" />
-            <h3 className="text-lg font-semibold mb-2 text-slate-900">
-              {state.isDragging ? 'Drop PDF files here' : 'Select or drop PDF files'}
-            </h3>
-            <p className="text-slate-600">
-              Choose multiple PDF files to merge into a single document
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              multiple
-              accept="application/pdf"
-              onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
-              aria-hidden="true"
-            />
-          </div>
+            multiple={true}
+            maxFiles={20}
+            placeholder="Select or drop PDF files"
+            description="Choose multiple PDF files to merge into a single document"
+            showFileTypes={true}
+            fileTypes={['PDF']}
+            className="bg-white border-lime-300 hover:border-lime-400 hover:bg-lime-50/50"
+            error={state.error?.message || null}
+          />
 
           {/* File List */}
           {state.files.length > 0 && (
@@ -359,7 +261,7 @@ const PdfMerger: React.FC<ToolProps> = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={resetState}
+                  onClick={reset}
                   className="text-slate-400"
                   leftIcon={<RefreshCw size={16} />}
                 >
@@ -367,44 +269,56 @@ const PdfMerger: React.FC<ToolProps> = () => {
                 </Button>
               </div>
 
-              <div className="space-y-2">
-                {state.files.map((file, index) => (
+              <SortableList
+                items={state.files}
+                getItemId={(file) => file.id}
+                onReorder={(reorderedFiles) => {
+                  setState(prev => ({ ...prev, files: reorderedFiles }));
+                }}
+                renderItem={(file, _index, isDragging, attributes) => (
                   <div
-                    key={file.id}
                     className={`
-                      flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200
-                      transition-all duration-200
-                      ${state.draggedItemIndex === index ? 'opacity-50 scale-95' : ''}
-                      ${state.dragOverItemIndex === index ? 'border-blue-400 bg-blue-50' : ''}
-                      hover:bg-slate-100
+                      flex items-center p-1 rounded-lg border transition-all duration-200 min-h-[80px]
+                      ${isDragging 
+                        ? 'bg-white border-lime-400 shadow-lg' 
+                        : 'bg-lime-50/50 border-lime-200 hover:bg-lime-100/50 hover:border-lime-300'
+                      }
                     `}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragEnter={(e) => handleDragEnterItem(e, index)}
-                    onDragEnd={handleDragEnd}
+                    {...attributes}
                   >
-                    <GripVertical 
-                      size={20} 
-                      className="text-slate-400 cursor-grab active:cursor-grabbing" 
-                      aria-label="Drag to reorder"
-                    />
-                    <FileText size={20} className="text-blue-600 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 truncate">{file.name}</p>
-                      <p className="text-sm text-slate-600">{formatFileSize(file.size)}</p>
+                    {/* Icon with proper spacing for drag handle */}
+                    <div className="flex items-center pl-10 pr-3 md:pl-8 md:pr-2">
+                      <FileText size={20} className="text-lime-600 flex-shrink-0" />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFile(file.id)}
-                      className="text-slate-400 hover:text-red-400 p-2"
-                      aria-label={`Remove ${file.name}`}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
+                    
+                    {/* File info with mobile spacing */}
+                    <div className="flex-1 min-w-0 pr-10 md:pr-4">
+                      <p className="font-medium text-slate-900 truncate text-sm md:text-base">
+                        {file.name}
+                      </p>
+                      <p className="text-xs md:text-sm text-slate-600 mt-1">
+                        {formatFileSize(file.size)}
+                      </p>
+                    </div>
+                    
+                    {/* Remove button with proper spacing */}
+                    <div className="flex-shrink-0 ml-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(file.id)}
+                        className="text-slate-400 hover:text-red-400 p-2 min-w-[40px] min-h-[40px]"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+                className="space-y-2"
+                gap="sm"
+                mobileReorderButtons={true}
+              />
             </div>
           )}
 

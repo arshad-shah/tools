@@ -11,6 +11,8 @@ export type SplitMode = 'range' | 'individual' | 'every-n' | 'selection';
  * Represents a page range for splitting
  */
 export interface PageRange {
+  /** Unique identifier for the range */
+  id: string;
   /** Starting page number (1-indexed) */
   start: string;
   /** Ending page number (1-indexed) */
@@ -66,8 +68,6 @@ export interface PdfSplitterState {
   splitResults: SplitResult[];
   /** Current error, if any */
   error: PdfSplitterError | null;
-  /** Whether user is dragging files */
-  isDragging: boolean;
   /** Array of page preview URLs */
   pagePreviewUrls: string[];
   /** Currently selected page in preview */
@@ -107,11 +107,8 @@ export interface SplitOperations {
 }
 
 /**
- * Drag and drop event handlers
+ * Enhanced file drop handlers using react-dropzone
  */
-export interface DragHandlers {
-  handleDrop: (e: React.DragEvent) => void;
-  handleDragOver: (e: React.DragEvent) => void;
-  handleDragEnter: () => void;
-  handleDragLeave: () => void;
+export interface FileDropHandlers {
+  handleFileDrop: (files: File[]) => void;
 }

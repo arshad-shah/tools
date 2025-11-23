@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Drag Drop Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; }
+        
+        .step {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 3px solid #4CAF50;
+        }
+        
+        .note {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Mobile Drag & Drop Debug Guide</h1>
+    
+    <div class="instructions">
+        <h2>🚀 Testing the SortableList Component</h2>
+        <p>Follow these steps to test mobile drag and drop functionality:</p>
+        
+        <div class="step">
+            <h3>Step 1: Start Development Server</h3>
+            <p>In PowerShell, navigate to your project directory and run:</p>
+            <code>cd "c:\Users\shaha\OneDrive\Code\tools"; pnpm dev</code>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Open in Mobile Browser</h3>
+            <p>Access your app at <code>http://localhost:5173</code> on:</p>
+            <ul>
+                <li>📱 Physical mobile device (connected to same network)</li>
+                <li>🖥️ Desktop browser with mobile device simulation (F12 > Toggle Device Toolbar)</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Test Drag Functionality</h3>
+            <p>Navigate to a page that uses SortableList (like PDF Merger) and test:</p>
+            <ul>
+                <li><strong>Touch & Hold:</strong> Press and hold on drag handle for 150ms</li>
+                <li><strong>Drag:</strong> Move your finger while holding</li>
+                <li><strong>Drop:</strong> Release to drop item in new position</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="test-info">
+        <h3>🔍 What We Fixed:</h3>
+        <ul>
+            <li><strong>Touch Sensor:</strong> Reduced delay from 200ms to 150ms</li>
+            <li><strong>Touch Tolerance:</strong> Increased from 8px to 12px for better mobile precision</li>
+            <li><strong>Touch Targets:</strong> Increased minimum size from 36px to 44px</li>
+            <li><strong>CSS Touch Action:</strong> Added proper touch-action styles</li>
+            <li><strong>Visual Feedback:</strong> Improved opacity and scaling for mobile</li>
+        </ul>
+    </div>
+    
+    <div class="test-info">
+        <h3>📱 Mobile-Specific Features:</h3>
+        <ul>
+            <li><strong>Fallback Buttons:</strong> Up/Down chevron buttons for devices where drag doesn't work</li>
+            <li><strong>Larger Touch Areas:</strong> 44px minimum for better accessibility</li>
+            <li><strong>Visual Indicators:</strong> Drag handle is more visible on mobile</li>
+        </ul>
+    </div>
+    
+    <h2>🐛 Debugging Console Output</h2>
+    <div class="note">
+        <p><strong>Console Logs Added:</strong> Check browser console for drag events:</p>
+        <ul>
+            <li><code>Drag start: [item-id]</code> - When drag begins</li>
+            <li><code>Drag end: [from] -> [to]</code> - When drag completes</li>
+            <li><code>Reordering from index [X] to [Y]</code> - When items reorder</li>
+        </ul>
+    </div>
+    
+    <h2>⚠️ Common Mobile Issues & Solutions</h2>
+    
+    <div class="step">
+        <h3>Issue: Touch events not registering</h3>
+        <p><strong>Solution:</strong> Added <code>touch-action: none</code> to drag handles</p>
+    </div>
+    
+    <div class="step">
+        <h3>Issue: Scrolling interferes with dragging</h3>
+        <p><strong>Solution:</strong> Used <code>touch-action: manipulation</code> on containers</p>
+    </div>
+    
+    <div class="step">
+        <h3>Issue: Small touch targets</h3>
+        <p><strong>Solution:</strong> Increased minimum touch target size to 44px × 44px</p>
+    </div>
+    
+    <div class="step">
+        <h3>Issue: Drag sensitivity too low</h3>
+        <p><strong>Solution:</strong> Reduced activation delay and increased tolerance</p>
+    </div>
+    
+    <div class="note">
+        <p><strong>Still having issues?</strong> Try the mobile reorder buttons (up/down arrows) as a fallback method.</p>
+    </div>
+    
+    <h2>🔧 Advanced Configuration</h2>
+    <p>You can now customize touch behavior using the <code>touchConfig</code> prop:</p>
+    <pre><code>
+&lt;SortableList
+  touchConfig={{
+    delay: 100,      // Faster activation
+    tolerance: 15    // More tolerance for shaky hands
+  }}
+  // ... other props
+/&gt;
+    </code></pre>
+    
+</body>
+</html>

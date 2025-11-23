@@ -48,19 +48,13 @@ export interface PDFMergerState {
   processingState: ProcessingState;
   mergedPDF: MergedPDFResult | null;
   error: PDFMergerError | null;
-  isDragging: boolean;
-  draggedItemIndex: number | null;
-  dragOverItemIndex: number | null;
 }
 
 /**
- * Drag and drop event handlers
+ * Enhanced file drop handlers using react-dropzone
  */
-export interface DragHandlers {
-  handleDrop: (e: React.DragEvent) => void;
-  handleDragOver: (e: React.DragEvent) => void;
-  handleDragEnter: (e: React.DragEvent) => void;
-  handleDragLeave: (e: React.DragEvent) => void;
+export interface FileDropHandlers {
+  handleFilesDrop: (files: File[]) => void;
 }
 
 /**
