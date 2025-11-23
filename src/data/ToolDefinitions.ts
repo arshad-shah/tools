@@ -1,6 +1,6 @@
 // src/data/ToolDefinitions.ts
 
-import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split, FileText, Play } from 'lucide-react';
+import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split, FileText, Play, FilePlus, Scissors, Minimize2 } from 'lucide-react';
 import { ToolDefinition } from '../types/ToolTypes';
 import { TOOL_IDS } from '../constants';
 
@@ -216,7 +216,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     name: "Calculator",
     description: "A simple calculator",
     icon: Calculator,
-    color: "bg-amber-500",
+    color: "bg-amber-600",
     enabled: true,
     category: "development",
     version: "1.0.0",
@@ -239,6 +239,36 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   color: "bg-sky-500",
   enabled: true,
   category: "design",
+  version: "1.0.0",
+},
+{
+  id: TOOL_IDS.PDF_MERGER,
+  name: "PDF Merger",
+  description: "Merge multiple PDF files into a single document",
+  icon: FilePlus,
+  color: "bg-lime-500",
+  enabled: true,
+  category: "productivity",
+  version: "1.0.0",
+},
+{
+  id: TOOL_IDS.PDF_SPLITTER,
+  name: "PDF Splitter",
+  description: "Split PDF files into multiple documents by pages or ranges",
+  icon: Scissors,
+  color: "bg-violet-500",
+  enabled: true,
+  category: "productivity",
+  version: "1.0.0",
+},
+{
+  id: TOOL_IDS.PDF_COMPRESSOR,
+  name: "PDF Compressor",
+  description: "Reduce PDF file size with customizable compression levels",
+  icon: Minimize2,
+  color: "bg-cyan-500",
+  enabled: false,
+  category: "productivity",
   version: "1.0.0",
 }
 ];
