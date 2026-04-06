@@ -1,6 +1,15 @@
 // components/CryptoForm.tsx
 import React from 'react';
 import { CryptoData, CryptoType } from '../../../types/qrTypes';
+import { 
+  Wallet, 
+  ChevronDown, 
+  Bitcoin, 
+  DollarSign, 
+  Info, 
+  CopyCheck,
+  Check
+} from 'lucide-react';
 
 interface CryptoFormProps {
   cryptoData: CryptoData;
@@ -10,17 +19,42 @@ interface CryptoFormProps {
 const CryptoForm: React.FC<CryptoFormProps> = ({ cryptoData, setCryptoData }) => {
   const { publicKey, amount, currency } = cryptoData;
 
+  // Get currency symbol
+  const getCurrencyIcon = (currencyType: CryptoType) => {
+    switch (currencyType) {
+      case 'BTC':
+        return '₿';
+      case 'ETH':
+        return 'Ξ';
+      case 'LTC':
+        return 'Ł';
+      case 'XRP':
+        return 'XRP';
+      case 'DOGE':
+        return 'Ð';
+      case 'ADA':
+        return '₳';
+      case 'DOT':
+        return '●';
+      default:
+        return currencyType;
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-blue-700 mb-2">
+    <div className="space-y-5">
+      {/* Cryptocurrency Selection */}
+      <div className="space-y-1">
+        <label htmlFor="currency" className="block text-sm font-medium text-gray-700 flex items-center gap-1.5">
+          <Bitcoin size={16} className="text-emerald-500" />
           Cryptocurrency
         </label>
-        <div className="relative">
+        <div className="relative mt-1 rounded-md shadow-sm">
           <select
+            id="currency"
             value={currency}
             onChange={(e) => setCryptoData({ currency: e.target.value as CryptoType })}
-            className="block appearance-none w-full bg-white border-2 border-blue-300 hover:border-blue-400 px-4 py-2 pr-8 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md appearance-none"
           >
             <option value="BTC">Bitcoin (BTC)</option>
             <option value="ETH">Ethereum (ETH)</option>
@@ -30,45 +64,89 @@ const CryptoForm: React.FC<CryptoFormProps> = ({ cryptoData, setCryptoData }) =>
             <option value="ADA">Cardano (ADA)</option>
             <option value="DOT">Polkadot (DOT)</option>
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-blue-700">
-            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-            </svg>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+            <ChevronDown size={16} />
           </div>
         </div>
       </div>
 
-      <div className="relative">
-        <input
-          type="text"
-          id="address"
-          value={publicKey}
-          onChange={(e) => setCryptoData({ publicKey: e.target.value })}
-          className="peer h-10 w-full border-b-2 border-blue-300 text-gray-900 placeholder-transparent focus:outline-none focus:border-blue-600"
-          placeholder="Wallet Address"
-        />
-        <label 
-          htmlFor="address" 
-          className="absolute left-0 -top-3.5 text-sm text-blue-600 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-2 peer-focus:-top-3.5 peer-focus:text-blue-600 peer-focus:text-sm"
-        >
+      {/* Wallet Address */}
+      <div className="space-y-1">
+        <label htmlFor="publicKey" className="block text-sm font-medium text-gray-700 flex items-center gap-1.5">
+          <Wallet size={16} className="text-emerald-500" />
+          Wallet Address
+        </label>
+        <div className="relative rounded-md shadow-sm">
+          <input
+            type="text"
+            id="publicKey"
+            value={publicKey}
+            onChange={(e) => setCryptoData({ publicKey: e.target.value })}
+            className="block w-full px-3 py-2 border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+            placeholder={`Enter your ${currency} wallet address`}
+          />
+          {publicKey && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <Check size={16} className="text-emerald-500" />
+            </div>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-gray-500">
+          Double-check your address to ensure funds are sent to the correct wallet
+        </p>
+      </div>
+
+      {/* Amount (Optional) */}
+      <div className="space-y-1">
+        <label htmlFor="amount" className="block text-sm font-medium text-gray-700 flex items-center gap-1.5">
+          <DollarSign size={16} className="text-emerald-500" />
           Amount (Optional)
         </label>
-        <div className="absolute right-0 top-2 text-sm text-gray-500">
-          {currency}
+        <div className="relative rounded-md shadow-sm">
+          <input
+            type="text"
+            id="amount"
+            value={amount}
+            onChange={(e) => setCryptoData({ amount: e.target.value })}
+            className="block w-full pl-3 pr-12 py-2 border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+            placeholder="0.00"
+          />
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <span className="text-gray-500 sm:text-sm">{getCurrencyIcon(currency)}</span>
+          </div>
+        </div>
+        <p className="mt-1 text-xs text-gray-500">
+          If left empty, the user can choose how much to send
+        </p>
+      </div>
+
+      {/* QR Info Section */}
+      <div className="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+        <div className="flex items-start">
+          <Info size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+          <div className="ml-3">
+            <span className="text-sm font-medium text-emerald-800">Cryptocurrency QR Info</span>
+            <p className="mt-1 text-xs text-emerald-700">
+              When scanned, this QR code will prompt the user to send {amount ? amount : "any amount of"} {currency} to your wallet address.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
-        <div className="flex items-center mb-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          <span className="text-sm font-medium text-gray-700">Cryptocurrency QR Info</span>
+      {/* Address Preview */}
+      {publicKey && (
+        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-gray-500">Address Preview</span>
+            <CopyCheck size={14} className="text-emerald-500" />
+          </div>
+          <div className="text-xs font-mono bg-white p-2 rounded border border-gray-200 break-all text-gray-800">
+            {publicKey.length > 40 
+              ? publicKey.substring(0, 20) + "..." + publicKey.substring(publicKey.length - 20) 
+              : publicKey}
+          </div>
         </div>
-        <p className="text-xs text-gray-600">
-          When scanned, this QR code will prompt the user to send {amount ? amount : "any amount of"} {currency} to your wallet address.
-        </p>
-      </div>
+      )}
     </div>
   );
 };

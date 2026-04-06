@@ -118,6 +118,7 @@ const ElementDetails: React.FC<ElementDetailsProps> = ({
               {elementProperties.map((prop) => (
                 <motion.div
                   key={prop.name}
+                  //@ts-expect-error variants are sortof misaligned with the expected types.
                   variants={itemVariants}
                   className={`p-3 rounded-lg ${
                     darkMode 

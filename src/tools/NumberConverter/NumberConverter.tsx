@@ -1,6 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, Copy, Check, AlertCircle, Award, Info, Hash, Clock, Zap } from 'lucide-react';
-import { NumberType, Results, ThemeOptions } from '../../types/NumberConverterTypes';
+import { Sun, Moon, Copy, Check, AlertCircle, Award, Info, Hash } from 'lucide-react';
+
+// TypeScript interfaces
+interface NumberType {
+  value: string;
+  label: string;
+  base: number;
+  regex: RegExp;
+  icon: React.ReactNode;
+  color: string;
+}
+
+interface Results {
+  binary: string;
+  decimal: string;
+  hexadecimal: string;
+  octal: string;
+}
+
+interface ThemeStyles {
+  background: string;
+  card: string;
+  text: string;
+  input: string;
+  button: string;
+  select: string;
+  resultCard: string;
+  badge: string;
+  accent: string;
+  accentBg: string;
+  muted: string;
+}
+
+interface ThemeOptions {
+  dark: ThemeStyles;
+  light: ThemeStyles;
+}
 
 const NumberConverter: React.FC = () => {
   const [inputValue, setInputValue] = useState<string>('');
@@ -22,32 +57,32 @@ const NumberConverter: React.FC = () => {
       label: 'Binary', 
       base: 2, 
       regex: /^[01]+$/, 
-      icon: <span className="text-green-500">01</span>,
-      color: 'from-green-500 to-emerald-600'
+      icon: <span className="text-amber-600 dark:text-amber-500 group-[.active]:text-white">01</span>,
+      color: 'bg-amber-600 dark:bg-amber-500'
     },
     { 
       value: 'decimal', 
       label: 'Decimal', 
       base: 10, 
       regex: /^[0-9]+$/, 
-      icon: <Hash size={16} className="text-blue-500" />,
-      color: 'from-blue-500 to-indigo-600'
+      icon: <Hash size={16} className="text-amber-600 dark:text-amber-500 group-[.active]:text-white" />,
+      color: 'bg-amber-600 dark:bg-amber-500'
     },
     { 
       value: 'hexadecimal', 
       label: 'Hexadecimal', 
       base: 16, 
       regex: /^[0-9A-Fa-f]+$/, 
-      icon: <span className="text-purple-500">0x</span>,
-      color: 'from-purple-500 to-pink-600'
+      icon: <span className="text-amber-600 dark:text-amber-500 group-[.active]:text-white">0x</span>,
+      color: 'bg-amber-600 dark:bg-amber-500'
     },
     { 
       value: 'octal', 
       label: 'Octal', 
       base: 8, 
       regex: /^[0-7]+$/, 
-      icon: <span className="text-amber-500">0o</span>,
-      color: 'from-amber-500 to-orange-600'
+      icon: <span className="text-amber-600 dark:text-amber-500 group-[.active]:text-white">0o</span>,
+      color: 'bg-amber-600 dark:bg-amber-500'
     }
   ];
 
@@ -87,7 +122,7 @@ const NumberConverter: React.FC = () => {
       });
       
       setError('');
-    } catch (err) {
+    } catch {
       setError('Conversion error');
     }
   }, [inputValue, inputType]);
@@ -105,246 +140,291 @@ const NumberConverter: React.FC = () => {
   // Dynamic styles based on theme
   const themeStyles: ThemeOptions = {
     dark: {
-      background: 'bg-gray-900',
-      card: 'bg-gray-800',
-      text: 'text-white',
-      input: 'bg-gray-700 text-white border-gray-600',
-      button: 'bg-blue-600 hover:bg-blue-700',
-      select: 'bg-gray-700 text-white border-gray-600',
-      resultCard: 'bg-gray-700',
-      badge: 'bg-gray-700'
+      background: 'bg-gray-950',
+      card: 'bg-gray-900',
+      text: 'text-gray-100',
+      input: 'bg-gray-900 text-gray-100 border-gray-800',
+      button: 'bg-amber-600 hover:bg-amber-700 text-white',
+      select: 'bg-gray-900 text-gray-100 border-gray-800',
+      resultCard: 'bg-gray-900 border-gray-800',
+      badge: 'bg-gray-800 text-gray-300',
+      accent: 'text-amber-500',
+      accentBg: 'bg-amber-500',
+      muted: 'text-gray-400'
     },
     light: {
-      background: 'bg-gray-100',
+      background: 'bg-gray-50',
       card: 'bg-white',
-      text: 'text-gray-800',
-      input: 'bg-gray-50 text-gray-800 border-gray-300',
-      button: 'bg-blue-500 hover:bg-blue-600',
-      select: 'bg-gray-50 text-gray-800 border-gray-300',
-      resultCard: 'bg-gray-50',
-      badge: 'bg-gray-200'
+      text: 'text-gray-900',
+      input: 'bg-white text-gray-900 border-gray-300',
+      button: 'bg-amber-600 hover:bg-amber-700 text-white',
+      select: 'bg-white text-gray-900 border-gray-300',
+      resultCard: 'bg-white border-gray-200',
+      badge: 'bg-gray-100 text-gray-700',
+      accent: 'text-amber-600',
+      accentBg: 'bg-amber-600',
+      muted: 'text-gray-500'
     }
   };
 
   const currentTheme = themeStyles[theme];
+  const darkMode = theme === 'dark';
 
   return (
-    <div className={`min-h-screen ${currentTheme.background} ${currentTheme.text} p-4 transition-colors duration-300`}>
-      <div className={`max-w-5xl mx-auto ${currentTheme.card} rounded-xl shadow-xl overflow-hidden`}>
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-700 p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Number System Converter
-              </h1>
-              <div className="flex gap-2">
-                <span className="px-2 py-1 rounded-full bg-white/20 text-white text-xs flex items-center gap-1">
-                  <Zap size={12} />
-                  Fast Conversion
-                </span>
-                <span className="px-2 py-1 rounded-full bg-white/20 text-white text-xs flex items-center gap-1">
-                  <Award size={12} />
-                  Multi-Base
-                </span>
-              </div>
-            </div>
-            <button 
-              onClick={toggleTheme}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun size={20} className="text-yellow-300" /> : <Moon size={20} className="text-indigo-300" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="border-b border-gray-700 flex">
+    <div className={`w-full ${currentTheme.background} ${currentTheme.text} min-h-screen transition-colors duration-300 rounded-xl overflow-hidden shadow-xl`}>
+      {/* Header */}
+      <div className={`${darkMode ? 'bg-gray-900' : 'bg-white'} px-6 py-4 border-b ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between">
+          
           <button 
-            className={`px-6 py-4 font-medium flex items-center gap-2 transition-all ${activeTab === 'converter' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400 hover:text-gray-300'}`}
+            onClick={toggleTheme}
+            className={`p-2 rounded-full ${darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'} transition-all`}
+            aria-label="Toggle theme"
+          >
+            {darkMode ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-amber-600" />}
+          </button>
+        </div>
+      </div>
+      
+      {/* Main Container */}
+      <div className="px-6 py-6">
+        {/* Tab Navigation */}
+        <div className={`inline-flex rounded-lg p-1 mb-6 ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+          <button 
+            className={`py-2 px-4 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
+              activeTab === 'converter' 
+                ? `${currentTheme.accentBg} text-white shadow-md` 
+                : `${darkMode ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:text-gray-700 hover:bg-gray-200'}`
+            }`}
             onClick={() => setActiveTab('converter')}
           >
-            <Hash size={18} />
+            <Hash size={16} />
             Converter
           </button>
           <button 
-            className={`px-6 py-4 font-medium flex items-center gap-2 transition-all ${activeTab === 'info' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400 hover:text-gray-300'}`}
+            className={`py-2 px-4 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
+              activeTab === 'info' 
+                ? `${currentTheme.accentBg} text-white shadow-md` 
+                : `${darkMode ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:text-gray-700 hover:bg-gray-200'}`
+            }`}
             onClick={() => setActiveTab('info')}
           >
-            <Info size={18} />
+            <Info size={16} />
             Number Systems
           </button>
         </div>
 
         {/* Main Content */}
-        <div className="p-6">
-          {activeTab === 'converter' ? (
-            <>
-              {/* Input Section */}
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block mb-2 text-sm font-medium">Number Type</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {numberTypes.map(type => (
-                        <button
-                          key={type.value}
-                          onClick={() => setInputType(type.value)}
-                          className={`p-3 rounded-lg border ${inputType === type.value 
-                            ? `bg-gradient-to-r ${type.color} text-white border-transparent` 
-                            : `${currentTheme.badge} border-gray-600 hover:border-gray-500`} 
-                            transition-all flex items-center gap-2`}
-                        >
-                          <span className="p-1 rounded-md bg-white/20 flex items-center justify-center">
+        {activeTab === 'converter' ? (
+          <div className="space-y-8">
+            {/* Input Section */}
+            <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-white'} border ${darkMode ? 'border-gray-800' : 'border-gray-200'} shadow-sm`}>
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span className={`inline-block w-2 h-6 rounded-full ${currentTheme.accentBg}`}></span>
+                Input Number
+              </h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <label className={`block mb-2 text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Select Number Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {numberTypes.map(type => (
+                      <button
+                        key={type.value}
+                        onClick={() => setInputType(type.value)}
+                        className={`p-3 rounded-lg flex items-center gap-2 justify-center transition-all group ${
+                          inputType === type.value 
+                            ? `${currentTheme.accentBg} text-white shadow-sm active` 
+                            : `${darkMode ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-gray-100 hover:bg-gray-200 border-gray-200'} border`
+                        }`}
+                      >
+                        <span className={`p-1 rounded-md ${
+                          inputType === type.value ? 'bg-white/20' : darkMode ? 'bg-gray-700' : 'bg-white'
+                        }`}>
+                          {type.icon}
+                        </span>
+                        <span className="font-medium">{type.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className={`block mb-2 text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Enter {numberTypes.find(t => t.value === inputType)?.label} Number
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder={`Type your ${numberTypes.find(t => t.value === inputType)?.label.toLowerCase()} number...`}
+                      className={`w-full p-4 pl-12 rounded-lg border ${currentTheme.input} focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all duration-200`}
+                    />
+                    <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 p-1 rounded-md ${
+                      darkMode ? 'bg-gray-800' : 'bg-gray-100'
+                    }`}>
+                      {numberTypes.find(t => t.value === inputType)?.icon}
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className={`mt-3 p-3 rounded-lg flex items-center gap-2 ${
+                      darkMode 
+                        ? 'bg-red-900/20 border border-red-800/50 text-red-400' 
+                        : 'bg-red-50 border border-red-200 text-red-600'
+                    }`}>
+                      <AlertCircle size={16} />
+                      <span>{error}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Results Section */}
+            <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-white'} border ${darkMode ? 'border-gray-800' : 'border-gray-200'} shadow-sm`}>
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span className={`inline-block w-2 h-6 rounded-full ${currentTheme.accentBg}`}></span>
+                Conversion Results
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {numberTypes.map(type => {
+                  const isCurrentType = inputType === type.value;
+                  return (
+                    <div 
+                      key={type.value}
+                      className={`p-4 rounded-lg transition-all group ${
+                        isCurrentType 
+                          ? `${currentTheme.accentBg} text-white shadow-sm active` 
+                          : `${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-200'} border`
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`p-1 rounded-md ${
+                            isCurrentType ? 'bg-white/20' : darkMode ? 'bg-gray-700' : 'bg-white'
+                          }`}>
                             {type.icon}
                           </span>
-                          {type.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-medium">Enter {numberTypes.find(t => t.value === inputType)?.label} Number</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        placeholder={`Type your number here...`}
-                        className={`w-full p-4 pl-10 rounded-lg ${currentTheme.input} focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200`}
-                      />
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                        {numberTypes.find(t => t.value === inputType)?.icon}
-                      </div>
-                    </div>
-
-                    {error && (
-                      <div className="mt-2 p-3 text-red-500 rounded-lg bg-red-900/30 flex items-center gap-2">
-                        <AlertCircle size={16} />
-                        {error}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Results Section */}
-              <div className="mt-8">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Award size={20} className="text-blue-500" />
-                  Conversion Results
-                </h2>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {numberTypes.map(type => {
-                    const isCurrentType = inputType === type.value;
-                    return (
-                      <div 
-                        key={type.value}
-                        className={`p-4 rounded-lg ${
-                          isCurrentType 
-                            ? `bg-gradient-to-r ${type.color} text-white` 
-                            : currentTheme.resultCard
-                        } shadow transition-all duration-200 hover:shadow-lg`}
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`p-1 rounded-full ${isCurrentType ? 'bg-white/20' : 'bg-gray-600'}`}>
-                              {type.icon}
-                            </span>
-                            <span className="font-medium">{type.label}</span>
-                          </div>
-                          {results[type.value as keyof Results] && (
-                            <button
-                              onClick={() => handleCopy(results[type.value as keyof Results], type.value)}
-                              className={`flex items-center gap-1 ${
-                                isCurrentType 
-                                  ? 'text-white/80 hover:text-white' 
-                                  : 'text-blue-500 hover:text-blue-400'
-                              } transition-colors`}
-                            >
-                              {copied === type.value ? (
-                                <>
-                                  <Check size={14} />
-                                  Copied
-                                </>
-                              ) : (
-                                <>
-                                  <Copy size={14} />
-                                  Copy
-                                </>
-                              )}
-                            </button>
-                          )}
+                          <span className="font-medium">{type.label}</span>
                         </div>
-                        <div className={`font-mono text-lg p-2 rounded ${
-                          isCurrentType ? 'bg-black/20' : theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'
-                        } overflow-x-auto whitespace-nowrap`}>
-                          {results[type.value as keyof Results] || '-'}
-                        </div>
-                        {type.value === 'binary' && (
-                          <div className="mt-1 text-xs opacity-70">
-                            {results.binary ? `${results.binary.length} bits` : ''}
-                          </div>
+                        {results[type.value as keyof Results] && (
+                          <button
+                            onClick={() => handleCopy(results[type.value as keyof Results], type.value)}
+                            className={`flex items-center gap-1 text-sm py-1 px-2 rounded-md transition-colors ${
+                              isCurrentType 
+                                ? 'bg-white/20 hover:bg-white/30' 
+                                : darkMode 
+                                  ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
+                                  : 'bg-white hover:bg-gray-200 text-gray-700'
+                            }`}
+                          >
+                            {copied === type.value ? (
+                              <>
+                                <Check size={14} />
+                                <span>Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={14} />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
-                    );
-                  })}
+                      <div className={`font-mono text-lg p-3 rounded-md overflow-x-auto whitespace-nowrap ${
+                        isCurrentType 
+                          ? 'bg-amber-700' 
+                          : darkMode 
+                            ? 'bg-gray-950 text-gray-300' 
+                            : 'bg-white text-gray-700 border border-gray-200'
+                      }`}>
+                        {results[type.value as keyof Results] || '-'}
+                      </div>
+                      {type.value === 'binary' && results.binary && (
+                        <div className="mt-2 text-xs flex items-center gap-1">
+                          <span className={`px-2 py-1 rounded-full ${
+                            isCurrentType 
+                              ? 'bg-white/20' 
+                              : darkMode 
+                                ? 'bg-gray-700 text-gray-300' 
+                                : 'bg-gray-200 text-gray-700'
+                          }`}>
+                            {results.binary.length} bits
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Visualization */}
+            {inputValue && !error && results.binary && (
+              <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-white'} border ${darkMode ? 'border-gray-800' : 'border-gray-200'} shadow-sm`}>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <span className={`inline-block w-2 h-6 rounded-full ${currentTheme.accentBg}`}></span>
+                  Binary Visualization
+                </h2>
+                
+                <div className="flex flex-wrap gap-2 justify-center p-4">
+                  {results.binary.split('').map((bit, index) => (
+                    <div
+                      key={index}
+                      className={`
+                        w-10 h-10 flex items-center justify-center rounded-lg shadow-sm
+                        ${bit === '1' 
+                          ? `${currentTheme.accentBg} text-white transform hover:scale-110` 
+                          : darkMode 
+                            ? 'bg-gray-800 border-gray-700 text-gray-400 border' 
+                            : 'bg-gray-100 border-gray-300 text-gray-500 border'}
+                        font-mono text-lg font-bold transition-all duration-200
+                      `}
+                      title={`Bit position: ${results.binary.length - index - 1}`}
+                    >
+                      {bit}
+                    </div>
+                  ))}
+                </div>
+                <div className={`mt-4 text-center text-xs ${currentTheme.muted}`}>
+                  Each square represents one bit in the binary number
                 </div>
               </div>
-
-              {/* Visualization */}
-              {inputValue && !error && results.binary && (
-                <div className="mt-8">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Zap size={20} className="text-yellow-500" />
-                    Binary Visualization
-                  </h2>
-                  <div className="p-4 rounded-lg bg-gray-900 border border-gray-700">
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {results.binary.split('').map((bit, index) => (
-                        <div
-                          key={index}
-                          className={`
-                            w-10 h-10 flex items-center justify-center rounded-lg shadow-lg
-                            ${bit === '1' 
-                              ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white transform hover:scale-110' 
-                              : 'bg-gray-800 border border-gray-700 text-gray-400'}
-                            font-mono text-lg transition-all duration-300
-                          `}
-                          title={`Bit position: ${results.binary.length - index - 1}`}
-                        >
-                          {bit}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 text-center text-xs text-gray-400">
-                      Hover over each bit to see its position
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            /* Info Tab Content */
-            <div>
-              <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                <Info size={20} className="text-blue-500" />
-                Understanding Number Systems
+            )}
+          </div>
+        ) : (
+          /* Info Tab Content */
+          <div className="space-y-8">
+            <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-white'} border ${darkMode ? 'border-gray-800' : 'border-gray-200'} shadow-sm`}>
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span className={`inline-block w-2 h-6 rounded-full ${currentTheme.accentBg}`}></span>
+                Number Systems Overview
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {numberTypes.map(type => (
-                  <div key={type.value} className={`p-5 rounded-lg border border-gray-700 hover:border-${type.color.split(' ')[0]} transition-all`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`p-2 rounded-lg bg-gradient-to-r ${type.color} text-white`}>
+                  <div 
+                    key={type.value} 
+                    className={`p-5 rounded-lg border transition-all ${
+                      darkMode 
+                        ? 'bg-gray-800/80 border-gray-700 hover:border-amber-500/70' 
+                        : 'bg-gray-50 border-gray-200 hover:border-amber-600/70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`p-2 rounded-lg ${currentTheme.accentBg} text-white`}>
                         {type.icon}
                       </div>
-                      <h3 className="font-medium text-lg">{type.label} (Base {type.base})</h3>
+                      <h3 className={`font-medium text-lg ${currentTheme.text}`}>{type.label} (Base {type.base})</h3>
                     </div>
                     
-                    <p className="text-sm opacity-80 mb-3">
+                    <p className={`text-sm ${currentTheme.muted} mb-4`}>
                       {type.value === 'binary' && 'Uses only 0 and 1. The foundation of all computing systems.'}
                       {type.value === 'decimal' && 'Our standard numbering system, using digits 0-9.'}
                       {type.value === 'hexadecimal' && 'Uses digits 0-9 and letters A-F. Common in programming and color codes.'}
@@ -354,56 +434,83 @@ const NumberConverter: React.FC = () => {
                     <div className="text-xs font-medium flex flex-wrap gap-2">
                       {type.value === 'binary' && (
                         <>
-                          <span className="px-2 py-1 rounded-full bg-green-900/30 text-green-500">Computer Circuits</span>
-                          <span className="px-2 py-1 rounded-full bg-blue-900/30 text-blue-500">Digital Logic</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>Computer Circuits</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>Digital Logic</span>
                         </>
                       )}
                       {type.value === 'decimal' && (
                         <>
-                          <span className="px-2 py-1 rounded-full bg-blue-900/30 text-blue-500">Daily Use</span>
-                          <span className="px-2 py-1 rounded-full bg-purple-900/30 text-purple-500">Mathematics</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>Daily Use</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>Mathematics</span>
                         </>
                       )}
                       {type.value === 'hexadecimal' && (
                         <>
-                          <span className="px-2 py-1 rounded-full bg-purple-900/30 text-purple-500">Memory Addresses</span>
-                          <span className="px-2 py-1 rounded-full bg-pink-900/30 text-pink-500">Color Codes</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>Memory Addresses</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>Color Codes</span>
                         </>
                       )}
                       {type.value === 'octal' && (
                         <>
-                          <span className="px-2 py-1 rounded-full bg-amber-900/30 text-amber-500">UNIX Permissions</span>
-                          <span className="px-2 py-1 rounded-full bg-orange-900/30 text-orange-500">Legacy Systems</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>UNIX Permissions</span>
+                          <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-800'}`}>Legacy Systems</span>
                         </>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
-              
-              <div className="mt-8 p-4 rounded-lg bg-blue-900/20 border border-blue-800/30 flex items-start gap-4">
-                <div className="mt-1">
-                  <Clock size={24} className="text-blue-400" />
+            </div>
+            
+            <div className={`p-6 rounded-lg ${darkMode ? 'bg-amber-900/20 border-amber-800/30' : 'bg-amber-50 border-amber-200'} border shadow-sm`}>
+              <div className="flex items-start gap-4">
+                <div className={`mt-1 p-2 rounded-full ${currentTheme.accentBg} text-white`}>
+                  <Award size={18} />
                 </div>
                 <div>
-                  <h3 className="font-medium text-blue-400 mb-2">Historical Context</h3>
-                  <p className="text-sm opacity-80">
-                    Different number systems evolved based on practical needs. While decimal became our standard counting system (likely due to our ten fingers), 
-                    binary emerged as the foundation for computing because electronic circuits have two states: on and off. 
+                  <h3 className={`font-medium ${darkMode ? 'text-amber-400' : 'text-amber-800'} mb-2`}>Why Multiple Number Systems?</h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Different number systems evolved based on practical needs. Binary is fundamental to computing because electronic circuits have two states: on and off. 
                     Hexadecimal and octal developed as more human-readable representations of binary data, making it easier for programmers to work with low-level computing concepts.
                   </p>
                 </div>
               </div>
             </div>
-          )}
-        </div>
-          
-        {/* Footer */}
-        <div className="border-t border-gray-700 p-4 text-center text-sm opacity-60 flex justify-center items-center gap-2">
-          <div>Number System Converter</div>
-          <div className="w-1 h-1 rounded-full bg-gray-500"></div>
-          <div>Made with precision</div>
-        </div>
+
+            <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-white'} border ${darkMode ? 'border-gray-800' : 'border-gray-200'} shadow-sm`}>
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span className={`inline-block w-2 h-6 rounded-full ${currentTheme.accentBg}`}></span>
+                Number System Conversions
+              </h2>
+              
+              <table className={`w-full border-collapse ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <thead>
+                  <tr className={darkMode ? 'border-gray-800' : 'border-gray-200'}>
+                    <th className="text-left py-2 px-3 border-b">Decimal</th>
+                    <th className="text-left py-2 px-3 border-b">Binary</th>
+                    <th className="text-left py-2 px-3 border-b">Octal</th>
+                    <th className="text-left py-2 px-3 border-b">Hexadecimal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[0, 1, 2, 5, 10, 15, 16, 31, 64, 128, 255].map(num => (
+                    <tr key={num} className={`${darkMode ? 'border-gray-800 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-50'} border-b`}>
+                      <td className="py-2 px-3">{num}</td>
+                      <td className="py-2 px-3 font-mono">{num.toString(2)}</td>
+                      <td className="py-2 px-3 font-mono">{num.toString(8)}</td>
+                      <td className="py-2 px-3 font-mono">{num.toString(16).toUpperCase()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className={`${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} px-6 py-3 border-t text-center text-xs ${currentTheme.muted}`}>
+        <p>Convert between Binary, Decimal, Hexadecimal and Octal number systems</p>
       </div>
     </div>
   );

@@ -5,7 +5,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { TOOL_DEFINITIONS } from './data/ToolDefinitions';
 import { getToolComponent } from './registry/ToolRegistry';
 import ErrorBoundary from './components/ErrorBoundary';
-
 // Lazy load components for better performance
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const ToolLayout = lazy(() => import('./components/ToolLayout'));
@@ -29,58 +28,13 @@ const GlobalLoadingFallback = () => (
   </div>
 );
 
-// Tool loader component that handles error states for specific tools
-const ToolComponentLoader = ({ toolId, children }: { toolId: string, children: React.ReactNode }) => (
-  <ErrorBoundary
-    fallback={
-      <div className="min-h-screen bg-slate-900 p-6 flex flex-col items-center justify-center">
-        <div className="max-w-md w-full bg-slate-800 rounded-xl overflow-hidden shadow-xl border border-slate-700">
-          <div className="px-6 py-4 bg-red-900/20 border-b border-slate-700">
-            <h3 className="text-xl font-bold text-white flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              Tool Failed to Load
-            </h3>
-          </div>
-          <div className="px-6 py-4">
-            <p className="text-slate-300 mb-4">
-              We couldn't load the tool <span className="font-mono text-white bg-slate-700 px-1.5 py-0.5 rounded text-sm">{toolId}</span>
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center mt-6">
-              <button 
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Retry
-              </button>
-              <button 
-                onClick={() => window.location.href = '/'}
-                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors flex items-center text-sm"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-14 0l2 2m0 0l7 7 7-7m-14 0l2-2m0 0l7-7 7 7m-14 0l2 2m0 0l7 7 7-7" />
-                </svg>
-                Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-  >
-    {children}
-  </ErrorBoundary>
-);
 
 /**
  * Main Application component with routing setup
  * Uses React.lazy for code splitting and Suspense for loading states
  */
 const App: React.FC = () => {
+  
   return (
     <ErrorBoundary>
       <BrowserRouter>
@@ -109,12 +63,10 @@ const App: React.FC = () => {
                   path={`/${toolDefinition.id}/*`} 
                   element={
                     toolDefinition.enabled ? (
-                      <ToolComponentLoader toolId={toolDefinition.id}>
                         <ToolLayout
                           definition={toolDefinition}
                           ToolComponent={LazyToolComponent}
                         />
-                      </ToolComponentLoader>
                     ) : (
                       // Redirect disabled tools to home
                       <Navigate to="/" replace />
