@@ -30,7 +30,7 @@ const NotFound: React.FC = () => {
   }, [count, navigate]);
 
   return (
-    <Center style={{ minHeight: '100vh' }}>
+    <Center minHeight="screen">
       <Container size="md">
         <Stack gap="6" align="center">
           <Heading level={1} size="5xl" weight="bold" align="center">

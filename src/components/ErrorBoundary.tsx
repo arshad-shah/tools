@@ -4,7 +4,6 @@ import {
   Alert,
   AlertTitle,
   AlertDescription,
-  Box,
   Button,
   Card,
   CardBody,
@@ -71,11 +70,15 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <Center style={{ minHeight: '100vh', padding: 'var(--cyn-space-6, 1.5rem)' }}>
+        <Center minHeight="screen" padding="6">
           <Container size="md">
             <Card variant="elevated" size="lg">
               <CardHeader>
-                <Alert status="danger" variant="soft" icon={<AlertTriangle aria-hidden />}>
+                <Alert
+                  status="danger"
+                  variant="soft"
+                  icon={<AlertTriangle aria-hidden />}
+                >
                   <AlertTitle>Application Error Detected</AlertTitle>
                   <AlertDescription>
                     Something went wrong in the application. Our engineers have
@@ -89,45 +92,28 @@ class ErrorBoundary extends Component<Props, State> {
                     <Text size="sm" weight="semibold">
                       Error details
                     </Text>
-                    <Box
-                      style={{
-                        padding: 'var(--cyn-space-3, 0.75rem)',
-                        borderRadius: 'var(--cyn-radius-md, 0.5rem)',
-                        background: 'var(--cyn-color-bg-muted, rgba(0,0,0,0.2))',
-                        overflowX: 'auto',
-                      }}
-                    >
-                      <Code size="sm">
-                        {error?.name}: {error?.message}
-                      </Code>
-                    </Box>
+                    <Card variant="filled" size="sm">
+                      <CardBody>
+                        <Code size="sm">
+                          {error?.name}: {error?.message}
+                        </Code>
+                      </CardBody>
+                    </Card>
                   </Stack>
                   {import.meta.env.DEV && errorInfo && (
-                    <details>
-                      <summary
-                        style={{
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                          fontSize: 'var(--cyn-font-size-sm, 0.875rem)',
-                        }}
-                      >
+                    <Stack gap="2">
+                      <Text size="sm" weight="semibold">
                         Stack trace (development only)
-                      </summary>
-                      <Box
-                        style={{
-                          marginTop: 'var(--cyn-space-2, 0.5rem)',
-                          padding: 'var(--cyn-space-3, 0.75rem)',
-                          borderRadius: 'var(--cyn-radius-md, 0.5rem)',
-                          background: 'var(--cyn-color-bg-muted, rgba(0,0,0,0.2))',
-                          maxHeight: '15rem',
-                          overflow: 'auto',
-                        }}
-                      >
-                        <Code size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                          {errorInfo.componentStack || 'No stack trace available'}
-                        </Code>
-                      </Box>
-                    </details>
+                      </Text>
+                      <Card variant="filled" size="sm">
+                        <CardBody>
+                          <Code size="sm">
+                            {errorInfo.componentStack ||
+                              'No stack trace available'}
+                          </Code>
+                        </CardBody>
+                      </Card>
+                    </Stack>
                   )}
                 </Stack>
               </CardBody>

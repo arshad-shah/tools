@@ -12,7 +12,7 @@ const ToolLayout = lazy(() => import('./components/ToolLayout'));
 const NotFound = lazy(() => import('./components/NotFound'));
 
 const GlobalLoadingFallback = () => (
-  <Center style={{ minHeight: '100vh' }}>
+  <Center minHeight="screen">
     <Stack gap="4" align="center">
       <Spinner size="xl" colorScheme="accent" variant="border" label="Loading" />
       <Text size="lg" weight="semibold">Loading</Text>

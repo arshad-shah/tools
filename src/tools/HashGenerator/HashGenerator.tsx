@@ -15,7 +15,6 @@ import {
   Label,
   Select,
   Stack,
-  Text,
   Textarea,
 } from '@arshad-shah/cynosure-react';
 import useClipboard from '../../hooks/useClipboard';
@@ -164,16 +163,7 @@ const HashGenerator: React.FC = () => {
                       <AlertDescription>{hash}</AlertDescription>
                     </Alert>
                   ) : (
-                    <Text
-                      as="div"
-                      style={{
-                        wordBreak: 'break-all',
-                        fontFamily: 'var(--cyn-font-mono, monospace)',
-                      }}
-                      size="sm"
-                    >
-                      <Code size="sm">{hash}</Code>
-                    </Text>
+                    <Code size="sm">{hash}</Code>
                   )}
                 </CardBody>
               </Card>

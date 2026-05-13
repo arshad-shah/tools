@@ -20,7 +20,7 @@ const LoadingFallback: React.FC<LoadingFallbackProps> = ({
   if (!show) return null;
 
   return (
-    <Center style={{ minHeight: '40vh' }}>
+    <Center paddingY="10">
       <Stack gap="4" align="center">
         <Spinner size="xl" colorScheme="accent" variant="border" />
         <Text size="md" weight="medium">

@@ -4,7 +4,6 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Box,
   Button,
   Card,
   CardBody,
@@ -70,7 +69,11 @@ class ToolErrorBoundary extends Component<Props, State> {
       <Stack gap="4">
         <Card variant="outlined" size="lg">
           <CardHeader>
-            <Alert status="danger" variant="soft" icon={<AlertCircle aria-hidden />}>
+            <Alert
+              status="danger"
+              variant="soft"
+              icon={<AlertCircle aria-hidden />}
+            >
               <AlertTitle>{toolName} encountered an error</AlertTitle>
               <AlertDescription>
                 We hit an unexpected issue while running this tool. You can try
@@ -83,16 +86,11 @@ class ToolErrorBoundary extends Component<Props, State> {
               <Text size="sm" weight="semibold">
                 Error details
               </Text>
-              <Box
-                style={{
-                  padding: 'var(--cyn-space-3, 0.75rem)',
-                  borderRadius: 'var(--cyn-radius-md, 0.5rem)',
-                  background: 'var(--cyn-color-bg-muted, rgba(0,0,0,0.2))',
-                  overflowX: 'auto',
-                }}
-              >
-                <Code size="sm">{error?.message || 'Unknown error occurred'}</Code>
-              </Box>
+              <Card variant="filled" size="sm">
+                <CardBody>
+                  <Code size="sm">{error?.message || 'Unknown error occurred'}</Code>
+                </CardBody>
+              </Card>
               <Inline gap="2" align="center">
                 <Text size="xs" variant="caption">
                   Tool ID:
@@ -126,40 +124,27 @@ class ToolErrorBoundary extends Component<Props, State> {
         {import.meta.env.DEV && (
           <Card variant="filled" size="md">
             <CardBody>
-              <details>
-                <summary
-                  style={{
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: 'var(--cyn-font-size-sm, 0.875rem)',
-                  }}
-                >
+              <Stack gap="2">
+                <Text size="sm" weight="semibold">
                   Technical details (development only)
-                </summary>
-                <Box
-                  style={{
-                    marginTop: 'var(--cyn-space-2, 0.5rem)',
-                    padding: 'var(--cyn-space-3, 0.75rem)',
-                    borderRadius: 'var(--cyn-radius-md, 0.5rem)',
-                    background: 'var(--cyn-color-bg-muted, rgba(0,0,0,0.2))',
-                    maxHeight: '15rem',
-                    overflow: 'auto',
-                  }}
-                >
-                  <Code size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                    {JSON.stringify(
-                      {
-                        toolId,
-                        errorName: this.state.error?.name,
-                        errorMessage: this.state.error?.message,
-                        stack: this.state.error?.stack?.split('\n'),
-                      },
-                      null,
-                      2,
-                    )}
-                  </Code>
-                </Box>
-              </details>
+                </Text>
+                <Card variant="outlined" size="sm">
+                  <CardBody>
+                    <Code size="sm">
+                      {JSON.stringify(
+                        {
+                          toolId,
+                          errorName: this.state.error?.name,
+                          errorMessage: this.state.error?.message,
+                          stack: this.state.error?.stack?.split('\n'),
+                        },
+                        null,
+                        2,
+                      )}
+                    </Code>
+                  </CardBody>
+                </Card>
+              </Stack>
             </CardBody>
           </Card>
         )}
