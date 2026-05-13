@@ -163,7 +163,7 @@ const HashGenerator: React.FC = () => {
                       <AlertDescription>{hash}</AlertDescription>
                     </Alert>
                   ) : (
-                    <Code size="sm">{hash}</Code>
+                    <Code size="sm" variant="block">{hash}</Code>
                   )}
                 </CardBody>
               </Card>

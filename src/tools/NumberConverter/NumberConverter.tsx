@@ -234,7 +234,7 @@ const NumberConverter: React.FC = () => {
                           </Inline>
                         </CardHeader>
                         <CardBody>
-                          <Code size="md">{value || '—'}</Code>
+                          <Code size="md" variant="block">{value || '—'}</Code>
                           {t.value === 'binary' && value && (
                             <Inline paddingTop="2">
                               <Badge variant="soft" colorScheme="accent" size="xs">
@@ -335,18 +335,32 @@ const NumberConverter: React.FC = () => {
                   <CardTitle as="h3">Common conversions</CardTitle>
                 </CardHeader>
                 <CardBody>
-                  <Grid columns={4} gap="2">
-                    <Text size="sm" weight="semibold">Decimal</Text>
-                    <Text size="sm" weight="semibold">Binary</Text>
-                    <Text size="sm" weight="semibold">Octal</Text>
-                    <Text size="sm" weight="semibold">Hex</Text>
-                    {SAMPLE_NUMBERS.flatMap((num) => [
-                      <Text key={`d-${num}`} size="sm">{num}</Text>,
-                      <Code key={`b-${num}`} size="sm">{num.toString(2)}</Code>,
-                      <Code key={`o-${num}`} size="sm">{num.toString(8)}</Code>,
-                      <Code key={`h-${num}`} size="sm">{num.toString(16).toUpperCase()}</Code>,
-                    ])}
-                  </Grid>
+                  <Stack gap="2">
+                    {SAMPLE_NUMBERS.map((num) => (
+                      <Card key={num} variant="filled" size="sm">
+                        <CardBody>
+                          <Grid columns={{ base: 2, md: 4 }} gap="2">
+                            <Stack gap="1">
+                              <Text size="xs" variant="caption">Decimal</Text>
+                              <Text size="sm" weight="medium">{num}</Text>
+                            </Stack>
+                            <Stack gap="1">
+                              <Text size="xs" variant="caption">Binary</Text>
+                              <Code size="sm" variant="block">{num.toString(2)}</Code>
+                            </Stack>
+                            <Stack gap="1">
+                              <Text size="xs" variant="caption">Octal</Text>
+                              <Code size="sm" variant="block">{num.toString(8)}</Code>
+                            </Stack>
+                            <Stack gap="1">
+                              <Text size="xs" variant="caption">Hex</Text>
+                              <Code size="sm" variant="block">{num.toString(16).toUpperCase()}</Code>
+                            </Stack>
+                          </Grid>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </Stack>
                 </CardBody>
               </Card>
             </Stack>

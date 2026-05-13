@@ -107,20 +107,22 @@ const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
       </CardHeader>
       <CardBody>
         <Stack gap="4">
-          <Inline align="center" gap="3" wrap>
-            <Code size="md">
+          <Stack gap="2">
+            <Code size="md" variant="block">
               {hidden ? '•'.repeat(password.length) : password}
             </Code>
-            <Button
-              variant={copied ? 'solid' : 'soft'}
-              colorScheme={copied ? 'success' : 'accent'}
-              size="md"
-              leftIcon={copied ? <CheckCircle size={18} /> : <Copy size={18} />}
-              onClick={onCopy}
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </Button>
-          </Inline>
+            <Inline justify="end">
+              <Button
+                variant={copied ? 'solid' : 'soft'}
+                colorScheme={copied ? 'success' : 'accent'}
+                size="md"
+                leftIcon={copied ? <CheckCircle size={18} /> : <Copy size={18} />}
+                onClick={onCopy}
+              >
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+            </Inline>
+          </Stack>
           <Inline gap="2" wrap>
             {counts.uppercase > 0 && (
               <Badge variant="soft" colorScheme="warning" size="sm">

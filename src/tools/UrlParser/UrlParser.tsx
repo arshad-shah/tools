@@ -174,7 +174,7 @@ const URLParser: React.FC = () => {
             {fields
               .filter((f) => f.value)
               .map((f) => (
-                <Inline key={f.label} align="center" gap="3" wrap>
+                <Stack key={f.label} gap="1">
                   <Badge
                     variant="soft"
                     colorScheme={f.color}
@@ -183,8 +183,8 @@ const URLParser: React.FC = () => {
                   >
                     {f.label}
                   </Badge>
-                  <Code size="sm">{f.value}</Code>
-                </Inline>
+                  <Code size="sm" variant="block">{f.value}</Code>
+                </Stack>
               ))}
           </Stack>
         </CardBody>
@@ -201,28 +201,28 @@ const URLParser: React.FC = () => {
               .map((f) => (
                 <Card key={f.label} variant="filled" size="sm">
                   <CardBody>
-                    <Inline justify="between" align="center" gap="2" wrap>
-                      <Stack gap="1">
+                    <Stack gap="2">
+                      <Inline justify="between" align="center" gap="2" wrap>
                         <Badge variant="soft" colorScheme={f.color} size="xs">
                           {f.label}
                         </Badge>
-                        <Code size="sm">{f.value}</Code>
-                      </Stack>
-                      <IconButton
-                        variant="ghost"
-                        colorScheme="neutral"
-                        size="sm"
-                        label={`Copy ${f.label}`}
-                        icon={
-                          copiedKey === f.label ? (
-                            <CheckCheck size={16} />
-                          ) : (
-                            <Copy size={16} />
-                          )
-                        }
-                        onClick={() => handleCopy(f.value, f.label)}
-                      />
-                    </Inline>
+                        <IconButton
+                          variant="ghost"
+                          colorScheme="neutral"
+                          size="sm"
+                          label={`Copy ${f.label}`}
+                          icon={
+                            copiedKey === f.label ? (
+                              <CheckCheck size={16} />
+                            ) : (
+                              <Copy size={16} />
+                            )
+                          }
+                          onClick={() => handleCopy(f.value, f.label)}
+                        />
+                      </Inline>
+                      <Code size="sm" variant="block">{f.value}</Code>
+                    </Stack>
                   </CardBody>
                 </Card>
               ))}
@@ -243,7 +243,7 @@ const URLParser: React.FC = () => {
                   {item.label}
                 </Text>
                 {item.value ? (
-                  <Code size="sm">{item.value}</Code>
+                  <Code size="sm" variant="block">{item.value}</Code>
                 ) : (
                   <Text size="sm" variant="caption">
                     (empty)
@@ -286,7 +286,7 @@ const URLParser: React.FC = () => {
                   <Text size="sm" weight="semibold">
                     {key}
                   </Text>
-                  <Code size="sm">{value}</Code>
+                  <Code size="sm" variant="block">{value}</Code>
                 </Stack>
                 <Button
                   variant="soft"

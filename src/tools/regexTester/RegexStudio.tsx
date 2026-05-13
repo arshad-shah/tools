@@ -201,7 +201,7 @@ const MatchItem: React.FC<{
       </CardHeader>
       <CardBody>
         <Stack gap="2">
-          <Code size="sm">
+          <Code size="sm" variant="block">
             {match.text || '(empty match)'}
           </Code>
           {expanded && hasGroups && (
@@ -339,12 +339,13 @@ const RegexStudio: React.FC = () => {
   };
 
   const renderHighlighted = () => {
-    if (!testString || matches.length === 0) return testString;
+    if (!testString) return null;
+    if (matches.length === 0) return testString;
     const out: React.ReactNode[] = [];
     let last = 0;
     matches.forEach((m, i) => {
       if (m.index > last) {
-        out.push(<span key={`t-${i}`}>{testString.substring(last, m.index)}</span>);
+        out.push(testString.substring(last, m.index));
       }
       out.push(
         <Badge
@@ -360,7 +361,7 @@ const RegexStudio: React.FC = () => {
       last = m.index + m.length;
     });
     if (last < testString.length) {
-      out.push(<span key="t-last">{testString.substring(last)}</span>);
+      out.push(testString.substring(last));
     }
     return out;
   };
@@ -425,9 +426,8 @@ const RegexStudio: React.FC = () => {
             <Stack gap="4">
               <Stack gap="2">
                 <Label htmlFor="regex-pattern">Pattern</Label>
-                <Inline gap="2" align="center" wrap={false}>
-                  <Text size="lg" weight="semibold">/</Text>
-                  <Box width="full">
+                <Inline gap="2" align="center" wrap>
+                  <Box flex="1" minWidth="0">
                     <Input
                       id="regex-pattern"
                       type="text"
@@ -436,9 +436,10 @@ const RegexStudio: React.FC = () => {
                       placeholder="Enter your regex pattern…"
                       invalid={!isValid}
                       aria-label="Regex pattern"
+                      leadingSlot={<Text size="md" weight="semibold">/</Text>}
+                      trailingSlot={<Text size="md" weight="semibold">/{flagsStr}</Text>}
                     />
                   </Box>
-                  <Text size="lg" weight="semibold">/{flagsStr}</Text>
                   <IconButton
                     variant="soft"
                     colorScheme={copied ? 'success' : 'neutral'}
@@ -533,11 +534,7 @@ const RegexStudio: React.FC = () => {
               </Inline>
             </CardHeader>
             <CardBody>
-              <Card variant="filled" size="sm">
-                <CardBody>
-                  <Inline gap="1" wrap>{renderHighlighted()}</Inline>
-                </CardBody>
-              </Card>
+              <Code variant="block" size="sm">{renderHighlighted()}</Code>
               {matches.length === 0 && pattern && isValid && (
                 <Inline paddingTop="3">
                   <Alert
@@ -595,7 +592,7 @@ const RegexStudio: React.FC = () => {
                         {TEMPLATES.find((t) => t.name === selectedTemplate)
                           ?.description}
                       </Text>
-                      <Code size="sm">
+                      <Code size="sm" variant="block">
                         {
                           TEMPLATES.find((t) => t.name === selectedTemplate)
                             ?.pattern
