@@ -1,6 +1,0 @@
-import{z as d,j as l}from"./index-DAtOL_aB.js";/**
- * @license lucide-react v0.476.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */const p=[["path",{d:"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z",key:"1rqfz7"}],["path",{d:"M14 2v4a2 2 0 0 0 2 2h4",key:"tnqrlb"}],["path",{d:"M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1",key:"1oajmo"}],["path",{d:"M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1",key:"mpwhp6"}]],x=d("FileJson",p),g=({children:e,variant:r="neutral",size:t="md",className:a=""})=>{const o="inline-flex items-center rounded-full font-medium border",s={sm:"px-2 py-0.5 text-xs",md:"px-3 py-1 text-sm",lg:"px-4 py-1.5 text-base"},n={success:"bg-green-50 text-green-700 border-green-200",warning:"bg-yellow-50 text-yellow-700 border-yellow-200",danger:"bg-red-50 text-red-700 border-red-200",neutral:"bg-gray-50 text-gray-700 border-gray-200",primary:"bg-pink-50 text-pink-700 border-pink-200",secondary:"bg-purple-50 text-purple-700 border-purple-200",info:"bg-blue-50 text-blue-700 border-blue-200",error:"bg-red-50 text-red-700 border-red-200",default:"bg-slate-50 text-slate-700 border-slate-200"};return l.jsx("span",{className:`${o} ${s[t]} ${n[r]} ${a}`,children:e})};export{g as B,x as F};
