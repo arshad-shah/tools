@@ -1,200 +1,187 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import * as CryptoJS from 'crypto-js';
-import { Card, CardContent } from '../../components/Card';
-import { Button } from '../../components/Button';
-import { Textarea } from '../../components/textarea';
-import { Label } from '../../components/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/select';
-import Alert from '../../components/Alert';
-import { Copy, Check, X } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Code,
+  Heading,
+  Inline,
+  Label,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+} from '@arshad-shah/cynosure-react';
 import useClipboard from '../../hooks/useClipboard';
 
 interface Algorithm {
   id: string;
   name: string;
-  function: (input: string) => string;
+  hash: (input: string) => string;
 }
 
-interface HashResult {
-  [key: string]: string;
-}
+const ALGORITHMS: Algorithm[] = [
+  { id: 'md5', name: 'MD5', hash: (i) => CryptoJS.MD5(i).toString() },
+  { id: 'sha1', name: 'SHA-1', hash: (i) => CryptoJS.SHA1(i).toString() },
+  { id: 'sha256', name: 'SHA-256', hash: (i) => CryptoJS.SHA256(i).toString() },
+  { id: 'sha224', name: 'SHA-224', hash: (i) => CryptoJS.SHA224(i).toString() },
+  { id: 'sha384', name: 'SHA-384', hash: (i) => CryptoJS.SHA384(i).toString() },
+  { id: 'sha512', name: 'SHA-512', hash: (i) => CryptoJS.SHA512(i).toString() },
+  { id: 'sha3', name: 'SHA-3', hash: (i) => CryptoJS.SHA3(i).toString() },
+  { id: 'ripemd160', name: 'RIPEMD-160', hash: (i) => CryptoJS.RIPEMD160(i).toString() },
+  { id: 'hmacmd5', name: 'HMAC-MD5', hash: (i) => CryptoJS.HmacMD5(i, 'key').toString() },
+  { id: 'hmacsha1', name: 'HMAC-SHA1', hash: (i) => CryptoJS.HmacSHA1(i, 'key').toString() },
+  { id: 'hmacsha256', name: 'HMAC-SHA256', hash: (i) => CryptoJS.HmacSHA256(i, 'key').toString() },
+  { id: 'hmacsha512', name: 'HMAC-SHA512', hash: (i) => CryptoJS.HmacSHA512(i, 'key').toString() },
+];
 
 const HashGenerator: React.FC = () => {
-  const [input, setInput] = useState<string>('');
-  const [hashes, setHashes] = useState<HashResult>({});
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('all');
-  const [copiedHash, setCopiedHash] = useState<string | null>(null);
+  const [input, setInput] = useState('');
+  const [selected, setSelected] = useState<string>('all');
+  const [results, setResults] = useState<Record<string, string>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const { copy } = useClipboard();
 
-  const algorithms: Algorithm[] = [
-    { id: 'md5', name: 'MD5', function: (input: string) => CryptoJS.MD5(input).toString() },
-    { id: 'sha1', name: 'SHA-1', function: (input: string) => CryptoJS.SHA1(input).toString() },
-    { id: 'sha256', name: 'SHA-256', function: (input: string) => CryptoJS.SHA256(input).toString() },
-    { id: 'sha224', name: 'SHA-224', function: (input: string) => CryptoJS.SHA224(input).toString() },
-    { id: 'sha384', name: 'SHA-384', function: (input: string) => CryptoJS.SHA384(input).toString() },
-    { id: 'sha512', name: 'SHA-512', function: (input: string) => CryptoJS.SHA512(input).toString() },
-    { id: 'sha3', name: 'SHA-3', function: (input: string) => CryptoJS.SHA3(input).toString() },
-    { id: 'ripemd160', name: 'RIPEMD-160', function: (input: string) => CryptoJS.RIPEMD160(input).toString() },
-    { id: 'hmacmd5', name: 'HMAC-MD5', function: (input: string) => CryptoJS.HmacMD5(input, "key").toString() },
-    { id: 'hmacsha1', name: 'HMAC-SHA1', function: (input: string) => CryptoJS.HmacSHA1(input, "key").toString() },
-    { id: 'hmacsha256', name: 'HMAC-SHA256', function: (input: string) => CryptoJS.HmacSHA256(input, "key").toString() },
-    { id: 'hmacsha512', name: 'HMAC-SHA512', function: (input: string) => CryptoJS.HmacSHA512(input, "key").toString() },
-  ];
-
-  const generateHashes = (): void => {
-    const newHashes: HashResult = {};
-    
-    if (selectedAlgorithm === 'all') {
-      algorithms.forEach(algo => {
-        try {
-          newHashes[algo.id] = algo.function(input);
-        } catch (error) {
-          console.error(`Error generating ${algo.name} hash:`, error);
-          newHashes[algo.id] = `Error generating ${algo.name} hash`;
-        }
-      });
-    } else {
-      const algorithm = algorithms.find(algo => algo.id === selectedAlgorithm);
-      if (algorithm) {
-        try {
-          newHashes[algorithm.id] = algorithm.function(input);
-        } catch (error) {
-          console.error(`Error generating ${algorithm.name} hash:`, error);
-          newHashes[algorithm.id] = `Error generating ${algorithm.name} hash`;
-        }
-      }
-    }
-    
-    setHashes(newHashes);
-  };
-
-  const copyToClipboard = (text: string, algorithmId: string): void => {
-    copy(text);
-    setCopiedHash(algorithmId);
-    setTimeout(() => {
-      setCopiedHash(null);
-    }, 2000);
-  };
+  const items = useMemo(
+    () => [
+      { value: 'all', label: 'All algorithms' },
+      ...ALGORITHMS.map((a) => ({ value: a.id, label: a.name })),
+    ],
+    [],
+  );
 
   useEffect(() => {
-    if (input) {
-      generateHashes();
-    } else {
-      setHashes({});
+    if (!input) {
+      setResults({});
+      return;
     }
-  }, [input, selectedAlgorithm]);
+    const next: Record<string, string> = {};
+    const list =
+      selected === 'all'
+        ? ALGORITHMS
+        : ALGORITHMS.filter((a) => a.id === selected);
+    for (const algo of list) {
+      try {
+        next[algo.id] = algo.hash(input);
+      } catch (err) {
+        console.error(`Error generating ${algo.name}:`, err);
+        next[algo.id] = `Error generating ${algo.name}`;
+      }
+    }
+    setResults(next);
+  }, [input, selected]);
 
-  const clearInput = (): void => {
-    setInput('');
-    setHashes({});
-    setCopiedHash(null);
+  const handleCopy = (text: string, id: string) => {
+    copy(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <Card className="border-yellow-200">
-          <CardContent className="space-y-6">
-            {/* Input Section */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="input-text" className="text-gray-700">Text to hash</Label>
+    <Stack gap="6">
+      <Card variant="elevated" size="md">
+        <CardBody>
+          <Stack gap="5">
+            <Stack gap="2">
+              <Inline justify="between" align="center">
+                <Label htmlFor="hash-input">Text to hash</Label>
                 {input && (
                   <Button
-                    onClick={clearInput}
-                    className="bg-transparent hover:bg-yellow-50 text-gray-600 border-0 h-8"
+                    variant="ghost"
+                    colorScheme="neutral"
                     size="sm"
+                    leftIcon={<X size={14} />}
+                    onClick={() => setInput('')}
                   >
-                    <X className="w-4 h-4 mr-1" />
                     Clear
                   </Button>
                 )}
-              </div>
+              </Inline>
               <Textarea
-                id="input-text"
+                id="hash-input"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter text to generate hashes..."
-                className="min-h-[100px] border-gray-300 focus:border-yellow-600 focus:ring-yellow-600"
+                onChange={setInput}
+                placeholder="Enter text to generate hashes…"
+                rows={4}
               />
-            </div>
+            </Stack>
 
-            {/* Algorithm Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="algorithm-select" className="text-gray-700">Hash Algorithm</Label>
-              <Select value={selectedAlgorithm} onValueChange={setSelectedAlgorithm}>
-                <SelectTrigger id="algorithm-select" className="border-gray-300 focus:border-yellow-600 focus:ring-yellow-600">
-                  <SelectValue placeholder="Select an algorithm" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="all" className="font-medium hover:bg-yellow-50">
-                    All Algorithms
-                  </SelectItem>
-                  {algorithms.map(algo => (
-                    <SelectItem key={algo.id} value={algo.id} className="font-medium hover:bg-yellow-50">
-                      {algo.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Stack gap="2">
+              <Label htmlFor="hash-algo">Hash algorithm</Label>
+              <Select
+                id="hash-algo"
+                value={selected}
+                onValueChange={setSelected}
+                items={items}
+                aria-label="Hash algorithm"
+              />
+            </Stack>
+          </Stack>
+        </CardBody>
+      </Card>
 
-            {/* Results */}
-            {Object.keys(hashes).length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800">Hash Results</h3>
-                <div className="space-y-3">
-                  {Object.entries(hashes).map(([algorithm, hash]) => {
-                    const algoInfo = algorithms.find(algo => algo.id === algorithm);
-                    const isError = hash.startsWith('Error');
-                    const isCopied = copiedHash === algorithm;
-                    
-                    return (
-                      <Card key={algorithm} className="overflow-hidden border-gray-200">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="font-medium text-gray-700">
-                              {algoInfo?.name || algorithm.toUpperCase()}
-                            </span>
-                            <Button
-                              onClick={() => copyToClipboard(hash, algorithm)}
-                              size="sm"
-                              variant={isCopied ? "success" : "secondary"}
-                              className={isCopied 
-                                ? "bg-green-600 hover:bg-green-700 text-white" 
-                                : "bg-yellow-600 hover:bg-yellow-700 text-white"}
-                              disabled={isError}
-                              leftIcon={isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                            >
-                              {isCopied ? 'Copied' : 'Copy'}
-                            </Button>
-                          </div>
-                          {isError ? (
-                            <Alert variant="error" className="bg-red-50 text-red-700 border-red-200">
-                              {hash}
-                            </Alert>
-                          ) : (
-                            <div className="font-mono text-sm p-3 bg-gray-100 text-gray-700 rounded-md overflow-x-auto break-all">
-                              {hash}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {!input && (
-              <Alert className="bg-yellow-50 text-yellow-800 border-yellow-200">
-                Enter text above to generate hash values
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      {!input ? (
+        <Alert status="info" variant="soft">
+          <AlertDescription>
+            Enter text above to generate hash values.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Stack gap="3">
+          <Heading level={2} size="lg" weight="semibold">
+            Hash results
+          </Heading>
+          {Object.entries(results).map(([id, hash]) => {
+            const info = ALGORITHMS.find((a) => a.id === id);
+            const isError = hash.startsWith('Error');
+            const isCopied = copiedId === id;
+            return (
+              <Card key={id} variant="outlined" size="sm">
+                <CardHeader>
+                  <Inline justify="between" align="center">
+                    <CardTitle as="h3">{info?.name || id}</CardTitle>
+                    <Button
+                      variant={isCopied ? 'solid' : 'soft'}
+                      colorScheme={isCopied ? 'success' : 'accent'}
+                      size="sm"
+                      disabled={isError}
+                      leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
+                      onClick={() => handleCopy(hash, id)}
+                    >
+                      {isCopied ? 'Copied' : 'Copy'}
+                    </Button>
+                  </Inline>
+                </CardHeader>
+                <CardBody>
+                  {isError ? (
+                    <Alert status="danger" variant="soft">
+                      <AlertDescription>{hash}</AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Text
+                      as="div"
+                      style={{
+                        wordBreak: 'break-all',
+                        fontFamily: 'var(--cyn-font-mono, monospace)',
+                      }}
+                      size="sm"
+                    >
+                      <Code size="sm">{hash}</Code>
+                    </Text>
+                  )}
+                </CardBody>
+              </Card>
+            );
+          })}
+        </Stack>
+      )}
+    </Stack>
   );
 };
 
