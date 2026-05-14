@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { DragEvent, useEffect, useRef, useState } from 'react';
 import {
@@ -29,7 +29,6 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { Toaster, toast } from 'sonner';
 import {
   Alert,
   AlertDescription,
@@ -58,6 +57,8 @@ import {
   TabsList,
   TabsTrigger,
   Text,
+  Toaster,
+  toast,
 } from '@arshad-shah/cynosure-react';
 
 enum PlayerState {
@@ -74,7 +75,11 @@ enum PlayerError {
 type BackgroundColor = 'transparent' | 'white' | 'black';
 type AlignFitIndex = { alignment: number; fit: number };
 type Dimensions = { width: number; height: number };
-type Status = { current: PlayerState; hovering?: boolean; error?: PlayerError | null };
+type Status = {
+  current: PlayerState;
+  hovering?: boolean;
+  error?: PlayerError | null;
+};
 type RiveAnimations = { animations: string[]; active: string };
 type RiveStateMachines = { stateMachines: string[]; active: string };
 type RiveController = { active: 'animations' | 'state-machines' };
@@ -145,15 +150,25 @@ export default function RiveAnimationPlayer() {
   const [riveAnimation, setRiveAnimation] = useState<Rive | null>(null);
   const [riveInfo, setRiveInfo] = useState<RiveInfo | null>(null);
 
-  const [animationList, setAnimationList] = useState<RiveAnimations | null>(null);
-  const [stateMachineList, setStateMachineList] = useState<RiveStateMachines | null>(null);
-  const [stateMachineInputs, setStateMachineInputs] = useState<StateMachineInput[]>([]);
+  const [animationList, setAnimationList] = useState<RiveAnimations | null>(
+    null,
+  );
+  const [stateMachineList, setStateMachineList] =
+    useState<RiveStateMachines | null>(null);
+  const [stateMachineInputs, setStateMachineInputs] = useState<
+    StateMachineInput[]
+  >([]);
   const [artboards, setArtboards] = useState<string[]>([]);
   const [selectedArtboard, setSelectedArtboard] = useState<string>('');
 
   const [isPlaying, setIsPlaying] = useState(true);
-  const [controller, setController] = useState<RiveController>({ active: 'animations' });
-  const [dimensions, setDimensions] = useState<Dimensions>({ width: 0, height: 0 });
+  const [controller, setController] = useState<RiveController>({
+    active: 'animations',
+  });
+  const [dimensions, setDimensions] = useState<Dimensions>({
+    width: 0,
+    height: 0,
+  });
   const [background, setBackground] = useState<BackgroundColor>('transparent');
   const [alignFitIndex, setAlignFitIndex] = useState<AlignFitIndex>({
     alignment: alignValues.indexOf('Center'),
@@ -170,14 +185,20 @@ export default function RiveAnimationPlayer() {
   ) => {
     const timestamp = new Date().toLocaleTimeString();
     const id = `log-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-    setDebugLogs((prev) => [{ id, timestamp, message, type }, ...prev.slice(0, 49)]);
+    setDebugLogs((prev) => [
+      { id, timestamp, message, type },
+      ...prev.slice(0, 49),
+    ]);
   };
 
   const getAnimationList = () => {
     const animations = riveAnimation?.animationNames;
     if (!animations) return;
     setAnimationList({ animations, active: animations[0] });
-    addDebugLog(`Found ${animations.length} animations: ${animations.join(', ')}`, 'info');
+    addDebugLog(
+      `Found ${animations.length} animations: ${animations.join(', ')}`,
+      'info',
+    );
   };
 
   const getStateMachineList = () => {
@@ -324,8 +345,10 @@ export default function RiveAnimationPlayer() {
   }, [alignFitIndex, riveAnimation]);
 
   const updateDimensions = () => {
-    const rect = previewRef.current?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0);
-    if (rect.width === dimensions.width && rect.height === dimensions.height) return;
+    const rect =
+      previewRef.current?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0);
+    if (rect.width === dimensions.width && rect.height === dimensions.height)
+      return;
     setDimensions({ width: rect.width, height: rect.height });
   };
 
@@ -402,10 +425,16 @@ export default function RiveAnimationPlayer() {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleInputChange = (input: StateMachineInput, value: boolean | number) => {
+  const handleInputChange = (
+    input: StateMachineInput,
+    value: boolean | number,
+  ) => {
     if (!riveAnimation) return;
     try {
-      addDebugLog(`Setting input ${input.name} (${input.type}) to ${value}`, 'info');
+      addDebugLog(
+        `Setting input ${input.name} (${input.type}) to ${value}`,
+        'info',
+      );
       switch (input.type) {
         case StateMachineInputType.Boolean:
           input.value = value as boolean;
@@ -413,7 +442,10 @@ export default function RiveAnimationPlayer() {
           break;
         case StateMachineInputType.Number:
           input.value = value as number;
-          setNumberValues((prev) => ({ ...prev, [input.name]: value as number }));
+          setNumberValues((prev) => ({
+            ...prev,
+            [input.name]: value as number,
+          }));
           addDebugLog(`Set number input ${input.name} to ${value}`, 'success');
           break;
         case StateMachineInputType.Trigger:
@@ -553,7 +585,9 @@ export default function RiveAnimationPlayer() {
               </Stack>
             ) : (
               <Alert status="info" variant="soft">
-                <AlertDescription>No state machines available.</AlertDescription>
+                <AlertDescription>
+                  No state machines available.
+                </AlertDescription>
               </Alert>
             )}
 
@@ -627,7 +661,9 @@ export default function RiveAnimationPlayer() {
                         </Inline>
                         <Slider
                           value={numberValues[input.name] ?? 0}
-                          onChange={(v) => handleInputChange(input, v as number)}
+                          onChange={(v) =>
+                            handleInputChange(input, v as number)
+                          }
                           minValue={0}
                           maxValue={100}
                           aria-label={input.name}
@@ -709,11 +745,15 @@ export default function RiveAnimationPlayer() {
             <IconButton
               key={value}
               variant={alignFitIndex.alignment === idx ? 'solid' : 'soft'}
-              colorScheme={alignFitIndex.alignment === idx ? 'accent' : 'neutral'}
+              colorScheme={
+                alignFitIndex.alignment === idx ? 'accent' : 'neutral'
+              }
               size="md"
               label={value}
               icon={alignmentIcon[value]}
-              onClick={() => setAlignFitIndex({ ...alignFitIndex, alignment: idx })}
+              onClick={() =>
+                setAlignFitIndex({ ...alignFitIndex, alignment: idx })
+              }
             />
           ))}
         </Grid>
@@ -880,10 +920,11 @@ export default function RiveAnimationPlayer() {
 
                       {!shouldDisplayCanvas() && (
                         <Center
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                          }}
+                          position="absolute"
+                          top="0"
+                          right="0"
+                          bottom="0"
+                          left="0"
                         >
                           <Stack gap="3" align="center">
                             <Upload size={32} aria-hidden />
@@ -905,7 +946,8 @@ export default function RiveAnimationPlayer() {
                               accept=".riv"
                               ref={inputRef}
                               onChange={(e) => {
-                                if (e.target.files?.[0]) load(e.target.files[0]);
+                                if (e.target.files?.[0])
+                                  load(e.target.files[0]);
                               }}
                             />
                           </Stack>
@@ -914,15 +956,22 @@ export default function RiveAnimationPlayer() {
 
                       {status.current === PlayerState.Loading && (
                         <Center
+                          position="absolute"
+                          top="0"
+                          right="0"
+                          bottom="0"
+                          left="0"
                           style={{
-                            position: 'absolute',
-                            inset: 0,
                             background: 'rgba(0,0,0,0.4)',
                           }}
                         >
                           <Stack gap="3" align="center">
                             <Spinner size="lg" colorScheme="accent" />
-                            <Text size="sm" weight="medium" style={{ color: '#fff' }}>
+                            <Text
+                              size="sm"
+                              weight="medium"
+                              style={{ color: '#fff' }}
+                            >
                               Loading animation…
                             </Text>
                           </Stack>

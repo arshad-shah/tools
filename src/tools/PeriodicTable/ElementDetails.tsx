@@ -58,7 +58,7 @@ const ElementDetails: React.FC<ElementDetailsProps> = ({
 
   return (
     <Stack gap="0">
-      <Box style={{ background: bg, color: fg, padding: '1.5rem' }}>
+      <Box padding="6" style={{ background: bg, color: fg }}>
         <Inline justify="between" align="center" gap="3" wrap>
           <Inline align="center" gap="4">
             <Heading
@@ -122,9 +122,9 @@ const ElementDetails: React.FC<ElementDetailsProps> = ({
               <Card variant="filled" size="sm">
                 <CardBody>
                   <Box
+                    paddingLeft="3"
                     style={{
                       borderLeft: `3px solid ${bg}`,
-                      paddingLeft: '0.75rem',
                     }}
                   >
                     <Text size="sm">{element.description}</Text>

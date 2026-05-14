@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Stack } from '@arshad-shah/cynosure-react';
+import { Box, Grid, Stack } from '@arshad-shah/cynosure-react';
 import { elements, colorMap } from './Data';
 import { Element } from '../../types/PeriodicTableTypes';
 
@@ -70,7 +70,9 @@ const ElementGrid: React.FC<ElementGridProps> = ({
               gridColumn: column,
               background: colorMap[element.group],
               color: '#0f172a',
-              border: isSelected ? '2px solid #0f172a' : '1px solid rgba(0,0,0,0.1)',
+              border: isSelected
+                ? '2px solid #0f172a'
+                : '1px solid rgba(0,0,0,0.1)',
               borderRadius: 6,
               padding: 2,
               cursor: 'pointer',
@@ -86,7 +88,9 @@ const ElementGrid: React.FC<ElementGridProps> = ({
                 : '0 1px 2px rgba(0,0,0,0.08)',
             }}
           >
-            <span style={{ fontSize: 10, gridColumn: '1 / 2', textAlign: 'left' }}>
+            <span
+              style={{ fontSize: 10, gridColumn: '1 / 2', textAlign: 'left' }}
+            >
               {element.number}
             </span>
             <span
@@ -132,17 +136,14 @@ const ElementGrid: React.FC<ElementGridProps> = ({
   return (
     <Stack gap="3">
       <Box overflow="auto">
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(18, minmax(48px, 1fr))',
-            gridTemplateRows: 'repeat(9, minmax(56px, auto))',
-            gap: 4,
-            minWidth: 18 * 56,
-          }}
+        <Grid
+          templateColumns="repeat(18, minmax(48px, 1fr))"
+          templateRows="repeat(9, minmax(56px, auto))"
+          gap="1"
+          minWidth="1008px"
         >
           {cells}
-        </div>
+        </Grid>
       </Box>
     </Stack>
   );

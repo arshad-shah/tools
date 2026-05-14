@@ -1,0 +1,12 @@
+# Default reviewer for all changes
+* @arshad-shah
+
+# CI / repo infra
+/.github/                @arshad-shah
+/.husky/                 @arshad-shah
+
+# Build & dependency surface
+/package.json            @arshad-shah
+/pnpm-lock.yaml          @arshad-shah
+/vite.config.ts          @arshad-shah
+/tsconfig*.json          @arshad-shah

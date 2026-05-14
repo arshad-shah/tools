@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in a tool is broken or behaves unexpectedly.
+labels: [bug]
+body:
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which tool?
+      options:
+        - Dashboard / shell
+        - Color Tester
+        - Password Generator
+        - Regex Tester
+        - JSON / XML Viewer
+        - QR Code Generator
+        - Number Converter
+        - Unit Converter
+        - Text Diff Checker
+        - Pomodoro
+        - Periodic Table
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what actually happened?
+      placeholder: 'Expected … but got …'
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the X tool
+        2. Type/paste …
+        3. Click …
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & OS
+      placeholder: 'Chrome 131 on macOS 15'
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, console errors, sample input that triggers it.

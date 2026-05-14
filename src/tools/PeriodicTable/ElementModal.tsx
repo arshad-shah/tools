@@ -5,6 +5,7 @@ import {
   Box,
   Card,
   CardBody,
+  Center,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -75,7 +76,14 @@ const ElementModal: React.FC<ElementModalProps> = ({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="xl">
         <DialogHeader>
-          <Box style={{ background: bg, color: fg, padding: '1rem', borderRadius: 8 }}>
+          <Box
+            padding="4"
+            borderRadius="lg"
+            style={{
+              background: bg,
+              color: fg,
+            }}
+          >
             <Inline justify="between" align="center" gap="3" wrap>
               <Inline align="center" gap="4">
                 <Heading
@@ -118,16 +126,11 @@ const ElementModal: React.FC<ElementModalProps> = ({
           <Card variant="filled" size="md">
             <CardBody>
               <Stack gap="3">
-                <Box
-                  style={{
-                    height: 400,
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    borderRadius: 8,
-                  }}
+                <Center
+                  height="400px"
+                  width="full"
+                  overflow="hidden"
+                  borderRadius="lg"
                 >
                   {use3D ? (
                     <ElementModel3D
@@ -140,7 +143,7 @@ const ElementModal: React.FC<ElementModalProps> = ({
                       containerSize={{ width: 800, height: 400 }}
                     />
                   )}
-                </Box>
+                </Center>
                 <Inline align="center" gap="2">
                   <Switch
                     checked={use3D}
@@ -221,10 +224,10 @@ const ElementModal: React.FC<ElementModalProps> = ({
                       <Inline key={item.label} align="center" gap="2">
                         <Box
                           aria-hidden
+                          width="12px"
+                          height="12px"
+                          borderRadius="full"
                           style={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
                             background: item.color,
                           }}
                         />

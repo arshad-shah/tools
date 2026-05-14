@@ -33,7 +33,7 @@ const Footer: React.FC = () => {
                 borderRadius="md"
                 background="accent.soft"
                 color="accent.solid"
-                style={{ display: 'inline-flex' }}
+                display="inline-flex"
               >
                 <Wrench size={18} aria-hidden />
               </Box>
