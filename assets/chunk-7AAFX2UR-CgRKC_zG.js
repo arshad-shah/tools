@@ -1,0 +1,6 @@
+import{I as g}from"./chunk-O2LMEIFR-8LQF-VWz.js";import{u as D}from"./chunk-HGV4B24C-C8CwnRAI.js";import{z as C,r as e,j as p}from"./index-CFV2yLgJ.js";import{u as V}from"./chunk-64KDQXJC-Vvm4qFJQ.js";/**
+ * @license lucide-react v1.8.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const v=[["path",{d:"m21 21-4.34-4.34",key:"14j7rj"}],["circle",{cx:"11",cy:"11",r:"8",key:"4ej97u"}]],z=C("search",v);function M(r,c){const[l,d]=e.useState(r);return e.useEffect(()=>{const f=window.setTimeout(()=>d(r),c);return()=>window.clearTimeout(f)},[r,c]),l}var N=()=>p.jsx(z,{"aria-hidden":!0,size:16}),L=e.forwardRef(function(c,l){const{id:d,value:f,defaultValue:j,onChange:x,onSearch:o,onSubmit:s,debounceMs:I=200,placeholder:R="Search…",onKeyDown:u,...S}=c,k=e.useId(),w=d??k,[t,i]=V({value:f,defaultValue:j??"",onChange:x}),h=e.useRef(null),y=D(l,h),a=M(t,I),m=e.useRef(null);e.useEffect(()=>{m.current!==a&&(m.current=a,o==null||o(a))},[a,o]);const E=e.useCallback(n=>{var b;n.key==="Escape"&&t!==""?(n.preventDefault(),i(""),(b=h.current)==null||b.focus()):n.key==="Enter"&&(s==null||s(t)),u==null||u(n)},[t,i,s,u]);return p.jsx(g,{...S,id:w,ref:y,type:"search",value:t,onChange:i,placeholder:R,clearable:!0,leadingSlot:p.jsx(N,{}),onKeyDown:E})});export{L as S};
