@@ -1,1 +1,0 @@
-import{r as i,j as a,l as n}from"./index-DCiTZCP6.js";var b="Label_label__r2ta8y0",o="Label_labelRequiredIndicator__r2ta8y1",x=i.forwardRef(function({required:e,disabled:r,children:l,className:s,...t},d){return a.jsxs("label",{ref:d,className:n(b,s),"data-disabled":r||void 0,...t,children:[l,e?a.jsx("span",{"aria-hidden":"true",className:o,children:"*"}):null]})});export{x as L};
