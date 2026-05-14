@@ -56,7 +56,7 @@
     "rehype-prism-plus": "^2.0.1",
     "rehype-rewrite": "^4.0.2",
     "sonner": "^2.0.7",
-    "three": "^0.174.0"
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.31.0",
