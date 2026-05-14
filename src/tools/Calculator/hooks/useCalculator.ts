@@ -666,6 +666,8 @@ export function useCalculator() {
     // Expression
     evaluateExpression,
     saveCalculation,
+    setCalculationHistory,
+    setSavedCalculations,
 
     // Panels
     toggleHistory,
