@@ -1,0 +1,1 @@
+import{r as t}from"./index-CNW9JESy.js";const i=()=>{const[o,e]=t.useState(!1),r=t.useCallback(async a=>{try{await navigator.clipboard.writeText(a),e(!0),setTimeout(()=>e(!1),2e3)}catch(s){console.error("Failed to copy:",s)}},[]);return{copied:o,copy:r}};export{i as u};
