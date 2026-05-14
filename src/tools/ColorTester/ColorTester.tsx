@@ -3,18 +3,75 @@ import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
 import { calculateHSL, hexToRgb } from './utils/ColorConverters';
 import { calculateContrastRatio, determineColorMood, determineColorName, generateHarmonyColors } from './utils/CalculationUtils';
 
-// Import components
+// Import enhanced components
 import ColorDisplay from './components/ColorDisplay';
 import ColorValues from './components/ColorValues';
-import QuickActions from './components/QuickActions';
 import TabNavigation from './components/TabNavigation';
 import HarmonyTab from './components/HarmonyTab';
 import PsychologyTab from './components/PsychologyTab';
 import PreviewTab from './components/PreviewTab';
 import AccessibilityTab from './components/AccessibilityTab';
 import ColorEditor from './components/ColorEditor';
-import AnimationStyles from './components/AnimationStyles';
 import ColorPalette from './components/ColorPallete';
+
+// Custom styling
+const CustomStyles: React.FC = () => (
+  <style>{`
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    .pulse-animation {
+      animation: pulse 0.5s ease;
+    }
+    
+    @keyframes highlight {
+      0% { background-color: rgba(79, 70, 229, 0.1); }
+      100% { background-color: transparent; }
+    }
+    .highlight-animation {
+      animation: highlight 1s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .glass-panel {
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        0 4px 24px rgba(0, 0, 0, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .depth-shadow {
+      box-shadow: 
+        0 2px 10px rgba(0, 0, 0, 0.05),
+        0 10px 20px rgba(79, 70, 229, 0.1);
+    }
+    
+    .background-pattern {
+      background-image: 
+        radial-gradient(circle at 80% 20%, rgba(120, 119, 198, 0.3) 0%, transparent 25%),
+        radial-gradient(circle at 20% 70%, rgba(255, 120, 180, 0.2) 0%, transparent 30%);
+    }
+  `}</style>
+);
 
 const ColorTester: React.FC = () => {
   // Base color state
@@ -187,77 +244,72 @@ const ColorTester: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <AnimationStyles />
+    <div className="min-h-screen background-pattern">
+      <CustomStyles />
       
-      <div className="max-w-6xl mx-auto backdrop-blur-sm bg-white/70 rounded-2xl shadow-xl border border-indigo-100 depth-effect">
-        <div className="p-4 md:p-6">
-          {/* Main Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* Sidebar: Color Display & Basic Controls */}
-            <div className="md:col-span-4 lg:col-span-3">
-              <ColorDisplay 
-                hexCode={hexCode}
-                rgbString={rgbString}
-                textColor={textColor}
-                colorNameSuggestion={colorNameSuggestion}
-                generateRandomColor={generateRandomColor}
-                saveColor={saveColor}
-              />
-              
-              <div className="mt-4">
-                <ColorValues 
+      <div className="max-w-6xl mx-auto">
+        <div className="glass-panel rounded-3xl depth-shadow mb-6">
+          <div className="p-6">
+            {/* Main Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Sidebar: Color Display & Basic Controls */}
+              <div className="lg:col-span-4">
+                <ColorDisplay 
                   hexCode={hexCode}
                   rgbString={rgbString}
-                  copiedValue={copiedValue}
-                  copyToClipboard={copyToClipboard}
-                />
-              </div>
-              
-              <div className="mt-4">
-                <QuickActions 
-                  saveColor={saveColor}
+                  colorNameSuggestion={colorNameSuggestion}
                   generateRandomColor={generateRandomColor}
-                />
-              </div>
-              
-              {/* Mobile-only ColorEditor */}
-              <div className="md:hidden mt-4">
-                <ColorEditor {...colorEditorProps} />
-              </div>
-            </div>
-            
-            {/* Main Content */}
-            <div className="md:col-span-8 lg:col-span-9">
-              {/* Tab Content */}
-              <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                <TabNavigation 
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
+                  saveColor={saveColor}
                 />
                 
-                <div className="p-5">
-                  {renderActiveTabContent()}
+                <div className="mt-6 space-y-6">
+                  <ColorValues 
+                    hexCode={hexCode}
+                    rgbString={rgbString}
+                    copiedValue={copiedValue}
+                    copyToClipboard={copyToClipboard}
+                  />
+                  
+                  {/* Mobile-only ColorEditor */}
+                  <div className="lg:hidden">
+                    <ColorEditor {...colorEditorProps} />
+                  </div>
                 </div>
               </div>
               
-              {/* Desktop-only ColorEditor */}
-              <div className="hidden md:block mt-4">
-                <ColorEditor {...colorEditorProps} />
+              {/* Main Content */}
+              <div className="lg:col-span-8">
+                {/* Tab Navigation & Content */}
+                <div className="bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden mb-6">
+                  <TabNavigation 
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                  />
+                  
+                  <div className="p-6">
+                    {renderActiveTabContent()}
+                  </div>
+                </div>
+                
+                {/* Desktop-only ColorEditor */}
+                <div className="hidden lg:block">
+                  <ColorEditor {...colorEditorProps} />
+                </div>
               </div>
             </div>
           </div>
-          
-          {/* Saved Colors Palette */}
-          <div className="mt-8" id="palette-section">
-            <ColorPalette
-              savedColors={savedColors}
-              loadColor={loadColor}
-              deleteColor={deleteColor}
-              exportPalette={exportPalette}
-            />
-          </div>
         </div>
+        
+        {/* Saved Colors Palette */}
+        <div className="mb-8" id="palette-section">
+          <ColorPalette
+            savedColors={savedColors}
+            loadColor={loadColor}
+            deleteColor={deleteColor}
+            exportPalette={exportPalette}
+          />
+        </div>
+      
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, JSX } from 'react';
-import { Split, Copy, CheckCheck, Clipboard, ExternalLink } from 'lucide-react';
+import {  Copy, CheckCheck, Clipboard, ExternalLink } from 'lucide-react';
 
 /*
 Definition:
@@ -127,17 +127,6 @@ const URLParser: React.FC = () => {
     </div>
   );
 
-  const renderHeader = (): JSX.Element => (
-    <div className="flex items-center mb-8">
-      <div className="bg-cyan-600 p-3 rounded-2xl mr-4 shadow-lg shadow-cyan-100">
-        <Split size={28} className="text-white" />
-      </div>
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">URL Parser</h1>
-        <p className="text-gray-500 text-sm">Break down and analyze URL components</p>
-      </div>
-    </div>
-  );
 
   const renderTabs = (): JSX.Element => (
     <div className="mb-6 border-b border-gray-200">
@@ -387,7 +376,6 @@ const URLParser: React.FC = () => {
   if (!parsedUrl) {
     return (
       <div className="flex flex-col p-6 max-w-4xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100">
-        {renderHeader()}
         
         <div className="w-full">
           {renderUrlInput()}
@@ -414,8 +402,7 @@ const URLParser: React.FC = () => {
   
   return (
     <div className="flex flex-col p-6 max-w-4xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100">
-      {renderHeader()}
-      
+
       <div className="w-full">
         {renderUrlInput()}
         {renderTabs()}
