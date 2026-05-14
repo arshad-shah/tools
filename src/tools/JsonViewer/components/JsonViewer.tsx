@@ -38,6 +38,7 @@ import {
   Grid,
   Heading,
   Inline,
+  ScrollArea,
   SearchInput,
   Select,
   Stack,
@@ -318,14 +319,13 @@ const DataViewer = () => {
         </Inline>
       </CardHeader>
       <CardBody>
-        <Box
-          style={{
-            height: '40rem',
-            overflow: viewMode === 'network' ? 'hidden' : 'auto',
-          }}
-        >
-          {renderViewerBody()}
-        </Box>
+        {viewMode === 'network' ? (
+          <Box style={{ height: '40rem', overflow: 'hidden' }}>
+            {renderViewerBody()}
+          </Box>
+        ) : (
+          <ScrollArea height="40rem">{renderViewerBody()}</ScrollArea>
+        )}
       </CardBody>
     </Card>
   );
@@ -366,7 +366,10 @@ const DataViewer = () => {
                       </ToggleGroupItem>
                     </Tooltip>
                     <Tooltip content="Network graph">
-                      <ToggleGroupItem value="network" aria-label="Network view">
+                      <ToggleGroupItem
+                        value="network"
+                        aria-label="Network view"
+                      >
                         <Network size={14} />
                       </ToggleGroupItem>
                     </Tooltip>
@@ -387,7 +390,10 @@ const DataViewer = () => {
                       </ToggleGroupItem>
                     </Tooltip>
                     <Tooltip content="Single panel">
-                      <ToggleGroupItem value="single" aria-label="Single layout">
+                      <ToggleGroupItem
+                        value="single"
+                        aria-label="Single layout"
+                      >
                         <MonitorIcon size={14} />
                       </ToggleGroupItem>
                     </Tooltip>
@@ -404,7 +410,10 @@ const DataViewer = () => {
                       aria-label="Active pane"
                     >
                       <Tooltip content="Editor">
-                        <ToggleGroupItem value="editor" aria-label="Editor pane">
+                        <ToggleGroupItem
+                          value="editor"
+                          aria-label="Editor pane"
+                        >
                           <PanelLeft size={14} />
                         </ToggleGroupItem>
                       </Tooltip>

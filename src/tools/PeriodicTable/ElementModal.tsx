@@ -5,6 +5,7 @@ import {
   Box,
   Card,
   CardBody,
+  Center,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -75,7 +76,14 @@ const ElementModal: React.FC<ElementModalProps> = ({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="xl">
         <DialogHeader>
-          <Box style={{ background: bg, color: fg, padding: '1rem', borderRadius: 8 }}>
+          <Box
+            style={{
+              background: bg,
+              color: fg,
+              padding: '1rem',
+              borderRadius: 8,
+            }}
+          >
             <Inline justify="between" align="center" gap="3" wrap>
               <Inline align="center" gap="4">
                 <Heading
@@ -118,13 +126,10 @@ const ElementModal: React.FC<ElementModalProps> = ({
           <Card variant="filled" size="md">
             <CardBody>
               <Stack gap="3">
-                <Box
+                <Center
                   style={{
                     height: 400,
                     width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     overflow: 'hidden',
                     borderRadius: 8,
                   }}
@@ -140,7 +145,7 @@ const ElementModal: React.FC<ElementModalProps> = ({
                       containerSize={{ width: 800, height: 400 }}
                     />
                   )}
-                </Box>
+                </Center>
                 <Inline align="center" gap="2">
                   <Switch
                     checked={use3D}
