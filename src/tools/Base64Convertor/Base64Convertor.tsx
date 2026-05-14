@@ -1,177 +1,148 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, Copy, Check } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowRightLeft, Check, Copy } from 'lucide-react';
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Center,
+  IconButton,
+  Inline,
+  Label,
+  Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+  Textarea,
+} from '@arshad-shah/cynosure-react';
 import useClipboard from '../../hooks/useClipboard';
 
-type NotificationType = {
-  message: string;
-  type: 'success' | 'error';
-} | null;
+type Mode = 'encode' | 'decode';
 
 const Base64Converter: React.FC = () => {
-  const [inputText, setInputText] = useState<string>('');
-  const [outputText, setOutputText] = useState<string>('');
-  const [mode, setMode] = useState<'encode' | 'decode'>('encode');
-  const [notification, setNotification] = useState<NotificationType>(null);
-
+  const [inputText, setInputText] = useState('');
+  const [outputText, setOutputText] = useState('');
+  const [error, setError] = useState('');
+  const [mode, setMode] = useState<Mode>('encode');
   const { copied, copy } = useClipboard();
 
-  // Handle mode toggle
-  const toggleMode = (): void => {
-    const currentOutput = outputText;
-    setMode(prevMode => prevMode === 'encode' ? 'decode' : 'encode');
-    
-    if (currentOutput) {
-      setInputText(currentOutput);
-      setOutputText('');
-    }
-  };
-
-  // Process text conversion
   useEffect(() => {
     if (!inputText) {
       setOutputText('');
+      setError('');
       return;
     }
-    
-    if (mode === 'encode') {
-      try {
-        const encoded = btoa(inputText);
-        setOutputText(encoded);
-      } catch {
-        setOutputText('Error: Could not encode text. Please ensure it contains valid characters.');
-        showNotification('Error encoding text', 'error');
-      }
-    } else {
-      try {
-        const decoded = atob(inputText);
-        setOutputText(decoded);
-      } catch {
-        setOutputText('Error: Could not decode. Please ensure you entered valid Base64.');
-        showNotification('Error decoding Base64', 'error');
-      }
+    try {
+      setOutputText(mode === 'encode' ? btoa(inputText) : atob(inputText));
+      setError('');
+    } catch {
+      setOutputText('');
+      setError(
+        mode === 'encode'
+          ? 'Could not encode text. Please ensure it contains valid characters.'
+          : 'Could not decode. Please ensure you entered valid Base64.',
+      );
     }
   }, [inputText, mode]);
 
-  // Copy to clipboard
-  const copyToClipboard = async (): Promise<void> => {
-    await copy(outputText);
-    showNotification('Copied to clipboard!', 'success');
-  };
-
-
-  const showNotification = (message: string, type: 'success' | 'error'): void => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+  const swap = () => {
+    if (!outputText) return;
+    setInputText(outputText);
+    setMode((m) => (m === 'encode' ? 'decode' : 'encode'));
+    setOutputText('');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <Card variant="elevated" size="md">
+      <CardHeader>
+        <Tabs
+          value={mode}
+          onValueChange={(v) => setMode(v as Mode)}
+          variant="soft"
+          colorScheme="accent"
+          fullWidth
+        >
+          <TabsList aria-label="Encode or decode">
+            <TabsTrigger value="encode">Encode</TabsTrigger>
+            <TabsTrigger value="decode">Decode</TabsTrigger>
+          </TabsList>
+          <TabsContent value={mode} />
+        </Tabs>
+      </CardHeader>
+      <CardBody>
+        <Stack gap="5">
+          <Stack gap="2">
+            <Label htmlFor="b64-input">
+              {mode === 'encode' ? 'Text to encode' : 'Base64 to decode'}
+            </Label>
+            <Textarea
+              id="b64-input"
+              value={inputText}
+              onChange={setInputText}
+              placeholder={
+                mode === 'encode'
+                  ? 'Enter your text…'
+                  : 'Enter Base64 text…'
+              }
+              rows={6}
+              clearable
+            />
+          </Stack>
 
+          <Center>
+            <IconButton
+              variant="solid"
+              colorScheme="accent"
+              shape="pill"
+              label="Swap input and output"
+              icon={<ArrowRightLeft size={18} />}
+              onClick={swap}
+              disabled={!outputText}
+            />
+          </Center>
 
-        {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-          {/* Mode Toggle */}
-          <div className="flex justify-center p-6 bg-slate-50 border-b border-slate-200">
-            <div className="inline-flex bg-slate-200 rounded-xl p-1">
-              <button
-                onClick={() => setMode('encode')}
-                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-                  mode === 'encode'
-                    ? 'bg-teal-700 text-white shadow-sm'
-                    : 'text-slate-700 hover:text-teal-700'
-                }`}
-              >
-                Encode
-              </button>
-              <button
-                onClick={() => setMode('decode')}
-                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-                  mode === 'decode'
-                    ? 'bg-teal-700 text-white shadow-sm'
-                    : 'text-slate-700 hover:text-teal-700'
-                }`}
-              >
-                Decode
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {/* Input */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                {mode === 'encode' ? 'Text to encode' : 'Base64 to decode'}
-              </label>
-              <textarea
-                className="w-full h-32 p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-700 focus:border-teal-700 transition-all resize-none"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder={mode === 'encode' ? 'Enter your text...' : 'Enter Base64 text...'}
-              />
-            </div>
-
-            {/* Toggle Button */}
-            <div className="flex justify-center mb-6">
-              <button 
-                onClick={toggleMode}
-                className="p-3 bg-teal-700 hover:bg-teal-800 text-white rounded-full transition-all hover:scale-105 shadow-lg"
-              >
-                <ArrowRightLeft className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Output */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-slate-700">
+          {error ? (
+            <Alert status="danger" variant="soft">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : (
+            <Stack gap="2">
+              <Inline justify="between" align="center">
+                <Text size="sm" weight="semibold">
                   {mode === 'encode' ? 'Base64 result' : 'Decoded result'}
-                </label>
-                {outputText && !outputText.startsWith('Error:') && (
-                  <button
-                    onClick={copyToClipboard}
-                    className="flex items-center space-x-1 px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg transition-all"
+                </Text>
+                {outputText && (
+                  <Button
+                    variant="ghost"
+                    colorScheme="neutral"
+                    size="sm"
+                    leftIcon={copied ? <Check size={16} /> : <Copy size={16} />}
+                    onClick={() => copy(outputText)}
                   >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
+                    {copied ? 'Copied' : 'Copy'}
+                  </Button>
                 )}
-              </div>
-              <textarea
-                className={`w-full h-32 p-4 rounded-xl resize-none ${
-                  outputText.startsWith('Error:')
-                    ? 'border-red-300 bg-red-50 text-red-700'
-                    : 'border-slate-300 bg-slate-50 text-slate-700'
-                }`}
+              </Inline>
+              <Textarea
+                aria-label="Result"
                 value={outputText}
                 readOnly
-                placeholder={mode === 'encode' ? 'Base64 result will appear here...' : 'Decoded text will appear here...'}
+                rows={6}
+                placeholder={
+                  mode === 'encode'
+                    ? 'Base64 result will appear here…'
+                    : 'Decoded text will appear here…'
+                }
               />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Notification */}
-      {notification && (
-        <div 
-          className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white font-medium ${
-            notification.type === 'success' ? 'bg-emerald-600' : 'bg-red-500'
-          }`}
-        >
-          {notification.message}
-        </div>
-      )}
-    </div>
+            </Stack>
+          )}
+        </Stack>
+      </CardBody>
+    </Card>
   );
 };
 

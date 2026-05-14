@@ -1,0 +1,70 @@
+/*
+ * Custom Cynosure themes for the Tools Dashboard.
+ * Overrides semantic accent + surface tokens; structural tokens inherit from :root.
+ */
+
+[data-theme='dashboard-light'] {
+  color-scheme: light;
+
+  --cynosure-color-background-canvas: #f7f8fb;
+  --cynosure-color-background-surface: #ffffff;
+  --cynosure-color-background-subtle: #eef1f7;
+  --cynosure-color-background-muted: #e2e6ef;
+  --cynosure-color-background-inverse: #0b1020;
+  --cynosure-color-background-overlay: rgba(11, 16, 32, 0.55);
+
+  --cynosure-color-foreground-default: #0b1020;
+  --cynosure-color-foreground-muted: #475067;
+  --cynosure-color-foreground-subtle: #6b7388;
+  --cynosure-color-foreground-disabled: #a3aabb;
+  --cynosure-color-foreground-inverse: #f7f8fb;
+  --cynosure-color-foreground-on-accent: #ffffff;
+
+  --cynosure-color-border-default: #dde2ec;
+  --cynosure-color-border-subtle: #e7eaf2;
+  --cynosure-color-border-strong: #c5cbd8;
+  --cynosure-color-border-focus: #0d9488;
+
+  /* Emerald-teal accent */
+  --cynosure-color-accent-solid: #0d9488;
+  --cynosure-color-accent-solid-hover: #0f766e;
+  --cynosure-color-accent-solid-active: #115e59;
+  --cynosure-color-accent-soft: #ccfbf1;
+  --cynosure-color-accent-soft-hover: #99f6e4;
+  --cynosure-color-accent-soft-active: #5eead4;
+  --cynosure-color-accent-ring: #14b8a6;
+  --cynosure-color-accent-on-solid: #ffffff;
+}
+
+[data-theme='dashboard-dark'] {
+  color-scheme: dark;
+
+  --cynosure-color-background-canvas: #0a0f1e;
+  --cynosure-color-background-surface: #111830;
+  --cynosure-color-background-subtle: #18213d;
+  --cynosure-color-background-muted: #1f2b4d;
+  --cynosure-color-background-inverse: #f7f8fb;
+  --cynosure-color-background-overlay: rgba(5, 8, 18, 0.7);
+
+  --cynosure-color-foreground-default: #e6ebf5;
+  --cynosure-color-foreground-muted: #9aa4be;
+  --cynosure-color-foreground-subtle: #6c7795;
+  --cynosure-color-foreground-disabled: #4b5573;
+  --cynosure-color-foreground-inverse: #0a0f1e;
+  --cynosure-color-foreground-on-accent: #04211e;
+
+  --cynosure-color-border-default: #25305a;
+  --cynosure-color-border-subtle: #1d2748;
+  --cynosure-color-border-strong: #334074;
+  --cynosure-color-border-focus: #2dd4bf;
+
+  /* Glowing teal accent for dark surfaces */
+  --cynosure-color-accent-solid: #2dd4bf;
+  --cynosure-color-accent-solid-hover: #5eead4;
+  --cynosure-color-accent-solid-active: #14b8a6;
+  --cynosure-color-accent-soft: #0b3b36;
+  --cynosure-color-accent-soft-hover: #115049;
+  --cynosure-color-accent-soft-active: #166a5f;
+  --cynosure-color-accent-ring: #2dd4bf;
+  --cynosure-color-accent-on-solid: #04211e;
+}

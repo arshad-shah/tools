@@ -1,27 +1,207 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Header from './components/Header';
-import FilterPanel from './components/FilterPanel';
-import LogContent from './components/LogContent';
-import { useLogParser, useAnimations } from './hooks/useLogParser';
+import React, { useState } from 'react';
+import {
+  Activity,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  Copy,
+  Cpu,
+  Download,
+  FileText,
+  Filter,
+  Info,
+  LayoutGrid,
+  PanelLeft,
+  PanelRight,
+  RefreshCw,
+  Search,
+  Trash2,
+} from 'lucide-react';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Code,
+  Container,
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  Grid,
+  Heading,
+  IconButton,
+  Inline,
+  Input,
+  Label,
+  SearchInput,
+  Select,
+  Stack,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Text,
+  Textarea,
+} from '@arshad-shah/cynosure-react';
+import { useCopyToClipboard, useLogParser } from './hooks/useLogParser';
+import { LogEntry, LogLevel, LogType } from '../../types/LogParserTypes';
+
+const LOG_TYPE_OPTIONS = [
+  { value: 'auto', label: 'Auto-detect' },
+  { value: 'spring', label: 'Spring Boot' },
+  { value: 'django', label: 'Django' },
+  { value: 'node', label: 'Node.js' },
+  { value: 'log4j', label: 'Log4j' },
+  { value: 'sql', label: 'SQL' },
+  { value: 'webpack', label: 'Webpack' },
+  { value: 'generic', label: 'Generic' },
+];
+
+const LEVEL_INFO: Record<
+  LogLevel,
+  { label: string; colorScheme: 'danger' | 'warning' | 'accent' | 'neutral' | 'success'; icon: React.ReactNode }
+> = {
+  error: {
+    label: 'Error',
+    colorScheme: 'danger',
+    icon: <AlertCircle size={14} aria-hidden />,
+  },
+  warn: {
+    label: 'Warn',
+    colorScheme: 'warning',
+    icon: <AlertTriangle size={14} aria-hidden />,
+  },
+  info: {
+    label: 'Info',
+    colorScheme: 'accent',
+    icon: <Info size={14} aria-hidden />,
+  },
+  debug: {
+    label: 'Debug',
+    colorScheme: 'neutral',
+    icon: <Cpu size={14} aria-hidden />,
+  },
+  success: {
+    label: 'Success',
+    colorScheme: 'success',
+    icon: <CheckCircle size={14} aria-hidden />,
+  },
+};
+
+interface LogRowProps {
+  log: LogEntry;
+  copied: boolean;
+  onCopy: (text: string) => void;
+}
+
+const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
+  const [expanded, setExpanded] = useState(false);
+  const info = LEVEL_INFO[log.level];
+  return (
+    <Card variant="outlined" size="sm">
+      <CardBody>
+        <Stack gap="2">
+          <Inline justify="between" align="center" gap="2" wrap>
+            <Inline align="center" gap="2" wrap>
+              <Badge
+                variant="soft"
+                colorScheme={info.colorScheme}
+                size="sm"
+                icon={info.icon}
+              >
+                {info.label}
+              </Badge>
+              {log.timestamp && (
+                <Badge variant="soft" colorScheme="neutral" size="xs">
+                  {log.timestamp}
+                </Badge>
+              )}
+              {log.component && (
+                <Badge variant="outline" colorScheme="accent" size="xs">
+                  {log.component}
+                </Badge>
+              )}
+              {log.executionTime && (
+                <Badge variant="soft" colorScheme="warning" size="xs">
+                  {log.executionTime}
+                </Badge>
+              )}
+            </Inline>
+            <Inline gap="1">
+              <IconButton
+                variant="ghost"
+                colorScheme="neutral"
+                size="sm"
+                label="Copy raw line"
+                icon={<Copy size={14} />}
+                onClick={() => onCopy(log.raw)}
+              />
+              {(log.details || log.raw !== log.message) && (
+                <IconButton
+                  variant="ghost"
+                  colorScheme="neutral"
+                  size="sm"
+                  label={expanded ? 'Collapse' : 'Expand'}
+                  icon={
+                    <ChevronRight
+                      size={14}
+                      style={{
+                        transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                        transition: 'transform 150ms',
+                      }}
+                    />
+                  }
+                  onClick={() => setExpanded((e) => !e)}
+                />
+              )}
+            </Inline>
+          </Inline>
+          <Text size="sm">{log.message}</Text>
+          {copied && (
+            <Text size="xs" variant="caption">
+              Copied
+            </Text>
+          )}
+          {expanded && (
+            <Stack gap="2">
+              {log.details && (
+                <Code variant="block" size="sm">
+                  {log.details}
+                </Code>
+              )}
+              <Code variant="block" size="sm">
+                {log.raw}
+              </Code>
+            </Stack>
+          )}
+        </Stack>
+      </CardBody>
+    </Card>
+  );
+};
 
 const LogParserTool: React.FC = () => {
   const {
-    // State
     logText,
     setLogText,
     parsedLogs,
     filteredLogs,
     logType,
     setLogType,
-    darkMode,
-    setDarkMode,
     showFilters,
     setShowFilters,
     viewMode,
     setViewMode,
-    
-    // Filters
+
     filter,
     setFilter,
     searchComponent,
@@ -29,120 +209,344 @@ const LogParserTool: React.FC = () => {
     activeFilters,
     timeRange,
     setTimeRange,
-    
-    // Computed values
+
     logCounts,
-    
-    // Actions
+    hasActiveFilters,
+
     toggleLevelFilter,
     clearLogs,
     resetFilters,
     loadSampleLogs,
   } = useLogParser();
 
-  const { fadeIn } = useAnimations();
+  const { copied, copyToClipboard } = useCopyToClipboard();
+
+  const downloadFiltered = () => {
+    const blob = new Blob(
+      [filteredLogs.map((l) => l.raw).join('\n')],
+      { type: 'text/plain' },
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `logs_filtered_${Date.now()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const inputPanel = (
+    <Card variant="elevated" size="md">
+      <CardHeader>
+        <Inline justify="between" align="center" wrap gap="2">
+          <Inline align="center" gap="2">
+            <FileText size={18} aria-hidden />
+            <CardTitle as="h3">Log input</CardTitle>
+          </Inline>
+          <Inline gap="2" wrap>
+            <Button
+              variant="soft"
+              colorScheme="accent"
+              size="sm"
+              leftIcon={<RefreshCw size={14} />}
+              onClick={loadSampleLogs}
+            >
+              Load sample
+            </Button>
+            <Button
+              variant="soft"
+              colorScheme="neutral"
+              size="sm"
+              leftIcon={<Trash2 size={14} />}
+              disabled={!logText}
+              onClick={clearLogs}
+            >
+              Clear
+            </Button>
+          </Inline>
+        </Inline>
+      </CardHeader>
+      <CardBody>
+        <Stack gap="3">
+          <Stack gap="2">
+            <Label>Log type</Label>
+            <Select
+              value={logType}
+              onValueChange={(v) => setLogType(v as LogType)}
+              items={LOG_TYPE_OPTIONS}
+              aria-label="Log type"
+            />
+          </Stack>
+          <Textarea
+            value={logText}
+            onChange={setLogText}
+            placeholder="Paste log lines here…"
+            rows={12}
+            aria-label="Log text"
+          />
+        </Stack>
+      </CardBody>
+    </Card>
+  );
+
+  const outputPanel = (
+    <Card variant="elevated" size="md">
+      <CardHeader>
+        <Inline justify="between" align="center" wrap gap="2">
+          <Inline align="center" gap="2">
+            <Activity size={18} aria-hidden />
+            <CardTitle as="h3">Parsed logs</CardTitle>
+            <Badge variant="soft" colorScheme="neutral" size="sm">
+              {filteredLogs.length} of {parsedLogs.length}
+            </Badge>
+          </Inline>
+          {filteredLogs.length > 0 && (
+            <Button
+              variant="soft"
+              colorScheme="neutral"
+              size="sm"
+              leftIcon={<Download size={14} />}
+              onClick={downloadFiltered}
+            >
+              Download
+            </Button>
+          )}
+        </Inline>
+      </CardHeader>
+      <CardBody>
+        {parsedLogs.length === 0 ? (
+          <EmptyState size="md" variant="subtle">
+            <EmptyStateIcon>
+              <FileText size={36} aria-hidden />
+            </EmptyStateIcon>
+            <EmptyStateTitle>No logs yet</EmptyStateTitle>
+            <EmptyStateDescription>
+              Paste log lines on the input panel or load a sample to get
+              started.
+            </EmptyStateDescription>
+            <EmptyStateActions>
+              <Button
+                variant="solid"
+                colorScheme="accent"
+                size="sm"
+                leftIcon={<RefreshCw size={14} />}
+                onClick={loadSampleLogs}
+              >
+                Load sample
+              </Button>
+            </EmptyStateActions>
+          </EmptyState>
+        ) : filteredLogs.length === 0 ? (
+          <EmptyState size="md" variant="subtle">
+            <EmptyStateIcon>
+              <Search size={36} aria-hidden />
+            </EmptyStateIcon>
+            <EmptyStateTitle>No matches</EmptyStateTitle>
+            <EmptyStateDescription>
+              No log lines match the active filters.
+            </EmptyStateDescription>
+            <EmptyStateActions>
+              <Button
+                variant="soft"
+                colorScheme="neutral"
+                size="sm"
+                onClick={resetFilters}
+              >
+                Reset filters
+              </Button>
+            </EmptyStateActions>
+          </EmptyState>
+        ) : (
+          <Stack gap="2">
+            {filteredLogs.map((log) => (
+              <LogRow
+                key={log.id}
+                log={log}
+                copied={copied}
+                onCopy={copyToClipboard}
+              />
+            ))}
+          </Stack>
+        )}
+      </CardBody>
+    </Card>
+  );
 
   return (
-    <motion.div
-      variants={fadeIn}
-      initial="hidden"
-      animate="visible"
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode 
-          ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800' 
-          : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
-      }`}
-    >
-      {/* Background Pattern */}
-      <div className={`fixed inset-0 opacity-30 ${
-        darkMode ? 'bg-gray-900' : 'bg-white'
-      }`}>
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 25px 25px, ${
-            darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
-          } 2px, transparent 0)`,
-          backgroundSize: '50px 50px'
-        }} />
-      </div>
+    <Container size="full">
+      <Stack gap="4">
+        <Inline justify="between" align="center" wrap gap="2">
+          <Inline align="center" gap="2" wrap>
+            <Heading level={2} size="lg" weight="semibold">
+              Log Parser
+            </Heading>
+            {parsedLogs.length > 0 && (
+              <Badge variant="soft" colorScheme="accent" size="sm">
+                {parsedLogs.length} parsed
+              </Badge>
+            )}
+          </Inline>
+          <Inline gap="2" wrap>
+            <Button
+              variant={showFilters ? 'solid' : 'soft'}
+              colorScheme={showFilters ? 'accent' : 'neutral'}
+              size="sm"
+              leftIcon={<Filter size={14} />}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              Filters{hasActiveFilters && ' •'}
+            </Button>
+            <Tabs
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as 'split' | 'input' | 'output')}
+              variant="soft"
+              size="sm"
+            >
+              <TabsList aria-label="View mode">
+                <TabsTrigger value="input">
+                  <PanelLeft size={14} aria-hidden />
+                </TabsTrigger>
+                <TabsTrigger value="split">
+                  <LayoutGrid size={14} aria-hidden />
+                </TabsTrigger>
+                <TabsTrigger value="output">
+                  <PanelRight size={14} aria-hidden />
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </Inline>
+        </Inline>
 
-      {/* Main Container */}
-      <div className="relative z-10 flex flex-col min-h-screen max-w-[2000px] mx-auto">
-        {/* Header */}
-        <Header 
-          logType={logType} 
-          logText={logText} 
-          showFilters={showFilters}
-          setShowFilters={setShowFilters}
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
-          totalLogs={parsedLogs.length}
-          filteredCount={filteredLogs.length}
-        />
-        
-        {/* Filter Panel */}
-        <AnimatePresence>
-          {showFilters && (
-            <div className="px-6">
-              <FilterPanel 
-                filter={filter}
-                setFilter={setFilter}
-                searchComponent={searchComponent}
-                setSearchComponent={setSearchComponent}
-                logType={logType}
-                setLogType={setLogType}
-                activeFilters={activeFilters}
-                toggleLevelFilter={toggleLevelFilter}
-                timeRange={timeRange}
-                setTimeRange={setTimeRange}
-                resetFilters={resetFilters}
-                logCounts={logCounts}
-                darkMode={darkMode}
-              />
-            </div>
-          )}
-        </AnimatePresence>
-        
-        {/* Main Content */}
-        <div className="flex-1 px-6 pb-6">
-          <LogContent 
-            logText={logText}
-            setLogText={setLogText}
-            parsedLogs={parsedLogs}
-            filteredLogs={filteredLogs}
-            clearLogs={clearLogs}
-            loadSampleLogs={loadSampleLogs}
-            filter={filter}
-            searchComponent={searchComponent}
-            resetFilters={resetFilters}
-            darkMode={darkMode}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-          />
-        </div>
-      </div>
+        {parsedLogs.length > 0 && (
+          <Grid columns={{ base: 2, sm: 3, md: 5 }} gap="2">
+            {(Object.keys(LEVEL_INFO) as LogLevel[]).map((level) => {
+              const info = LEVEL_INFO[level];
+              const isActive = activeFilters[level];
+              const count = logCounts[level];
+              return (
+                <Card
+                  key={level}
+                  variant={isActive ? 'outlined' : 'filled'}
+                  size="sm"
+                  interactive
+                  onClick={() => toggleLevelFilter(level)}
+                >
+                  <CardBody>
+                    <Inline justify="between" align="center">
+                      <Inline gap="2" align="center">
+                        {info.icon}
+                        <Text size="sm" weight="medium">
+                          {info.label}
+                        </Text>
+                      </Inline>
+                      <Badge
+                        variant="soft"
+                        colorScheme={info.colorScheme}
+                        size="sm"
+                      >
+                        {count}
+                      </Badge>
+                    </Inline>
+                  </CardBody>
+                </Card>
+              );
+            })}
+          </Grid>
+        )}
 
-      {/* Scroll to top button */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className={`fixed bottom-6 right-6 p-3 rounded-full shadow-lg transition-all duration-200 ${
-          darkMode 
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/25' 
-            : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-500/25'
-        }`}
-        aria-label="Scroll to top"
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path 
-            d="M10 3L3 10H7V17H13V10H17L10 3Z" 
-            fill="currentColor"
-          />
-        </svg>
-      </motion.button>
-    </motion.div>
+        {showFilters && (
+          <Card variant="filled" size="md">
+            <CardHeader>
+              <Inline justify="between" align="center" wrap>
+                <Inline align="center" gap="2">
+                  <Filter size={18} aria-hidden />
+                  <CardTitle as="h3">Filters</CardTitle>
+                </Inline>
+                <Button
+                  variant="ghost"
+                  colorScheme="neutral"
+                  size="sm"
+                  disabled={!hasActiveFilters}
+                  onClick={resetFilters}
+                >
+                  Reset
+                </Button>
+              </Inline>
+            </CardHeader>
+            <CardBody>
+              <Grid columns={{ base: 1, md: 2 }} gap="3">
+                <Stack gap="2">
+                  <Label htmlFor="filter-search">Message search</Label>
+                  <SearchInput
+                    value={filter}
+                    onChange={setFilter}
+                    onSearch={setFilter}
+                    placeholder="Search in messages…"
+                  />
+                </Stack>
+                <Stack gap="2">
+                  <Label htmlFor="filter-component">Component</Label>
+                  <Input
+                    id="filter-component"
+                    value={searchComponent}
+                    onChange={setSearchComponent}
+                    placeholder="Filter by component…"
+                    leadingSlot={<Cpu size={16} aria-hidden />}
+                  />
+                </Stack>
+                <Stack gap="2">
+                  <Label htmlFor="filter-from">Time range start</Label>
+                  <Input
+                    id="filter-from"
+                    value={timeRange.start ?? ''}
+                    onChange={(v) =>
+                      setTimeRange({ ...timeRange, start: v || undefined })
+                    }
+                    placeholder="e.g. 12:00:00"
+                    leadingSlot={<Clock size={16} aria-hidden />}
+                  />
+                </Stack>
+                <Stack gap="2">
+                  <Label htmlFor="filter-to">Time range end</Label>
+                  <Input
+                    id="filter-to"
+                    value={timeRange.end ?? ''}
+                    onChange={(v) =>
+                      setTimeRange({ ...timeRange, end: v || undefined })
+                    }
+                    placeholder="e.g. 13:00:00"
+                    leadingSlot={<Clock size={16} aria-hidden />}
+                  />
+                </Stack>
+              </Grid>
+            </CardBody>
+          </Card>
+        )}
+
+        {viewMode === 'split' ? (
+          <Grid columns={{ base: 1, lg: 2 }} gap="4">
+            <Box>{inputPanel}</Box>
+            <Box>{outputPanel}</Box>
+          </Grid>
+        ) : viewMode === 'input' ? (
+          inputPanel
+        ) : (
+          outputPanel
+        )}
+
+        {parsedLogs.length === 0 && !logText && (
+          <Alert status="info" variant="soft">
+            <AlertTitle>How to use</AlertTitle>
+            <AlertDescription>
+              Paste your application logs into the input panel, pick a log type
+              (or leave on Auto-detect), then use the filter chips above each
+              log level to drill down.
+            </AlertDescription>
+          </Alert>
+        )}
+      </Stack>
+    </Container>
   );
 };
 

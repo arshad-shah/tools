@@ -1,50 +1,255 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { Save } from 'lucide-react';
-import { RequestPanel } from './components/RequestPanel';
-import { ResponsePanel } from './components/ResponsePanel';
-import { Sidebar } from './components/SideBar';
-import { SaveRequestModal } from './components/SaveRequestModal';
-import { NewCollectionModal } from './components/NewCollectionModal';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { 
-  RequestItemType, 
-  ParamType, 
-  HeaderType, 
-  ResponseType,
+import {
+  ChevronDown,
+  ChevronRight,
+  FilePlus,
+  Folder,
+  FolderPlus,
+  Globe,
+  Plus,
+  Save,
+  Send,
+  Trash2,
+} from 'lucide-react';
+import {
+  Badge,
+  Box,
+  Button,
+  ButtonGroup,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Center,
+  Code,
+  Container,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  Grid,
+  IconButton,
+  Inline,
+  Input,
+  Label,
+  Select,
+  Spinner,
+  Stack,
+  Switch,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+  Textarea,
+} from '@arshad-shah/cynosure-react';
+import {
   BodyType,
   CollectionType,
-  FolderItemType
+  FolderItemType,
+  HeaderType,
+  ParamType,
+  RequestItemType,
+  ResponseType,
 } from '../../types/ApiTesterTypes';
 import { useLocalStorage } from '../../hooks/useLocalStorage.hook';
-import { Button } from '../../components/Button';
-import { EmptyRequestState } from './components/EmptyRequestState';
+
+const METHOD_OPTIONS = [
+  { value: 'GET', label: 'GET' },
+  { value: 'POST', label: 'POST' },
+  { value: 'PUT', label: 'PUT' },
+  { value: 'PATCH', label: 'PATCH' },
+  { value: 'DELETE', label: 'DELETE' },
+  { value: 'HEAD', label: 'HEAD' },
+  { value: 'OPTIONS', label: 'OPTIONS' },
+];
+
+const BODY_TYPE_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'json', label: 'JSON' },
+  { value: 'x-www-form-urlencoded', label: 'Form urlencoded' },
+  { value: 'form-data', label: 'Form data' },
+];
+
+const methodColor = (
+  method: string,
+): 'success' | 'warning' | 'accent' | 'danger' | 'neutral' => {
+  switch (method.toUpperCase()) {
+    case 'GET':
+      return 'success';
+    case 'POST':
+      return 'accent';
+    case 'PUT':
+      return 'warning';
+    case 'PATCH':
+      return 'warning';
+    case 'DELETE':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+};
+
+const statusColor = (
+  status: number,
+): 'success' | 'warning' | 'danger' | 'neutral' => {
+  if (status === 0) return 'danger';
+  if (status >= 500) return 'danger';
+  if (status >= 400) return 'warning';
+  if (status >= 200 && status < 300) return 'success';
+  return 'neutral';
+};
+
+interface CollectionItemProps {
+  item: RequestItemType | FolderItemType;
+  depth: number;
+  selectedRequest: string | null;
+  onSelectRequest: (req: RequestItemType) => void;
+  onDelete: (id: string, type: 'folder' | 'request') => void;
+}
+
+const CollectionItem: React.FC<CollectionItemProps> = ({
+  item,
+  depth,
+  selectedRequest,
+  onSelectRequest,
+  onDelete,
+}) => {
+  const [open, setOpen] = useState(true);
+  if (item.type === 'folder') {
+    return (
+      <Stack gap="1">
+        <Inline align="center" gap="2" style={{ paddingLeft: depth * 12 }}>
+          <IconButton
+            variant="ghost"
+            colorScheme="neutral"
+            size="sm"
+            label={open ? 'Collapse' : 'Expand'}
+            icon={
+              open ? (
+                <ChevronDown size={14} />
+              ) : (
+                <ChevronRight size={14} />
+              )
+            }
+            onClick={() => setOpen(!open)}
+          />
+          <Folder size={14} aria-hidden />
+          <Text size="sm" weight="medium">
+            {item.name}
+          </Text>
+          <Box flex="1" />
+          <IconButton
+            variant="ghost"
+            colorScheme="danger"
+            size="sm"
+            label="Delete folder"
+            icon={<Trash2 size={12} />}
+            onClick={() => onDelete(item.id, 'folder')}
+          />
+        </Inline>
+        {open && (
+          <Stack gap="1">
+            {item.children.map((child) => (
+              <CollectionItem
+                key={child.id}
+                item={child}
+                depth={depth + 1}
+                selectedRequest={selectedRequest}
+                onSelectRequest={onSelectRequest}
+                onDelete={onDelete}
+              />
+            ))}
+          </Stack>
+        )}
+      </Stack>
+    );
+  }
+
+  const req = item as RequestItemType;
+  const isSelected = selectedRequest === req.id;
+  return (
+    <Card
+      variant={isSelected ? 'outlined' : 'filled'}
+      size="sm"
+      interactive
+      onClick={() => onSelectRequest(req)}
+      style={{ marginLeft: depth * 12 }}
+    >
+      <CardBody>
+        <Inline justify="between" align="center" gap="2" wrap>
+          <Inline align="center" gap="2">
+            <Badge
+              variant="solid"
+              colorScheme={methodColor(req.method)}
+              size="xs"
+            >
+              {req.method}
+            </Badge>
+            <Text size="sm" weight="medium" truncate>
+              {req.name}
+            </Text>
+          </Inline>
+          <IconButton
+            variant="ghost"
+            colorScheme="danger"
+            size="sm"
+            label="Delete request"
+            icon={<Trash2 size={12} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(req.id, 'request');
+            }}
+          />
+        </Inline>
+      </CardBody>
+    </Card>
+  );
+};
 
 const ApiTester: React.FC = () => {
   // Request state
   const [requestType, setRequestType] = useState<'rest' | 'graphql'>('rest');
   const [method, setMethod] = useState<string>('GET');
   const [url, setUrl] = useState<string>('');
-  const [headers, setHeaders] = useState<HeaderType[]>([{ key: '', value: '' }]);
-  const [params, setParams] = useState<ParamType[]>([{ key: '', value: '', enabled: true }]);
+  const [headers, setHeaders] = useState<HeaderType[]>([
+    { key: '', value: '' },
+  ]);
+  const [params, setParams] = useState<ParamType[]>([
+    { key: '', value: '', enabled: true },
+  ]);
   const [bodyType, setBodyType] = useState<BodyType>('none');
   const [body, setBody] = useState<string>('');
   const [graphqlQuery, setGraphqlQuery] = useState<string>('');
   const [graphqlVariables, setGraphqlVariables] = useState<string>('');
-  
+
   // Response state
   const [response, setResponse] = useState<ResponseType | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
+
   // UI state
   const [sidebarActive, setSidebarActive] = useState<boolean>(true);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [saveModalOpen, setSaveModalOpen] = useState<boolean>(false);
   const [saveName, setSaveName] = useState<string>('');
-  const [newCollectionModalOpen, setNewCollectionModalOpen] = useState<boolean>(false);
+  const [newCollectionModalOpen, setNewCollectionModalOpen] =
+    useState<boolean>(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
-  
-  // Collections state with localStorage persistence
+  const [activeRequestTab, setActiveRequestTab] = useState<
+    'params' | 'headers' | 'body'
+  >('params');
+  const [activeResponseTab, setActiveResponseTab] = useState<
+    'body' | 'headers'
+  >('body');
+
   const [collections, setCollections] = useLocalStorage<CollectionType[]>(
     'apiTesterCollections',
     [
@@ -53,360 +258,276 @@ const ApiTester: React.FC = () => {
         type: 'folder',
         name: 'My Collection',
         children: [
-          { id: '2', type: 'request', name: 'Get Users', method: 'GET', url: 'https://jsonplaceholder.typicode.com/users' },
-          { id: '3', type: 'request', name: 'Create User', method: 'POST', url: 'https://jsonplaceholder.typicode.com/users' }
-        ]
-      }
-    ]
+          {
+            id: '2',
+            type: 'request',
+            name: 'Get Users',
+            method: 'GET',
+            url: 'https://jsonplaceholder.typicode.com/users',
+          },
+          {
+            id: '3',
+            type: 'request',
+            name: 'Create User',
+            method: 'POST',
+            url: 'https://jsonplaceholder.typicode.com/users',
+          },
+        ],
+      },
+    ],
   );
 
-  // Headers management
-  const handleAddHeader = (): void => {
-    setHeaders([...headers, { key: '', value: '' }]);
+  // Header helpers
+  const addHeader = () => setHeaders([...headers, { key: '', value: '' }]);
+  const removeHeader = (i: number) => {
+    const next = [...headers];
+    next.splice(i, 1);
+    setHeaders(next);
   };
-  
-  const handleRemoveHeader = (index: number): void => {
-    const newHeaders = [...headers];
-    newHeaders.splice(index, 1);
-    setHeaders(newHeaders);
+  const updateHeader = (i: number, field: 'key' | 'value', value: string) => {
+    const next = [...headers];
+    next[i] = { ...next[i], [field]: value };
+    setHeaders(next);
   };
-  
-  const handleHeaderChange = (index: number, field: string, value: string): void => {
-    const newHeaders = [...headers];
-    newHeaders[index] = { ...newHeaders[index], [field]: value };
-    setHeaders(newHeaders);
-  };
-  
-  // Parameters management
-  const handleAddParam = (): void => {
+
+  // Param helpers
+  const addParam = () =>
     setParams([...params, { key: '', value: '', enabled: true }]);
+  const removeParam = (i: number) => {
+    const next = [...params];
+    next.splice(i, 1);
+    setParams(next);
   };
-  
-  const handleRemoveParam = (index: number): void => {
-    const newParams = [...params];
-    newParams.splice(index, 1);
-    setParams(newParams);
+  const updateParam = (i: number, field: keyof ParamType, value: any) => {
+    const next = [...params];
+    next[i] = { ...next[i], [field]: value };
+    setParams(next);
   };
-  
-  const handleParamChange = (index: number, field: string, value: any): void => {
-    const newParams = [...params];
-    newParams[index] = { ...newParams[index], [field]: value };
-    setParams(newParams);
-  };
-  
-  // Build URL with query parameters
-  const buildUrl = (): string => {
+
+  const buildUrl = () => {
     try {
-      const parsedUrl = new URL(url);
-      const enabledParams = params.filter(p => p.enabled && p.key.trim());
-      
-      enabledParams.forEach(param => {
-        parsedUrl.searchParams.append(param.key, param.value);
-      });
-      
-      return parsedUrl.toString();
+      const parsed = new URL(url);
+      params
+        .filter((p) => p.enabled && p.key.trim())
+        .forEach((p) => parsed.searchParams.append(p.key, p.value));
+      return parsed.toString();
     } catch {
-      return url; // Return original if not a valid URL
+      return url;
     }
   };
-  
-  // Request handling
-  const handleSendRequest = async (): Promise<void> => {
+
+  const sendRequest = async () => {
     if (!url) {
-      alert("Please enter a URL");
+      window.alert('Please enter a URL');
       return;
     }
-    
     setIsLoading(true);
     const startTime = performance.now();
-    
     try {
-      let response: ResponseType;
-      
+      let res: ResponseType;
       if (requestType === 'rest') {
-        // Prepare headers
         const headerObj: Record<string, string> = {};
-        headers.forEach(header => {
-          if (header.key.trim() && header.value.trim()) {
-            headerObj[header.key.trim()] = header.value.trim();
+        headers.forEach((h) => {
+          if (h.key.trim() && h.value.trim()) {
+            headerObj[h.key.trim()] = h.value.trim();
           }
         });
-        
-        // Prepare request URL with query parameters for GET requests
-        let requestUrl = url;
-        if (method === 'GET') {
-          requestUrl = buildUrl();
-        }
-        
-        // Prepare request body for non-GET requests
-        let requestBody: any = undefined;
+        let reqUrl = url;
+        if (method === 'GET') reqUrl = buildUrl();
+        let reqBody: any = undefined;
         if (method !== 'GET' && bodyType === 'json' && body.trim()) {
           try {
-            requestBody = JSON.parse(body);
+            reqBody = JSON.parse(body);
             headerObj['Content-Type'] = 'application/json';
+            reqBody = JSON.stringify(reqBody);
           } catch {
-            alert("Invalid JSON in request body");
+            window.alert('Invalid JSON in request body');
             setIsLoading(false);
             return;
           }
-        } else if (method !== 'GET' && bodyType === 'x-www-form-urlencoded') {
+        } else if (
+          method !== 'GET' &&
+          bodyType === 'x-www-form-urlencoded'
+        ) {
           const formData = new URLSearchParams();
-          // Assume body is in format key=value&key2=value2
-          body.split('&').forEach(pair => {
-            const [key, value] = pair.split('=');
-            if (key) formData.append(key, value || '');
+          body.split('&').forEach((pair) => {
+            const [k, v] = pair.split('=');
+            if (k) formData.append(k, v || '');
           });
-          requestBody = formData;
+          reqBody = formData;
           headerObj['Content-Type'] = 'application/x-www-form-urlencoded';
-        } else if (method !== 'GET' && bodyType === 'form-data') {
-          const formData = new FormData();
-          // For form-data, we would need proper form inputs
-          // This is a simplified implementation
-          try {
-            const formObj = JSON.parse(body);
-            Object.entries(formObj).forEach(([key, value]) => {
-              formData.append(key, String(value));
-            });
-          } catch {
-            alert("Invalid form data format. Use JSON object for now.");
-            setIsLoading(false);
-            return;
-          }
-          requestBody = formData;
-          // Don't set Content-Type for FormData - browser will set it with boundary
         }
-        
-        // Make the actual REST API call
-        const fetchResponse = await fetch(requestUrl, {
-          method: method,
+        const fetchRes = await fetch(reqUrl, {
+          method,
           headers: headerObj,
-          body: requestBody
+          body: reqBody,
         });
-        
-        // Process response
-        const responseHeaders: Record<string, string> = {};
-        fetchResponse.headers.forEach((value, key) => {
-          responseHeaders[key] = value;
+        const respHeaders: Record<string, string> = {};
+        fetchRes.headers.forEach((value, key) => {
+          respHeaders[key] = value;
         });
-        
-        let responseData: any;
-        const contentType = fetchResponse.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          responseData = await fetchResponse.json();
-        } else {
-          responseData = await fetchResponse.text();
-        }
-        
-        response = {
-          status: fetchResponse.status,
-          statusText: fetchResponse.statusText,
+        const contentType = fetchRes.headers.get('content-type');
+        const data =
+          contentType && contentType.includes('application/json')
+            ? await fetchRes.json()
+            : await fetchRes.text();
+        res = {
+          status: fetchRes.status,
+          statusText: fetchRes.statusText,
           time: Math.round(performance.now() - startTime),
-          headers: responseHeaders,
-          data: responseData
+          headers: respHeaders,
+          data,
         };
-      } else { // GraphQL
-        // Prepare headers
+      } else {
         const headerObj: Record<string, string> = {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         };
-        
-        headers.forEach(header => {
-          if (header.key.trim() && header.value.trim()) {
-            headerObj[header.key.trim()] = header.value.trim();
+        headers.forEach((h) => {
+          if (h.key.trim() && h.value.trim()) {
+            headerObj[h.key.trim()] = h.value.trim();
           }
         });
-        
-        // Prepare GraphQL request
         let variables: Record<string, unknown> = {};
         if (graphqlVariables.trim()) {
           try {
             variables = JSON.parse(graphqlVariables);
           } catch {
-            alert("Invalid JSON in GraphQL variables");
+            window.alert('Invalid JSON in GraphQL variables');
             setIsLoading(false);
             return;
           }
         }
-        
-        const graphqlRequest = {
-          query: graphqlQuery,
-          variables: variables
-        };
-        
-        // Make the actual GraphQL API call
-        const fetchResponse = await fetch(url, {
+        const fetchRes = await fetch(url, {
           method: 'POST',
           headers: headerObj,
-          body: JSON.stringify(graphqlRequest)
+          body: JSON.stringify({ query: graphqlQuery, variables }),
         });
-        
-        // Process response
-        const responseHeaders: Record<string, string> = {};
-        fetchResponse.headers.forEach((value, key) => {
-          responseHeaders[key] = value;
+        const respHeaders: Record<string, string> = {};
+        fetchRes.headers.forEach((value, key) => {
+          respHeaders[key] = value;
         });
-        
-        const responseData = await fetchResponse.json();
-        
-        response = {
-          status: fetchResponse.status,
-          statusText: fetchResponse.statusText,
+        const data = await fetchRes.json();
+        res = {
+          status: fetchRes.status,
+          statusText: fetchRes.statusText,
           time: Math.round(performance.now() - startTime),
-          headers: responseHeaders,
-          data: responseData
+          headers: respHeaders,
+          data,
         };
       }
-      
-      setResponse(response);
-    } catch (error: unknown) {
-      // Handle network errors
+      setResponse(res);
+    } catch (err) {
       setResponse({
         status: 0,
-        statusText: 'Network Error',
+        statusText: 'Network error',
         time: Math.round(performance.now() - startTime),
         headers: {},
-        data: { error: (error instanceof Error ? error.message : "Failed to connect to the server") }
+        data: {
+          error:
+            err instanceof Error ? err.message : 'Failed to connect to the server',
+        },
       });
-      console.error("API Request failed:", error);
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Collection management
-  const handleSelectRequest = (request: RequestItemType): void => {
-    setSelectedRequest(request.id);
-    
-    // Load all request details
-    if (request.requestType) {
-      setRequestType(request.requestType as 'rest' | 'graphql');
-    }
-    
-    setMethod(request.method);
-    setUrl(request.url);
-    
-    // Load headers if available
-    if (request.headers && Array.isArray(request.headers)) {
-      setHeaders(request.headers.length > 0 ? [...request.headers] : [{ key: '', value: '' }]);
-    }
-    
-    // Load params if available
-    if (request.params && Array.isArray(request.params)) {
-      setParams(request.params.length > 0 ? [...request.params] : [{ key: '', value: '', enabled: true }]);
-    }
-    
-    // Load body settings if available
-    if (request.bodyType) {
-      setBodyType(request.bodyType as BodyType);
-    }
-    
-    if (request.body !== undefined) {
-      setBody(request.body);
-    }
-    
-    // Load GraphQL settings if available
-    if (request.graphqlQuery !== undefined) {
-      setGraphqlQuery(request.graphqlQuery);
-    }
-    
-    if (request.graphqlVariables !== undefined) {
-      setGraphqlVariables(request.graphqlVariables);
-    }
+
+  const handleSelectRequest = (req: RequestItemType) => {
+    setSelectedRequest(req.id);
+    if (req.requestType) setRequestType(req.requestType as 'rest' | 'graphql');
+    setMethod(req.method);
+    setUrl(req.url);
+    setHeaders(
+      req.headers && Array.isArray(req.headers) && req.headers.length > 0
+        ? [...req.headers]
+        : [{ key: '', value: '' }],
+    );
+    setParams(
+      req.params && Array.isArray(req.params) && req.params.length > 0
+        ? [...req.params]
+        : [{ key: '', value: '', enabled: true }],
+    );
+    if (req.bodyType) setBodyType(req.bodyType as BodyType);
+    if (req.body !== undefined) setBody(req.body);
+    if (req.graphqlQuery !== undefined) setGraphqlQuery(req.graphqlQuery);
+    if (req.graphqlVariables !== undefined)
+      setGraphqlVariables(req.graphqlVariables);
   };
-  
-const handleSaveRequest = (): void => {
+
+  const handleSaveRequest = () => {
     if (!saveName) {
-      alert("Please enter a name for your request");
+      window.alert('Please enter a name');
       return;
     }
-    
-    // Create new request object with all current settings
-    const newRequest: RequestItemType = {
-      id: Date.now().toString(), // Generate unique ID
+    const newReq: RequestItemType = {
+      id: Date.now().toString(),
       type: 'request',
       name: saveName,
-      method: method,
-      url: url,
-      requestType: requestType,
+      method,
+      url,
+      requestType,
       headers: [...headers],
       params: [...params],
-      bodyType: bodyType,
-      body: body,
-      graphqlQuery: graphqlQuery,
-      graphqlVariables: graphqlVariables,
+      bodyType,
+      body,
+      graphqlQuery,
+      graphqlVariables,
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     };
-    
-    // Find the target collection to add the request to
-    const targetCollectionId = selectedCollectionId || (collections.length > 0 ? collections[0].id : null);
-    
-    if (!targetCollectionId) {
-      alert("No collection available to save to. Please create a collection first.");
+    const targetId =
+      selectedCollectionId || (collections.length > 0 ? collections[0].id : null);
+    if (!targetId) {
+      window.alert('No collection available. Create one first.');
       return;
     }
-    
-    const newCollections = [...collections];
-    
-    // Helper function to add request to the right collection (supports nested collections)
-    const addRequestToCollection = (items: (RequestItemType | FolderItemType)[]) => {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type === 'folder' && item.id === targetCollectionId) {
-          item.children = [...item.children, newRequest];
+    const next = [...collections];
+    const addTo = (items: (RequestItemType | FolderItemType)[]) => {
+      for (const item of items) {
+        if (item.type === 'folder' && item.id === targetId) {
+          item.children = [...item.children, newReq];
           return true;
-        } else if (item.type === 'folder') {
-          if (addRequestToCollection(item.children)) {
-            return true;
-          }
         }
+        if (item.type === 'folder' && addTo(item.children)) return true;
       }
       return false;
     };
-    
-    // Try to add the request to the selected collection
-    if (addRequestToCollection(newCollections)) {
-      setCollections(newCollections);
-      setSelectedRequest(newRequest.id);
-    } else {
-      // Fallback to first collection if target not found
-      if (newCollections.length > 0) {
-        newCollections[0].children = [...newCollections[0].children, newRequest];
-        setCollections(newCollections);
-        setSelectedRequest(newRequest.id);
-      }
+    if (addTo(next) || (next.length > 0 && (next[0].children = [...next[0].children, newReq]))) {
+      setCollections(next);
+      setSelectedRequest(newReq.id);
+      setSaveModalOpen(false);
+      setSaveName('');
     }
   };
-  const handleCreateCollection = (name: string): void => {
-    const newCollection: CollectionType = {
-      id: Date.now().toString(),
-      type: 'folder',
-      name: name,
-      children: []
-    };
-    
-    const newCollections = [...collections, newCollection];
-    setCollections(newCollections);
+
+  const handleCreateCollection = () => {
+    if (!newCollectionName.trim()) return;
+    setCollections([
+      ...collections,
+      {
+        id: Date.now().toString(),
+        type: 'folder',
+        name: newCollectionName.trim(),
+        children: [],
+      },
+    ]);
+    setNewCollectionName('');
+    setNewCollectionModalOpen(false);
   };
 
   const handleCreateNewRequest = () => {
-    // Create new blank request and select it
-    const newRequest: RequestItemType = {
+    const newReq: RequestItemType = {
       id: Date.now().toString(),
       type: 'request',
       name: 'New Request',
       method: 'GET',
       url: '',
-      requestType: 'rest'
+      requestType: 'rest',
     };
-    
-    // Add to first collection if it exists
     if (collections.length > 0) {
-      const newCollections = [...collections];
-      newCollections[0].children = [...newCollections[0].children, newRequest];
-      setCollections(newCollections);
-      
-      // Reset form and select the new request
+      const next = [...collections];
+      next[0].children = [...next[0].children, newReq];
+      setCollections(next);
       setMethod('GET');
       setUrl('');
       setHeaders([{ key: '', value: '' }]);
@@ -415,140 +536,543 @@ const handleSaveRequest = (): void => {
       setBody('');
       setGraphqlQuery('');
       setGraphqlVariables('');
-      setSelectedRequest(newRequest.id);
+      setSelectedRequest(newReq.id);
     } else {
-      // If no collections exist, prompt to create one
       setNewCollectionModalOpen(true);
     }
   };
-  
+
+  const handleDelete = (id: string, type: 'folder' | 'request') => {
+    if (type === 'request') {
+      const next = [...collections];
+      const idx = next[0]?.children.findIndex((r) => r.id === id);
+      if (idx !== undefined && idx !== -1) {
+        next[0].children.splice(idx, 1);
+        setCollections(next);
+        if (selectedRequest === id) setSelectedRequest(null);
+      }
+    } else if (type === 'folder') {
+      setCollections(collections.filter((c) => c.id !== id));
+    }
+  };
+
+  const renderResponse = () => {
+    if (isLoading) {
+      return (
+        <Center paddingY="10">
+          <Stack gap="3" align="center">
+            <Spinner size="lg" colorScheme="accent" />
+            <Text size="sm" variant="caption">
+              Sending request…
+            </Text>
+          </Stack>
+        </Center>
+      );
+    }
+    if (!response) {
+      return (
+        <EmptyState size="md" variant="subtle">
+          <EmptyStateIcon>
+            <Send size={36} aria-hidden />
+          </EmptyStateIcon>
+          <EmptyStateTitle>No response yet</EmptyStateTitle>
+          <EmptyStateDescription>
+            Send a request to see the response here.
+          </EmptyStateDescription>
+        </EmptyState>
+      );
+    }
+    return (
+      <Stack gap="3">
+        <Inline justify="between" align="center" wrap gap="2">
+          <Inline gap="2" align="center">
+            <Badge
+              variant="solid"
+              colorScheme={statusColor(response.status)}
+              size="md"
+            >
+              {response.status} {response.statusText}
+            </Badge>
+            <Badge variant="soft" colorScheme="neutral" size="sm">
+              {response.time}ms
+            </Badge>
+          </Inline>
+        </Inline>
+        <Tabs
+          value={activeResponseTab}
+          onValueChange={(v) => setActiveResponseTab(v as 'body' | 'headers')}
+          variant="line"
+          colorScheme="accent"
+        >
+          <TabsList aria-label="Response">
+            <TabsTrigger value="body">Body</TabsTrigger>
+            <TabsTrigger value="headers">
+              <Inline gap="2" align="center" wrap={false}>
+                <span>Headers</span>
+                <Badge variant="soft" colorScheme="neutral" size="xs">
+                  {Object.keys(response.headers).length}
+                </Badge>
+              </Inline>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="body">
+            <Box paddingTop="3">
+              <Code variant="block" size="sm">
+                {typeof response.data === 'string'
+                  ? response.data
+                  : JSON.stringify(response.data, null, 2)}
+              </Code>
+            </Box>
+          </TabsContent>
+          <TabsContent value="headers">
+            <Box paddingTop="3">
+              <Stack gap="1">
+                {Object.entries(response.headers).map(([k, v]) => (
+                  <Inline key={k} justify="between" align="start" gap="2" wrap>
+                    <Text size="sm" weight="medium">
+                      {k}
+                    </Text>
+                    <Code size="sm">{v}</Code>
+                  </Inline>
+                ))}
+              </Stack>
+            </Box>
+          </TabsContent>
+        </Tabs>
+      </Stack>
+    );
+  };
+
+  const requestForm = (
+    <Stack gap="4">
+      <Inline gap="2" align="center" wrap>
+        <Box minWidth="32">
+          <Select
+            value={method}
+            onValueChange={setMethod}
+            items={METHOD_OPTIONS}
+            aria-label="HTTP method"
+          />
+        </Box>
+        <Box flex="1" minWidth="0">
+          <Input
+            value={url}
+            onChange={setUrl}
+            placeholder="https://api.example.com/endpoint"
+            leadingSlot={<Globe size={14} aria-hidden />}
+            aria-label="Request URL"
+          />
+        </Box>
+        <Button
+          variant="solid"
+          colorScheme="accent"
+          leftIcon={<Send size={14} />}
+          onClick={sendRequest}
+          loading={isLoading}
+        >
+          Send
+        </Button>
+      </Inline>
+
+      <Tabs
+        value={activeRequestTab}
+        onValueChange={(v) =>
+          setActiveRequestTab(v as 'params' | 'headers' | 'body')
+        }
+        variant="line"
+        colorScheme="accent"
+      >
+        <TabsList aria-label="Request sections">
+          <TabsTrigger value="params">Params</TabsTrigger>
+          <TabsTrigger value="headers">Headers</TabsTrigger>
+          <TabsTrigger value="body">
+            {requestType === 'graphql' ? 'GraphQL' : 'Body'}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="params">
+          <Box paddingTop="3">
+            <Stack gap="2">
+              {params.map((p, idx) => (
+                <Inline key={idx} gap="2" align="center" wrap>
+                  <Switch
+                    checked={p.enabled}
+                    onCheckedChange={(c) => updateParam(idx, 'enabled', c)}
+                    aria-label="Enabled"
+                  />
+                  <Box flex="1" minWidth="0">
+                    <Input
+                      value={p.key}
+                      onChange={(v) => updateParam(idx, 'key', v)}
+                      placeholder="Key"
+                    />
+                  </Box>
+                  <Box flex="1" minWidth="0">
+                    <Input
+                      value={p.value}
+                      onChange={(v) => updateParam(idx, 'value', v)}
+                      placeholder="Value"
+                    />
+                  </Box>
+                  <IconButton
+                    variant="ghost"
+                    colorScheme="danger"
+                    size="sm"
+                    label="Remove parameter"
+                    icon={<Trash2 size={14} />}
+                    onClick={() => removeParam(idx)}
+                  />
+                </Inline>
+              ))}
+              <Button
+                variant="soft"
+                colorScheme="accent"
+                size="sm"
+                leftIcon={<Plus size={14} />}
+                onClick={addParam}
+              >
+                Add parameter
+              </Button>
+            </Stack>
+          </Box>
+        </TabsContent>
+
+        <TabsContent value="headers">
+          <Box paddingTop="3">
+            <Stack gap="2">
+              {headers.map((h, idx) => (
+                <Inline key={idx} gap="2" align="center" wrap>
+                  <Box flex="1" minWidth="0">
+                    <Input
+                      value={h.key}
+                      onChange={(v) => updateHeader(idx, 'key', v)}
+                      placeholder="Header"
+                    />
+                  </Box>
+                  <Box flex="1" minWidth="0">
+                    <Input
+                      value={h.value}
+                      onChange={(v) => updateHeader(idx, 'value', v)}
+                      placeholder="Value"
+                    />
+                  </Box>
+                  <IconButton
+                    variant="ghost"
+                    colorScheme="danger"
+                    size="sm"
+                    label="Remove header"
+                    icon={<Trash2 size={14} />}
+                    onClick={() => removeHeader(idx)}
+                  />
+                </Inline>
+              ))}
+              <Button
+                variant="soft"
+                colorScheme="accent"
+                size="sm"
+                leftIcon={<Plus size={14} />}
+                onClick={addHeader}
+              >
+                Add header
+              </Button>
+            </Stack>
+          </Box>
+        </TabsContent>
+
+        <TabsContent value="body">
+          <Box paddingTop="3">
+            {requestType === 'graphql' ? (
+              <Stack gap="3">
+                <Stack gap="2">
+                  <Label>Query</Label>
+                  <Textarea
+                    value={graphqlQuery}
+                    onChange={setGraphqlQuery}
+                    placeholder={'query {\n  users { id name }\n}'}
+                    rows={8}
+                    aria-label="GraphQL query"
+                  />
+                </Stack>
+                <Stack gap="2">
+                  <Label>Variables (JSON)</Label>
+                  <Textarea
+                    value={graphqlVariables}
+                    onChange={setGraphqlVariables}
+                    placeholder='{ "id": 1 }'
+                    rows={4}
+                    aria-label="GraphQL variables"
+                  />
+                </Stack>
+              </Stack>
+            ) : (
+              <Stack gap="3">
+                <Stack gap="2">
+                  <Label>Body type</Label>
+                  <Select
+                    value={bodyType}
+                    onValueChange={(v) => setBodyType(v as BodyType)}
+                    items={BODY_TYPE_OPTIONS}
+                    aria-label="Body type"
+                  />
+                </Stack>
+                {bodyType !== 'none' && (
+                  <Stack gap="2">
+                    <Label>Body</Label>
+                    <Textarea
+                      value={body}
+                      onChange={setBody}
+                      placeholder={
+                        bodyType === 'json'
+                          ? '{\n  "key": "value"\n}'
+                          : bodyType === 'x-www-form-urlencoded'
+                            ? 'key=value&another=value'
+                            : 'Body content…'
+                      }
+                      rows={8}
+                      aria-label="Request body"
+                    />
+                  </Stack>
+                )}
+              </Stack>
+            )}
+          </Box>
+        </TabsContent>
+      </Tabs>
+    </Stack>
+  );
+
   return (
-    <ErrorBoundary>
-      <div className="flex flex-col h-screen bg-gray-50 align-middle justify-center">
-        
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          {sidebarActive && (
-            <Sidebar 
-              collections={collections}
-              selectedRequest={selectedRequest}
-              onSelectRequest={handleSelectRequest}
-              onCreateRequest={handleCreateNewRequest}
-              onCreateCollection={() => setNewCollectionModalOpen(true)}
-              onDelete={(itemId, type) => {
-                if (type === 'request') {
-                  const newCollections = [...collections];
-                  const requestIndex = newCollections[0].children.findIndex(r => r.id === itemId);
-                  if (requestIndex !== -1) {
-                    newCollections[0].children.splice(requestIndex, 1);
-                    setCollections(newCollections);
-                    setSelectedRequest(null);
+    <Container size="full">
+      <Grid columns={{ base: 1, lg: sidebarActive ? 4 : 1 }} gap="4">
+        {sidebarActive && (
+          <Box gridColumn={{ base: 'span 1', lg: 'span 1' }}>
+            <Card variant="elevated" size="md">
+              <CardHeader>
+                <Inline justify="between" align="center" wrap gap="2">
+                  <CardTitle as="h3">Collections</CardTitle>
+                  <Inline gap="1">
+                    <IconButton
+                      variant="soft"
+                      colorScheme="accent"
+                      size="sm"
+                      label="New request"
+                      icon={<FilePlus size={14} />}
+                      onClick={handleCreateNewRequest}
+                    />
+                    <IconButton
+                      variant="soft"
+                      colorScheme="accent"
+                      size="sm"
+                      label="New collection"
+                      icon={<FolderPlus size={14} />}
+                      onClick={() => setNewCollectionModalOpen(true)}
+                    />
+                  </Inline>
+                </Inline>
+              </CardHeader>
+              <CardBody>
+                <Stack gap="2">
+                  {collections.length === 0 ? (
+                    <Text size="sm" variant="caption" align="center">
+                      No collections yet. Click + to create one.
+                    </Text>
+                  ) : (
+                    collections.map((c) => (
+                      <CollectionItem
+                        key={c.id}
+                        item={c}
+                        depth={0}
+                        selectedRequest={selectedRequest}
+                        onSelectRequest={handleSelectRequest}
+                        onDelete={handleDelete}
+                      />
+                    ))
+                  )}
+                </Stack>
+              </CardBody>
+            </Card>
+          </Box>
+        )}
+
+        <Box gridColumn={{ base: 'span 1', lg: sidebarActive ? 'span 3' : 'span 1' }}>
+          <Stack gap="4">
+            <Inline justify="between" align="center" wrap gap="2">
+              <ButtonGroup>
+                <Button
+                  variant={requestType === 'rest' ? 'solid' : 'soft'}
+                  colorScheme={requestType === 'rest' ? 'accent' : 'neutral'}
+                  size="sm"
+                  onClick={() => setRequestType('rest')}
+                >
+                  REST
+                </Button>
+                <Button
+                  variant={requestType === 'graphql' ? 'solid' : 'soft'}
+                  colorScheme={
+                    requestType === 'graphql' ? 'accent' : 'neutral'
                   }
-                }else if (type === 'folder') {
-                  const newCollections = collections.filter(c => c.id !== itemId);
-                  setCollections(newCollections);
-                }
-            }}
-            
-            />
-          )}
-          
-          {/* Main Content */}
-          {
-            selectedRequest ?
-            
-            (<div className="flex-1 overflow-hidden flex flex-col">
-            {/* Tab Controls */}
-            <div className="bg-gray-100 border-b border-gray-200 p-2 flex space-x-2">
-              <Button 
-                variant={requestType === 'rest' ? 'primary' : 'outline'} 
-                size="sm" 
-                onClick={() => setRequestType('rest')}
-              >
-                REST
-              </Button>
-              <Button 
-                variant={requestType === 'graphql' ? 'primary' : 'outline'} 
-                size="sm" 
-                onClick={() => setRequestType('graphql')}
-              >
-                GraphQL
-              </Button>
-              <div className="ml-auto flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                  size="sm"
+                  onClick={() => setRequestType('graphql')}
+                >
+                  GraphQL
+                </Button>
+              </ButtonGroup>
+              <Inline gap="2">
+                <Button
+                  variant="soft"
+                  colorScheme="neutral"
+                  size="sm"
+                  leftIcon={<Save size={14} />}
                   onClick={() => setSaveModalOpen(true)}
                 >
-                    <Save className="mr-2" />
                   Save
                 </Button>
                 <Button
-                  variant={sidebarActive ? 'secondary' : 'outline'} 
-                  size="sm" 
+                  variant="soft"
+                  colorScheme="neutral"
+                  size="sm"
                   onClick={() => setSidebarActive(!sidebarActive)}
                 >
-                  {sidebarActive ? 'Hide Collections' : 'Show Collections'}
+                  {sidebarActive ? 'Hide collections' : 'Show collections'}
                 </Button>
-              </div>
-            </div>
-            
-            {/* Main Request Form Area */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <RequestPanel
-                requestType={requestType}
-                method={method}
-                url={url}
-                headers={headers}
-                params={params}
-                bodyType={bodyType}
-                body={body}
-                graphqlQuery={graphqlQuery}
-                graphqlVariables={graphqlVariables}
-                buildUrl={buildUrl}
-                onMethodChange={(e) => setMethod(e.target.value)}
-                onUrlChange={(e) => setUrl(e.target.value)}
-                onHeaderChange={handleHeaderChange}
-                onAddHeader={handleAddHeader}
-                onRemoveHeader={handleRemoveHeader}
-                onParamChange={handleParamChange}
-                onAddParam={handleAddParam}
-                onRemoveParam={handleRemoveParam}
-                onBodyTypeChange={(e) => setBodyType(e.target.value as BodyType)}
-                onBodyChange={(e) => setBody(e.target.value)}
-                onGraphqlQueryChange={(e) => setGraphqlQuery(e.target.value)}
-                onGraphqlVariablesChange={(e) => setGraphqlVariables(e.target.value)}
-                onSendRequest={handleSendRequest}
+              </Inline>
+            </Inline>
+
+            {selectedRequest ? (
+              <Stack gap="4">
+                <Card variant="elevated" size="md">
+                  <CardHeader>
+                    <CardTitle as="h3">Request</CardTitle>
+                  </CardHeader>
+                  <CardBody>{requestForm}</CardBody>
+                </Card>
+                <Card variant="elevated" size="md">
+                  <CardHeader>
+                    <CardTitle as="h3">Response</CardTitle>
+                  </CardHeader>
+                  <CardBody>{renderResponse()}</CardBody>
+                </Card>
+              </Stack>
+            ) : (
+              <Card variant="elevated" size="md">
+                <CardBody>
+                  <EmptyState size="lg" variant="subtle">
+                    <EmptyStateIcon>
+                      <Globe size={48} aria-hidden />
+                    </EmptyStateIcon>
+                    <EmptyStateTitle>No request selected</EmptyStateTitle>
+                    <EmptyStateDescription>
+                      Pick a request from a collection or create a new one to
+                      get started.
+                    </EmptyStateDescription>
+                    <EmptyStateActions>
+                      <Button
+                        variant="solid"
+                        colorScheme="accent"
+                        leftIcon={<FilePlus size={14} />}
+                        onClick={handleCreateNewRequest}
+                      >
+                        New request
+                      </Button>
+                    </EmptyStateActions>
+                  </EmptyState>
+                </CardBody>
+              </Card>
+            )}
+          </Stack>
+        </Box>
+      </Grid>
+
+      <Dialog
+        open={saveModalOpen}
+        onOpenChange={(open) => setSaveModalOpen(open)}
+      >
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle>Save request</DialogTitle>
+          </DialogHeader>
+          <Stack gap="3" paddingY="3">
+            <Stack gap="2">
+              <Label htmlFor="save-name">Name</Label>
+              <Input
+                id="save-name"
+                value={saveName}
+                onChange={setSaveName}
+                placeholder="My request"
               />
-              
-              <ResponsePanel 
-                response={response} 
-                isLoading={isLoading} 
+            </Stack>
+            <Stack gap="2">
+              <Label>Collection</Label>
+              <Select
+                value={selectedCollectionId}
+                onValueChange={setSelectedCollectionId}
+                items={collections.map((c) => ({ value: c.id, label: c.name }))}
+                placeholder="Select a collection"
+                aria-label="Collection"
               />
-            </div>
-          </div>): (
-            <EmptyRequestState />
-          )}
-        </div>
-        
-        <SaveRequestModal
-          isOpen={saveModalOpen}
-          onClose={() => setSaveModalOpen(false)}
-          onSave={handleSaveRequest}
-          name={saveName}
-          setName={setSaveName}
-          collections={collections}
-          selectedCollection={selectedCollectionId}
-          setSelectedCollection={setSelectedCollectionId}
-        />
-        
-        <NewCollectionModal
-          isOpen={newCollectionModalOpen}
-          onClose={() => setNewCollectionModalOpen(false)}
-          onSave={handleCreateCollection}
-        />
-      </div>
-    </ErrorBoundary>
+            </Stack>
+          </Stack>
+          <DialogFooter>
+            <Inline justify="end" gap="2">
+              <Button
+                variant="soft"
+                colorScheme="neutral"
+                onClick={() => setSaveModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                colorScheme="accent"
+                onClick={handleSaveRequest}
+              >
+                Save
+              </Button>
+            </Inline>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={newCollectionModalOpen}
+        onOpenChange={(open) => setNewCollectionModalOpen(open)}
+      >
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle>New collection</DialogTitle>
+          </DialogHeader>
+          <Stack gap="3" paddingY="3">
+            <Stack gap="2">
+              <Label htmlFor="coll-name">Name</Label>
+              <Input
+                id="coll-name"
+                value={newCollectionName}
+                onChange={setNewCollectionName}
+                placeholder="My collection"
+              />
+            </Stack>
+          </Stack>
+          <DialogFooter>
+            <Inline justify="end" gap="2">
+              <Button
+                variant="soft"
+                colorScheme="neutral"
+                onClick={() => setNewCollectionModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                colorScheme="accent"
+                onClick={handleCreateCollection}
+              >
+                Create
+              </Button>
+            </Inline>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Container>
   );
 };
 
