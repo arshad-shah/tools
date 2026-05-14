@@ -77,11 +77,11 @@ const ElementModal: React.FC<ElementModalProps> = ({
       <DialogContent size="xl">
         <DialogHeader>
           <Box
+            padding="4"
+            borderRadius="lg"
             style={{
               background: bg,
               color: fg,
-              padding: '1rem',
-              borderRadius: 8,
             }}
           >
             <Inline justify="between" align="center" gap="3" wrap>
@@ -127,12 +127,10 @@ const ElementModal: React.FC<ElementModalProps> = ({
             <CardBody>
               <Stack gap="3">
                 <Center
-                  style={{
-                    height: 400,
-                    width: '100%',
-                    overflow: 'hidden',
-                    borderRadius: 8,
-                  }}
+                  height="400px"
+                  width="full"
+                  overflow="hidden"
+                  borderRadius="lg"
                 >
                   {use3D ? (
                     <ElementModel3D
@@ -226,10 +224,10 @@ const ElementModal: React.FC<ElementModalProps> = ({
                       <Inline key={item.label} align="center" gap="2">
                         <Box
                           aria-hidden
+                          width="12px"
+                          height="12px"
+                          borderRadius="full"
                           style={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
                             background: item.color,
                           }}
                         />

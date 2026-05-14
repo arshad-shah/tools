@@ -140,7 +140,7 @@ const ElementGrid: React.FC<ElementGridProps> = ({
           templateColumns="repeat(18, minmax(48px, 1fr))"
           templateRows="repeat(9, minmax(56px, auto))"
           gap="1"
-          style={{ minWidth: 18 * 56 }}
+          minWidth="1008px"
         >
           {cells}
         </Grid>

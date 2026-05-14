@@ -320,7 +320,7 @@ const DataViewer = () => {
       </CardHeader>
       <CardBody>
         {viewMode === 'network' ? (
-          <Box style={{ height: '40rem', overflow: 'hidden' }}>
+          <Box height="40rem" overflow="hidden">
             {renderViewerBody()}
           </Box>
         ) : (
@@ -338,7 +338,7 @@ const DataViewer = () => {
             <Stack gap="3">
               <Inline justify="between" align="center" wrap gap="3">
                 <Inline align="center" gap="2" wrap>
-                  <Box style={{ minWidth: 110 }}>
+                  <Box minWidth="110px">
                     <Select
                       value={format}
                       onValueChange={(v) => setFormat(v as FormatType)}
