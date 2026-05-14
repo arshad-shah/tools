@@ -1,52 +1,74 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  AlertCircle,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  ExternalLink,
-  FileText,
-  Folder,
-  FolderOpen,
-  Info,
-} from 'lucide-react';
-import {
-  Badge,
-  Box,
-  Code,
-  IconButton,
-  Inline,
-  Text,
-  Tooltip,
-} from '@arshad-shah/cynosure-react';
+import React from 'react';
+import { ChevronDown, ChevronRight, Copy, Link2 } from 'lucide-react';
+import { Tooltip } from '@arshad-shah/cynosure-react';
+import styles from './DataNode.module.css';
 
-type NodeColor = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
+type ValueKind =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'null'
+  | 'object'
+  | 'array'
+  | 'other';
 
-const getNodeTypeInfo = (
-  data: any,
-): { icon: typeof FileText; color: NodeColor; label: string } => {
-  if (data === null) return { icon: AlertCircle, color: 'neutral', label: 'null' };
-  if (Array.isArray(data))
-    return { icon: FolderOpen, color: 'accent', label: `Array (${data.length})` };
-  if (typeof data === 'object')
-    return {
-      icon: Folder,
-      color: 'accent',
-      label: `Object (${Object.keys(data).length})`,
-    };
-  if (typeof data === 'string')
-    return { icon: FileText, color: 'success', label: 'string' };
-  if (typeof data === 'number')
-    return { icon: Info, color: 'accent', label: 'number' };
-  if (typeof data === 'boolean')
-    return { icon: Info, color: 'warning', label: data ? 'true' : 'false' };
-  return { icon: FileText, color: 'neutral', label: typeof data };
+const kindOf = (data: any): ValueKind => {
+  if (data === null) return 'null';
+  if (Array.isArray(data)) return 'array';
+  if (typeof data === 'object') return 'object';
+  if (typeof data === 'string') return 'string';
+  if (typeof data === 'number') return 'number';
+  if (typeof data === 'boolean') return 'boolean';
+  return 'other';
 };
 
-const formatValue = (value: any): string => {
-  if (value === null) return 'null';
-  if (typeof value === 'string') return `"${value}"`;
-  return String(value);
+const renderValue = (data: any, kind: ValueKind) => {
+  switch (kind) {
+    case 'string': {
+      const display =
+        data.length > 80 ? `"${data.slice(0, 80)}…"` : `"${data}"`;
+      return <span className={styles.string}>{display}</span>;
+    }
+    case 'number':
+      return <span className={styles.number}>{String(data)}</span>;
+    case 'boolean':
+      return <span className={styles.boolean}>{String(data)}</span>;
+    case 'null':
+      return <span className={styles.null}>null</span>;
+    default:
+      return <span>{String(data)}</span>;
+  }
+};
+
+const renderSummary = (data: any, kind: ValueKind, isExpanded: boolean) => {
+  if (isExpanded) {
+    return (
+      <span className={styles.bracket}>{kind === 'array' ? '[' : '{'}</span>
+    );
+  }
+  const count =
+    kind === 'array' ? data.length : Object.keys(data as object).length;
+  const open = kind === 'array' ? '[' : '{';
+  const close = kind === 'array' ? ']' : '}';
+  const noun =
+    kind === 'array'
+      ? count === 1
+        ? 'item'
+        : 'items'
+      : count === 1
+        ? 'key'
+        : 'keys';
+  return (
+    <>
+      <span className={styles.bracket}>{open}</span>
+      <span className={styles.summary}>
+        {' '}
+        {count} {noun}{' '}
+      </span>
+      <span className={styles.bracket}>{close}</span>
+    </>
+  );
 };
 
 const DataNode: React.FC<{
@@ -68,78 +90,70 @@ const DataNode: React.FC<{
   onCopyPath,
   onCopyValue,
 }) => {
-  const { icon: TypeIcon, color, label } = getNodeTypeInfo(data);
-  const isExpandable = data !== null && typeof data === 'object';
-  const nodeValue = !isExpandable ? formatValue(data) : null;
-  const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+  const kind = kindOf(data);
+  const isExpandable = kind === 'object' || kind === 'array';
+  const isRoot = name === 'root';
 
   return (
-    <Inline
-      align="center"
-      gap="2"
-      paddingY="1"
-      paddingX="2"
-      style={{
-        paddingLeft: `${depth * 1.25 + 0.5}rem`,
-        borderLeft: isMatched ? '2px solid currentColor' : '2px solid transparent',
-      }}
+    <div
+      className={`${styles.row} ${isMatched ? styles.matched : ''}`}
+      style={{ paddingLeft: 4 + depth * 16 }}
     >
-      <Box width="4">
-        {isExpandable ? (
-          <IconButton
-            variant="ghost"
-            colorScheme="neutral"
-            size="sm"
-            label={isExpanded ? 'Collapse' : 'Expand'}
-            icon={<ChevronIcon size={14} />}
-            onClick={onToggle}
-          />
-        ) : null}
-      </Box>
+      {Array.from({ length: depth }).map((_, i) => (
+        <span key={i} className={styles.indentGuide} aria-hidden />
+      ))}
 
-      <Badge variant="soft" colorScheme={color} size="xs">
-        <TypeIcon size={12} aria-hidden />
-      </Badge>
-
-      {name !== 'root' && (
-        <Text size="sm" weight="medium">
-          {name}
-        </Text>
+      {isExpandable ? (
+        <button
+          type="button"
+          className={styles.chevron}
+          onClick={onToggle}
+          aria-label={isExpanded ? 'Collapse' : 'Expand'}
+        >
+          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
+      ) : (
+        <span className={styles.chevronSpacer} aria-hidden />
       )}
 
-      {isExpandable && (
-        <Badge variant="soft" colorScheme="neutral" size="xs">
-          {label}
-        </Badge>
+      {!isRoot && (
+        <>
+          <span className={styles.key}>
+            {Array.isArray(data) ? name : `"${name}"`}
+          </span>
+          <span className={styles.colon}>:</span>
+        </>
       )}
 
-      {nodeValue && <Code size="sm">{nodeValue}</Code>}
+      <span className={styles.value}>
+        {isExpandable
+          ? renderSummary(data, kind, isExpanded)
+          : renderValue(data, kind)}
+      </span>
 
-      <Box flex="1" />
-
-      <Inline gap="1">
+      <span className={styles.actions}>
         <Tooltip content="Copy path">
-          <IconButton
-            variant="ghost"
-            colorScheme="neutral"
-            size="sm"
-            label="Copy path"
-            icon={<ExternalLink size={12} />}
+          <button
+            type="button"
+            className={styles.actionBtn}
+            aria-label="Copy path"
             onClick={onCopyPath}
-          />
+          >
+            <Link2 size={12} />
+          </button>
         </Tooltip>
         <Tooltip content="Copy value">
-          <IconButton
-            variant="ghost"
-            colorScheme="neutral"
-            size="sm"
-            label="Copy value"
-            icon={<Copy size={12} />}
+          <button
+            type="button"
+            className={styles.actionBtn}
+            aria-label="Copy value"
             onClick={onCopyValue}
-          />
+          >
+            <Copy size={12} />
+          </button>
         </Tooltip>
-      </Inline>
-    </Inline>
+      </span>
+    </div>
   );
 };
 

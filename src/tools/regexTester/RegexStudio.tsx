@@ -23,7 +23,12 @@ import {
   CardHeader,
   CardTitle,
   Code,
-  Grid,
+  Divider,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   IconButton,
   Inline,
   Input,
@@ -35,6 +40,8 @@ import {
   Text,
   Textarea,
 } from '@arshad-shah/cynosure-react';
+import { ChevronDown } from 'lucide-react';
+import previewStyles from './LivePreview.module.css';
 
 interface RegexTemplate {
   name: string;
@@ -345,23 +352,23 @@ const RegexStudio: React.FC = () => {
     let last = 0;
     matches.forEach((m, i) => {
       if (m.index > last) {
-        out.push(testString.substring(last, m.index));
+        out.push(
+          <span key={`t-${i}`}>{testString.substring(last, m.index)}</span>,
+        );
       }
       out.push(
-        <Badge
+        <mark
           key={`m-${i}`}
-          variant="soft"
-          colorScheme="accent"
-          size="sm"
           title={`Match #${i + 1}: "${m.text}"`}
+          className={previewStyles.mark}
         >
           {testString.substring(m.index, m.index + m.length)}
-        </Badge>,
+        </mark>,
       );
       last = m.index + m.length;
     });
     if (last < testString.length) {
-      out.push(testString.substring(last));
+      out.push(<span key="t-end">{testString.substring(last)}</span>);
     }
     return out;
   };
@@ -412,9 +419,123 @@ const RegexStudio: React.FC = () => {
     }
   };
 
+  const handleClearAll = () => {
+    setPattern('');
+    setTestString('');
+    setSelectedTemplate('');
+  };
+
+  const handleCopyAsJs = () => {
+    const code = `const regex = /${pattern}/${flagsStr};\nconst matches = '${testString.replace(/'/g, "\\'")}'.match(regex);`;
+    copyToClipboard(code);
+  };
+
   return (
-    <Grid columns={{ base: 1, lg: 3 }} gap="4">
-      <Stack gap="4" gridColumn={{ base: 'span 1', lg: 'span 2' }}>
+    <Stack gap="4">
+      <Card variant="elevated" size="sm">
+        <CardBody>
+          <Inline justify="between" align="center" gap="3" wrap>
+            <Inline align="center" gap="3" wrap>
+              <Box minWidth="0" style={{ minWidth: 220 }}>
+                <Select
+                  value={selectedTemplate}
+                  onValueChange={handleTemplateSelect}
+                  placeholder="Load a template…"
+                  aria-label="Template"
+                  size="sm"
+                >
+                  {(
+                    Object.entries(groupedTemplates) as Array<
+                      [RegexTemplate['category'], RegexTemplate[]]
+                    >
+                  ).map(([cat, list]) => (
+                    <SelectSection key={cat} title={CATEGORY_LABEL[cat]}>
+                      {list.map((t) => (
+                        <SelectItem key={t.name} id={t.name} textValue={t.name}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectSection>
+                  ))}
+                </Select>
+              </Box>
+
+              <Divider orientation="vertical" style={{ height: 24 }} />
+
+              <Inline align="center" gap="2" wrap>
+                <Badge
+                  variant="soft"
+                  colorScheme={isValid ? 'success' : 'danger'}
+                  size="sm"
+                >
+                  {isValid ? 'Valid' : 'Invalid'}
+                </Badge>
+                <Badge variant="soft" colorScheme="neutral" size="sm">
+                  {matches.length} {matches.length === 1 ? 'match' : 'matches'}
+                </Badge>
+                {matches.length > 0 && (
+                  <Badge variant="soft" colorScheme="accent" size="sm">
+                    {coverage}% coverage
+                  </Badge>
+                )}
+                <Badge variant="outline" colorScheme="neutral" size="sm">
+                  /{flagsStr || '—'}
+                </Badge>
+              </Inline>
+            </Inline>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="soft"
+                  colorScheme="neutral"
+                  size="sm"
+                  rightIcon={<ChevronDown size={14} />}
+                  leftIcon={<Settings size={14} />}
+                >
+                  Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={handleCopyAsJs}
+                  disabled={!pattern || !isValid}
+                >
+                  <Inline align="center" gap="2">
+                    <Code2 size={14} aria-hidden />
+                    <span>Copy as JavaScript</span>
+                  </Inline>
+                </DropdownMenuItem>
+                {selectedTemplate && (
+                  <DropdownMenuItem onClick={generateSample}>
+                    <Inline align="center" gap="2">
+                      <Zap size={14} aria-hidden />
+                      <span>Generate sample text</span>
+                    </Inline>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleClearAll}>
+                  <Inline align="center" gap="2">
+                    <X size={14} aria-hidden />
+                    <span>Clear all</span>
+                  </Inline>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Inline>
+
+          {selectedTemplate && (
+            <Box paddingTop="3">
+              <Text size="xs" variant="caption">
+                {TEMPLATES.find((t) => t.name === selectedTemplate)?.description}
+              </Text>
+            </Box>
+          )}
+        </CardBody>
+      </Card>
+
+      <Stack gap="4" minWidth="0">
         <Card variant="elevated" size="md">
           <CardHeader>
             <Inline gap="2" align="center">
@@ -426,8 +547,13 @@ const RegexStudio: React.FC = () => {
             <Stack gap="4">
               <Stack gap="2">
                 <Label htmlFor="regex-pattern">Pattern</Label>
-                <Inline gap="2" align="center" wrap>
-                  <Box flex="1" minWidth="0">
+                <Inline
+                  gap="2"
+                  align="center"
+                  wrap={false}
+                  style={{ width: '100%' }}
+                >
+                  <Box flexGrow={1} flexShrink={1} minWidth="0" width="full">
                     <Input
                       id="regex-pattern"
                       type="text"
@@ -534,7 +660,20 @@ const RegexStudio: React.FC = () => {
               </Inline>
             </CardHeader>
             <CardBody>
-              <Code variant="block" size="sm">{renderHighlighted()}</Code>
+              <div className={previewStyles.preview}>
+                <div className={previewStyles.gutter} aria-hidden>
+                  {Array.from({ length: testString.split('\n').length }).map(
+                    (_, i) => (
+                      <span key={i} className={previewStyles.gutterLine}>
+                        {i + 1}
+                      </span>
+                    ),
+                  )}
+                </div>
+                <div className={previewStyles.content}>
+                  {renderHighlighted()}
+                </div>
+              </div>
               {matches.length === 0 && pattern && isValid && (
                 <Inline paddingTop="3">
                   <Alert
@@ -554,188 +693,37 @@ const RegexStudio: React.FC = () => {
         )}
       </Stack>
 
-      <Stack gap="4">
-        <Card variant="elevated" size="md">
-          <CardHeader>
-            <Inline gap="2" align="center">
-              <BookOpen size={18} aria-hidden />
-              <CardTitle as="h2">Templates</CardTitle>
-            </Inline>
-          </CardHeader>
-          <CardBody>
-            <Stack gap="3">
-              <Select
-                value={selectedTemplate}
-                onValueChange={handleTemplateSelect}
-                placeholder="Select a template…"
-                aria-label="Template"
-              >
-                {(
-                  Object.entries(groupedTemplates) as Array<
-                    [RegexTemplate['category'], RegexTemplate[]]
-                  >
-                ).map(([cat, list]) => (
-                  <SelectSection key={cat} title={CATEGORY_LABEL[cat]}>
-                    {list.map((t) => (
-                      <SelectItem key={t.name} id={t.name} textValue={t.name}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectSection>
-                ))}
-              </Select>
-              {selectedTemplate && (
-                <Card variant="filled" size="sm">
-                  <CardBody>
-                    <Stack gap="2">
-                      <Text size="sm" weight="medium">
-                        {TEMPLATES.find((t) => t.name === selectedTemplate)
-                          ?.description}
-                      </Text>
-                      <Code size="sm" variant="block">
-                        {
-                          TEMPLATES.find((t) => t.name === selectedTemplate)
-                            ?.pattern
-                        }
-                      </Code>
-                    </Stack>
-                  </CardBody>
-                </Card>
-              )}
-            </Stack>
-          </CardBody>
-        </Card>
-
+      {matches.length > 0 && (
         <Card variant="elevated" size="md">
           <CardHeader>
             <Inline gap="2" align="center">
               <BarChart3 size={18} aria-hidden />
-              <CardTitle as="h2">Statistics</CardTitle>
+              <CardTitle as="h2">Matches ({matches.length})</CardTitle>
             </Inline>
           </CardHeader>
           <CardBody>
             <Stack gap="2">
-              <Inline justify="between" align="center">
-                <Text size="sm" variant="caption">
-                  Pattern status
-                </Text>
-                <Badge
-                  variant="soft"
-                  colorScheme={isValid ? 'success' : 'danger'}
-                  size="sm"
-                >
-                  {isValid ? 'Valid' : 'Invalid'}
-                </Badge>
-              </Inline>
-              <Inline justify="between" align="center">
-                <Text size="sm" variant="caption">
-                  Total matches
-                </Text>
-                <Badge variant="soft" colorScheme="neutral" size="sm">
-                  {matches.length}
-                </Badge>
-              </Inline>
-              <Inline justify="between" align="center">
-                <Text size="sm" variant="caption">
-                  Pattern length
-                </Text>
-                <Text size="sm" weight="medium">
-                  {pattern.length} chars
-                </Text>
-              </Inline>
-              <Inline justify="between" align="center">
-                <Text size="sm" variant="caption">
-                  Test string length
-                </Text>
-                <Text size="sm" weight="medium">
-                  {testString.length} chars
-                </Text>
-              </Inline>
-              <Inline justify="between" align="center">
-                <Text size="sm" variant="caption">
-                  Active flags
-                </Text>
-                <Code size="sm">{flagsStr || 'none'}</Code>
-              </Inline>
-              {matches.length > 0 && (
-                <Inline justify="between" align="center">
-                  <Text size="sm" variant="caption">
-                    Coverage
-                  </Text>
-                  <Text size="sm" weight="medium">
-                    {coverage}%
-                  </Text>
-                </Inline>
+              {matches.slice(0, 100).map((m, i) => (
+                <MatchItem
+                  key={i}
+                  match={m}
+                  index={i}
+                  onCopy={() => copyToClipboard(m.text)}
+                />
+              ))}
+              {matches.length > 100 && (
+                <Alert status="info" variant="soft">
+                  <AlertDescription>
+                    Showing first 100 of {matches.length} matches. Consider
+                    refining your pattern for better performance.
+                  </AlertDescription>
+                </Alert>
               )}
             </Stack>
           </CardBody>
         </Card>
-
-        <Card variant="elevated" size="md">
-          <CardHeader>
-            <CardTitle as="h2">Quick actions</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <Stack gap="2">
-              <Button
-                variant="soft"
-                colorScheme="accent"
-                leftIcon={<Code2 size={16} />}
-                disabled={!pattern || !isValid}
-                onClick={() => {
-                  const code = `const regex = /${pattern}/${flagsStr};\nconst matches = '${testString.replace(/'/g, "\\'")}'.match(regex);`;
-                  copyToClipboard(code);
-                }}
-                fullWidth
-              >
-                Copy as JavaScript
-              </Button>
-              <Button
-                variant="soft"
-                colorScheme="neutral"
-                leftIcon={<X size={16} />}
-                onClick={() => {
-                  setPattern('');
-                  setTestString('');
-                  setSelectedTemplate('');
-                }}
-                fullWidth
-              >
-                Clear all
-              </Button>
-            </Stack>
-          </CardBody>
-        </Card>
-
-        {matches.length > 0 && (
-          <Card variant="elevated" size="md">
-            <CardHeader>
-              <CardTitle as="h2">Matches ({matches.length})</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <Stack gap="2">
-                {matches.slice(0, 100).map((m, i) => (
-                  <MatchItem
-                    key={i}
-                    match={m}
-                    index={i}
-                    onCopy={() => copyToClipboard(m.text)}
-                  />
-                ))}
-                {matches.length > 100 && (
-                  <Alert status="info" variant="soft">
-                    <AlertDescription>
-                      Showing first 100 of {matches.length} matches. Consider
-                      refining your pattern for better performance.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </Stack>
-            </CardBody>
-          </Card>
-        )}
-      </Stack>
-    </Grid>
+      )}
+    </Stack>
   );
 };
 

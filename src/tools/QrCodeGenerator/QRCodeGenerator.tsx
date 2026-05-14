@@ -422,8 +422,11 @@ const QRCodeGenerator: React.FC = () => {
   };
 
   return (
-    <Grid columns={{ base: 1, lg: 5 }} gap="6">
-      <Box gridColumn={{ base: 'span 1', lg: 'span 3' }}>
+    <Grid
+      templateColumns={{ base: '1fr', lg: 'minmax(0, 3fr) minmax(0, 2fr)' }}
+      gap="6"
+    >
+      <Box minWidth="0">
         <Card variant="elevated" size="md">
           <CardBody>
             <Tabs
@@ -904,7 +907,7 @@ const QRCodeGenerator: React.FC = () => {
         </Card>
       </Box>
 
-      <Box gridColumn={{ base: 'span 1', lg: 'span 2' }}>
+      <Box minWidth="0">
         <Card variant="elevated" size="md">
           <CardHeader>
             <CardTitle as="h3">QR code preview</CardTitle>

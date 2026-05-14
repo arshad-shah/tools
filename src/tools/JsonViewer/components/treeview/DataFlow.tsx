@@ -6,14 +6,13 @@ import {
   BackgroundVariant,
   Controls,
   Edge,
-  MiniMap,
   NodeTypes,
   ReactFlow,
   useEdgesState,
   useNodesState,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Box } from '@arshad-shah/cynosure-react';
+import { useColorScheme } from '@arshad-shah/cynosure-react';
 
 import CustomNode from './CustomNode';
 import { AppNode, DataFlowProps } from './types';
@@ -23,11 +22,16 @@ const nodeTypes = {
   custom: CustomNode,
 } satisfies NodeTypes;
 
-const defaultViewport = { x: 0, y: 0, zoom: 1.5 };
-
 const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  const accent = 'var(--cynosure-color-accent-solid)';
+  const surface = 'var(--cynosure-color-background-surface)';
+  const subtle = 'var(--cynosure-color-background-subtle)';
+  const muted = 'var(--cynosure-color-foreground-subtle)';
 
   const onConnect = useCallback(
     (params: any) =>
@@ -36,19 +40,28 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
           {
             ...params,
             type: 'smoothstep',
-            style: { stroke: '#60A5FA', strokeWidth: 2 },
+            style: { stroke: accent, strokeWidth: 2 },
             animated: true,
           },
           eds,
         ),
       ),
-    [setEdges],
+    [setEdges, accent],
   );
 
   useDataProcessor({ initialData, setNodes, setEdges });
 
   return (
-    <Box width="full" style={{ height: '70vh' }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: 400,
+        borderRadius: 8,
+        overflow: 'hidden',
+        background: subtle,
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -57,23 +70,33 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         snapToGrid={false}
-        defaultViewport={defaultViewport}
         fitView
+        fitViewOptions={{ padding: 0.2, duration: 300 }}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          style: { stroke: accent, strokeWidth: 1.5 },
+        }}
+        proOptions={{ hideAttribution: true }}
       >
         <Background
-          variant={BackgroundVariant.Cross}
-          color="#60A5FA"
-          gap={24}
-          size={1.5}
+          variant={BackgroundVariant.Dots}
+          color={muted}
+          gap={20}
+          size={1}
         />
-        <MiniMap
-          nodeStrokeColor={(n) => (n.type === 'custom' ? '#60A5FA' : '#fff')}
-          nodeColor={(n) => (n.type === 'custom' ? '#1E293B' : '#fff')}
-          maskColor="rgba(0, 0, 0, 0.2)"
+        <Controls
+          position="bottom-right"
+          style={{
+            background: surface,
+            border: `1px solid var(--cynosure-color-border-default)`,
+            borderRadius: 8,
+            boxShadow: isDark
+              ? '0 4px 12px rgba(0,0,0,0.4)'
+              : '0 4px 12px rgba(0,0,0,0.08)',
+          }}
         />
-        <Controls position="bottom-right" />
       </ReactFlow>
-    </Box>
+    </div>
   );
 };
 

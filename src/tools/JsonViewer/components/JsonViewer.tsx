@@ -5,13 +5,17 @@ import rehypePrism from 'rehype-prism-plus';
 import rehypeRewrite from 'rehype-rewrite';
 import { useColorScheme } from '@arshad-shah/cynosure-react';
 import {
+  ChevronDown,
   Code2,
   Columns,
   Download,
   FileJson,
   List as ListIcon,
   MonitorIcon,
+  MoreHorizontal,
   Network,
+  PanelLeft,
+  PanelRight,
   Wand2,
 } from 'lucide-react';
 import {
@@ -21,12 +25,16 @@ import {
   Badge,
   Box,
   Button,
-  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
   Center,
   Container,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   Grid,
   Heading,
   Inline,
@@ -34,6 +42,9 @@ import {
   Select,
   Stack,
   Text,
+  ToggleGroup,
+  ToggleGroupItem,
+  Tooltip,
 } from '@arshad-shah/cynosure-react';
 import TreeView from './TreeView';
 import DataFlow from './treeview/DataFlow';
@@ -307,7 +318,12 @@ const DataViewer = () => {
         </Inline>
       </CardHeader>
       <CardBody>
-        <Box overflow="auto" maxHeight="40rem">
+        <Box
+          style={{
+            height: '40rem',
+            overflow: viewMode === 'network' ? 'hidden' : 'auto',
+          }}
+        >
           {renderViewerBody()}
         </Box>
       </CardBody>
@@ -322,7 +338,7 @@ const DataViewer = () => {
             <Stack gap="3">
               <Inline justify="between" align="center" wrap gap="3">
                 <Inline align="center" gap="2" wrap>
-                  <Stack gap="1" minWidth="40">
+                  <Box style={{ minWidth: 110 }}>
                     <Select
                       value={format}
                       onValueChange={(v) => setFormat(v as FormatType)}
@@ -331,76 +347,77 @@ const DataViewer = () => {
                         { value: 'xml', label: 'XML' },
                       ]}
                       aria-label="Format"
+                      size="sm"
                     />
-                  </Stack>
-                  <ButtonGroup>
-                    <Button
-                      variant={layout === 'split' ? 'solid' : 'soft'}
-                      colorScheme={layout === 'split' ? 'accent' : 'neutral'}
-                      size="sm"
-                      leftIcon={<Columns size={14} />}
-                      onClick={() => setLayout('split')}
-                    >
-                      Split
-                    </Button>
-                    <Button
-                      variant={layout === 'single' ? 'solid' : 'soft'}
-                      colorScheme={layout === 'single' ? 'accent' : 'neutral'}
-                      size="sm"
-                      leftIcon={<MonitorIcon size={14} />}
-                      onClick={() => setLayout('single')}
-                    >
-                      Single
-                    </Button>
-                  </ButtonGroup>
+                  </Box>
+
+                  <ToggleGroup
+                    type="single"
+                    value={viewMode}
+                    onValueChange={(v) => v && setViewMode(v as ViewMode)}
+                    size="sm"
+                    variant="outline"
+                    attached
+                    aria-label="View mode"
+                  >
+                    <Tooltip content="Tree view">
+                      <ToggleGroupItem value="tree" aria-label="Tree view">
+                        <ListIcon size={14} />
+                      </ToggleGroupItem>
+                    </Tooltip>
+                    <Tooltip content="Network graph">
+                      <ToggleGroupItem value="network" aria-label="Network view">
+                        <Network size={14} />
+                      </ToggleGroupItem>
+                    </Tooltip>
+                  </ToggleGroup>
+
+                  <ToggleGroup
+                    type="single"
+                    value={layout}
+                    onValueChange={(v) => v && setLayout(v as LayoutType)}
+                    size="sm"
+                    variant="outline"
+                    attached
+                    aria-label="Layout"
+                  >
+                    <Tooltip content="Split panels">
+                      <ToggleGroupItem value="split" aria-label="Split layout">
+                        <Columns size={14} />
+                      </ToggleGroupItem>
+                    </Tooltip>
+                    <Tooltip content="Single panel">
+                      <ToggleGroupItem value="single" aria-label="Single layout">
+                        <MonitorIcon size={14} />
+                      </ToggleGroupItem>
+                    </Tooltip>
+                  </ToggleGroup>
+
                   {layout === 'single' && (
-                    <ButtonGroup>
-                      <Button
-                        variant={activePane === 'editor' ? 'solid' : 'soft'}
-                        colorScheme={
-                          activePane === 'editor' ? 'accent' : 'neutral'
-                        }
-                        size="sm"
-                        onClick={() => setActivePane('editor')}
-                      >
-                        Editor
-                      </Button>
-                      <Button
-                        variant={activePane === 'view' ? 'solid' : 'soft'}
-                        colorScheme={
-                          activePane === 'view' ? 'accent' : 'neutral'
-                        }
-                        size="sm"
-                        onClick={() => setActivePane('view')}
-                      >
-                        View
-                      </Button>
-                    </ButtonGroup>
+                    <ToggleGroup
+                      type="single"
+                      value={activePane}
+                      onValueChange={(v) => v && setActivePane(v as PaneType)}
+                      size="sm"
+                      variant="outline"
+                      attached
+                      aria-label="Active pane"
+                    >
+                      <Tooltip content="Editor">
+                        <ToggleGroupItem value="editor" aria-label="Editor pane">
+                          <PanelLeft size={14} />
+                        </ToggleGroupItem>
+                      </Tooltip>
+                      <Tooltip content="Viewer">
+                        <ToggleGroupItem value="view" aria-label="Viewer pane">
+                          <PanelRight size={14} />
+                        </ToggleGroupItem>
+                      </Tooltip>
+                    </ToggleGroup>
                   )}
-                  <ButtonGroup>
-                    <Button
-                      variant={viewMode === 'tree' ? 'solid' : 'soft'}
-                      colorScheme={viewMode === 'tree' ? 'accent' : 'neutral'}
-                      size="sm"
-                      leftIcon={<ListIcon size={14} />}
-                      onClick={() => setViewMode('tree')}
-                    >
-                      Tree
-                    </Button>
-                    <Button
-                      variant={viewMode === 'network' ? 'solid' : 'soft'}
-                      colorScheme={
-                        viewMode === 'network' ? 'accent' : 'neutral'
-                      }
-                      size="sm"
-                      leftIcon={<Network size={14} />}
-                      onClick={() => setViewMode('network')}
-                    >
-                      Network
-                    </Button>
-                  </ButtonGroup>
                 </Inline>
-                <Inline gap="2" wrap>
+
+                <Inline gap="2" align="center">
                   <Button
                     variant="solid"
                     colorScheme="accent"
@@ -410,24 +427,35 @@ const DataViewer = () => {
                   >
                     Parse
                   </Button>
-                  <Button
-                    variant="soft"
-                    colorScheme="accent"
-                    size="sm"
-                    leftIcon={<Code2 size={14} />}
-                    onClick={formatCode}
-                  >
-                    Format
-                  </Button>
-                  <Button
-                    variant="soft"
-                    colorScheme="neutral"
-                    size="sm"
-                    leftIcon={<Download size={14} />}
-                    onClick={handleDownload}
-                  >
-                    Download
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="soft"
+                        colorScheme="neutral"
+                        size="sm"
+                        rightIcon={<ChevronDown size={12} />}
+                        leftIcon={<MoreHorizontal size={14} />}
+                        aria-label="More actions"
+                      >
+                        More
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={formatCode}>
+                        <Inline align="center" gap="2">
+                          <Code2 size={14} aria-hidden />
+                          <span>Format code</span>
+                        </Inline>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleDownload}>
+                        <Inline align="center" gap="2">
+                          <Download size={14} aria-hidden />
+                          <span>Download as .{format}</span>
+                        </Inline>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </Inline>
               </Inline>
               <SearchInput

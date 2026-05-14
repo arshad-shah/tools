@@ -1,6 +1,6 @@
 import React, { Suspense, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sun, Moon } from 'lucide-react';
 import {
   Box,
   Container,
@@ -12,11 +12,15 @@ import {
   Text,
   Badge,
   Button,
+  IconButton,
   Spinner,
   Divider,
+  useTheme,
 } from '@arshad-shah/cynosure-react';
 import { ToolComponent, ToolDefinition } from '../types/ToolTypes';
 import ToolErrorBoundary from './ToolErrorBoundary';
+import Footer from './Footer';
+import styles from './ToolLayout.module.css';
 
 interface ToolLayoutProps {
   definition: ToolDefinition;
@@ -51,6 +55,8 @@ const getVersionBadge = (
 
 const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) => {
   const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dashboard-dark';
   const [key, setKey] = useState<number>(Date.now());
 
   const handleRetry = () => setKey(Date.now());
@@ -63,47 +69,76 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) =>
       <Section as="header" space="sm">
         <Container size="xl">
           <Stack gap="4">
-            <Inline justify="between" align="center" gap="4" wrap>
-              <Button
-                asChild
-                variant="ghost"
+            <Inline justify="between" align="center" gap="4" wrap={false}>
+              <Inline align="center" gap="4" wrap={false} className={styles.titleRow}>
+                <Button
+                  asChild
+                  variant="ghost"
+                  colorScheme="neutral"
+                  size="sm"
+                  shape="pill"
+                  leftIcon={<ArrowLeft size={16} />}
+                  aria-label="Back to tools"
+                >
+                  <Link to="/">Back</Link>
+                </Button>
+                <span className={styles.iconTile} aria-hidden>
+                  <Icon size={24} />
+                </span>
+                <Stack gap="1" className={styles.titleBlock}>
+                  <Inline justify="start" align="center" gap="2" wrap>
+                    <Heading level={1} size="xl" weight="bold">
+                      {definition.name}
+                    </Heading>
+                    {definition.category && (
+                      <Badge
+                        variant="soft"
+                        colorScheme="neutral"
+                        size="sm"
+                        shape="pill"
+                      >
+                        {definition.category}
+                      </Badge>
+                    )}
+                    {versionBadge && (
+                      <Badge
+                        variant="soft"
+                        colorScheme={versionBadge.colorScheme}
+                        size="sm"
+                        shape="pill"
+                      >
+                        {versionBadge.label}
+                      </Badge>
+                    )}
+                    {!definition.enabled && (
+                      <Badge
+                        variant="outline"
+                        colorScheme="warning"
+                        size="sm"
+                        shape="pill"
+                      >
+                        Coming soon
+                      </Badge>
+                    )}
+                  </Inline>
+                  <Text size="sm" variant="caption">
+                    {definition.description}
+                  </Text>
+                </Stack>
+              </Inline>
+              <IconButton
+                variant="soft"
                 colorScheme="neutral"
                 size="sm"
                 shape="pill"
-                leftIcon={<ArrowLeft size={16} />}
-                aria-label="Back to tools"
-              >
-                <Link to="/">Back</Link>
-              </Button>
-              <Inline align="center" gap="3" wrap>
-                <Icon size={28} aria-hidden />
-                <Heading level={1} size="lg" weight="bold">
-                  {definition.name}
-                </Heading>
-                {definition.category && (
-                  <Badge variant="soft" colorScheme="neutral" size="sm" shape="pill">
-                    {definition.category}
-                  </Badge>
-                )}
-                {versionBadge && (
-                  <Badge
-                    variant="soft"
-                    colorScheme={versionBadge.colorScheme}
-                    size="sm"
-                  >
-                    {versionBadge.label}
-                  </Badge>
-                )}
-                {!definition.enabled && (
-                  <Badge variant="outline" colorScheme="warning" size="sm">
-                    Coming soon
-                  </Badge>
-                )}
-              </Inline>
+                label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                icon={isDark ? <Sun size={16} /> : <Moon size={16} />}
+                onClick={() =>
+                  setTheme(isDark ? 'dashboard-light' : 'dashboard-dark')
+                }
+              />
             </Inline>
-            <Text size="sm" variant="caption">
-              {definition.description}
-            </Text>
+
             <Divider />
           </Stack>
         </Container>
@@ -127,6 +162,7 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) =>
           </ToolErrorBoundary>
         </Container>
       </Section>
+      <Footer />
     </Box>
   );
 };

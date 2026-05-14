@@ -13,12 +13,12 @@ import {
   Alert,
   AlertDescription,
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
-  Code,
   IconButton,
   Inline,
   Slider,
@@ -27,6 +27,94 @@ import {
   Text,
 } from '@arshad-shah/cynosure-react';
 import { charSets, getSecureRandom, secureShuffle } from './utils/utils';
+
+type CharType = 'uppercase' | 'lowercase' | 'number' | 'special';
+
+const classifyChar = (ch: string): CharType => {
+  if (/[A-Z]/.test(ch)) return 'uppercase';
+  if (/[a-z]/.test(ch)) return 'lowercase';
+  if (/[0-9]/.test(ch)) return 'number';
+  return 'special';
+};
+
+const CHAR_CSS_VARS: Record<CharType, string> = {
+  uppercase: 'var(--cynosure-color-feedback-warning-solid)',
+  lowercase: 'var(--cynosure-color-foreground-default)',
+  number: 'var(--cynosure-color-feedback-success-solid)',
+  special: 'var(--cynosure-color-violet-400)',
+};
+
+interface HighlightedPasswordProps {
+  password: string;
+  hidden: boolean;
+}
+
+const HighlightedPassword: React.FC<HighlightedPasswordProps> = ({
+  password,
+  hidden,
+}) => (
+  <Box
+    padding="4"
+    borderWidth="1"
+    borderStyle="solid"
+    borderColor="border.default"
+    borderRadius="md"
+    background="bg.surface"
+    overflow="hidden"
+    style={{
+      fontFamily: 'var(--cynosure-font-family-mono)',
+      fontSize: 'var(--cynosure-font-body-md-size)',
+      lineHeight: 1.6,
+      wordBreak: 'break-all',
+      overflowWrap: 'anywhere',
+      whiteSpace: 'pre-wrap',
+      minWidth: 0,
+    }}
+  >
+    {hidden
+      ? '•'.repeat(password.length)
+      : Array.from(password).map((ch, i) => {
+          const type = classifyChar(ch);
+          return (
+            <span
+              key={i}
+              style={{ color: CHAR_CSS_VARS[type], fontWeight: 700 }}
+            >
+              {ch}
+            </span>
+          );
+        })}
+  </Box>
+);
+
+const CharLegend: React.FC = () => (
+  <Inline gap="3" wrap>
+    {(
+      [
+        ['uppercase', 'Aa', 'Upper'],
+        ['lowercase', 'ab', 'Lower'],
+        ['number', '09', 'Number'],
+        ['special', '!@', 'Special'],
+      ] as Array<[CharType, string, string]>
+    ).map(([type, sample, label]) => (
+      <Inline key={type} gap="1" align="center">
+        <span
+          style={{
+            color: CHAR_CSS_VARS[type],
+            fontWeight: 700,
+            fontFamily: 'var(--cynosure-font-family-mono)',
+            fontSize: 'var(--cynosure-font-body-sm-size)',
+          }}
+        >
+          {sample}
+        </span>
+        <Text as="span" size="xs" variant="caption">
+          {label}
+        </Text>
+      </Inline>
+    ))}
+  </Inline>
+);
 
 interface CharacterTypeOptionProps {
   label: string;
@@ -108,10 +196,9 @@ const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
       <CardBody>
         <Stack gap="4">
           <Stack gap="2">
-            <Code size="md" variant="block">
-              {hidden ? '•'.repeat(password.length) : password}
-            </Code>
-            <Inline justify="end">
+            <HighlightedPassword password={password} hidden={hidden} />
+            <Inline justify="between" align="center" gap="3" wrap>
+              <CharLegend />
               <Button
                 variant={copied ? 'solid' : 'soft'}
                 colorScheme={copied ? 'success' : 'accent'}

@@ -212,7 +212,7 @@ const ColorTester: React.FC = () => {
       ['Darker', colorHarmony.darker],
     ];
     return (
-      <Grid columns={{ base: 2, sm: 3, lg: 4 }} gap="3">
+      <Grid columns={{ base: 2, sm: 3, xl: 4 }} gap="3">
         {entries.map(([label, c]) => (
           <Card
             key={label}
@@ -372,8 +372,11 @@ const ColorTester: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Grid columns={{ base: 1, lg: 12 }} gap="4">
-        <Box gridColumn={{ base: 'span 1', lg: 'span 4' }}>
+      <Grid
+        templateColumns={{ base: '1fr', md: 'minmax(0, 5fr) minmax(0, 7fr)' }}
+        gap="4"
+      >
+        <Box minWidth="0">
           <Card variant="elevated" size="md">
             <CardHeader>
               <Inline align="center" gap="2">
@@ -481,7 +484,7 @@ const ColorTester: React.FC = () => {
           </Card>
         </Box>
 
-        <Box gridColumn={{ base: 'span 1', lg: 'span 8' }}>
+        <Box minWidth="0">
           <Card variant="elevated" size="md">
             <CardBody>
               <Tabs
@@ -641,7 +644,7 @@ const ColorTester: React.FC = () => {
               No colours saved yet. Click Save to add one.
             </Text>
           ) : (
-            <Grid columns={{ base: 2, sm: 3, md: 4, lg: 6 }} gap="3">
+            <Grid columns={{ base: 2, sm: 3, md: 4, xl: 6 }} gap="3">
               {savedColors.map((c, idx) => (
                 <Card
                   key={`${c.hex}-${idx}`}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, X } from 'lucide-react';
+import { Star, X, Sun, Moon } from 'lucide-react';
 import {
   Container,
   Section,
@@ -23,12 +23,17 @@ import {
   EmptyStateTitle,
   EmptyStateDescription,
   EmptyStateActions,
+  useTheme,
 } from '@arshad-shah/cynosure-react';
 import { getEnabledTools } from '../data/ToolDefinitions';
 import { ToolDefinition } from '../types/ToolTypes';
+import AnimatedBackground from './AnimatedBackground';
+import Footer from './Footer';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dashboard-dark';
   const tools = useMemo<ToolDefinition[]>(() => getEnabledTools(), []);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,7 +86,7 @@ const Dashboard: React.FC = () => {
           <Inline justify="between" align="start" wrap={false} gap="3">
             <Inline align="center" gap="3" wrap={false}>
               <Icon size={28} aria-hidden />
-              <CardTitle as="h3">{tool.name}</CardTitle>
+              <CardTitle as="h3"><Text size="lg">{tool.name}</Text></CardTitle>
             </Inline>
             <IconButton
               variant="ghost"
@@ -91,7 +96,7 @@ const Dashboard: React.FC = () => {
               icon={
                 <Star
                   size={18}
-                  fill={isFavorite ? 'currentColor' : 'none'}
+                  fill={isFavorite ? '#ffa500' : 'none'}
                 />
               }
               onClick={(e) => {
@@ -128,18 +133,31 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Section as="main" space="lg">
-      <Container size="xl">
-        <Stack gap="8">
-          <Stack gap="3">
-            <Heading level={1} size="4xl" weight="bold">
-              Tools Dashboard
-            </Heading>
-            <Text size="lg" variant="lead">
-              A curated collection of essential development utilities and
-              productivity tools.
-            </Text>
-          </Stack>
+    <>
+      <AnimatedBackground />
+      <Section as="main" space="lg" padding="12">
+        <Container size="xl">
+          <Stack gap="8">
+            <Inline justify="between" align="start" gap="4" wrap={false}>
+              <Stack gap="3">
+                <Heading level={1} size="4xl" weight="bold">
+                  Tools Dashboard
+                </Heading>
+                <Text size="lg" variant="lead">
+                  A curated collection of essential development utilities and
+                  productivity tools.
+                </Text>
+              </Stack>
+              <IconButton
+                variant="soft"
+                colorScheme="neutral"
+                size="md"
+                shape="pill"
+                label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                icon={isDark ? <Sun size={18} /> : <Moon size={18} />}
+                onClick={() => setTheme(isDark ? 'dashboard-light' : 'dashboard-dark')}
+              />
+            </Inline>
 
           <Card variant="filled" size="md">
             <CardBody>
@@ -185,7 +203,7 @@ const Dashboard: React.FC = () => {
           {favoriteTools.length > 0 && (
             <Stack gap="4">
               <Inline align="center" gap="2">
-                <Star size={20} aria-hidden />
+                <Star size={20} aria-hidden color="#ffa500" fill="#ffa500"/>
                 <Heading level={2} size="xl" weight="semibold">
                   Favorites
                 </Heading>
@@ -193,7 +211,7 @@ const Dashboard: React.FC = () => {
                   {favoriteTools.length}
                 </Badge>
               </Inline>
-              <Grid columns={{ base: 1, md: 2, lg: 3 }} gap="5">
+              <Grid columns={{ base: 1, md: 2, lg: 3 }} gap="5" padding="8">
                 {favoriteTools.map(renderToolCard)}
               </Grid>
             </Stack>
@@ -237,9 +255,11 @@ const Dashboard: React.FC = () => {
               </EmptyState>
             )}
           </Stack>
-        </Stack>
-      </Container>
-    </Section>
+          </Stack>
+        </Container>
+      </Section>
+      <Footer />
+    </>
   );
 };
 
