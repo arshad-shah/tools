@@ -1,1 +1,0 @@
-import{r as a}from"./index-AkEwz5VT.js";function i(r,t={}){const e=a.createContext(void 0);e.displayName=r;const n=()=>{const o=a.useContext(e);if(o===void 0){if("fallback"in t)return t.fallback;const s=`use${r.replace(/Provider$/,"")}`;throw new Error(t.errorMessage??`\`${s}\` must be used within a \`${r}\`.`)}return o};return[e.Provider,n,e]}export{i as c};
