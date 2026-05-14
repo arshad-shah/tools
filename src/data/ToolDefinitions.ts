@@ -1,6 +1,6 @@
 // src/data/ToolDefinitions.ts
 
-import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, Blocks, FileCode, Lock, Calendar, Link, Dice1, Table, Image  , Split, FileText, Play, FilePlus, Scissors, Minimize2 } from 'lucide-react';
+import { Clock, Eye, Key, Palette, QrCode, CodeXml, Calculator, FileCode, Lock, Calendar, Link, Dice1, Table, Image, Split, FileText, Play, FilePlus, Scissors, Minimize2 } from 'lucide-react';
 import { ToolDefinition } from '../types/ToolTypes';
 import { TOOL_IDS } from '../constants';
 
@@ -89,16 +89,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     color: "bg-purple-500",
     enabled: true,
     category: "development",
-    version: "1.0.0",
-  },
-  {
-    id: TOOL_IDS.PERIODIC_TABLE,
-    name: "Periodic Table",
-    description: "Explore the periodic table of elements",
-    icon: Blocks,
-    color: "bg-blue-500",
-    enabled: true,
-    category: "science",
     version: "1.0.0",
   },
   {
@@ -207,16 +197,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Make HTTP requests to APIs",
     icon: Link,
     color: "bg-emerald-600",
-    enabled: true,
-    category: "development",
-    version: "1.0.0",
-  },
-  {
-    id: TOOL_IDS.CALCULATOR,
-    name: "Calculator",
-    description: "A simple calculator",
-    icon: Calculator,
-    color: "bg-amber-600",
     enabled: true,
     category: "development",
     version: "1.0.0",
