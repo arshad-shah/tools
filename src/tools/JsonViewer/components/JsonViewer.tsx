@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import rehypePrism from 'rehype-prism-plus';
 import rehypeRewrite from 'rehype-rewrite';
-import { useTheme } from 'next-themes';
+import { useColorScheme } from '@arshad-shah/cynosure-react';
 import {
   Code2,
   Columns,
@@ -60,7 +60,7 @@ const DataViewer = () => {
   const [format, setFormat] = useState<FormatType>('json');
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedLines, setHighlightedLines] = useState<number[]>([]);
-  const { theme } = useTheme();
+  const theme = useColorScheme();
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
   const [layout, setLayout] = useState<LayoutType>('split');
   const [activePane, setActivePane] = useState<PaneType>('editor');
