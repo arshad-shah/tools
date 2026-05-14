@@ -1,16 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import Papa from 'papaparse';
 import _ from 'lodash';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { LineChart } from '@arshad-shah/cynosure-react/chart';
 import {
   BarChart3,
   ChevronLeft,
@@ -280,16 +271,7 @@ const CSVTSVViewer: React.FC = () => {
     }));
   }, [filteredData, chartColumn]);
 
-  const yDomain = useMemo<[number, number]>(() => {
-    if (!chartData.length) return [0, 100];
-    const values = chartData.map((p) => p.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const padding = (max - min) * 0.1;
-    return [min - padding, max + padding];
-  }, [chartData]);
-
-  const renderStatCard = (column: string, stats: ColumnStatistics) => (
+  const renderStatCard =(column: string, stats: ColumnStatistics) => (
     <Card key={column} variant="outlined" size="sm">
       <CardHeader>
         <CardTitle as="h4">{column}</CardTitle>
@@ -648,37 +630,15 @@ const CSVTSVViewer: React.FC = () => {
                   </Inline>
                 </CardHeader>
                 <CardBody>
-                  <Box style={{ height: 360, width: '100%' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={chartData}
-                        margin={{ top: 10, right: 30, left: 0, bottom: 10 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="index" />
-                        <YAxis domain={yDomain} />
-                        <RechartsTooltip
-                          formatter={(value: number) => [
-                            value.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }),
-                            chartColumn,
-                          ]}
-                          labelFormatter={(idx) => `Row ${idx}`}
-                        />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          name={chartColumn}
-                          strokeWidth={2}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </Box>
+                  <LineChart
+                    data={chartData}
+                    mapping={{
+                      x: 'index',
+                      y: 'value',
+                      seriesNames: [chartColumn],
+                    }}
+                    height={360}
+                  />
                   <Text size="xs" variant="caption" align="center">
                     {filteredData.length > 50
                       ? `Showing first 50 of ${filteredData.length} rows`
