@@ -75,7 +75,9 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
       {/* Controls for domain & step */}
       <div className="flex flex-wrap gap-3 mb-4 items-end">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Min X</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Min X
+          </label>
           <input
             type="number"
             step="0.1"
@@ -85,7 +87,9 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Max X</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Max X
+          </label>
           <input
             type="number"
             step="0.1"
@@ -95,7 +99,9 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Step</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Step
+          </label>
           <input
             type="number"
             step="0.1"
@@ -134,9 +140,9 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
         ]}
         layout={{
           autosize: true,
-          title: `f(x) = ${expression}`,
-          xaxis: { title: 'x' },
-          yaxis: { title: 'f(x)' },
+          title: { text: `f(x) = ${expression}` },
+          xaxis: { title: { text: 'x' } },
+          yaxis: { title: { text: 'f(x)' } },
           margin: { l: 60, r: 20, t: 40, b: 40 },
         }}
       />
