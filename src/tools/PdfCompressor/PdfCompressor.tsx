@@ -33,7 +33,6 @@ import {
   Heading,
   Inline,
   LinearProgress,
-  Spinner,
   Stack,
   Text,
 } from '@arshad-shah/cynosure-react';
@@ -57,14 +56,22 @@ class ProductionPdfCompressor {
     imageData: Uint8Array,
     mimeType: string,
     quality: number,
-    scale: number
+    scale: number,
   ): Promise<Uint8Array> {
     return new Promise((resolve) => {
       try {
         // Create image element
         const img = new Image();
         const buffer = imageData.buffer as ArrayBuffer;
-        const blob = new Blob([buffer.slice(imageData.byteOffset, imageData.byteOffset + imageData.byteLength)], { type: mimeType });
+        const blob = new Blob(
+          [
+            buffer.slice(
+              imageData.byteOffset,
+              imageData.byteOffset + imageData.byteLength,
+            ),
+          ],
+          { type: mimeType },
+        );
         const url = URL.createObjectURL(blob);
 
         img.onload = () => {
@@ -72,7 +79,7 @@ class ProductionPdfCompressor {
             // Create canvas with scaled dimensions
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             if (!ctx) {
               URL.revokeObjectURL(url);
               resolve(imageData);
@@ -81,7 +88,7 @@ class ProductionPdfCompressor {
 
             const newWidth = Math.floor(img.width * scale);
             const newHeight = Math.floor(img.height * scale);
-            
+
             canvas.width = newWidth;
             canvas.height = newHeight;
 
@@ -97,16 +104,19 @@ class ProductionPdfCompressor {
                   return;
                 }
 
-                blob.arrayBuffer().then(buffer => {
-                  URL.revokeObjectURL(url);
-                  resolve(new Uint8Array(buffer));
-                }).catch(() => {
-                  URL.revokeObjectURL(url);
-                  resolve(imageData);
-                });
+                blob
+                  .arrayBuffer()
+                  .then((buffer) => {
+                    URL.revokeObjectURL(url);
+                    resolve(new Uint8Array(buffer));
+                  })
+                  .catch(() => {
+                    URL.revokeObjectURL(url);
+                    resolve(imageData);
+                  });
               },
               'image/jpeg',
-              quality
+              quality,
             );
           } catch {
             URL.revokeObjectURL(url);
@@ -132,11 +142,11 @@ class ProductionPdfCompressor {
   static async deepCompress(
     pdfBytes: Uint8Array,
     settings: { imageQuality: number; imageScale: number },
-    onProgress?: (stage: string, percentage: number) => void
+    onProgress?: (stage: string, percentage: number) => void,
   ): Promise<Uint8Array> {
     try {
       onProgress?.('Loading PDF document...', 10);
-      
+
       // Load the PDF
       const pdfDoc = await PDFDocument.load(pdfBytes, {
         updateMetadata: false,
@@ -144,7 +154,7 @@ class ProductionPdfCompressor {
       });
 
       onProgress?.('Removing metadata...', 20);
-      
+
       // Remove all metadata
       pdfDoc.setTitle('');
       pdfDoc.setAuthor('');
@@ -167,7 +177,7 @@ class ProductionPdfCompressor {
         if (settings.imageScale < 1.0) {
           page.scale(settings.imageScale, settings.imageScale);
         }
-        
+
         // Update progress
         const pageProgress = 30 + (i / totalPages) * 20;
         onProgress?.(`Processing page ${i + 1}/${totalPages}...`, pageProgress);
@@ -200,7 +210,7 @@ class ProductionPdfCompressor {
       const secondPass = await PDFDocument.load(compressedBytes, {
         updateMetadata: false,
       });
-      
+
       compressedBytes = await secondPass.save({
         useObjectStreams: true,
         addDefaultPage: false,
@@ -214,7 +224,7 @@ class ProductionPdfCompressor {
         const thirdPass = await PDFDocument.load(compressedBytes, {
           updateMetadata: false,
         });
-        
+
         compressedBytes = await thirdPass.save({
           useObjectStreams: true,
           addDefaultPage: false,
@@ -236,10 +246,10 @@ class ProductionPdfCompressor {
    */
   static estimateCompressionRatio(level: CompressionLevel): number {
     const ratios = {
-      low: 0.85,      // 15% reduction
-      medium: 0.65,   // 35% reduction
-      high: 0.45,     // 55% reduction
-      maximum: 0.30,  // 70% reduction
+      low: 0.85, // 15% reduction
+      medium: 0.65, // 35% reduction
+      high: 0.45, // 55% reduction
+      maximum: 0.3, // 70% reduction
     };
     return ratios[level];
   }
@@ -247,7 +257,7 @@ class ProductionPdfCompressor {
 
 /**
  * PDF Compressor Tool Component - Production Ready
- * 
+ *
  * Features:
  * - Real image compression using Canvas API
  * - Multi-pass compression for maximum reduction
@@ -280,9 +290,12 @@ const PdfCompressor: React.FC<ToolProps> = () => {
    */
   const handleFileSelect = useCallback(async (file: File) => {
     if (!file || file.type !== 'application/pdf') {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: { message: 'Please select a valid PDF file. Only PDF files are supported.' },
+        error: {
+          message:
+            'Please select a valid PDF file. Only PDF files are supported.',
+        },
       }));
       return;
     }
@@ -290,7 +303,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
     // Check file size limit (100MB)
     const maxSize = 100 * 1024 * 1024;
     if (file.size > maxSize) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: { message: 'File is too large. Maximum file size is 100MB.' },
       }));
@@ -298,7 +311,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
     }
 
     try {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: null,
         pdfFile: file,
@@ -308,9 +321,11 @@ const PdfCompressor: React.FC<ToolProps> = () => {
       }));
     } catch (error) {
       console.error('Failed to load PDF:', error);
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: { message: 'Failed to load PDF. Please ensure it\'s a valid PDF file.' },
+        error: {
+          message: "Failed to load PDF. Please ensure it's a valid PDF file.",
+        },
       }));
     }
   }, []);
@@ -319,7 +334,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
    * Compression level change handler
    */
   const handleCompressionLevelChange = (level: CompressionLevel) => {
-    setState(prev => ({ ...prev, compressionLevel: level }));
+    setState((prev) => ({ ...prev, compressionLevel: level }));
   };
 
   /**
@@ -328,7 +343,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
   const compressPDF = async () => {
     if (!state.pdfFile) return;
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       processing: true,
       processingState: 'processing',
@@ -338,7 +353,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
     try {
       const arrayBuffer = await state.pdfFile.arrayBuffer();
       const pdfBytes = new Uint8Array(arrayBuffer);
-      
+
       const settings = COMPRESSION_SETTINGS[state.compressionLevel];
 
       // Perform deep compression with progress tracking
@@ -347,7 +362,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
         settings,
         (stage, percentage) => {
           setCompressionProgress({ stage, percentage });
-        }
+        },
       );
 
       setCompressionProgress({ stage: 'Complete!', percentage: 100 });
@@ -360,10 +375,13 @@ const PdfCompressor: React.FC<ToolProps> = () => {
       const compressedResult: CompressedPdfResult = {
         url,
         size: compressedBytes.length,
-        name: state.pdfFile.name.replace('.pdf', '_compressed.pdf')
+        name: state.pdfFile.name.replace('.pdf', '_compressed.pdf'),
       };
 
-      const reduction = ((1 - compressedBytes.length / state.originalSize) * 100).toFixed(1);
+      const reduction = (
+        (1 - compressedBytes.length / state.originalSize) *
+        100
+      ).toFixed(1);
 
       console.log('✅ Compression successful:', {
         originalSize: state.originalSize,
@@ -373,7 +391,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
         savedBytes: state.originalSize - compressedBytes.length,
       });
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         compressedPDF: compressedResult,
         processingState: 'completed',
@@ -385,30 +403,32 @@ const PdfCompressor: React.FC<ToolProps> = () => {
       }, 2000);
     } catch (error) {
       console.error('❌ Compression failed:', error);
-      
+
       let errorMessage = 'Failed to compress PDF. ';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('encrypted')) {
-          errorMessage += 'The PDF is password-protected. Please remove the password first.';
+          errorMessage +=
+            'The PDF is password-protected. Please remove the password first.';
         } else if (error.message.includes('Invalid')) {
           errorMessage += 'The PDF file appears to be corrupted or invalid.';
         } else {
-          errorMessage += 'Try a different compression level or check if the file is valid.';
+          errorMessage +=
+            'Try a different compression level or check if the file is valid.';
         }
       } else {
         errorMessage += 'An unexpected error occurred. Please try again.';
       }
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         error: { message: errorMessage },
         processingState: 'error',
       }));
-      
+
       setCompressionProgress({ stage: '', percentage: 0 });
     } finally {
-      setState(prev => ({ ...prev, processing: false }));
+      setState((prev) => ({ ...prev, processing: false }));
     }
   };
 
@@ -461,8 +481,9 @@ const PdfCompressor: React.FC<ToolProps> = () => {
   };
 
   const calculateReduction = (): string => {
-    if (!state.compressedPDF || !state.originalSize || state.originalSize === 0) return '0';
-    const reduction = ((1 - state.compressedPDF.size / state.originalSize) * 100);
+    if (!state.compressedPDF || !state.originalSize || state.originalSize === 0)
+      return '0';
+    const reduction = (1 - state.compressedPDF.size / state.originalSize) * 100;
     return isNaN(reduction) ? '0' : Math.max(0, reduction).toFixed(1);
   };
 
@@ -473,7 +494,9 @@ const PdfCompressor: React.FC<ToolProps> = () => {
 
   const getEstimatedSize = (): string => {
     if (!state.originalSize) return '0 Bytes';
-    const ratio = ProductionPdfCompressor.estimateCompressionRatio(state.compressionLevel);
+    const ratio = ProductionPdfCompressor.estimateCompressionRatio(
+      state.compressionLevel,
+    );
     return formatFileSize(Math.floor(state.originalSize * ratio));
   };
 
@@ -505,9 +528,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
               accept="application/pdf,.pdf"
               maxCount={1}
               maxSize={100 * 1024 * 1024}
-              onFilesChange={(files) =>
-                files[0] && handleFileSelect(files[0])
-              }
+              onFilesChange={(files) => files[0] && handleFileSelect(files[0])}
               onError={(err) =>
                 setState((prev) => ({
                   ...prev,
@@ -554,8 +575,8 @@ const PdfCompressor: React.FC<ToolProps> = () => {
           <Alert status="info" variant="soft">
             <AlertTitle>Production-grade compression</AlertTitle>
             <AlertDescription>
-              Multi-pass optimisation, image compression, metadata removal,
-              form flattening, and object stream optimisation.
+              Multi-pass optimisation, image compression, metadata removal, form
+              flattening, and object stream optimisation.
             </AlertDescription>
           </Alert>
 
@@ -566,41 +587,46 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             <CardBody>
               <Stack gap="5">
                 <Grid columns={{ base: 1, md: 2 }} gap="3">
-                  {Object.entries(COMPRESSION_SETTINGS).map(([key, setting]) => {
-                    const level = key as CompressionLevel;
-                    const Icon = getCompressionIcon(level);
-                    const isSelected = state.compressionLevel === level;
-                    return (
-                      <Card
-                        key={key}
-                        variant={isSelected ? 'outlined' : 'filled'}
-                        size="sm"
-                        interactive
-                        onClick={() => handleCompressionLevelChange(level)}
-                      >
-                        <CardBody>
-                          <Inline align="start" gap="3">
-                            <Icon size={24} aria-hidden />
-                            <Stack gap="1">
-                              <Text size="sm" weight="semibold">
-                                {setting.name}
-                              </Text>
-                              <Text size="xs" variant="caption">
-                                {setting.description}
-                              </Text>
-                              <Badge
-                                variant="soft"
-                                colorScheme={isSelected ? 'accent' : 'neutral'}
-                                size="xs"
-                              >
-                                Expected: {setting.expectedReduction} reduction
-                              </Badge>
-                            </Stack>
-                          </Inline>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
+                  {Object.entries(COMPRESSION_SETTINGS).map(
+                    ([key, setting]) => {
+                      const level = key as CompressionLevel;
+                      const Icon = getCompressionIcon(level);
+                      const isSelected = state.compressionLevel === level;
+                      return (
+                        <Card
+                          key={key}
+                          variant={isSelected ? 'outlined' : 'filled'}
+                          size="sm"
+                          interactive
+                          onClick={() => handleCompressionLevelChange(level)}
+                        >
+                          <CardBody>
+                            <Inline align="start" gap="3">
+                              <Icon size={24} aria-hidden />
+                              <Stack gap="1">
+                                <Text size="sm" weight="semibold">
+                                  {setting.name}
+                                </Text>
+                                <Text size="xs" variant="caption">
+                                  {setting.description}
+                                </Text>
+                                <Badge
+                                  variant="soft"
+                                  colorScheme={
+                                    isSelected ? 'accent' : 'neutral'
+                                  }
+                                  size="xs"
+                                >
+                                  Expected: {setting.expectedReduction}{' '}
+                                  reduction
+                                </Badge>
+                              </Stack>
+                            </Inline>
+                          </CardBody>
+                        </Card>
+                      );
+                    },
+                  )}
                 </Grid>
 
                 <Card variant="filled" size="sm">
@@ -621,7 +647,11 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                             Image quality
                           </Text>
                           <Text size="sm" weight="medium">
-                            {(COMPRESSION_SETTINGS[state.compressionLevel].imageQuality * 100).toFixed(0)}%
+                            {(
+                              COMPRESSION_SETTINGS[state.compressionLevel]
+                                .imageQuality * 100
+                            ).toFixed(0)}
+                            %
                           </Text>
                         </Stack>
                       </Inline>
@@ -632,7 +662,11 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                             Image scale
                           </Text>
                           <Text size="sm" weight="medium">
-                            {(COMPRESSION_SETTINGS[state.compressionLevel].imageScale * 100).toFixed(0)}%
+                            {(
+                              COMPRESSION_SETTINGS[state.compressionLevel]
+                                .imageScale * 100
+                            ).toFixed(0)}
+                            %
                           </Text>
                         </Stack>
                       </Inline>
@@ -643,7 +677,10 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                             Optimisation passes
                           </Text>
                           <Text size="sm" weight="medium">
-                            {state.compressionLevel === 'low' || state.compressionLevel === 'medium' ? '2' : '3'}
+                            {state.compressionLevel === 'low' ||
+                            state.compressionLevel === 'medium'
+                              ? '2'
+                              : '3'}
                           </Text>
                         </Stack>
                       </Inline>
@@ -686,9 +723,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
               fullWidth
               loading={state.processing}
               disabled={state.processing}
-              leftIcon={
-                state.processing ? <Spinner size="sm" /> : <Minimize2 size={20} />
-              }
+              leftIcon={state.processing ? undefined : <Minimize2 size={20} />}
             >
               {state.processing ? 'Compressing PDF…' : 'Compress PDF'}
             </Button>
@@ -734,7 +769,12 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                 <Center>
                   <Stack gap="2" align="center">
                     <ArrowDown size={28} aria-hidden />
-                    <Badge variant="solid" colorScheme="accent" size="sm" shape="pill">
+                    <Badge
+                      variant="solid"
+                      colorScheme="accent"
+                      size="sm"
+                      shape="pill"
+                    >
                       -{calculateReduction()}%
                     </Badge>
                   </Stack>

@@ -167,7 +167,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
         console.error('Failed to load PDF:', err);
         setState((prev) => ({
           ...prev,
-          error: { message: "Failed to load PDF. Please ensure it's a valid PDF file." },
+          error: {
+            message: "Failed to load PDF. Please ensure it's a valid PDF file.",
+          },
           previewLoading: false,
         }));
       }
@@ -193,7 +195,10 @@ const PdfSplitter: React.FC<ToolProps> = () => {
   const addRange = () => {
     setState((prev) => ({
       ...prev,
-      ranges: [...prev.ranges, { id: Date.now().toString(), start: '', end: '' }],
+      ranges: [
+        ...prev.ranges,
+        { id: Date.now().toString(), start: '', end: '' },
+      ],
     }));
   };
 
@@ -215,7 +220,12 @@ const PdfSplitter: React.FC<ToolProps> = () => {
   };
 
   const changeSplitMode = (mode: SplitMode) =>
-    setState((prev) => ({ ...prev, splitMode: mode, splitResults: [], error: null }));
+    setState((prev) => ({
+      ...prev,
+      splitMode: mode,
+      splitResults: [],
+      error: null,
+    }));
 
   const splitPDF = async () => {
     if (!state.pdfDoc) return;
@@ -233,7 +243,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
           const [p] = await doc.copyPages(state.pdfDoc, [i]);
           doc.addPage(p);
           const bytes = await doc.save();
-          const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+          const blob = new Blob([new Uint8Array(bytes)], {
+            type: 'application/pdf',
+          });
           results.push({
             name: `page_${i + 1}.pdf`,
             url: URL.createObjectURL(blob),
@@ -258,7 +270,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
           const pages = await doc.copyPages(state.pdfDoc, indices);
           pages.forEach((p) => doc.addPage(p));
           const bytes = await doc.save();
-          const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+          const blob = new Blob([new Uint8Array(bytes)], {
+            type: 'application/pdf',
+          });
           results.push({
             name: `pages_${i + 1}-${end}.pdf`,
             url: URL.createObjectURL(blob),
@@ -280,7 +294,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
         const pages = await doc.copyPages(state.pdfDoc, sorted);
         pages.forEach((p) => doc.addPage(p));
         const bytes = await doc.save();
-        const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+        const blob = new Blob([new Uint8Array(bytes)], {
+          type: 'application/pdf',
+        });
         const list = sorted.map((i) => i + 1).join(', ');
         results.push({
           name: `selected_pages.pdf`,
@@ -316,11 +332,16 @@ const PdfSplitter: React.FC<ToolProps> = () => {
             return;
           }
           const doc = await PDFDocument.create();
-          const indices = Array.from({ length: e - s + 1 }, (_, idx) => s - 1 + idx);
+          const indices = Array.from(
+            { length: e - s + 1 },
+            (_, idx) => s - 1 + idx,
+          );
           const pages = await doc.copyPages(state.pdfDoc, indices);
           pages.forEach((p) => doc.addPage(p));
           const bytes = await doc.save();
-          const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+          const blob = new Blob([new Uint8Array(bytes)], {
+            type: 'application/pdf',
+          });
           results.push({
             name: `pages_${s}-${e}.pdf`,
             url: URL.createObjectURL(blob),
@@ -429,7 +450,11 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                             <Check size={12} aria-hidden />
                           </Badge>
                         ) : (
-                          <Badge variant="outline" colorScheme="neutral" size="xs">
+                          <Badge
+                            variant="outline"
+                            colorScheme="neutral"
+                            size="xs"
+                          >
                             ?
                           </Badge>
                         )}
@@ -493,7 +518,8 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                 <Stack gap="2" align="center">
                   <FileText size={48} aria-hidden />
                   <Text size="sm" variant="caption">
-                    Preview not available for page {state.currentPreviewPage + 1}
+                    Preview not available for page{' '}
+                    {state.currentPreviewPage + 1}
                   </Text>
                 </Stack>
               </Center>
@@ -518,9 +544,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
               }).map((_, i) => (
                 <Button
                   key={i}
-                  variant={
-                    state.currentPreviewPage === i ? 'solid' : 'soft'
-                  }
+                  variant={state.currentPreviewPage === i ? 'solid' : 'soft'}
                   colorScheme={
                     state.currentPreviewPage === i ? 'accent' : 'neutral'
                   }
@@ -569,7 +593,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
               <FileUpload
                 accept="application/pdf,.pdf"
                 maxCount={1}
-                onFilesChange={(files) => files[0] && handleFileSelect(files[0])}
+                onFilesChange={(files) =>
+                  files[0] && handleFileSelect(files[0])
+                }
                 onError={(err) =>
                   setState((prev) => ({
                     ...prev,
@@ -700,7 +726,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                           <Card
                             key={m.value}
                             variant={
-                              state.splitMode === m.value ? 'outlined' : 'filled'
+                              state.splitMode === m.value
+                                ? 'outlined'
+                                : 'filled'
                             }
                             size="sm"
                             interactive
@@ -709,10 +737,18 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                             <CardBody>
                               <Stack gap="2" align="center">
                                 {m.icon}
-                                <Text size="sm" weight="semibold" align="center">
+                                <Text
+                                  size="sm"
+                                  weight="semibold"
+                                  align="center"
+                                >
                                   {m.label}
                                 </Text>
-                                <Text size="xs" variant="caption" align="center">
+                                <Text
+                                  size="xs"
+                                  variant="caption"
+                                  align="center"
+                                >
                                   {m.description}
                                 </Text>
                               </Stack>
@@ -757,7 +793,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                                       id={`range-end-${r.id}`}
                                       type="number"
                                       value={r.end}
-                                      onChange={(v) => updateRange(r.id, 'end', v)}
+                                      onChange={(v) =>
+                                        updateRange(r.id, 'end', v)
+                                      }
                                       placeholder={`${state.pageCount}`}
                                       aria-label={`Range ${i + 1} end`}
                                     />
@@ -817,7 +855,11 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                       )}
 
                       {state.splitMode === 'selection' && (
-                        <Alert status="info" variant="soft" icon={<Check aria-hidden />}>
+                        <Alert
+                          status="info"
+                          variant="soft"
+                          icon={<Check aria-hidden />}
+                        >
                           <AlertTitle>Visual page selection</AlertTitle>
                           <AlertDescription>
                             Use the preview above to select pages. Click pages
@@ -850,9 +892,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                   fullWidth
                   loading={isProcessing}
                   disabled={isProcessing}
-                  leftIcon={
-                    isProcessing ? <Spinner size="sm" /> : <Scissors size={20} />
-                  }
+                  leftIcon={isProcessing ? undefined : <Scissors size={20} />}
                 >
                   {isProcessing ? 'Splitting PDF…' : 'Split PDF'}
                 </Button>

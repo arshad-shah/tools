@@ -28,6 +28,7 @@ import {
   Grid,
   IconButton,
   Inline,
+  Input,
   Label,
   NumberInput,
   Select,
@@ -111,22 +112,13 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                 #{index + 1}
               </Badge>
               <Box minWidth="0">
-                <input
-                  type="text"
+                <Input
+                  variant="ghost"
+                  size="sm"
                   value={field.name}
-                  onChange={(e) =>
-                    onUpdateField(fullPath, { name: e.target.value })
-                  }
+                  onChange={(value) => onUpdateField(fullPath, { name: value })}
                   placeholder="Field name"
                   aria-label="Field name"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    font: 'inherit',
-                    color: 'inherit',
-                    width: '100%',
-                  }}
                 />
               </Box>
             </Inline>
@@ -184,9 +176,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                   <Label>Min</Label>
                   <NumberInput
                     value={field.min ?? 0}
-                    onChange={(v) =>
-                      onUpdateField(fullPath, { min: v ?? 0 })
-                    }
+                    onChange={(v) => onUpdateField(fullPath, { min: v ?? 0 })}
                     aria-label="Minimum value"
                   />
                 </Stack>
@@ -194,9 +184,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                   <Label>Max</Label>
                   <NumberInput
                     value={field.max ?? 100}
-                    onChange={(v) =>
-                      onUpdateField(fullPath, { max: v ?? 100 })
-                    }
+                    onChange={(v) => onUpdateField(fullPath, { max: v ?? 100 })}
                     aria-label="Maximum value"
                   />
                 </Stack>
@@ -358,9 +346,7 @@ const RandomDataGenerator: React.FC = () => {
                       <NumberInput
                         id="gen-count"
                         value={count}
-                        onChange={(v) =>
-                          setCount(Math.max(1, v ?? 1))
-                        }
+                        onChange={(v) => setCount(Math.max(1, v ?? 1))}
                         minValue={1}
                         aria-label="Item count"
                       />

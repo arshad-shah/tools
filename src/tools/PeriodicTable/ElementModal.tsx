@@ -95,20 +95,11 @@ const ElementModal: React.FC<ElementModalProps> = ({
                   {element.number}
                 </Heading>
                 <Stack gap="0">
-                  <DialogTitle asChild>
-                    <Heading
-                      level={3}
-                      size="3xl"
-                      weight="bold"
-                      style={{ color: fg }}
-                    >
-                      {element.symbol}
-                    </Heading>
+                  <DialogTitle style={{ color: fg }}>
+                    {element.symbol}
                   </DialogTitle>
-                  <DialogDescription asChild>
-                    <Text size="md" weight="medium" style={{ color: fg }}>
-                      {element.name}
-                    </Text>
+                  <DialogDescription style={{ color: fg }}>
+                    {element.name}
                   </DialogDescription>
                 </Stack>
               </Inline>
