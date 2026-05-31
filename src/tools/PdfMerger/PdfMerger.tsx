@@ -22,7 +22,6 @@ import {
   Heading,
   IconButton,
   Inline,
-  Spinner,
   Stack,
   Text,
 } from '@arshad-shah/cynosure-react';
@@ -91,7 +90,11 @@ const PdfMerger: React.FC<ToolProps> = () => {
       }));
       return;
     }
-    setState((prev) => ({ ...prev, processingState: 'processing', error: null }));
+    setState((prev) => ({
+      ...prev,
+      processingState: 'processing',
+      error: null,
+    }));
     try {
       const mergedDoc = await PDFDocument.create();
       for (const item of state.files) {
@@ -293,9 +296,7 @@ const PdfMerger: React.FC<ToolProps> = () => {
               size="lg"
               fullWidth
               loading={isProcessing}
-              leftIcon={
-                isProcessing ? <Spinner size="sm" /> : <ArrowDownUp size={20} />
-              }
+              leftIcon={isProcessing ? undefined : <ArrowDownUp size={20} />}
             >
               {isProcessing
                 ? 'Merging PDFs…'

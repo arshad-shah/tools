@@ -6,8 +6,6 @@ import {
   Building2,
   Coins,
   Download,
-  Eye,
-  EyeOff,
   FileImage,
   FileText,
   Hash,
@@ -47,7 +45,6 @@ import {
   Checkbox,
   Code,
   Grid,
-  IconButton,
   Inline,
   Input,
   Label,
@@ -237,7 +234,6 @@ const WifiFormPanel: React.FC<{
   wifiData: WifiData;
   setWifiData: (data: Partial<WifiData>) => void;
 }> = ({ wifiData, setWifiData }) => {
-  const [showPassword, setShowPassword] = useState(false);
   return (
     <Stack gap="3">
       <Stack gap="2">
@@ -254,21 +250,11 @@ const WifiFormPanel: React.FC<{
         <Label htmlFor="wifi-password">Password</Label>
         <Input
           id="wifi-password"
-          type={showPassword ? 'text' : 'password'}
+          type="password"
           value={wifiData.password}
           onChange={(v) => setWifiData({ password: v })}
           placeholder="Enter network password"
           leadingSlot={<KeyRound size={16} aria-hidden />}
-          trailingSlot={
-            <IconButton
-              variant="ghost"
-              colorScheme="neutral"
-              size="sm"
-              label={showPassword ? 'Hide' : 'Show'}
-              icon={showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              onClick={() => setShowPassword(!showPassword)}
-            />
-          }
         />
       </Stack>
       <Stack gap="2">
@@ -402,10 +388,7 @@ const QRCodeGenerator: React.FC = () => {
         );
       case 'wifi':
         return (
-          <WifiFormPanel
-            wifiData={state.wifiData}
-            setWifiData={setWifiData}
-          />
+          <WifiFormPanel wifiData={state.wifiData} setWifiData={setWifiData} />
         );
       case 'crypto':
         return (
@@ -466,7 +449,9 @@ const QRCodeGenerator: React.FC = () => {
                         {QR_TYPE_OPTIONS.map((t) => (
                           <Button
                             key={t.value}
-                            variant={state.qrType === t.value ? 'solid' : 'soft'}
+                            variant={
+                              state.qrType === t.value ? 'solid' : 'soft'
+                            }
                             colorScheme={
                               state.qrType === t.value ? 'accent' : 'neutral'
                             }
@@ -495,7 +480,11 @@ const QRCodeGenerator: React.FC = () => {
                         <Stack gap="3">
                           <Inline justify="between" align="center">
                             <Label>QR code size</Label>
-                            <Badge variant="soft" colorScheme="accent" size="sm">
+                            <Badge
+                              variant="soft"
+                              colorScheme="accent"
+                              size="sm"
+                            >
                               {state.size}px
                             </Badge>
                           </Inline>
@@ -604,16 +593,26 @@ const QRCodeGenerator: React.FC = () => {
                           <Label>Output format</Label>
                           <ButtonGroup>
                             <Button
-                              variant={state.renderAs === 'canvas' ? 'solid' : 'soft'}
-                              colorScheme={state.renderAs === 'canvas' ? 'accent' : 'neutral'}
+                              variant={
+                                state.renderAs === 'canvas' ? 'solid' : 'soft'
+                              }
+                              colorScheme={
+                                state.renderAs === 'canvas'
+                                  ? 'accent'
+                                  : 'neutral'
+                              }
                               size="sm"
                               onClick={() => setRenderAs('canvas')}
                             >
                               PNG
                             </Button>
                             <Button
-                              variant={state.renderAs === 'svg' ? 'solid' : 'soft'}
-                              colorScheme={state.renderAs === 'svg' ? 'accent' : 'neutral'}
+                              variant={
+                                state.renderAs === 'svg' ? 'solid' : 'soft'
+                              }
+                              colorScheme={
+                                state.renderAs === 'svg' ? 'accent' : 'neutral'
+                              }
                               size="sm"
                               onClick={() => setRenderAs('svg')}
                             >
@@ -622,7 +621,9 @@ const QRCodeGenerator: React.FC = () => {
                           </ButtonGroup>
                           <Inline justify="between" align="center" wrap>
                             <Stack gap="0">
-                              <Label htmlFor="include-margin">Include margin</Label>
+                              <Label htmlFor="include-margin">
+                                Include margin
+                              </Label>
                               <Text size="xs" variant="caption">
                                 Adds white space around the QR
                               </Text>
@@ -685,7 +686,9 @@ const QRCodeGenerator: React.FC = () => {
                                   />
                                 </Stack>
                                 <Stack gap="2">
-                                  <Label htmlFor="logo-height">Height (px)</Label>
+                                  <Label htmlFor="logo-height">
+                                    Height (px)
+                                  </Label>
                                   <NumberInput
                                     id="logo-height"
                                     value={state.imageSettings.height}
@@ -720,18 +723,27 @@ const QRCodeGenerator: React.FC = () => {
                       </CardBody>
                     </Card>
 
-                    <Accordion type="single" collapsible variant="contained" size="md">
+                    <Accordion
+                      type="single"
+                      collapsible
+                      variant="contained"
+                      size="md"
+                    >
                       <AccordionItem value="advanced">
                         <AccordionTrigger>
                           <Inline align="center" gap="2">
                             <SettingsIcon size={16} aria-hidden />
-                            <Text weight="medium">Advanced technical settings</Text>
+                            <Text weight="medium">
+                              Advanced technical settings
+                            </Text>
                           </Inline>
                         </AccordionTrigger>
                         <AccordionContent>
                           <Stack gap="3">
                             <Stack gap="2">
-                              <Label htmlFor="qr-version">QR version (0 for auto)</Label>
+                              <Label htmlFor="qr-version">
+                                QR version (0 for auto)
+                              </Label>
                               <NumberInput
                                 id="qr-version"
                                 value={state.version}
@@ -742,7 +754,9 @@ const QRCodeGenerator: React.FC = () => {
                               />
                             </Stack>
                             <Stack gap="2">
-                              <Label htmlFor="mask-pattern">Mask pattern (-1 for auto)</Label>
+                              <Label htmlFor="mask-pattern">
+                                Mask pattern (-1 for auto)
+                              </Label>
                               <NumberInput
                                 id="mask-pattern"
                                 value={state.maskPattern}
@@ -783,7 +797,11 @@ const QRCodeGenerator: React.FC = () => {
                     </Card>
 
                     {state.encryptionConfig.type === 'none' ? (
-                      <Alert status="info" variant="soft" icon={<ShieldOff aria-hidden />}>
+                      <Alert
+                        status="info"
+                        variant="soft"
+                        icon={<ShieldOff aria-hidden />}
+                      >
                         <AlertDescription>
                           Your QR code data will not be encrypted. Anyone who
                           scans it will be able to read its contents.
@@ -810,7 +828,8 @@ const QRCodeGenerator: React.FC = () => {
                                 This key will be needed to decrypt the QR code.
                               </Text>
                               {(state.encryptionConfig.type === 'aes' ||
-                                state.encryptionConfig.type === 'tripledes') && (
+                                state.encryptionConfig.type ===
+                                  'tripledes') && (
                                 <>
                                   <Stack gap="2">
                                     <Label htmlFor="enc-iv">
@@ -820,7 +839,9 @@ const QRCodeGenerator: React.FC = () => {
                                       <Box flex="1" minWidth="0">
                                         <Input
                                           id="enc-iv"
-                                          value={state.encryptionConfig.iv ?? ''}
+                                          value={
+                                            state.encryptionConfig.iv ?? ''
+                                          }
                                           onChange={(v) =>
                                             setEncryptionConfig({ iv: v })
                                           }
@@ -849,7 +870,9 @@ const QRCodeGenerator: React.FC = () => {
                                         <Box flex="1" minWidth="0">
                                           <Input
                                             id="enc-salt"
-                                            value={state.encryptionConfig.salt ?? ''}
+                                            value={
+                                              state.encryptionConfig.salt ?? ''
+                                            }
                                             onChange={(v) =>
                                               setEncryptionConfig({ salt: v })
                                             }
@@ -886,14 +909,28 @@ const QRCodeGenerator: React.FC = () => {
                           </AlertDescription>
                         </Alert>
 
-                        <Alert status="info" variant="soft" icon={<Shield aria-hidden />}>
+                        <Alert
+                          status="info"
+                          variant="soft"
+                          icon={<Shield aria-hidden />}
+                        >
                           <AlertDescription>
                             <Stack gap="1">
-                              <Text size="sm" weight="semibold">Encryption details</Text>
-                              <Text size="xs">• AES-256 offers strongest security</Text>
-                              <Text size="xs">• Triple DES is widely supported but slower</Text>
-                              <Text size="xs">• RC4 is fast but has known vulnerabilities</Text>
-                              <Text size="xs">• Rabbit balances speed and security</Text>
+                              <Text size="sm" weight="semibold">
+                                Encryption details
+                              </Text>
+                              <Text size="xs">
+                                • AES-256 offers strongest security
+                              </Text>
+                              <Text size="xs">
+                                • Triple DES is widely supported but slower
+                              </Text>
+                              <Text size="xs">
+                                • RC4 is fast but has known vulnerabilities
+                              </Text>
+                              <Text size="xs">
+                                • Rabbit balances speed and security
+                              </Text>
                             </Stack>
                           </AlertDescription>
                         </Alert>
@@ -979,13 +1016,17 @@ const QRCodeGenerator: React.FC = () => {
                 <AlertDescription>
                   <Stack gap="1">
                     <Text size="sm">
-                      <Text as="span" weight="semibold">Error correction:</Text>{' '}
+                      <Text as="span" weight="semibold">
+                        Error correction:
+                      </Text>{' '}
                       {state.errorCorrectionLevel} (
                       {ERROR_LEVEL_PCT[state.errorCorrectionLevel]})
                     </Text>
                     {state.encryptionConfig.type !== 'none' && (
                       <Text size="sm">
-                        <Text as="span" weight="semibold">Encryption:</Text>{' '}
+                        <Text as="span" weight="semibold">
+                          Encryption:
+                        </Text>{' '}
                         {state.encryptionConfig.type.toUpperCase()}
                       </Text>
                     )}
