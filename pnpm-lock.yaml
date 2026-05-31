@@ -24,8 +24,8 @@ importers:
   .:
     dependencies:
       '@arshad-shah/cynosure-react':
-        specifier: ^3.3.0
-        version: 3.3.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: ^3.3.1
+        version: 3.3.1(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@arshad-shah/cynosure-tokens':
         specifier: ^3.3.0
         version: 3.3.0
@@ -189,8 +189,8 @@ packages:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
-  '@arshad-shah/cynosure-react@3.3.0':
-    resolution: {integrity: sha512-A/HN+YQzr9pfrPmTZeMvx1Jw5p2gPfog7qaQkQjUEXveU2GR4Vf6Pz6Ga1vY/6KfuzWJdlBe2DZE3oly5HbRcg==}
+  '@arshad-shah/cynosure-react@3.3.1':
+    resolution: {integrity: sha512-GTTA7uJ72+5ZnLgmX4yyH7scfYhBkHV8MT4XFTUqcgWm/ZBQ3a13VHS/GztdUrgvxqojEtauQ43iZr91hlLWJg==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -3482,7 +3482,7 @@ snapshots:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
 
-  '@arshad-shah/cynosure-react@3.3.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@arshad-shah/cynosure-react@3.3.1(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
       '@arshad-shah/cynosure-core': 3.3.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@arshad-shah/cynosure-tokens': 3.3.0

@@ -25,7 +25,7 @@
     ]
   },
   "dependencies": {
-    "@arshad-shah/cynosure-react": "^3.3.0",
+    "@arshad-shah/cynosure-react": "^3.3.1",
     "@arshad-shah/cynosure-tokens": "^3.3.0",
     "@internationalized/date": "^3.12.2",
     "@reduxjs/toolkit": "^2.12.0",
