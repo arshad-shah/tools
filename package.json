@@ -59,7 +59,7 @@
     "three": "^0.184.0"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.39.0",
+    "@cloudflare/vite-plugin": "^1.39.1",
     "@eslint/js": "^10.0.1",
     "@types/dagre": "^0.7.54",
     "@types/node": "^25.9.1",
