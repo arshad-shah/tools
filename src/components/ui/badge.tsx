@@ -91,9 +91,14 @@ export interface BadgeProps
     React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {
   mono?: boolean;
+  /** Leading icon, rendered before the label with the built-in gap. */
+  icon?: React.ReactNode;
 }
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant, tone, size, pill, mono, ...props }, ref) => (
+  (
+    { className, variant, tone, size, pill, mono, icon, children, ...props },
+    ref,
+  ) => (
     <span
       ref={ref}
       className={cn(
@@ -102,7 +107,10 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
         className,
       )}
       {...props}
-    />
+    >
+      {icon}
+      {children}
+    </span>
   ),
 );
 Badge.displayName = 'Badge';

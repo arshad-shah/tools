@@ -116,8 +116,7 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
         <Stack gap="2">
           <Inline justify="between" align="center" gap="2" wrap>
             <Inline align="center" gap="2" wrap>
-              <Badge variant="soft" tone={info.tone} size="sm">
-                {info.icon}
+              <Badge variant="soft" tone={info.tone} size="sm" icon={info.icon}>
                 {info.label}
               </Badge>
               {log.timestamp && (
@@ -356,7 +355,7 @@ const LogParserTool: React.FC = () => {
   );
 
   return (
-    <Container className="max-w-none">
+    <Container size="full">
       <Stack gap="4">
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2" wrap>
@@ -401,7 +400,7 @@ const LogParserTool: React.FC = () => {
         </Inline>
 
         {parsedLogs.length > 0 && (
-          <Box className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+          <Grid cols={{ base: 2, sm: 3, md: 5 }} gap="2">
             {(Object.keys(LEVEL_INFO) as LogLevel[]).map((level) => {
               const info = LEVEL_INFO[level];
               const isActive = activeFilters[level];
@@ -431,7 +430,7 @@ const LogParserTool: React.FC = () => {
                 </Card>
               );
             })}
-          </Box>
+          </Grid>
         )}
 
         {showFilters && (
@@ -502,10 +501,10 @@ const LogParserTool: React.FC = () => {
         )}
 
         {viewMode === 'split' ? (
-          <Box className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Grid cols={{ base: 1, lg: 2 }} gap="4">
             <Box>{inputPanel}</Box>
             <Box>{outputPanel}</Box>
-          </Box>
+          </Grid>
         ) : viewMode === 'input' ? (
           inputPanel
         ) : (

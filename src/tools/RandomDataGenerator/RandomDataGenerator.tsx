@@ -244,7 +244,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                 variant="soft"
                 leftIcon={<Plus size={14} />}
                 onClick={() => onAddField(path)}
-                className="w-full"
+                fullWidth
               >
                 Add field to {field.name}
               </Button>
@@ -296,7 +296,7 @@ const RandomDataGenerator: React.FC = () => {
   const headers = generatedData ? DataUtils.getAllHeaders(flattenedData) : [];
 
   return (
-    <Container className="max-w-none">
+    <Container size="full">
       <Grid max={2} gap="4">
         <Card>
           <CardHeader>
@@ -326,7 +326,7 @@ const RandomDataGenerator: React.FC = () => {
                   variant="soft"
                   leftIcon={<PlusCircle size={16} />}
                   onClick={() => handleAddField()}
-                  className="w-full"
+                  fullWidth
                 >
                   Add new field
                 </Button>
@@ -351,7 +351,7 @@ const RandomDataGenerator: React.FC = () => {
                       variant="solid"
                       leftIcon={<RefreshCw size={16} />}
                       onClick={handleGenerate}
-                      className="w-full"
+                      fullWidth
                     >
                       Generate random data
                     </Button>

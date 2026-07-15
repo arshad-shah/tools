@@ -335,7 +335,7 @@ const UnitConverter: React.FC = () => {
                     placeholder="Search categories…"
                   />
                 </Inline>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                <Grid cols={{ base: 2, sm: 3, md: 5 }} gap="3">
                   {filteredCategories.map((c) => (
                     <Card
                       key={c.name}
@@ -361,7 +361,7 @@ const UnitConverter: React.FC = () => {
                       </CardBody>
                     </Card>
                   ))}
-                </div>
+                </Grid>
               </Stack>
 
               <Card>
@@ -555,7 +555,7 @@ const UnitConverter: React.FC = () => {
                               <IconButton
                                 variant="ghost"
                                 size="sm"
-                                className="text-danger hover:text-danger"
+                                tone="danger"
                                 label="Remove conversion"
                                 icon={<X size={16} />}
                                 onClick={(e) => {
