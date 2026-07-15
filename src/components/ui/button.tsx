@@ -1,6 +1,7 @@
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
+import { Spinner } from './spinner';
 
 /* ------------------------------------------------------------------ *
  * Slot — minimal asChild support (merges props onto a single child)
@@ -39,22 +40,31 @@ export const buttonVariants = cva(
           'border border-danger/40 bg-danger-dim text-danger hover:border-danger/70',
       },
       size: {
+        xs: 'h-7 px-2 text-xs',
         sm: 'h-8 px-3 text-sm',
         md: 'h-10 px-4 text-sm',
         lg: 'h-11 px-5 text-base',
       },
+      fullWidth: { true: 'w-full', false: '' },
     },
-    defaultVariants: { variant: 'soft', size: 'md' },
+    defaultVariants: { variant: 'soft', size: 'md', fullWidth: false },
   },
 );
+
+/** Spinner size that visually matches each button size. */
+const spinnerForSize = { xs: 'sm', sm: 'sm', md: 'sm', lg: 'md' } as const;
 
 export interface ButtonProps
   extends
     React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+    Omit<VariantProps<typeof buttonVariants>, 'fullWidth'> {
   asChild?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  /** Show a spinner in place of the left icon and disable the button. */
+  loading?: boolean;
+  /** Stretch to the full width of the container. */
+  fullWidth?: boolean;
 }
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -65,12 +75,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       asChild,
       leftIcon,
       rightIcon,
+      loading,
+      fullWidth,
+      disabled,
       children,
       ...props
     },
     ref,
   ) => {
-    const classes = cn(buttonVariants({ variant, size }), className);
+    const classes = cn(buttonVariants({ variant, size, fullWidth }), className);
     if (asChild) {
       return (
         <Slot className={classes} {...props}>
@@ -78,9 +91,19 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         </Slot>
       );
     }
+    const left = loading ? (
+      <Spinner size={spinnerForSize[size ?? 'md']} />
+    ) : (
+      leftIcon
+    );
     return (
-      <button ref={ref} className={classes} {...props}>
-        {leftIcon}
+      <button
+        ref={ref}
+        className={classes}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {left}
         {children}
         {rightIcon}
       </button>
@@ -93,9 +116,16 @@ Button.displayName = 'Button';
  * IconButton — square, icon-only, requires a label
  * ------------------------------------------------------------------ */
 const iconButtonSize = {
+  xs: 'size-7',
   sm: 'size-8',
   md: 'size-10',
   lg: 'size-11',
+} as const;
+/** Tints ghost/soft icon buttons without a full filled background. */
+const iconButtonTone = {
+  danger: 'text-danger hover:text-danger',
+  warning: 'text-warning hover:text-warning',
+  accent: 'text-accent hover:text-accent',
 } as const;
 export interface IconButtonProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -105,6 +135,9 @@ export interface IconButtonProps extends Omit<
   icon: React.ReactNode;
   variant?: NonNullable<VariantProps<typeof buttonVariants>['variant']>;
   size?: keyof typeof iconButtonSize;
+  /** Color tint for ghost/soft icon buttons (e.g. a destructive action). */
+  tone?: keyof typeof iconButtonTone;
+  loading?: boolean;
   asChild?: boolean;
 }
 export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
@@ -115,7 +148,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       icon,
       variant = 'soft',
       size = 'md',
+      tone,
+      loading,
       asChild,
+      disabled,
       children,
       ...props
     },
@@ -125,6 +161,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       buttonVariants({ variant }),
       'p-0',
       iconButtonSize[size],
+      tone && iconButtonTone[tone],
       className,
     );
     if (asChild) {
@@ -135,8 +172,14 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       );
     }
     return (
-      <button ref={ref} className={classes} aria-label={label} {...props}>
-        {icon}
+      <button
+        ref={ref}
+        className={classes}
+        aria-label={label}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading ? <Spinner size="sm" /> : icon}
       </button>
     );
   },

@@ -324,7 +324,7 @@ const DataViewer = () => {
   );
 
   return (
-    <Container size="xl" className="max-w-none">
+    <Container size="full">
       <Stack gap="4">
         <Card>
           <CardBody>

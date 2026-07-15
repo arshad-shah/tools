@@ -651,9 +651,9 @@ const ApiTester: React.FC = () => {
         </Box>
         <Button
           variant="solid"
-          leftIcon={isLoading ? <Spinner size="sm" /> : <Send size={14} />}
+          loading={isLoading}
+          leftIcon={<Send size={14} />}
           onClick={sendRequest}
-          disabled={isLoading}
         >
           Send
         </Button>

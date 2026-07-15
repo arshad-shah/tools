@@ -18,7 +18,6 @@ import {
   Label,
   Select,
   Slider,
-  Spinner,
   Stack,
   Text,
 } from '@/components/ui';
@@ -292,10 +291,10 @@ const ImageOptimiser: React.FC = () => {
                 </Stack>
                 <Button
                   variant="solid"
-                  className="w-full"
-                  disabled={!selectedFile || isProcessing}
+                  fullWidth
+                  loading={isProcessing}
+                  disabled={!selectedFile}
                   onClick={processImage}
-                  leftIcon={isProcessing ? <Spinner size="sm" /> : undefined}
                 >
                   {isProcessing ? 'Processing…' : 'Convert & compress'}
                 </Button>
@@ -356,7 +355,7 @@ const ImageOptimiser: React.FC = () => {
                 <Button
                   variant="solid"
                   size="lg"
-                  className="w-full"
+                  fullWidth
                   leftIcon={<Save size={20} />}
                   onClick={downloadImage}
                 >

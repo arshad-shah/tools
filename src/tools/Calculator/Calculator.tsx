@@ -28,6 +28,7 @@ import {
   CardHeader,
   CardTitle,
   Container,
+  Grid,
   Heading,
   IconButton,
   Inline,
@@ -64,7 +65,7 @@ const CalcKey: React.FC<CalcKeyProps> = ({
     size="lg"
     leftIcon={icon}
     onClick={onClick}
-    className="w-full"
+    fullWidth
   >
     {children}
   </Button>
@@ -141,7 +142,7 @@ const Calculator: React.FC = () => {
   );
 
   const renderStandardKeypad = () => (
-    <Box className="grid grid-cols-4 gap-2">
+    <Grid cols={4} gap="2">
       <CalcKey variant="solid" colorScheme="danger" onClick={clear}>
         C
       </CalcKey>
@@ -198,11 +199,11 @@ const Calculator: React.FC = () => {
       <CalcKey onClick={squareRoot}>√</CalcKey>
       <CalcKey onClick={square}>x²</CalcKey>
       <CalcKey onClick={reciprocal}>1/x</CalcKey>
-    </Box>
+    </Grid>
   );
 
   const renderScientificExtras = () => (
-    <Box className="grid grid-cols-4 gap-2">
+    <Grid cols={4} gap="2">
       <CalcKey variant="soft" colorScheme="accent" onClick={factorial}>
         x!
       </CalcKey>
@@ -246,7 +247,7 @@ const Calculator: React.FC = () => {
       >
         mod
       </CalcKey>
-    </Box>
+    </Grid>
   );
 
   const renderExpressionMode = () => (
@@ -270,7 +271,7 @@ const Calculator: React.FC = () => {
             variant="solid"
             onClick={evaluateExpression}
             leftIcon={<Equal size={16} />}
-            className="w-full"
+            fullWidth
           >
             Evaluate
           </Button>
@@ -305,7 +306,7 @@ const Calculator: React.FC = () => {
         aria-label="Expression"
       />
 
-      <Box className="grid grid-cols-4 gap-2">
+      <Grid cols={4} gap="2">
         <CalcKey onClick={() => setDisplay(display + '(')}>(</CalcKey>
         <CalcKey onClick={() => setDisplay(display + ')')}>)</CalcKey>
         <CalcKey onClick={() => setDisplay(display + '^')}>^</CalcKey>
@@ -332,7 +333,7 @@ const Calculator: React.FC = () => {
           onClick={evaluateExpression}
           icon={<Equal size={16} />}
         />
-      </Box>
+      </Grid>
     </Stack>
   );
 

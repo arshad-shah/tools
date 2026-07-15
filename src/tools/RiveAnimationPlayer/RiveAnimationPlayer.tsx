@@ -551,7 +551,7 @@ export default function RiveAnimationPlayer() {
                     }
                     size="sm"
                     onClick={() => setActiveAnimation(animation)}
-                    className="w-full"
+                    fullWidth
                   >
                     {animation}
                   </Button>
@@ -604,7 +604,7 @@ export default function RiveAnimationPlayer() {
                         variant="solid"
                         size="sm"
                         onClick={() => handleInputChange(input, true)}
-                        className="w-full"
+                        fullWidth
                       >
                         {input.name}
                       </Button>
@@ -689,7 +689,7 @@ export default function RiveAnimationPlayer() {
       {controller.active === 'animations' && (
         <Button
           variant="soft"
-          className="w-full"
+          fullWidth
           disabled={status.current !== PlayerState.Active}
           leftIcon={isPlaying ? <Pause size={16} /> : <Play size={16} />}
           onClick={togglePlayback}
@@ -740,7 +740,7 @@ export default function RiveAnimationPlayer() {
       </Stack>
       <Stack gap="2">
         <Label>Alignment</Label>
-        <Box className="grid grid-cols-3 gap-2">
+        <Grid cols={3} gap="2">
           {alignValues.map((value, idx) => (
             <IconButton
               key={value}
@@ -753,7 +753,7 @@ export default function RiveAnimationPlayer() {
               }
             />
           ))}
-        </Box>
+        </Grid>
       </Stack>
     </Stack>
   );
@@ -807,7 +807,7 @@ export default function RiveAnimationPlayer() {
     ) : null;
 
   return (
-    <Container size="xl" className="max-w-none">
+    <Container size="full">
       <Toaster richColors visibleToasts={10} theme="dark" />
       <Grid max={3} gap="4">
         <Box className="lg:col-span-2">
@@ -965,7 +965,7 @@ export default function RiveAnimationPlayer() {
                   size="sm"
                   leftIcon={<Info size={14} />}
                   onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)}
-                  className="w-full"
+                  fullWidth
                 >
                   {isDebugPanelOpen ? 'Hide debug panel' : 'Show debug panel'}
                 </Button>

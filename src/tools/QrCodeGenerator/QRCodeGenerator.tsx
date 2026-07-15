@@ -44,6 +44,7 @@ import {
   Center,
   Checkbox,
   Code,
+  Grid,
   Inline,
   Input,
   Label,
@@ -436,7 +437,7 @@ const QRCodeGenerator: React.FC = () => {
                   <Stack gap="4">
                     <Stack gap="2">
                       <Label>QR code type</Label>
-                      <Box className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      <Grid cols={{ base: 2, sm: 3 }} gap="2">
                         {QR_TYPE_OPTIONS.map((t) => (
                           <Button
                             key={t.value}
@@ -446,12 +447,12 @@ const QRCodeGenerator: React.FC = () => {
                             size="sm"
                             leftIcon={t.icon}
                             onClick={() => setQrType(t.value)}
-                            className="w-full"
+                            fullWidth
                           >
                             {t.label}
                           </Button>
                         ))}
-                      </Box>
+                      </Grid>
                     </Stack>
                     <Card>
                       <CardBody>{renderContentForm()}</CardBody>
@@ -488,7 +489,7 @@ const QRCodeGenerator: React.FC = () => {
                       <CardBody>
                         <Stack gap="3">
                           <Label>Colour presets</Label>
-                          <Box className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                          <Grid cols={{ base: 3, sm: 6 }} gap="2">
                             {COLOR_PRESETS.map((p) => (
                               <Button
                                 key={p.name}
@@ -507,8 +508,8 @@ const QRCodeGenerator: React.FC = () => {
                                 {p.name}
                               </Button>
                             ))}
-                          </Box>
-                          <Box className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          </Grid>
+                          <Grid cols={{ base: 1, md: 2 }} gap="3">
                             <Stack gap="2">
                               <Label htmlFor="bg-color">Background</Label>
                               <Input
@@ -527,7 +528,7 @@ const QRCodeGenerator: React.FC = () => {
                                 placeholder="#000000"
                               />
                             </Stack>
-                          </Box>
+                          </Grid>
                         </Stack>
                       </CardBody>
                     </Card>
@@ -633,7 +634,7 @@ const QRCodeGenerator: React.FC = () => {
                                   placeholder="https://example.com/logo.png"
                                 />
                               </Stack>
-                              <Box className="grid grid-cols-2 gap-3">
+                              <Grid cols={2} gap="3">
                                 <Stack gap="2">
                                   <Label htmlFor="logo-width">Width (px)</Label>
                                   <NumberInput
@@ -668,7 +669,7 @@ const QRCodeGenerator: React.FC = () => {
                                     aria-label="Logo height"
                                   />
                                 </Stack>
-                              </Box>
+                              </Grid>
                               <Inline align="center" gap="2">
                                 <Checkbox
                                   checked={state.imageSettings.excavate}
@@ -955,7 +956,7 @@ const QRCodeGenerator: React.FC = () => {
                 onClick={handleDownloadQRCode}
                 variant="solid"
                 size="md"
-                className="w-full"
+                fullWidth
                 leftIcon={<Download size={18} />}
               >
                 Download QR code

@@ -704,7 +704,7 @@ const TextDiffChecker: React.FC = () => {
       </Card>
 
       {showStats && diffStats && (
-        <Box className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <Grid cols={{ base: 2, md: 5 }} gap="3">
           <Card>
             <CardBody>
               <Stack gap="1">
@@ -775,7 +775,7 @@ const TextDiffChecker: React.FC = () => {
               </Stack>
             </CardBody>
           </Card>
-        </Box>
+        </Grid>
       )}
 
       {performanceWarning && (

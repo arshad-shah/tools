@@ -123,7 +123,7 @@ const ModeSelector: React.FC<{
           size="md"
           leftIcon={<Icon size={16} />}
           onClick={() => onChange(mode)}
-          className="w-full"
+          fullWidth
         >
           {info.label}
         </Button>
@@ -310,8 +310,12 @@ const Timer: React.FC = () => {
                 {info.label}
               </Heading>
               {timer.mode === 'work' && stats.dailyPomodoros > 0 && (
-                <Badge variant="soft" tone="warning" size="sm">
-                  <Flame size={14} aria-hidden />
+                <Badge
+                  variant="soft"
+                  tone="warning"
+                  size="sm"
+                  icon={<Flame size={14} aria-hidden />}
+                >
                   {stats.dailyPomodoros} today
                 </Badge>
               )}
@@ -423,8 +427,8 @@ const TaskRow: React.FC<{
             }
             size="sm"
             pill
+            icon={<TimerIcon size={12} aria-hidden />}
           >
-            <TimerIcon size={12} aria-hidden />
             {task.completedPomodoros}/{task.pomodoros}
           </Badge>
           <IconButton
@@ -590,8 +594,12 @@ const Stats: React.FC = () => {
             Statistics
           </Heading>
         </Inline>
-        <Badge variant="soft" tone="accent" size="sm">
-          <Sparkles size={12} aria-hidden />
+        <Badge
+          variant="soft"
+          tone="accent"
+          size="sm"
+          icon={<Sparkles size={12} aria-hidden />}
+        >
           Good {timePeriod}!
         </Badge>
       </Inline>
