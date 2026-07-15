@@ -13,12 +13,11 @@ import {
   Label,
   Stack,
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
   Text,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '../../components/ui';
 import useClipboard from '../../hooks/useClipboard';
 
 type Mode = 'encode' | 'decode';
@@ -57,20 +56,18 @@ const Base64Converter: React.FC = () => {
   };
 
   return (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardHeader>
         <Tabs
           value={mode}
           onValueChange={(v) => setMode(v as Mode)}
           variant="soft"
-          colorScheme="accent"
           fullWidth
         >
           <TabsList aria-label="Encode or decode">
             <TabsTrigger value="encode">Encode</TabsTrigger>
             <TabsTrigger value="decode">Decode</TabsTrigger>
           </TabsList>
-          <TabsContent value={mode} />
         </Tabs>
       </CardHeader>
       <CardBody>
@@ -84,9 +81,7 @@ const Base64Converter: React.FC = () => {
               value={inputText}
               onChange={setInputText}
               placeholder={
-                mode === 'encode'
-                  ? 'Enter your text…'
-                  : 'Enter Base64 text…'
+                mode === 'encode' ? 'Enter your text…' : 'Enter Base64 text…'
               }
               rows={6}
               clearable
@@ -96,8 +91,6 @@ const Base64Converter: React.FC = () => {
           <Center>
             <IconButton
               variant="solid"
-              colorScheme="accent"
-              shape="pill"
               label="Swap input and output"
               icon={<ArrowRightLeft size={18} />}
               onClick={swap}
@@ -106,7 +99,7 @@ const Base64Converter: React.FC = () => {
           </Center>
 
           {error ? (
-            <Alert status="danger" variant="soft">
+            <Alert status="danger">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : (
@@ -118,7 +111,6 @@ const Base64Converter: React.FC = () => {
                 {outputText && (
                   <Button
                     variant="ghost"
-                    colorScheme="neutral"
                     size="sm"
                     leftIcon={copied ? <Check size={16} /> : <Copy size={16} />}
                     onClick={() => copy(outputText)}

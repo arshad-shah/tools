@@ -16,7 +16,7 @@ import {
   Select,
   Stack,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '../../components/ui';
 import useClipboard from '../../hooks/useClipboard';
 
 interface Algorithm {
@@ -33,11 +33,31 @@ const ALGORITHMS: Algorithm[] = [
   { id: 'sha384', name: 'SHA-384', hash: (i) => CryptoJS.SHA384(i).toString() },
   { id: 'sha512', name: 'SHA-512', hash: (i) => CryptoJS.SHA512(i).toString() },
   { id: 'sha3', name: 'SHA-3', hash: (i) => CryptoJS.SHA3(i).toString() },
-  { id: 'ripemd160', name: 'RIPEMD-160', hash: (i) => CryptoJS.RIPEMD160(i).toString() },
-  { id: 'hmacmd5', name: 'HMAC-MD5', hash: (i) => CryptoJS.HmacMD5(i, 'key').toString() },
-  { id: 'hmacsha1', name: 'HMAC-SHA1', hash: (i) => CryptoJS.HmacSHA1(i, 'key').toString() },
-  { id: 'hmacsha256', name: 'HMAC-SHA256', hash: (i) => CryptoJS.HmacSHA256(i, 'key').toString() },
-  { id: 'hmacsha512', name: 'HMAC-SHA512', hash: (i) => CryptoJS.HmacSHA512(i, 'key').toString() },
+  {
+    id: 'ripemd160',
+    name: 'RIPEMD-160',
+    hash: (i) => CryptoJS.RIPEMD160(i).toString(),
+  },
+  {
+    id: 'hmacmd5',
+    name: 'HMAC-MD5',
+    hash: (i) => CryptoJS.HmacMD5(i, 'key').toString(),
+  },
+  {
+    id: 'hmacsha1',
+    name: 'HMAC-SHA1',
+    hash: (i) => CryptoJS.HmacSHA1(i, 'key').toString(),
+  },
+  {
+    id: 'hmacsha256',
+    name: 'HMAC-SHA256',
+    hash: (i) => CryptoJS.HmacSHA256(i, 'key').toString(),
+  },
+  {
+    id: 'hmacsha512',
+    name: 'HMAC-SHA512',
+    hash: (i) => CryptoJS.HmacSHA512(i, 'key').toString(),
+  },
 ];
 
 const HashGenerator: React.FC = () => {
@@ -84,7 +104,7 @@ const HashGenerator: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Card variant="elevated" size="md">
+      <Card>
         <CardBody>
           <Stack gap="5">
             <Stack gap="2">
@@ -93,7 +113,6 @@ const HashGenerator: React.FC = () => {
                 {input && (
                   <Button
                     variant="ghost"
-                    colorScheme="neutral"
                     size="sm"
                     leftIcon={<X size={14} />}
                     onClick={() => setInput('')}
@@ -126,14 +145,14 @@ const HashGenerator: React.FC = () => {
       </Card>
 
       {!input ? (
-        <Alert status="info" variant="soft">
+        <Alert status="info">
           <AlertDescription>
             Enter text above to generate hash values.
           </AlertDescription>
         </Alert>
       ) : (
         <Stack gap="3">
-          <Heading level={2} size="lg" weight="semibold">
+          <Heading level={2} size="lg">
             Hash results
           </Heading>
           {Object.entries(results).map(([id, hash]) => {
@@ -141,16 +160,17 @@ const HashGenerator: React.FC = () => {
             const isError = hash.startsWith('Error');
             const isCopied = copiedId === id;
             return (
-              <Card key={id} variant="outlined" size="sm">
+              <Card key={id}>
                 <CardHeader>
                   <Inline justify="between" align="center">
                     <CardTitle as="h3">{info?.name || id}</CardTitle>
                     <Button
                       variant={isCopied ? 'solid' : 'soft'}
-                      colorScheme={isCopied ? 'success' : 'accent'}
                       size="sm"
                       disabled={isError}
-                      leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
+                      leftIcon={
+                        isCopied ? <Check size={16} /> : <Copy size={16} />
+                      }
                       onClick={() => handleCopy(hash, id)}
                     >
                       {isCopied ? 'Copied' : 'Copy'}
@@ -159,11 +179,11 @@ const HashGenerator: React.FC = () => {
                 </CardHeader>
                 <CardBody>
                   {isError ? (
-                    <Alert status="danger" variant="soft">
+                    <Alert status="danger">
                       <AlertDescription>{hash}</AlertDescription>
                     </Alert>
                   ) : (
-                    <Code size="sm" variant="block">{hash}</Code>
+                    <Code block>{hash}</Code>
                   )}
                 </CardBody>
               </Card>

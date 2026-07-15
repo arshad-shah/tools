@@ -31,3 +31,7 @@ export {
 } from './empty-state';
 export { Input } from './input';
 export { SearchInput } from './search-input';
+export { Textarea } from './textarea';
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
+export { Select, type SelectItem } from './select';
+export { List, ListItem } from './list';

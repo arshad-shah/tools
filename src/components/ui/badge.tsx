@@ -3,7 +3,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-md font-medium leading-none',
+  'inline-flex items-center gap-1 font-medium leading-none',
   {
     variants: {
       variant: {
@@ -17,11 +17,14 @@ const badgeVariants = cva(
         success: '',
         warning: '',
         danger: '',
+        info: '',
       },
       size: {
+        xs: 'px-1.5 py-0.5 text-[0.6rem]',
         sm: 'px-2 py-1 text-[0.65rem]',
         md: 'px-2.5 py-1 text-xs',
       },
+      pill: { true: 'rounded-full', false: 'rounded-md' },
     },
     compoundVariants: [
       // solid
@@ -30,6 +33,7 @@ const badgeVariants = cva(
       { variant: 'solid', tone: 'success', class: 'bg-success text-canvas' },
       { variant: 'solid', tone: 'warning', class: 'bg-warning text-canvas' },
       { variant: 'solid', tone: 'danger', class: 'bg-danger text-canvas' },
+      { variant: 'solid', tone: 'info', class: 'bg-info text-canvas' },
       // soft
       { variant: 'soft', tone: 'accent', class: 'bg-accent/15 text-accent' },
       {
@@ -40,6 +44,7 @@ const badgeVariants = cva(
       { variant: 'soft', tone: 'success', class: 'bg-success/15 text-success' },
       { variant: 'soft', tone: 'warning', class: 'bg-warning/15 text-warning' },
       { variant: 'soft', tone: 'danger', class: 'bg-danger/15 text-danger' },
+      { variant: 'soft', tone: 'info', class: 'bg-info/15 text-info' },
       // outline
       {
         variant: 'outline',
@@ -66,8 +71,18 @@ const badgeVariants = cva(
         tone: 'danger',
         class: 'border border-danger/40 text-danger',
       },
+      {
+        variant: 'outline',
+        tone: 'info',
+        class: 'border border-info/40 text-info',
+      },
     ],
-    defaultVariants: { variant: 'soft', tone: 'neutral', size: 'md' },
+    defaultVariants: {
+      variant: 'soft',
+      tone: 'neutral',
+      size: 'md',
+      pill: false,
+    },
   },
 );
 
@@ -78,11 +93,11 @@ export interface BadgeProps
   mono?: boolean;
 }
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant, tone, size, mono, ...props }, ref) => (
+  ({ className, variant, tone, size, pill, mono, ...props }, ref) => (
     <span
       ref={ref}
       className={cn(
-        badgeVariants({ variant, tone, size }),
+        badgeVariants({ variant, tone, size, pill }),
         mono && 'font-mono',
         className,
       )}

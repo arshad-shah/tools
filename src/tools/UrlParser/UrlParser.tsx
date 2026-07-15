@@ -24,7 +24,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '../../components/ui';
 
 interface ParsedUrl {
   protocol: string;
@@ -111,7 +111,6 @@ const URLParser: React.FC = () => {
       <Inline justify="end">
         <Button
           variant="soft"
-          colorScheme="neutral"
           size="sm"
           leftIcon={<Clipboard size={16} />}
           onClick={handlePaste}
@@ -124,15 +123,15 @@ const URLParser: React.FC = () => {
 
   if (!parsed) {
     return (
-      <Card variant="elevated" size="md">
+      <Card>
         <CardBody>
           <Stack gap="6">
             {urlInput}
-            <Alert status="danger" variant="soft">
+            <Alert status="danger">
               <AlertTitle>Invalid URL</AlertTitle>
               <AlertDescription>
                 Please enter a valid URL including a protocol (e.g.{' '}
-                <Code size="sm">https://example.com</Code>).
+                <Code>https://example.com</Code>).
               </AlertDescription>
             </Alert>
           </Stack>
@@ -168,47 +167,41 @@ const URLParser: React.FC = () => {
 
   const visualBreakdown = (
     <Stack gap="6">
-      <Card variant="filled" size="md">
+      <Card>
         <CardBody>
           <Stack gap="2">
             {fields
               .filter((f) => f.value)
               .map((f) => (
                 <Stack key={f.label} gap="1">
-                  <Badge
-                    variant="soft"
-                    colorScheme={f.color}
-                    size="sm"
-                    shape="pill"
-                  >
+                  <Badge variant="soft" tone={f.color} size="sm" pill>
                     {f.label}
                   </Badge>
-                  <Code size="sm" variant="block">{f.value}</Code>
+                  <Code block>{f.value}</Code>
                 </Stack>
               ))}
           </Stack>
         </CardBody>
       </Card>
 
-      <Card variant="outlined" size="md">
+      <Card>
         <CardHeader>
           <CardTitle as="h3">URL components</CardTitle>
         </CardHeader>
         <CardBody>
-          <Grid columns={{ base: 1, md: 2 }} gap="3">
+          <Grid max={2} gap="3">
             {fields
               .filter((f) => f.value)
               .map((f) => (
-                <Card key={f.label} variant="filled" size="sm">
+                <Card key={f.label} className="bg-surface-subtle">
                   <CardBody>
                     <Stack gap="2">
                       <Inline justify="between" align="center" gap="2" wrap>
-                        <Badge variant="soft" colorScheme={f.color} size="xs">
+                        <Badge variant="soft" tone={f.color} size="xs">
                           {f.label}
                         </Badge>
                         <IconButton
                           variant="ghost"
-                          colorScheme="neutral"
                           size="sm"
                           label={`Copy ${f.label}`}
                           icon={
@@ -221,7 +214,7 @@ const URLParser: React.FC = () => {
                           onClick={() => handleCopy(f.value, f.label)}
                         />
                       </Inline>
-                      <Code size="sm" variant="block">{f.value}</Code>
+                      <Code block>{f.value}</Code>
                     </Stack>
                   </CardBody>
                 </Card>
@@ -235,7 +228,7 @@ const URLParser: React.FC = () => {
   const componentsTable = (
     <Stack gap="2">
       {allComponents.map((item) => (
-        <Card key={item.label} variant="outlined" size="sm">
+        <Card key={item.label}>
           <CardBody>
             <Inline justify="between" align="center" gap="3" wrap>
               <Stack gap="1">
@@ -243,9 +236,9 @@ const URLParser: React.FC = () => {
                   {item.label}
                 </Text>
                 {item.value ? (
-                  <Code size="sm" variant="block">{item.value}</Code>
+                  <Code block>{item.value}</Code>
                 ) : (
-                  <Text size="sm" variant="caption">
+                  <Text size="sm" tone="subtle">
                     (empty)
                   </Text>
                 )}
@@ -253,9 +246,7 @@ const URLParser: React.FC = () => {
               {item.value && (
                 <Button
                   variant="soft"
-                  colorScheme="accent"
                   size="sm"
-                  shape="pill"
                   leftIcon={
                     copiedKey === `table-${item.label}` ? (
                       <CheckCheck size={14} />
@@ -279,20 +270,18 @@ const URLParser: React.FC = () => {
     parsed.searchParams.length > 0 ? (
       <Stack gap="2">
         {parsed.searchParams.map(([key, value], index) => (
-          <Card key={`${key}-${index}`} variant="outlined" size="sm">
+          <Card key={`${key}-${index}`}>
             <CardBody>
               <Inline justify="between" align="center" gap="3" wrap>
                 <Stack gap="1">
                   <Text size="sm" weight="semibold">
                     {key}
                   </Text>
-                  <Code size="sm" variant="block">{value}</Code>
+                  <Code block>{value}</Code>
                 </Stack>
                 <Button
                   variant="soft"
-                  colorScheme="accent"
                   size="sm"
-                  shape="pill"
                   leftIcon={
                     copiedKey === `param-${key}` ? (
                       <CheckCheck size={14} />
@@ -310,7 +299,7 @@ const URLParser: React.FC = () => {
         ))}
       </Stack>
     ) : (
-      <EmptyState size="md" variant="subtle">
+      <EmptyState>
         <EmptyStateTitle>No query parameters</EmptyStateTitle>
         <EmptyStateDescription>
           This URL doesn&apos;t contain any query parameters.
@@ -319,16 +308,11 @@ const URLParser: React.FC = () => {
     );
 
   return (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardBody>
         <Stack gap="6">
           {urlInput}
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            variant="line"
-            colorScheme="accent"
-          >
+          <Tabs value={activeTab} onValueChange={setActiveTab} variant="line">
             <TabsList aria-label="URL view">
               <TabsTrigger value="visualization">Visual breakdown</TabsTrigger>
               <TabsTrigger value="components">URL components</TabsTrigger>

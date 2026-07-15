@@ -17,12 +17,11 @@ import {
   ListItem,
   Stack,
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
   Text,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '../../components/ui';
 
 type Mode = 'encode' | 'decode';
 
@@ -61,20 +60,18 @@ const URLEncoderDecoder: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Card variant="elevated" size="md">
+      <Card>
         <CardHeader>
           <Tabs
             value={mode}
             onValueChange={(v) => setMode(v as Mode)}
             variant="soft"
-            colorScheme="accent"
             fullWidth
           >
             <TabsList aria-label="Encode or decode">
               <TabsTrigger value="encode">Encode</TabsTrigger>
               <TabsTrigger value="decode">Decode</TabsTrigger>
             </TabsList>
-            <TabsContent value={mode} />
           </Tabs>
         </CardHeader>
         <CardBody>
@@ -100,7 +97,6 @@ const URLEncoderDecoder: React.FC = () => {
             <Inline gap="2" justify="end" wrap>
               <Button
                 variant="soft"
-                colorScheme="neutral"
                 size="sm"
                 onClick={() => {
                   setInputText('');
@@ -112,7 +108,6 @@ const URLEncoderDecoder: React.FC = () => {
               </Button>
               <Button
                 variant="soft"
-                colorScheme="accent"
                 size="sm"
                 disabled={!outputText}
                 onClick={() => setInputText(outputText)}
@@ -122,7 +117,7 @@ const URLEncoderDecoder: React.FC = () => {
             </Inline>
 
             {error ? (
-              <Alert status="danger" variant="soft">
+              <Alert status="danger">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : (
@@ -134,9 +129,10 @@ const URLEncoderDecoder: React.FC = () => {
                   {outputText && (
                     <Button
                       variant="ghost"
-                      colorScheme="neutral"
                       size="sm"
-                      leftIcon={copied ? <Check size={16} /> : <Copy size={16} />}
+                      leftIcon={
+                        copied ? <Check size={16} /> : <Copy size={16} />
+                      }
                       onClick={handleCopy}
                     >
                       {copied ? 'Copied' : 'Copy'}
@@ -155,46 +151,46 @@ const URLEncoderDecoder: React.FC = () => {
         </CardBody>
       </Card>
 
-      <Card variant="filled" size="md">
+      <Card>
         <CardHeader>
           <CardTitle as="h2">About URL Encoding</CardTitle>
         </CardHeader>
         <CardBody>
           <Stack gap="4">
-            <Text>
+            <Text tone="muted">
               URL encoding converts characters into a format that can be
               transmitted over the Internet. URLs can only be sent using the
               ASCII character set, so unsafe characters are replaced with a{' '}
-              <Code size="sm">%</Code> followed by two hexadecimal digits.
+              <Code>%</Code> followed by two hexadecimal digits.
             </Text>
-            <Grid columns={{ base: 1, md: 2 }} gap="4">
+            <Grid max={2} gap="4">
               <Stack gap="2">
-                <Heading level={3} size="md" weight="semibold">
+                <Heading level={3} size="md">
                   Common encodings
                 </Heading>
                 <List>
                   <ListItem>
-                    Space <Code size="sm">%20</Code>
+                    Space <Code>%20</Code>
                   </ListItem>
                   <ListItem>
-                    ! <Code size="sm">%21</Code>
+                    ! <Code>%21</Code>
                   </ListItem>
                   <ListItem>
-                    # <Code size="sm">%23</Code>
+                    # <Code>%23</Code>
                   </ListItem>
                   <ListItem>
-                    $ <Code size="sm">%24</Code>
+                    $ <Code>%24</Code>
                   </ListItem>
                   <ListItem>
-                    &amp; <Code size="sm">%26</Code>
+                    &amp; <Code>%26</Code>
                   </ListItem>
                   <ListItem>
-                    + <Code size="sm">%2B</Code>
+                    + <Code>%2B</Code>
                   </ListItem>
                 </List>
               </Stack>
               <Stack gap="2">
-                <Heading level={3} size="md" weight="semibold">
+                <Heading level={3} size="md">
                   When to use it
                 </Heading>
                 <List>
