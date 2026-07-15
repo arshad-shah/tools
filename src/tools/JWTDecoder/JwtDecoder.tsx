@@ -27,6 +27,7 @@ import {
   AlertDescription,
   AlertTitle,
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
@@ -42,17 +43,36 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { ExpiryInfo, JWTHeader, JWTPayload } from '../../types/JwtTypes';
-import { formatTime, getClaimIcon, getClaimLabel, getExpiryInfo } from './utils/utils';
+import {
+  formatTime,
+  getClaimIcon,
+  getClaimLabel,
+  getExpiryInfo,
+} from './utils/utils';
 import useJWTDecoder from './hooks/useJWTDecoder';
 import useClipboard from '../../hooks/useClipboard';
 
 const SAMPLE_JWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNhbXBsZS1rZXkifQ.eyJzdWIiOiJ1c2VyLTEyMzQ1IiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzI2MjM5MDIyLCJleHAiOjE3NTc3NzUwMjIsImlzcyI6Imh0dHBzOi8vYXV0aC5leGFtcGxlLmNvbSIsImF1ZCI6WyJhcGkuZXhhbXBsZS5jb20iLCJ3ZWIuZXhhbXBsZS5jb20iXSwicm9sZXMiOlsidXNlciIsIm1vZGVyYXRvciJdLCJwZXJtaXNzaW9ucyI6WyJyZWFkOnBvc3RzIiwid3JpdGU6cG9zdHMiLCJtb2RlcmF0ZTpjb21tZW50cyJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiZ3JvdXBzIjpbImRldmVsb3BlcnMiLCJiZXRhLXVzZXJzIl0sImN1c3RvbV9jbGFpbSI6eyJkZXBhcnRtZW50IjoiZW5naW5lZXJpbmciLCJ0ZWFtX2lkIjo0Mn19.K8Xz9n4rQ6vKm3LpBtY8jE2dR7fN9sA1qW5cT3uI0Mn';
 
-const IDENTITY_KEYS = ['sub', 'name', 'email', 'preferred_username', 'given_name', 'family_name'];
-const ACCESS_KEYS = ['role', 'roles', 'permissions', 'scope', 'groups', 'authorities'];
+const IDENTITY_KEYS = [
+  'sub',
+  'name',
+  'email',
+  'preferred_username',
+  'given_name',
+  'family_name',
+];
+const ACCESS_KEYS = [
+  'role',
+  'roles',
+  'permissions',
+  'scope',
+  'groups',
+  'authorities',
+];
 const TIMING_KEYS = ['exp', 'iat', 'nbf', 'auth_time'];
 const ISSUER_KEYS = ['iss', 'aud', 'azp', 'client_id', 'jti'];
 
@@ -68,23 +88,29 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
   maxDepth = 3,
 }) => {
   if (data === null || data === undefined) {
-    return <Text size="sm" variant="caption" italic>null</Text>;
+    return (
+      <Text size="sm" tone="subtle" className="italic">
+        null
+      </Text>
+    );
   }
   if (typeof data === 'string') {
-    return <Code size="sm" colorScheme="success">&quot;{data}&quot;</Code>;
+    return <Code className="text-success">&quot;{data}&quot;</Code>;
   }
   if (typeof data === 'number') {
-    return <Code size="sm" colorScheme="accent">{data}</Code>;
+    return <Code className="text-accent">{data}</Code>;
   }
   if (typeof data === 'boolean') {
-    return <Code size="sm" colorScheme="accent">{data ? 'true' : 'false'}</Code>;
+    return <Code className="text-accent">{data ? 'true' : 'false'}</Code>;
   }
   if (Array.isArray(data)) {
     if (depth >= maxDepth) {
       return (
         <Inline gap="1" align="center">
           <Brackets size={12} aria-hidden />
-          <Text size="sm" variant="caption">Array[{data.length}]</Text>
+          <Text size="sm" tone="subtle">
+            Array[{data.length}]
+          </Text>
         </Inline>
       );
     }
@@ -92,13 +118,21 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
       <Stack gap="1">
         <Inline gap="1" align="center">
           <Brackets size={14} aria-hidden />
-          <Text size="sm" weight="medium">Array ({data.length} items)</Text>
+          <Text size="sm" weight="medium">
+            Array ({data.length} items)
+          </Text>
         </Inline>
-        <Stack gap="1" paddingLeft="4">
+        <Stack gap="1" className="pl-4">
           {data.map((item, i) => (
             <Inline key={i} align="start" gap="2">
-              <Text size="sm" variant="caption">{i}:</Text>
-              <ValueRenderer data={item} depth={depth + 1} maxDepth={maxDepth} />
+              <Text size="sm" tone="subtle">
+                {i}:
+              </Text>
+              <ValueRenderer
+                data={item}
+                depth={depth + 1}
+                maxDepth={maxDepth}
+              />
             </Inline>
           ))}
         </Stack>
@@ -111,7 +145,9 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
       return (
         <Inline gap="1" align="center">
           <Braces size={12} aria-hidden />
-          <Text size="sm" variant="caption">Object[{entries.length} keys]</Text>
+          <Text size="sm" tone="subtle">
+            Object[{entries.length} keys]
+          </Text>
         </Inline>
       );
     }
@@ -119,13 +155,19 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
       <Stack gap="1">
         <Inline gap="1" align="center">
           <Braces size={14} aria-hidden />
-          <Text size="sm" weight="medium">Object ({entries.length} properties)</Text>
+          <Text size="sm" weight="medium">
+            Object ({entries.length} properties)
+          </Text>
         </Inline>
-        <Stack gap="1" paddingLeft="4">
+        <Stack gap="1" className="pl-4">
           {entries.map(([key, value]) => (
             <Inline key={key} align="start" gap="2">
-              <Code size="sm" colorScheme="accent">&quot;{key}&quot;:</Code>
-              <ValueRenderer data={value} depth={depth + 1} maxDepth={maxDepth} />
+              <Code className="text-accent">&quot;{key}&quot;:</Code>
+              <ValueRenderer
+                data={value}
+                depth={depth + 1}
+                maxDepth={maxDepth}
+              />
             </Inline>
           ))}
         </Stack>
@@ -148,13 +190,13 @@ const ClaimCard: React.FC<ClaimCardProps> = ({
   icon,
   colorScheme = 'neutral',
 }) => (
-  <Card variant={colorScheme === 'neutral' ? 'outlined' : 'filled'} size="sm">
+  <Card>
     <CardBody>
       <Inline align="start" gap="3">
         <Box>{icon}</Box>
-        <Stack gap="1" flex="1" minWidth="0">
+        <Stack gap="1" className="flex-1 min-w-0">
           <Inline gap="2" align="center">
-            <Badge variant="soft" colorScheme={colorScheme} size="xs">
+            <Badge variant="soft" tone={colorScheme} size="xs">
               {label}
             </Badge>
           </Inline>
@@ -165,14 +207,12 @@ const ClaimCard: React.FC<ClaimCardProps> = ({
   </Card>
 );
 
-import { Box } from '@arshad-shah/cynosure-react';
-
 const JWTDecoder: React.FC = () => {
   const { jwt, setJwt, decoded, error, decode, clear } = useJWTDecoder();
   const { copied, copy } = useClipboard();
-  const [activeTab, setActiveTab] = useState<'header' | 'payload' | 'signature'>(
-    'payload',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'header' | 'payload' | 'signature'
+  >('payload');
 
   const expiryInfo: ExpiryInfo = useMemo(
     () => getExpiryInfo(decoded?.payload.exp),
@@ -206,14 +246,19 @@ const JWTDecoder: React.FC = () => {
       issuer: entries.filter(([k]) => ISSUER_KEYS.includes(k)),
       custom: entries.filter(
         ([k]) =>
-          ![...IDENTITY_KEYS, ...ACCESS_KEYS, ...TIMING_KEYS, ...ISSUER_KEYS].includes(k),
+          ![
+            ...IDENTITY_KEYS,
+            ...ACCESS_KEYS,
+            ...TIMING_KEYS,
+            ...ISSUER_KEYS,
+          ].includes(k),
       ),
     };
   }, [decoded]);
 
   const renderHeaderSection = (header: JWTHeader) => (
     <Stack gap="4">
-      <Grid columns={{ base: 1, md: 2 }} gap="3">
+      <Grid max={2} gap="3">
         {header.alg && (
           <ClaimCard
             label="Algorithm"
@@ -237,8 +282,9 @@ const JWTDecoder: React.FC = () => {
           />
         )}
       </Grid>
-      {Object.keys(header).filter((k) => !['alg', 'typ', 'kid'].includes(k)).length > 0 && (
-        <Accordion type="single" collapsible variant="contained" size="md">
+      {Object.keys(header).filter((k) => !['alg', 'typ', 'kid'].includes(k))
+        .length > 0 && (
+        <Accordion type="single">
           <AccordionItem value="extra">
             <AccordionTrigger>
               <Inline gap="2" align="center">
@@ -247,7 +293,7 @@ const JWTDecoder: React.FC = () => {
               </Inline>
             </AccordionTrigger>
             <AccordionContent>
-              <Grid columns={{ base: 1, md: 2 }} gap="3">
+              <Grid max={2} gap="3">
                 {Object.entries(header)
                   .filter(([k]) => !['alg', 'typ', 'kid'].includes(k))
                   .map(([k, v]) => (
@@ -263,7 +309,7 @@ const JWTDecoder: React.FC = () => {
           </AccordionItem>
         </Accordion>
       )}
-      <Accordion type="single" collapsible variant="contained" size="md">
+      <Accordion type="single">
         <AccordionItem value="raw">
           <AccordionTrigger>
             <Inline gap="2" align="center">
@@ -274,20 +320,21 @@ const JWTDecoder: React.FC = () => {
           <AccordionContent>
             <Stack gap="2">
               <Inline justify="between" align="center">
-                <Text size="sm" weight="medium">Complete header</Text>
+                <Text size="sm" weight="medium">
+                  Complete header
+                </Text>
                 <Button
                   variant="ghost"
-                  colorScheme="neutral"
                   size="sm"
-                  leftIcon={copied ? <CheckCircle size={14} /> : <Copy size={14} />}
+                  leftIcon={
+                    copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                  }
                   onClick={() => copy(JSON.stringify(header, null, 2))}
                 >
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
               </Inline>
-              <Code variant="block" size="sm">
-                {JSON.stringify(header, null, 2)}
-              </Code>
+              <Code block>{JSON.stringify(header, null, 2)}</Code>
             </Stack>
           </AccordionContent>
         </AccordionItem>
@@ -298,19 +345,19 @@ const JWTDecoder: React.FC = () => {
   const renderPayloadSection = (payload: JWTPayload) => (
     <Stack gap="4">
       {categorizedClaims.identity.length > 0 && (
-        <Accordion type="single" collapsible defaultValue="identity" variant="contained" size="md">
+        <Accordion type="single" defaultValue="identity">
           <AccordionItem value="identity">
             <AccordionTrigger>
               <Inline gap="2" align="center">
                 <User size={16} aria-hidden />
                 <Text weight="medium">Identity claims</Text>
-                <Badge variant="soft" colorScheme="accent" size="xs">
+                <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.identity.length}
                 </Badge>
               </Inline>
             </AccordionTrigger>
             <AccordionContent>
-              <Grid columns={{ base: 1, md: 2 }} gap="3">
+              <Grid max={2} gap="3">
                 {categorizedClaims.identity.map(([k, v]) => (
                   <ClaimCard
                     key={k}
@@ -325,19 +372,19 @@ const JWTDecoder: React.FC = () => {
         </Accordion>
       )}
       {categorizedClaims.access.length > 0 && (
-        <Accordion type="single" collapsible defaultValue="access" variant="contained" size="md">
+        <Accordion type="single" defaultValue="access">
           <AccordionItem value="access">
             <AccordionTrigger>
               <Inline gap="2" align="center">
                 <Shield size={16} aria-hidden />
                 <Text weight="medium">Access &amp; permissions</Text>
-                <Badge variant="soft" colorScheme="warning" size="xs">
+                <Badge variant="soft" tone="warning" size="xs">
                   {categorizedClaims.access.length}
                 </Badge>
               </Inline>
             </AccordionTrigger>
             <AccordionContent>
-              <Grid columns={{ base: 1, md: 2 }} gap="3">
+              <Grid max={2} gap="3">
                 {categorizedClaims.access.map(([k, v]) => (
                   <ClaimCard
                     key={k}
@@ -353,13 +400,13 @@ const JWTDecoder: React.FC = () => {
         </Accordion>
       )}
       {categorizedClaims.timing.length > 0 && (
-        <Accordion type="single" collapsible defaultValue="timing" variant="contained" size="md">
+        <Accordion type="single" defaultValue="timing">
           <AccordionItem value="timing">
             <AccordionTrigger>
               <Inline gap="2" align="center">
                 <Clock size={16} aria-hidden />
                 <Text weight="medium">Timestamps</Text>
-                <Badge variant="soft" colorScheme="accent" size="xs">
+                <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.timing.length}
                 </Badge>
               </Inline>
@@ -370,11 +417,7 @@ const JWTDecoder: React.FC = () => {
                   const isExpired = k === 'exp' && expiryInfo.isExpired;
                   const isExp = k === 'exp';
                   return (
-                    <Card
-                      key={k}
-                      variant="filled"
-                      size="sm"
-                    >
+                    <Card key={k}>
                       <CardBody>
                         <Inline justify="between" align="center" gap="3" wrap>
                           <Inline align="center" gap="3">
@@ -389,18 +432,18 @@ const JWTDecoder: React.FC = () => {
                               <Text size="sm" weight="medium">
                                 {getClaimLabel(k)}
                               </Text>
-                              <Text size="xs" variant="caption">
+                              <Text size="xs" tone="subtle">
                                 {formatTime(v as number)}
                               </Text>
                             </Stack>
                           </Inline>
                           {isExp && !isExpired && (
-                            <Badge variant="soft" colorScheme="success" size="sm">
+                            <Badge variant="soft" tone="success" size="sm">
                               {expiryInfo.timeLeft} left
                             </Badge>
                           )}
                           {isExpired && (
-                            <Badge variant="soft" colorScheme="danger" size="sm">
+                            <Badge variant="soft" tone="danger" size="sm">
                               Expired
                             </Badge>
                           )}
@@ -415,13 +458,13 @@ const JWTDecoder: React.FC = () => {
         </Accordion>
       )}
       {categorizedClaims.issuer.length > 0 && (
-        <Accordion type="single" collapsible defaultValue="issuer" variant="contained" size="md">
+        <Accordion type="single" defaultValue="issuer">
           <AccordionItem value="issuer">
             <AccordionTrigger>
               <Inline gap="2" align="center">
                 <Globe size={16} aria-hidden />
                 <Text weight="medium">Issuer information</Text>
-                <Badge variant="soft" colorScheme="accent" size="xs">
+                <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.issuer.length}
                 </Badge>
               </Inline>
@@ -442,19 +485,19 @@ const JWTDecoder: React.FC = () => {
         </Accordion>
       )}
       {categorizedClaims.custom.length > 0 && (
-        <Accordion type="single" collapsible variant="contained" size="md">
+        <Accordion type="single">
           <AccordionItem value="custom">
             <AccordionTrigger>
               <Inline gap="2" align="center">
                 <Settings size={16} aria-hidden />
                 <Text weight="medium">Custom claims</Text>
-                <Badge variant="soft" colorScheme="accent" size="xs">
+                <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.custom.length}
                 </Badge>
               </Inline>
             </AccordionTrigger>
             <AccordionContent>
-              <Grid columns={{ base: 1, md: 2 }} gap="3">
+              <Grid max={2} gap="3">
                 {categorizedClaims.custom.map(([k, v]) => (
                   <ClaimCard
                     key={k}
@@ -468,7 +511,7 @@ const JWTDecoder: React.FC = () => {
           </AccordionItem>
         </Accordion>
       )}
-      <Accordion type="single" collapsible variant="contained" size="md">
+      <Accordion type="single">
         <AccordionItem value="raw">
           <AccordionTrigger>
             <Inline gap="2" align="center">
@@ -479,20 +522,21 @@ const JWTDecoder: React.FC = () => {
           <AccordionContent>
             <Stack gap="2">
               <Inline justify="between" align="center">
-                <Text size="sm" weight="medium">Complete payload</Text>
+                <Text size="sm" weight="medium">
+                  Complete payload
+                </Text>
                 <Button
                   variant="ghost"
-                  colorScheme="neutral"
                   size="sm"
-                  leftIcon={copied ? <CheckCircle size={14} /> : <Copy size={14} />}
+                  leftIcon={
+                    copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                  }
                   onClick={() => copy(JSON.stringify(payload, null, 2))}
                 >
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
               </Inline>
-              <Code variant="block" size="sm">
-                {JSON.stringify(payload, null, 2)}
-              </Code>
+              <Code block>{JSON.stringify(payload, null, 2)}</Code>
             </Stack>
           </AccordionContent>
         </AccordionItem>
@@ -502,7 +546,7 @@ const JWTDecoder: React.FC = () => {
 
   const renderSignatureSection = (signature: string, algorithm?: string) => (
     <Stack gap="4">
-      <Alert status="info" variant="soft" icon={<Info aria-hidden />}>
+      <Alert status="info" icon={<Info aria-hidden />}>
         <AlertTitle>About signatures</AlertTitle>
         <AlertDescription>
           The signature verifies that the token hasn&apos;t been tampered with
@@ -526,7 +570,7 @@ const JWTDecoder: React.FC = () => {
           colorScheme="warning"
         />
       )}
-      <Accordion type="single" collapsible variant="contained" size="md">
+      <Accordion type="single">
         <AccordionItem value="signature-value">
           <AccordionTrigger>
             <Inline gap="2" align="center">
@@ -537,18 +581,21 @@ const JWTDecoder: React.FC = () => {
           <AccordionContent>
             <Stack gap="2">
               <Inline justify="between" align="center">
-                <Text size="sm" weight="medium">Base64-encoded signature</Text>
+                <Text size="sm" weight="medium">
+                  Base64-encoded signature
+                </Text>
                 <Button
                   variant="ghost"
-                  colorScheme="neutral"
                   size="sm"
-                  leftIcon={copied ? <CheckCircle size={14} /> : <Copy size={14} />}
+                  leftIcon={
+                    copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                  }
                   onClick={() => copy(signature)}
                 >
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
               </Inline>
-              <Code variant="block" size="sm">{signature}</Code>
+              <Code block>{signature}</Code>
             </Stack>
           </AccordionContent>
         </AccordionItem>
@@ -558,7 +605,7 @@ const JWTDecoder: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Card variant="elevated" size="md">
+      <Card>
         <CardHeader>
           <Inline justify="between" align="center" gap="2" wrap>
             <Inline gap="2" align="center">
@@ -568,7 +615,6 @@ const JWTDecoder: React.FC = () => {
             <Inline gap="2" wrap>
               <Button
                 variant="ghost"
-                colorScheme="neutral"
                 size="sm"
                 leftIcon={<FileJson size={14} />}
                 onClick={handleSample}
@@ -577,9 +623,10 @@ const JWTDecoder: React.FC = () => {
               </Button>
               <Button
                 variant="ghost"
-                colorScheme="neutral"
                 size="sm"
-                leftIcon={copied ? <CheckCircle size={14} /> : <Copy size={14} />}
+                leftIcon={
+                  copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                }
                 onClick={handleCopyJwt}
               >
                 {copied ? 'Copied' : 'Copy'}
@@ -597,20 +644,18 @@ const JWTDecoder: React.FC = () => {
               aria-label="JWT token"
             />
             <Inline gap="2" wrap>
-              <Box flex="1">
+              <Box className="flex-1">
                 <Button
                   variant="solid"
-                  colorScheme="accent"
                   leftIcon={<RefreshCw size={16} />}
                   onClick={() => decode(jwt)}
-                  fullWidth
+                  className="w-full"
                 >
                   Decode token
                 </Button>
               </Box>
               <Button
                 variant="soft"
-                colorScheme="neutral"
                 leftIcon={<Trash2 size={16} />}
                 onClick={clear}
               >
@@ -622,7 +667,7 @@ const JWTDecoder: React.FC = () => {
       </Card>
 
       {error && (
-        <Alert status="danger" variant="soft">
+        <Alert status="danger">
           <AlertTitle>Decoding error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -631,7 +676,6 @@ const JWTDecoder: React.FC = () => {
       {decoded && decoded.payload.exp && (
         <Alert
           status={expiryInfo.isExpired ? 'danger' : 'success'}
-          variant="soft"
           icon={
             expiryInfo.isExpired ? (
               <AlertCircle aria-hidden />
@@ -651,7 +695,7 @@ const JWTDecoder: React.FC = () => {
                   : formatTime(decoded.payload.exp)}
               </Text>
               {!expiryInfo.isExpired && (
-                <Badge variant="soft" colorScheme="success" size="sm">
+                <Badge variant="soft" tone="success" size="sm">
                   Expires in {expiryInfo.timeLeft}
                 </Badge>
               )}
@@ -661,7 +705,7 @@ const JWTDecoder: React.FC = () => {
       )}
 
       {decoded && (
-        <Card variant="elevated" size="md">
+        <Card>
           <CardBody>
             <Tabs
               value={activeTab}
@@ -669,14 +713,13 @@ const JWTDecoder: React.FC = () => {
                 setActiveTab(v as 'header' | 'payload' | 'signature')
               }
               variant="soft"
-              colorScheme="accent"
               fullWidth
             >
               <TabsList aria-label="JWT sections">
                 <TabsTrigger value="header">
                   <Inline gap="2" align="center" wrap={false}>
                     <span>Header</span>
-                    <Badge variant="soft" colorScheme="accent" size="xs">
+                    <Badge variant="soft" tone="accent" size="xs">
                       {decoded.header.alg}
                     </Badge>
                   </Inline>
@@ -684,7 +727,7 @@ const JWTDecoder: React.FC = () => {
                 <TabsTrigger value="payload">
                   <Inline gap="2" align="center" wrap={false}>
                     <span>Payload</span>
-                    <Badge variant="soft" colorScheme="accent" size="xs">
+                    <Badge variant="soft" tone="accent" size="xs">
                       {Object.keys(decoded.payload).length}
                     </Badge>
                   </Inline>
@@ -693,13 +736,17 @@ const JWTDecoder: React.FC = () => {
               </TabsList>
 
               <TabsContent value="header">
-                <Box paddingTop="4">{renderHeaderSection(decoded.header)}</Box>
+                <Box className="pt-4">
+                  {renderHeaderSection(decoded.header)}
+                </Box>
               </TabsContent>
               <TabsContent value="payload">
-                <Box paddingTop="4">{renderPayloadSection(decoded.payload)}</Box>
+                <Box className="pt-4">
+                  {renderPayloadSection(decoded.payload)}
+                </Box>
               </TabsContent>
               <TabsContent value="signature">
-                <Box paddingTop="4">
+                <Box className="pt-4">
                   {renderSignatureSection(
                     decoded.signature,
                     decoded.header.alg,
@@ -713,7 +760,7 @@ const JWTDecoder: React.FC = () => {
 
       <Inline justify="center" align="center" gap="2" wrap>
         <Lock size={14} aria-hidden />
-        <Text size="sm" variant="caption">
+        <Text size="sm" tone="subtle">
           All processing happens in your browser — no data is sent to any server
         </Text>
         <ArrowRight size={14} aria-hidden style={{ display: 'none' }} />

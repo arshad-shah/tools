@@ -2,25 +2,25 @@
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr;
-  border: 1px solid var(--cynosure-color-border-default);
-  border-radius: var(--cynosure-radius-md, 10px);
-  background: var(--cynosure-color-background-surface);
-  font-family: var(--cynosure-font-family-mono);
-  font-size: var(--cynosure-font-body-sm-size);
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
   line-height: 1.7;
-  color: var(--cynosure-color-foreground-default);
+  color: var(--color-fg);
   max-height: 420px;
   overflow: auto;
-  box-shadow: inset 3px 0 0 0 var(--cynosure-color-accent-solid);
+  box-shadow: inset 3px 0 0 0 var(--color-accent);
 }
 
 .gutter {
   user-select: none;
   text-align: right;
   padding: 12px 12px 12px 18px;
-  color: var(--cynosure-color-foreground-subtle);
-  background: var(--cynosure-color-background-subtle);
-  border-right: 1px solid var(--cynosure-color-border-subtle);
+  color: var(--color-fg-subtle);
+  background: var(--color-surface-subtle);
+  border-right: 1px solid var(--color-line);
   font-variant-numeric: tabular-nums;
   position: sticky;
   left: 0;
@@ -41,8 +41,8 @@
 }
 
 .mark {
-  background: var(--cynosure-color-amber-200);
-  color: var(--cynosure-color-amber-900);
+  background: var(--color-warning);
+  color: var(--color-canvas);
   padding: 1px 3px;
   border-radius: 3px;
   box-decoration-break: clone;

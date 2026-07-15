@@ -22,7 +22,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 
 type NumberKey = 'binary' | 'decimal' | 'hexadecimal' | 'octal';
 
@@ -75,6 +75,7 @@ const NUMBER_TYPES: NumberType[] = [
 const SAMPLE_NUMBERS = [0, 1, 2, 5, 10, 15, 16, 31, 64, 128, 255];
 
 const NumberConverter: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('converter');
   const [inputValue, setInputValue] = useState('');
   const [inputType, setInputType] = useState<NumberKey>('decimal');
   const [results, setResults] = useState<Record<NumberKey, string>>({
@@ -125,9 +126,9 @@ const NumberConverter: React.FC = () => {
   const currentType = NUMBER_TYPES.find((t) => t.value === inputType)!;
 
   return (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardBody>
-        <Tabs defaultValue="converter" variant="line" colorScheme="accent">
+        <Tabs value={activeTab} onValueChange={setActiveTab} variant="line">
           <TabsList aria-label="Number converter view">
             <TabsTrigger value="converter">
               <Inline gap="2" align="center" wrap={false}>
@@ -144,12 +145,12 @@ const NumberConverter: React.FC = () => {
           </TabsList>
 
           <TabsContent value="converter">
-            <Stack gap="6" paddingTop="4">
+            <Stack gap="6" className="pt-4">
               <Stack gap="4">
-                <Heading level={2} size="md" weight="semibold">
+                <Heading level={2} size="md">
                   Input number
                 </Heading>
-                <Grid columns={{ base: 1, lg: 2 }} gap="4">
+                <Grid max={2} gap="4">
                   <Stack gap="2">
                     <Label>Select number type</Label>
                     <ButtonGroup>
@@ -157,9 +158,6 @@ const NumberConverter: React.FC = () => {
                         <Button
                           key={t.value}
                           variant={inputType === t.value ? 'solid' : 'soft'}
-                          colorScheme={
-                            inputType === t.value ? 'accent' : 'neutral'
-                          }
                           size="sm"
                           onClick={() => setInputType(t.value)}
                         >
@@ -182,7 +180,7 @@ const NumberConverter: React.FC = () => {
                       clearable
                     />
                     {error && (
-                      <Alert status="danger" variant="soft">
+                      <Alert status="danger">
                         <AlertDescription>{error}</AlertDescription>
                       </Alert>
                     )}
@@ -191,18 +189,17 @@ const NumberConverter: React.FC = () => {
               </Stack>
 
               <Stack gap="3">
-                <Heading level={2} size="md" weight="semibold">
+                <Heading level={2} size="md">
                   Conversion results
                 </Heading>
-                <Grid columns={{ base: 1, md: 2 }} gap="3">
+                <Grid max={2} gap="3">
                   {NUMBER_TYPES.map((t) => {
                     const value = results[t.value];
                     const isCurrent = inputType === t.value;
                     return (
                       <Card
                         key={t.value}
-                        variant={isCurrent ? 'outlined' : 'filled'}
-                        size="sm"
+                        className={isCurrent ? 'border-accent' : undefined}
                       >
                         <CardHeader>
                           <Inline justify="between" align="center" wrap>
@@ -210,14 +207,13 @@ const NumberConverter: React.FC = () => {
                               <Text size="sm" weight="semibold">
                                 {t.label}
                               </Text>
-                              <Badge variant="soft" colorScheme="neutral" size="xs">
+                              <Badge tone="neutral" variant="soft" size="xs">
                                 Base {t.base}
                               </Badge>
                             </Inline>
                             {value && (
                               <Button
                                 variant="ghost"
-                                colorScheme="neutral"
                                 size="sm"
                                 leftIcon={
                                   copied === t.value ? (
@@ -234,10 +230,10 @@ const NumberConverter: React.FC = () => {
                           </Inline>
                         </CardHeader>
                         <CardBody>
-                          <Code size="md" variant="block">{value || '—'}</Code>
+                          <Code block>{value || '—'}</Code>
                           {t.value === 'binary' && value && (
-                            <Inline paddingTop="2">
-                              <Badge variant="soft" colorScheme="accent" size="xs">
+                            <Inline className="pt-2">
+                              <Badge tone="accent" variant="soft" size="xs">
                                 {value.length} bits
                               </Badge>
                             </Inline>
@@ -251,26 +247,25 @@ const NumberConverter: React.FC = () => {
 
               {results.binary && !error && (
                 <Stack gap="3">
-                  <Heading level={2} size="md" weight="semibold">
+                  <Heading level={2} size="md">
                     Binary visualisation
                   </Heading>
-                  <Card variant="filled" size="sm">
+                  <Card>
                     <CardBody>
                       <Inline gap="2" wrap justify="center">
                         {results.binary.split('').map((bit, idx) => (
                           <Badge
                             key={idx}
                             variant={bit === '1' ? 'solid' : 'outline'}
-                            colorScheme={bit === '1' ? 'accent' : 'neutral'}
+                            tone={bit === '1' ? 'accent' : 'neutral'}
                             size="md"
-                            shape="square"
                           >
                             {bit}
                           </Badge>
                         ))}
                       </Inline>
-                      <Inline justify="center" paddingTop="3">
-                        <Text size="xs" variant="caption">
+                      <Inline justify="center" className="pt-3">
+                        <Text size="xs" tone="subtle">
                           Each square represents one bit
                         </Text>
                       </Inline>
@@ -282,14 +277,14 @@ const NumberConverter: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="info">
-            <Stack gap="6" paddingTop="4">
+            <Stack gap="6" className="pt-4">
               <Stack gap="3">
-                <Heading level={2} size="md" weight="semibold">
+                <Heading level={2} size="md">
                   Number systems overview
                 </Heading>
-                <Grid columns={{ base: 1, md: 2 }} gap="3">
+                <Grid max={2} gap="3">
                   {NUMBER_TYPES.map((t) => (
-                    <Card key={t.value} variant="outlined" size="sm">
+                    <Card key={t.value}>
                       <CardHeader>
                         <CardTitle as="h3">
                           {t.label} (Base {t.base})
@@ -302,10 +297,10 @@ const NumberConverter: React.FC = () => {
                             {t.uses.map((u) => (
                               <Badge
                                 key={u}
+                                tone="accent"
                                 variant="soft"
-                                colorScheme="accent"
                                 size="sm"
-                                shape="pill"
+                                pill
                               >
                                 {u}
                               </Badge>
@@ -318,43 +313,55 @@ const NumberConverter: React.FC = () => {
                 </Grid>
               </Stack>
 
-              <Alert status="info" variant="soft" icon={<Award aria-hidden />}>
+              <Alert status="info" icon={<Award aria-hidden />}>
                 <AlertDescription>
                   <Text as="span" weight="semibold">
                     Why multiple number systems?
                   </Text>{' '}
                   Different number systems evolved based on practical needs.
                   Binary is fundamental to computing because electronic circuits
-                  have two states: on and off. Hexadecimal and octal developed as
-                  more human-readable representations of binary data.
+                  have two states: on and off. Hexadecimal and octal developed
+                  as more human-readable representations of binary data.
                 </AlertDescription>
               </Alert>
 
-              <Card variant="outlined" size="md">
+              <Card>
                 <CardHeader>
                   <CardTitle as="h3">Common conversions</CardTitle>
                 </CardHeader>
                 <CardBody>
                   <Stack gap="2">
                     {SAMPLE_NUMBERS.map((num) => (
-                      <Card key={num} variant="filled" size="sm">
+                      <Card key={num}>
                         <CardBody>
-                          <Grid columns={{ base: 2, md: 4 }} gap="2">
+                          <Grid max={4} gap="2">
                             <Stack gap="1">
-                              <Text size="xs" variant="caption">Decimal</Text>
-                              <Text size="sm" weight="medium">{num}</Text>
+                              <Text size="xs" tone="subtle">
+                                Decimal
+                              </Text>
+                              <Text size="sm" weight="medium">
+                                {num}
+                              </Text>
                             </Stack>
                             <Stack gap="1">
-                              <Text size="xs" variant="caption">Binary</Text>
-                              <Code size="sm" variant="block">{num.toString(2)}</Code>
+                              <Text size="xs" tone="subtle">
+                                Binary
+                              </Text>
+                              <Code block>{num.toString(2)}</Code>
                             </Stack>
                             <Stack gap="1">
-                              <Text size="xs" variant="caption">Octal</Text>
-                              <Code size="sm" variant="block">{num.toString(8)}</Code>
+                              <Text size="xs" tone="subtle">
+                                Octal
+                              </Text>
+                              <Code block>{num.toString(8)}</Code>
                             </Stack>
                             <Stack gap="1">
-                              <Text size="xs" variant="caption">Hex</Text>
-                              <Code size="sm" variant="block">{num.toString(16).toUpperCase()}</Code>
+                              <Text size="xs" tone="subtle">
+                                Hex
+                              </Text>
+                              <Code block>
+                                {num.toString(16).toUpperCase()}
+                              </Code>
                             </Stack>
                           </Grid>
                         </CardBody>

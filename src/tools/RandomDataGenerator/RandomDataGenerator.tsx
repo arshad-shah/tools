@@ -44,7 +44,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import * as DataUtils from './utils';
 import {
   FieldSchema,
@@ -87,7 +87,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
   const isExpanded = expandedFields[path] || false;
 
   return (
-    <Card variant="outlined" size="sm">
+    <Card>
       <CardBody>
         <Stack gap="3">
           <Inline justify="between" align="center" gap="2" wrap>
@@ -95,7 +95,6 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
               {isNested && (
                 <IconButton
                   variant="ghost"
-                  colorScheme="neutral"
                   size="sm"
                   label={isExpanded ? 'Collapse field' : 'Expand field'}
                   icon={
@@ -108,13 +107,11 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                   onClick={() => onToggleExpanded(path)}
                 />
               )}
-              <Badge variant="soft" colorScheme="accent" size="sm">
+              <Badge variant="soft" tone="accent" size="sm">
                 #{index + 1}
               </Badge>
-              <Box minWidth="0">
+              <Box className="min-w-0">
                 <Input
-                  variant="ghost"
-                  size="sm"
                   value={field.name}
                   onChange={(value) => onUpdateField(fullPath, { name: value })}
                   placeholder="Field name"
@@ -127,7 +124,6 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                 <>
                   <IconButton
                     variant="ghost"
-                    colorScheme="neutral"
                     size="sm"
                     label="Move up"
                     icon={<ArrowUp size={14} />}
@@ -136,7 +132,6 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                   />
                   <IconButton
                     variant="ghost"
-                    colorScheme="neutral"
                     size="sm"
                     label="Move down"
                     icon={<ArrowDown size={14} />}
@@ -146,8 +141,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                 </>
               )}
               <IconButton
-                variant="ghost"
-                colorScheme="danger"
+                variant="danger"
                 size="sm"
                 label="Remove field"
                 icon={<Trash2 size={14} />}
@@ -156,7 +150,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
             </Inline>
           </Inline>
 
-          <Grid columns={{ base: 1, md: 2 }} gap="3">
+          <Grid max={2} gap="3">
             <Stack gap="2">
               <Label>Data type</Label>
               <Select
@@ -172,19 +166,23 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
 
             {field.type === 'number' && (
               <Inline gap="2">
-                <Stack gap="2" flex="1">
+                <Stack gap="2" className="flex-1">
                   <Label>Min</Label>
                   <NumberInput
                     value={field.min ?? 0}
-                    onChange={(v) => onUpdateField(fullPath, { min: v ?? 0 })}
+                    onValueChange={(v) =>
+                      onUpdateField(fullPath, { min: v ?? 0 })
+                    }
                     aria-label="Minimum value"
                   />
                 </Stack>
-                <Stack gap="2" flex="1">
+                <Stack gap="2" className="flex-1">
                   <Label>Max</Label>
                   <NumberInput
                     value={field.max ?? 100}
-                    onChange={(v) => onUpdateField(fullPath, { max: v ?? 100 })}
+                    onValueChange={(v) =>
+                      onUpdateField(fullPath, { max: v ?? 100 })
+                    }
                     aria-label="Maximum value"
                   />
                 </Stack>
@@ -196,11 +194,11 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                 <Label>Array size</Label>
                 <NumberInput
                   value={field.arraySize ?? 3}
-                  onChange={(v) =>
+                  onValueChange={(v) =>
                     onUpdateField(fullPath, { arraySize: v ?? 3 })
                   }
-                  minValue={1}
-                  maxValue={20}
+                  min={1}
+                  max={20}
                   aria-label="Array size"
                 />
               </Stack>
@@ -218,13 +216,13 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
             </Inline>
           </Grid>
 
-          <Text size="xs" variant="caption" italic>
+          <Text size="xs" tone="subtle" className="italic">
             {DataUtils.fieldDescriptions[field.type] ||
               'Field type description not available'}
           </Text>
 
           {isNested && isExpanded && (
-            <Stack gap="3" paddingLeft="4">
+            <Stack gap="3" className="pl-4">
               {field.fields?.map((nestedField, nestedIndex) => (
                 <FieldEditor
                   key={`${path}.${nestedField.name}-${nestedIndex}`}
@@ -244,10 +242,9 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
               ))}
               <Button
                 variant="soft"
-                colorScheme="accent"
                 leftIcon={<Plus size={14} />}
                 onClick={() => onAddField(path)}
-                fullWidth
+                className="w-full"
               >
                 Add field to {field.name}
               </Button>
@@ -299,9 +296,9 @@ const RandomDataGenerator: React.FC = () => {
   const headers = generatedData ? DataUtils.getAllHeaders(flattenedData) : [];
 
   return (
-    <Container size="full">
-      <Grid columns={{ base: 1, md: 2 }} gap="4">
-        <Card variant="elevated" size="md">
+    <Container className="max-w-none">
+      <Grid max={2} gap="4">
+        <Card>
           <CardHeader>
             <CardTitle as="h3">Schema definition</CardTitle>
           </CardHeader>
@@ -327,16 +324,15 @@ const RandomDataGenerator: React.FC = () => {
                 ))}
                 <Button
                   variant="soft"
-                  colorScheme="accent"
                   leftIcon={<PlusCircle size={16} />}
                   onClick={() => handleAddField()}
-                  fullWidth
+                  className="w-full"
                 >
                   Add new field
                 </Button>
               </Stack>
 
-              <Card variant="filled" size="sm">
+              <Card>
                 <CardBody>
                   <Stack gap="3">
                     <Stack gap="2">
@@ -346,17 +342,16 @@ const RandomDataGenerator: React.FC = () => {
                       <NumberInput
                         id="gen-count"
                         value={count}
-                        onChange={(v) => setCount(Math.max(1, v ?? 1))}
-                        minValue={1}
+                        onValueChange={(v) => setCount(Math.max(1, v ?? 1))}
+                        min={1}
                         aria-label="Item count"
                       />
                     </Stack>
                     <Button
                       variant="solid"
-                      colorScheme="accent"
                       leftIcon={<RefreshCw size={16} />}
                       onClick={handleGenerate}
-                      fullWidth
+                      className="w-full"
                     >
                       Generate random data
                     </Button>
@@ -367,14 +362,13 @@ const RandomDataGenerator: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card variant="elevated" size="md">
+        <Card>
           <CardHeader>
             <Inline justify="between" align="center" wrap gap="2">
               <CardTitle as="h3">Generated data</CardTitle>
               <Inline gap="2">
                 <IconButton
                   variant={view === 'json' ? 'solid' : 'soft'}
-                  colorScheme={view === 'json' ? 'accent' : 'neutral'}
                   size="sm"
                   label="Toggle JSON view"
                   icon={<CodeIcon size={14} />}
@@ -382,7 +376,6 @@ const RandomDataGenerator: React.FC = () => {
                 />
                 <IconButton
                   variant="soft"
-                  colorScheme="accent"
                   size="sm"
                   label="Download JSON"
                   icon={<Download size={14} />}
@@ -394,10 +387,10 @@ const RandomDataGenerator: React.FC = () => {
           </CardHeader>
           <CardBody>
             {!generatedData ? (
-              <Center paddingY="10">
+              <Center className="py-10">
                 <Stack gap="2" align="center">
                   <Download size={32} aria-hidden />
-                  <Text size="sm" variant="caption" align="center">
+                  <Text size="sm" tone="subtle" className="text-center">
                     No data generated yet. Define your schema and click
                     Generate.
                   </Text>
@@ -408,7 +401,6 @@ const RandomDataGenerator: React.FC = () => {
                 value={view}
                 onValueChange={(v) => setView(v as 'table' | 'json')}
                 variant="line"
-                colorScheme="accent"
               >
                 <TabsList aria-label="View">
                   <TabsTrigger value="table">Table</TabsTrigger>
@@ -416,51 +408,47 @@ const RandomDataGenerator: React.FC = () => {
                 </TabsList>
 
                 <TabsContent value="table">
-                  <Box paddingTop="3">
+                  <Box className="pt-3">
                     <Stack gap="2">
-                      <Alert status="info" variant="soft">
+                      <Alert status="info">
                         <AlertDescription>
                           Complex nested objects are shown as simplified strings
                           in table view. Switch to JSON for full structure.
                         </AlertDescription>
                       </Alert>
-                      <Box overflow="auto">
-                        <Table variant="striped" size="sm">
-                          <TableHead>
-                            <TableRow>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            {headers.map((h) => (
+                              <TableHead key={h}>{h}</TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {flattenedData.map((item, idx) => (
+                            <TableRow key={idx}>
                               {headers.map((h) => (
-                                <TableHeader key={h}>{h}</TableHeader>
+                                <TableCell key={h}>
+                                  {item[h] !== undefined
+                                    ? typeof item[h] === 'boolean'
+                                      ? item[h]
+                                        ? 'true'
+                                        : 'false'
+                                      : String(item[h])
+                                    : ''}
+                                </TableCell>
                               ))}
                             </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {flattenedData.map((item, idx) => (
-                              <TableRow key={idx}>
-                                {headers.map((h) => (
-                                  <TableCell key={h}>
-                                    {item[h] !== undefined
-                                      ? typeof item[h] === 'boolean'
-                                        ? item[h]
-                                          ? 'true'
-                                          : 'false'
-                                        : String(item[h])
-                                      : ''}
-                                  </TableCell>
-                                ))}
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </Box>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </Stack>
                   </Box>
                 </TabsContent>
 
                 <TabsContent value="json">
-                  <Box paddingTop="3">
-                    <Code variant="block" size="sm">
-                      {JSON.stringify(generatedData, null, 2)}
-                    </Code>
+                  <Box className="pt-3">
+                    <Code block>{JSON.stringify(generatedData, null, 2)}</Code>
                   </Box>
                 </TabsContent>
               </Tabs>

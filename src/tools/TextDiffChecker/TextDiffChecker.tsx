@@ -36,7 +36,7 @@ import {
   Stack,
   Text,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { DiffSegment, DiffViewMode } from '../../types/TextDiffCheckerTypes';
 import useNotification from './hooks/useNotification';
 import useDiffSettings from './hooks/useDiffSettings';
@@ -69,7 +69,7 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
   onCopy,
   onClear,
 }) => (
-  <Card variant="elevated" size="md">
+  <Card>
     <CardHeader>
       <Inline justify="between" align="center" wrap gap="2">
         <Inline align="center" gap="2">
@@ -80,7 +80,6 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
           {onFileUpload && (
             <IconButton
               variant="ghost"
-              colorScheme="neutral"
               size="sm"
               label="Upload file"
               disabled={disabled}
@@ -91,7 +90,6 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
           {onCopy && (
             <IconButton
               variant="ghost"
-              colorScheme="neutral"
               size="sm"
               label="Copy"
               disabled={!value || disabled}
@@ -102,7 +100,6 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
           {onClear && (
             <IconButton
               variant="ghost"
-              colorScheme="neutral"
               size="sm"
               label="Clear"
               disabled={!value || disabled}
@@ -130,7 +127,9 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
 const TextDiffChecker: React.FC = () => {
   const [leftText, setLeftText] = useState('');
   const [rightText, setRightText] = useState('');
-  const [diffViewMode, setDiffViewMode] = useState<'split' | 'unified' | 'inline'>('split');
+  const [diffViewMode, setDiffViewMode] = useState<
+    'split' | 'unified' | 'inline'
+  >('split');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showStats, setShowStats] = useState(true);
   const [highlightMode, setHighlightMode] = useState<
@@ -193,7 +192,9 @@ const TextDiffChecker: React.FC = () => {
       ];
       const isTextFile =
         allowedTypes.includes(file.type) ||
-        file.name.match(/\.(txt|md|json|html|css|js|ts|jsx|tsx|xml|yaml|yml|log)$/i);
+        file.name.match(
+          /\.(txt|md|json|html|css|js|ts|jsx|tsx|xml|yaml|yml|log)$/i,
+        );
       if (!isTextFile) {
         showNotification('Please select a text file', 'error');
         return;
@@ -238,7 +239,8 @@ const TextDiffChecker: React.FC = () => {
       settings: diffSettings,
       results: diffSegments.map((s) => ({
         text: s.text,
-        type: s.type || (s.added ? 'added' : s.removed ? 'removed' : 'unchanged'),
+        type:
+          s.type || (s.added ? 'added' : s.removed ? 'removed' : 'unchanged'),
         lineNumber: s.lineNumber,
       })),
     };
@@ -279,7 +281,7 @@ const TextDiffChecker: React.FC = () => {
     (text1: string, text2: string, isLeftSide = true) => {
       if (!text1 && !text2)
         return (
-          <Text as="span" size="sm" variant="caption" italic>
+          <Text as="span" size="sm" tone="subtle" className="italic">
             (empty line)
           </Text>
         );
@@ -299,7 +301,7 @@ const TextDiffChecker: React.FC = () => {
             if (isLeftSide) {
               if (part.added) return null;
               return part.removed ? (
-                <Badge key={idx} variant="soft" colorScheme="danger" size="xs">
+                <Badge key={idx} variant="soft" tone="danger" size="xs">
                   {part.value}
                 </Badge>
               ) : (
@@ -310,7 +312,7 @@ const TextDiffChecker: React.FC = () => {
             }
             if (part.removed) return null;
             return part.added ? (
-              <Badge key={idx} variant="soft" colorScheme="success" size="xs">
+              <Badge key={idx} variant="soft" tone="success" size="xs">
                 {part.value}
               </Badge>
             ) : (
@@ -330,14 +332,14 @@ const TextDiffChecker: React.FC = () => {
       if (segment.isIntraline) {
         if (segment.added) {
           return (
-            <Badge variant="soft" colorScheme="success" size="xs">
+            <Badge variant="soft" tone="success" size="xs">
               {segment.text}
             </Badge>
           );
         }
         if (segment.removed) {
           return (
-            <Badge variant="soft" colorScheme="danger" size="xs">
+            <Badge variant="soft" tone="danger" size="xs">
               {segment.text}
             </Badge>
           );
@@ -362,7 +364,7 @@ const TextDiffChecker: React.FC = () => {
       return (
         <Text as="span" size="sm">
           {segment.text || (
-            <Text as="span" size="sm" variant="caption" italic>
+            <Text as="span" size="sm" tone="subtle" className="italic">
               (empty line)
             </Text>
           )}
@@ -394,18 +396,13 @@ const TextDiffChecker: React.FC = () => {
   ) => (
     <Inline key={keyPrefix} gap="2" align="center" wrap={false}>
       {diffSettings.showLineNumbers && (
-        <Text size="xs" variant="caption">
+        <Text size="xs" tone="subtle">
           {(isLeftSide
             ? segment.originalLineNumber
             : segment.modifiedLineNumber) || segment.lineNumber}
         </Text>
       )}
-      <Badge
-        variant="soft"
-        colorScheme={lineMarkerColor(segment)}
-        size="xs"
-        shape="square"
-      >
+      <Badge variant="soft" tone={lineMarkerColor(segment)} size="xs">
         {lineMarker(segment)}
       </Badge>
       {renderDiffSegment(segment, isLeftSide, comparisonText)}
@@ -415,10 +412,10 @@ const TextDiffChecker: React.FC = () => {
   const renderDiffContent = () => {
     if (isDiffing) {
       return (
-        <Center paddingY="8">
+        <Center className="py-8">
           <Inline align="center" gap="3">
-            <Spinner size="md" colorScheme="accent" />
-            <Text size="sm" variant="caption">
+            <Spinner size="md" />
+            <Text size="sm" tone="subtle">
               Calculating differences…
             </Text>
           </Inline>
@@ -428,13 +425,13 @@ const TextDiffChecker: React.FC = () => {
     if (!diffSegments.length) {
       if (leftText && rightText) {
         return (
-          <Center paddingY="8">
+          <Center className="py-8">
             <Stack gap="2" align="center">
               <Check size={32} aria-hidden />
               <Text size="md" weight="semibold">
                 No differences found
               </Text>
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 The texts are identical.
               </Text>
             </Stack>
@@ -442,13 +439,13 @@ const TextDiffChecker: React.FC = () => {
         );
       }
       return (
-        <Center paddingY="8">
+        <Center className="py-8">
           <Stack gap="2" align="center">
             <Sparkles size={32} aria-hidden />
             <Text size="md" weight="semibold">
               Ready to compare
             </Text>
-            <Text size="sm" variant="caption">
+            <Text size="sm" tone="subtle">
               Enter text in both panels to see differences.
             </Text>
           </Stack>
@@ -460,9 +457,14 @@ const TextDiffChecker: React.FC = () => {
       const leftSegments = diffSegments.filter((s) => !s.added);
       const rightSegments = diffSegments.filter((s) => !s.removed);
       return (
-        <Grid columns={{ base: 1, md: 2 }} gap="3">
+        <Grid max={2} gap="3">
           <Stack gap="1">
-            <Text size="xs" weight="semibold" variant="overline">
+            <Text
+              size="xs"
+              weight="semibold"
+              tone="subtle"
+              className="uppercase tracking-wider"
+            >
               Original
             </Text>
             {leftSegments.map((segment, idx) => {
@@ -480,7 +482,12 @@ const TextDiffChecker: React.FC = () => {
             })}
           </Stack>
           <Stack gap="1">
-            <Text size="xs" weight="semibold" variant="overline">
+            <Text
+              size="xs"
+              weight="semibold"
+              tone="subtle"
+              className="uppercase tracking-wider"
+            >
               Modified
             </Text>
             {rightSegments.map((segment, idx) => {
@@ -527,20 +534,19 @@ const TextDiffChecker: React.FC = () => {
         hidden
       />
 
-      <Card variant="elevated" size="md">
+      <Card>
         <CardBody>
           <Stack gap="4">
             <Inline justify="between" align="center" wrap gap="3">
               <Inline align="center" gap="2">
                 <Split size={20} aria-hidden />
-                <Heading level={2} size="lg" weight="semibold">
+                <Heading level={2} size="lg">
                   Text Diff Checker
                 </Heading>
               </Inline>
               <Inline gap="2" wrap>
                 <Button
                   variant={showStats ? 'solid' : 'soft'}
-                  colorScheme={showStats ? 'accent' : 'neutral'}
                   size="sm"
                   leftIcon={<BarChart2 size={14} />}
                   onClick={() => setShowStats(!showStats)}
@@ -549,7 +555,6 @@ const TextDiffChecker: React.FC = () => {
                 </Button>
                 <Button
                   variant={autoRefresh ? 'solid' : 'soft'}
-                  colorScheme={autoRefresh ? 'success' : 'neutral'}
                   size="sm"
                   leftIcon={<Play size={14} />}
                   onClick={() => setAutoRefresh(!autoRefresh)}
@@ -559,7 +564,6 @@ const TextDiffChecker: React.FC = () => {
                 {!autoRefresh && (
                   <Button
                     variant="soft"
-                    colorScheme="neutral"
                     size="sm"
                     leftIcon={<RotateCcw size={14} />}
                     disabled={isDiffing}
@@ -570,7 +574,6 @@ const TextDiffChecker: React.FC = () => {
                 )}
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   leftIcon={<ArrowRightLeft size={14} />}
                   disabled={isDiffing}
@@ -580,7 +583,6 @@ const TextDiffChecker: React.FC = () => {
                 </Button>
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   leftIcon={<Download size={14} />}
                   disabled={!diffSegments.length}
@@ -589,8 +591,7 @@ const TextDiffChecker: React.FC = () => {
                   Export
                 </Button>
                 <Button
-                  variant="soft"
-                  colorScheme="danger"
+                  variant="danger"
                   size="sm"
                   leftIcon={<Trash size={14} />}
                   disabled={isDiffing}
@@ -606,10 +607,11 @@ const TextDiffChecker: React.FC = () => {
                 <Button
                   key={mode.id}
                   variant={diffViewMode === mode.id ? 'solid' : 'soft'}
-                  colorScheme={diffViewMode === mode.id ? 'accent' : 'neutral'}
                   size="sm"
                   leftIcon={mode.icon}
-                  onClick={() => setDiffViewMode(mode.id as typeof diffViewMode)}
+                  onClick={() =>
+                    setDiffViewMode(mode.id as typeof diffViewMode)
+                  }
                 >
                   {mode.name}
                 </Button>
@@ -619,13 +621,12 @@ const TextDiffChecker: React.FC = () => {
         </CardBody>
       </Card>
 
-      <Card variant="filled" size="md">
+      <Card>
         <CardBody>
           <Stack gap="3">
             <Inline gap="2" wrap>
               <Button
                 variant={diffSettings.ignoreWhitespace ? 'solid' : 'soft'}
-                colorScheme={diffSettings.ignoreWhitespace ? 'accent' : 'neutral'}
                 size="sm"
                 onClick={() =>
                   updateDiffSetting(
@@ -638,7 +639,6 @@ const TextDiffChecker: React.FC = () => {
               </Button>
               <Button
                 variant={diffSettings.ignoreCase ? 'solid' : 'soft'}
-                colorScheme={diffSettings.ignoreCase ? 'accent' : 'neutral'}
                 size="sm"
                 onClick={() =>
                   updateDiffSetting('ignoreCase', !diffSettings.ignoreCase)
@@ -647,9 +647,8 @@ const TextDiffChecker: React.FC = () => {
                 Ignore case
               </Button>
               <Button
-                variant={diffSettings.highlightIntralineChanges ? 'solid' : 'soft'}
-                colorScheme={
-                  diffSettings.highlightIntralineChanges ? 'accent' : 'neutral'
+                variant={
+                  diffSettings.highlightIntralineChanges ? 'solid' : 'soft'
                 }
                 size="sm"
                 onClick={() =>
@@ -663,9 +662,6 @@ const TextDiffChecker: React.FC = () => {
               </Button>
               <Button
                 variant={diffSettings.showLineNumbers ? 'solid' : 'soft'}
-                colorScheme={
-                  diffSettings.showLineNumbers ? 'accent' : 'neutral'
-                }
                 size="sm"
                 onClick={() =>
                   updateDiffSetting(
@@ -678,7 +674,6 @@ const TextDiffChecker: React.FC = () => {
               </Button>
               <Button
                 variant="ghost"
-                colorScheme="neutral"
                 size="sm"
                 leftIcon={<RotateCcw size={14} />}
                 onClick={resetSettings}
@@ -688,7 +683,7 @@ const TextDiffChecker: React.FC = () => {
             </Inline>
 
             <Inline gap="2" wrap align="center">
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 Highlight level:
               </Text>
               <ButtonGroup>
@@ -696,7 +691,6 @@ const TextDiffChecker: React.FC = () => {
                   <Button
                     key={mode}
                     variant={highlightMode === mode ? 'solid' : 'soft'}
-                    colorScheme={highlightMode === mode ? 'accent' : 'neutral'}
                     size="sm"
                     onClick={() => setHighlightMode(mode)}
                   >
@@ -710,93 +704,89 @@ const TextDiffChecker: React.FC = () => {
       </Card>
 
       {showStats && diffStats && (
-        <Grid columns={{ base: 2, md: 5 }} gap="3">
-          <Card variant="filled" size="sm">
+        <Box className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <Card>
             <CardBody>
               <Stack gap="1">
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Additions
                 </Text>
                 <Inline gap="2" align="center">
-                  <Badge variant="soft" colorScheme="success" size="md">
+                  <Badge variant="soft" tone="success" size="md">
                     {diffStats.additions}
                   </Badge>
                 </Inline>
               </Stack>
             </CardBody>
           </Card>
-          <Card variant="filled" size="sm">
+          <Card>
             <CardBody>
               <Stack gap="1">
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Deletions
                 </Text>
                 <Inline gap="2" align="center">
-                  <Badge variant="soft" colorScheme="danger" size="md">
+                  <Badge variant="soft" tone="danger" size="md">
                     {diffStats.deletions}
                   </Badge>
                 </Inline>
               </Stack>
             </CardBody>
           </Card>
-          <Card variant="filled" size="sm">
+          <Card>
             <CardBody>
               <Stack gap="1">
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Changes
                 </Text>
                 <Inline gap="2" align="center">
-                  <Badge variant="soft" colorScheme="warning" size="md">
+                  <Badge variant="soft" tone="warning" size="md">
                     {diffStats.changes}
                   </Badge>
                 </Inline>
               </Stack>
             </CardBody>
           </Card>
-          <Card variant="filled" size="sm">
+          <Card>
             <CardBody>
               <Stack gap="1">
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Unchanged
                 </Text>
                 <Inline gap="2" align="center">
-                  <Badge variant="soft" colorScheme="accent" size="md">
+                  <Badge variant="soft" tone="accent" size="md">
                     {diffStats.unchanged}
                   </Badge>
                 </Inline>
               </Stack>
             </CardBody>
           </Card>
-          <Card variant="filled" size="sm">
+          <Card>
             <CardBody>
               <Stack gap="1">
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Change rate
                 </Text>
                 <Inline gap="2" align="center">
-                  <Badge variant="soft" colorScheme="accent" size="md">
+                  <Badge variant="soft" tone="accent" size="md">
                     {diffStats.changePercentage}%
                   </Badge>
                 </Inline>
               </Stack>
             </CardBody>
           </Card>
-        </Grid>
+        </Box>
       )}
 
       {performanceWarning && (
-        <Alert
-          status="warning"
-          variant="soft"
-          icon={<AlertTriangle aria-hidden />}
-        >
+        <Alert status="warning" icon={<AlertTriangle aria-hidden />}>
           <AlertDescription>
             Large text detected. Performance may be affected.
           </AlertDescription>
         </Alert>
       )}
 
-      <Grid columns={{ base: 1, md: 2 }} gap="4">
+      <Grid max={2} gap="4">
         <DiffTextArea
           value={leftText}
           onChange={setLeftText}
@@ -819,7 +809,7 @@ const TextDiffChecker: React.FC = () => {
         />
       </Grid>
 
-      <Card variant="elevated" size="md">
+      <Card>
         <CardHeader>
           <Inline justify="between" align="center" wrap gap="2">
             <Inline align="center" gap="2">
@@ -827,7 +817,7 @@ const TextDiffChecker: React.FC = () => {
               <CardTitle as="h3">Diff results</CardTitle>
             </Inline>
             {diffSegments.length > 0 && (
-              <Badge variant="soft" colorScheme="accent" size="sm">
+              <Badge variant="soft" tone="accent" size="sm">
                 {diffSegments.length}{' '}
                 {diffSettings.highlightIntralineChanges ? 'changes' : 'lines'}
               </Badge>
@@ -835,7 +825,7 @@ const TextDiffChecker: React.FC = () => {
           </Inline>
         </CardHeader>
         <CardBody>
-          <Box overflow="auto">{renderDiffContent()}</Box>
+          <Box className="overflow-auto">{renderDiffContent()}</Box>
         </CardBody>
       </Card>
 
@@ -848,7 +838,6 @@ const TextDiffChecker: React.FC = () => {
                 ? 'success'
                 : 'info'
           }
-          variant="soft"
         >
           <AlertDescription>{notification.message}</AlertDescription>
         </Alert>

@@ -12,7 +12,6 @@ import {
   useNodesState,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useColorScheme } from '@arshad-shah/cynosure-react';
 
 import CustomNode from './CustomNode';
 import { AppNode, DataFlowProps } from './types';
@@ -25,13 +24,11 @@ const nodeTypes = {
 const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
 
-  const accent = 'var(--cynosure-color-accent-solid)';
-  const surface = 'var(--cynosure-color-background-surface)';
-  const subtle = 'var(--cynosure-color-background-subtle)';
-  const muted = 'var(--cynosure-color-foreground-subtle)';
+  const accent = 'var(--color-accent)';
+  const surface = 'var(--color-surface)';
+  const subtle = 'var(--color-surface-subtle)';
+  const muted = 'var(--color-fg-subtle)';
 
   const onConnect = useCallback(
     (params: any) =>
@@ -88,11 +85,9 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
           position="bottom-right"
           style={{
             background: surface,
-            border: `1px solid var(--cynosure-color-border-default)`,
+            border: `1px solid var(--color-line)`,
             borderRadius: 8,
-            boxShadow: isDark
-              ? '0 4px 12px rgba(0,0,0,0.4)'
-              : '0 4px 12px rgba(0,0,0,0.08)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
           }}
         />
       </ReactFlow>

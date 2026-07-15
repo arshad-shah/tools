@@ -25,7 +25,7 @@ import {
   Stack,
   Switch,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { charSets, getSecureRandom, secureShuffle } from './utils/utils';
 
 type CharType = 'uppercase' | 'lowercase' | 'number' | 'special';
@@ -38,10 +38,10 @@ const classifyChar = (ch: string): CharType => {
 };
 
 const CHAR_CSS_VARS: Record<CharType, string> = {
-  uppercase: 'var(--cynosure-color-feedback-warning-solid)',
-  lowercase: 'var(--cynosure-color-foreground-default)',
-  number: 'var(--cynosure-color-feedback-success-solid)',
-  special: 'var(--cynosure-color-violet-400)',
+  uppercase: 'var(--color-warning)',
+  lowercase: 'var(--color-fg)',
+  number: 'var(--color-success)',
+  special: 'var(--color-info)',
 };
 
 interface HighlightedPasswordProps {
@@ -54,16 +54,8 @@ const HighlightedPassword: React.FC<HighlightedPasswordProps> = ({
   hidden,
 }) => (
   <Box
-    padding="4"
-    borderWidth="1"
-    borderStyle="solid"
-    borderColor="border.default"
-    borderRadius="md"
-    background="bg.surface"
-    overflow="hidden"
+    className="overflow-hidden rounded-md border border-line bg-surface p-4 font-mono text-base"
     style={{
-      fontFamily: 'var(--cynosure-font-family-mono)',
-      fontSize: 'var(--cynosure-font-body-md-size)',
       lineHeight: 1.6,
       wordBreak: 'break-all',
       overflowWrap: 'anywhere',
@@ -99,16 +91,15 @@ const CharLegend: React.FC = () => (
     ).map(([type, sample, label]) => (
       <Inline key={type} gap="1" align="center">
         <span
+          className="font-mono text-sm"
           style={{
             color: CHAR_CSS_VARS[type],
             fontWeight: 700,
-            fontFamily: 'var(--cynosure-font-family-mono)',
-            fontSize: 'var(--cynosure-font-body-sm-size)',
           }}
         >
           {sample}
         </span>
-        <Text as="span" size="xs" variant="caption">
+        <Text as="span" size="xs" tone="subtle">
           {label}
         </Text>
       </Inline>
@@ -131,7 +122,7 @@ const CharacterTypeOption: React.FC<CharacterTypeOptionProps> = ({
   onChange,
   recommended = false,
 }) => (
-  <Card variant={checked ? 'outlined' : 'filled'} size="sm">
+  <Card className={checked ? 'border-accent' : undefined}>
     <CardBody>
       <Inline justify="between" align="center" gap="3" wrap>
         <Stack gap="1">
@@ -140,12 +131,12 @@ const CharacterTypeOption: React.FC<CharacterTypeOptionProps> = ({
               {label}
             </Text>
             {recommended && (
-              <Badge variant="soft" colorScheme="warning" size="xs">
+              <Badge variant="soft" tone="warning" size="xs">
                 Recommended
               </Badge>
             )}
           </Inline>
-          <Text size="xs" variant="caption">
+          <Text size="xs" tone="subtle">
             {sublabel}
           </Text>
         </Stack>
@@ -179,13 +170,12 @@ const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
   };
 
   return (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardHeader>
         <Inline justify="between" align="center">
           <CardTitle as="h3">Generated password</CardTitle>
           <IconButton
             variant="ghost"
-            colorScheme="neutral"
             size="sm"
             label={hidden ? 'Show password' : 'Hide password'}
             icon={hidden ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -201,9 +191,10 @@ const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
               <CharLegend />
               <Button
                 variant={copied ? 'solid' : 'soft'}
-                colorScheme={copied ? 'success' : 'accent'}
                 size="md"
-                leftIcon={copied ? <CheckCircle size={18} /> : <Copy size={18} />}
+                leftIcon={
+                  copied ? <CheckCircle size={18} /> : <Copy size={18} />
+                }
                 onClick={onCopy}
               >
                 {copied ? 'Copied' : 'Copy'}
@@ -212,22 +203,22 @@ const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
           </Stack>
           <Inline gap="2" wrap>
             {counts.uppercase > 0 && (
-              <Badge variant="soft" colorScheme="warning" size="sm">
+              <Badge variant="soft" tone="warning" size="sm">
                 {counts.uppercase} uppercase
               </Badge>
             )}
             {counts.lowercase > 0 && (
-              <Badge variant="soft" colorScheme="neutral" size="sm">
+              <Badge variant="soft" tone="neutral" size="sm">
                 {counts.lowercase} lowercase
               </Badge>
             )}
             {counts.numbers > 0 && (
-              <Badge variant="soft" colorScheme="success" size="sm">
+              <Badge variant="soft" tone="success" size="sm">
                 {counts.numbers} numbers
               </Badge>
             )}
             {counts.special > 0 && (
-              <Badge variant="soft" colorScheme="info" size="sm">
+              <Badge variant="soft" tone="info" size="sm">
                 {counts.special} special
               </Badge>
             )}
@@ -242,7 +233,8 @@ const getSecurityLevel = (length: number) => {
   if (length < 12) return { label: 'Weak', colorScheme: 'danger' as const };
   if (length < 16) return { label: 'Basic', colorScheme: 'warning' as const };
   if (length < 24) return { label: 'Strong', colorScheme: 'accent' as const };
-  if (length < 32) return { label: 'Very strong', colorScheme: 'success' as const };
+  if (length < 32)
+    return { label: 'Very strong', colorScheme: 'success' as const };
   return { label: 'Maximum', colorScheme: 'success' as const };
 };
 
@@ -262,25 +254,33 @@ const SecurePasswordGenerator: React.FC = () => {
     if (includeUppercase) {
       charset += charSets.uppercase;
       mandatoryChars.push(
-        charSets.uppercase[Math.floor(getSecureRandom() * charSets.uppercase.length)],
+        charSets.uppercase[
+          Math.floor(getSecureRandom() * charSets.uppercase.length)
+        ],
       );
     }
     if (includeLowercase) {
       charset += charSets.lowercase;
       mandatoryChars.push(
-        charSets.lowercase[Math.floor(getSecureRandom() * charSets.lowercase.length)],
+        charSets.lowercase[
+          Math.floor(getSecureRandom() * charSets.lowercase.length)
+        ],
       );
     }
     if (includeNumbers) {
       charset += charSets.numbers;
       mandatoryChars.push(
-        charSets.numbers[Math.floor(getSecureRandom() * charSets.numbers.length)],
+        charSets.numbers[
+          Math.floor(getSecureRandom() * charSets.numbers.length)
+        ],
       );
     }
     if (includeSpecial) {
       charset += charSets.special;
       mandatoryChars.push(
-        charSets.special[Math.floor(getSecureRandom() * charSets.special.length)],
+        charSets.special[
+          Math.floor(getSecureRandom() * charSets.special.length)
+        ],
       );
     }
     if (!charset) {
@@ -317,7 +317,7 @@ const SecurePasswordGenerator: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Card variant="elevated" size="md">
+      <Card>
         <CardHeader>
           <Inline justify="between" align="center" wrap>
             <Inline align="center" gap="2">
@@ -325,10 +325,10 @@ const SecurePasswordGenerator: React.FC = () => {
               <CardTitle as="h2">Password length</CardTitle>
             </Inline>
             <Inline gap="2" align="center">
-              <Badge variant="soft" colorScheme={security.colorScheme} size="sm">
+              <Badge variant="soft" tone={security.colorScheme} size="sm">
                 {security.label}
               </Badge>
-              <Badge variant="soft" colorScheme="accent" size="sm">
+              <Badge variant="soft" tone="accent" size="sm">
                 {length} characters
               </Badge>
             </Inline>
@@ -338,11 +338,10 @@ const SecurePasswordGenerator: React.FC = () => {
           <Stack gap="6">
             <Slider
               value={length}
-              onChange={(v) => setLength(v as number)}
-              minValue={8}
-              maxValue={64}
+              onValueChange={setLength}
+              min={8}
+              max={64}
               step={1}
-              showValue
               aria-label="Password length"
             />
 
@@ -389,14 +388,13 @@ const SecurePasswordGenerator: React.FC = () => {
         leftIcon={<RefreshCw size={20} />}
         size="lg"
         variant="solid"
-        colorScheme="accent"
-        fullWidth
+        className="w-full"
       >
         Generate secure password
       </Button>
 
       {missingTypes && (
-        <Alert status="danger" variant="soft">
+        <Alert status="danger">
           <AlertDescription>
             Please select at least one character type.
           </AlertDescription>
@@ -411,7 +409,7 @@ const SecurePasswordGenerator: React.FC = () => {
         />
       )}
 
-      <Alert status="info" variant="soft" icon={<Shield aria-hidden />}>
+      <Alert status="info" icon={<Shield aria-hidden />}>
         <AlertDescription>
           <Text weight="medium" as="span">
             Secure generation.

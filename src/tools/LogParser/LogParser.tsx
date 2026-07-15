@@ -51,7 +51,7 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { useCopyToClipboard, useLogParser } from './hooks/useLogParser';
 import { LogEntry, LogLevel, LogType } from '../../types/LogParserTypes';
 
@@ -68,31 +68,35 @@ const LOG_TYPE_OPTIONS = [
 
 const LEVEL_INFO: Record<
   LogLevel,
-  { label: string; colorScheme: 'danger' | 'warning' | 'accent' | 'neutral' | 'success'; icon: React.ReactNode }
+  {
+    label: string;
+    tone: 'danger' | 'warning' | 'accent' | 'neutral' | 'success';
+    icon: React.ReactNode;
+  }
 > = {
   error: {
     label: 'Error',
-    colorScheme: 'danger',
+    tone: 'danger',
     icon: <AlertCircle size={14} aria-hidden />,
   },
   warn: {
     label: 'Warn',
-    colorScheme: 'warning',
+    tone: 'warning',
     icon: <AlertTriangle size={14} aria-hidden />,
   },
   info: {
     label: 'Info',
-    colorScheme: 'accent',
+    tone: 'accent',
     icon: <Info size={14} aria-hidden />,
   },
   debug: {
     label: 'Debug',
-    colorScheme: 'neutral',
+    tone: 'neutral',
     icon: <Cpu size={14} aria-hidden />,
   },
   success: {
     label: 'Success',
-    colorScheme: 'success',
+    tone: 'success',
     icon: <CheckCircle size={14} aria-hidden />,
   },
 };
@@ -107,31 +111,27 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
   const [expanded, setExpanded] = useState(false);
   const info = LEVEL_INFO[log.level];
   return (
-    <Card variant="outlined" size="sm">
+    <Card>
       <CardBody>
         <Stack gap="2">
           <Inline justify="between" align="center" gap="2" wrap>
             <Inline align="center" gap="2" wrap>
-              <Badge
-                variant="soft"
-                colorScheme={info.colorScheme}
-                size="sm"
-                icon={info.icon}
-              >
+              <Badge variant="soft" tone={info.tone} size="sm">
+                {info.icon}
                 {info.label}
               </Badge>
               {log.timestamp && (
-                <Badge variant="soft" colorScheme="neutral" size="xs">
+                <Badge variant="soft" tone="neutral" size="xs">
                   {log.timestamp}
                 </Badge>
               )}
               {log.component && (
-                <Badge variant="outline" colorScheme="accent" size="xs">
+                <Badge variant="outline" tone="accent" size="xs">
                   {log.component}
                 </Badge>
               )}
               {log.executionTime && (
-                <Badge variant="soft" colorScheme="warning" size="xs">
+                <Badge variant="soft" tone="warning" size="xs">
                   {log.executionTime}
                 </Badge>
               )}
@@ -139,7 +139,6 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
             <Inline gap="1">
               <IconButton
                 variant="ghost"
-                colorScheme="neutral"
                 size="sm"
                 label="Copy raw line"
                 icon={<Copy size={14} />}
@@ -148,7 +147,6 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
               {(log.details || log.raw !== log.message) && (
                 <IconButton
                   variant="ghost"
-                  colorScheme="neutral"
                   size="sm"
                   label={expanded ? 'Collapse' : 'Expand'}
                   icon={
@@ -167,20 +165,14 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
           </Inline>
           <Text size="sm">{log.message}</Text>
           {copied && (
-            <Text size="xs" variant="caption">
+            <Text size="xs" tone="subtle">
               Copied
             </Text>
           )}
           {expanded && (
             <Stack gap="2">
-              {log.details && (
-                <Code variant="block" size="sm">
-                  {log.details}
-                </Code>
-              )}
-              <Code variant="block" size="sm">
-                {log.raw}
-              </Code>
+              {log.details && <Code block>{log.details}</Code>}
+              <Code block>{log.raw}</Code>
             </Stack>
           )}
         </Stack>
@@ -222,10 +214,9 @@ const LogParserTool: React.FC = () => {
   const { copied, copyToClipboard } = useCopyToClipboard();
 
   const downloadFiltered = () => {
-    const blob = new Blob(
-      [filteredLogs.map((l) => l.raw).join('\n')],
-      { type: 'text/plain' },
-    );
+    const blob = new Blob([filteredLogs.map((l) => l.raw).join('\n')], {
+      type: 'text/plain',
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -237,7 +228,7 @@ const LogParserTool: React.FC = () => {
   };
 
   const inputPanel = (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardHeader>
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
@@ -247,7 +238,6 @@ const LogParserTool: React.FC = () => {
           <Inline gap="2" wrap>
             <Button
               variant="soft"
-              colorScheme="accent"
               size="sm"
               leftIcon={<RefreshCw size={14} />}
               onClick={loadSampleLogs}
@@ -256,7 +246,6 @@ const LogParserTool: React.FC = () => {
             </Button>
             <Button
               variant="soft"
-              colorScheme="neutral"
               size="sm"
               leftIcon={<Trash2 size={14} />}
               disabled={!logText}
@@ -291,20 +280,19 @@ const LogParserTool: React.FC = () => {
   );
 
   const outputPanel = (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardHeader>
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
             <Activity size={18} aria-hidden />
             <CardTitle as="h3">Parsed logs</CardTitle>
-            <Badge variant="soft" colorScheme="neutral" size="sm">
+            <Badge variant="soft" tone="neutral" size="sm">
               {filteredLogs.length} of {parsedLogs.length}
             </Badge>
           </Inline>
           {filteredLogs.length > 0 && (
             <Button
               variant="soft"
-              colorScheme="neutral"
               size="sm"
               leftIcon={<Download size={14} />}
               onClick={downloadFiltered}
@@ -316,7 +304,7 @@ const LogParserTool: React.FC = () => {
       </CardHeader>
       <CardBody>
         {parsedLogs.length === 0 ? (
-          <EmptyState size="md" variant="subtle">
+          <EmptyState>
             <EmptyStateIcon>
               <FileText size={36} aria-hidden />
             </EmptyStateIcon>
@@ -328,7 +316,6 @@ const LogParserTool: React.FC = () => {
             <EmptyStateActions>
               <Button
                 variant="solid"
-                colorScheme="accent"
                 size="sm"
                 leftIcon={<RefreshCw size={14} />}
                 onClick={loadSampleLogs}
@@ -338,7 +325,7 @@ const LogParserTool: React.FC = () => {
             </EmptyStateActions>
           </EmptyState>
         ) : filteredLogs.length === 0 ? (
-          <EmptyState size="md" variant="subtle">
+          <EmptyState>
             <EmptyStateIcon>
               <Search size={36} aria-hidden />
             </EmptyStateIcon>
@@ -347,12 +334,7 @@ const LogParserTool: React.FC = () => {
               No log lines match the active filters.
             </EmptyStateDescription>
             <EmptyStateActions>
-              <Button
-                variant="soft"
-                colorScheme="neutral"
-                size="sm"
-                onClick={resetFilters}
-              >
+              <Button variant="soft" size="sm" onClick={resetFilters}>
                 Reset filters
               </Button>
             </EmptyStateActions>
@@ -374,15 +356,15 @@ const LogParserTool: React.FC = () => {
   );
 
   return (
-    <Container size="full">
+    <Container className="max-w-none">
       <Stack gap="4">
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2" wrap>
-            <Heading level={2} size="lg" weight="semibold">
+            <Heading level={2} size="lg">
               Log Parser
             </Heading>
             {parsedLogs.length > 0 && (
-              <Badge variant="soft" colorScheme="accent" size="sm">
+              <Badge variant="soft" tone="accent" size="sm">
                 {parsedLogs.length} parsed
               </Badge>
             )}
@@ -390,7 +372,6 @@ const LogParserTool: React.FC = () => {
           <Inline gap="2" wrap>
             <Button
               variant={showFilters ? 'solid' : 'soft'}
-              colorScheme={showFilters ? 'accent' : 'neutral'}
               size="sm"
               leftIcon={<Filter size={14} />}
               onClick={() => setShowFilters(!showFilters)}
@@ -399,9 +380,10 @@ const LogParserTool: React.FC = () => {
             </Button>
             <Tabs
               value={viewMode}
-              onValueChange={(v) => setViewMode(v as 'split' | 'input' | 'output')}
+              onValueChange={(v) =>
+                setViewMode(v as 'split' | 'input' | 'output')
+              }
               variant="soft"
-              size="sm"
             >
               <TabsList aria-label="View mode">
                 <TabsTrigger value="input">
@@ -419,7 +401,7 @@ const LogParserTool: React.FC = () => {
         </Inline>
 
         {parsedLogs.length > 0 && (
-          <Grid columns={{ base: 2, sm: 3, md: 5 }} gap="2">
+          <Box className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
             {(Object.keys(LEVEL_INFO) as LogLevel[]).map((level) => {
               const info = LEVEL_INFO[level];
               const isActive = activeFilters[level];
@@ -427,9 +409,10 @@ const LogParserTool: React.FC = () => {
               return (
                 <Card
                   key={level}
-                  variant={isActive ? 'outlined' : 'filled'}
-                  size="sm"
                   interactive
+                  className={
+                    isActive ? 'border-accent bg-surface-subtle' : undefined
+                  }
                   onClick={() => toggleLevelFilter(level)}
                 >
                   <CardBody>
@@ -440,11 +423,7 @@ const LogParserTool: React.FC = () => {
                           {info.label}
                         </Text>
                       </Inline>
-                      <Badge
-                        variant="soft"
-                        colorScheme={info.colorScheme}
-                        size="sm"
-                      >
+                      <Badge variant="soft" tone={info.tone} size="sm">
                         {count}
                       </Badge>
                     </Inline>
@@ -452,11 +431,11 @@ const LogParserTool: React.FC = () => {
                 </Card>
               );
             })}
-          </Grid>
+          </Box>
         )}
 
         {showFilters && (
-          <Card variant="filled" size="md">
+          <Card>
             <CardHeader>
               <Inline justify="between" align="center" wrap>
                 <Inline align="center" gap="2">
@@ -465,7 +444,6 @@ const LogParserTool: React.FC = () => {
                 </Inline>
                 <Button
                   variant="ghost"
-                  colorScheme="neutral"
                   size="sm"
                   disabled={!hasActiveFilters}
                   onClick={resetFilters}
@@ -475,13 +453,12 @@ const LogParserTool: React.FC = () => {
               </Inline>
             </CardHeader>
             <CardBody>
-              <Grid columns={{ base: 1, md: 2 }} gap="3">
+              <Grid max={2} gap="3">
                 <Stack gap="2">
                   <Label htmlFor="filter-search">Message search</Label>
                   <SearchInput
                     value={filter}
                     onChange={setFilter}
-                    onSearch={setFilter}
                     placeholder="Search in messages…"
                   />
                 </Stack>
@@ -525,10 +502,10 @@ const LogParserTool: React.FC = () => {
         )}
 
         {viewMode === 'split' ? (
-          <Grid columns={{ base: 1, lg: 2 }} gap="4">
+          <Box className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Box>{inputPanel}</Box>
             <Box>{outputPanel}</Box>
-          </Grid>
+          </Box>
         ) : viewMode === 'input' ? (
           inputPanel
         ) : (
@@ -536,7 +513,7 @@ const LogParserTool: React.FC = () => {
         )}
 
         {parsedLogs.length === 0 && !logText && (
-          <Alert status="info" variant="soft">
+          <Alert status="info" icon={<Info size={18} aria-hidden />}>
             <AlertTitle>How to use</AlertTitle>
             <AlertDescription>
               Paste your application logs into the input panel, pick a log type

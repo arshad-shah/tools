@@ -9,7 +9,7 @@ import {
   Inline,
   Stack,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import DataNode from './DataNode';
 
 interface TreeViewProps {
@@ -146,40 +146,34 @@ const TreeView: React.FC<TreeViewProps> = React.memo(({ data, searchTerm }) => {
 
   return (
     <Stack gap="2">
-      <Card variant="filled" size="sm">
+      <Card>
         <CardBody>
           <Inline justify="between" align="center" gap="2" wrap>
             <Inline gap="2" align="center" wrap>
               {searchTerm && matchedPaths.size > 0 && (
-                <Badge variant="soft" colorScheme="accent" size="sm">
+                <Badge variant="soft" tone="accent" size="sm">
                   {matchedPaths.size} match
                   {matchedPaths.size !== 1 ? 'es' : ''}
                 </Badge>
               )}
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 {totalNodesCount} total node{totalNodesCount !== 1 ? 's' : ''}
               </Text>
             </Inline>
             <Inline gap="2" align="center" wrap>
               {collapsedCount > 0 && (
-                <Text size="sm" variant="caption">
+                <Text size="sm" tone="subtle">
                   {collapsedCount} collapsed
                 </Text>
               )}
               <Button
                 variant="ghost"
-                colorScheme="neutral"
                 size="sm"
                 onClick={() => setExpandedNodes(new Set(['root']))}
               >
                 Collapse all
               </Button>
-              <Button
-                variant="ghost"
-                colorScheme="neutral"
-                size="sm"
-                onClick={expandAllLevelOne}
-              >
+              <Button variant="ghost" size="sm" onClick={expandAllLevelOne}>
                 Expand level 1
               </Button>
             </Inline>
@@ -187,7 +181,7 @@ const TreeView: React.FC<TreeViewProps> = React.memo(({ data, searchTerm }) => {
         </CardBody>
       </Card>
 
-      <Card variant="outlined" size="sm">
+      <Card>
         <CardBody>{renderNode(data)}</CardBody>
       </Card>
     </Stack>

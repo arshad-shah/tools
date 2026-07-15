@@ -78,7 +78,7 @@ export const DropdownMenuContent: React.FC<ContentProps> = ({
   );
 };
 
-interface ItemProps extends React.HTMLAttributes<HTMLButtonElement> {
+interface ItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   destructive?: boolean;
 }
 export const DropdownMenuItem: React.FC<ItemProps> = ({

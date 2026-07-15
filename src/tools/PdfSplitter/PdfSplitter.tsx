@@ -19,7 +19,6 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  AspectRatio,
   Badge,
   Box,
   Button,
@@ -38,7 +37,7 @@ import {
   Spinner,
   Stack,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { ToolProps } from '../../types/ToolTypes';
 import {
   PdfSplitterState,
@@ -407,10 +406,10 @@ const PdfSplitter: React.FC<ToolProps> = () => {
     if (!state.pdfFile || state.pageCount === 0) return null;
     if (state.previewLoading) {
       return (
-        <Center paddingY="10">
+        <Center className="py-10">
           <Stack gap="3" align="center">
-            <Spinner size="lg" colorScheme="accent" />
-            <Text size="sm" variant="caption">
+            <Spinner size="lg" />
+            <Text size="sm" tone="subtle">
               Generating preview…
             </Text>
           </Stack>
@@ -428,7 +427,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
 
     if (state.previewMode === 'grid') {
       return (
-        <Grid columns={{ base: 2, sm: 3, md: 4, lg: 6 }} gap="3">
+        <Grid max={4} gap="3">
           {Array.from({ length: state.pageCount }).map((_, i) => {
             const url = state.pagePreviewUrls[i];
             const selected = state.selectedPages.has(i);
@@ -436,9 +435,8 @@ const PdfSplitter: React.FC<ToolProps> = () => {
             return (
               <Card
                 key={i}
-                variant={selected && inSelMode ? 'outlined' : 'filled'}
-                size="sm"
                 interactive
+                className={selected && inSelMode ? 'border-accent' : undefined}
                 onClick={() => handleClick(i)}
               >
                 <CardBody>
@@ -446,41 +444,36 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                     {inSelMode && (
                       <Inline justify="end">
                         {selected ? (
-                          <Badge variant="solid" colorScheme="accent" size="xs">
+                          <Badge variant="solid" tone="accent" size="xs">
                             <Check size={12} aria-hidden />
                           </Badge>
                         ) : (
-                          <Badge
-                            variant="outline"
-                            colorScheme="neutral"
-                            size="xs"
-                          >
+                          <Badge variant="outline" tone="neutral" size="xs">
                             ?
                           </Badge>
                         )}
                       </Inline>
                     )}
-                    <AspectRatio ratio={3 / 4}>
+                    <div className="relative aspect-[3/4] w-full">
                       {url ? (
                         <iframe
                           src={url}
-                          width="100%"
-                          height="100%"
+                          className="absolute inset-0 h-full w-full"
                           frameBorder={0}
                           title={`Page ${i + 1} preview`}
                         />
                       ) : (
-                        <Center>
+                        <Center className="absolute inset-0">
                           <Stack gap="1" align="center">
                             <FileText size={24} aria-hidden />
-                            <Text size="xs" variant="caption">
+                            <Text size="xs" tone="subtle">
                               Page {i + 1}
                             </Text>
                           </Stack>
                         </Center>
                       )}
-                    </AspectRatio>
-                    <Badge variant="soft" colorScheme="neutral" size="xs">
+                    </div>
+                    <Badge variant="soft" tone="neutral" size="xs">
                       Page {i + 1}
                     </Badge>
                   </Stack>
@@ -496,28 +489,27 @@ const PdfSplitter: React.FC<ToolProps> = () => {
     return (
       <Stack gap="4">
         <Center>
-          <Text size="sm" variant="caption">
+          <Text size="sm" tone="subtle">
             Page {state.currentPreviewPage + 1} of {state.pageCount}
           </Text>
         </Center>
-        <Card variant="filled" size="md">
+        <Card>
           <CardBody>
             {url ? (
-              <AspectRatio ratio={3 / 4}>
+              <div className="relative aspect-[3/4] w-full">
                 <iframe
                   src={url}
-                  width="100%"
-                  height="100%"
+                  className="absolute inset-0 h-full w-full"
                   frameBorder={0}
                   scrolling="no"
                   title={`Page ${state.currentPreviewPage + 1} preview`}
                 />
-              </AspectRatio>
+              </div>
             ) : (
-              <Center paddingY="10">
+              <Center className="py-10">
                 <Stack gap="2" align="center">
                   <FileText size={48} aria-hidden />
-                  <Text size="sm" variant="caption">
+                  <Text size="sm" tone="subtle">
                     Preview not available for page{' '}
                     {state.currentPreviewPage + 1}
                   </Text>
@@ -530,7 +522,6 @@ const PdfSplitter: React.FC<ToolProps> = () => {
           <Inline justify="between" align="center" gap="2" wrap>
             <Button
               variant="soft"
-              colorScheme="neutral"
               size="sm"
               leftIcon={<ChevronLeft size={16} />}
               disabled={state.currentPreviewPage === 0}
@@ -545,25 +536,21 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                 <Button
                   key={i}
                   variant={state.currentPreviewPage === i ? 'solid' : 'soft'}
-                  colorScheme={
-                    state.currentPreviewPage === i ? 'accent' : 'neutral'
-                  }
                   size="sm"
-                  shape="square"
+                  className="w-8 px-0"
                   onClick={() => goToPage(i)}
                 >
                   {i + 1}
                 </Button>
               ))}
               {state.pageCount > 10 && (
-                <Text size="sm" variant="caption">
+                <Text size="sm" tone="subtle">
                   …
                 </Text>
               )}
             </Inline>
             <Button
               variant="soft"
-              colorScheme="neutral"
               size="sm"
               rightIcon={<ChevronRight size={16} />}
               disabled={state.currentPreviewPage === state.pageCount - 1}
@@ -579,11 +566,11 @@ const PdfSplitter: React.FC<ToolProps> = () => {
 
   return (
     <Stack gap="6">
-      <Card variant="elevated" size="md">
+      <Card>
         <CardBody>
           <Stack gap="6">
             {state.error && (
-              <Alert status="danger" variant="soft">
+              <Alert status="danger">
                 <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{state.error.message}</AlertDescription>
               </Alert>
@@ -592,22 +579,15 @@ const PdfSplitter: React.FC<ToolProps> = () => {
             {!state.pdfFile && (
               <FileUpload
                 accept="application/pdf,.pdf"
-                maxCount={1}
-                onFilesChange={(files) =>
+                onFiles={(files: File[]) =>
                   files[0] && handleFileSelect(files[0])
-                }
-                onError={(err) =>
-                  setState((prev) => ({
-                    ...prev,
-                    error: { message: err.message },
-                  }))
                 }
               />
             )}
 
             {state.pdfFile && state.splitResults.length === 0 && (
               <Stack gap="6">
-                <Card variant="filled" size="sm">
+                <Card>
                   <CardBody>
                     <Inline justify="between" align="center" gap="3" wrap>
                       <Inline align="center" gap="3">
@@ -616,7 +596,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                           <Text size="md" weight="semibold">
                             {state.pdfFile.name}
                           </Text>
-                          <Text size="sm" variant="caption">
+                          <Text size="sm" tone="subtle">
                             {state.pageCount} pages •{' '}
                             {formatFileSize(state.pdfFile.size)}
                           </Text>
@@ -624,7 +604,6 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                       </Inline>
                       <Button
                         variant="soft"
-                        colorScheme="neutral"
                         size="sm"
                         leftIcon={<RefreshCw size={16} />}
                         onClick={reset}
@@ -635,7 +614,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                   </CardBody>
                 </Card>
 
-                <Card variant="outlined" size="md">
+                <Card>
                   <CardHeader>
                     <Inline justify="between" align="center" gap="3" wrap>
                       <Inline align="center" gap="2">
@@ -647,7 +626,6 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                           <Inline gap="2" wrap align="center">
                             <Button
                               variant="soft"
-                              colorScheme="neutral"
                               size="sm"
                               onClick={() => {
                                 const all = new Set(
@@ -666,7 +644,6 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                             </Button>
                             <Button
                               variant="soft"
-                              colorScheme="neutral"
                               size="sm"
                               onClick={() =>
                                 setState((prev) => ({
@@ -677,18 +654,13 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                             >
                               Clear all
                             </Button>
-                            <Badge
-                              variant="soft"
-                              colorScheme="accent"
-                              size="sm"
-                            >
+                            <Badge variant="soft" tone="accent" size="sm">
                               {state.selectedPages.size} selected
                             </Badge>
                           </Inline>
                         )}
                         <Button
                           variant="soft"
-                          colorScheme="neutral"
                           size="sm"
                           leftIcon={
                             state.previewMode === 'single' ? (
@@ -715,23 +687,22 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                   <CardBody>{renderPreview()}</CardBody>
                 </Card>
 
-                <Card variant="outlined" size="md">
+                <Card>
                   <CardHeader>
                     <CardTitle as="h3">Split method</CardTitle>
                   </CardHeader>
                   <CardBody>
                     <Stack gap="4">
-                      <Grid columns={{ base: 1, md: 2, lg: 4 }} gap="3">
+                      <Grid max={4} gap="3">
                         {SPLIT_MODE_OPTIONS.map((m) => (
                           <Card
                             key={m.value}
-                            variant={
-                              state.splitMode === m.value
-                                ? 'outlined'
-                                : 'filled'
-                            }
-                            size="sm"
                             interactive
+                            className={
+                              state.splitMode === m.value
+                                ? 'border-accent'
+                                : undefined
+                            }
                             onClick={() => changeSplitMode(m.value)}
                           >
                             <CardBody>
@@ -740,14 +711,14 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                                 <Text
                                   size="sm"
                                   weight="semibold"
-                                  align="center"
+                                  className="text-center"
                                 >
                                   {m.label}
                                 </Text>
                                 <Text
                                   size="xs"
-                                  variant="caption"
-                                  align="center"
+                                  tone="subtle"
+                                  className="text-center"
                                 >
                                   {m.description}
                                 </Text>
@@ -760,17 +731,13 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                       {state.splitMode === 'range' && (
                         <Stack gap="3">
                           {state.ranges.map((r, i) => (
-                            <Card key={r.id} variant="filled" size="sm">
+                            <Card key={r.id}>
                               <CardBody>
                                 <Inline gap="2" align="end" wrap>
-                                  <Badge
-                                    variant="soft"
-                                    colorScheme="accent"
-                                    size="sm"
-                                  >
+                                  <Badge variant="soft" tone="accent" size="sm">
                                     #{i + 1}
                                   </Badge>
-                                  <Stack gap="1" flex="1">
+                                  <Stack gap="1" className="flex-1">
                                     <Label htmlFor={`range-start-${r.id}`}>
                                       From
                                     </Label>
@@ -785,7 +752,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                                       aria-label={`Range ${i + 1} start`}
                                     />
                                   </Stack>
-                                  <Stack gap="1" flex="1">
+                                  <Stack gap="1" className="flex-1">
                                     <Label htmlFor={`range-end-${r.id}`}>
                                       To
                                     </Label>
@@ -802,8 +769,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                                   </Stack>
                                   {state.ranges.length > 1 && (
                                     <IconButton
-                                      variant="ghost"
-                                      colorScheme="danger"
+                                      variant="danger"
                                       size="sm"
                                       label="Remove range"
                                       icon={<Trash2 size={14} />}
@@ -816,10 +782,9 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                           ))}
                           <Button
                             variant="soft"
-                            colorScheme="accent"
+                            className="w-full"
                             leftIcon={<Plus size={16} />}
                             onClick={addRange}
-                            fullWidth
                           >
                             Add range
                           </Button>
@@ -830,23 +795,23 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                         <Stack gap="2">
                           <Label>Split every</Label>
                           <Inline gap="2" align="center" wrap>
-                            <Box flex="1" minWidth="0">
+                            <Box className="min-w-0 flex-1">
                               <NumberInput
                                 value={state.everyN}
-                                onChange={(v) =>
+                                onValueChange={(v) =>
                                   setState((prev) => ({
                                     ...prev,
-                                    everyN: v ?? 1,
+                                    everyN: v || 1,
                                   }))
                                 }
-                                minValue={1}
-                                maxValue={state.pageCount}
+                                min={1}
+                                max={state.pageCount}
                                 aria-label="Pages per file"
                               />
                             </Box>
                             <Text size="sm">pages</Text>
                           </Inline>
-                          <Text size="sm" variant="caption">
+                          <Text size="sm" tone="subtle">
                             This will create{' '}
                             {Math.ceil(state.pageCount / state.everyN)} PDF
                             files.
@@ -855,11 +820,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                       )}
 
                       {state.splitMode === 'selection' && (
-                        <Alert
-                          status="info"
-                          variant="soft"
-                          icon={<Check aria-hidden />}
-                        >
+                        <Alert status="info" icon={<Check aria-hidden />}>
                           <AlertTitle>Visual page selection</AlertTitle>
                           <AlertDescription>
                             Use the preview above to select pages. Click pages
@@ -870,7 +831,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                       )}
 
                       {state.splitMode === 'individual' && (
-                        <Alert status="info" variant="soft">
+                        <Alert status="info">
                           <AlertDescription>
                             This will create{' '}
                             <Text as="span" weight="semibold">
@@ -887,12 +848,16 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                 <Button
                   onClick={splitPDF}
                   variant="solid"
-                  colorScheme="accent"
                   size="lg"
-                  fullWidth
-                  loading={isProcessing}
+                  className="w-full"
                   disabled={isProcessing}
-                  leftIcon={isProcessing ? undefined : <Scissors size={20} />}
+                  leftIcon={
+                    isProcessing ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Scissors size={20} />
+                    )
+                  }
                 >
                   {isProcessing ? 'Splitting PDF…' : 'Split PDF'}
                 </Button>
@@ -901,7 +866,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
 
             {state.splitResults.length > 0 && (
               <Stack gap="4">
-                <Alert status="success" variant="soft">
+                <Alert status="success">
                   <AlertTitle>
                     Successfully split into {state.splitResults.length} files
                   </AlertTitle>
@@ -912,9 +877,8 @@ const PdfSplitter: React.FC<ToolProps> = () => {
 
                 <Button
                   variant="solid"
-                  colorScheme="success"
                   size="lg"
-                  fullWidth
+                  className="w-full"
                   leftIcon={<Package size={20} />}
                   onClick={downloadAll}
                 >
@@ -923,7 +887,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
 
                 <Stack gap="2">
                   {state.splitResults.map((r, i) => (
-                    <Card key={i} variant="outlined" size="sm">
+                    <Card key={i}>
                       <CardBody>
                         <Inline justify="between" align="center" gap="3" wrap>
                           <Inline align="center" gap="3">
@@ -932,14 +896,13 @@ const PdfSplitter: React.FC<ToolProps> = () => {
                               <Text size="sm" weight="medium">
                                 {r.name}
                               </Text>
-                              <Text size="xs" variant="caption">
+                              <Text size="xs" tone="subtle">
                                 {r.pages} • {formatFileSize(r.size)}
                               </Text>
                             </Stack>
                           </Inline>
                           <Button
                             variant="soft"
-                            colorScheme="accent"
                             size="sm"
                             leftIcon={<Download size={16} />}
                             onClick={() => downloadFile(r.url, r.name)}
@@ -954,8 +917,7 @@ const PdfSplitter: React.FC<ToolProps> = () => {
 
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
-                  fullWidth
+                  className="w-full"
                   leftIcon={<RefreshCw size={16} />}
                   onClick={reset}
                 >

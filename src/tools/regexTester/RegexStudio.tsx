@@ -23,7 +23,6 @@ import {
   CardHeader,
   CardTitle,
   Code,
-  Divider,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,13 +32,10 @@ import {
   Inline,
   Input,
   Label,
-  Select,
-  SelectItem,
-  SelectSection,
   Stack,
   Text,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { ChevronDown } from 'lucide-react';
 import previewStyles from './LivePreview.module.css';
 
@@ -129,7 +125,8 @@ const TEMPLATES: RegexTemplate[] = [
   },
   {
     name: 'UUID',
-    pattern: '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+    pattern:
+      '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
     description: 'Universally Unique Identifier',
     category: 'format',
   },
@@ -148,13 +145,48 @@ const FLAG_INFO: Array<{
   label: string;
   description: string;
 }> = [
-  { key: 'global', flag: 'g', label: 'Global', description: 'Find all matches' },
-  { key: 'ignoreCase', flag: 'i', label: 'Ignore case', description: 'Case insensitive matching' },
-  { key: 'multiline', flag: 'm', label: 'Multiline', description: '^ and $ match line breaks' },
-  { key: 'dotAll', flag: 's', label: 'Dot all', description: '. matches newline characters' },
-  { key: 'unicode', flag: 'u', label: 'Unicode', description: 'Full Unicode matching' },
-  { key: 'sticky', flag: 'y', label: 'Sticky', description: 'Match only from lastIndex position' },
-  { key: 'hasIndices', flag: 'd', label: 'Indices', description: 'Generate start/end indices' },
+  {
+    key: 'global',
+    flag: 'g',
+    label: 'Global',
+    description: 'Find all matches',
+  },
+  {
+    key: 'ignoreCase',
+    flag: 'i',
+    label: 'Ignore case',
+    description: 'Case insensitive matching',
+  },
+  {
+    key: 'multiline',
+    flag: 'm',
+    label: 'Multiline',
+    description: '^ and $ match line breaks',
+  },
+  {
+    key: 'dotAll',
+    flag: 's',
+    label: 'Dot all',
+    description: '. matches newline characters',
+  },
+  {
+    key: 'unicode',
+    flag: 'u',
+    label: 'Unicode',
+    description: 'Full Unicode matching',
+  },
+  {
+    key: 'sticky',
+    flag: 'y',
+    label: 'Sticky',
+    description: 'Match only from lastIndex position',
+  },
+  {
+    key: 'hasIndices',
+    flag: 'd',
+    label: 'Indices',
+    description: 'Generate start/end indices',
+  },
 ];
 
 const MatchItem: React.FC<{
@@ -168,18 +200,18 @@ const MatchItem: React.FC<{
     Object.keys(match.namedGroups ?? {}).length > 0;
 
   return (
-    <Card variant="outlined" size="sm">
+    <Card>
       <CardHeader>
         <Inline justify="between" align="center" wrap gap="2">
           <Inline gap="2" align="center">
-            <Badge variant="solid" colorScheme="accent" size="sm">
+            <Badge variant="solid" tone="accent" size="sm">
               #{index + 1}
             </Badge>
-            <Badge variant="soft" colorScheme="neutral" size="sm">
+            <Badge variant="soft" tone="neutral" size="sm">
               {match.index}–{match.index + match.length}
             </Badge>
             {match.length === 0 && (
-              <Badge variant="soft" colorScheme="warning" size="sm">
+              <Badge variant="soft" tone="warning" size="sm">
                 Empty
               </Badge>
             )}
@@ -187,7 +219,6 @@ const MatchItem: React.FC<{
           <Inline gap="1">
             <IconButton
               variant="ghost"
-              colorScheme="neutral"
               size="sm"
               label="Copy match"
               icon={<Copy size={14} />}
@@ -196,7 +227,6 @@ const MatchItem: React.FC<{
             {hasGroups && (
               <IconButton
                 variant="ghost"
-                colorScheme="neutral"
                 size="sm"
                 label={expanded ? 'Hide details' : 'Show details'}
                 icon={expanded ? <X size={14} /> : <Info size={14} />}
@@ -208,9 +238,7 @@ const MatchItem: React.FC<{
       </CardHeader>
       <CardBody>
         <Stack gap="2">
-          <Code size="sm" variant="block">
-            {match.text || '(empty match)'}
-          </Code>
+          <Code block>{match.text || '(empty match)'}</Code>
           {expanded && hasGroups && (
             <Stack gap="2">
               {match.groups && match.groups.length > 0 && (
@@ -220,10 +248,10 @@ const MatchItem: React.FC<{
                   </Text>
                   {match.groups.map((g, i) => (
                     <Inline key={i} justify="between" align="center">
-                      <Text size="xs" variant="caption">
+                      <Text size="xs" tone="subtle">
                         Group {i + 1}:
                       </Text>
-                      <Code size="sm">{g || '(empty)'}</Code>
+                      <Code>{g || '(empty)'}</Code>
                     </Inline>
                   ))}
                 </Stack>
@@ -236,10 +264,10 @@ const MatchItem: React.FC<{
                     </Text>
                     {Object.entries(match.namedGroups).map(([n, v]) => (
                       <Inline key={n} justify="between" align="center">
-                        <Text size="xs" variant="caption">
+                        <Text size="xs" tone="subtle">
                           {n}:
                         </Text>
-                        <Code size="sm">{v || '(empty)'}</Code>
+                        <Code>{v || '(empty)'}</Code>
                       </Inline>
                     ))}
                   </Stack>
@@ -272,7 +300,9 @@ const RegexStudio: React.FC = () => {
 
   const flagsStr = useMemo(
     () =>
-      FLAG_INFO.filter((f) => flags[f.key]).map((f) => f.flag).join(''),
+      FLAG_INFO.filter((f) => flags[f.key])
+        .map((f) => f.flag)
+        .join(''),
     [flags],
   );
 
@@ -403,7 +433,9 @@ const RegexStudio: React.FC = () => {
     } else if (lower.includes('phone')) {
       setTestString('+1234567890\n+44123456789\n555-0123\nInvalid: abc123');
     } else if (lower.includes('date')) {
-      setTestString('Meeting: 2023-05-15\nDeadline: 2024-01-31\nInvalid: 2023/05/15');
+      setTestString(
+        'Meeting: 2023-05-15\nDeadline: 2024-01-31\nInvalid: 2023/05/15',
+      );
     } else if (lower.includes('time')) {
       setTestString('Meeting at 09:30\nLunch break: 12:45\nInvalid: 25:61');
     } else if (lower.includes('ipv4')) {
@@ -432,63 +464,67 @@ const RegexStudio: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Card variant="elevated" size="sm">
+      <Card>
         <CardBody>
           <Inline justify="between" align="center" gap="3" wrap>
             <Inline align="center" gap="3" wrap>
-              <Box minWidth="0" style={{ minWidth: 220 }}>
-                <Select
+              <div className="relative" style={{ minWidth: 220 }}>
+                <select
                   value={selectedTemplate}
-                  onValueChange={handleTemplateSelect}
-                  placeholder="Load a template…"
+                  onChange={(e) => handleTemplateSelect(e.target.value)}
                   aria-label="Template"
-                  size="sm"
+                  className="h-8 w-full appearance-none rounded-md border border-line bg-surface pl-3 pr-9 text-sm text-fg transition-colors focus:border-accent focus:outline-none"
                 >
+                  <option value="">Load a template…</option>
                   {(
                     Object.entries(groupedTemplates) as Array<
                       [RegexTemplate['category'], RegexTemplate[]]
                     >
                   ).map(([cat, list]) => (
-                    <SelectSection key={cat} title={CATEGORY_LABEL[cat]}>
+                    <optgroup key={cat} label={CATEGORY_LABEL[cat]}>
                       {list.map((t) => (
-                        <SelectItem key={t.name} id={t.name} textValue={t.name}>
+                        <option key={t.name} value={t.name}>
                           {t.name}
-                        </SelectItem>
+                        </option>
                       ))}
-                    </SelectSection>
+                    </optgroup>
                   ))}
-                </Select>
-              </Box>
+                </select>
+                <ChevronDown
+                  size={16}
+                  aria-hidden
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle"
+                />
+              </div>
 
-              <Divider orientation="vertical" style={{ height: 24 }} />
+              <div className="h-6 w-px shrink-0 bg-line" aria-hidden />
 
               <Inline align="center" gap="2" wrap>
                 <Badge
                   variant="soft"
-                  colorScheme={isValid ? 'success' : 'danger'}
+                  tone={isValid ? 'success' : 'danger'}
                   size="sm"
                 >
                   {isValid ? 'Valid' : 'Invalid'}
                 </Badge>
-                <Badge variant="soft" colorScheme="neutral" size="sm">
+                <Badge variant="soft" tone="neutral" size="sm">
                   {matches.length} {matches.length === 1 ? 'match' : 'matches'}
                 </Badge>
                 {matches.length > 0 && (
-                  <Badge variant="soft" colorScheme="accent" size="sm">
+                  <Badge variant="soft" tone="accent" size="sm">
                     {coverage}% coverage
                   </Badge>
                 )}
-                <Badge variant="outline" colorScheme="neutral" size="sm">
+                <Badge variant="outline" tone="neutral" size="sm" mono>
                   /{flagsStr || '—'}
                 </Badge>
               </Inline>
             </Inline>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger>
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   rightIcon={<ChevronDown size={14} />}
                   leftIcon={<Settings size={14} />}
@@ -526,17 +562,20 @@ const RegexStudio: React.FC = () => {
           </Inline>
 
           {selectedTemplate && (
-            <Box paddingTop="3">
-              <Text size="xs" variant="caption">
-                {TEMPLATES.find((t) => t.name === selectedTemplate)?.description}
+            <Box className="pt-3">
+              <Text size="xs" tone="subtle">
+                {
+                  TEMPLATES.find((t) => t.name === selectedTemplate)
+                    ?.description
+                }
               </Text>
             </Box>
           )}
         </CardBody>
       </Card>
 
-      <Stack gap="4" minWidth="0">
-        <Card variant="elevated" size="md">
+      <Stack gap="4" className="min-w-0">
+        <Card>
           <CardHeader>
             <Inline gap="2" align="center">
               <Code2 size={20} aria-hidden />
@@ -547,13 +586,8 @@ const RegexStudio: React.FC = () => {
             <Stack gap="4">
               <Stack gap="2">
                 <Label htmlFor="regex-pattern">Pattern</Label>
-                <Inline
-                  gap="2"
-                  align="center"
-                  wrap={false}
-                  style={{ width: '100%' }}
-                >
-                  <Box flexGrow={1} flexShrink={1} minWidth="0" width="full">
+                <Inline gap="2" align="center" className="w-full">
+                  <Box className="w-full min-w-0 flex-1">
                     <Input
                       id="regex-pattern"
                       type="text"
@@ -562,13 +596,23 @@ const RegexStudio: React.FC = () => {
                       placeholder="Enter your regex pattern…"
                       invalid={!isValid}
                       aria-label="Regex pattern"
-                      leadingSlot={<Text size="md" weight="semibold">/</Text>}
-                      trailingSlot={<Text size="md" weight="semibold">/{flagsStr}</Text>}
+                      leadingSlot={
+                        <Text size="md" weight="semibold">
+                          /
+                        </Text>
+                      }
+                      trailingSlot={
+                        <Text size="md" weight="semibold">
+                          /{flagsStr}
+                        </Text>
+                      }
                     />
                   </Box>
                   <IconButton
                     variant="soft"
-                    colorScheme={copied ? 'success' : 'neutral'}
+                    className={
+                      copied ? 'border-success/40 text-success' : undefined
+                    }
                     label="Copy regex with flags"
                     disabled={!pattern || !isValid}
                     icon={copied ? <Check size={16} /> : <Copy size={16} />}
@@ -576,7 +620,7 @@ const RegexStudio: React.FC = () => {
                   />
                 </Inline>
                 {!isValid && errorMessage && (
-                  <Alert status="danger" variant="soft">
+                  <Alert status="danger">
                     <AlertDescription>{errorMessage}</AlertDescription>
                   </Alert>
                 )}
@@ -592,7 +636,6 @@ const RegexStudio: React.FC = () => {
                     <Button
                       key={f.key}
                       variant={flags[f.key] ? 'solid' : 'soft'}
-                      colorScheme={flags[f.key] ? 'accent' : 'neutral'}
                       size="sm"
                       title={`${f.label}: ${f.description}`}
                       onClick={() =>
@@ -608,7 +651,7 @@ const RegexStudio: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card variant="elevated" size="md">
+        <Card>
           <CardHeader>
             <Inline justify="between" align="center" wrap gap="2">
               <Inline gap="2" align="center">
@@ -618,7 +661,6 @@ const RegexStudio: React.FC = () => {
               {selectedTemplate && !testString && (
                 <Button
                   variant="soft"
-                  colorScheme="accent"
                   size="sm"
                   leftIcon={<Zap size={14} />}
                   onClick={generateSample}
@@ -640,7 +682,7 @@ const RegexStudio: React.FC = () => {
         </Card>
 
         {pattern && testString && (
-          <Card variant="elevated" size="md">
+          <Card>
             <CardHeader>
               <Inline justify="between" align="center" wrap gap="2">
                 <Inline gap="2" align="center">
@@ -648,11 +690,11 @@ const RegexStudio: React.FC = () => {
                   <CardTitle as="h2">Live preview</CardTitle>
                 </Inline>
                 <Inline gap="2">
-                  <Badge variant="solid" colorScheme="accent" size="sm">
+                  <Badge variant="solid" tone="accent" size="sm">
                     {matches.length} match{matches.length !== 1 ? 'es' : ''}
                   </Badge>
                   {matches.length > 0 && (
-                    <Badge variant="soft" colorScheme="neutral" size="sm">
+                    <Badge variant="soft" tone="neutral" size="sm">
                       {coverage}% coverage
                     </Badge>
                   )}
@@ -675,12 +717,8 @@ const RegexStudio: React.FC = () => {
                 </div>
               </div>
               {matches.length === 0 && pattern && isValid && (
-                <Inline paddingTop="3">
-                  <Alert
-                    status="warning"
-                    variant="soft"
-                    icon={<AlertCircle aria-hidden />}
-                  >
+                <Inline className="pt-3">
+                  <Alert status="warning" icon={<AlertCircle aria-hidden />}>
                     <AlertDescription>
                       No matches found — try adjusting your pattern or test
                       string.
@@ -694,7 +732,7 @@ const RegexStudio: React.FC = () => {
       </Stack>
 
       {matches.length > 0 && (
-        <Card variant="elevated" size="md">
+        <Card>
           <CardHeader>
             <Inline gap="2" align="center">
               <BarChart3 size={18} aria-hidden />
@@ -712,7 +750,7 @@ const RegexStudio: React.FC = () => {
                 />
               ))}
               {matches.length > 100 && (
-                <Alert status="info" variant="soft">
+                <Alert status="info">
                   <AlertDescription>
                     Showing first 100 of {matches.length} matches. Consider
                     refining your pattern for better performance.

@@ -1,14 +1,8 @@
 import { FC, useState } from 'react';
 import * as math from 'mathjs';
 import Plot from 'react-plotly.js';
-import {
-  Box,
-  Inline,
-  Label,
-  NumberInput,
-  Stack,
-  Text,
-} from '@arshad-shah/cynosure-react';
+import { Box, Inline, Label, NumberInput, Stack, Text } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 interface GraphDisplayProps {
   /**
@@ -79,38 +73,38 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
   const { xVals, yVals } = generateData();
 
   return (
-    <Box maxWidth="28rem" marginX="auto" className={className}>
+    <Box className={cn('mx-auto max-w-md', className)}>
       <Stack gap="4">
         {/* Controls for domain & step */}
         <Inline gap="3" wrap align="end">
-          <Stack gap="2" flex="1">
+          <Stack gap="2" className="flex-1">
             <Label htmlFor="graph-min-x">Min X</Label>
             <NumberInput
               id="graph-min-x"
               value={minX}
               step={0.1}
-              onChange={setMinX}
+              onValueChange={setMinX}
               aria-label="Minimum X value"
             />
           </Stack>
-          <Stack gap="2" flex="1">
+          <Stack gap="2" className="flex-1">
             <Label htmlFor="graph-max-x">Max X</Label>
             <NumberInput
               id="graph-max-x"
               value={maxX}
               step={0.1}
-              onChange={setMaxX}
+              onValueChange={setMaxX}
               aria-label="Maximum X value"
             />
           </Stack>
-          <Stack gap="2" flex="1">
+          <Stack gap="2" className="flex-1">
             <Label htmlFor="graph-step">Step</Label>
             <NumberInput
               id="graph-step"
               value={step}
-              minValue={0.1}
+              min={0.1}
               step={0.1}
-              onChange={(val) => setStep(val > 0 ? val : 0.1)}
+              onValueChange={(val) => setStep(val > 0 ? val : 0.1)}
               aria-label="Sampling step"
             />
           </Stack>

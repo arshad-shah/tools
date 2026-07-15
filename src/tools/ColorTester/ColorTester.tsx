@@ -24,7 +24,6 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  ColorPicker,
   Grid,
   Heading,
   IconButton,
@@ -37,7 +36,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
 
 interface ColorLike {
@@ -52,12 +51,60 @@ import {
 } from './utils/CalculationUtils';
 
 const INITIAL_PALETTE: ColorInfo[] = [
-  { red: 255, green: 105, blue: 180, alpha: 1, hex: '#ff69b4', rgb: 'rgb(255, 105, 180)', name: 'Hot Pink' },
-  { red: 102, green: 205, blue: 170, alpha: 1, hex: '#66cdaa', rgb: 'rgb(102, 205, 170)', name: 'Medium Aquamarine' },
-  { red: 65, green: 105, blue: 225, alpha: 1, hex: '#4169e1', rgb: 'rgb(65, 105, 225)', name: 'Royal Blue' },
-  { red: 255, green: 165, blue: 0, alpha: 1, hex: '#ffa500', rgb: 'rgb(255, 165, 0)', name: 'Orange' },
-  { red: 75, green: 0, blue: 130, alpha: 1, hex: '#4b0082', rgb: 'rgb(75, 0, 130)', name: 'Indigo' },
-  { red: 60, green: 179, blue: 113, alpha: 1, hex: '#3cb371', rgb: 'rgb(60, 179, 113)', name: 'Medium Sea Green' },
+  {
+    red: 255,
+    green: 105,
+    blue: 180,
+    alpha: 1,
+    hex: '#ff69b4',
+    rgb: 'rgb(255, 105, 180)',
+    name: 'Hot Pink',
+  },
+  {
+    red: 102,
+    green: 205,
+    blue: 170,
+    alpha: 1,
+    hex: '#66cdaa',
+    rgb: 'rgb(102, 205, 170)',
+    name: 'Medium Aquamarine',
+  },
+  {
+    red: 65,
+    green: 105,
+    blue: 225,
+    alpha: 1,
+    hex: '#4169e1',
+    rgb: 'rgb(65, 105, 225)',
+    name: 'Royal Blue',
+  },
+  {
+    red: 255,
+    green: 165,
+    blue: 0,
+    alpha: 1,
+    hex: '#ffa500',
+    rgb: 'rgb(255, 165, 0)',
+    name: 'Orange',
+  },
+  {
+    red: 75,
+    green: 0,
+    blue: 130,
+    alpha: 1,
+    hex: '#4b0082',
+    rgb: 'rgb(75, 0, 130)',
+    name: 'Indigo',
+  },
+  {
+    red: 60,
+    green: 179,
+    blue: 113,
+    alpha: 1,
+    hex: '#3cb371',
+    rgb: 'rgb(60, 179, 113)',
+    name: 'Medium Sea Green',
+  },
 ];
 
 const wcagLevel = (
@@ -202,25 +249,20 @@ const ColorTester: React.FC = () => {
 
   const renderHarmony = () => {
     if (!colorHarmony) return null;
-    const entries: Array<[string, { hex: string; rgb: string; name: string }]> = [
-      ['Complementary', colorHarmony.complementary],
-      ['Analogous 1', colorHarmony.analogous1],
-      ['Analogous 2', colorHarmony.analogous2],
-      ['Triadic 1', colorHarmony.triadic1],
-      ['Triadic 2', colorHarmony.triadic2],
-      ['Lighter', colorHarmony.lighter],
-      ['Darker', colorHarmony.darker],
-    ];
+    const entries: Array<[string, { hex: string; rgb: string; name: string }]> =
+      [
+        ['Complementary', colorHarmony.complementary],
+        ['Analogous 1', colorHarmony.analogous1],
+        ['Analogous 2', colorHarmony.analogous2],
+        ['Triadic 1', colorHarmony.triadic1],
+        ['Triadic 2', colorHarmony.triadic2],
+        ['Lighter', colorHarmony.lighter],
+        ['Darker', colorHarmony.darker],
+      ];
     return (
-      <Grid columns={{ base: 2, sm: 3, xl: 4 }} gap="3">
+      <Grid max={4} gap="3">
         {entries.map(([label, c]) => (
-          <Card
-            key={label}
-            variant="filled"
-            size="sm"
-            interactive
-            onClick={() => loadHarmonyColor(c.rgb)}
-          >
+          <Card key={label} interactive onClick={() => loadHarmonyColor(c.rgb)}>
             <CardBody>
               <Stack gap="2" align="center">
                 <Swatch color={c.hex} size="lg" rounded={false} />
@@ -228,7 +270,7 @@ const ColorTester: React.FC = () => {
                   <Text size="xs" weight="semibold">
                     {label}
                   </Text>
-                  <Text size="xs" variant="caption">
+                  <Text size="xs" tone="subtle">
                     {c.hex}
                   </Text>
                 </Stack>
@@ -245,15 +287,15 @@ const ColorTester: React.FC = () => {
       <Inline align="center" gap="3" wrap>
         <Swatch color={rgbString} size="lg" />
         <Stack gap="1">
-          <Heading level={3} size="lg" weight="semibold">
+          <Heading level={3} size="lg">
             {colorNameSuggestion}
           </Heading>
-          <Text size="sm" variant="caption">
+          <Text size="sm" tone="subtle">
             {rgbString}
           </Text>
         </Stack>
       </Inline>
-      <Card variant="filled" size="sm">
+      <Card>
         <CardBody>
           <Stack gap="2">
             <Inline align="center" gap="2">
@@ -271,30 +313,29 @@ const ColorTester: React.FC = () => {
 
   const renderPreview = () => (
     <Stack gap="3">
-      <Card
-        variant="outlined"
-        size="md"
-        style={{ background: rgbString, color: textColor }}
-      >
+      <Card style={{ background: rgbString, color: textColor }}>
         <CardBody>
           <Stack gap="3" align="center">
             <Heading
               level={3}
               size="2xl"
-              weight="bold"
-              align="center"
+              className="text-center"
               style={{ color: textColor }}
             >
               Sample heading
             </Heading>
-            <Text size="md" align="center" style={{ color: textColor }}>
+            <Text
+              size="md"
+              className="text-center"
+              style={{ color: textColor }}
+            >
               The quick brown fox jumps over the lazy dog.
             </Text>
             <Inline gap="2">
-              <Button variant="solid" colorScheme="accent" size="sm">
+              <Button variant="solid" size="sm">
                 Primary
               </Button>
-              <Button variant="soft" colorScheme="neutral" size="sm">
+              <Button variant="soft" size="sm">
                 Secondary
               </Button>
             </Inline>
@@ -302,7 +343,7 @@ const ColorTester: React.FC = () => {
         </CardBody>
       </Card>
       <Inline justify="center" gap="2">
-        <Badge variant="soft" colorScheme="neutral" size="sm">
+        <Badge variant="soft" tone="neutral" size="sm">
           Auto text colour: {textColor}
         </Badge>
       </Inline>
@@ -314,11 +355,7 @@ const ColorTester: React.FC = () => {
     const blackLevel = wcagLevel(contrastRatios.black);
     return (
       <Stack gap="3">
-        <Card
-          variant="outlined"
-          size="md"
-          style={{ background: rgbString }}
-        >
+        <Card style={{ background: rgbString }}>
           <CardBody>
             <Stack gap="2">
               <Text size="lg" weight="bold" style={{ color: '#ffffff' }}>
@@ -328,18 +365,14 @@ const ColorTester: React.FC = () => {
                 Contrast ratio: {contrastRatios.white.toFixed(2)}:1
               </Text>
               <Inline gap="2">
-                <Badge variant="solid" colorScheme={whiteLevel.colorScheme} size="sm">
+                <Badge variant="solid" tone={whiteLevel.colorScheme} size="sm">
                   WCAG {whiteLevel.label}
                 </Badge>
               </Inline>
             </Stack>
           </CardBody>
         </Card>
-        <Card
-          variant="outlined"
-          size="md"
-          style={{ background: rgbString }}
-        >
+        <Card style={{ background: rgbString }}>
           <CardBody>
             <Stack gap="2">
               <Text size="lg" weight="bold" style={{ color: '#000000' }}>
@@ -349,7 +382,7 @@ const ColorTester: React.FC = () => {
                 Contrast ratio: {contrastRatios.black.toFixed(2)}:1
               </Text>
               <Inline gap="2">
-                <Badge variant="solid" colorScheme={blackLevel.colorScheme} size="sm">
+                <Badge variant="solid" tone={blackLevel.colorScheme} size="sm">
                   WCAG {blackLevel.label}
                 </Badge>
               </Inline>
@@ -358,7 +391,7 @@ const ColorTester: React.FC = () => {
         </Card>
         {whiteLevel.colorScheme !== 'success' &&
           blackLevel.colorScheme !== 'success' && (
-            <Alert status="warning" variant="soft" icon={<AlertTriangle aria-hidden />}>
+            <Alert status="warning" icon={<AlertTriangle aria-hidden />}>
               <AlertTitle>Low contrast</AlertTitle>
               <AlertDescription>
                 Neither white nor black text reaches WCAG AA on this colour for
@@ -372,12 +405,9 @@ const ColorTester: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Grid
-        templateColumns={{ base: '1fr', md: 'minmax(0, 5fr) minmax(0, 7fr)' }}
-        gap="4"
-      >
-        <Box minWidth="0">
-          <Card variant="elevated" size="md">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+        <div className="min-w-0 md:col-span-5">
+          <Card>
             <CardHeader>
               <Inline align="center" gap="2">
                 <PaletteIcon size={20} aria-hidden />
@@ -386,20 +416,11 @@ const ColorTester: React.FC = () => {
             </CardHeader>
             <CardBody>
               <Stack gap="4">
-                <Card
-                  variant="outlined"
-                  size="md"
-                  style={{ background: rgbString, color: textColor }}
-                >
+                <Card style={{ background: rgbString, color: textColor }}>
                   <CardBody>
                     <Stack gap="2" align="center">
                       <Sparkles size={36} aria-hidden />
-                      <Heading
-                        level={3}
-                        size="xl"
-                        weight="bold"
-                        style={{ color: textColor }}
-                      >
+                      <Heading level={3} size="xl" style={{ color: textColor }}>
                         {colorNameSuggestion}
                       </Heading>
                       <Text size="sm" style={{ color: textColor }}>
@@ -411,7 +432,6 @@ const ColorTester: React.FC = () => {
                 <Inline gap="2" wrap>
                   <Button
                     variant="soft"
-                    colorScheme="neutral"
                     size="sm"
                     leftIcon={<RefreshCw size={14} />}
                     onClick={generateRandomColor}
@@ -420,7 +440,6 @@ const ColorTester: React.FC = () => {
                   </Button>
                   <Button
                     variant="solid"
-                    colorScheme="accent"
                     size="sm"
                     leftIcon={<Save size={14} />}
                     onClick={saveColor}
@@ -431,7 +450,7 @@ const ColorTester: React.FC = () => {
 
                 <Stack gap="2">
                   <Inline justify="between" align="center">
-                    <Text size="sm" variant="caption">
+                    <Text size="sm" tone="subtle">
                       HEX
                     </Text>
                     <Inline gap="2" align="center">
@@ -440,7 +459,6 @@ const ColorTester: React.FC = () => {
                       </Text>
                       <IconButton
                         variant="ghost"
-                        colorScheme="neutral"
                         size="sm"
                         label="Copy hex"
                         icon={
@@ -455,7 +473,7 @@ const ColorTester: React.FC = () => {
                     </Inline>
                   </Inline>
                   <Inline justify="between" align="center">
-                    <Text size="sm" variant="caption">
+                    <Text size="sm" tone="subtle">
                       RGB
                     </Text>
                     <Inline gap="2" align="center">
@@ -464,7 +482,6 @@ const ColorTester: React.FC = () => {
                       </Text>
                       <IconButton
                         variant="ghost"
-                        colorScheme="neutral"
                         size="sm"
                         label="Copy rgb"
                         icon={
@@ -482,16 +499,15 @@ const ColorTester: React.FC = () => {
               </Stack>
             </CardBody>
           </Card>
-        </Box>
+        </div>
 
-        <Box minWidth="0">
-          <Card variant="elevated" size="md">
+        <div className="min-w-0 md:col-span-7">
+          <Card>
             <CardBody>
               <Tabs
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as TabType)}
                 variant="line"
-                colorScheme="accent"
               >
                 <TabsList aria-label="Tester views">
                   <TabsTrigger value="harmony">
@@ -521,98 +537,102 @@ const ColorTester: React.FC = () => {
                 </TabsList>
 
                 <TabsContent value="harmony">
-                  <Box paddingTop="4">{renderHarmony()}</Box>
+                  <Box className="pt-4">{renderHarmony()}</Box>
                 </TabsContent>
                 <TabsContent value="psychology">
-                  <Box paddingTop="4">{renderPsychology()}</Box>
+                  <Box className="pt-4">{renderPsychology()}</Box>
                 </TabsContent>
                 <TabsContent value="preview">
-                  <Box paddingTop="4">{renderPreview()}</Box>
+                  <Box className="pt-4">{renderPreview()}</Box>
                 </TabsContent>
                 <TabsContent value="accessibility">
-                  <Box paddingTop="4">{renderAccessibility()}</Box>
+                  <Box className="pt-4">{renderAccessibility()}</Box>
                 </TabsContent>
               </Tabs>
             </CardBody>
           </Card>
-        </Box>
-      </Grid>
+        </div>
+      </div>
 
-      <Card variant="elevated" size="md">
+      <Card>
         <CardHeader>
           <CardTitle as="h3">Colour editor</CardTitle>
         </CardHeader>
         <CardBody>
           <Stack gap="4">
             <Inline align="center" gap="3" wrap>
-              <ColorPicker
+              <input
+                type="color"
                 value={hexCode}
-                onChange={handleColorPicker}
+                onChange={(e) =>
+                  handleColorPicker({ toString: () => e.target.value })
+                }
                 aria-label="Colour picker"
+                className="h-10 w-16 cursor-pointer rounded-md border border-line bg-surface"
               />
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 Pick a colour or use the sliders below.
               </Text>
             </Inline>
 
-            <Grid columns={{ base: 1, md: 2 }} gap="4">
+            <Grid max={2} gap="4">
               <Stack gap="2">
                 <Inline justify="between" align="center">
                   <Label>Red</Label>
-                  <Badge variant="soft" colorScheme="danger" size="sm">
+                  <Badge variant="soft" tone="danger" size="sm">
                     {red}
                   </Badge>
                 </Inline>
                 <Slider
                   value={red}
-                  onChange={(v) => setRed(v as number)}
-                  minValue={0}
-                  maxValue={255}
+                  onValueChange={setRed}
+                  min={0}
+                  max={255}
                   aria-label="Red channel"
                 />
               </Stack>
               <Stack gap="2">
                 <Inline justify="between" align="center">
                   <Label>Green</Label>
-                  <Badge variant="soft" colorScheme="success" size="sm">
+                  <Badge variant="soft" tone="success" size="sm">
                     {green}
                   </Badge>
                 </Inline>
                 <Slider
                   value={green}
-                  onChange={(v) => setGreen(v as number)}
-                  minValue={0}
-                  maxValue={255}
+                  onValueChange={setGreen}
+                  min={0}
+                  max={255}
                   aria-label="Green channel"
                 />
               </Stack>
               <Stack gap="2">
                 <Inline justify="between" align="center">
                   <Label>Blue</Label>
-                  <Badge variant="soft" colorScheme="accent" size="sm">
+                  <Badge variant="soft" tone="accent" size="sm">
                     {blue}
                   </Badge>
                 </Inline>
                 <Slider
                   value={blue}
-                  onChange={(v) => setBlue(v as number)}
-                  minValue={0}
-                  maxValue={255}
+                  onValueChange={setBlue}
+                  min={0}
+                  max={255}
                   aria-label="Blue channel"
                 />
               </Stack>
               <Stack gap="2">
                 <Inline justify="between" align="center">
                   <Label>Alpha</Label>
-                  <Badge variant="soft" colorScheme="neutral" size="sm">
+                  <Badge variant="soft" tone="neutral" size="sm">
                     {alpha.toFixed(2)}
                   </Badge>
                 </Inline>
                 <Slider
                   value={alpha}
-                  onChange={(v) => setAlpha(v as number)}
-                  minValue={0}
-                  maxValue={1}
+                  onValueChange={setAlpha}
+                  min={0}
+                  max={1}
                   step={0.01}
                   aria-label="Alpha channel"
                 />
@@ -622,13 +642,12 @@ const ColorTester: React.FC = () => {
         </CardBody>
       </Card>
 
-      <Card variant="elevated" size="md">
+      <Card>
         <CardHeader>
           <Inline justify="between" align="center" wrap>
             <CardTitle as="h3">Saved palette</CardTitle>
             <Button
               variant="soft"
-              colorScheme="accent"
               size="sm"
               leftIcon={<Download size={14} />}
               disabled={savedColors.length === 0}
@@ -640,16 +659,14 @@ const ColorTester: React.FC = () => {
         </CardHeader>
         <CardBody>
           {savedColors.length === 0 ? (
-            <Text size="sm" variant="caption" align="center">
+            <Text size="sm" tone="subtle" className="text-center">
               No colours saved yet. Click Save to add one.
             </Text>
           ) : (
-            <Grid columns={{ base: 2, sm: 3, md: 4, xl: 6 }} gap="3">
+            <Grid max={4} gap="3">
               {savedColors.map((c, idx) => (
                 <Card
                   key={`${c.hex}-${idx}`}
-                  variant="filled"
-                  size="sm"
                   interactive
                   onClick={() => loadColor(c)}
                 >
@@ -660,13 +677,12 @@ const ColorTester: React.FC = () => {
                         <Text size="xs" weight="semibold">
                           {c.name || c.hex}
                         </Text>
-                        <Text size="xs" variant="caption">
+                        <Text size="xs" tone="subtle">
                           {c.hex}
                         </Text>
                       </Stack>
                       <IconButton
-                        variant="ghost"
-                        colorScheme="danger"
+                        variant="danger"
                         size="sm"
                         label="Delete colour"
                         icon={<Trash2 size={12} />}

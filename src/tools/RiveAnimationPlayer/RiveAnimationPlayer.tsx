@@ -26,7 +26,6 @@ import {
   Pause,
   Play,
   RotateCcw,
-  Upload,
   X,
 } from 'lucide-react';
 import {
@@ -42,6 +41,7 @@ import {
   CardTitle,
   Center,
   Container,
+  FileUpload,
   Grid,
   Heading,
   IconButton,
@@ -57,9 +57,8 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-  Toaster,
-  toast,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
+import { Toaster, toast } from 'sonner';
 
 enum PlayerState {
   Idle,
@@ -139,7 +138,6 @@ const formatFileSize = (bytes: number): string => {
 export default function RiveAnimationPlayer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const [status, setStatus] = useState<Status>({
     current: PlayerState.Idle,
@@ -178,6 +176,10 @@ export default function RiveAnimationPlayer() {
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
   const [numberValues, setNumberValues] = useState<Record<string, number>>({});
+  const [booleanValues, setBooleanValues] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [settingsTab, setSettingsTab] = useState('controls');
 
   const addDebugLog = (
     message: string,
@@ -249,7 +251,6 @@ export default function RiveAnimationPlayer() {
     setSelectedArtboard('');
     setRiveInfo(null);
     setStatus({ ...status, current: PlayerState.Idle });
-    if (inputRef.current) inputRef.current.value = '';
     clearCanvas();
   };
 
@@ -520,7 +521,6 @@ export default function RiveAnimationPlayer() {
           setControllerState(v as 'animations' | 'state-machines')
         }
         variant="soft"
-        colorScheme="accent"
         fullWidth
       >
         <TabsList aria-label="Controller">
@@ -529,7 +529,7 @@ export default function RiveAnimationPlayer() {
         </TabsList>
 
         <TabsContent value="animations">
-          <Stack gap="3" paddingTop="3">
+          <Stack gap="3" className="pt-3">
             {artboards.length > 1 && (
               <Stack gap="2">
                 <Label>Artboard</Label>
@@ -542,26 +542,23 @@ export default function RiveAnimationPlayer() {
               </Stack>
             )}
             {animationList && animationList.animations.length > 0 ? (
-              <Grid columns={{ base: 1, sm: 2 }} gap="2">
+              <Grid max={2} gap="2">
                 {animationList.animations.map((animation) => (
                   <Button
                     key={animation}
                     variant={
                       animationList.active === animation ? 'solid' : 'soft'
                     }
-                    colorScheme={
-                      animationList.active === animation ? 'accent' : 'neutral'
-                    }
                     size="sm"
                     onClick={() => setActiveAnimation(animation)}
-                    fullWidth
+                    className="w-full"
                   >
                     {animation}
                   </Button>
                 ))}
               </Grid>
             ) : (
-              <Alert status="info" variant="soft">
+              <Alert status="info">
                 <AlertDescription>No animations available.</AlertDescription>
               </Alert>
             )}
@@ -569,7 +566,7 @@ export default function RiveAnimationPlayer() {
         </TabsContent>
 
         <TabsContent value="state-machines">
-          <Stack gap="3" paddingTop="3">
+          <Stack gap="3" className="pt-3">
             {stateMachineList && stateMachineList.stateMachines.length > 0 ? (
               <Stack gap="2">
                 <Label>Active state machine</Label>
@@ -584,7 +581,7 @@ export default function RiveAnimationPlayer() {
                 />
               </Stack>
             ) : (
-              <Alert status="info" variant="soft">
+              <Alert status="info">
                 <AlertDescription>
                   No state machines available.
                 </AlertDescription>
@@ -595,20 +592,19 @@ export default function RiveAnimationPlayer() {
               (i) => i.type === StateMachineInputType.Trigger,
             ) && (
               <Stack gap="2">
-                <Heading level={4} size="sm" weight="semibold">
+                <Heading level={4} size="sm">
                   Triggers
                 </Heading>
-                <Grid columns={{ base: 1, sm: 2 }} gap="2">
+                <Grid max={2} gap="2">
                   {stateMachineInputs
                     .filter((i) => i.type === StateMachineInputType.Trigger)
                     .map((input) => (
                       <Button
                         key={input.name}
                         variant="solid"
-                        colorScheme="accent"
                         size="sm"
                         onClick={() => handleInputChange(input, true)}
-                        fullWidth
+                        className="w-full"
                       >
                         {input.name}
                       </Button>
@@ -621,7 +617,7 @@ export default function RiveAnimationPlayer() {
               (i) => i.type === StateMachineInputType.Boolean,
             ) && (
               <Stack gap="2">
-                <Heading level={4} size="sm" weight="semibold">
+                <Heading level={4} size="sm">
                   Booleans
                 </Heading>
                 <Stack gap="2">
@@ -631,7 +627,14 @@ export default function RiveAnimationPlayer() {
                       <Inline key={input.name} align="center" gap="2">
                         <Switch
                           id={input.name}
-                          onCheckedChange={(v) => handleInputChange(input, v)}
+                          checked={booleanValues[input.name] ?? false}
+                          onCheckedChange={(v) => {
+                            setBooleanValues((prev) => ({
+                              ...prev,
+                              [input.name]: v,
+                            }));
+                            handleInputChange(input, v);
+                          }}
                           aria-label={input.name}
                         />
                         <Label htmlFor={input.name}>{input.name}</Label>
@@ -645,7 +648,7 @@ export default function RiveAnimationPlayer() {
               (i) => i.type === StateMachineInputType.Number,
             ) && (
               <Stack gap="2">
-                <Heading level={4} size="sm" weight="semibold">
+                <Heading level={4} size="sm">
                   Numbers
                 </Heading>
                 <Stack gap="3">
@@ -655,17 +658,15 @@ export default function RiveAnimationPlayer() {
                       <Stack key={input.name} gap="2">
                         <Inline justify="between" align="center">
                           <Label>{input.name}</Label>
-                          <Badge variant="soft" colorScheme="neutral" size="sm">
+                          <Badge variant="soft" tone="neutral" size="sm">
                             {numberValues[input.name] ?? 0}
                           </Badge>
                         </Inline>
                         <Slider
                           value={numberValues[input.name] ?? 0}
-                          onChange={(v) =>
-                            handleInputChange(input, v as number)
-                          }
-                          minValue={0}
-                          maxValue={100}
+                          onValueChange={(v) => handleInputChange(input, v)}
+                          min={0}
+                          max={100}
                           aria-label={input.name}
                         />
                       </Stack>
@@ -675,7 +676,7 @@ export default function RiveAnimationPlayer() {
             )}
 
             {stateMachineInputs.length === 0 && stateMachineList && (
-              <Alert status="info" variant="soft">
+              <Alert status="info">
                 <AlertDescription>
                   No inputs available for this state machine.
                 </AlertDescription>
@@ -688,8 +689,7 @@ export default function RiveAnimationPlayer() {
       {controller.active === 'animations' && (
         <Button
           variant="soft"
-          colorScheme="neutral"
-          fullWidth
+          className="w-full"
           disabled={status.current !== PlayerState.Active}
           leftIcon={isPlaying ? <Pause size={16} /> : <Play size={16} />}
           onClick={togglePlayback}
@@ -740,14 +740,11 @@ export default function RiveAnimationPlayer() {
       </Stack>
       <Stack gap="2">
         <Label>Alignment</Label>
-        <Grid columns={3} gap="2">
+        <Box className="grid grid-cols-3 gap-2">
           {alignValues.map((value, idx) => (
             <IconButton
               key={value}
               variant={alignFitIndex.alignment === idx ? 'solid' : 'soft'}
-              colorScheme={
-                alignFitIndex.alignment === idx ? 'accent' : 'neutral'
-              }
               size="md"
               label={value}
               icon={alignmentIcon[value]}
@@ -756,20 +753,19 @@ export default function RiveAnimationPlayer() {
               }
             />
           ))}
-        </Grid>
+        </Box>
       </Stack>
     </Stack>
   );
 
   const renderDebugPanel = () =>
     isDebugPanelOpen ? (
-      <Card variant="filled" size="sm">
+      <Card>
         <CardHeader>
           <Inline justify="between" align="center">
             <CardTitle as="h4">Debug logs</CardTitle>
             <Button
               variant="ghost"
-              colorScheme="neutral"
               size="sm"
               leftIcon={<X size={14} />}
               onClick={() => setDebugLogs([])}
@@ -779,21 +775,21 @@ export default function RiveAnimationPlayer() {
           </Inline>
         </CardHeader>
         <CardBody>
-          <Box overflow="auto" maxHeight="16rem">
+          <Box className="max-h-64 overflow-auto">
             {debugLogs.length === 0 ? (
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 No logs yet. Upload a file to see debug information.
               </Text>
             ) : (
               <Stack gap="1">
                 {debugLogs.map((log) => (
-                  <Card key={log.id} variant="outlined" size="sm">
+                  <Card key={log.id}>
                     <CardBody>
                       <Inline gap="2" align="center">
                         {logIcon(log.type)}
                         <Badge
                           variant="soft"
-                          colorScheme={logColorScheme(log.type)}
+                          tone={logColorScheme(log.type)}
                           size="xs"
                         >
                           {log.timestamp}
@@ -811,23 +807,23 @@ export default function RiveAnimationPlayer() {
     ) : null;
 
   return (
-    <Container size="full">
-      <Toaster richColors visibleToasts={10} />
-      <Grid columns={{ base: 1, lg: 3 }} gap="4">
-        <Box gridColumn={{ base: 'span 1', lg: 'span 2' }}>
-          <Card variant="elevated" size="md">
+    <Container size="xl" className="max-w-none">
+      <Toaster richColors visibleToasts={10} theme="dark" />
+      <Grid max={3} gap="4">
+        <Box className="lg:col-span-2">
+          <Card>
             <CardHeader>
               <Inline justify="between" align="center" wrap gap="2">
                 <Stack gap="0">
                   <CardTitle as="h3">Preview</CardTitle>
-                  <Text size="sm" variant="caption">
+                  <Text size="sm" tone="subtle">
                     {filename ? (
                       <>
                         {filename}
                         {fileSize && (
                           <>
                             {' '}
-                            <Text as="span" size="sm" variant="caption">
+                            <Text as="span" size="sm" tone="subtle">
                               ({fileSize})
                             </Text>
                           </>
@@ -842,7 +838,6 @@ export default function RiveAnimationPlayer() {
                   <Inline gap="2">
                     <Button
                       variant="soft"
-                      colorScheme="neutral"
                       size="sm"
                       leftIcon={
                         isPlaying ? <Pause size={14} /> : <Play size={14} />
@@ -854,7 +849,6 @@ export default function RiveAnimationPlayer() {
                     </Button>
                     <Button
                       variant="soft"
-                      colorScheme="neutral"
                       size="sm"
                       leftIcon={<RotateCcw size={14} />}
                       onClick={reset}
@@ -869,26 +863,23 @@ export default function RiveAnimationPlayer() {
               <Stack gap="3">
                 {filename && riveInfo && (
                   <Inline gap="2" wrap>
-                    <Badge variant="soft" colorScheme="accent" size="sm">
+                    <Badge variant="soft" tone="accent" size="sm">
                       File: {filename}
                     </Badge>
                     {fileSize && (
-                      <Badge variant="soft" colorScheme="accent" size="sm">
+                      <Badge variant="soft" tone="accent" size="sm">
                         Size: {fileSize}
                       </Badge>
                     )}
                     {riveInfo.artboardCount > 0 && (
-                      <Badge variant="soft" colorScheme="accent" size="sm">
+                      <Badge variant="soft" tone="accent" size="sm">
                         Artboards: {riveInfo.artboardCount}
                       </Badge>
                     )}
                   </Inline>
                 )}
 
-                <Card
-                  variant={status.hovering ? 'outlined' : 'filled'}
-                  size="sm"
-                >
+                <Card className={status.hovering ? 'border-accent' : undefined}>
                   <CardBody>
                     <div
                       ref={previewRef}
@@ -919,54 +910,31 @@ export default function RiveAnimationPlayer() {
                       />
 
                       {!shouldDisplayCanvas() && (
-                        <Center
-                          position="absolute"
-                          top="0"
-                          right="0"
-                          bottom="0"
-                          left="0"
-                        >
-                          <Stack gap="3" align="center">
-                            <Upload size={32} aria-hidden />
-                            <Text size="sm" variant="caption">
-                              Drag and drop a Rive file, or
-                            </Text>
-                            <Button
-                              variant="solid"
-                              colorScheme="accent"
-                              size="sm"
-                              leftIcon={<Upload size={14} />}
-                              onClick={() => inputRef.current?.click()}
-                            >
-                              Browse
-                            </Button>
-                            <input
-                              hidden
-                              type="file"
-                              accept=".riv"
-                              ref={inputRef}
-                              onChange={(e) => {
-                                if (e.target.files?.[0])
-                                  load(e.target.files[0]);
+                        <Center className="absolute inset-0 p-4">
+                          <div
+                            className="w-full max-w-sm"
+                            onDrop={(e) => e.stopPropagation()}
+                          >
+                            <FileUpload
+                              onFiles={(files) => {
+                                if (files[0]) load(files[0]);
                               }}
+                              accept=".riv"
+                              label="Drag and drop a Rive file, or click to browse"
                             />
-                          </Stack>
+                          </div>
                         </Center>
                       )}
 
                       {status.current === PlayerState.Loading && (
                         <Center
-                          position="absolute"
-                          top="0"
-                          right="0"
-                          bottom="0"
-                          left="0"
+                          className="absolute inset-0"
                           style={{
                             background: 'rgba(0,0,0,0.4)',
                           }}
                         >
                           <Stack gap="3" align="center">
-                            <Spinner size="lg" colorScheme="accent" />
+                            <Spinner size="lg" />
                             <Text
                               size="sm"
                               weight="medium"
@@ -982,7 +950,7 @@ export default function RiveAnimationPlayer() {
                 </Card>
 
                 {status.error && (
-                  <Alert status="danger" variant="soft">
+                  <Alert status="danger">
                     <AlertTitle>Error loading animation</AlertTitle>
                     <AlertDescription>
                       {status.error === PlayerError.NoAnimation
@@ -994,11 +962,10 @@ export default function RiveAnimationPlayer() {
 
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   leftIcon={<Info size={14} />}
                   onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)}
-                  fullWidth
+                  className="w-full"
                 >
                   {isDebugPanelOpen ? 'Hide debug panel' : 'Show debug panel'}
                 </Button>
@@ -1009,22 +976,26 @@ export default function RiveAnimationPlayer() {
           </Card>
         </Box>
 
-        <Card variant="elevated" size="md">
+        <Card>
           <CardBody>
-            <Tabs defaultValue="controls" variant="line" colorScheme="accent">
+            <Tabs
+              value={settingsTab}
+              onValueChange={setSettingsTab}
+              variant="line"
+            >
               <TabsList aria-label="Settings">
                 <TabsTrigger value="controls">Controls</TabsTrigger>
                 <TabsTrigger value="appearance">Appearance</TabsTrigger>
                 <TabsTrigger value="layout">Layout</TabsTrigger>
               </TabsList>
               <TabsContent value="controls">
-                <Box paddingTop="3">{renderControlsTab()}</Box>
+                <Box className="pt-3">{renderControlsTab()}</Box>
               </TabsContent>
               <TabsContent value="appearance">
-                <Box paddingTop="3">{renderAppearanceTab()}</Box>
+                <Box className="pt-3">{renderAppearanceTab()}</Box>
               </TabsContent>
               <TabsContent value="layout">
-                <Box paddingTop="3">{renderLayoutTab()}</Box>
+                <Box className="pt-3">{renderLayoutTab()}</Box>
               </TabsContent>
             </Tabs>
           </CardBody>

@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import Papa from 'papaparse';
 import _ from 'lodash';
-import { LineChart } from '@arshad-shah/cynosure-react/chart';
 import {
   BarChart3,
   ChevronLeft,
@@ -47,7 +46,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import {
   ColumnStatistics,
   ParsedData,
@@ -69,6 +68,107 @@ const formatNumber = (value: number, decimals = 2): string =>
     maximumFractionDigits: decimals,
   });
 
+/**
+ * Lightweight SVG line chart (kit has no chart primitive). Dark-only, uses
+ * theme tokens via currentColor. Renders a single series of {index, value}.
+ */
+const LineChart: React.FC<{
+  data: { index: number; value: number }[];
+  height?: number;
+}> = ({ data, height = 360 }) => {
+  const points = data.filter(
+    (d) => typeof d.value === 'number' && Number.isFinite(d.value),
+  );
+
+  if (points.length === 0) {
+    return (
+      <div
+        className="flex items-center justify-center text-sm text-fg-subtle"
+        style={{ height }}
+      >
+        No numeric data to plot
+      </div>
+    );
+  }
+
+  const width = 800;
+  const padding = { top: 16, right: 16, bottom: 32, left: 56 };
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+
+  const values = points.map((p) => p.value);
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const range = maxV - minV || 1;
+  const n = points.length;
+
+  const px = (i: number) =>
+    padding.left + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const py = (v: number) =>
+    padding.top + innerH - ((v - minV) / range) * innerH;
+
+  const linePath = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${px(i)} ${py(p.value)}`)
+    .join(' ');
+
+  const ticks = 4;
+  const gridLines = Array.from({ length: ticks + 1 }, (_v, i) => {
+    const value = minV + (range * i) / ticks;
+    const y = padding.top + innerH - (innerH * i) / ticks;
+    return { value, y };
+  });
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      width="100%"
+      height={height}
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="Line chart"
+    >
+      {gridLines.map((g, i) => (
+        <g key={i}>
+          <line
+            x1={padding.left}
+            x2={width - padding.right}
+            y1={g.y}
+            y2={g.y}
+            stroke="currentColor"
+            className="text-line"
+            strokeWidth={1}
+          />
+          <text
+            x={padding.left - 8}
+            y={g.y}
+            textAnchor="end"
+            dominantBaseline="middle"
+            className="fill-current text-[10px] text-fg-subtle"
+          >
+            {formatNumber(g.value)}
+          </text>
+        </g>
+      ))}
+      <path
+        d={linePath}
+        fill="none"
+        stroke="currentColor"
+        className="text-accent"
+        strokeWidth={2}
+      />
+      {points.map((p, i) => (
+        <circle
+          key={i}
+          cx={px(i)}
+          cy={py(p.value)}
+          r={2.5}
+          className="fill-current text-accent"
+        />
+      ))}
+    </svg>
+  );
+};
+
 interface DataState {
   data: ParsedData[];
   columns: string[];
@@ -81,7 +181,9 @@ const CSVTSVViewer: React.FC = () => {
   const [parseError, setParseError] = useState<string | null>(null);
 
   // viewer state
-  const [activeTab, setActiveTab] = useState<'data' | 'stats' | 'chart'>('data');
+  const [activeTab, setActiveTab] = useState<'data' | 'stats' | 'chart'>(
+    'data',
+  );
   const [filterColumn, setFilterColumn] = useState('');
   const [filterValue, setFilterValue] = useState('');
   const [sortColumn, setSortColumn] = useState('');
@@ -163,9 +265,7 @@ const CSVTSVViewer: React.FC = () => {
     dataState.columns.forEach((col) => {
       const numericValues = dataState.data
         .map((row) => row[col])
-        .filter(
-          (v): v is number => typeof v === 'number' && !Number.isNaN(v),
-        );
+        .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
       if (numericValues.length > 0) {
         stats[col] = {
           min: _.min(numericValues) || 0,
@@ -179,10 +279,7 @@ const CSVTSVViewer: React.FC = () => {
     return stats;
   }, [dataState]);
 
-  const numericColumns = useMemo(
-    () => Object.keys(statistics),
-    [statistics],
-  );
+  const numericColumns = useMemo(() => Object.keys(statistics), [statistics]);
 
   React.useEffect(() => {
     if (numericColumns.length > 0 && !chartColumn) {
@@ -271,32 +368,52 @@ const CSVTSVViewer: React.FC = () => {
     }));
   }, [filteredData, chartColumn]);
 
-  const renderStatCard =(column: string, stats: ColumnStatistics) => (
-    <Card key={column} variant="outlined" size="sm">
+  const renderStatCard = (column: string, stats: ColumnStatistics) => (
+    <Card key={column}>
       <CardHeader>
         <CardTitle as="h4">{column}</CardTitle>
       </CardHeader>
       <CardBody>
         <Stack gap="2">
           <Inline justify="between" align="center">
-            <Text size="sm" variant="caption">Minimum</Text>
-            <Text size="sm" weight="medium">{formatNumber(stats.min)}</Text>
+            <Text size="sm" tone="subtle">
+              Minimum
+            </Text>
+            <Text size="sm" weight="medium">
+              {formatNumber(stats.min)}
+            </Text>
           </Inline>
           <Inline justify="between" align="center">
-            <Text size="sm" variant="caption">Maximum</Text>
-            <Text size="sm" weight="medium">{formatNumber(stats.max)}</Text>
+            <Text size="sm" tone="subtle">
+              Maximum
+            </Text>
+            <Text size="sm" weight="medium">
+              {formatNumber(stats.max)}
+            </Text>
           </Inline>
           <Inline justify="between" align="center">
-            <Text size="sm" variant="caption">Average</Text>
-            <Text size="sm" weight="medium">{formatNumber(stats.avg)}</Text>
+            <Text size="sm" tone="subtle">
+              Average
+            </Text>
+            <Text size="sm" weight="medium">
+              {formatNumber(stats.avg)}
+            </Text>
           </Inline>
           <Inline justify="between" align="center">
-            <Text size="sm" variant="caption">Sum</Text>
-            <Text size="sm" weight="medium">{formatNumber(stats.sum)}</Text>
+            <Text size="sm" tone="subtle">
+              Sum
+            </Text>
+            <Text size="sm" weight="medium">
+              {formatNumber(stats.sum)}
+            </Text>
           </Inline>
           <Inline justify="between" align="center">
-            <Text size="sm" variant="caption">Count</Text>
-            <Text size="sm" weight="medium">{stats.count.toLocaleString()}</Text>
+            <Text size="sm" tone="subtle">
+              Count
+            </Text>
+            <Text size="sm" weight="medium">
+              {stats.count.toLocaleString()}
+            </Text>
           </Inline>
         </Stack>
       </CardBody>
@@ -309,14 +426,11 @@ const CSVTSVViewer: React.FC = () => {
         <Stack gap="4">
           <FileUpload
             accept=".csv,.tsv"
-            maxCount={1}
-            onFilesChange={(files) => files[0] && processFile(files[0])}
-            onError={(err) => setParseError(err.message)}
+            onFiles={(files) => files[0] && processFile(files[0])}
           />
           <Inline gap="2" wrap justify="center">
             <Button
               variant="soft"
-              colorScheme="accent"
               leftIcon={<Upload size={16} />}
               onClick={loadSample}
               disabled={loading}
@@ -325,12 +439,12 @@ const CSVTSVViewer: React.FC = () => {
             </Button>
           </Inline>
           {parseError && (
-            <Alert status="danger" variant="soft">
+            <Alert status="danger">
               <AlertDescription>{parseError}</AlertDescription>
             </Alert>
           )}
           {loading && (
-            <Alert status="info" variant="soft">
+            <Alert status="info">
               <AlertDescription>Processing your file…</AlertDescription>
             </Alert>
           )}
@@ -348,19 +462,18 @@ const CSVTSVViewer: React.FC = () => {
     <Stack gap="4">
       <Inline justify="between" align="center" wrap gap="3">
         <Inline align="center" gap="2" wrap>
-          <Heading level={2} size="lg" weight="semibold">
+          <Heading level={2} size="lg">
             {dataState.fileName}
           </Heading>
-          <Badge variant="soft" colorScheme="accent" size="sm">
+          <Badge variant="soft" tone="accent" size="sm">
             {dataState.data.length} rows
           </Badge>
-          <Badge variant="soft" colorScheme="accent" size="sm">
+          <Badge variant="soft" tone="accent" size="sm">
             {dataState.columns.length} columns
           </Badge>
         </Inline>
         <Button
-          variant="soft"
-          colorScheme="danger"
+          variant="danger"
           size="sm"
           leftIcon={<RefreshCw size={14} />}
           onClick={reset}
@@ -373,7 +486,6 @@ const CSVTSVViewer: React.FC = () => {
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as typeof activeTab)}
         variant="line"
-        colorScheme="accent"
       >
         <TabsList aria-label="Viewer tabs">
           <TabsTrigger value="data">
@@ -397,11 +509,11 @@ const CSVTSVViewer: React.FC = () => {
         </TabsList>
 
         <TabsContent value="data">
-          <Stack gap="4" paddingTop="4">
-            <Card variant="filled" size="sm">
+          <Stack gap="4" className="pt-4">
+            <Card>
               <CardBody>
                 <Stack gap="3">
-                  <Grid columns={{ base: 1, md: 3 }} gap="3">
+                  <Grid max={3} gap="3">
                     <Stack gap="2">
                       <Label>Filter column</Label>
                       <Select
@@ -438,7 +550,7 @@ const CSVTSVViewer: React.FC = () => {
                     </Stack>
                   </Grid>
                   <Inline justify="between" align="center" wrap gap="3">
-                    <Text size="sm" variant="caption">
+                    <Text size="sm" tone="subtle">
                       {filteredData.length === dataState.data.length
                         ? `Showing all ${dataState.data.length} rows`
                         : `Showing ${filteredData.length} of ${dataState.data.length} rows`}
@@ -446,7 +558,6 @@ const CSVTSVViewer: React.FC = () => {
                     <Inline gap="2" wrap>
                       <Button
                         variant="soft"
-                        colorScheme="neutral"
                         size="sm"
                         onClick={toggleAllColumns}
                       >
@@ -456,7 +567,6 @@ const CSVTSVViewer: React.FC = () => {
                       </Button>
                       <Button
                         variant="solid"
-                        colorScheme="accent"
                         size="sm"
                         leftIcon={<Download size={14} />}
                         disabled={filteredData.length === 0}
@@ -470,7 +580,7 @@ const CSVTSVViewer: React.FC = () => {
               </CardBody>
             </Card>
 
-            <Card variant="outlined" size="sm">
+            <Card>
               <CardHeader>
                 <CardTitle as="h4">Column visibility</CardTitle>
               </CardHeader>
@@ -482,9 +592,8 @@ const CSVTSVViewer: React.FC = () => {
                       <Button
                         key={col}
                         variant={selected ? 'solid' : 'soft'}
-                        colorScheme={selected ? 'accent' : 'neutral'}
-                        size="xs"
-                        shape="pill"
+                        size="sm"
+                        className="rounded-full"
                         onClick={() => toggleColumn(col)}
                       >
                         {col}
@@ -495,14 +604,14 @@ const CSVTSVViewer: React.FC = () => {
               </CardBody>
             </Card>
 
-            <Card variant="outlined" size="sm">
+            <Card>
               <CardBody>
-                <Box overflow="auto">
-                  <Table variant="striped" size="sm">
-                    <TableHead>
+                <Box className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
                         {selectedColumns.map((col) => (
-                          <TableHeader
+                          <TableHead
                             key={col}
                             onClick={() => handleSort(col)}
                             style={{ cursor: 'pointer' }}
@@ -515,10 +624,10 @@ const CSVTSVViewer: React.FC = () => {
                                 </span>
                               )}
                             </Inline>
-                          </TableHeader>
+                          </TableHead>
                         ))}
                       </TableRow>
-                    </TableHead>
+                    </TableHeader>
                     <TableBody>
                       {paginatedData.length > 0 ? (
                         paginatedData.map((row, idx) => (
@@ -538,7 +647,11 @@ const CSVTSVViewer: React.FC = () => {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={selectedColumns.length}>
-                            <Text size="sm" variant="caption" align="center">
+                            <Text
+                              size="sm"
+                              tone="subtle"
+                              className="text-center"
+                            >
                               No matching data found
                             </Text>
                           </TableCell>
@@ -550,17 +663,16 @@ const CSVTSVViewer: React.FC = () => {
                 <Inline
                   justify="between"
                   align="center"
-                  paddingTop="3"
+                  className="pt-3"
                   wrap
                   gap="2"
                 >
-                  <Text size="sm" variant="caption">
+                  <Text size="sm" tone="subtle">
                     Page {page} of {totalPages}
                   </Text>
                   <Inline gap="2">
                     <Button
                       variant="soft"
-                      colorScheme="neutral"
                       size="sm"
                       leftIcon={<ChevronLeft size={14} />}
                       disabled={page === 1}
@@ -570,7 +682,6 @@ const CSVTSVViewer: React.FC = () => {
                     </Button>
                     <Button
                       variant="soft"
-                      colorScheme="neutral"
                       size="sm"
                       rightIcon={<ChevronRight size={14} />}
                       disabled={page >= totalPages}
@@ -586,15 +697,15 @@ const CSVTSVViewer: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="stats">
-          <Stack gap="4" paddingTop="4">
+          <Stack gap="4" className="pt-4">
             {Object.keys(statistics).length > 0 ? (
-              <Grid columns={{ base: 1, md: 2, lg: 3 }} gap="3">
+              <Grid max={3} gap="3">
                 {Object.entries(statistics).map(([col, stats]) =>
                   renderStatCard(col, stats),
                 )}
               </Grid>
             ) : (
-              <EmptyState size="md" variant="subtle">
+              <EmptyState>
                 <EmptyStateIcon>
                   <BarChart3 size={36} aria-hidden />
                 </EmptyStateIcon>
@@ -609,9 +720,9 @@ const CSVTSVViewer: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="chart">
-          <Stack gap="4" paddingTop="4">
+          <Stack gap="4" className="pt-4">
             {numericColumns.length > 0 ? (
-              <Card variant="outlined" size="md">
+              <Card>
                 <CardHeader>
                   <Inline justify="between" align="center" wrap gap="3">
                     <CardTitle as="h4">Data visualisation</CardTitle>
@@ -630,16 +741,8 @@ const CSVTSVViewer: React.FC = () => {
                   </Inline>
                 </CardHeader>
                 <CardBody>
-                  <LineChart
-                    data={chartData}
-                    mapping={{
-                      x: 'index',
-                      y: 'value',
-                      seriesNames: [chartColumn],
-                    }}
-                    height={360}
-                  />
-                  <Text size="xs" variant="caption" align="center">
+                  <LineChart data={chartData} height={360} />
+                  <Text size="xs" tone="subtle" className="text-center">
                     {filteredData.length > 50
                       ? `Showing first 50 of ${filteredData.length} rows`
                       : `Showing all ${filteredData.length} rows`}
@@ -647,7 +750,7 @@ const CSVTSVViewer: React.FC = () => {
                 </CardBody>
               </Card>
             ) : (
-              <EmptyState size="md" variant="subtle">
+              <EmptyState>
                 <EmptyStateIcon>
                   <TrendingUp size={36} aria-hidden />
                 </EmptyStateIcon>
@@ -662,7 +765,7 @@ const CSVTSVViewer: React.FC = () => {
       </Tabs>
 
       {parseError && (
-        <Alert status="danger" variant="soft">
+        <Alert status="danger">
           <AlertTitle>Parse error</AlertTitle>
           <AlertDescription>{parseError}</AlertDescription>
         </Alert>

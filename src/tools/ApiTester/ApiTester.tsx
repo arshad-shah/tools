@@ -23,9 +23,8 @@ import {
   CardTitle,
   Center,
   Code,
-  Container,
   Dialog,
-  DialogContent,
+  DialogBody,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -34,7 +33,6 @@ import {
   EmptyStateDescription,
   EmptyStateIcon,
   EmptyStateTitle,
-  Grid,
   IconButton,
   Inline,
   Input,
@@ -49,7 +47,7 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import {
   BodyType,
   CollectionType,
@@ -129,26 +127,18 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
         <Inline align="center" gap="2" style={{ paddingLeft: depth * 12 }}>
           <IconButton
             variant="ghost"
-            colorScheme="neutral"
             size="sm"
             label={open ? 'Collapse' : 'Expand'}
-            icon={
-              open ? (
-                <ChevronDown size={14} />
-              ) : (
-                <ChevronRight size={14} />
-              )
-            }
+            icon={open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             onClick={() => setOpen(!open)}
           />
           <Folder size={14} aria-hidden />
           <Text size="sm" weight="medium">
             {item.name}
           </Text>
-          <Box flex="1" />
+          <Box className="flex-1" />
           <IconButton
             variant="ghost"
-            colorScheme="danger"
             size="sm"
             label="Delete folder"
             icon={<Trash2 size={12} />}
@@ -177,29 +167,23 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
   const isSelected = selectedRequest === req.id;
   return (
     <Card
-      variant={isSelected ? 'outlined' : 'filled'}
-      size="sm"
       interactive
       onClick={() => onSelectRequest(req)}
+      className={isSelected ? 'border-accent' : undefined}
       style={{ marginLeft: depth * 12 }}
     >
       <CardBody>
         <Inline justify="between" align="center" gap="2" wrap>
           <Inline align="center" gap="2">
-            <Badge
-              variant="solid"
-              colorScheme={methodColor(req.method)}
-              size="xs"
-            >
+            <Badge variant="solid" tone={methodColor(req.method)} size="xs">
               {req.method}
             </Badge>
-            <Text size="sm" weight="medium" truncate>
+            <Text size="sm" weight="medium" className="truncate">
               {req.name}
             </Text>
           </Inline>
           <IconButton
             variant="ghost"
-            colorScheme="danger"
             size="sm"
             label="Delete request"
             icon={<Trash2 size={12} />}
@@ -345,10 +329,7 @@ const ApiTester: React.FC = () => {
             setIsLoading(false);
             return;
           }
-        } else if (
-          method !== 'GET' &&
-          bodyType === 'x-www-form-urlencoded'
-        ) {
+        } else if (method !== 'GET' && bodyType === 'x-www-form-urlencoded') {
           const formData = new URLSearchParams();
           body.split('&').forEach((pair) => {
             const [k, v] = pair.split('=');
@@ -424,7 +405,9 @@ const ApiTester: React.FC = () => {
         headers: {},
         data: {
           error:
-            err instanceof Error ? err.message : 'Failed to connect to the server',
+            err instanceof Error
+              ? err.message
+              : 'Failed to connect to the server',
         },
       });
     } finally {
@@ -476,7 +459,8 @@ const ApiTester: React.FC = () => {
       updatedAt: Date.now(),
     };
     const targetId =
-      selectedCollectionId || (collections.length > 0 ? collections[0].id : null);
+      selectedCollectionId ||
+      (collections.length > 0 ? collections[0].id : null);
     if (!targetId) {
       window.alert('No collection available. Create one first.');
       return;
@@ -492,7 +476,10 @@ const ApiTester: React.FC = () => {
       }
       return false;
     };
-    if (addTo(next) || (next.length > 0 && (next[0].children = [...next[0].children, newReq]))) {
+    if (
+      addTo(next) ||
+      (next.length > 0 && (next[0].children = [...next[0].children, newReq]))
+    ) {
       setCollections(next);
       setSelectedRequest(newReq.id);
       setSaveModalOpen(false);
@@ -559,10 +546,10 @@ const ApiTester: React.FC = () => {
   const renderResponse = () => {
     if (isLoading) {
       return (
-        <Center paddingY="10">
+        <Center className="py-10">
           <Stack gap="3" align="center">
-            <Spinner size="lg" colorScheme="accent" />
-            <Text size="sm" variant="caption">
+            <Spinner size="lg" />
+            <Text size="sm" tone="subtle">
               Sending request…
             </Text>
           </Stack>
@@ -571,7 +558,7 @@ const ApiTester: React.FC = () => {
     }
     if (!response) {
       return (
-        <EmptyState size="md" variant="subtle">
+        <EmptyState>
           <EmptyStateIcon>
             <Send size={36} aria-hidden />
           </EmptyStateIcon>
@@ -588,12 +575,12 @@ const ApiTester: React.FC = () => {
           <Inline gap="2" align="center">
             <Badge
               variant="solid"
-              colorScheme={statusColor(response.status)}
+              tone={statusColor(response.status)}
               size="md"
             >
               {response.status} {response.statusText}
             </Badge>
-            <Badge variant="soft" colorScheme="neutral" size="sm">
+            <Badge variant="soft" tone="neutral" size="sm">
               {response.time}ms
             </Badge>
           </Inline>
@@ -602,22 +589,21 @@ const ApiTester: React.FC = () => {
           value={activeResponseTab}
           onValueChange={(v) => setActiveResponseTab(v as 'body' | 'headers')}
           variant="line"
-          colorScheme="accent"
         >
           <TabsList aria-label="Response">
             <TabsTrigger value="body">Body</TabsTrigger>
             <TabsTrigger value="headers">
-              <Inline gap="2" align="center" wrap={false}>
+              <Inline gap="2" align="center">
                 <span>Headers</span>
-                <Badge variant="soft" colorScheme="neutral" size="xs">
+                <Badge variant="soft" tone="neutral" size="xs">
                   {Object.keys(response.headers).length}
                 </Badge>
               </Inline>
             </TabsTrigger>
           </TabsList>
           <TabsContent value="body">
-            <Box paddingTop="3">
-              <Code variant="block" size="sm">
+            <Box className="pt-3">
+              <Code block>
                 {typeof response.data === 'string'
                   ? response.data
                   : JSON.stringify(response.data, null, 2)}
@@ -625,14 +611,14 @@ const ApiTester: React.FC = () => {
             </Box>
           </TabsContent>
           <TabsContent value="headers">
-            <Box paddingTop="3">
+            <Box className="pt-3">
               <Stack gap="1">
                 {Object.entries(response.headers).map(([k, v]) => (
                   <Inline key={k} justify="between" align="start" gap="2" wrap>
                     <Text size="sm" weight="medium">
                       {k}
                     </Text>
-                    <Code size="sm">{v}</Code>
+                    <Code>{v}</Code>
                   </Inline>
                 ))}
               </Stack>
@@ -646,7 +632,7 @@ const ApiTester: React.FC = () => {
   const requestForm = (
     <Stack gap="4">
       <Inline gap="2" align="center" wrap>
-        <Box minWidth="32">
+        <Box className="min-w-32">
           <Select
             value={method}
             onValueChange={setMethod}
@@ -654,7 +640,7 @@ const ApiTester: React.FC = () => {
             aria-label="HTTP method"
           />
         </Box>
-        <Box flex="1" minWidth="0">
+        <Box className="min-w-0 flex-1">
           <Input
             value={url}
             onChange={setUrl}
@@ -665,10 +651,9 @@ const ApiTester: React.FC = () => {
         </Box>
         <Button
           variant="solid"
-          colorScheme="accent"
-          leftIcon={<Send size={14} />}
+          leftIcon={isLoading ? <Spinner size="sm" /> : <Send size={14} />}
           onClick={sendRequest}
-          loading={isLoading}
+          disabled={isLoading}
         >
           Send
         </Button>
@@ -680,7 +665,6 @@ const ApiTester: React.FC = () => {
           setActiveRequestTab(v as 'params' | 'headers' | 'body')
         }
         variant="line"
-        colorScheme="accent"
       >
         <TabsList aria-label="Request sections">
           <TabsTrigger value="params">Params</TabsTrigger>
@@ -691,7 +675,7 @@ const ApiTester: React.FC = () => {
         </TabsList>
 
         <TabsContent value="params">
-          <Box paddingTop="3">
+          <Box className="pt-3">
             <Stack gap="2">
               {params.map((p, idx) => (
                 <Inline key={idx} gap="2" align="center" wrap>
@@ -700,14 +684,14 @@ const ApiTester: React.FC = () => {
                     onCheckedChange={(c) => updateParam(idx, 'enabled', c)}
                     aria-label="Enabled"
                   />
-                  <Box flex="1" minWidth="0">
+                  <Box className="min-w-0 flex-1">
                     <Input
                       value={p.key}
                       onChange={(v) => updateParam(idx, 'key', v)}
                       placeholder="Key"
                     />
                   </Box>
-                  <Box flex="1" minWidth="0">
+                  <Box className="min-w-0 flex-1">
                     <Input
                       value={p.value}
                       onChange={(v) => updateParam(idx, 'value', v)}
@@ -716,7 +700,6 @@ const ApiTester: React.FC = () => {
                   </Box>
                   <IconButton
                     variant="ghost"
-                    colorScheme="danger"
                     size="sm"
                     label="Remove parameter"
                     icon={<Trash2 size={14} />}
@@ -726,7 +709,6 @@ const ApiTester: React.FC = () => {
               ))}
               <Button
                 variant="soft"
-                colorScheme="accent"
                 size="sm"
                 leftIcon={<Plus size={14} />}
                 onClick={addParam}
@@ -738,18 +720,18 @@ const ApiTester: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="headers">
-          <Box paddingTop="3">
+          <Box className="pt-3">
             <Stack gap="2">
               {headers.map((h, idx) => (
                 <Inline key={idx} gap="2" align="center" wrap>
-                  <Box flex="1" minWidth="0">
+                  <Box className="min-w-0 flex-1">
                     <Input
                       value={h.key}
                       onChange={(v) => updateHeader(idx, 'key', v)}
                       placeholder="Header"
                     />
                   </Box>
-                  <Box flex="1" minWidth="0">
+                  <Box className="min-w-0 flex-1">
                     <Input
                       value={h.value}
                       onChange={(v) => updateHeader(idx, 'value', v)}
@@ -758,7 +740,6 @@ const ApiTester: React.FC = () => {
                   </Box>
                   <IconButton
                     variant="ghost"
-                    colorScheme="danger"
                     size="sm"
                     label="Remove header"
                     icon={<Trash2 size={14} />}
@@ -768,7 +749,6 @@ const ApiTester: React.FC = () => {
               ))}
               <Button
                 variant="soft"
-                colorScheme="accent"
                 size="sm"
                 leftIcon={<Plus size={14} />}
                 onClick={addHeader}
@@ -780,7 +760,7 @@ const ApiTester: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="body">
-          <Box paddingTop="3">
+          <Box className="pt-3">
             {requestType === 'graphql' ? (
               <Stack gap="3">
                 <Stack gap="2">
@@ -842,18 +822,21 @@ const ApiTester: React.FC = () => {
   );
 
   return (
-    <Container size="full">
-      <Grid columns={{ base: 1, lg: sidebarActive ? 4 : 1 }} gap="4">
+    <Box className="w-full">
+      <Box
+        className={`grid grid-cols-1 gap-4${
+          sidebarActive ? ' lg:grid-cols-4' : ''
+        }`}
+      >
         {sidebarActive && (
-          <Box gridColumn={{ base: 'span 1', lg: 'span 1' }}>
-            <Card variant="elevated" size="md">
+          <Box className="lg:col-span-1">
+            <Card>
               <CardHeader>
                 <Inline justify="between" align="center" wrap gap="2">
                   <CardTitle as="h3">Collections</CardTitle>
                   <Inline gap="1">
                     <IconButton
                       variant="soft"
-                      colorScheme="accent"
                       size="sm"
                       label="New request"
                       icon={<FilePlus size={14} />}
@@ -861,7 +844,6 @@ const ApiTester: React.FC = () => {
                     />
                     <IconButton
                       variant="soft"
-                      colorScheme="accent"
                       size="sm"
                       label="New collection"
                       icon={<FolderPlus size={14} />}
@@ -873,7 +855,7 @@ const ApiTester: React.FC = () => {
               <CardBody>
                 <Stack gap="2">
                   {collections.length === 0 ? (
-                    <Text size="sm" variant="caption" align="center">
+                    <Text size="sm" tone="subtle" className="text-center">
                       No collections yet. Click + to create one.
                     </Text>
                   ) : (
@@ -894,13 +876,12 @@ const ApiTester: React.FC = () => {
           </Box>
         )}
 
-        <Box gridColumn={{ base: 'span 1', lg: sidebarActive ? 'span 3' : 'span 1' }}>
+        <Box className={sidebarActive ? 'lg:col-span-3' : undefined}>
           <Stack gap="4">
             <Inline justify="between" align="center" wrap gap="2">
               <ButtonGroup>
                 <Button
                   variant={requestType === 'rest' ? 'solid' : 'soft'}
-                  colorScheme={requestType === 'rest' ? 'accent' : 'neutral'}
                   size="sm"
                   onClick={() => setRequestType('rest')}
                 >
@@ -908,9 +889,6 @@ const ApiTester: React.FC = () => {
                 </Button>
                 <Button
                   variant={requestType === 'graphql' ? 'solid' : 'soft'}
-                  colorScheme={
-                    requestType === 'graphql' ? 'accent' : 'neutral'
-                  }
                   size="sm"
                   onClick={() => setRequestType('graphql')}
                 >
@@ -920,7 +898,6 @@ const ApiTester: React.FC = () => {
               <Inline gap="2">
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   leftIcon={<Save size={14} />}
                   onClick={() => setSaveModalOpen(true)}
@@ -929,7 +906,6 @@ const ApiTester: React.FC = () => {
                 </Button>
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   onClick={() => setSidebarActive(!sidebarActive)}
                 >
@@ -940,13 +916,13 @@ const ApiTester: React.FC = () => {
 
             {selectedRequest ? (
               <Stack gap="4">
-                <Card variant="elevated" size="md">
+                <Card>
                   <CardHeader>
                     <CardTitle as="h3">Request</CardTitle>
                   </CardHeader>
                   <CardBody>{requestForm}</CardBody>
                 </Card>
-                <Card variant="elevated" size="md">
+                <Card>
                   <CardHeader>
                     <CardTitle as="h3">Response</CardTitle>
                   </CardHeader>
@@ -954,9 +930,9 @@ const ApiTester: React.FC = () => {
                 </Card>
               </Stack>
             ) : (
-              <Card variant="elevated" size="md">
+              <Card>
                 <CardBody>
-                  <EmptyState size="lg" variant="subtle">
+                  <EmptyState>
                     <EmptyStateIcon>
                       <Globe size={48} aria-hidden />
                     </EmptyStateIcon>
@@ -968,7 +944,6 @@ const ApiTester: React.FC = () => {
                     <EmptyStateActions>
                       <Button
                         variant="solid"
-                        colorScheme="accent"
                         leftIcon={<FilePlus size={14} />}
                         onClick={handleCreateNewRequest}
                       >
@@ -981,17 +956,17 @@ const ApiTester: React.FC = () => {
             )}
           </Stack>
         </Box>
-      </Grid>
+      </Box>
 
       <Dialog
         open={saveModalOpen}
         onOpenChange={(open) => setSaveModalOpen(open)}
       >
-        <DialogContent size="md">
-          <DialogHeader>
-            <DialogTitle>Save request</DialogTitle>
-          </DialogHeader>
-          <Stack gap="3" paddingY="3">
+        <DialogHeader>
+          <DialogTitle>Save request</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Stack gap="3">
             <Stack gap="2">
               <Label htmlFor="save-name">Name</Label>
               <Input
@@ -1006,42 +981,34 @@ const ApiTester: React.FC = () => {
               <Select
                 value={selectedCollectionId}
                 onValueChange={setSelectedCollectionId}
-                items={collections.map((c) => ({ value: c.id, label: c.name }))}
-                placeholder="Select a collection"
+                items={[
+                  { value: '', label: 'Select a collection' },
+                  ...collections.map((c) => ({ value: c.id, label: c.name })),
+                ]}
                 aria-label="Collection"
               />
             </Stack>
           </Stack>
-          <DialogFooter>
-            <Inline justify="end" gap="2">
-              <Button
-                variant="soft"
-                colorScheme="neutral"
-                onClick={() => setSaveModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="solid"
-                colorScheme="accent"
-                onClick={handleSaveRequest}
-              >
-                Save
-              </Button>
-            </Inline>
-          </DialogFooter>
-        </DialogContent>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="soft" onClick={() => setSaveModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="solid" onClick={handleSaveRequest}>
+            Save
+          </Button>
+        </DialogFooter>
       </Dialog>
 
       <Dialog
         open={newCollectionModalOpen}
         onOpenChange={(open) => setNewCollectionModalOpen(open)}
       >
-        <DialogContent size="md">
-          <DialogHeader>
-            <DialogTitle>New collection</DialogTitle>
-          </DialogHeader>
-          <Stack gap="3" paddingY="3">
+        <DialogHeader>
+          <DialogTitle>New collection</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <Stack gap="3">
             <Stack gap="2">
               <Label htmlFor="coll-name">Name</Label>
               <Input
@@ -1052,27 +1019,20 @@ const ApiTester: React.FC = () => {
               />
             </Stack>
           </Stack>
-          <DialogFooter>
-            <Inline justify="end" gap="2">
-              <Button
-                variant="soft"
-                colorScheme="neutral"
-                onClick={() => setNewCollectionModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="solid"
-                colorScheme="accent"
-                onClick={handleCreateCollection}
-              >
-                Create
-              </Button>
-            </Inline>
-          </DialogFooter>
-        </DialogContent>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="soft"
+            onClick={() => setNewCollectionModalOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button variant="solid" onClick={handleCreateCollection}>
+            Create
+          </Button>
+        </DialogFooter>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

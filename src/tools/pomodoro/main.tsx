@@ -39,16 +39,13 @@ import {
   Center,
   Container,
   Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
   Grid,
   Heading,
   IconButton,
   Inline,
   Input,
   Label,
-  LinearProgress,
+  Progress,
   Slider,
   Stack,
   Switch,
@@ -57,7 +54,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { store, persistor } from './store';
 import {
   addTask,
@@ -114,7 +111,7 @@ const ModeSelector: React.FC<{
   currentMode: Mode;
   onChange: (mode: Mode) => void;
 }> = ({ currentMode, onChange }) => (
-  <Grid columns={{ base: 1, sm: 3 }} gap="2">
+  <Grid max={3} gap="2">
     {(Object.keys(MODE_INFO) as Mode[]).map((mode) => {
       const info = MODE_INFO[mode];
       const Icon = info.icon;
@@ -123,11 +120,10 @@ const ModeSelector: React.FC<{
         <Button
           key={mode}
           variant={isActive ? 'solid' : 'soft'}
-          colorScheme={isActive ? info.colorScheme : 'neutral'}
           size="md"
           leftIcon={<Icon size={16} />}
           onClick={() => onChange(mode)}
-          fullWidth
+          className="w-full"
         >
           {info.label}
         </Button>
@@ -146,7 +142,7 @@ const CurrentTaskCard: React.FC = () => {
     const nextTask = tasks.find((t: Task) => !t.completed);
     if (!nextTask) {
       return (
-        <Alert status="info" variant="soft" icon={<ListTodo aria-hidden />}>
+        <Alert status="info" icon={<ListTodo aria-hidden />}>
           <AlertDescription>
             No active task. Add tasks from the menu to get started.
           </AlertDescription>
@@ -154,13 +150,13 @@ const CurrentTaskCard: React.FC = () => {
       );
     }
     return (
-      <Card variant="filled" size="sm">
+      <Card>
         <CardBody>
           <Inline justify="between" align="center" gap="3" wrap>
             <Inline align="center" gap="2">
               <ListTodo size={18} aria-hidden />
               <Stack gap="0">
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Start working on:
                 </Text>
                 <Text size="sm" weight="medium">
@@ -170,7 +166,6 @@ const CurrentTaskCard: React.FC = () => {
             </Inline>
             <Button
               variant="solid"
-              colorScheme="accent"
               size="sm"
               onClick={() => dispatch(setCurrentTask(nextTask.id))}
             >
@@ -183,7 +178,7 @@ const CurrentTaskCard: React.FC = () => {
   }
 
   return (
-    <Card variant="outlined" size="sm">
+    <Card>
       <CardBody>
         <Inline justify="between" align="center" gap="3" wrap>
           <Inline align="center" gap="2">
@@ -196,7 +191,7 @@ const CurrentTaskCard: React.FC = () => {
               {currentTask.title}
             </Text>
           </Inline>
-          <Badge variant="soft" colorScheme="accent" size="sm" shape="pill">
+          <Badge variant="soft" tone="accent" size="sm" pill>
             {currentTask.completedPomodoros}/{currentTask.pomodoros} pomodoros
           </Badge>
         </Inline>
@@ -290,7 +285,7 @@ const Timer: React.FC = () => {
   };
 
   return (
-    <Card variant="elevated" size="lg">
+    <Card>
       <CardBody>
         <Stack gap="6">
           <ModeSelector
@@ -311,16 +306,12 @@ const Timer: React.FC = () => {
           <Stack gap="6" align="center">
             <Inline align="center" gap="3" wrap justify="center">
               <Icon size={28} aria-hidden />
-              <Heading level={2} size="xl" weight="bold">
+              <Heading level={2} size="xl">
                 {info.label}
               </Heading>
               {timer.mode === 'work' && stats.dailyPomodoros > 0 && (
-                <Badge
-                  variant="soft"
-                  colorScheme="warning"
-                  size="sm"
-                  icon={<Flame size={14} aria-hidden />}
-                >
+                <Badge variant="soft" tone="warning" size="sm">
+                  <Flame size={14} aria-hidden />
                   {stats.dailyPomodoros} today
                 </Badge>
               )}
@@ -329,7 +320,6 @@ const Timer: React.FC = () => {
             <Heading
               level={1}
               size="5xl"
-              weight="bold"
               style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               {formatTime(timer.timeLeft)}
@@ -337,18 +327,13 @@ const Timer: React.FC = () => {
 
             <Inline align="center" gap="2">
               <Clock size={14} aria-hidden />
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 {Math.floor(timer.timeLeft / 60)} minutes remaining
               </Text>
             </Inline>
 
-            <Box width="full">
-              <LinearProgress
-                value={progress}
-                max={100}
-                size="md"
-                colorScheme={info.colorScheme}
-              />
+            <Box className="w-full">
+              <Progress value={progress} max={100} />
             </Box>
 
             {progress >= 100 && (
@@ -362,17 +347,17 @@ const Timer: React.FC = () => {
 
             <Inline gap="3" wrap justify="center">
               <Button
-                variant="solid"
-                colorScheme={timer.isActive ? 'danger' : info.colorScheme}
+                variant={timer.isActive ? 'danger' : 'solid'}
                 size="lg"
-                leftIcon={timer.isActive ? <Pause size={20} /> : <Play size={20} />}
+                leftIcon={
+                  timer.isActive ? <Pause size={20} /> : <Play size={20} />
+                }
                 onClick={handleToggle}
               >
                 {timer.isActive ? 'Pause' : 'Start'}
               </Button>
               <IconButton
                 variant="soft"
-                colorScheme="neutral"
                 size="lg"
                 label="Reset"
                 icon={<RotateCcw size={20} />}
@@ -387,7 +372,6 @@ const Timer: React.FC = () => {
               />
               <IconButton
                 variant="soft"
-                colorScheme="neutral"
                 size="lg"
                 label="Skip"
                 icon={<SkipForward size={20} />}
@@ -406,21 +390,16 @@ const TaskRow: React.FC<{
   onToggle: () => void;
   onDelete: () => void;
 }> = ({ task, onToggle, onDelete }) => (
-  <Card variant={task.completed ? 'filled' : 'outlined'} size="sm">
+  <Card>
     <CardBody>
       <Inline justify="between" align="center" gap="3" wrap>
         <Inline align="center" gap="3" wrap>
           <IconButton
             variant="ghost"
-            colorScheme={task.completed ? 'success' : 'neutral'}
             size="sm"
             label={task.completed ? 'Mark incomplete' : 'Mark complete'}
             icon={
-              task.completed ? (
-                <CheckCircle2 size={20} />
-              ) : (
-                <Circle size={20} />
-              )
+              task.completed ? <CheckCircle2 size={20} /> : <Circle size={20} />
             }
             onClick={onToggle}
           />
@@ -439,18 +418,17 @@ const TaskRow: React.FC<{
         <Inline gap="2" align="center">
           <Badge
             variant="soft"
-            colorScheme={
+            tone={
               task.completedPomodoros >= task.pomodoros ? 'success' : 'accent'
             }
             size="sm"
-            shape="pill"
-            icon={<TimerIcon size={12} aria-hidden />}
+            pill
           >
+            <TimerIcon size={12} aria-hidden />
             {task.completedPomodoros}/{task.pomodoros}
           </Badge>
           <IconButton
-            variant="ghost"
-            colorScheme="danger"
+            variant="danger"
             size="sm"
             label="Delete task"
             icon={<Trash2 size={16} />}
@@ -486,20 +464,21 @@ const TaskList: React.FC = () => {
       <Inline justify="between" align="center" wrap>
         <Inline align="center" gap="2">
           <ListTodo size={20} aria-hidden />
-          <Heading level={3} size="md" weight="semibold">
+          <Heading level={3} size="md">
             Tasks for today
           </Heading>
         </Inline>
         {tasks.length > 0 && (
-          <Badge variant="soft" colorScheme="neutral" size="sm">
-            {tasks.filter((t: Task) => t.completed).length}/{tasks.length} completed
+          <Badge variant="soft" tone="neutral" size="sm">
+            {tasks.filter((t: Task) => t.completed).length}/{tasks.length}{' '}
+            completed
           </Badge>
         )}
       </Inline>
 
       <form onSubmit={handleAdd}>
         <Inline gap="2">
-          <Box flex="1" minWidth="0">
+          <Box className="flex-1 min-w-0">
             <Input
               value={newTitle}
               onChange={setNewTitle}
@@ -510,7 +489,6 @@ const TaskList: React.FC = () => {
           <Button
             type="submit"
             variant="solid"
-            colorScheme="accent"
             disabled={!newTitle.trim()}
             leftIcon={<Plus size={16} />}
           >
@@ -521,7 +499,7 @@ const TaskList: React.FC = () => {
 
       <Stack gap="2">
         {tasks.length === 0 ? (
-          <Alert status="info" variant="soft">
+          <Alert status="info">
             <AlertDescription>
               No tasks yet. Add one using the form above.
             </AlertDescription>
@@ -533,7 +511,10 @@ const TaskList: React.FC = () => {
               task={task}
               onToggle={() =>
                 dispatch(
-                  updateTask({ id: task.id, updates: { completed: !task.completed } }),
+                  updateTask({
+                    id: task.id,
+                    updates: { completed: !task.completed },
+                  }),
                 )
               }
               onDelete={() => dispatch(deleteTask(task.id))}
@@ -551,20 +532,20 @@ const StatTile: React.FC<{
   value: string | number;
   subtext?: string;
 }> = ({ icon, label, value, subtext }) => (
-  <Card variant="filled" size="sm">
+  <Card>
     <CardBody>
       <Stack gap="1">
         <Inline gap="2" align="center">
           {icon}
-          <Text size="xs" variant="caption">
+          <Text size="xs" tone="subtle">
             {label}
           </Text>
         </Inline>
-        <Heading level={4} size="xl" weight="bold">
+        <Heading level={4} size="xl">
           {value}
         </Heading>
         {subtext && (
-          <Text size="xs" variant="caption">
+          <Text size="xs" tone="subtle">
             {subtext}
           </Text>
         )}
@@ -590,10 +571,7 @@ const Stats: React.FC = () => {
     const dailyProgress = (stats.dailyPomodoros / dailyGoal) * 100;
     const streakBonus = Math.min(stats.currentStreak * 5, 25);
     const weeklyBonus = Math.min(stats.weeklyPomodoros, 50);
-    return Math.min(
-      Math.floor(dailyProgress + streakBonus + weeklyBonus),
-      100,
-    );
+    return Math.min(Math.floor(dailyProgress + streakBonus + weeklyBonus), 100);
   }, [stats]);
 
   const timePeriod = (() => {
@@ -608,41 +586,32 @@ const Stats: React.FC = () => {
       <Inline justify="between" align="center" wrap>
         <Inline align="center" gap="2">
           <BarChart2 size={20} aria-hidden />
-          <Heading level={3} size="md" weight="semibold">
+          <Heading level={3} size="md">
             Statistics
           </Heading>
         </Inline>
-        <Badge
-          variant="soft"
-          colorScheme="accent"
-          size="sm"
-          icon={<Sparkles size={12} aria-hidden />}
-        >
+        <Badge variant="soft" tone="accent" size="sm">
+          <Sparkles size={12} aria-hidden />
           Good {timePeriod}!
         </Badge>
       </Inline>
 
-      <Card variant="outlined" size="md">
+      <Card>
         <CardHeader>
           <Inline justify="between" align="center" wrap>
             <Inline align="center" gap="2">
               <Target size={18} aria-hidden />
               <CardTitle as="h4">Daily progress</CardTitle>
             </Inline>
-            <Badge variant="soft" colorScheme="accent" size="sm">
+            <Badge variant="soft" tone="accent" size="sm">
               {stats.dailyPomodoros} / {dailyGoal} pomodoros
             </Badge>
           </Inline>
         </CardHeader>
         <CardBody>
           <Stack gap="2">
-            <LinearProgress
-              value={progressToGoal}
-              max={100}
-              size="md"
-              colorScheme="accent"
-            />
-            <Text size="sm" variant="caption">
+            <Progress value={progressToGoal} max={100} />
+            <Text size="sm" tone="subtle">
               {progressToGoal >= 100
                 ? 'Daily goal achieved — outstanding work!'
                 : `${dailyGoal - stats.dailyPomodoros} pomodoros to reach your goal`}
@@ -651,7 +620,7 @@ const Stats: React.FC = () => {
         </CardBody>
       </Card>
 
-      <Grid columns={{ base: 1, sm: 2 }} gap="3">
+      <Grid max={2} gap="3">
         <StatTile
           icon={<Target size={16} aria-hidden />}
           label="Today's focus"
@@ -676,31 +645,27 @@ const Stats: React.FC = () => {
         />
       </Grid>
 
-      <Card variant="elevated" size="md">
+      <Card>
         <CardBody>
           <Inline justify="between" align="center" wrap>
             <Inline align="center" gap="2">
               <Award size={20} aria-hidden />
-              <Heading level={4} size="md" weight="semibold">
+              <Heading level={4} size="md">
                 Focus score
               </Heading>
             </Inline>
-            <Heading level={4} size="3xl" weight="bold">
+            <Heading level={4} size="3xl">
               {focusScore}
             </Heading>
           </Inline>
-          <Text size="sm" variant="caption" paddingTop="2">
+          <Text size="sm" tone="subtle" className="pt-2">
             Based on your daily progress, streak, and weekly performance.
           </Text>
         </CardBody>
       </Card>
 
       {stats.weeklyPomodoros > 0 && (
-        <Alert
-          status="info"
-          variant="soft"
-          icon={<TrendingUp aria-hidden />}
-        >
+        <Alert status="info" icon={<TrendingUp aria-hidden />}>
           <AlertDescription>
             {stats.weeklyPomodoros > stats.dailyPomodoros * 7
               ? "You're ahead of last week's pace!"
@@ -722,7 +687,7 @@ const Settings: React.FC = () => {
     <Stack gap="6">
       <Inline align="center" gap="2">
         <Settings2 size={20} aria-hidden />
-        <Heading level={3} size="md" weight="semibold">
+        <Heading level={3} size="md">
           Settings
         </Heading>
       </Inline>
@@ -730,12 +695,12 @@ const Settings: React.FC = () => {
       <Stack gap="4">
         <Inline align="center" gap="2">
           <Clock size={18} aria-hidden />
-          <Heading level={4} size="sm" weight="semibold">
+          <Heading level={4} size="sm">
             Timer durations
           </Heading>
         </Inline>
 
-        <Card variant="filled" size="sm">
+        <Card>
           <CardBody>
             <Stack gap="3">
               <Inline justify="between" align="center" wrap>
@@ -743,15 +708,15 @@ const Settings: React.FC = () => {
                   <TimerIcon size={16} aria-hidden />
                   <Label>Work duration</Label>
                 </Inline>
-                <Badge variant="soft" colorScheme="accent" size="sm">
+                <Badge variant="soft" tone="accent" size="sm">
                   {settings.workDuration} min
                 </Badge>
               </Inline>
               <Slider
                 value={settings.workDuration}
-                onChange={(v) => update({ workDuration: v as number })}
-                minValue={1}
-                maxValue={60}
+                onValueChange={(v) => update({ workDuration: v })}
+                min={1}
+                max={60}
                 step={1}
                 aria-label="Work duration"
               />
@@ -759,7 +724,7 @@ const Settings: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card variant="filled" size="sm">
+        <Card>
           <CardBody>
             <Stack gap="3">
               <Inline justify="between" align="center" wrap>
@@ -767,15 +732,15 @@ const Settings: React.FC = () => {
                   <Coffee size={16} aria-hidden />
                   <Label>Short break</Label>
                 </Inline>
-                <Badge variant="soft" colorScheme="info" size="sm">
+                <Badge variant="soft" tone="info" size="sm">
                   {settings.shortBreakDuration} min
                 </Badge>
               </Inline>
               <Slider
                 value={settings.shortBreakDuration}
-                onChange={(v) => update({ shortBreakDuration: v as number })}
-                minValue={1}
-                maxValue={30}
+                onValueChange={(v) => update({ shortBreakDuration: v })}
+                min={1}
+                max={30}
                 step={1}
                 aria-label="Short break"
               />
@@ -783,7 +748,7 @@ const Settings: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card variant="filled" size="sm">
+        <Card>
           <CardBody>
             <Stack gap="3">
               <Inline justify="between" align="center" wrap>
@@ -791,15 +756,15 @@ const Settings: React.FC = () => {
                   <Battery size={16} aria-hidden />
                   <Label>Long break</Label>
                 </Inline>
-                <Badge variant="soft" colorScheme="success" size="sm">
+                <Badge variant="soft" tone="success" size="sm">
                   {settings.longBreakDuration} min
                 </Badge>
               </Inline>
               <Slider
                 value={settings.longBreakDuration}
-                onChange={(v) => update({ longBreakDuration: v as number })}
-                minValue={5}
-                maxValue={45}
+                onValueChange={(v) => update({ longBreakDuration: v })}
+                min={5}
+                max={45}
                 step={5}
                 aria-label="Long break"
               />
@@ -811,17 +776,17 @@ const Settings: React.FC = () => {
       <Stack gap="4">
         <Inline align="center" gap="2">
           <Play size={18} aria-hidden />
-          <Heading level={4} size="sm" weight="semibold">
+          <Heading level={4} size="sm">
             Automation
           </Heading>
         </Inline>
 
-        <Card variant="filled" size="sm">
+        <Card>
           <CardBody>
             <Inline justify="between" align="center" gap="3" wrap>
               <Stack gap="1">
                 <Label htmlFor="auto-breaks">Auto-start breaks</Label>
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Automatically begin breaks when work sessions end
                 </Text>
               </Stack>
@@ -834,12 +799,12 @@ const Settings: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card variant="filled" size="sm">
+        <Card>
           <CardBody>
             <Inline justify="between" align="center" gap="3" wrap>
               <Stack gap="1">
                 <Label htmlFor="auto-pomos">Auto-start pomodoros</Label>
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Automatically begin new work sessions after breaks
                 </Text>
               </Stack>
@@ -852,12 +817,12 @@ const Settings: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card variant="filled" size="sm">
+        <Card>
           <CardBody>
             <Inline justify="between" align="center" gap="3" wrap>
               <Stack gap="1">
                 <Label htmlFor="sound">Sound notifications</Label>
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Play a sound when the timer completes
                 </Text>
               </Stack>
@@ -880,57 +845,54 @@ const MenuDrawer: React.FC<{ open: boolean; onClose: () => void }> = ({
 }) => {
   const [tab, setTab] = useState<'tasks' | 'stats' | 'settings'>('tasks');
   return (
-    <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent side="right" size="md">
-        <DrawerHeader>
-          <DrawerTitle>Menu</DrawerTitle>
-        </DrawerHeader>
-        <Box padding="4">
-          <Tabs
-            value={tab}
-            onValueChange={(v) => setTab(v as typeof tab)}
-            variant="soft"
-            colorScheme="accent"
-            fullWidth
-          >
-            <TabsList aria-label="Menu sections">
-              <TabsTrigger value="tasks">
-                <Inline gap="2" align="center" wrap={false}>
-                  <ListTodo size={14} aria-hidden />
-                  <span>Tasks</span>
-                </Inline>
-              </TabsTrigger>
-              <TabsTrigger value="stats">
-                <Inline gap="2" align="center" wrap={false}>
-                  <BarChart2 size={14} aria-hidden />
-                  <span>Stats</span>
-                </Inline>
-              </TabsTrigger>
-              <TabsTrigger value="settings">
-                <Inline gap="2" align="center" wrap={false}>
-                  <Settings2 size={14} aria-hidden />
-                  <span>Settings</span>
-                </Inline>
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="tasks">
-              <Box paddingTop="4">
-                <TaskList />
-              </Box>
-            </TabsContent>
-            <TabsContent value="stats">
-              <Box paddingTop="4">
-                <Stats />
-              </Box>
-            </TabsContent>
-            <TabsContent value="settings">
-              <Box paddingTop="4">
-                <Settings />
-              </Box>
-            </TabsContent>
-          </Tabs>
-        </Box>
-      </DrawerContent>
+    <Drawer
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      side="right"
+      title="Menu"
+    >
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setTab(v as typeof tab)}
+        variant="soft"
+        fullWidth
+      >
+        <TabsList aria-label="Menu sections">
+          <TabsTrigger value="tasks">
+            <Inline gap="2" align="center" wrap={false}>
+              <ListTodo size={14} aria-hidden />
+              <span>Tasks</span>
+            </Inline>
+          </TabsTrigger>
+          <TabsTrigger value="stats">
+            <Inline gap="2" align="center" wrap={false}>
+              <BarChart2 size={14} aria-hidden />
+              <span>Stats</span>
+            </Inline>
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Inline gap="2" align="center" wrap={false}>
+              <Settings2 size={14} aria-hidden />
+              <span>Settings</span>
+            </Inline>
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="tasks">
+          <Box className="pt-4">
+            <TaskList />
+          </Box>
+        </TabsContent>
+        <TabsContent value="stats">
+          <Box className="pt-4">
+            <Stats />
+          </Box>
+        </TabsContent>
+        <TabsContent value="settings">
+          <Box className="pt-4">
+            <Settings />
+          </Box>
+        </TabsContent>
+      </Tabs>
     </Drawer>
   );
 };
@@ -945,7 +907,6 @@ const Main: React.FC = () => {
             <Inline justify="end">
               <Button
                 variant="soft"
-                colorScheme="neutral"
                 size="sm"
                 leftIcon={<Menu size={16} />}
                 onClick={() => setMenuOpen(true)}
@@ -954,7 +915,7 @@ const Main: React.FC = () => {
               </Button>
             </Inline>
             <Center>
-              <Box width="full">
+              <Box className="w-full">
                 <Timer />
               </Box>
             </Center>

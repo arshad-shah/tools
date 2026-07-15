@@ -3,8 +3,8 @@
   align-items: center;
   gap: 6px;
   padding: 2px 8px 2px 0;
-  font-family: var(--cynosure-font-family-mono);
-  font-size: var(--cynosure-font-body-sm-size);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
   line-height: 1.6;
   border-radius: 4px;
   position: relative;
@@ -12,11 +12,11 @@
 }
 
 .row:hover {
-  background: var(--cynosure-color-background-subtle);
+  background: var(--color-surface-subtle);
 }
 
 .row.matched {
-  background: var(--cynosure-color-amber-100);
+  background: var(--color-warning);
 }
 
 .indent {
@@ -27,7 +27,7 @@
 
 .indentGuide {
   width: 16px;
-  border-left: 1px solid var(--cynosure-color-border-subtle);
+  border-left: 1px solid var(--color-line);
   margin-left: 7px;
 }
 
@@ -40,15 +40,15 @@
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--cynosure-color-foreground-muted);
+  color: var(--color-fg-muted);
   border-radius: 3px;
   cursor: pointer;
   padding: 0;
 }
 
 .chevron:hover {
-  background: var(--cynosure-color-background-muted);
-  color: var(--cynosure-color-foreground-default);
+  background: var(--color-surface-strong);
+  color: var(--color-fg);
 }
 
 .chevronSpacer {
@@ -57,13 +57,13 @@
 }
 
 .key {
-  color: var(--cynosure-color-foreground-default);
+  color: var(--color-fg);
   font-weight: 500;
   white-space: nowrap;
 }
 
 .colon {
-  color: var(--cynosure-color-foreground-subtle);
+  color: var(--color-fg-subtle);
   margin-right: 2px;
 }
 
@@ -76,31 +76,31 @@
 }
 
 .string {
-  color: var(--cynosure-color-feedback-success-solid);
+  color: var(--color-success);
 }
 
 .number {
-  color: var(--cynosure-color-feedback-info-solid);
+  color: var(--color-info);
 }
 
 .boolean {
-  color: var(--cynosure-color-feedback-warning-solid);
+  color: var(--color-warning);
   font-weight: 600;
 }
 
 .null {
-  color: var(--cynosure-color-foreground-subtle);
+  color: var(--color-fg-subtle);
   font-style: italic;
 }
 
 .summary {
-  color: var(--cynosure-color-foreground-subtle);
+  color: var(--color-fg-subtle);
   font-style: italic;
   font-size: 0.9em;
 }
 
 .bracket {
-  color: var(--cynosure-color-foreground-muted);
+  color: var(--color-fg-muted);
   font-weight: 700;
 }
 
@@ -126,13 +126,13 @@
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--cynosure-color-foreground-subtle);
+  color: var(--color-fg-subtle);
   border-radius: 3px;
   cursor: pointer;
   padding: 0;
 }
 
 .actionBtn:hover {
-  background: var(--cynosure-color-background-muted);
-  color: var(--cynosure-color-foreground-default);
+  background: var(--color-surface-strong);
+  color: var(--color-fg);
 }

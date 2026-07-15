@@ -1,5 +1,5 @@
-import React, { ChangeEvent, useRef, useState } from 'react';
-import { Save, Settings, Upload } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Save, Settings } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
@@ -7,19 +7,21 @@ import {
   Badge,
   Box,
   Button,
-  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
+  FileUpload,
   Grid,
   Heading,
   Inline,
   Label,
+  Select,
   Slider,
+  Spinner,
   Stack,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 
 type OutputFormat = 'jpeg' | 'png' | 'webp';
 
@@ -78,10 +80,9 @@ const ImageOptimiser: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [metadata, setMetadata] = useState<ImageMetadata | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFiles = (files: File[]) => {
+    const file = files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setErrorMessage('Please select an image file.');
@@ -180,36 +181,24 @@ const ImageOptimiser: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Card variant="outlined" size="md">
+      <Card>
         <CardBody>
           <Stack gap="3" align="center">
-            <Box>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                hidden
-              />
-            </Box>
-            <Button
-              variant="solid"
-              colorScheme="accent"
-              size="lg"
-              leftIcon={<Upload size={20} />}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Select image
-            </Button>
+            <FileUpload
+              onFiles={handleFiles}
+              accept="image/*"
+              className="w-full"
+              label="Select an image"
+            />
             {selectedFile ? (
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 Selected:{' '}
                 <Text as="span" weight="medium">
                   {selectedFile.name}
                 </Text>
               </Text>
             ) : (
-              <Text size="sm" variant="caption">
+              <Text size="sm" tone="subtle">
                 Supported: JPG, PNG, GIF, WebP, BMP
               </Text>
             )}
@@ -218,17 +207,20 @@ const ImageOptimiser: React.FC = () => {
       </Card>
 
       {errorMessage && (
-        <Alert status="danger" variant="soft">
+        <Alert status="danger">
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
 
       {preview && (
-        <Grid columns={{ base: 1, lg: 2 }} gap="4">
-          <Card variant="outlined" size="md">
+        <Grid max={2} gap="4">
+          <Card>
             <CardHeader>
               <Inline align="center" gap="2">
-                <Badge variant="solid" colorScheme="accent" size="xs" dot />
+                <span
+                  className="inline-block size-2 rounded-full bg-accent"
+                  aria-hidden
+                />
                 <CardTitle as="h3">Original image</CardTitle>
               </Inline>
             </CardHeader>
@@ -236,15 +228,15 @@ const ImageOptimiser: React.FC = () => {
               <Stack gap="3">
                 <img src={preview} alt="Preview" width="100%" />
                 <Inline justify="between" align="center" wrap>
-                  <Text size="sm" variant="caption">
+                  <Text size="sm" tone="subtle">
                     Size: {originalSize}
                   </Text>
-                  <Text size="sm" variant="caption">
+                  <Text size="sm" tone="subtle">
                     {dimensions.width} × {dimensions.height}px
                   </Text>
                 </Inline>
                 {metadata && (
-                  <Card variant="filled" size="sm">
+                  <Card className="bg-surface-subtle">
                     <CardBody>
                       <Stack gap="1">
                         <Text size="xs" weight="semibold">
@@ -262,7 +254,7 @@ const ImageOptimiser: React.FC = () => {
             </CardBody>
           </Card>
 
-          <Card variant="outlined" size="md">
+          <Card>
             <CardHeader>
               <Inline align="center" gap="2">
                 <Settings size={18} aria-hidden />
@@ -273,41 +265,37 @@ const ImageOptimiser: React.FC = () => {
               <Stack gap="5">
                 <Stack gap="2">
                   <Label>Output format</Label>
-                  <ButtonGroup>
-                    {(['jpeg', 'png', 'webp'] as const).map((f) => (
-                      <Button
-                        key={f}
-                        variant={outputFormat === f ? 'solid' : 'soft'}
-                        colorScheme={outputFormat === f ? 'accent' : 'neutral'}
-                        size="sm"
-                        onClick={() => setOutputFormat(f)}
-                      >
-                        {f.toUpperCase()}
-                      </Button>
-                    ))}
-                  </ButtonGroup>
+                  <Select
+                    value={outputFormat}
+                    onValueChange={(v) => setOutputFormat(v as OutputFormat)}
+                    items={[
+                      { value: 'jpeg', label: 'JPEG' },
+                      { value: 'png', label: 'PNG' },
+                      { value: 'webp', label: 'WEBP' },
+                    ]}
+                    aria-label="Output format"
+                  />
                 </Stack>
                 <Stack gap="2">
                   <Label>Compression quality: {compressionLevel}%</Label>
                   <Slider
                     value={compressionLevel}
-                    onChange={(v) => setCompressionLevel(v as number)}
-                    minValue={1}
-                    maxValue={100}
+                    onValueChange={(v) => setCompressionLevel(v)}
+                    min={1}
+                    max={100}
                     step={1}
                     aria-label="Compression quality"
                   />
-                  <Text size="xs" variant="caption">
+                  <Text size="xs" tone="subtle">
                     {qualityHint}
                   </Text>
                 </Stack>
                 <Button
                   variant="solid"
-                  colorScheme="accent"
-                  fullWidth
-                  loading={isProcessing}
+                  className="w-full"
                   disabled={!selectedFile || isProcessing}
                   onClick={processImage}
+                  leftIcon={isProcessing ? <Spinner size="sm" /> : undefined}
                 >
                   {isProcessing ? 'Processing…' : 'Convert & compress'}
                 </Button>
@@ -318,36 +306,47 @@ const ImageOptimiser: React.FC = () => {
       )}
 
       {processedImage && (
-        <Card variant="outlined" size="md">
+        <Card>
           <CardHeader>
-            <Alert status={reductionStatus} variant="soft">
+            <Alert status={reductionStatus}>
               <AlertTitle>Processing complete</AlertTitle>
               {reduction !== 'No reduction' && (
                 <AlertDescription>
-                  Size reduction: <Text as="span" weight="semibold">{reduction}</Text>
+                  Size reduction:{' '}
+                  <Text as="span" weight="semibold">
+                    {reduction}
+                  </Text>
                 </AlertDescription>
               )}
             </Alert>
           </CardHeader>
           <CardBody>
-            <Grid columns={{ base: 1, lg: 3 }} gap="4">
-              <Box gridColumn={{ base: 'span 1', lg: 'span 2' }}>
+            <Grid max={3} gap="4">
+              <Box className="lg:col-span-2">
                 <Stack gap="3">
-                  <Heading level={4} size="md" weight="semibold">
+                  <Heading level={4} size="md">
                     Processed image
                   </Heading>
                   <img src={processedImage} alt="Processed" width="100%" />
-                  <Grid columns={2} gap="3">
-                    <Card variant="filled" size="sm">
+                  <Grid max={2} gap="3">
+                    <Card className="bg-surface-subtle">
                       <CardBody>
-                        <Text size="xs" variant="caption">Original</Text>
-                        <Text size="md" weight="semibold">{originalSize}</Text>
+                        <Text size="xs" tone="subtle">
+                          Original
+                        </Text>
+                        <Text size="md" weight="semibold">
+                          {originalSize}
+                        </Text>
                       </CardBody>
                     </Card>
-                    <Card variant="filled" size="sm">
+                    <Card className="bg-surface-subtle">
                       <CardBody>
-                        <Text size="xs" variant="caption">Compressed</Text>
-                        <Text size="md" weight="semibold">{newSize}</Text>
+                        <Text size="xs" tone="subtle">
+                          Compressed
+                        </Text>
+                        <Text size="md" weight="semibold">
+                          {newSize}
+                        </Text>
                       </CardBody>
                     </Card>
                   </Grid>
@@ -356,15 +355,14 @@ const ImageOptimiser: React.FC = () => {
               <Stack gap="3" justify="center" align="center">
                 <Button
                   variant="solid"
-                  colorScheme="accent"
                   size="lg"
-                  fullWidth
+                  className="w-full"
                   leftIcon={<Save size={20} />}
                   onClick={downloadImage}
                 >
                   Download image
                 </Button>
-                <Badge variant="soft" colorScheme="neutral" size="sm">
+                <Badge variant="soft" tone="neutral" size="sm">
                   Format: {outputFormat.toUpperCase()}
                 </Badge>
               </Stack>
@@ -373,7 +371,7 @@ const ImageOptimiser: React.FC = () => {
         </Card>
       )}
 
-      <Box display="none">
+      <Box className="hidden">
         <canvas ref={canvasRef} />
       </Box>
     </Stack>

@@ -41,7 +41,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { Category, Conversion, Unit } from '../../types/UnitConverterTypes';
 
 const CATEGORIES: Category[] = [
@@ -232,7 +232,9 @@ const UnitConverter: React.FC = () => {
   const [fromValue, setFromValue] = useState('1');
   const [toValue, setToValue] = useState('');
   const [history, setHistory] = useState<Conversion[]>([]);
-  const [activeTab, setActiveTab] = useState<'converter' | 'saved'>('converter');
+  const [activeTab, setActiveTab] = useState<'converter' | 'saved'>(
+    'converter',
+  );
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -293,13 +295,12 @@ const UnitConverter: React.FC = () => {
   }));
 
   return (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardBody>
         <Tabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as 'converter' | 'saved')}
           variant="line"
-          colorScheme="accent"
         >
           <TabsList aria-label="Unit converter view">
             <TabsTrigger value="converter">
@@ -313,7 +314,7 @@ const UnitConverter: React.FC = () => {
                 <History size={16} aria-hidden />
                 <span>History</span>
                 {history.length > 0 && (
-                  <Badge variant="solid" colorScheme="accent" size="xs">
+                  <Badge variant="solid" tone="accent" size="xs">
                     {history.length}
                   </Badge>
                 )}
@@ -322,53 +323,56 @@ const UnitConverter: React.FC = () => {
           </TabsList>
 
           <TabsContent value="converter">
-            <Stack gap="6" paddingTop="4">
+            <Stack gap="6" className="pt-4">
               <Stack gap="3">
                 <Inline justify="between" align="center" wrap gap="3">
-                  <Heading level={2} size="md" weight="semibold">
+                  <Heading level={2} size="md">
                     Select category
                   </Heading>
                   <SearchInput
                     value={searchTerm}
                     onChange={setSearchTerm}
-                    onSearch={setSearchTerm}
                     placeholder="Search categories…"
-                    size="sm"
                   />
                 </Inline>
-                <Grid columns={{ base: 2, sm: 3, md: 5 }} gap="3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                   {filteredCategories.map((c) => (
                     <Card
                       key={c.name}
-                      variant={
-                        selectedCategory.name === c.name ? 'outlined' : 'filled'
-                      }
-                      size="sm"
                       interactive
+                      className={
+                        selectedCategory.name === c.name
+                          ? 'border-accent'
+                          : undefined
+                      }
                       onClick={() => setSelectedCategory(c)}
                     >
                       <CardBody>
                         <Stack gap="2" align="center">
                           {c.icon}
-                          <Text size="sm" weight="medium" align="center">
+                          <Text
+                            size="sm"
+                            weight="medium"
+                            className="text-center"
+                          >
                             {c.name}
                           </Text>
                         </Stack>
                       </CardBody>
                     </Card>
                   ))}
-                </Grid>
+                </div>
               </Stack>
 
-              <Card variant="filled" size="md">
+              <Card>
                 <CardBody>
-                  <Grid columns={{ base: 1, md: 2 }} gap="6" align="center">
+                  <Grid max={2} gap="6" className="items-center">
                     <Stack gap="3">
                       <Inline align="center" gap="2">
-                        <Heading level={3} size="md" weight="semibold">
+                        <Heading level={3} size="md">
                           From
                         </Heading>
-                        <Badge variant="soft" colorScheme="accent" size="xs">
+                        <Badge variant="soft" tone="accent" size="xs">
                           INPUT
                         </Badge>
                       </Inline>
@@ -407,10 +411,10 @@ const UnitConverter: React.FC = () => {
 
                     <Stack gap="3">
                       <Inline align="center" gap="2">
-                        <Heading level={3} size="md" weight="semibold">
+                        <Heading level={3} size="md">
                           To
                         </Heading>
-                        <Badge variant="soft" colorScheme="success" size="xs">
+                        <Badge variant="soft" tone="success" size="xs">
                           RESULT
                         </Badge>
                       </Inline>
@@ -447,11 +451,10 @@ const UnitConverter: React.FC = () => {
                     </Stack>
                   </Grid>
 
-                  <Inline justify="center" paddingY="4">
+                  <Inline justify="center" className="py-4">
                     <IconButton
                       variant="solid"
-                      colorScheme="accent"
-                      shape="pill"
+                      className="rounded-full"
                       label="Swap units"
                       icon={<ArrowRightLeft size={20} />}
                       onClick={swapUnits}
@@ -460,18 +463,18 @@ const UnitConverter: React.FC = () => {
                 </CardBody>
               </Card>
 
-              <Card variant="outlined" size="md">
+              <Card>
                 <CardBody>
                   <Center>
                     <Inline gap="3" align="center" wrap justify="center">
-                      <Badge variant="soft" colorScheme="neutral" size="md">
+                      <Badge variant="soft" tone="neutral" size="md">
                         {fromValue ? formatNumber(fromValue) : '0'}{' '}
                         {fromUnit.symbol}
                       </Badge>
                       <Text size="lg" weight="bold">
                         =
                       </Text>
-                      <Badge variant="solid" colorScheme="accent" size="md">
+                      <Badge variant="solid" tone="accent" size="md">
                         {toValue ? formatNumber(toValue) : '0'} {toUnit.symbol}
                       </Badge>
                     </Inline>
@@ -482,11 +485,11 @@ const UnitConverter: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="saved">
-            <Stack gap="4" paddingTop="4">
+            <Stack gap="4" className="pt-4">
               {history.length > 0 ? (
                 <>
                   <Inline justify="between" align="center" wrap>
-                    <Heading level={2} size="md" weight="semibold">
+                    <Heading level={2} size="md">
                       <Inline gap="2" align="center">
                         <Clock size={20} aria-hidden />
                         Conversion history
@@ -494,7 +497,6 @@ const UnitConverter: React.FC = () => {
                     </Heading>
                     <Button
                       variant="soft"
-                      colorScheme="neutral"
                       size="sm"
                       leftIcon={<X size={16} />}
                       onClick={() => setHistory([])}
@@ -506,18 +508,11 @@ const UnitConverter: React.FC = () => {
                     {history.map((c) => (
                       <Card
                         key={c.id}
-                        variant="outlined"
-                        size="sm"
                         interactive
                         onClick={() => reuseConversion(c)}
                       >
                         <CardBody>
-                          <Inline
-                            justify="between"
-                            align="center"
-                            gap="3"
-                            wrap
-                          >
+                          <Inline justify="between" align="center" gap="3" wrap>
                             <Inline align="center" gap="3">
                               {c.categoryIcon}
                               <Stack gap="1">
@@ -527,7 +522,7 @@ const UnitConverter: React.FC = () => {
                                   </Text>
                                   <Badge
                                     variant="soft"
-                                    colorScheme="neutral"
+                                    tone="neutral"
                                     size="xs"
                                   >
                                     {getTimeSince(c.timestamp)}
@@ -537,14 +532,10 @@ const UnitConverter: React.FC = () => {
                                   <Text size="sm" weight="semibold">
                                     {c.from}
                                   </Text>
-                                  <Text size="sm" variant="caption">
+                                  <Text size="sm" tone="subtle">
                                     →
                                   </Text>
-                                  <Badge
-                                    variant="soft"
-                                    colorScheme="accent"
-                                    size="sm"
-                                  >
+                                  <Badge variant="soft" tone="accent" size="sm">
                                     {c.to}
                                   </Badge>
                                 </Inline>
@@ -553,7 +544,6 @@ const UnitConverter: React.FC = () => {
                             <Inline gap="1">
                               <IconButton
                                 variant="ghost"
-                                colorScheme="accent"
                                 size="sm"
                                 label="Reuse conversion"
                                 icon={<RefreshCw size={16} />}
@@ -564,8 +554,8 @@ const UnitConverter: React.FC = () => {
                               />
                               <IconButton
                                 variant="ghost"
-                                colorScheme="danger"
                                 size="sm"
+                                className="text-danger hover:text-danger"
                                 label="Remove conversion"
                                 icon={<X size={16} />}
                                 onClick={(e) => {
@@ -583,7 +573,7 @@ const UnitConverter: React.FC = () => {
                   </Stack>
                 </>
               ) : (
-                <EmptyState size="lg" variant="subtle">
+                <EmptyState>
                   <EmptyStateIcon>
                     <History size={48} aria-hidden />
                   </EmptyStateIcon>
@@ -594,7 +584,6 @@ const UnitConverter: React.FC = () => {
                   <EmptyStateActions>
                     <Button
                       variant="solid"
-                      colorScheme="accent"
                       onClick={() => setActiveTab('converter')}
                     >
                       Start converting

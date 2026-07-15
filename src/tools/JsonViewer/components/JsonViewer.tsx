@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import rehypePrism from 'rehype-prism-plus';
 import rehypeRewrite from 'rehype-rewrite';
-import { useColorScheme } from '@arshad-shah/cynosure-react';
 import {
   ChevronDown,
   Code2,
@@ -25,6 +24,7 @@ import {
   Badge,
   Box,
   Button,
+  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
@@ -37,16 +37,14 @@ import {
   DropdownMenuTrigger,
   Grid,
   Heading,
+  IconButton,
   Inline,
-  ScrollArea,
   SearchInput,
   Select,
   Stack,
   Text,
-  ToggleGroup,
-  ToggleGroupItem,
   Tooltip,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import TreeView from './TreeView';
 import DataFlow from './treeview/DataFlow';
 
@@ -72,16 +70,13 @@ const DataViewer = () => {
   const [format, setFormat] = useState<FormatType>('json');
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedLines, setHighlightedLines] = useState<number[]>([]);
-  const theme = useColorScheme();
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
   const [layout, setLayout] = useState<LayoutType>('split');
   const [activePane, setActivePane] = useState<PaneType>('editor');
 
   const getHighlightStyles = (lineNumber: number) =>
     highlightedLines.includes(lineNumber)
-      ? theme === 'dark'
-        ? { backgroundColor: 'rgba(6, 182, 212, 0.2)' }
-        : { backgroundColor: 'rgba(6, 182, 212, 0.1)' }
+      ? { backgroundColor: 'rgba(6, 182, 212, 0.2)' }
       : {};
 
   const editorStyles = {
@@ -241,7 +236,7 @@ const DataViewer = () => {
       onChange={(evn) => setInputText(evn.target.value)}
       padding={15}
       style={editorStyles}
-      data-color-mode={theme === 'dark' ? 'dark' : 'light'}
+      data-color-mode="dark"
       rehypePlugins={rehypePlugins}
     />
   );
@@ -249,12 +244,12 @@ const DataViewer = () => {
   const renderViewerBody = () => {
     if (!parsedData) {
       return (
-        <Center paddingY="10">
+        <Center className="py-10">
           <Stack gap="2" align="center">
-            <Heading level={3} size="md" weight="semibold">
+            <Heading level={3} size="md">
               No data to display
             </Heading>
-            <Text size="sm" variant="caption">
+            <Text size="sm" tone="subtle">
               Enter some {format.toUpperCase()} above and click Parse to
               visualise.
             </Text>
@@ -270,7 +265,7 @@ const DataViewer = () => {
   };
 
   const editorPanel = (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardHeader>
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
@@ -279,12 +274,12 @@ const DataViewer = () => {
             ) : (
               <Code2 size={16} aria-hidden />
             )}
-            <Heading level={3} size="md" weight="semibold">
+            <Heading level={3} size="md">
               {format.toUpperCase()} editor
             </Heading>
           </Inline>
           {highlightedLines.length > 0 && (
-            <Badge variant="soft" colorScheme="accent" size="sm">
+            <Badge variant="soft" tone="accent" size="sm">
               {highlightedLines.length} match
               {highlightedLines.length !== 1 ? 'es' : ''}
             </Badge>
@@ -292,13 +287,13 @@ const DataViewer = () => {
         </Inline>
       </CardHeader>
       <CardBody>
-        <Box overflow="auto">{renderEditor()}</Box>
+        <Box className="overflow-auto">{renderEditor()}</Box>
       </CardBody>
     </Card>
   );
 
   const viewerPanel = (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardHeader>
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
@@ -307,12 +302,12 @@ const DataViewer = () => {
             ) : (
               <Network size={16} aria-hidden />
             )}
-            <Heading level={3} size="md" weight="semibold">
+            <Heading level={3} size="md">
               {viewMode === 'tree' ? 'Tree view' : 'Network view'}
             </Heading>
           </Inline>
           {searchTerm && (
-            <Badge variant="soft" colorScheme="accent" size="sm">
+            <Badge variant="soft" tone="accent" size="sm">
               Filtering: {searchTerm}
             </Badge>
           )}
@@ -320,25 +315,23 @@ const DataViewer = () => {
       </CardHeader>
       <CardBody>
         {viewMode === 'network' ? (
-          <Box height="40rem" overflow="hidden">
-            {renderViewerBody()}
-          </Box>
+          <Box className="h-[40rem] overflow-hidden">{renderViewerBody()}</Box>
         ) : (
-          <ScrollArea height="40rem">{renderViewerBody()}</ScrollArea>
+          <Box className="h-[40rem] overflow-auto">{renderViewerBody()}</Box>
         )}
       </CardBody>
     </Card>
   );
 
   return (
-    <Container size="full">
+    <Container size="xl" className="max-w-none">
       <Stack gap="4">
-        <Card variant="filled" size="md">
+        <Card>
           <CardBody>
             <Stack gap="3">
               <Inline justify="between" align="center" wrap gap="3">
                 <Inline align="center" gap="2" wrap>
-                  <Box minWidth="110px">
+                  <Box className="min-w-[110px]">
                     <Select
                       value={format}
                       onValueChange={(v) => setFormat(v as FormatType)}
@@ -347,89 +340,78 @@ const DataViewer = () => {
                         { value: 'xml', label: 'XML' },
                       ]}
                       aria-label="Format"
-                      size="sm"
                     />
                   </Box>
 
-                  <ToggleGroup
-                    type="single"
-                    value={viewMode}
-                    onValueChange={(v) => v && setViewMode(v as ViewMode)}
-                    size="sm"
-                    variant="outline"
-                    attached
-                    aria-label="View mode"
-                  >
+                  <ButtonGroup aria-label="View mode">
                     <Tooltip content="Tree view">
-                      <ToggleGroupItem value="tree" aria-label="Tree view">
-                        <ListIcon size={14} />
-                      </ToggleGroupItem>
+                      <IconButton
+                        label="Tree view"
+                        icon={<ListIcon size={14} />}
+                        size="sm"
+                        variant={viewMode === 'tree' ? 'solid' : 'ghost'}
+                        onClick={() => setViewMode('tree')}
+                      />
                     </Tooltip>
                     <Tooltip content="Network graph">
-                      <ToggleGroupItem
-                        value="network"
-                        aria-label="Network view"
-                      >
-                        <Network size={14} />
-                      </ToggleGroupItem>
+                      <IconButton
+                        label="Network view"
+                        icon={<Network size={14} />}
+                        size="sm"
+                        variant={viewMode === 'network' ? 'solid' : 'ghost'}
+                        onClick={() => setViewMode('network')}
+                      />
                     </Tooltip>
-                  </ToggleGroup>
+                  </ButtonGroup>
 
-                  <ToggleGroup
-                    type="single"
-                    value={layout}
-                    onValueChange={(v) => v && setLayout(v as LayoutType)}
-                    size="sm"
-                    variant="outline"
-                    attached
-                    aria-label="Layout"
-                  >
+                  <ButtonGroup aria-label="Layout">
                     <Tooltip content="Split panels">
-                      <ToggleGroupItem value="split" aria-label="Split layout">
-                        <Columns size={14} />
-                      </ToggleGroupItem>
+                      <IconButton
+                        label="Split layout"
+                        icon={<Columns size={14} />}
+                        size="sm"
+                        variant={layout === 'split' ? 'solid' : 'ghost'}
+                        onClick={() => setLayout('split')}
+                      />
                     </Tooltip>
                     <Tooltip content="Single panel">
-                      <ToggleGroupItem
-                        value="single"
-                        aria-label="Single layout"
-                      >
-                        <MonitorIcon size={14} />
-                      </ToggleGroupItem>
+                      <IconButton
+                        label="Single layout"
+                        icon={<MonitorIcon size={14} />}
+                        size="sm"
+                        variant={layout === 'single' ? 'solid' : 'ghost'}
+                        onClick={() => setLayout('single')}
+                      />
                     </Tooltip>
-                  </ToggleGroup>
+                  </ButtonGroup>
 
                   {layout === 'single' && (
-                    <ToggleGroup
-                      type="single"
-                      value={activePane}
-                      onValueChange={(v) => v && setActivePane(v as PaneType)}
-                      size="sm"
-                      variant="outline"
-                      attached
-                      aria-label="Active pane"
-                    >
+                    <ButtonGroup aria-label="Active pane">
                       <Tooltip content="Editor">
-                        <ToggleGroupItem
-                          value="editor"
-                          aria-label="Editor pane"
-                        >
-                          <PanelLeft size={14} />
-                        </ToggleGroupItem>
+                        <IconButton
+                          label="Editor pane"
+                          icon={<PanelLeft size={14} />}
+                          size="sm"
+                          variant={activePane === 'editor' ? 'solid' : 'ghost'}
+                          onClick={() => setActivePane('editor')}
+                        />
                       </Tooltip>
                       <Tooltip content="Viewer">
-                        <ToggleGroupItem value="view" aria-label="Viewer pane">
-                          <PanelRight size={14} />
-                        </ToggleGroupItem>
+                        <IconButton
+                          label="Viewer pane"
+                          icon={<PanelRight size={14} />}
+                          size="sm"
+                          variant={activePane === 'view' ? 'solid' : 'ghost'}
+                          onClick={() => setActivePane('view')}
+                        />
                       </Tooltip>
-                    </ToggleGroup>
+                    </ButtonGroup>
                   )}
                 </Inline>
 
                 <Inline gap="2" align="center">
                   <Button
                     variant="solid"
-                    colorScheme="accent"
                     size="sm"
                     leftIcon={<Wand2 size={14} />}
                     onClick={handleParse}
@@ -437,10 +419,9 @@ const DataViewer = () => {
                     Parse
                   </Button>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger>
                       <Button
                         variant="soft"
-                        colorScheme="neutral"
                         size="sm"
                         rightIcon={<ChevronDown size={12} />}
                         leftIcon={<MoreHorizontal size={14} />}
@@ -470,7 +451,6 @@ const DataViewer = () => {
               <SearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}
-                onSearch={setSearchTerm}
                 placeholder="Search lines…"
               />
             </Stack>
@@ -478,7 +458,7 @@ const DataViewer = () => {
         </Card>
 
         {layout === 'split' ? (
-          <Grid columns={{ base: 1, lg: 2 }} gap="4">
+          <Grid max={2} gap="4">
             {editorPanel}
             {viewerPanel}
           </Grid>
@@ -489,7 +469,7 @@ const DataViewer = () => {
         )}
 
         {error && (
-          <Alert status="danger" variant="soft">
+          <Alert status="danger">
             <AlertTitle>Parse error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>

@@ -32,10 +32,11 @@ import {
   Grid,
   Heading,
   Inline,
-  LinearProgress,
+  Progress,
+  Spinner,
   Stack,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { ToolProps } from '../../types/ToolTypes';
 import {
   CompressionLevel,
@@ -516,24 +517,18 @@ const PdfCompressor: React.FC<ToolProps> = () => {
   return (
     <Stack gap="6">
       {state.error && (
-        <Alert status="danger" variant="soft">
+        <Alert status="danger">
           <AlertDescription>{state.error.message}</AlertDescription>
         </Alert>
       )}
 
       {!state.pdfFile && (
-        <Card variant="elevated" size="md">
+        <Card>
           <CardBody>
             <FileUpload
               accept="application/pdf,.pdf"
-              maxCount={1}
-              maxSize={100 * 1024 * 1024}
-              onFilesChange={(files) => files[0] && handleFileSelect(files[0])}
-              onError={(err) =>
-                setState((prev) => ({
-                  ...prev,
-                  error: { message: err.message },
-                }))
+              onFiles={(files: File[]) =>
+                files[0] && handleFileSelect(files[0])
               }
             />
           </CardBody>
@@ -542,7 +537,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
 
       {state.pdfFile && !state.compressedPDF && (
         <Stack gap="6">
-          <Card variant="elevated" size="md">
+          <Card>
             <CardBody>
               <Inline justify="between" align="center" gap="3" wrap>
                 <Inline align="center" gap="3">
@@ -551,17 +546,16 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                     <Text size="md" weight="semibold">
                       {state.pdfFile.name}
                     </Text>
-                    <Text size="sm" variant="caption">
+                    <Text size="sm" tone="subtle">
                       Original size: {formatFileSize(state.originalSize)}
                     </Text>
-                    <Text size="sm" variant="caption">
+                    <Text size="sm" tone="subtle">
                       Estimated after compression: ~{getEstimatedSize()}
                     </Text>
                   </Stack>
                 </Inline>
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   leftIcon={<RotateCcw size={16} />}
                   onClick={reset}
@@ -572,7 +566,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             </CardBody>
           </Card>
 
-          <Alert status="info" variant="soft">
+          <Alert status="info">
             <AlertTitle>Production-grade compression</AlertTitle>
             <AlertDescription>
               Multi-pass optimisation, image compression, metadata removal, form
@@ -580,13 +574,13 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             </AlertDescription>
           </Alert>
 
-          <Card variant="elevated" size="md">
+          <Card>
             <CardHeader>
               <CardTitle as="h3">Compression level</CardTitle>
             </CardHeader>
             <CardBody>
               <Stack gap="5">
-                <Grid columns={{ base: 1, md: 2 }} gap="3">
+                <Grid max={2} gap="3">
                   {Object.entries(COMPRESSION_SETTINGS).map(
                     ([key, setting]) => {
                       const level = key as CompressionLevel;
@@ -595,9 +589,8 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                       return (
                         <Card
                           key={key}
-                          variant={isSelected ? 'outlined' : 'filled'}
-                          size="sm"
                           interactive
+                          className={isSelected ? 'border-accent' : undefined}
                           onClick={() => handleCompressionLevelChange(level)}
                         >
                           <CardBody>
@@ -607,14 +600,12 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                                 <Text size="sm" weight="semibold">
                                   {setting.name}
                                 </Text>
-                                <Text size="xs" variant="caption">
+                                <Text size="xs" tone="subtle">
                                   {setting.description}
                                 </Text>
                                 <Badge
                                   variant="soft"
-                                  colorScheme={
-                                    isSelected ? 'accent' : 'neutral'
-                                  }
+                                  tone={isSelected ? 'accent' : 'neutral'}
                                   size="xs"
                                 >
                                   Expected: {setting.expectedReduction}{' '}
@@ -629,7 +620,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                   )}
                 </Grid>
 
-                <Card variant="filled" size="sm">
+                <Card>
                   <CardHeader>
                     <Inline gap="2" align="center">
                       <Settings size={16} aria-hidden />
@@ -639,11 +630,11 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                     </Inline>
                   </CardHeader>
                   <CardBody>
-                    <Grid columns={{ base: 1, md: 3 }} gap="3">
+                    <Grid max={3} gap="3">
                       <Inline align="center" gap="2">
                         <ImageIcon size={16} aria-hidden />
                         <Stack gap="0">
-                          <Text size="xs" variant="caption">
+                          <Text size="xs" tone="subtle">
                             Image quality
                           </Text>
                           <Text size="sm" weight="medium">
@@ -658,7 +649,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                       <Inline align="center" gap="2">
                         <Layers size={16} aria-hidden />
                         <Stack gap="0">
-                          <Text size="xs" variant="caption">
+                          <Text size="xs" tone="subtle">
                             Image scale
                           </Text>
                           <Text size="sm" weight="medium">
@@ -673,7 +664,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                       <Inline align="center" gap="2">
                         <Type size={16} aria-hidden />
                         <Stack gap="0">
-                          <Text size="xs" variant="caption">
+                          <Text size="xs" tone="subtle">
                             Optimisation passes
                           </Text>
                           <Text size="sm" weight="medium">
@@ -693,7 +684,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
 
           <Stack gap="3">
             {state.processing && compressionProgress.stage && (
-              <Card variant="filled" size="sm">
+              <Card>
                 <CardBody>
                   <Stack gap="2">
                     <Inline justify="between" align="center">
@@ -704,11 +695,9 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                         {compressionProgress.percentage}%
                       </Text>
                     </Inline>
-                    <LinearProgress
+                    <Progress
                       value={compressionProgress.percentage}
                       max={100}
-                      size="sm"
-                      colorScheme="accent"
                     />
                   </Stack>
                 </CardBody>
@@ -718,12 +707,16 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             <Button
               onClick={compressPDF}
               variant="solid"
-              colorScheme="accent"
               size="lg"
-              fullWidth
-              loading={state.processing}
+              className="w-full"
               disabled={state.processing}
-              leftIcon={state.processing ? undefined : <Minimize2 size={20} />}
+              leftIcon={
+                state.processing ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <Minimize2 size={20} />
+                )
+              }
             >
               {state.processing ? 'Compressing PDF…' : 'Compress PDF'}
             </Button>
@@ -733,7 +726,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
 
       {state.compressedPDF && (
         <Stack gap="6">
-          <Alert status="success" variant="soft">
+          <Alert status="success">
             <AlertTitle>Successfully compressed your PDF</AlertTitle>
             <AlertDescription>
               File size reduced by {calculateReduction()}% • Saved{' '}
@@ -741,7 +734,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             </AlertDescription>
           </Alert>
 
-          <Card variant="elevated" size="md">
+          <Card>
             <CardHeader>
               <Inline align="center" gap="2">
                 <ArrowDown size={20} aria-hidden />
@@ -750,14 +743,14 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             </CardHeader>
             <CardBody>
               <Stack gap="4">
-                <Card variant="filled" size="sm">
+                <Card>
                   <CardBody>
                     <Inline justify="between" align="center">
                       <Stack gap="1">
-                        <Text size="sm" variant="caption">
+                        <Text size="sm" tone="subtle">
                           Original size
                         </Text>
-                        <Heading level={4} size="xl" weight="bold">
+                        <Heading level={4} size="xl">
                           {formatFileSize(state.originalSize)}
                         </Heading>
                       </Stack>
@@ -769,25 +762,20 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                 <Center>
                   <Stack gap="2" align="center">
                     <ArrowDown size={28} aria-hidden />
-                    <Badge
-                      variant="solid"
-                      colorScheme="accent"
-                      size="sm"
-                      shape="pill"
-                    >
+                    <Badge variant="solid" tone="accent" size="sm" pill>
                       -{calculateReduction()}%
                     </Badge>
                   </Stack>
                 </Center>
 
-                <Card variant="outlined" size="sm">
+                <Card>
                   <CardBody>
                     <Inline justify="between" align="center">
                       <Stack gap="1">
-                        <Text size="sm" variant="caption">
+                        <Text size="sm" tone="subtle">
                           Compressed size
                         </Text>
-                        <Heading level={4} size="xl" weight="bold">
+                        <Heading level={4} size="xl">
                           {formatFileSize(state.compressedPDF.size)}
                         </Heading>
                       </Stack>
@@ -796,13 +784,13 @@ const PdfCompressor: React.FC<ToolProps> = () => {
                   </CardBody>
                 </Card>
 
-                <Card variant="filled" size="md">
+                <Card>
                   <CardBody>
                     <Stack gap="2" align="center">
-                      <Text size="sm" variant="caption">
+                      <Text size="sm" tone="subtle">
                         Total space saved
                       </Text>
-                      <Heading level={3} size="3xl" weight="bold">
+                      <Heading level={3} size="3xl">
                         {formatFileSize(calculateSavings())}
                       </Heading>
                       <Inline gap="2" align="center">
@@ -822,9 +810,8 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             <Button
               onClick={downloadCompressed}
               variant="solid"
-              colorScheme="success"
               size="lg"
-              fullWidth
+              className="w-full"
               leftIcon={<Download size={20} />}
             >
               Download compressed PDF
@@ -832,8 +819,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
             <Button
               onClick={reset}
               variant="soft"
-              colorScheme="neutral"
-              fullWidth
+              className="w-full"
               leftIcon={<RotateCcw size={16} />}
             >
               Compress another PDF

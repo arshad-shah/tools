@@ -5,6 +5,7 @@ import {
   type DateValue,
   getLocalTimeZone,
   now,
+  parseDateTime,
   toCalendarDateTime,
 } from '@internationalized/date';
 import {
@@ -13,9 +14,9 @@ import {
   Button,
   Card,
   CardBody,
-  DatePicker,
   Grid,
   Inline,
+  Input,
   Label,
   NumberInput,
   Select,
@@ -25,7 +26,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 
 type TimeUnit = 'minutes' | 'hours' | 'days' | 'months' | 'years';
 type Operation = 'add' | 'subtract';
@@ -55,6 +56,20 @@ const toJsDate = (value: DateValue | null): Date | null => {
   return dt.toDate(getLocalTimeZone());
 };
 
+// UI-boundary conversions for the native <input type="datetime-local">
+// (minute granularity). State stays a DateValue so all calculation logic
+// below is unchanged.
+const pad = (n: number): string => String(n).padStart(2, '0');
+
+const toInputValue = (value: DateValue | null): string => {
+  if (!value) return '';
+  const dt = toCalendarDateTime(value as CalendarDateTime);
+  return `${dt.year}-${pad(dt.month)}-${pad(dt.day)}T${pad(dt.hour)}:${pad(dt.minute)}`;
+};
+
+const fromInputValue = (str: string): DateValue | null =>
+  str ? parseDateTime(str) : null;
+
 const DateCalculator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('difference');
 
@@ -62,7 +77,9 @@ const DateCalculator: React.FC = () => {
   const [endDate, setEndDate] = useState<DateValue | null>(null);
   const [diffResult, setDiffResult] = useState<ResultState | null>(null);
 
-  const [baseDate, setBaseDate] = useState<DateValue | null>(now(getLocalTimeZone()));
+  const [baseDate, setBaseDate] = useState<DateValue | null>(
+    now(getLocalTimeZone()),
+  );
   const [timeValue, setTimeValue] = useState<number>(0);
   const [timeUnit, setTimeUnit] = useState<TimeUnit>('days');
   const [operation, setOperation] = useState<Operation>('add');
@@ -79,7 +96,9 @@ const DateCalculator: React.FC = () => {
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const months = Math.floor(days / 30);
     const years = Math.floor(days / 365);
-    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const hours = Math.floor(
+      (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     setDiffResult({
       message: `${years} years, ${months % 12} months, ${days % 30} days, ${hours} hours, ${minutes} minutes`,
@@ -90,7 +109,10 @@ const DateCalculator: React.FC = () => {
   const modifyDate = () => {
     const date = toJsDate(baseDate);
     if (!date) {
-      setModifyResult({ message: 'Please provide a base date', status: 'danger' });
+      setModifyResult({
+        message: 'Please provide a base date',
+        status: 'danger',
+      });
       return;
     }
     const value = Number(timeValue);
@@ -121,13 +143,12 @@ const DateCalculator: React.FC = () => {
   };
 
   return (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardBody>
         <Tabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as TabType)}
           variant="soft"
-          colorScheme="accent"
           fullWidth
         >
           <TabsList aria-label="Date calculator mode">
@@ -146,35 +167,34 @@ const DateCalculator: React.FC = () => {
           </TabsList>
 
           <TabsContent value="difference">
-            <Stack gap="4" paddingTop="4">
+            <Stack gap="4" className="pt-4">
               <Stack gap="2">
                 <Label>Start date</Label>
-                <DatePicker
-                  value={startDate}
-                  onChange={setStartDate}
-                  granularity="minute"
+                <Input
+                  type="datetime-local"
+                  value={toInputValue(startDate)}
+                  onChange={(v) => setStartDate(fromInputValue(v))}
                   aria-label="Start date"
                 />
               </Stack>
               <Stack gap="2">
                 <Label>End date</Label>
-                <DatePicker
-                  value={endDate}
-                  onChange={setEndDate}
-                  granularity="minute"
+                <Input
+                  type="datetime-local"
+                  value={toInputValue(endDate)}
+                  onChange={(v) => setEndDate(fromInputValue(v))}
                   aria-label="End date"
                 />
               </Stack>
               <Button
                 variant="solid"
-                colorScheme="accent"
-                fullWidth
+                className="w-full"
                 onClick={calculateDifference}
               >
                 Calculate difference
               </Button>
               {diffResult && (
-                <Alert status={diffResult.status} variant="soft">
+                <Alert status={diffResult.status}>
                   <AlertDescription>
                     <Text weight="medium">{diffResult.message}</Text>
                   </AlertDescription>
@@ -184,17 +204,17 @@ const DateCalculator: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="modify">
-            <Stack gap="4" paddingTop="4">
+            <Stack gap="4" className="pt-4">
               <Stack gap="2">
                 <Label>Base date</Label>
-                <DatePicker
-                  value={baseDate}
-                  onChange={setBaseDate}
-                  granularity="minute"
+                <Input
+                  type="datetime-local"
+                  value={toInputValue(baseDate)}
+                  onChange={(v) => setBaseDate(fromInputValue(v))}
                   aria-label="Base date"
                 />
               </Stack>
-              <Grid columns={{ base: 1, md: 3 }} gap="3">
+              <Grid max={3} gap="3">
                 <Stack gap="2">
                   <Label htmlFor="mod-op">Operation</Label>
                   <Select
@@ -209,9 +229,9 @@ const DateCalculator: React.FC = () => {
                   <Label htmlFor="mod-val">Value</Label>
                   <NumberInput
                     id="mod-val"
-                    minValue={0}
+                    min={0}
                     value={timeValue}
-                    onChange={setTimeValue}
+                    onValueChange={setTimeValue}
                     aria-label="Value"
                   />
                 </Stack>
@@ -226,16 +246,11 @@ const DateCalculator: React.FC = () => {
                   />
                 </Stack>
               </Grid>
-              <Button
-                variant="solid"
-                colorScheme="accent"
-                fullWidth
-                onClick={modifyDate}
-              >
+              <Button variant="solid" className="w-full" onClick={modifyDate}>
                 Calculate new date
               </Button>
               {modifyResult && (
-                <Alert status={modifyResult.status} variant="soft">
+                <Alert status={modifyResult.status}>
                   <AlertDescription>
                     <Text weight="medium">{modifyResult.message}</Text>
                   </AlertDescription>

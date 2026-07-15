@@ -22,9 +22,10 @@ import {
   Heading,
   IconButton,
   Inline,
+  Spinner,
   Stack,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from '@/components/ui';
 import { ToolProps } from '../../types/ToolTypes';
 import {
   PDFFile,
@@ -169,11 +170,11 @@ const PdfMerger: React.FC<ToolProps> = () => {
   const isProcessing = state.processingState === 'processing';
 
   return (
-    <Card variant="elevated" size="md">
+    <Card>
       <CardBody>
         <Stack gap="6">
           {state.error && (
-            <Alert status="danger" variant="soft">
+            <Alert status="danger">
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{state.error.message}</AlertDescription>
             </Alert>
@@ -182,26 +183,17 @@ const PdfMerger: React.FC<ToolProps> = () => {
           <FileUpload
             accept="application/pdf,.pdf"
             multiple
-            maxCount={20}
-            value={state.files.map((f) => f.file)}
-            onFilesChange={handleFilesChange}
-            onError={(err) =>
-              setState((prev) => ({
-                ...prev,
-                error: { message: err.message },
-              }))
-            }
+            onFiles={(files: File[]) => handleFilesChange(files)}
           />
 
           {state.files.length > 0 && (
             <Stack gap="3">
               <Inline justify="between" align="center" wrap>
-                <Heading level={3} size="md" weight="semibold">
+                <Heading level={3} size="md">
                   Files to merge
                 </Heading>
                 <Button
                   variant="soft"
-                  colorScheme="neutral"
                   size="sm"
                   leftIcon={<RefreshCw size={16} />}
                   onClick={reset}
@@ -212,11 +204,11 @@ const PdfMerger: React.FC<ToolProps> = () => {
 
               <Stack gap="2">
                 {state.files.map((file, index) => (
-                  <Card key={file.id} variant="outlined" size="sm">
+                  <Card key={file.id}>
                     <CardBody>
                       <Inline justify="between" align="center" gap="3" wrap>
                         <Inline align="center" gap="3">
-                          <Badge variant="soft" colorScheme="accent" size="sm">
+                          <Badge variant="soft" tone="accent" size="sm">
                             {index + 1}
                           </Badge>
                           <FileText size={20} aria-hidden />
@@ -224,7 +216,7 @@ const PdfMerger: React.FC<ToolProps> = () => {
                             <Text size="sm" weight="medium">
                               {file.name}
                             </Text>
-                            <Text size="xs" variant="caption">
+                            <Text size="xs" tone="subtle">
                               {formatFileSize(file.size)}
                             </Text>
                           </Stack>
@@ -232,7 +224,6 @@ const PdfMerger: React.FC<ToolProps> = () => {
                         <Inline gap="1">
                           <IconButton
                             variant="ghost"
-                            colorScheme="neutral"
                             size="sm"
                             label="Move up"
                             disabled={index === 0}
@@ -241,7 +232,6 @@ const PdfMerger: React.FC<ToolProps> = () => {
                           />
                           <IconButton
                             variant="ghost"
-                            colorScheme="neutral"
                             size="sm"
                             label="Move down"
                             disabled={index === state.files.length - 1}
@@ -249,8 +239,7 @@ const PdfMerger: React.FC<ToolProps> = () => {
                             onClick={() => moveFile(index, 1)}
                           />
                           <IconButton
-                            variant="ghost"
-                            colorScheme="danger"
+                            variant="danger"
                             size="sm"
                             label={`Remove ${file.name}`}
                             icon={<Trash2 size={16} />}
@@ -263,22 +252,22 @@ const PdfMerger: React.FC<ToolProps> = () => {
                 ))}
               </Stack>
 
-              <Card variant="filled" size="sm">
+              <Card>
                 <CardBody>
-                  <Grid columns={2} gap="4">
+                  <Grid max={2} gap="4">
                     <Stack gap="1" align="center">
-                      <Heading level={4} size="xl" weight="bold">
+                      <Heading level={4} size="xl">
                         {state.files.length}
                       </Heading>
-                      <Text size="xs" variant="caption">
+                      <Text size="xs" tone="subtle">
                         Files selected
                       </Text>
                     </Stack>
                     <Stack gap="1" align="center">
-                      <Heading level={4} size="xl" weight="bold">
+                      <Heading level={4} size="xl">
                         {formatFileSize(totalSize)}
                       </Heading>
-                      <Text size="xs" variant="caption">
+                      <Text size="xs" tone="subtle">
                         Total size
                       </Text>
                     </Stack>
@@ -292,11 +281,12 @@ const PdfMerger: React.FC<ToolProps> = () => {
             <Button
               onClick={mergePDFs}
               variant="solid"
-              colorScheme="accent"
               size="lg"
-              fullWidth
-              loading={isProcessing}
-              leftIcon={isProcessing ? undefined : <ArrowDownUp size={20} />}
+              className="w-full"
+              disabled={isProcessing}
+              leftIcon={
+                isProcessing ? <Spinner size="sm" /> : <ArrowDownUp size={20} />
+              }
             >
               {isProcessing
                 ? 'Merging PDFs…'
@@ -306,7 +296,7 @@ const PdfMerger: React.FC<ToolProps> = () => {
 
           {state.mergedPDF && state.processingState === 'completed' && (
             <Stack gap="3">
-              <Alert status="success" variant="soft">
+              <Alert status="success">
                 <AlertTitle>
                   Successfully merged {state.files.length} PDFs
                 </AlertTitle>
@@ -318,9 +308,8 @@ const PdfMerger: React.FC<ToolProps> = () => {
               <Button
                 onClick={downloadMerged}
                 variant="solid"
-                colorScheme="success"
                 size="lg"
-                fullWidth
+                className="w-full"
                 leftIcon={<Download size={20} />}
               >
                 Download merged PDF
