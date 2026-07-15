@@ -1,6 +1,23 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, HelpCircle } from 'lucide-react';
+import React from 'react';
+import { Cuboid, HelpCircle, Info, Square } from 'lucide-react';
+import {
+  Badge,
+  Box,
+  Card,
+  CardBody,
+  Center,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Grid,
+  Heading,
+  Inline,
+  Stack,
+  Switch,
+  Text,
+} from '@arshad-shah/cynosure-react';
 import { Element } from '../../types/PeriodicTableTypes';
 import { colorMap } from './Data';
 import ElementModel3D from './ElementModal3D';
@@ -11,310 +28,215 @@ interface ElementModalProps {
   onClose: () => void;
   use3D: boolean;
   onToggle3D: () => void;
-  darkMode: boolean;
 }
 
-const ElementModal: React.FC<ElementModalProps> = ({ 
-  element, 
-  onClose, 
+const getTextColor = (hexColor: string): string => {
+  const r = parseInt(hexColor.slice(1, 3), 16);
+  const g = parseInt(hexColor.slice(3, 5), 16);
+  const b = parseInt(hexColor.slice(5, 7), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? '#0f172a' : '#ffffff';
+};
+
+const COLOR_LEGEND = [
+  { color: '#f44336', label: 'Nucleus (protons and neutrons)' },
+  { color: '#2196f3', label: 'First shell electrons' },
+  { color: '#4caf50', label: 'Second shell electrons' },
+  { color: '#ffeb3b', label: 'Third shell electrons' },
+  { color: '#ff9800', label: 'Fourth shell electrons' },
+];
+
+const ElementModal: React.FC<ElementModalProps> = ({
+  element,
+  onClose,
   use3D,
   onToggle3D,
-  darkMode
 }) => {
-  // Prevent scrolling when modal is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, []);
+  const bg = colorMap[element.group];
+  const fg = getTextColor(bg);
 
-  // Close modal when escape key is pressed
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  // Helper function to determine text contrast color
-  const getTextColor = (hexColor: string): string => {
-    // Convert hex to RGB
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
-    // Calculate contrast
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 128 ? 'text-gray-900' : 'text-white';
-  };
-
-  // Format element properties for display
-  const elementProperties = [
-    { label: 'Atomic Number', value: element.number },
-    { label: 'Group', value: element.group.charAt(0).toUpperCase() + element.group.slice(1) },
+  const properties = [
+    { label: 'Atomic number', value: element.number },
+    {
+      label: 'Group',
+      value: element.group.charAt(0).toUpperCase() + element.group.slice(1),
+    },
     { label: 'Period', value: element.period },
-    { label: 'Atomic Mass', value: typeof element.mass === 'number' ? element.mass.toFixed(3) + ' u' : element.mass + ' u' },
-    { label: 'Electron Configuration', value: element.electrons }
+    {
+      label: 'Atomic mass',
+      value:
+        typeof element.mass === 'number'
+          ? `${element.mass.toFixed(3)} u`
+          : `${element.mass} u`,
+    },
+    { label: 'Electron configuration', value: element.electrons },
   ];
-
-  // 3D Model color legend
-  const colorLegend = [
-    { color: '#f44336', label: 'Nucleus (protons and neutrons)' },
-    { color: '#2196f3', label: 'First shell electrons' },
-    { color: '#4caf50', label: 'Second shell electrons' },
-    { color: '#ffeb3b', label: 'Third shell electrons' },
-    { color: '#ff9800', label: 'Fourth shell electrons' }
-  ];
-
-  // Animation variants
-  const overlayVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { duration: 0.2 }
-    },
-    exit: { 
-      opacity: 0,
-      transition: { duration: 0.2 }
-    }
-  };
-
-  const modalVariants = {
-    hidden: { 
-      opacity: 0,
-      scale: 0.95,
-      y: 20
-    },
-    visible: { 
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 300, 
-        damping: 30,
-        delay: 0.1
-      }
-    },
-    exit: { 
-      opacity: 0,
-      scale: 0.95,
-      y: 20,
-      transition: { duration: 0.2 }
-    }
-  };
-
-  const staggerItems = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.07
-      }
-    }
-  };
-
-  //TODO: align these types to the variants that framer motion expects
-  // const itemVariants = {
-  //   hidden: { opacity: 0, y: 10 },
-  //   visible: { 
-  //     opacity: 1, 
-  //     y: 0,
-  //     transition: { type: "spring", stiffness: 300, damping: 24 }
-  //   }
-  // };
 
   return (
-    <AnimatePresence>
-      <motion.div 
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        variants={overlayVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        onClick={onClose}
-      >
-        <motion.div 
-          className={`w-full max-w-4xl max-h-[90vh] rounded-xl overflow-hidden shadow-2xl flex flex-col ${
-            darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-800'
-          }`}
-          //@ts-expect-error variants are sortof misaligned with the expected types.
-          variants={modalVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div 
-            className={`relative px-6 py-4 ${getTextColor(colorMap[element.group])} flex justify-between items-center`}
-            style={{ backgroundColor: colorMap[element.group] }}
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="xl">
+        <DialogHeader>
+          <Box
+            padding="4"
+            borderRadius="lg"
+            style={{
+              background: bg,
+              color: fg,
+            }}
           >
-            <div className="grid grid-cols-[auto_1fr_auto] gap-x-4 items-center">
-              <div className="text-2xl font-bold opacity-80">
-                {element.number}
-              </div>
-              <div className="flex flex-col">
-                <div className="text-4xl font-bold tracking-tight">
-                  {element.symbol}
-                </div>
-                <div className="text-xl font-medium">
-                  {element.name}
-                </div>
-              </div>
-              <div className="text-lg font-medium text-right">
-                {typeof element.mass === 'number' ? element.mass.toFixed(3) : element.mass} u
-              </div>
-            </div>
-            
-            <motion.button 
-              className={`p-2 rounded-full ${getTextColor(colorMap[element.group]) === 'text-white' ? 'hover:bg-white/20' : 'hover:bg-black/10'} transition-colors`}
-              onClick={onClose}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <X size={24} />
-            </motion.button>
+            <Inline justify="between" align="center" gap="3" wrap>
+              <Inline align="center" gap="4">
+                <Heading
+                  level={2}
+                  size="xl"
+                  weight="bold"
+                  style={{ color: fg, opacity: 0.9 }}
+                >
+                  {element.number}
+                </Heading>
+                <Stack gap="0">
+                  <DialogTitle style={{ color: fg }}>
+                    {element.symbol}
+                  </DialogTitle>
+                  <DialogDescription style={{ color: fg }}>
+                    {element.name}
+                  </DialogDescription>
+                </Stack>
+              </Inline>
+              <Text size="md" weight="medium" style={{ color: fg }}>
+                {typeof element.mass === 'number'
+                  ? element.mass.toFixed(3)
+                  : element.mass}{' '}
+                u
+              </Text>
+            </Inline>
+          </Box>
+        </DialogHeader>
 
-            {/* Decorative element */}
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-white/30 to-transparent"></div>
-          </div>
-
-          {/* Visualization Container */}
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-gray-100'} p-4`}>
-            <div className="relative">
-              {/* Model display */}
-              <div className={`flex justify-center items-center w-full h-[400px] rounded-lg overflow-hidden ${
-                darkMode ? 'bg-gray-700' : 'bg-white'
-              } shadow-md`}>
-                {use3D ? (
-                  <ElementModel3D 
-                    element={element}
-                    containerSize={{ width: 800, height: 400 }}
+        <Stack gap="4" paddingTop="4">
+          <Card variant="filled" size="md">
+            <CardBody>
+              <Stack gap="3">
+                <Center
+                  height="400px"
+                  width="full"
+                  overflow="hidden"
+                  borderRadius="lg"
+                >
+                  {use3D ? (
+                    <ElementModel3D
+                      element={element}
+                      containerSize={{ width: 800, height: 400 }}
+                    />
+                  ) : (
+                    <ElementModel2D
+                      element={element}
+                      containerSize={{ width: 800, height: 400 }}
+                    />
+                  )}
+                </Center>
+                <Inline align="center" gap="2">
+                  <Switch
+                    checked={use3D}
+                    onCheckedChange={onToggle3D}
+                    aria-label="Toggle 3D model"
                   />
-                ) : (
-                  <ElementModel2D 
-                    element={element} 
-                    containerSize={{ width: 800, height: 400 }} 
-                  />
-                )}
-              </div>
-            </div>
-            
-            {/* Controls */}
-            <div className="flex flex-wrap items-center justify-between mt-4">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={use3D} 
-                  onChange={onToggle3D}
-                />
-                <div className={`w-11 h-6 rounded-full peer 
-                  ${darkMode ? 'bg-gray-700' : 'bg-gray-300'} 
-                  peer-checked:after:translate-x-full after:content-[''] 
-                  after:absolute after:top-[2px] after:left-[2px] 
-                  after:bg-white after:border-gray-300 after:border 
-                  after:rounded-full after:h-5 after:w-5 after:transition-all 
-                  peer-checked:bg-blue-600`}>
-                </div>
-                <span className="ml-3 text-sm font-medium">
-                  {use3D ? '3D Model' : '2D Model'}
-                </span>
-              </label>
-            </div>
-          </div>
+                  <Inline gap="1" align="center">
+                    {use3D ? (
+                      <Cuboid size={14} aria-hidden />
+                    ) : (
+                      <Square size={14} aria-hidden />
+                    )}
+                    <Text size="sm" weight="medium">
+                      {use3D ? '3D model' : '2D model'}
+                    </Text>
+                  </Inline>
+                </Inline>
+              </Stack>
+            </CardBody>
+          </Card>
 
-          {/* Information Section - Now Scrollable */}
-          <div className={`p-6 overflow-y-auto ${darkMode ? 'bg-gray-900' : 'bg-white'} flex-1`}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <motion.div
-                variants={staggerItems}
-                initial="hidden"
-                animate="visible"
-                className={`p-5 rounded-lg ${
-                  darkMode ? 'bg-gray-800' : 'bg-gray-50'
-                }`}
-              >
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <Info size={18} className="mr-2 opacity-70" />
-                  Element Information
-                </h3>
-                
-                <div className="grid grid-cols-1 gap-2">
-                  {elementProperties.map((prop) => (
-                    <motion.div 
-                      key={prop.label}
-                      //TODO: variant types are incorrect
-                      // variants={itemVariants}
-                      className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 py-2"
-                    >
-                      <span className="font-medium">{prop.label}</span>
-                      <span className={`px-2 py-1 rounded ${
-                        darkMode ? 'bg-gray-700' : 'bg-gray-200'
-                      }`}>
-                        {prop.value}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
+          <Grid columns={{ base: 1, lg: 2 }} gap="3">
+            <Card variant="filled" size="sm">
+              <CardBody>
+                <Stack gap="3">
+                  <Inline align="center" gap="2">
+                    <Info size={16} aria-hidden />
+                    <Heading level={4} size="md" weight="semibold">
+                      Element information
+                    </Heading>
+                  </Inline>
+                  <Stack gap="2">
+                    {properties.map((p) => (
+                      <Inline
+                        key={p.label}
+                        justify="between"
+                        align="center"
+                        gap="2"
+                        wrap
+                      >
+                        <Text size="sm" weight="medium">
+                          {p.label}
+                        </Text>
+                        <Badge variant="soft" colorScheme="neutral" size="sm">
+                          {p.value}
+                        </Badge>
+                      </Inline>
+                    ))}
+                  </Stack>
+                </Stack>
+              </CardBody>
+            </Card>
 
-              <div className={`p-5 rounded-lg ${
-                darkMode ? 'bg-gray-800' : 'bg-gray-50'
-              }`}>
-                <h3 className="text-lg font-semibold mb-4">Description</h3>
-                <p className="leading-relaxed">{element.description}</p>
-              </div>
-            </div>
-            
-            {/* 3D Model Legend */}
-            {use3D && (
-              <motion.div 
-                className={`mt-6 p-5 rounded-lg ${
-                  darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50 border border-gray-200'
-                }`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.4 }}
-              >
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <HelpCircle size={18} className="mr-2 opacity-70" />
-                  3D Model Legend
-                </h3>
-                
-                <div className="flex flex-wrap gap-3">
-                  {colorLegend.map((item, index) => (
-                    <motion.div 
-                      key={index}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                        darkMode ? 'bg-gray-700' : 'bg-white'
-                      } shadow-sm`}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: item.color }}
-                      ></div>
-                      <span className="text-sm">{item.label}</span>
-                    </motion.div>
-                  ))}
-                </div>
-                
-                <div className="mt-4 text-xs opacity-70 italic">
-                  Note: The model is a simplified representation of the atomic structure.
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+            <Card variant="filled" size="sm">
+              <CardBody>
+                <Stack gap="3">
+                  <Heading level={4} size="md" weight="semibold">
+                    Description
+                  </Heading>
+                  <Text size="sm">{element.description}</Text>
+                </Stack>
+              </CardBody>
+            </Card>
+          </Grid>
+
+          {use3D && (
+            <Card variant="outlined" size="sm">
+              <CardBody>
+                <Stack gap="3">
+                  <Inline align="center" gap="2">
+                    <HelpCircle size={16} aria-hidden />
+                    <Heading level={4} size="md" weight="semibold">
+                      3D model legend
+                    </Heading>
+                  </Inline>
+                  <Inline gap="2" wrap>
+                    {COLOR_LEGEND.map((item) => (
+                      <Inline key={item.label} align="center" gap="2">
+                        <Box
+                          aria-hidden
+                          width="12px"
+                          height="12px"
+                          borderRadius="full"
+                          style={{
+                            background: item.color,
+                          }}
+                        />
+                        <Text size="xs">{item.label}</Text>
+                      </Inline>
+                    ))}
+                  </Inline>
+                  <Text size="xs" variant="caption" italic>
+                    The model is a simplified representation of the atomic
+                    structure.
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+          )}
+        </Stack>
+      </DialogContent>
+    </Dialog>
   );
 };
 

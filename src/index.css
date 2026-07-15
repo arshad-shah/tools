@@ -1,28 +1,19 @@
-@import "tailwindcss";
-
 /* Touch optimizations for drag and drop on mobile */
 .sortable-list-container {
-  /* Prevent unwanted touch behaviors */
   -webkit-user-select: none;
   user-select: none;
-  
-  /* Optimize touch responsiveness */
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Ensure proper touch handling for draggable items */
 [data-dnd-kit-draggable] {
-  /* Allow manipulation for scrolling but prevent default drag */
   touch-action: manipulation;
 }
 
-/* Specific touch-action for drag handles */
 [data-dnd-kit-drag-handle] {
   touch-action: none !important;
 }
 
-/* Prevent text selection during drag */
 .sortable-item-dragging * {
   -webkit-user-select: none !important;
   user-select: none !important;

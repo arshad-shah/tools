@@ -1,6 +1,14 @@
 import { FC, useState } from 'react';
 import * as math from 'mathjs';
 import Plot from 'react-plotly.js';
+import {
+  Box,
+  Inline,
+  Label,
+  NumberInput,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure-react';
 
 interface GraphDisplayProps {
   /**
@@ -22,7 +30,7 @@ interface GraphDisplayProps {
    */
   defaultStep?: number;
   /**
-   * Optional style or className for the container.
+   * Optional className for the container.
    */
   className?: string;
 }
@@ -36,7 +44,7 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
   defaultMinX = -10,
   defaultMaxX = 10,
   defaultStep = 1,
-  className = '',
+  className,
 }) => {
   const [minX, setMinX] = useState<number>(defaultMinX);
   const [maxX, setMaxX] = useState<number>(defaultMaxX);
@@ -71,76 +79,82 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
   const { xVals, yVals } = generateData();
 
   return (
-    <div className={`max-w-md mx-auto ${className}`}>
-      {/* Controls for domain & step */}
-      <div className="flex flex-wrap gap-3 mb-4 items-end">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Min X</label>
-          <input
-            type="number"
-            step="0.1"
-            value={minX}
-            onChange={(e) => setMinX(parseFloat(e.target.value))}
-            className="w-24 px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Max X</label>
-          <input
-            type="number"
-            step="0.1"
-            value={maxX}
-            onChange={(e) => setMaxX(parseFloat(e.target.value))}
-            className="w-24 px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Step</label>
-          <input
-            type="number"
-            step="0.1"
-            value={step}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              setStep(val > 0 ? val : 0.1); // ensure step > 0
-            }}
-            className="w-24 px-2 py-1 border border-gray-300 rounded"
-          />
-        </div>
-      </div>
+    <Box maxWidth="28rem" marginX="auto" className={className}>
+      <Stack gap="4">
+        {/* Controls for domain & step */}
+        <Inline gap="3" wrap align="end">
+          <Stack gap="2" flex="1">
+            <Label htmlFor="graph-min-x">Min X</Label>
+            <NumberInput
+              id="graph-min-x"
+              value={minX}
+              step={0.1}
+              onChange={setMinX}
+              aria-label="Minimum X value"
+            />
+          </Stack>
+          <Stack gap="2" flex="1">
+            <Label htmlFor="graph-max-x">Max X</Label>
+            <NumberInput
+              id="graph-max-x"
+              value={maxX}
+              step={0.1}
+              onChange={setMaxX}
+              aria-label="Maximum X value"
+            />
+          </Stack>
+          <Stack gap="2" flex="1">
+            <Label htmlFor="graph-step">Step</Label>
+            <NumberInput
+              id="graph-step"
+              value={step}
+              minValue={0.1}
+              step={0.1}
+              onChange={(val) => setStep(val > 0 ? val : 0.1)}
+              aria-label="Sampling step"
+            />
+          </Stack>
+        </Inline>
 
-      {/* Expression & Basic Info */}
-      <div className="mb-2 text-sm">
-        <p>
-          <span className="font-semibold">Expression:</span> {expression}
-        </p>
-        <p>
-          <span className="font-semibold">Points:</span> {xVals.length}
-        </p>
-      </div>
+        {/* Expression & Basic Info */}
+        <Stack gap="1">
+          <Text size="sm">
+            <Text as="span" weight="semibold">
+              Expression:
+            </Text>{' '}
+            {expression}
+          </Text>
+          <Text size="sm">
+            <Text as="span" weight="semibold">
+              Points:
+            </Text>{' '}
+            {xVals.length}
+          </Text>
+        </Stack>
 
-      {/* Plotly React Component */}
-      <Plot
-        style={{ width: '100%', height: '400px' }}
-        config={{ responsive: true }}
-        data={[
-          {
-            x: xVals,
-            y: yVals,
-            type: 'scatter',
-            mode: 'lines',
-            line: { shape: 'spline', smoothing: 1.3 }, // smooth curve
-          },
-        ]}
-        layout={{
-          autosize: true,
-          title: `f(x) = ${expression}`,
-          xaxis: { title: 'x' },
-          yaxis: { title: 'f(x)' },
-          margin: { l: 60, r: 20, t: 40, b: 40 },
-        }}
-      />
-    </div>
+        {/* Plotly React Component */}
+        <Plot
+          style={{ width: '100%', height: '400px' }}
+          config={{ responsive: true }}
+          data={[
+            {
+              x: xVals,
+              y: yVals,
+              type: 'scatter',
+              mode: 'lines',
+              line: { shape: 'spline', smoothing: 1.3 }, // smooth curve
+            },
+          ]}
+          layout={{
+            autosize: true,
+            title: { text: `f(x) = ${expression}` },
+            xaxis: { title: { text: 'x' } },
+            yaxis: { title: { text: 'f(x)' } },
+            margin: { l: 60, r: 20, t: 40, b: 40 },
+          }}
+        />
+      </Stack>
+    </Box>
   );
 };
 

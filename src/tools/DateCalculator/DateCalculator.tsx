@@ -1,250 +1,251 @@
 import React, { useState } from 'react';
 import { Calendar, Plus } from 'lucide-react';
+import {
+  CalendarDateTime,
+  type DateValue,
+  getLocalTimeZone,
+  now,
+  toCalendarDateTime,
+} from '@internationalized/date';
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  CardBody,
+  DatePicker,
+  Grid,
+  Inline,
+  Label,
+  NumberInput,
+  Select,
+  Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+} from '@arshad-shah/cynosure-react';
 
 type TimeUnit = 'minutes' | 'hours' | 'days' | 'months' | 'years';
 type Operation = 'add' | 'subtract';
 type TabType = 'difference' | 'modify';
 
+const TIME_UNIT_OPTIONS = [
+  { value: 'minutes', label: 'Minutes' },
+  { value: 'hours', label: 'Hours' },
+  { value: 'days', label: 'Days' },
+  { value: 'months', label: 'Months' },
+  { value: 'years', label: 'Years' },
+];
+
+const OPERATION_OPTIONS = [
+  { value: 'add', label: 'Add' },
+  { value: 'subtract', label: 'Subtract' },
+];
+
+interface ResultState {
+  message: string;
+  status: 'success' | 'danger';
+}
+
+const toJsDate = (value: DateValue | null): Date | null => {
+  if (!value) return null;
+  const dt = toCalendarDateTime(value as CalendarDateTime);
+  return dt.toDate(getLocalTimeZone());
+};
+
 const DateCalculator: React.FC = () => {
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
-  const [result, setResult] = useState<string>('');
-  
-  const [baseDate, setBaseDate] = useState<string>('');
-  const [timeValue, setTimeValue] = useState<string>('');
-  const [timeUnit, setTimeUnit] = useState<TimeUnit>('days');
-  const [operation, setOperation] = useState<Operation>('add');
-  const [modifiedResult, setModifiedResult] = useState<string>('');
-  
   const [activeTab, setActiveTab] = useState<TabType>('difference');
 
-  const calculateDifference = (): void => {
-    if (!startDate || !endDate) {
-      setResult('Please select both dates');
+  const [startDate, setStartDate] = useState<DateValue | null>(null);
+  const [endDate, setEndDate] = useState<DateValue | null>(null);
+  const [diffResult, setDiffResult] = useState<ResultState | null>(null);
+
+  const [baseDate, setBaseDate] = useState<DateValue | null>(now(getLocalTimeZone()));
+  const [timeValue, setTimeValue] = useState<number>(0);
+  const [timeUnit, setTimeUnit] = useState<TimeUnit>('days');
+  const [operation, setOperation] = useState<Operation>('add');
+  const [modifyResult, setModifyResult] = useState<ResultState | null>(null);
+
+  const calculateDifference = () => {
+    const start = toJsDate(startDate);
+    const end = toJsDate(endDate);
+    if (!start || !end) {
+      setDiffResult({ message: 'Please select both dates', status: 'danger' });
       return;
     }
-
-    const start: Date = new Date(startDate);
-    const end: Date = new Date(endDate);
-    
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      setResult('Invalid date format');
-      return;
-    }
-
-    const diffTime: number = Math.abs(end.getTime() - start.getTime());
-    const diffDays: number = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffMonths: number = Math.floor(diffDays / 30);
-    const diffYears: number = Math.floor(diffDays / 365);
-    
-    const hours: number = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes: number = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-
-    setResult(`${diffYears} years, ${diffMonths % 12} months, ${diffDays % 30} days, ${hours} hours, ${minutes} minutes`);
+    const diffMs = Math.abs(end.getTime() - start.getTime());
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    setDiffResult({
+      message: `${years} years, ${months % 12} months, ${days % 30} days, ${hours} hours, ${minutes} minutes`,
+      status: 'success',
+    });
   };
 
-  const modifyDate = (): void => {
-    if (!baseDate || !timeValue) {
-      setModifiedResult('Please provide a date and time value');
+  const modifyDate = () => {
+    const date = toJsDate(baseDate);
+    if (!date) {
+      setModifyResult({ message: 'Please provide a base date', status: 'danger' });
       return;
     }
-
-    const date: Date = new Date(baseDate);
-    
-    if (isNaN(date.getTime())) {
-      setModifiedResult('Invalid date format');
+    const value = Number(timeValue);
+    if (Number.isNaN(value)) {
+      setModifyResult({ message: 'Invalid time value', status: 'danger' });
       return;
     }
-
-    const value: number = parseInt(timeValue, 10);
-    
-    if (isNaN(value)) {
-      setModifiedResult('Invalid time value');
-      return;
-    }
-
-    const newDate: Date = new Date(date);
+    const result = new Date(date);
     const multiplier = operation === 'add' ? 1 : -1;
-
     switch (timeUnit) {
       case 'minutes':
-        newDate.setMinutes(date.getMinutes() + (value * multiplier));
+        result.setMinutes(date.getMinutes() + value * multiplier);
         break;
       case 'hours':
-        newDate.setHours(date.getHours() + (value * multiplier));
+        result.setHours(date.getHours() + value * multiplier);
         break;
       case 'days':
-        newDate.setDate(date.getDate() + (value * multiplier));
+        result.setDate(date.getDate() + value * multiplier);
         break;
       case 'months':
-        newDate.setMonth(date.getMonth() + (value * multiplier));
+        result.setMonth(date.getMonth() + value * multiplier);
         break;
       case 'years':
-        newDate.setFullYear(date.getFullYear() + (value * multiplier));
+        result.setFullYear(date.getFullYear() + value * multiplier);
         break;
-      default:
-        setModifiedResult('Invalid time unit');
-        return;
     }
-
-    setModifiedResult(`${newDate.toLocaleString()}`);
+    setModifyResult({ message: result.toLocaleString(), status: 'success' });
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-slate-200">
-            <button
-              onClick={() => setActiveTab('difference')}
-              className={`flex-1 py-4 px-6 text-center font-medium transition-all ${
-                activeTab === 'difference' 
-                  ? 'text-green-600 border-b-2 border-green-600 bg-green-50' 
-                  : 'text-slate-600 hover:text-green-600 hover:bg-slate-50'
-              }`}
-            >
-              <div className="flex justify-center items-center space-x-2">
-                <Calendar className="w-4 h-4" />
+    <Card variant="elevated" size="md">
+      <CardBody>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as TabType)}
+          variant="soft"
+          colorScheme="accent"
+          fullWidth
+        >
+          <TabsList aria-label="Date calculator mode">
+            <TabsTrigger value="difference">
+              <Inline gap="2" align="center" wrap={false}>
+                <Calendar size={16} aria-hidden />
                 <span>Date Difference</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('modify')}
-              className={`flex-1 py-4 px-6 text-center font-medium transition-all ${
-                activeTab === 'modify' 
-                  ? 'text-green-600 border-b-2 border-green-600 bg-green-50' 
-                  : 'text-slate-600 hover:text-green-600 hover:bg-slate-50'
-              }`}
-            >
-              <div className="flex justify-center items-center space-x-2">
-                <Plus className="w-4 h-4" />
-                <span>Add/Subtract Time</span>
-              </div>
-            </button>
-          </div>
-          
-          {/* Date Difference Tab */}
-          {activeTab === 'difference' && (
-            <div className="p-6 space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
-                  <input
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">End Date</label>
-                  <input
-                    type="datetime-local"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                  />
-                </div>
-                
-                <button
-                  onClick={calculateDifference}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-xl transition-all hover:shadow-lg"
-                >
-                  Calculate Difference
-                </button>
-              </div>
-              
-              {result && (
-                <div className={`p-4 rounded-xl ${
-                  result.includes('Please') || result.includes('Invalid') 
-                    ? 'bg-red-50 border border-red-200 text-red-700' 
-                    : 'bg-green-50 border border-green-200 text-green-700'
-                }`}>
-                  <div className="font-medium">{result}</div>
-                </div>
+              </Inline>
+            </TabsTrigger>
+            <TabsTrigger value="modify">
+              <Inline gap="2" align="center" wrap={false}>
+                <Plus size={16} aria-hidden />
+                <span>Add / Subtract Time</span>
+              </Inline>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="difference">
+            <Stack gap="4" paddingTop="4">
+              <Stack gap="2">
+                <Label>Start date</Label>
+                <DatePicker
+                  value={startDate}
+                  onChange={setStartDate}
+                  granularity="minute"
+                  aria-label="Start date"
+                />
+              </Stack>
+              <Stack gap="2">
+                <Label>End date</Label>
+                <DatePicker
+                  value={endDate}
+                  onChange={setEndDate}
+                  granularity="minute"
+                  aria-label="End date"
+                />
+              </Stack>
+              <Button
+                variant="solid"
+                colorScheme="accent"
+                fullWidth
+                onClick={calculateDifference}
+              >
+                Calculate difference
+              </Button>
+              {diffResult && (
+                <Alert status={diffResult.status} variant="soft">
+                  <AlertDescription>
+                    <Text weight="medium">{diffResult.message}</Text>
+                  </AlertDescription>
+                </Alert>
               )}
-            </div>
-          )}
-          
-          {/* Add/Subtract Time Tab */}
-          {activeTab === 'modify' && (
-            <div className="p-6 space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Base Date</label>
-                  <input
-                    type="datetime-local"
-                    value={baseDate}
-                    onChange={(e) => setBaseDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
+            </Stack>
+          </TabsContent>
+
+          <TabsContent value="modify">
+            <Stack gap="4" paddingTop="4">
+              <Stack gap="2">
+                <Label>Base date</Label>
+                <DatePicker
+                  value={baseDate}
+                  onChange={setBaseDate}
+                  granularity="minute"
+                  aria-label="Base date"
+                />
+              </Stack>
+              <Grid columns={{ base: 1, md: 3 }} gap="3">
+                <Stack gap="2">
+                  <Label htmlFor="mod-op">Operation</Label>
+                  <Select
+                    id="mod-op"
+                    value={operation}
+                    onValueChange={(v) => setOperation(v as Operation)}
+                    items={OPERATION_OPTIONS}
+                    aria-label="Operation"
                   />
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Operation</label>
-                    <select
-                      value={operation}
-                      onChange={(e) => setOperation(e.target.value as Operation)}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                    >
-                      <option value="add">Add</option>
-                      <option value="subtract">Subtract</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Value</label>
-                    <input
-                      type="number"
-                      value={timeValue}
-                      onChange={(e) => setTimeValue(e.target.value)}
-                      min="0"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Unit</label>
-                    <select
-                      value={timeUnit}
-                      onChange={(e) => setTimeUnit(e.target.value as TimeUnit)}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                    >
-                      <option value="minutes">Minutes</option>
-                      <option value="hours">Hours</option>
-                      <option value="days">Days</option>
-                      <option value="months">Months</option>
-                      <option value="years">Years</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={modifyDate}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-xl transition-all hover:shadow-lg"
-                >
-                  Calculate New Date
-                </button>
-              </div>
-              
-              {modifiedResult && (
-                <div className={`p-4 rounded-xl ${
-                  modifiedResult.includes('Please') || modifiedResult.includes('Invalid') 
-                    ? 'bg-red-50 border border-red-200 text-red-700' 
-                    : 'bg-green-50 border border-green-200 text-green-700'
-                }`}>
-                  <div className="font-medium">{modifiedResult}</div>
-                </div>
+                </Stack>
+                <Stack gap="2">
+                  <Label htmlFor="mod-val">Value</Label>
+                  <NumberInput
+                    id="mod-val"
+                    minValue={0}
+                    value={timeValue}
+                    onChange={setTimeValue}
+                    aria-label="Value"
+                  />
+                </Stack>
+                <Stack gap="2">
+                  <Label htmlFor="mod-unit">Unit</Label>
+                  <Select
+                    id="mod-unit"
+                    value={timeUnit}
+                    onValueChange={(v) => setTimeUnit(v as TimeUnit)}
+                    items={TIME_UNIT_OPTIONS}
+                    aria-label="Unit"
+                  />
+                </Stack>
+              </Grid>
+              <Button
+                variant="solid"
+                colorScheme="accent"
+                fullWidth
+                onClick={modifyDate}
+              >
+                Calculate new date
+              </Button>
+              {modifyResult && (
+                <Alert status={modifyResult.status} variant="soft">
+                  <AlertDescription>
+                    <Text weight="medium">{modifyResult.message}</Text>
+                  </AlertDescription>
+                </Alert>
               )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            </Stack>
+          </TabsContent>
+        </Tabs>
+      </CardBody>
+    </Card>
   );
 };
 

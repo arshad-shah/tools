@@ -1,0 +1,138 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 2px 0;
+  font-family: var(--cynosure-font-family-mono);
+  font-size: var(--cynosure-font-body-sm-size);
+  line-height: 1.6;
+  border-radius: 4px;
+  position: relative;
+  min-width: 0;
+}
+
+.row:hover {
+  background: var(--cynosure-color-background-subtle);
+}
+
+.row.matched {
+  background: var(--cynosure-color-amber-100);
+}
+
+.indent {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.indentGuide {
+  width: 16px;
+  border-left: 1px solid var(--cynosure-color-border-subtle);
+  margin-left: 7px;
+}
+
+.chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--cynosure-color-foreground-muted);
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.chevron:hover {
+  background: var(--cynosure-color-background-muted);
+  color: var(--cynosure-color-foreground-default);
+}
+
+.chevronSpacer {
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.key {
+  color: var(--cynosure-color-foreground-default);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.colon {
+  color: var(--cynosure-color-foreground-subtle);
+  margin-right: 2px;
+}
+
+.value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.string {
+  color: var(--cynosure-color-feedback-success-solid);
+}
+
+.number {
+  color: var(--cynosure-color-feedback-info-solid);
+}
+
+.boolean {
+  color: var(--cynosure-color-feedback-warning-solid);
+  font-weight: 600;
+}
+
+.null {
+  color: var(--cynosure-color-foreground-subtle);
+  font-style: italic;
+}
+
+.summary {
+  color: var(--cynosure-color-foreground-subtle);
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.bracket {
+  color: var(--cynosure-color-foreground-muted);
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.row:hover .actions,
+.row:focus-within .actions {
+  opacity: 1;
+}
+
+.actionBtn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--cynosure-color-foreground-subtle);
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.actionBtn:hover {
+  background: var(--cynosure-color-background-muted);
+  color: var(--cynosure-color-foreground-default);
+}

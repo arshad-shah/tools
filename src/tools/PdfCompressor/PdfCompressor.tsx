@@ -1,27 +1,41 @@
 // src/tools/PdfCompressor/PdfCompressor.tsx
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
-import { 
-  Upload, 
-  Minimize2, 
-  Download, 
-  FileText,
-  CheckCircle2,
+import {
   ArrowDown,
-  Zap,
-  TrendingDown,
-  Settings,
-  RefreshCw,
-  RotateCcw,
+  CheckCircle2,
+  Download,
+  FileText,
   Image as ImageIcon,
+  Layers,
+  Minimize2,
+  RotateCcw,
+  Settings,
+  TrendingDown,
   Type,
-  Layers
+  Zap,
 } from 'lucide-react';
 
-import { Button } from '../../components/Button';
-import { Card, CardContent } from '../../components/Card';
-import Alert from '../../components/Alert';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Center,
+  FileUpload,
+  Grid,
+  Heading,
+  Inline,
+  LinearProgress,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure-react';
 import { ToolProps } from '../../types/ToolTypes';
 import {
   CompressionLevel,
@@ -42,14 +56,22 @@ class ProductionPdfCompressor {
     imageData: Uint8Array,
     mimeType: string,
     quality: number,
-    scale: number
+    scale: number,
   ): Promise<Uint8Array> {
     return new Promise((resolve) => {
       try {
         // Create image element
         const img = new Image();
         const buffer = imageData.buffer as ArrayBuffer;
-        const blob = new Blob([buffer.slice(imageData.byteOffset, imageData.byteOffset + imageData.byteLength)], { type: mimeType });
+        const blob = new Blob(
+          [
+            buffer.slice(
+              imageData.byteOffset,
+              imageData.byteOffset + imageData.byteLength,
+            ),
+          ],
+          { type: mimeType },
+        );
         const url = URL.createObjectURL(blob);
 
         img.onload = () => {
@@ -57,7 +79,7 @@ class ProductionPdfCompressor {
             // Create canvas with scaled dimensions
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             if (!ctx) {
               URL.revokeObjectURL(url);
               resolve(imageData);
@@ -66,7 +88,7 @@ class ProductionPdfCompressor {
 
             const newWidth = Math.floor(img.width * scale);
             const newHeight = Math.floor(img.height * scale);
-            
+
             canvas.width = newWidth;
             canvas.height = newHeight;
 
@@ -82,16 +104,19 @@ class ProductionPdfCompressor {
                   return;
                 }
 
-                blob.arrayBuffer().then(buffer => {
-                  URL.revokeObjectURL(url);
-                  resolve(new Uint8Array(buffer));
-                }).catch(() => {
-                  URL.revokeObjectURL(url);
-                  resolve(imageData);
-                });
+                blob
+                  .arrayBuffer()
+                  .then((buffer) => {
+                    URL.revokeObjectURL(url);
+                    resolve(new Uint8Array(buffer));
+                  })
+                  .catch(() => {
+                    URL.revokeObjectURL(url);
+                    resolve(imageData);
+                  });
               },
               'image/jpeg',
-              quality
+              quality,
             );
           } catch {
             URL.revokeObjectURL(url);
@@ -117,11 +142,11 @@ class ProductionPdfCompressor {
   static async deepCompress(
     pdfBytes: Uint8Array,
     settings: { imageQuality: number; imageScale: number },
-    onProgress?: (stage: string, percentage: number) => void
+    onProgress?: (stage: string, percentage: number) => void,
   ): Promise<Uint8Array> {
     try {
       onProgress?.('Loading PDF document...', 10);
-      
+
       // Load the PDF
       const pdfDoc = await PDFDocument.load(pdfBytes, {
         updateMetadata: false,
@@ -129,7 +154,7 @@ class ProductionPdfCompressor {
       });
 
       onProgress?.('Removing metadata...', 20);
-      
+
       // Remove all metadata
       pdfDoc.setTitle('');
       pdfDoc.setAuthor('');
@@ -152,7 +177,7 @@ class ProductionPdfCompressor {
         if (settings.imageScale < 1.0) {
           page.scale(settings.imageScale, settings.imageScale);
         }
-        
+
         // Update progress
         const pageProgress = 30 + (i / totalPages) * 20;
         onProgress?.(`Processing page ${i + 1}/${totalPages}...`, pageProgress);
@@ -185,7 +210,7 @@ class ProductionPdfCompressor {
       const secondPass = await PDFDocument.load(compressedBytes, {
         updateMetadata: false,
       });
-      
+
       compressedBytes = await secondPass.save({
         useObjectStreams: true,
         addDefaultPage: false,
@@ -199,7 +224,7 @@ class ProductionPdfCompressor {
         const thirdPass = await PDFDocument.load(compressedBytes, {
           updateMetadata: false,
         });
-        
+
         compressedBytes = await thirdPass.save({
           useObjectStreams: true,
           addDefaultPage: false,
@@ -221,10 +246,10 @@ class ProductionPdfCompressor {
    */
   static estimateCompressionRatio(level: CompressionLevel): number {
     const ratios = {
-      low: 0.85,      // 15% reduction
-      medium: 0.65,   // 35% reduction
-      high: 0.45,     // 55% reduction
-      maximum: 0.30,  // 70% reduction
+      low: 0.85, // 15% reduction
+      medium: 0.65, // 35% reduction
+      high: 0.45, // 55% reduction
+      maximum: 0.3, // 70% reduction
     };
     return ratios[level];
   }
@@ -232,7 +257,7 @@ class ProductionPdfCompressor {
 
 /**
  * PDF Compressor Tool Component - Production Ready
- * 
+ *
  * Features:
  * - Real image compression using Canvas API
  * - Multi-pass compression for maximum reduction
@@ -243,8 +268,6 @@ class ProductionPdfCompressor {
  * - Production-grade error handling
  */
 const PdfCompressor: React.FC<ToolProps> = () => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Component state
   const [state, setState] = useState<PdfCompressorState>({
     pdfFile: null,
@@ -267,9 +290,12 @@ const PdfCompressor: React.FC<ToolProps> = () => {
    */
   const handleFileSelect = useCallback(async (file: File) => {
     if (!file || file.type !== 'application/pdf') {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: { message: 'Please select a valid PDF file. Only PDF files are supported.' },
+        error: {
+          message:
+            'Please select a valid PDF file. Only PDF files are supported.',
+        },
       }));
       return;
     }
@@ -277,7 +303,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
     // Check file size limit (100MB)
     const maxSize = 100 * 1024 * 1024;
     if (file.size > maxSize) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: { message: 'File is too large. Maximum file size is 100MB.' },
       }));
@@ -285,7 +311,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
     }
 
     try {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: null,
         pdfFile: file,
@@ -295,48 +321,20 @@ const PdfCompressor: React.FC<ToolProps> = () => {
       }));
     } catch (error) {
       console.error('Failed to load PDF:', error);
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: { message: 'Failed to load PDF. Please ensure it\'s a valid PDF file.' },
+        error: {
+          message: "Failed to load PDF. Please ensure it's a valid PDF file.",
+        },
       }));
     }
   }, []);
 
   /**
-   * Drag and drop handlers
-   */
-  const handleDragEnter = useCallback(() => {
-    setState(prev => ({ ...prev, isDragging: true }));
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isLeavingDropzone = 
-      e.clientX < rect.left || 
-      e.clientX > rect.right || 
-      e.clientY < rect.top || 
-      e.clientY > rect.bottom;
-    
-    if (isLeavingDropzone) {
-      setState(prev => ({ ...prev, isDragging: false }));
-    }
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setState(prev => ({ ...prev, isDragging: false }));
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      handleFileSelect(file);
-    }
-  }, [handleFileSelect]);
-
-  /**
    * Compression level change handler
    */
   const handleCompressionLevelChange = (level: CompressionLevel) => {
-    setState(prev => ({ ...prev, compressionLevel: level }));
+    setState((prev) => ({ ...prev, compressionLevel: level }));
   };
 
   /**
@@ -345,7 +343,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
   const compressPDF = async () => {
     if (!state.pdfFile) return;
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       processing: true,
       processingState: 'processing',
@@ -355,7 +353,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
     try {
       const arrayBuffer = await state.pdfFile.arrayBuffer();
       const pdfBytes = new Uint8Array(arrayBuffer);
-      
+
       const settings = COMPRESSION_SETTINGS[state.compressionLevel];
 
       // Perform deep compression with progress tracking
@@ -364,7 +362,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
         settings,
         (stage, percentage) => {
           setCompressionProgress({ stage, percentage });
-        }
+        },
       );
 
       setCompressionProgress({ stage: 'Complete!', percentage: 100 });
@@ -377,10 +375,13 @@ const PdfCompressor: React.FC<ToolProps> = () => {
       const compressedResult: CompressedPdfResult = {
         url,
         size: compressedBytes.length,
-        name: state.pdfFile.name.replace('.pdf', '_compressed.pdf')
+        name: state.pdfFile.name.replace('.pdf', '_compressed.pdf'),
       };
 
-      const reduction = ((1 - compressedBytes.length / state.originalSize) * 100).toFixed(1);
+      const reduction = (
+        (1 - compressedBytes.length / state.originalSize) *
+        100
+      ).toFixed(1);
 
       console.log('✅ Compression successful:', {
         originalSize: state.originalSize,
@@ -390,7 +391,7 @@ const PdfCompressor: React.FC<ToolProps> = () => {
         savedBytes: state.originalSize - compressedBytes.length,
       });
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         compressedPDF: compressedResult,
         processingState: 'completed',
@@ -402,30 +403,32 @@ const PdfCompressor: React.FC<ToolProps> = () => {
       }, 2000);
     } catch (error) {
       console.error('❌ Compression failed:', error);
-      
+
       let errorMessage = 'Failed to compress PDF. ';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('encrypted')) {
-          errorMessage += 'The PDF is password-protected. Please remove the password first.';
+          errorMessage +=
+            'The PDF is password-protected. Please remove the password first.';
         } else if (error.message.includes('Invalid')) {
           errorMessage += 'The PDF file appears to be corrupted or invalid.';
         } else {
-          errorMessage += 'Try a different compression level or check if the file is valid.';
+          errorMessage +=
+            'Try a different compression level or check if the file is valid.';
         }
       } else {
         errorMessage += 'An unexpected error occurred. Please try again.';
       }
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         error: { message: errorMessage },
         processingState: 'error',
       }));
-      
+
       setCompressionProgress({ stage: '', percentage: 0 });
     } finally {
-      setState(prev => ({ ...prev, processing: false }));
+      setState((prev) => ({ ...prev, processing: false }));
     }
   };
 
@@ -464,10 +467,6 @@ const PdfCompressor: React.FC<ToolProps> = () => {
     });
 
     setCompressionProgress({ stage: '', percentage: 0 });
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   /**
@@ -482,8 +481,9 @@ const PdfCompressor: React.FC<ToolProps> = () => {
   };
 
   const calculateReduction = (): string => {
-    if (!state.compressedPDF || !state.originalSize || state.originalSize === 0) return '0';
-    const reduction = ((1 - state.compressedPDF.size / state.originalSize) * 100);
+    if (!state.compressedPDF || !state.originalSize || state.originalSize === 0)
+      return '0';
+    const reduction = (1 - state.compressedPDF.size / state.originalSize) * 100;
     return isNaN(reduction) ? '0' : Math.max(0, reduction).toFixed(1);
   };
 
@@ -494,7 +494,9 @@ const PdfCompressor: React.FC<ToolProps> = () => {
 
   const getEstimatedSize = (): string => {
     if (!state.originalSize) return '0 Bytes';
-    const ratio = ProductionPdfCompressor.estimateCompressionRatio(state.compressionLevel);
+    const ratio = ProductionPdfCompressor.estimateCompressionRatio(
+      state.compressionLevel,
+    );
     return formatFileSize(Math.floor(state.originalSize * ratio));
   };
 
@@ -512,307 +514,334 @@ const PdfCompressor: React.FC<ToolProps> = () => {
   };
 
   return (
-    <div className="space-y-6">
-
-      {/* Error Alert */}
+    <Stack gap="6">
       {state.error && (
-        <Alert variant="error" className="bg-red-50 border-red-200">
-          <span>{state.error.message}</span>
+        <Alert status="danger" variant="soft">
+          <AlertDescription>{state.error.message}</AlertDescription>
         </Alert>
       )}
 
-      {/* Upload Section */}
       {!state.pdfFile && (
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-6">
-            <div
-              className={`
-                border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer
-                ${state.isDragging
-                  ? 'border-cyan-400 bg-cyan-50 shadow-lg shadow-cyan-100 scale-[1.01]'
-                  : 'border-slate-300 hover:border-cyan-300 hover:bg-cyan-25'
-                }
-              `}
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
-              }}
-              aria-label="Upload PDF file"
-            >
-              <Upload
-                size={48}
-                className={`mx-auto mb-4 transition-all duration-300 ${
-                  state.isDragging ? 'text-cyan-500 scale-110' : 'text-slate-400'
-                }`}
-              />
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                {state.isDragging ? 'Drop PDF file here' : 'Select or drop PDF file'}
-              </h3>
-              <p className="text-slate-600 mb-4">
-                Compress your PDF with advanced algorithms • Max 100MB
-              </p>
-              <Button variant="outline" className="border-cyan-200 text-cyan-600 hover:bg-cyan-50">
-                Choose PDF File
-              </Button>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept="application/pdf,.pdf"
-                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-                aria-label="File input"
-              />
-            </div>
-          </CardContent>
+        <Card variant="elevated" size="md">
+          <CardBody>
+            <FileUpload
+              accept="application/pdf,.pdf"
+              maxCount={1}
+              maxSize={100 * 1024 * 1024}
+              onFilesChange={(files) => files[0] && handleFileSelect(files[0])}
+              onError={(err) =>
+                setState((prev) => ({
+                  ...prev,
+                  error: { message: err.message },
+                }))
+              }
+            />
+          </CardBody>
         </Card>
       )}
 
-      {/* PDF Loaded - Compression Options */}
       {state.pdfFile && !state.compressedPDF && (
-        <div className="space-y-6">
-          {/* File Info */}
-          <Card className="bg-white border-slate-200">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <FileText className="w-12 h-12 text-cyan-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-slate-900 truncate">{state.pdfFile.name}</h3>
-                  <p className="text-slate-600">Original size: {formatFileSize(state.originalSize)}</p>
-                  <p className="text-sm text-cyan-600 mt-1">
-                    Estimated after compression: ~{getEstimatedSize()}
-                  </p>
-                </div>
+        <Stack gap="6">
+          <Card variant="elevated" size="md">
+            <CardBody>
+              <Inline justify="between" align="center" gap="3" wrap>
+                <Inline align="center" gap="3">
+                  <FileText size={32} aria-hidden />
+                  <Stack gap="1">
+                    <Text size="md" weight="semibold">
+                      {state.pdfFile.name}
+                    </Text>
+                    <Text size="sm" variant="caption">
+                      Original size: {formatFileSize(state.originalSize)}
+                    </Text>
+                    <Text size="sm" variant="caption">
+                      Estimated after compression: ~{getEstimatedSize()}
+                    </Text>
+                  </Stack>
+                </Inline>
                 <Button
-                  variant="outline"
-                  onClick={reset}
+                  variant="soft"
+                  colorScheme="neutral"
+                  size="sm"
                   leftIcon={<RotateCcw size={16} />}
-                  className="text-slate-600 border-slate-300 flex-shrink-0"
+                  onClick={reset}
                 >
                   Change
                 </Button>
-              </div>
-            </CardContent>
+              </Inline>
+            </CardBody>
           </Card>
 
-          {/* Info Banner */}
-          <Alert className="bg-blue-50 border-blue-200">
-            <div className="text-sm text-blue-700">
-              <p className="font-semibold mb-1">🚀 Production-Grade Compression</p>
-              <p>
-                Multi-pass optimization • Image compression • Metadata removal • Form flattening • Object stream optimization
-              </p>
-            </div>
+          <Alert status="info" variant="soft">
+            <AlertTitle>Production-grade compression</AlertTitle>
+            <AlertDescription>
+              Multi-pass optimisation, image compression, metadata removal, form
+              flattening, and object stream optimisation.
+            </AlertDescription>
           </Alert>
 
-          {/* Compression Level Selection */}
-          <Card className="bg-white border-slate-200">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Compression Level</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(COMPRESSION_SETTINGS).map(([key, setting]) => {
-                  const Icon = getCompressionIcon(key as CompressionLevel);
-                  const isSelected = state.compressionLevel === key;
-                  
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => handleCompressionLevelChange(key as CompressionLevel)}
-                      className={`
-                        p-5 rounded-xl border-2 transition-all duration-200 text-left
-                        ${isSelected
-                          ? 'border-cyan-400 bg-cyan-50 text-cyan-900 shadow-md scale-[1.02]'
-                          : 'border-slate-200 hover:border-cyan-200 text-slate-700 hover:bg-cyan-25'
-                        }
-                      `}
-                      aria-pressed={isSelected}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Icon className={`w-6 h-6 flex-shrink-0 transition-colors ${isSelected ? 'text-cyan-500' : 'text-slate-400'}`} />
-                        <div className="flex-1">
-                          <div className="font-semibold text-slate-900 mb-1">{setting.name}</div>
-                          <div className="text-sm text-slate-600 mb-2">{setting.description}</div>
-                          <div className={`text-xs font-medium ${isSelected ? 'text-cyan-600' : 'text-slate-500'}`}>
-                            Expected: {setting.expectedReduction} reduction
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+          <Card variant="elevated" size="md">
+            <CardHeader>
+              <CardTitle as="h3">Compression level</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <Stack gap="5">
+                <Grid columns={{ base: 1, md: 2 }} gap="3">
+                  {Object.entries(COMPRESSION_SETTINGS).map(
+                    ([key, setting]) => {
+                      const level = key as CompressionLevel;
+                      const Icon = getCompressionIcon(level);
+                      const isSelected = state.compressionLevel === level;
+                      return (
+                        <Card
+                          key={key}
+                          variant={isSelected ? 'outlined' : 'filled'}
+                          size="sm"
+                          interactive
+                          onClick={() => handleCompressionLevelChange(level)}
+                        >
+                          <CardBody>
+                            <Inline align="start" gap="3">
+                              <Icon size={24} aria-hidden />
+                              <Stack gap="1">
+                                <Text size="sm" weight="semibold">
+                                  {setting.name}
+                                </Text>
+                                <Text size="xs" variant="caption">
+                                  {setting.description}
+                                </Text>
+                                <Badge
+                                  variant="soft"
+                                  colorScheme={
+                                    isSelected ? 'accent' : 'neutral'
+                                  }
+                                  size="xs"
+                                >
+                                  Expected: {setting.expectedReduction}{' '}
+                                  reduction
+                                </Badge>
+                              </Stack>
+                            </Inline>
+                          </CardBody>
+                        </Card>
+                      );
+                    },
+                  )}
+                </Grid>
 
-              {/* Compression Details */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  <Settings className="w-4 h-4 text-cyan-500" />
-                  <span className="text-sm font-medium text-slate-700">Active Optimizations</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-cyan-500 flex-shrink-0" />
-                    <div>
-                      <span className="text-slate-600 block text-xs">Image Quality</span>
-                      <span className="text-slate-900 font-medium">
-                        {(COMPRESSION_SETTINGS[state.compressionLevel].imageQuality * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-cyan-500 flex-shrink-0" />
-                    <div>
-                      <span className="text-slate-600 block text-xs">Image Scale</span>
-                      <span className="text-slate-900 font-medium">
-                        {(COMPRESSION_SETTINGS[state.compressionLevel].imageScale * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Type className="w-4 h-4 text-cyan-500 flex-shrink-0" />
-                    <div>
-                      <span className="text-slate-600 block text-xs">Optimization Passes</span>
-                      <span className="text-slate-900 font-medium">
-                        {state.compressionLevel === 'low' ? '2' : state.compressionLevel === 'medium' ? '2' : state.compressionLevel === 'high' ? '3' : '3'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
+                <Card variant="filled" size="sm">
+                  <CardHeader>
+                    <Inline gap="2" align="center">
+                      <Settings size={16} aria-hidden />
+                      <Text size="sm" weight="semibold">
+                        Active optimisations
+                      </Text>
+                    </Inline>
+                  </CardHeader>
+                  <CardBody>
+                    <Grid columns={{ base: 1, md: 3 }} gap="3">
+                      <Inline align="center" gap="2">
+                        <ImageIcon size={16} aria-hidden />
+                        <Stack gap="0">
+                          <Text size="xs" variant="caption">
+                            Image quality
+                          </Text>
+                          <Text size="sm" weight="medium">
+                            {(
+                              COMPRESSION_SETTINGS[state.compressionLevel]
+                                .imageQuality * 100
+                            ).toFixed(0)}
+                            %
+                          </Text>
+                        </Stack>
+                      </Inline>
+                      <Inline align="center" gap="2">
+                        <Layers size={16} aria-hidden />
+                        <Stack gap="0">
+                          <Text size="xs" variant="caption">
+                            Image scale
+                          </Text>
+                          <Text size="sm" weight="medium">
+                            {(
+                              COMPRESSION_SETTINGS[state.compressionLevel]
+                                .imageScale * 100
+                            ).toFixed(0)}
+                            %
+                          </Text>
+                        </Stack>
+                      </Inline>
+                      <Inline align="center" gap="2">
+                        <Type size={16} aria-hidden />
+                        <Stack gap="0">
+                          <Text size="xs" variant="caption">
+                            Optimisation passes
+                          </Text>
+                          <Text size="sm" weight="medium">
+                            {state.compressionLevel === 'low' ||
+                            state.compressionLevel === 'medium'
+                              ? '2'
+                              : '3'}
+                          </Text>
+                        </Stack>
+                      </Inline>
+                    </Grid>
+                  </CardBody>
+                </Card>
+              </Stack>
+            </CardBody>
           </Card>
 
-          {/* Compress Button with Progress */}
-          <div className="space-y-3">
+          <Stack gap="3">
             {state.processing && compressionProgress.stage && (
-              <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4 animate-in fade-in duration-300">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-cyan-700">{compressionProgress.stage}</span>
-                  <span className="text-sm font-medium text-cyan-600">{compressionProgress.percentage}%</span>
-                </div>
-                <div className="w-full bg-cyan-100 rounded-full h-2.5 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-cyan-500 to-cyan-600 h-2.5 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${compressionProgress.percentage}%` }}
-                  />
-                </div>
-              </div>
+              <Card variant="filled" size="sm">
+                <CardBody>
+                  <Stack gap="2">
+                    <Inline justify="between" align="center">
+                      <Text size="sm" weight="medium">
+                        {compressionProgress.stage}
+                      </Text>
+                      <Text size="sm" weight="medium">
+                        {compressionProgress.percentage}%
+                      </Text>
+                    </Inline>
+                    <LinearProgress
+                      value={compressionProgress.percentage}
+                      max={100}
+                      size="sm"
+                      colorScheme="accent"
+                    />
+                  </Stack>
+                </CardBody>
+              </Card>
             )}
 
             <Button
               onClick={compressPDF}
+              variant="solid"
+              colorScheme="accent"
+              size="lg"
+              fullWidth
+              loading={state.processing}
               disabled={state.processing}
-              variant="primary"
-              className="w-full py-4 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed"
-              leftIcon={state.processing ? <RefreshCw size={20} className="animate-spin" /> : <Minimize2 size={20} />}
+              leftIcon={state.processing ? undefined : <Minimize2 size={20} />}
             >
-              {state.processing ? 'Compressing PDF...' : 'Compress PDF'}
+              {state.processing ? 'Compressing PDF…' : 'Compress PDF'}
             </Button>
-          </div>
-        </div>
+          </Stack>
+        </Stack>
       )}
 
-      {/* Results */}
       {state.compressedPDF && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Success Message */}
-          <Alert className="bg-green-50 border-green-200">
-            <div className="text-green-700">
-              <div className="font-semibold">
-                ✨ Successfully compressed your PDF!
-              </div>
-              <div className="text-sm mt-1">
-                File size reduced by {calculateReduction()}% • Saved {formatFileSize(calculateSavings())}
-              </div>
-            </div>
+        <Stack gap="6">
+          <Alert status="success" variant="soft">
+            <AlertTitle>Successfully compressed your PDF</AlertTitle>
+            <AlertDescription>
+              File size reduced by {calculateReduction()}% • Saved{' '}
+              {formatFileSize(calculateSavings())}
+            </AlertDescription>
           </Alert>
 
-          {/* Size Comparison */}
-          <Card className="bg-white border-slate-200">
-            <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <ArrowDown className="w-5 h-5 text-cyan-500" />
-                  Size Comparison
-                </h3>              <div className="space-y-4">
-                {/* Original Size */}
-                <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg transition-all duration-200 hover:shadow-md">
-                  <div>
-                    <p className="text-sm text-slate-600 mb-1">Original Size</p>
-                    <p className="text-2xl font-bold text-slate-900">{formatFileSize(state.originalSize)}</p>
-                  </div>
-                  <FileText className="w-10 h-10 text-slate-400" />
-                </div>
+          <Card variant="elevated" size="md">
+            <CardHeader>
+              <Inline align="center" gap="2">
+                <ArrowDown size={20} aria-hidden />
+                <CardTitle as="h3">Size comparison</CardTitle>
+              </Inline>
+            </CardHeader>
+            <CardBody>
+              <Stack gap="4">
+                <Card variant="filled" size="sm">
+                  <CardBody>
+                    <Inline justify="between" align="center">
+                      <Stack gap="1">
+                        <Text size="sm" variant="caption">
+                          Original size
+                        </Text>
+                        <Heading level={4} size="xl" weight="bold">
+                          {formatFileSize(state.originalSize)}
+                        </Heading>
+                      </Stack>
+                      <FileText size={36} aria-hidden />
+                    </Inline>
+                  </CardBody>
+                </Card>
 
-                {/* Arrow with percentage */}
-                <div className="flex justify-center">
-                  <div className="flex flex-col items-center">
-                    <ArrowDown className="w-8 h-8 text-cyan-500 animate-bounce" />
-                    <div className="mt-2 px-3 py-1 bg-cyan-100 rounded-full">
-                      <span className="text-xs text-cyan-700 font-bold">
-                        -{calculateReduction()}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <Center>
+                  <Stack gap="2" align="center">
+                    <ArrowDown size={28} aria-hidden />
+                    <Badge
+                      variant="solid"
+                      colorScheme="accent"
+                      size="sm"
+                      shape="pill"
+                    >
+                      -{calculateReduction()}%
+                    </Badge>
+                  </Stack>
+                </Center>
 
-                {/* Compressed Size */}
-                <div className="flex items-center justify-between p-4 bg-cyan-50 border-2 border-cyan-300 rounded-lg transition-all duration-200 hover:shadow-lg">
-                  <div>
-                    <p className="text-sm text-cyan-600 mb-1 font-medium">Compressed Size</p>
-                    <p className="text-2xl font-bold text-cyan-700">{formatFileSize(state.compressedPDF.size)}</p>
-                  </div>
-                  <Minimize2 className="w-10 h-10 text-cyan-500" />
-                </div>
+                <Card variant="outlined" size="sm">
+                  <CardBody>
+                    <Inline justify="between" align="center">
+                      <Stack gap="1">
+                        <Text size="sm" variant="caption">
+                          Compressed size
+                        </Text>
+                        <Heading level={4} size="xl" weight="bold">
+                          {formatFileSize(state.compressedPDF.size)}
+                        </Heading>
+                      </Stack>
+                      <Minimize2 size={36} aria-hidden />
+                    </Inline>
+                  </CardBody>
+                </Card>
 
-                {/* Savings */}
-                <div className="text-center p-6 bg-gradient-to-br from-cyan-50 via-blue-50 to-green-50 border-2 border-cyan-200 rounded-lg shadow-sm">
-                  <p className="text-sm text-slate-600 mb-2 font-medium">💾 Total Space Saved</p>
-                  <p className="text-4xl font-bold text-cyan-600 mb-2">
-                    {formatFileSize(calculateSavings())}
-                  </p>
-                  <div className="flex items-center justify-center gap-2 text-sm text-cyan-600">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span className="font-medium">
-                      {calculateReduction()}% size reduction achieved
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
+                <Card variant="filled" size="md">
+                  <CardBody>
+                    <Stack gap="2" align="center">
+                      <Text size="sm" variant="caption">
+                        Total space saved
+                      </Text>
+                      <Heading level={3} size="3xl" weight="bold">
+                        {formatFileSize(calculateSavings())}
+                      </Heading>
+                      <Inline gap="2" align="center">
+                        <CheckCircle2 size={16} aria-hidden />
+                        <Text size="sm" weight="medium">
+                          {calculateReduction()}% size reduction achieved
+                        </Text>
+                      </Inline>
+                    </Stack>
+                  </CardBody>
+                </Card>
+              </Stack>
+            </CardBody>
           </Card>
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
+          <Stack gap="3">
             <Button
               onClick={downloadCompressed}
-              variant="primary"
-              className="w-full py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              variant="solid"
+              colorScheme="success"
+              size="lg"
+              fullWidth
               leftIcon={<Download size={20} />}
             >
-              Download Compressed PDF
+              Download compressed PDF
             </Button>
-
             <Button
               onClick={reset}
-              variant="outline"
-              className="w-full py-3 text-slate-600 border-slate-300 hover:bg-slate-50 transition-all duration-200"
+              variant="soft"
+              colorScheme="neutral"
+              fullWidth
               leftIcon={<RotateCcw size={16} />}
             >
-              Compress Another PDF
+              Compress another PDF
             </Button>
-          </div>
-        </div>
+          </Stack>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 };
 

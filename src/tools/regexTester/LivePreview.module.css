@@ -1,0 +1,50 @@
+.preview {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  border: 1px solid var(--cynosure-color-border-default);
+  border-radius: var(--cynosure-radius-md, 10px);
+  background: var(--cynosure-color-background-surface);
+  font-family: var(--cynosure-font-family-mono);
+  font-size: var(--cynosure-font-body-sm-size);
+  line-height: 1.7;
+  color: var(--cynosure-color-foreground-default);
+  max-height: 420px;
+  overflow: auto;
+  box-shadow: inset 3px 0 0 0 var(--cynosure-color-accent-solid);
+}
+
+.gutter {
+  user-select: none;
+  text-align: right;
+  padding: 12px 12px 12px 18px;
+  color: var(--cynosure-color-foreground-subtle);
+  background: var(--cynosure-color-background-subtle);
+  border-right: 1px solid var(--cynosure-color-border-subtle);
+  font-variant-numeric: tabular-nums;
+  position: sticky;
+  left: 0;
+}
+
+.gutterLine {
+  display: block;
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.content {
+  padding: 12px 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.mark {
+  background: var(--cynosure-color-amber-200);
+  color: var(--cynosure-color-amber-900);
+  padding: 1px 3px;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

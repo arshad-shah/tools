@@ -1,51 +1,67 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useCallback } from 'react';
-import { 
-  ReactFlow, 
-  useNodesState, 
-  useEdgesState, 
-  addEdge, 
-  MiniMap, 
-  Controls,
+import {
+  addEdge,
   Background,
-  NodeTypes,
   BackgroundVariant,
-  Edge
+  Controls,
+  Edge,
+  NodeTypes,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useColorScheme } from '@arshad-shah/cynosure-react';
 
-import { DataFlowProps, AppNode } from './types';
 import CustomNode from './CustomNode';
+import { AppNode, DataFlowProps } from './types';
 import { useDataProcessor } from './useDataProcessor';
-import { FlowStyles } from './styles';
 
 const nodeTypes = {
   custom: CustomNode,
 } satisfies NodeTypes;
 
-const defaultViewport = { x: 0, y: 0, zoom: 1.5 };
-
 const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
-    const onConnect = useCallback(
-      (params: any) => setEdges((eds) => addEdge(
-        { 
-          ...params, 
-          type: 'smoothstep',
-          style: { stroke: '#60A5FA', strokeWidth: 2 },
-          animated: true
-        }, 
-        eds
-      )),
-      []
-    );
+  const accent = 'var(--cynosure-color-accent-solid)';
+  const surface = 'var(--cynosure-color-background-surface)';
+  const subtle = 'var(--cynosure-color-background-subtle)';
+  const muted = 'var(--cynosure-color-foreground-subtle)';
+
+  const onConnect = useCallback(
+    (params: any) =>
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            type: 'smoothstep',
+            style: { stroke: accent, strokeWidth: 2 },
+            animated: true,
+          },
+          eds,
+        ),
+      ),
+    [setEdges, accent],
+  );
 
   useDataProcessor({ initialData, setNodes, setEdges });
 
   return (
-    <div className={FlowStyles.container}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: 400,
+        borderRadius: 8,
+        overflow: 'hidden',
+        background: subtle,
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -54,26 +70,30 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         snapToGrid={false}
-        defaultViewport={defaultViewport}
         fitView
-        className="backdrop-blur-sm"
+        fitViewOptions={{ padding: 0.2, duration: 300 }}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          style: { stroke: accent, strokeWidth: 1.5 },
+        }}
+        proOptions={{ hideAttribution: true }}
       >
-        <Background 
-        variant={BackgroundVariant.Cross}
-          color="#60A5FA"
-          gap={24}
-          size={1.5}
-          className={FlowStyles.background}
+        <Background
+          variant={BackgroundVariant.Dots}
+          color={muted}
+          gap={20}
+          size={1}
         />
-        <MiniMap
-          className={FlowStyles.minimap}
-          nodeStrokeColor={(n) => n.type === 'custom' ? '#60A5FA' : '#fff'}
-          nodeColor={(n) => n.type === 'custom' ? '#1E293B' : '#fff'}
-          maskColor="rgba(0, 0, 0, 0.2)"
-        />
-        <Controls 
-          className={FlowStyles.controls}
+        <Controls
           position="bottom-right"
+          style={{
+            background: surface,
+            border: `1px solid var(--cynosure-color-border-default)`,
+            borderRadius: 8,
+            boxShadow: isDark
+              ? '0 4px 12px rgba(0,0,0,0.4)'
+              : '0 4px 12px rgba(0,0,0,0.08)',
+          }}
         />
       </ReactFlow>
     </div>

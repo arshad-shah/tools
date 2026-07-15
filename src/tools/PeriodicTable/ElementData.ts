@@ -1088,7 +1088,7 @@
 //     column: 13,
 //     electrons: "2, 8, 18, 3",
 //     mass: 69.723,
-//     description: "Gallium is a soft, silvery metal (understandard conditions) that melts at about 29.8 °C (just above room temperature).&#8203;:contentReference[oaicite:104]{index=104}",
+//     description: "Gallium is a soft, silvery metal (understandard conditions) that melts at about 29.8 °C (just above room temperature).&#8203;:contentReference[oaicite:104]{index=104}",
 //     density: 5.91,           // g/cm³ (at 25°C)
 //     meltingPoint: 302.91,    // K (29.76 °C)
 //     boilingPoint: 2477,      // K
@@ -1952,7 +1952,7 @@
 //     column: 1,
 //     electrons: "2, 8, 18, 18, 8, 1",
 //     mass: 132.905,
-//     description: "Cesium is a very soft, gold-colored alkali metal. It is extremely reactive (ignites explosively in water) and has one of the lowest melting points (28.5 °C, it liquefies in a warm room).&#8203;:contentReference[oaicite:160]{index=160}",
+//     description: "Cesium is a very soft, gold-colored alkali metal. It is extremely reactive (ignites explosively in water) and has one of the lowest melting points (28.5 °C, it liquefies in a warm room).&#8203;:contentReference[oaicite:160]{index=160}",
 //     density: 1.87,           // g/cm³
 //     meltingPoint: 301.59,    // K
 //     boilingPoint: 944,       // K
@@ -2420,7 +2420,7 @@
 //     column: 3,
 //     electrons: "2, 8, 18, 30, 8, 2",
 //     mass: 167.259,
-//     description: "Erbium is a silvery-white rare-earth metal. It is fairly stable in air compared to earlier lanthanides. Erbium’s pink oxide is used in glass coloring, and Er³⁺ ions are used in fiber optic signal amplifiers (at 1.55 µm).&#8203;:contentReference[oaicite:188]{index=188}",
+//     description: "Erbium is a silvery-white rare-earth metal. It is fairly stable in air compared to earlier lanthanides. Erbium’s pink oxide is used in glass coloring, and Er³⁺ ions are used in fiber optic signal amplifiers (at 1.55 µm).&#8203;:contentReference[oaicite:188]{index=188}",
 //     density: 9.07,           // g/cm³
 //     meltingPoint: 1802,      // K
 //     boilingPoint: 3141,      // K
@@ -2636,7 +2636,7 @@
 //     column: 6,
 //     electrons: "2, 8, 18, 32, 12, 2",
 //     mass: 183.84,
-//     description: "Tungsten (Wolfram) is a hard, steel-gray metal with the highest melting point of all metals (3422 °C). It is extremely dense and is used in filaments, cutting tools, and heavy metal alloys.&#8203;:contentReference[oaicite:200]{index=200}",
+//     description: "Tungsten (Wolfram) is a hard, steel-gray metal with the highest melting point of all metals (3422 °C). It is extremely dense and is used in filaments, cutting tools, and heavy metal alloys.&#8203;:contentReference[oaicite:200]{index=200}",
 //     density: 19.25,          // g/cm³
 //     meltingPoint: 3695,      // K
 //     boilingPoint: 5828,      // K
@@ -3052,7 +3052,7 @@
 //     natural: true,  // trace from decay of heavier elements
 //     metal: "metalloid",  // Astatine is usually classified as a halogen (nonmetal), but expected to have some metalloid properties
 //     abundanceCrust: ~0,   // (only ~0.05 micrograms in entire Earth's crust at any time)
-//     abundanceUniverse: ~0,// 
+//     abundanceUniverse: ~0,//
 //     cpkColor: "#754F45",   // CPK color (dark brown)
 //     iconColor: "#754F45",
 //     modelColor: "#754F45",
@@ -3088,7 +3088,7 @@
 //     natural: true,
 //     metal: "nonmetal",
 //     abundanceCrust: ~0,      // (trace from decay, ~6×10^-18% of air)
-//     abundanceUniverse: ~0,   // 
+//     abundanceUniverse: ~0,   //
 //     cpkColor: "#428296",     // CPK color (gray-blue)
 //     iconColor: "#428296",
 //     modelColor: "#428296",
@@ -3826,8 +3826,8 @@
 //     mass: 270,
 //     description: "Bohrium is a synthetic element with atomic number 107, named after physicist Niels Bohr. It is produced in particle accelerators and is extremely short-lived (half-lives on the order of seconds or shorter). Bohrium falls in group 7, so its chemistry is expected to resemble that of rhenium (its lighter homolog), but only a few atoms have ever been observed, insufficient for detailed chemical studies.&#8203;:contentReference[oaicite:276]{index=276}",
 //     density: — ,             // (unknown)
-//     meltingPoint: — ,        // 
-//     boilingPoint: — ,        // 
+//     meltingPoint: — ,        //
+//     boilingPoint: — ,        //
 //     atomicRadius: — ,
 //     electronegativity: — ,
 //     discoveryYear: 1981,
@@ -3862,8 +3862,8 @@
 //     mass: 269,
 //     description: "Hassium is a synthetic superheavy element, atomic number 108, named after the German state of Hesse (Latin Hassia). It was first synthesized in 1984 at Darmstadt. Hassium is very short-lived (most stable known isotope has half-life ~16 seconds), and only a few atoms have been produced. It lies in group 8, so it may have chemical similarities to osmium, but experiments are extremely limited. Its use is only in research on element properties.&#8203;:contentReference[oaicite:278]{index=278}",
 //     density: — ,             // (unknown, predicted ~40 g/cm3)
-//     meltingPoint: — ,        // 
-//     boilingPoint: — ,        // 
+//     meltingPoint: — ,        //
+//     boilingPoint: — ,        //
 //     atomicRadius: — ,
 //     electronegativity: — ,
 //     discoveryYear: 1984,
@@ -3898,8 +3898,8 @@
 //     mass: 278,
 //     description: "Meitnerium is a synthetic element with atomic number 109, named in honor of physicist Lise Meitner. It was first synthesized in 1982 in Darmstadt, Germany. Meitnerium is extremely radioactive and only a few atoms have ever been made (half-life of the most stable known isotope ~7.6 seconds). Its chemical properties are largely unexplored, but as element 109 in group 9, it may behave somewhat like iridium. It has no applications outside research.&#8203;:contentReference[oaicite:280]{index=280}",
 //     density: — ,             // (unknown)
-//     meltingPoint: — ,        // 
-//     boilingPoint: — ,        // 
+//     meltingPoint: — ,        //
+//     boilingPoint: — ,        //
 //     atomicRadius: — ,
 //     electronegativity: — ,
 //     discoveryYear: 1982,
@@ -3934,8 +3934,8 @@
 //     mass: 281,
 //     description: "Darmstadtium is a synthetic superheavy element, atomic number 110, named after Darmstadt, Germany (where it was discovered in 1994). It is highly unstable; the most stable isotopes have half-lives on the order of milliseconds. As a group 10 element, it would theoretically behave similarly to platinum or palladium, but its extremely short existence precludes chemical investigation. It has no practical use beyond fundamental research.&#8203;:contentReference[oaicite:282]{index=282}",
 //     density: — ,             // (unknown)
-//     meltingPoint: — ,        // 
-//     boilingPoint: — ,        // 
+//     meltingPoint: — ,        //
+//     boilingPoint: — ,        //
 //     atomicRadius: — ,
 //     electronegativity: — ,
 //     discoveryYear: 1994,
@@ -3970,8 +3970,8 @@
 //     mass: 282,
 //     description: "Roentgenium is a synthetic element with atomic number 111, named after Wilhelm Conrad Röntgen (discoverer of X-rays). It was first synthesized in 1994 in Darmstadt. Roentgenium atoms are extremely short-lived (half-life ~1.6 ms for Rg-282). As a period 7 coinage metal (group 11), it may have properties analogous to gold, but no chemistry has been observed due to the few atoms produced. It is only used for experimental purposes in physics.&#8203;:contentReference[oaicite:284]{index=284}",
 //     density: — ,             // (unknown)
-//     meltingPoint: — ,        // 
-//     boilingPoint: — ,        // 
+//     meltingPoint: — ,        //
+//     boilingPoint: — ,        //
 //     atomicRadius: — ,
 //     electronegativity: — ,
 //     discoveryYear: 1994,
@@ -4042,8 +4042,8 @@
 //     mass: 286,
 //     description: "Nihonium is a synthetic element with atomic number 113, named after Japan (Nihon meaning Japan). First reported in 2003 by RIKEN in Japan and confirmed in later experiments, it is very short-lived (half-life of the longest isotope ~20 seconds). Nihonium is in group 13, so it could show some similarities to thallium or indium in chemistry, though experimental confirmation is lacking. It has no practical applications; it’s created for research on superheavy elements.",
 //     density: — ,             // (unknown)
-//     meltingPoint: — ,        // 
-//     boilingPoint: — ,        // 
+//     meltingPoint: — ,        //
+//     boilingPoint: — ,        //
 //     atomicRadius: — ,
 //     electronegativity: — ,
 //     discoveryYear: 2003,

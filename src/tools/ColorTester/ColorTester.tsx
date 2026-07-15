@@ -1,183 +1,168 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import {
+  AlertTriangle,
+  Brain,
+  Check,
+  CheckCircle2,
+  Copy,
+  Download,
+  Eye,
+  Palette as PaletteIcon,
+  RefreshCw,
+  Save,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  ColorPicker,
+  Grid,
+  Heading,
+  IconButton,
+  Inline,
+  Label,
+  Slider,
+  Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
+} from '@arshad-shah/cynosure-react';
 import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
+
+interface ColorLike {
+  toString: (format: 'hex') => string;
+}
 import { calculateHSL, hexToRgb } from './utils/ColorConverters';
-import { calculateContrastRatio, determineColorMood, determineColorName, generateHarmonyColors } from './utils/CalculationUtils';
+import {
+  calculateContrastRatio,
+  determineColorMood,
+  determineColorName,
+  generateHarmonyColors,
+} from './utils/CalculationUtils';
 
-// Import enhanced components
-import ColorDisplay from './components/ColorDisplay';
-import ColorValues from './components/ColorValues';
-import TabNavigation from './components/TabNavigation';
-import HarmonyTab from './components/HarmonyTab';
-import PsychologyTab from './components/PsychologyTab';
-import PreviewTab from './components/PreviewTab';
-import AccessibilityTab from './components/AccessibilityTab';
-import ColorEditor from './components/ColorEditor';
-import ColorPalette from './components/ColorPallete';
+const INITIAL_PALETTE: ColorInfo[] = [
+  { red: 255, green: 105, blue: 180, alpha: 1, hex: '#ff69b4', rgb: 'rgb(255, 105, 180)', name: 'Hot Pink' },
+  { red: 102, green: 205, blue: 170, alpha: 1, hex: '#66cdaa', rgb: 'rgb(102, 205, 170)', name: 'Medium Aquamarine' },
+  { red: 65, green: 105, blue: 225, alpha: 1, hex: '#4169e1', rgb: 'rgb(65, 105, 225)', name: 'Royal Blue' },
+  { red: 255, green: 165, blue: 0, alpha: 1, hex: '#ffa500', rgb: 'rgb(255, 165, 0)', name: 'Orange' },
+  { red: 75, green: 0, blue: 130, alpha: 1, hex: '#4b0082', rgb: 'rgb(75, 0, 130)', name: 'Indigo' },
+  { red: 60, green: 179, blue: 113, alpha: 1, hex: '#3cb371', rgb: 'rgb(60, 179, 113)', name: 'Medium Sea Green' },
+];
 
-// Custom styling
-const CustomStyles: React.FC = () => (
-  <style>{`
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-    .pulse-animation {
-      animation: pulse 0.5s ease;
-    }
-    
-    @keyframes highlight {
-      0% { background-color: rgba(79, 70, 229, 0.1); }
-      100% { background-color: transparent; }
-    }
-    .highlight-animation {
-      animation: highlight 1s ease;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fadeIn {
-      animation: fadeIn 0.3s ease-out forwards;
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-5px); }
-    }
-    .float-animation {
-      animation: float 3s ease-in-out infinite;
-    }
-    
-    .glass-panel {
-      backdrop-filter: blur(12px);
-      background: rgba(255, 255, 255, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 
-        0 4px 24px rgba(0, 0, 0, 0.08),
-        0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-    
-    .depth-shadow {
-      box-shadow: 
-        0 2px 10px rgba(0, 0, 0, 0.05),
-        0 10px 20px rgba(79, 70, 229, 0.1);
-    }
-    
-    .background-pattern {
-      background-image: 
-        radial-gradient(circle at 80% 20%, rgba(120, 119, 198, 0.3) 0%, transparent 25%),
-        radial-gradient(circle at 20% 70%, rgba(255, 120, 180, 0.2) 0%, transparent 30%);
-    }
-  `}</style>
-);
+const wcagLevel = (
+  ratio: number,
+): { label: string; colorScheme: 'success' | 'warning' | 'danger' } => {
+  if (ratio >= 7) return { label: 'AAA', colorScheme: 'success' };
+  if (ratio >= 4.5) return { label: 'AA', colorScheme: 'success' };
+  if (ratio >= 3) return { label: 'AA Large', colorScheme: 'warning' };
+  return { label: 'Fail', colorScheme: 'danger' };
+};
+
+const Swatch: React.FC<{
+  color: string;
+  size?: 'sm' | 'md' | 'lg';
+  rounded?: boolean;
+}> = ({ color, size = 'md', rounded = true }) => {
+  const px = size === 'sm' ? 32 : size === 'lg' ? 64 : 48;
+  return (
+    <div
+      aria-hidden
+      style={{
+        width: px,
+        height: px,
+        background: color,
+        borderRadius: rounded ? '999px' : '8px',
+        border: '1px solid rgba(0,0,0,0.1)',
+        flexShrink: 0,
+      }}
+    />
+  );
+};
 
 const ColorTester: React.FC = () => {
-  // Base color state
-  const [red, setRed] = useState<number>(128);
-  const [green, setGreen] = useState<number>(128);
-  const [blue, setBlue] = useState<number>(128);
-  const [alpha, setAlpha] = useState<number>(1);
-  
-  // UI state
-  const [savedColors, setSavedColors] = useState<ColorInfo[]>([
-    { red: 255, green: 105, blue: 180, alpha: 1, hex: '#ff69b4', rgb: 'rgb(255, 105, 180)', name: 'Hot Pink' },
-    { red: 102, green: 205, blue: 170, alpha: 1, hex: '#66cdaa', rgb: 'rgb(102, 205, 170)', name: 'Medium Aquamarine' },
-    { red: 65, green: 105, blue: 225, alpha: 1, hex: '#4169e1', rgb: 'rgb(65, 105, 225)', name: 'Royal Blue' },
-    { red: 255, green: 165, blue: 0, alpha: 1, hex: '#ffa500', rgb: 'rgb(255, 165, 0)', name: 'Orange' },
-    { red: 75, green: 0, blue: 130, alpha: 1, hex: '#4b0082', rgb: 'rgb(75, 0, 130)', name: 'Indigo' },
-    { red: 60, green: 179, blue: 113, alpha: 1, hex: '#3cb371', rgb: 'rgb(60, 179, 113)', name: 'Medium Sea Green' },
-  ]);
-  
-  const [copiedValue, setCopiedValue] = useState<string | null>(null);
-  const [copiedTimeout, setCopiedTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [colorNameSuggestion, setColorNameSuggestion] = useState<string>('Steel Blue');
+  const [red, setRed] = useState(70);
+  const [green, setGreen] = useState(130);
+  const [blue, setBlue] = useState(180);
+  const [alpha, setAlpha] = useState(1);
+
+  const [savedColors, setSavedColors] = useState<ColorInfo[]>(INITIAL_PALETTE);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [colorNameSuggestion, setColorNameSuggestion] =
+    useState<string>('Steel Blue');
   const [colorHarmony, setColorHarmony] = useState<ColorHarmony | null>(null);
   const [colorMood, setColorMood] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabType>('harmony');
-  const [contrastRatios, setContrastRatios] = useState<{white: number, black: number}>({ white: 0, black: 0 });
-  const [showEditorsPanel, setShowEditorsPanel] = useState<boolean>(true);
-  
-  // Calculate derived color values
+  const [contrastRatios, setContrastRatios] = useState({
+    white: 0,
+    black: 0,
+  });
+
   const hexCode = `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}`;
-  const rgbString = alpha < 1 ? `rgba(${red}, ${green}, ${blue}, ${alpha})` : `rgb(${red}, ${green}, ${blue})`;
+  const rgbString =
+    alpha < 1
+      ? `rgba(${red}, ${green}, ${blue}, ${alpha})`
+      : `rgb(${red}, ${green}, ${blue})`;
   const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
   const textColor = luminance > 0.5 ? '#1a202c' : '#ffffff';
 
-  // Calculate color harmony
   useEffect(() => {
     const hsl = calculateHSL(red, green, blue);
     setColorHarmony(generateHarmonyColors(hsl.h, hsl.s, hsl.l));
-  }, [red, green, blue]);
-  
-  // Calculate color name and mood
-  useEffect(() => {
-    const hsl = calculateHSL(red, green, blue);
     setColorNameSuggestion(determineColorName(hsl.h, hsl.s, hsl.l));
     setColorMood(determineColorMood(hsl.h, hsl.s, hsl.l));
-  }, [red, green, blue]);
-  
-  // Calculate contrast ratios for accessibility
-  useEffect(() => {
-    const whiteRatio = calculateContrastRatio([red, green, blue], [255, 255, 255]);
-    const blackRatio = calculateContrastRatio([red, green, blue], [0, 0, 0]);
-    setContrastRatios({ white: whiteRatio, black: blackRatio });
+    setContrastRatios({
+      white: calculateContrastRatio([red, green, blue], [255, 255, 255]),
+      black: calculateContrastRatio([red, green, blue], [0, 0, 0]),
+    });
   }, [red, green, blue]);
 
-  // Function to copy text to clipboard
-  const copyToClipboard = (text: string, label: string): void => {
+  const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      if (copiedTimeout) clearTimeout(copiedTimeout);
-      
-      setCopiedValue(label);
-      const timeout = setTimeout(() => setCopiedValue(null), 2000);
-      setCopiedTimeout(timeout);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
     });
   };
-  
-  // Generate random color
-  const generateRandomColor = (): void => {
+
+  const generateRandomColor = () => {
     setRed(Math.floor(Math.random() * 256));
     setGreen(Math.floor(Math.random() * 256));
     setBlue(Math.floor(Math.random() * 256));
-    
-    // Add animation flair
-    const element = document.querySelector('.color-display');
-    if (element) {
-      element.classList.add('pulse-animation');
-      setTimeout(() => element.classList.remove('pulse-animation'), 500);
-    }
   };
-  
-  // Save the current color
-  const saveColor = (): void => {
-    const colorInfo: ColorInfo = {
-      hex: hexCode,
-      rgb: rgbString,
-      red, green, blue, alpha,
-      name: colorNameSuggestion
-    };
-    setSavedColors([...savedColors, colorInfo]);
-    
-    // Show quick notification
-    const element = document.getElementById('palette-section');
-    if (element) {
-      element.classList.add('highlight-animation');
-      setTimeout(() => element.classList.remove('highlight-animation'), 1000);
-    }
+
+  const saveColor = () => {
+    setSavedColors((prev) => [
+      ...prev,
+      {
+        hex: hexCode,
+        rgb: rgbString,
+        red,
+        green,
+        blue,
+        alpha,
+        name: colorNameSuggestion,
+      },
+    ]);
   };
-  
-  // Load a saved color
-  const loadColor = (colorInfo: ColorInfo): void => {
-    setRed(colorInfo.red);
-    setGreen(colorInfo.green);
-    setBlue(colorInfo.blue);
-    setAlpha(colorInfo.alpha || 1);
+
+  const loadColor = (c: ColorInfo) => {
+    setRed(c.red);
+    setGreen(c.green);
+    setBlue(c.blue);
+    setAlpha(c.alpha || 1);
   };
-  
-  // Load a suggested harmony color
-  const loadHarmonyColor = (rgb: string): void => {
+
+  const loadHarmonyColor = (rgb: string) => {
     const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (match) {
       setRed(parseInt(match[1]));
@@ -185,133 +170,520 @@ const ColorTester: React.FC = () => {
       setBlue(parseInt(match[3]));
     }
   };
-  
-  // Handle color picker input
-  const handleColorPicker = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const hex = e.target.value;
-    const { r, g, b } = hexToRgb(hex);
-    setRed(r);
-    setGreen(g);
-    setBlue(b);
+
+  const deleteColor = (index: number) => {
+    setSavedColors((prev) => {
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
   };
-  
-  // Delete a saved color
-  const deleteColor = (index: number, e: React.MouseEvent): void => {
-    e.stopPropagation(); // Prevent triggering the parent button's onClick
-    const newColors = [...savedColors];
-    newColors.splice(index, 1);
-    setSavedColors(newColors);
-  };
-  
-  // Export palette as JSON
-  const exportPalette = (): void => {
+
+  const exportPalette = () => {
     const data = JSON.stringify(savedColors, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
     const link = document.createElement('a');
     link.href = url;
     link.download = 'color-palette.json';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    copyToClipboard('Palette successfully exported!', 'export');
+    URL.revokeObjectURL(url);
   };
 
-  // Common props for ColorEditor component
-  const colorEditorProps = {
-    red, green, blue, alpha, hexCode,
-    setRed, setGreen, setBlue, setAlpha,
-    handleColorPicker,
-    showEditorsPanel, setShowEditorsPanel
+  const handleColorPicker = (color: ColorLike) => {
+    const hex = color.toString('hex');
+    const { r, g, b } = hexToRgb(hex);
+    setRed(r);
+    setGreen(g);
+    setBlue(b);
   };
 
-  // Props for active tab content
-  const renderActiveTabContent = () => {
-    switch (activeTab) {
-      case 'harmony':
-        return colorHarmony && <HarmonyTab colorHarmony={colorHarmony} loadHarmonyColor={loadHarmonyColor} />;
-      case 'psychology':
-        return <PsychologyTab rgbString={rgbString} colorNameSuggestion={colorNameSuggestion} colorMood={colorMood} />;
-      case 'preview':
-        return <PreviewTab rgbString={rgbString} textColor={textColor} />;
-      case 'accessibility':
-        return <AccessibilityTab rgbString={rgbString} contrastRatios={contrastRatios} />;
-      default:
-        return null;
-    }
+  const renderHarmony = () => {
+    if (!colorHarmony) return null;
+    const entries: Array<[string, { hex: string; rgb: string; name: string }]> = [
+      ['Complementary', colorHarmony.complementary],
+      ['Analogous 1', colorHarmony.analogous1],
+      ['Analogous 2', colorHarmony.analogous2],
+      ['Triadic 1', colorHarmony.triadic1],
+      ['Triadic 2', colorHarmony.triadic2],
+      ['Lighter', colorHarmony.lighter],
+      ['Darker', colorHarmony.darker],
+    ];
+    return (
+      <Grid columns={{ base: 2, sm: 3, xl: 4 }} gap="3">
+        {entries.map(([label, c]) => (
+          <Card
+            key={label}
+            variant="filled"
+            size="sm"
+            interactive
+            onClick={() => loadHarmonyColor(c.rgb)}
+          >
+            <CardBody>
+              <Stack gap="2" align="center">
+                <Swatch color={c.hex} size="lg" rounded={false} />
+                <Stack gap="0" align="center">
+                  <Text size="xs" weight="semibold">
+                    {label}
+                  </Text>
+                  <Text size="xs" variant="caption">
+                    {c.hex}
+                  </Text>
+                </Stack>
+              </Stack>
+            </CardBody>
+          </Card>
+        ))}
+      </Grid>
+    );
+  };
+
+  const renderPsychology = () => (
+    <Stack gap="3">
+      <Inline align="center" gap="3" wrap>
+        <Swatch color={rgbString} size="lg" />
+        <Stack gap="1">
+          <Heading level={3} size="lg" weight="semibold">
+            {colorNameSuggestion}
+          </Heading>
+          <Text size="sm" variant="caption">
+            {rgbString}
+          </Text>
+        </Stack>
+      </Inline>
+      <Card variant="filled" size="sm">
+        <CardBody>
+          <Stack gap="2">
+            <Inline align="center" gap="2">
+              <Brain size={16} aria-hidden />
+              <Text size="sm" weight="semibold">
+                Mood
+              </Text>
+            </Inline>
+            <Text size="sm">{colorMood}</Text>
+          </Stack>
+        </CardBody>
+      </Card>
+    </Stack>
+  );
+
+  const renderPreview = () => (
+    <Stack gap="3">
+      <Card
+        variant="outlined"
+        size="md"
+        style={{ background: rgbString, color: textColor }}
+      >
+        <CardBody>
+          <Stack gap="3" align="center">
+            <Heading
+              level={3}
+              size="2xl"
+              weight="bold"
+              align="center"
+              style={{ color: textColor }}
+            >
+              Sample heading
+            </Heading>
+            <Text size="md" align="center" style={{ color: textColor }}>
+              The quick brown fox jumps over the lazy dog.
+            </Text>
+            <Inline gap="2">
+              <Button variant="solid" colorScheme="accent" size="sm">
+                Primary
+              </Button>
+              <Button variant="soft" colorScheme="neutral" size="sm">
+                Secondary
+              </Button>
+            </Inline>
+          </Stack>
+        </CardBody>
+      </Card>
+      <Inline justify="center" gap="2">
+        <Badge variant="soft" colorScheme="neutral" size="sm">
+          Auto text colour: {textColor}
+        </Badge>
+      </Inline>
+    </Stack>
+  );
+
+  const renderAccessibility = () => {
+    const whiteLevel = wcagLevel(contrastRatios.white);
+    const blackLevel = wcagLevel(contrastRatios.black);
+    return (
+      <Stack gap="3">
+        <Card
+          variant="outlined"
+          size="md"
+          style={{ background: rgbString }}
+        >
+          <CardBody>
+            <Stack gap="2">
+              <Text size="lg" weight="bold" style={{ color: '#ffffff' }}>
+                White text on this colour
+              </Text>
+              <Text size="sm" style={{ color: '#ffffff' }}>
+                Contrast ratio: {contrastRatios.white.toFixed(2)}:1
+              </Text>
+              <Inline gap="2">
+                <Badge variant="solid" colorScheme={whiteLevel.colorScheme} size="sm">
+                  WCAG {whiteLevel.label}
+                </Badge>
+              </Inline>
+            </Stack>
+          </CardBody>
+        </Card>
+        <Card
+          variant="outlined"
+          size="md"
+          style={{ background: rgbString }}
+        >
+          <CardBody>
+            <Stack gap="2">
+              <Text size="lg" weight="bold" style={{ color: '#000000' }}>
+                Black text on this colour
+              </Text>
+              <Text size="sm" style={{ color: '#000000' }}>
+                Contrast ratio: {contrastRatios.black.toFixed(2)}:1
+              </Text>
+              <Inline gap="2">
+                <Badge variant="solid" colorScheme={blackLevel.colorScheme} size="sm">
+                  WCAG {blackLevel.label}
+                </Badge>
+              </Inline>
+            </Stack>
+          </CardBody>
+        </Card>
+        {whiteLevel.colorScheme !== 'success' &&
+          blackLevel.colorScheme !== 'success' && (
+            <Alert status="warning" variant="soft" icon={<AlertTriangle aria-hidden />}>
+              <AlertTitle>Low contrast</AlertTitle>
+              <AlertDescription>
+                Neither white nor black text reaches WCAG AA on this colour for
+                normal text. Consider darkening or lightening it.
+              </AlertDescription>
+            </Alert>
+          )}
+      </Stack>
+    );
   };
 
   return (
-    <div className="min-h-screen background-pattern">
-      <CustomStyles />
-      
-      <div className="max-w-6xl mx-auto">
-        <div className="glass-panel rounded-3xl depth-shadow mb-6">
-          <div className="p-6">
-            {/* Main Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Sidebar: Color Display & Basic Controls */}
-              <div className="lg:col-span-4">
-                <ColorDisplay 
-                  hexCode={hexCode}
-                  rgbString={rgbString}
-                  colorNameSuggestion={colorNameSuggestion}
-                  generateRandomColor={generateRandomColor}
-                  saveColor={saveColor}
+    <Stack gap="4">
+      <Grid
+        templateColumns={{ base: '1fr', md: 'minmax(0, 5fr) minmax(0, 7fr)' }}
+        gap="4"
+      >
+        <Box minWidth="0">
+          <Card variant="elevated" size="md">
+            <CardHeader>
+              <Inline align="center" gap="2">
+                <PaletteIcon size={20} aria-hidden />
+                <CardTitle as="h3">Current colour</CardTitle>
+              </Inline>
+            </CardHeader>
+            <CardBody>
+              <Stack gap="4">
+                <Card
+                  variant="outlined"
+                  size="md"
+                  style={{ background: rgbString, color: textColor }}
+                >
+                  <CardBody>
+                    <Stack gap="2" align="center">
+                      <Sparkles size={36} aria-hidden />
+                      <Heading
+                        level={3}
+                        size="xl"
+                        weight="bold"
+                        style={{ color: textColor }}
+                      >
+                        {colorNameSuggestion}
+                      </Heading>
+                      <Text size="sm" style={{ color: textColor }}>
+                        {hexCode}
+                      </Text>
+                    </Stack>
+                  </CardBody>
+                </Card>
+                <Inline gap="2" wrap>
+                  <Button
+                    variant="soft"
+                    colorScheme="neutral"
+                    size="sm"
+                    leftIcon={<RefreshCw size={14} />}
+                    onClick={generateRandomColor}
+                  >
+                    Random
+                  </Button>
+                  <Button
+                    variant="solid"
+                    colorScheme="accent"
+                    size="sm"
+                    leftIcon={<Save size={14} />}
+                    onClick={saveColor}
+                  >
+                    Save
+                  </Button>
+                </Inline>
+
+                <Stack gap="2">
+                  <Inline justify="between" align="center">
+                    <Text size="sm" variant="caption">
+                      HEX
+                    </Text>
+                    <Inline gap="2" align="center">
+                      <Text size="sm" weight="medium">
+                        {hexCode}
+                      </Text>
+                      <IconButton
+                        variant="ghost"
+                        colorScheme="neutral"
+                        size="sm"
+                        label="Copy hex"
+                        icon={
+                          copiedKey === 'hex' ? (
+                            <CheckCircle2 size={14} />
+                          ) : (
+                            <Copy size={14} />
+                          )
+                        }
+                        onClick={() => copyToClipboard(hexCode, 'hex')}
+                      />
+                    </Inline>
+                  </Inline>
+                  <Inline justify="between" align="center">
+                    <Text size="sm" variant="caption">
+                      RGB
+                    </Text>
+                    <Inline gap="2" align="center">
+                      <Text size="sm" weight="medium">
+                        {rgbString}
+                      </Text>
+                      <IconButton
+                        variant="ghost"
+                        colorScheme="neutral"
+                        size="sm"
+                        label="Copy rgb"
+                        icon={
+                          copiedKey === 'rgb' ? (
+                            <CheckCircle2 size={14} />
+                          ) : (
+                            <Copy size={14} />
+                          )
+                        }
+                        onClick={() => copyToClipboard(rgbString, 'rgb')}
+                      />
+                    </Inline>
+                  </Inline>
+                </Stack>
+              </Stack>
+            </CardBody>
+          </Card>
+        </Box>
+
+        <Box minWidth="0">
+          <Card variant="elevated" size="md">
+            <CardBody>
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as TabType)}
+                variant="line"
+                colorScheme="accent"
+              >
+                <TabsList aria-label="Tester views">
+                  <TabsTrigger value="harmony">
+                    <Inline gap="2" align="center" wrap={false}>
+                      <PaletteIcon size={14} aria-hidden />
+                      <span>Harmony</span>
+                    </Inline>
+                  </TabsTrigger>
+                  <TabsTrigger value="psychology">
+                    <Inline gap="2" align="center" wrap={false}>
+                      <Brain size={14} aria-hidden />
+                      <span>Psychology</span>
+                    </Inline>
+                  </TabsTrigger>
+                  <TabsTrigger value="preview">
+                    <Inline gap="2" align="center" wrap={false}>
+                      <Eye size={14} aria-hidden />
+                      <span>Preview</span>
+                    </Inline>
+                  </TabsTrigger>
+                  <TabsTrigger value="accessibility">
+                    <Inline gap="2" align="center" wrap={false}>
+                      <Check size={14} aria-hidden />
+                      <span>A11y</span>
+                    </Inline>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="harmony">
+                  <Box paddingTop="4">{renderHarmony()}</Box>
+                </TabsContent>
+                <TabsContent value="psychology">
+                  <Box paddingTop="4">{renderPsychology()}</Box>
+                </TabsContent>
+                <TabsContent value="preview">
+                  <Box paddingTop="4">{renderPreview()}</Box>
+                </TabsContent>
+                <TabsContent value="accessibility">
+                  <Box paddingTop="4">{renderAccessibility()}</Box>
+                </TabsContent>
+              </Tabs>
+            </CardBody>
+          </Card>
+        </Box>
+      </Grid>
+
+      <Card variant="elevated" size="md">
+        <CardHeader>
+          <CardTitle as="h3">Colour editor</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <Stack gap="4">
+            <Inline align="center" gap="3" wrap>
+              <ColorPicker
+                value={hexCode}
+                onChange={handleColorPicker}
+                aria-label="Colour picker"
+              />
+              <Text size="sm" variant="caption">
+                Pick a colour or use the sliders below.
+              </Text>
+            </Inline>
+
+            <Grid columns={{ base: 1, md: 2 }} gap="4">
+              <Stack gap="2">
+                <Inline justify="between" align="center">
+                  <Label>Red</Label>
+                  <Badge variant="soft" colorScheme="danger" size="sm">
+                    {red}
+                  </Badge>
+                </Inline>
+                <Slider
+                  value={red}
+                  onChange={(v) => setRed(v as number)}
+                  minValue={0}
+                  maxValue={255}
+                  aria-label="Red channel"
                 />
-                
-                <div className="mt-6 space-y-6">
-                  <ColorValues 
-                    hexCode={hexCode}
-                    rgbString={rgbString}
-                    copiedValue={copiedValue}
-                    copyToClipboard={copyToClipboard}
-                  />
-                  
-                  {/* Mobile-only ColorEditor */}
-                  <div className="lg:hidden">
-                    <ColorEditor {...colorEditorProps} />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Main Content */}
-              <div className="lg:col-span-8">
-                {/* Tab Navigation & Content */}
-                <div className="bg-white rounded-3xl shadow-md border border-gray-100 overflow-hidden mb-6">
-                  <TabNavigation 
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                  />
-                  
-                  <div className="p-6">
-                    {renderActiveTabContent()}
-                  </div>
-                </div>
-                
-                {/* Desktop-only ColorEditor */}
-                <div className="hidden lg:block">
-                  <ColorEditor {...colorEditorProps} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Saved Colors Palette */}
-        <div className="mb-8" id="palette-section">
-          <ColorPalette
-            savedColors={savedColors}
-            loadColor={loadColor}
-            deleteColor={deleteColor}
-            exportPalette={exportPalette}
-          />
-        </div>
-      
-      </div>
-    </div>
+              </Stack>
+              <Stack gap="2">
+                <Inline justify="between" align="center">
+                  <Label>Green</Label>
+                  <Badge variant="soft" colorScheme="success" size="sm">
+                    {green}
+                  </Badge>
+                </Inline>
+                <Slider
+                  value={green}
+                  onChange={(v) => setGreen(v as number)}
+                  minValue={0}
+                  maxValue={255}
+                  aria-label="Green channel"
+                />
+              </Stack>
+              <Stack gap="2">
+                <Inline justify="between" align="center">
+                  <Label>Blue</Label>
+                  <Badge variant="soft" colorScheme="accent" size="sm">
+                    {blue}
+                  </Badge>
+                </Inline>
+                <Slider
+                  value={blue}
+                  onChange={(v) => setBlue(v as number)}
+                  minValue={0}
+                  maxValue={255}
+                  aria-label="Blue channel"
+                />
+              </Stack>
+              <Stack gap="2">
+                <Inline justify="between" align="center">
+                  <Label>Alpha</Label>
+                  <Badge variant="soft" colorScheme="neutral" size="sm">
+                    {alpha.toFixed(2)}
+                  </Badge>
+                </Inline>
+                <Slider
+                  value={alpha}
+                  onChange={(v) => setAlpha(v as number)}
+                  minValue={0}
+                  maxValue={1}
+                  step={0.01}
+                  aria-label="Alpha channel"
+                />
+              </Stack>
+            </Grid>
+          </Stack>
+        </CardBody>
+      </Card>
+
+      <Card variant="elevated" size="md">
+        <CardHeader>
+          <Inline justify="between" align="center" wrap>
+            <CardTitle as="h3">Saved palette</CardTitle>
+            <Button
+              variant="soft"
+              colorScheme="accent"
+              size="sm"
+              leftIcon={<Download size={14} />}
+              disabled={savedColors.length === 0}
+              onClick={exportPalette}
+            >
+              Export
+            </Button>
+          </Inline>
+        </CardHeader>
+        <CardBody>
+          {savedColors.length === 0 ? (
+            <Text size="sm" variant="caption" align="center">
+              No colours saved yet. Click Save to add one.
+            </Text>
+          ) : (
+            <Grid columns={{ base: 2, sm: 3, md: 4, xl: 6 }} gap="3">
+              {savedColors.map((c, idx) => (
+                <Card
+                  key={`${c.hex}-${idx}`}
+                  variant="filled"
+                  size="sm"
+                  interactive
+                  onClick={() => loadColor(c)}
+                >
+                  <CardBody>
+                    <Stack gap="2" align="center">
+                      <Swatch color={c.hex} size="lg" rounded={false} />
+                      <Stack gap="0" align="center">
+                        <Text size="xs" weight="semibold">
+                          {c.name || c.hex}
+                        </Text>
+                        <Text size="xs" variant="caption">
+                          {c.hex}
+                        </Text>
+                      </Stack>
+                      <IconButton
+                        variant="ghost"
+                        colorScheme="danger"
+                        size="sm"
+                        label="Delete colour"
+                        icon={<Trash2 size={12} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteColor(idx);
+                        }}
+                      />
+                    </Stack>
+                  </CardBody>
+                </Card>
+              ))}
+            </Grid>
+          )}
+        </CardBody>
+      </Card>
+    </Stack>
   );
 };
 

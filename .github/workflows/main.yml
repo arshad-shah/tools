@@ -1,44 +1,52 @@
-name: Node.js CI
+name: Build & publish
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
   pull_request:
-    branches: [ "master" ]
+    branches: [master]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-build
+  cancel-in-progress: false
 
 jobs:
   build_and_test:
-
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [20.x]
-
+    timeout-minutes: 15
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: setup pnpm
-      uses: pnpm/action-setup@v4.0.0
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-    - name: Install dependencies
-      run: CI=true pnpm install --frozen-lockfile
-    - name: Build
-      env:
-        CI: true
-      run: pnpm build # The build command of your project
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
 
-    - name: Push build to branch
-      uses: s0/git-publish-subdir-action@develop
-      env:
-        REPO: self
-        BRANCH: build # The branch name where you want to push the assets
-        FOLDER: dist # The directory where your assets are generated
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub will automatically add this - you don't need to bother getting a token
-        MESSAGE: "Build: ({sha}) {msg}" # The commit message
+      - name: Install dependencies
+        run: CI=true pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          CI: true
+        run: pnpm build
+
+      - name: Push build to branch
+        if: github.event_name == 'push'
+        uses: s0/git-publish-subdir-action@v2.6.0
+        env:
+          REPO: self
+          BRANCH: build
+          FOLDER: dist
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MESSAGE: 'Build: ({sha}) {msg}'
+          SKIP_EMPTY_COMMITS: 'true'
+          CLEAR_GLOBS_FILE: '.clear-target-files'
