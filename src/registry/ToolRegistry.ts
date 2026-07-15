@@ -26,7 +26,10 @@ class ToolRegistryManager {
    * @param id Tool ID
    * @param loader Function that imports the component
    */
-  public register(id: string, loader: () => Promise<{ default: ToolComponent }>): void {
+  public register(
+    id: string,
+    loader: () => Promise<{ default: ToolComponent }>,
+  ): void {
     this.registry[id] = { loader };
   }
 
@@ -34,7 +37,9 @@ class ToolRegistryManager {
    * Register multiple lazy-loaded tools at once
    * @param tools Object mapping tool IDs to loader functions
    */
-  public registerTools(tools: Record<string, () => Promise<{ default: ToolComponent }>>): void {
+  public registerTools(
+    tools: Record<string, () => Promise<{ default: ToolComponent }>>,
+  ): void {
     const lazyTools: Record<string, LazyToolComponent> = {};
     for (const [id, loader] of Object.entries(tools)) {
       lazyTools[id] = { loader };
@@ -51,20 +56,20 @@ class ToolRegistryManager {
     if (this.loadedComponents[id]) {
       return this.loadedComponents[id];
     }
-    
+
     // If not registered, return undefined
     if (!this.registry[id]) {
       return undefined;
     }
-    
+
     try {
       // Load the component dynamically
       const module = await this.registry[id].loader();
       const component = module.default;
-      
+
       // Cache the loaded component
       this.loadedComponents[id] = component;
-      
+
       return component;
     } catch (error) {
       console.error(`Failed to load tool component: ${id}`, error);
@@ -94,35 +99,50 @@ export const toolRegistry = ToolRegistryManager.getInstance();
 // Initialize with lazy-loaded tools
 toolRegistry.registerTools({
   [TOOL_IDS.COLOR_TESTER]: () => import('../tools/ColorTester/ColorTester'),
-  [TOOL_IDS.PASSWORD_GENERATOR]: () => import('../tools/PasswordGenerator/Generator'),
+  [TOOL_IDS.PASSWORD_GENERATOR]: () =>
+    import('../tools/PasswordGenerator/Generator'),
   [TOOL_IDS.REGEX_TESTER]: () => import('../tools/regexTester/RegexStudio'),
-  [TOOL_IDS.NUMBER_CONVERTER]: () => import('../tools/NumberConverter/NumberConverter'),
-  [TOOL_IDS.QR_CODE_GENERATOR]: () => import('../tools/QrCodeGenerator/QRCodeGenerator'),
-  [TOOL_IDS.JSON_AND_XML_VIEWER]: () => import('../tools/JsonViewer/components/JsonViewer'),
+  [TOOL_IDS.NUMBER_CONVERTER]: () =>
+    import('../tools/NumberConverter/NumberConverter'),
+  [TOOL_IDS.QR_CODE_GENERATOR]: () =>
+    import('../tools/QrCodeGenerator/QRCodeGenerator'),
+  [TOOL_IDS.JSON_AND_XML_VIEWER]: () =>
+    import('../tools/JsonViewer/components/JsonViewer'),
   [TOOL_IDS.POMODORO]: () => import('../tools/pomodoro/main'),
-  [TOOL_IDS.UNIT_CONVERTER]: () => import('../tools/UnitConverter/UnitConverter'),
-  [TOOL_IDS.PERIODIC_TABLE]: () => import('../tools/PeriodicTable/PeriodicTable'),
-  [TOOL_IDS.TEXT_DIFF_CHECKER]: () => import('../tools/TextDiffChecker/TextDiffChecker'),
-  [TOOL_IDS.IMAGE_OPTIMIZER]: () => import('../tools/ImageOptimiser/ImageOptimiser'),
+  [TOOL_IDS.UNIT_CONVERTER]: () =>
+    import('../tools/UnitConverter/UnitConverter'),
+  [TOOL_IDS.TEXT_DIFF_CHECKER]: () =>
+    import('../tools/TextDiffChecker/TextDiffChecker'),
+  [TOOL_IDS.IMAGE_OPTIMIZER]: () =>
+    import('../tools/ImageOptimiser/ImageOptimiser'),
   [TOOL_IDS.CSV_VIEWER]: () => import('../tools/CSVViewer/Csv-Tsv-viewer'),
-  [TOOL_IDS.RANDOM_DATA_GENERATOR]: () => import('../tools/RandomDataGenerator/RandomDataGenerator'),
-  [TOOL_IDS.URL_ENCODER]: () => import('../tools/URLEncoderDecoder/URLEncoderDecoder'),
-  [TOOL_IDS.DATE_CALCULATOR]: () => import('../tools/DateCalculator/DateCalculator'),
-  [TOOL_IDS.HASH_GENERATOR]: () => import('../tools/HashGenerator/HashGenerator'),
-  [TOOL_IDS.BASE64_CONVERTER]: () => import('../tools/Base64Convertor/Base64Convertor'),
+  [TOOL_IDS.RANDOM_DATA_GENERATOR]: () =>
+    import('../tools/RandomDataGenerator/RandomDataGenerator'),
+  [TOOL_IDS.URL_ENCODER]: () =>
+    import('../tools/URLEncoderDecoder/URLEncoderDecoder'),
+  [TOOL_IDS.DATE_CALCULATOR]: () =>
+    import('../tools/DateCalculator/DateCalculator'),
+  [TOOL_IDS.HASH_GENERATOR]: () =>
+    import('../tools/HashGenerator/HashGenerator'),
+  [TOOL_IDS.BASE64_CONVERTER]: () =>
+    import('../tools/Base64Convertor/Base64Convertor'),
   [TOOL_IDS.JWT_DECODE]: () => import('../tools/JWTDecoder/JwtDecoder'),
   [TOOL_IDS.URL_PARSER]: () => import('../tools/UrlParser/UrlParser'),
   [TOOL_IDS.API_REQUEST]: () => import('../tools/ApiTester/ApiTester'),
   [TOOL_IDS.CALCULATOR]: () => import('../tools/Calculator/Calculator'),
   [TOOL_IDS.LOG_PARSER]: () => import('../tools/LogParser/LogParser'),
-  [TOOL_IDS.RIVE_ANIMATION_PLAYER]: () => import('../tools/RiveAnimationPlayer/RiveAnimationPlayer'),
+  [TOOL_IDS.RIVE_ANIMATION_PLAYER]: () =>
+    import('../tools/RiveAnimationPlayer/RiveAnimationPlayer'),
   [TOOL_IDS.PDF_MERGER]: () => import('../tools/PdfMerger/PdfMerger'),
   [TOOL_IDS.PDF_SPLITTER]: () => import('../tools/PdfSplitter/PdfSplitter'),
-  [TOOL_IDS.PDF_COMPRESSOR]: () => import('../tools/PdfCompressor/PdfCompressor'),
+  [TOOL_IDS.PDF_COMPRESSOR]: () =>
+    import('../tools/PdfCompressor/PdfCompressor'),
 });
 
 // Convenience function to get a tool component by ID (async)
-export async function getToolComponent(id: string): Promise<ToolComponent | undefined> {
+export async function getToolComponent(
+  id: string,
+): Promise<ToolComponent | undefined> {
   return toolRegistry.getComponent(id);
 }
 

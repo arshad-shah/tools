@@ -4,7 +4,6 @@
 import { LucideIcon } from 'lucide-react';
 import { ComponentType } from 'react';
 
-
 // New type for lazy-loaded components
 export interface LazyToolComponent {
   loader: () => Promise<{ default: ToolComponent }>;
@@ -12,7 +11,16 @@ export interface LazyToolComponent {
 /**
  * Available tool categories
  */
-export type ToolCategory = 'design' | 'development' | 'security' | 'productivity' | 'utility' | 'science' | 'ai';
+export type ToolCategory =
+  | 'encoding'
+  | 'text'
+  | 'data'
+  | 'web'
+  | 'security'
+  | 'math'
+  | 'media'
+  | 'pdf'
+  | 'time';
 
 /**
  * Core tool metadata definition
@@ -33,7 +41,7 @@ export interface ToolDefinition {
  * Props that will be passed to each tool component
  */
 export interface ToolProps {
-  definition: ToolDefinition;  // The tool's metadata
+  definition: ToolDefinition; // The tool's metadata
 }
 
 /**

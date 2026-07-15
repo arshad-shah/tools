@@ -35,3 +35,38 @@ export { Textarea } from './textarea';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
 export { Select, type SelectItem } from './select';
 export { List, ListItem } from './list';
+export { Switch, Checkbox, Slider, NumberInput, Progress } from './controls';
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from './table';
+export { ButtonGroup } from './button-group';
+export { Tooltip } from './tooltip';
+export { Statistic } from './stat';
+export { FileUpload } from './file-upload';
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from './accordion';
+export {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from './dialog';
+export { Drawer } from './drawer';
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from './menu';
