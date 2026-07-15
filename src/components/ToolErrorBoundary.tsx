@@ -14,7 +14,7 @@ import {
   Kbd,
   Stack,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from './ui';
 
 interface Props {
   children: React.ReactNode;
@@ -67,13 +67,9 @@ class ToolErrorBoundary extends Component<Props, State> {
 
     return (
       <Stack gap="4">
-        <Card variant="outlined" size="lg">
+        <Card>
           <CardHeader>
-            <Alert
-              status="danger"
-              variant="soft"
-              icon={<AlertCircle aria-hidden />}
-            >
+            <Alert status="danger" icon={<AlertCircle size={18} aria-hidden />}>
               <AlertTitle>{toolName} encountered an error</AlertTitle>
               <AlertDescription>
                 We hit an unexpected issue while running this tool. You can try
@@ -86,16 +82,12 @@ class ToolErrorBoundary extends Component<Props, State> {
               <Text size="sm" weight="semibold">
                 Error details
               </Text>
-              <Card variant="filled" size="sm">
-                <CardBody>
-                  <Code size="sm">{error?.message || 'Unknown error occurred'}</Code>
-                </CardBody>
-              </Card>
+              <Code block>{error?.message || 'Unknown error occurred'}</Code>
               <Inline gap="2" align="center">
-                <Text size="xs" variant="caption">
+                <Text size="xs" tone="subtle">
                   Tool ID:
                 </Text>
-                <Kbd size="sm">{toolId}</Kbd>
+                <Kbd>{toolId}</Kbd>
               </Inline>
             </Stack>
           </CardBody>
@@ -103,7 +95,6 @@ class ToolErrorBoundary extends Component<Props, State> {
             <Inline gap="2" wrap justify="end">
               <Button
                 variant="soft"
-                colorScheme="neutral"
                 leftIcon={<Home size={16} />}
                 onClick={this.handleNavigateHome}
               >
@@ -111,7 +102,6 @@ class ToolErrorBoundary extends Component<Props, State> {
               </Button>
               <Button
                 variant="solid"
-                colorScheme="accent"
                 leftIcon={<RefreshCw size={16} />}
                 onClick={this.handleRetry}
               >
@@ -122,28 +112,24 @@ class ToolErrorBoundary extends Component<Props, State> {
         </Card>
 
         {import.meta.env.DEV && (
-          <Card variant="filled" size="md">
+          <Card>
             <CardBody>
               <Stack gap="2">
                 <Text size="sm" weight="semibold">
                   Technical details (development only)
                 </Text>
-                <Card variant="outlined" size="sm">
-                  <CardBody>
-                    <Code size="sm">
-                      {JSON.stringify(
-                        {
-                          toolId,
-                          errorName: this.state.error?.name,
-                          errorMessage: this.state.error?.message,
-                          stack: this.state.error?.stack?.split('\n'),
-                        },
-                        null,
-                        2,
-                      )}
-                    </Code>
-                  </CardBody>
-                </Card>
+                <Code block>
+                  {JSON.stringify(
+                    {
+                      toolId,
+                      errorName: this.state.error?.name,
+                      errorMessage: this.state.error?.message,
+                      stack: this.state.error?.stack?.split('\n'),
+                    },
+                    null,
+                    2,
+                  )}
+                </Code>
               </Stack>
             </CardBody>
           </Card>

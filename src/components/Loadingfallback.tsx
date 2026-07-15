@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Center, Spinner, Stack, Text } from '@arshad-shah/cynosure-react';
+import { Center, Spinner, Stack, Text } from './ui';
 
 interface LoadingFallbackProps {
   toolName?: string;
@@ -20,10 +20,10 @@ const LoadingFallback: React.FC<LoadingFallbackProps> = ({
   if (!show) return null;
 
   return (
-    <Center paddingY="10">
+    <Center className="py-10">
       <Stack gap="4" align="center">
-        <Spinner size="xl" colorScheme="accent" variant="border" />
-        <Text size="md" weight="medium">
+        <Spinner size="xl" />
+        <Text size="md" weight="medium" mono>
           {toolName ? `Loading ${toolName}…` : 'Loading…'}
         </Text>
       </Stack>

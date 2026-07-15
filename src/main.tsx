@@ -1,12 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { CynosureProvider } from '@arshad-shah/cynosure-react'
-import { registerCynosureThemes } from '@arshad-shah/cynosure-react/chart'
-import '@arshad-shah/cynosure-react/all.css'
-import '@arshad-shah/cynosure-react/fonts.css'
-import './theme/dashboard-theme.css'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { CynosureProvider } from '@arshad-shah/cynosure-react';
+import { registerCynosureThemes } from '@arshad-shah/cynosure-react/chart';
+import '@arshad-shah/cynosure-react/all.css';
+import '@arshad-shah/cynosure-react/fonts.css';
+import './theme/dashboard-theme.css';
+// Terminal Precision theme — loaded last so its tokens/utilities win for the
+// migrated shell. Cynosure stays mounted below for not-yet-migrated tools.
+import './theme/terminal.css';
+import './index.css';
+import App from './App.tsx';
 
 registerCynosureThemes();
 
@@ -22,4 +25,4 @@ createRoot(document.getElementById('root')!).render(
       <App />
     </CynosureProvider>
   </StrictMode>,
-)
+);

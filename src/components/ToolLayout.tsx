@@ -1,6 +1,6 @@
 import React, { Suspense, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sun, Moon } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import {
   Box,
   Container,
@@ -12,15 +12,12 @@ import {
   Text,
   Badge,
   Button,
-  IconButton,
   Spinner,
   Divider,
-  useTheme,
-} from '@arshad-shah/cynosure-react';
+} from './ui';
 import { ToolComponent, ToolDefinition } from '../types/ToolTypes';
 import ToolErrorBoundary from './ToolErrorBoundary';
 import Footer from './Footer';
-import styles from './ToolLayout.module.css';
 
 interface ToolLayoutProps {
   definition: ToolDefinition;
@@ -30,33 +27,35 @@ interface ToolLayoutProps {
 const ToolLoadingFallback: React.FC<{ definition: ToolDefinition }> = ({
   definition,
 }) => (
-  <Center paddingY="10">
+  <Center className="py-10">
     <Stack gap="4" align="center">
-      <Spinner size="xl" colorScheme="accent" variant="border" />
-      <Text size="md" weight="medium">
+      <Spinner size="xl" />
+      <Text size="md" weight="medium" mono>
         Loading {definition.name}…
       </Text>
     </Stack>
   </Center>
 );
 
+type BadgeTone = 'success' | 'warning' | 'accent';
 const getVersionBadge = (
   definition: ToolDefinition,
-): { label: string; colorScheme: 'success' | 'warning' | 'accent' } | null => {
+): { label: string; tone: BadgeTone } | null => {
   if (!definition.version) return null;
   const isBeta =
     definition.version.includes('beta') ||
     definition.version.startsWith('0.') ||
     parseFloat(definition.version) < 1;
-  if (isBeta) return { label: 'Beta', colorScheme: 'warning' };
-  if (definition.isNew) return { label: 'New', colorScheme: 'success' };
-  return { label: `v${definition.version}`, colorScheme: 'accent' };
+  if (isBeta) return { label: 'Beta', tone: 'warning' };
+  if (definition.isNew) return { label: 'New', tone: 'success' };
+  return { label: `v${definition.version}`, tone: 'accent' };
 };
 
-const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) => {
+const ToolLayout: React.FC<ToolLayoutProps> = ({
+  definition,
+  ToolComponent,
+}) => {
   const navigate = useNavigate();
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === 'dashboard-dark';
   const [key, setKey] = useState<number>(Date.now());
 
   const handleRetry = () => setKey(Date.now());
@@ -65,78 +64,57 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) =>
   const Icon = definition.icon;
 
   return (
-    <Box minHeight="screen">
-      <Section as="header" space="sm">
+    <Box className="min-h-screen">
+      <Section as="header" className="py-6">
         <Container size="xl">
           <Stack gap="4">
-            <Inline justify="between" align="center" gap="4" wrap={false}>
-              <Inline align="center" gap="4" wrap={false} className={styles.titleRow}>
+            <Inline justify="between" align="center" gap="4">
+              <Inline align="center" gap="4" className="min-w-0">
                 <Button
                   asChild
                   variant="ghost"
-                  colorScheme="neutral"
                   size="sm"
-                  shape="pill"
                   leftIcon={<ArrowLeft size={16} />}
-                  aria-label="Back to tools"
                 >
                   <Link to="/">Back</Link>
                 </Button>
-                <span className={styles.iconTile} aria-hidden>
-                  <Icon size={24} />
+                <span
+                  aria-hidden
+                  className="flex size-10 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface-subtle text-accent"
+                >
+                  <Icon size={22} />
                 </span>
-                <Stack gap="1" className={styles.titleBlock}>
-                  <Inline justify="start" align="center" gap="2" wrap>
-                    <Heading level={1} size="xl" weight="bold">
+                <Stack gap="1" className="min-w-0">
+                  <Inline gap="2" wrap>
+                    <Heading level={1} size="xl">
                       {definition.name}
                     </Heading>
                     {definition.category && (
-                      <Badge
-                        variant="soft"
-                        colorScheme="neutral"
-                        size="sm"
-                        shape="pill"
-                      >
+                      <Badge variant="soft" tone="neutral" size="sm" mono>
                         {definition.category}
                       </Badge>
                     )}
                     {versionBadge && (
                       <Badge
                         variant="soft"
-                        colorScheme={versionBadge.colorScheme}
+                        tone={versionBadge.tone}
                         size="sm"
-                        shape="pill"
+                        mono
                       >
                         {versionBadge.label}
                       </Badge>
                     )}
                     {!definition.enabled && (
-                      <Badge
-                        variant="outline"
-                        colorScheme="warning"
-                        size="sm"
-                        shape="pill"
-                      >
+                      <Badge variant="outline" tone="warning" size="sm" mono>
                         Coming soon
                       </Badge>
                     )}
                   </Inline>
-                  <Text size="sm" variant="caption">
+                  <Text size="sm" tone="muted">
                     {definition.description}
                   </Text>
                 </Stack>
               </Inline>
-              <IconButton
-                variant="soft"
-                colorScheme="neutral"
-                size="sm"
-                shape="pill"
-                label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-                icon={isDark ? <Sun size={16} /> : <Moon size={16} />}
-                onClick={() =>
-                  setTheme(isDark ? 'dashboard-light' : 'dashboard-dark')
-                }
-              />
             </Inline>
 
             <Divider />
@@ -144,7 +122,7 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) =>
         </Container>
       </Section>
 
-      <Section as="main" space="md">
+      <Section as="main" className="py-4">
         <Container size="xl">
           <ToolErrorBoundary
             toolName={definition.name}
@@ -152,7 +130,9 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({ definition, ToolComponent }) =>
             onRetry={handleRetry}
             onNavigateHome={handleNavigateHome}
           >
-            <Suspense fallback={<ToolLoadingFallback definition={definition} />}>
+            <Suspense
+              fallback={<ToolLoadingFallback definition={definition} />}
+            >
               {React.isValidElement(ToolComponent) ? (
                 ToolComponent
               ) : (

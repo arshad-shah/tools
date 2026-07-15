@@ -15,7 +15,7 @@ import {
   Inline,
   Stack,
   Text,
-} from '@arshad-shah/cynosure-react';
+} from './ui';
 
 interface Props {
   children: React.ReactNode;
@@ -70,16 +70,15 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <Center minHeight="screen" padding="6">
+        <Center minScreen className="p-6">
           <Container size="md">
-            <Card variant="elevated" size="lg">
+            <Card>
               <CardHeader>
                 <Alert
                   status="danger"
-                  variant="soft"
-                  icon={<AlertTriangle aria-hidden />}
+                  icon={<AlertTriangle size={18} aria-hidden />}
                 >
-                  <AlertTitle>Application Error Detected</AlertTitle>
+                  <AlertTitle>Application error detected</AlertTitle>
                   <AlertDescription>
                     Something went wrong in the application. Our engineers have
                     been notified.
@@ -92,27 +91,18 @@ class ErrorBoundary extends Component<Props, State> {
                     <Text size="sm" weight="semibold">
                       Error details
                     </Text>
-                    <Card variant="filled" size="sm">
-                      <CardBody>
-                        <Code size="sm">
-                          {error?.name}: {error?.message}
-                        </Code>
-                      </CardBody>
-                    </Card>
+                    <Code block>
+                      {error?.name}: {error?.message}
+                    </Code>
                   </Stack>
                   {import.meta.env.DEV && errorInfo && (
                     <Stack gap="2">
                       <Text size="sm" weight="semibold">
                         Stack trace (development only)
                       </Text>
-                      <Card variant="filled" size="sm">
-                        <CardBody>
-                          <Code size="sm">
-                            {errorInfo.componentStack ||
-                              'No stack trace available'}
-                          </Code>
-                        </CardBody>
-                      </Card>
+                      <Code block>
+                        {errorInfo.componentStack || 'No stack trace available'}
+                      </Code>
                     </Stack>
                   )}
                 </Stack>
@@ -121,7 +111,6 @@ class ErrorBoundary extends Component<Props, State> {
                 <Inline gap="2" wrap justify="end">
                   <Button
                     variant="ghost"
-                    colorScheme="neutral"
                     leftIcon={<X size={16} />}
                     onClick={this.handleDismiss}
                   >
@@ -129,7 +118,6 @@ class ErrorBoundary extends Component<Props, State> {
                   </Button>
                   <Button
                     variant="soft"
-                    colorScheme="neutral"
                     leftIcon={<Home size={16} />}
                     onClick={this.handleGoHome}
                   >
@@ -137,7 +125,6 @@ class ErrorBoundary extends Component<Props, State> {
                   </Button>
                   <Button
                     variant="solid"
-                    colorScheme="accent"
                     leftIcon={<RefreshCw size={16} />}
                     onClick={this.handleReload}
                   >

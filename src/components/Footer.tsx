@@ -1,15 +1,5 @@
 import React from 'react';
-import { Wrench } from 'lucide-react';
-import {
-  Box,
-  Container,
-  Divider,
-  Inline,
-  Section,
-  Stack,
-  Text,
-  Button,
-} from '@arshad-shah/cynosure-react';
+import { Container, Section, Stack, Inline, Text, Button, Divider } from './ui';
 import { getEnabledTools } from '../data/ToolDefinitions';
 
 const REPO_URL = 'https://github.com/arshad-shah/tools';
@@ -35,73 +25,60 @@ const Footer: React.FC = () => {
   const toolCount = getEnabledTools().length;
 
   return (
-    <Section as="footer" space="md" paddingTop="16" paddingBottom="10">
+    <Section as="footer" className="pb-10 pt-16">
       <Container size="xl">
-        <Stack gap="8" align="center">
+        <Stack gap="6" align="center">
           <Divider />
 
-          <Stack gap="4" align="center">
-            <Inline align="center" gap="3">
-              <Box
-                padding="2"
-                borderRadius="md"
-                background="accent.soft"
-                color="accent.solid"
-                display="inline-flex"
-              >
-                <Wrench size={18} aria-hidden />
-              </Box>
-              <Text size="lg" weight="bold">
-                Tools Dashboard
-              </Text>
-            </Inline>
+          <Inline gap="2" align="baseline">
+            <span className="font-mono text-lg font-bold text-fg">
+              <span className="text-fg-faint">~/</span>tools
+            </span>
+            <span
+              aria-hidden
+              className="inline-block h-4 w-2 animate-caret bg-accent"
+            />
+          </Inline>
 
-            <Text size="sm" variant="caption" align="center">
-              {toolCount} client-side utilities {DOT} no tracking {DOT} open
-              source
-            </Text>
+          <Text mono size="sm" tone="muted" className="text-center">
+            {toolCount} client-side utilities {DOT} no tracking {DOT} open
+            source
+          </Text>
 
-            <Button
-              asChild
-              variant="soft"
-              colorScheme="accent"
-              size="sm"
-              shape="pill"
-              leftIcon={<GithubIcon size={14} />}
+          <Button
+            asChild
+            variant="soft"
+            size="sm"
+            leftIcon={<GithubIcon size={14} />}
+          >
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View source on GitHub"
             >
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="View source on GitHub"
-              >
-                View on GitHub
-              </a>
-            </Button>
-          </Stack>
+              View on GitHub
+            </a>
+          </Button>
 
-          <Inline align="center" gap="2" wrap justify="center">
-            <Text size="xs" variant="caption" as="span">
-              © {year} {AUTHOR}
-            </Text>
-            <Text size="xs" variant="caption" as="span" aria-hidden>
-              {DOT}
-            </Text>
-            <Text size="xs" variant="caption" as="span">
-              React
-            </Text>
-            <Text size="xs" variant="caption" as="span" aria-hidden>
-              {DOT}
-            </Text>
-            <Text size="xs" variant="caption" as="span">
-              Cynosure
-            </Text>
-            <Text size="xs" variant="caption" as="span" aria-hidden>
-              {DOT}
-            </Text>
-            <Text size="xs" variant="caption" as="span">
-              Vite
-            </Text>
+          <Inline gap="2" wrap justify="center">
+            {[`© ${year} ${AUTHOR}`, 'React', 'Tailwind', 'Vite'].map(
+              (item, i, arr) => (
+                <React.Fragment key={item}>
+                  <span className="font-mono text-xs text-fg-subtle">
+                    {item}
+                  </span>
+                  {i < arr.length - 1 && (
+                    <span
+                      className="font-mono text-xs text-fg-faint"
+                      aria-hidden
+                    >
+                      {DOT}
+                    </span>
+                  )}
+                </React.Fragment>
+              ),
+            )}
           </Inline>
         </Stack>
       </Container>
