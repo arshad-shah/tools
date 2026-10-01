@@ -54,6 +54,7 @@ import {
   HeaderType,
   ParamType,
   RequestItemType,
+  ResponseType,
 } from '../../types/ApiTesterTypes';
 import { toToolError } from '@/shared/lib/errors';
 import { newId } from '@/shared/lib/id';
@@ -222,7 +223,9 @@ const ApiTester: React.FC = () => {
   const job = useJob((ctx, input: RequestInput) =>
     sendRequest(input, ctx.signal),
   );
-  const response = job.result;
+  // Kept across sends, so a send that fails validation or is cancelled
+  // leaves the previous response on screen (as before useJob).
+  const [response, setResponse] = useState<ResponseType | null>(null);
   const isLoading = job.status === 'running';
   // Invalid input (no URL, bad JSON) is toasted; network failures show as a
   // status-0 response instead.
@@ -276,8 +279,8 @@ const ApiTester: React.FC = () => {
     setParams(next);
   };
 
-  const handleSend = () => {
-    void job.run({
+  const handleSend = async () => {
+    const result = await job.run({
       requestType,
       method,
       url,
@@ -288,6 +291,7 @@ const ApiTester: React.FC = () => {
       graphqlQuery,
       graphqlVariables,
     });
+    if (result) setResponse(result);
   };
 
   const handleSelectRequest = (req: RequestItemType) => {
@@ -495,7 +499,7 @@ const ApiTester: React.FC = () => {
           variant="solid"
           loading={isLoading}
           leftIcon={<Send size={14} />}
-          onClick={handleSend}
+          onClick={() => void handleSend()}
         >
           Send
         </Button>

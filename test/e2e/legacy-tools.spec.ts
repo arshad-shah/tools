@@ -228,3 +228,22 @@ test('text-diff-checker accepts a text/plain file of any extension', async ({
     page.getByRole('textbox', { name: 'Modified text' }),
   ).toHaveValue('print("right")');
 });
+
+test('api-request keeps the last response when a send fails validation', async ({
+  page,
+}) => {
+  await page.route('https://jsonplaceholder.typicode.com/users', (route) =>
+    route.fulfill({ json: [{ id: 1, name: 'Mocked' }] }),
+  );
+  await page.goto('/api-request');
+  await page.getByText('Get Users').click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByText('200', { exact: false }).first()).toBeVisible();
+  await expect(page.getByText('Mocked')).toBeVisible();
+  await page.getByRole('textbox', { name: 'Request URL' }).fill('');
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(
+    page.locator('[data-sonner-toast]').getByText('Please enter a URL'),
+  ).toBeVisible();
+  await expect(page.getByText('Mocked')).toBeVisible();
+});
