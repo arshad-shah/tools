@@ -1,4 +1,5 @@
 import { zip, type AsyncZippable } from 'fflate';
+import { ToolError } from './errors';
 
 /** `report.pdf` + `merged` + `pdf` → `report.merged.pdf`. */
 export function deriveFilename(
@@ -43,10 +44,13 @@ export function saveBlob(
   a.download = filename;
   a.rel = 'noopener';
   a.hidden = true;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+  try {
+    document.body.appendChild(a);
+    a.click();
+  } finally {
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+  }
 }
 
 export function zipFiles(
@@ -59,7 +63,25 @@ export function zipFiles(
     input[names[i]] = [e.data, { level }];
   });
   return new Promise((resolve, reject) => {
-    zip(input, (err, out) => (err ? reject(err) : resolve(out)));
+    try {
+      zip(input, (err, out) => {
+        if (err) {
+          reject(
+            new ToolError('UNKNOWN', 'Could not build the ZIP file', {
+              cause: err,
+            }),
+          );
+        } else {
+          resolve(out);
+        }
+      });
+    } catch (err) {
+      reject(
+        new ToolError('UNKNOWN', 'Could not build the ZIP file', {
+          cause: err,
+        }),
+      );
+    }
   });
 }
 

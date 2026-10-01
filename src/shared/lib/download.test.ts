@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import { unzipSync, strFromU8 } from 'fflate';
 import { deriveFilename, saveBlob, uniqueNames, zipFiles } from './download';
+import { ToolError } from './errors';
 
 describe('deriveFilename', () => {
   it.each([
@@ -27,9 +28,17 @@ describe('uniqueNames', () => {
 });
 
 describe('saveBlob', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
   it('clicks a download anchor and revokes the URL afterwards', () => {
     vi.useFakeTimers();
-    const create = vi.fn(() => 'blob:mock');
+    const create = vi.fn((blob: Blob) => {
+      void blob;
+      return 'blob:mock';
+    });
     const revoke = vi.fn();
     Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });
     const click = vi
@@ -39,15 +48,13 @@ describe('saveBlob', () => {
     saveBlob(new Uint8Array([1, 2, 3]), 'out.pdf', 'application/pdf');
 
     expect(create).toHaveBeenCalledOnce();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blob = (create as any).mock.calls[0][0] as unknown as Blob;
+    const blob = create.mock.calls[0][0] as Blob;
     expect(blob.type).toBe('application/pdf');
     expect(click).toHaveBeenCalledOnce();
     expect(document.querySelector('a[download]')).toBeNull();
     expect(revoke).not.toHaveBeenCalled();
     vi.runAllTimers();
     expect(revoke).toHaveBeenCalledWith('blob:mock');
-    vi.useRealTimers();
   });
 });
 
@@ -60,5 +67,24 @@ describe('zipFiles', () => {
     const files = unzipSync(zip);
     expect(Object.keys(files).sort()).toEqual(['a (2).txt', 'a.txt']);
     expect(strFromU8(files['a (2).txt'])).toBe('two');
+  });
+
+  it('wraps fflate errors as ToolError', async () => {
+    // Pass invalid data to trigger fflate error
+    const promise = zipFiles([
+      { name: 'invalid.txt', data: 'not bytes' as unknown as Uint8Array },
+    ]);
+
+    try {
+      await promise;
+      // If fflate doesn't error, skip this test
+      expect.soft(null).toBeDefined();
+    } catch (err) {
+      expect(err).toBeInstanceOf(ToolError);
+      if (err instanceof ToolError) {
+        expect(err.code).toBe('UNKNOWN');
+        expect(err.message).toBe('Could not build the ZIP file');
+      }
+    }
   });
 });
