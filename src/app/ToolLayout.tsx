@@ -14,8 +14,8 @@ import {
   Button,
   Spinner,
   Divider,
-} from './ui';
-import { ToolComponent, ToolDefinition } from '../types/ToolTypes';
+} from '@/shared/ui';
+import type { ToolComponent, ToolDefinition } from './tool';
 import ToolErrorBoundary from './ToolErrorBoundary';
 import Footer from './Footer';
 

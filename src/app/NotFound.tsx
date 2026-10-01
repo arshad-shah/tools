@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft } from 'lucide-react';
-import { Center, Container, Stack, Inline, Text, Button } from './ui';
+import { Center, Container, Stack, Inline, Text, Button } from '@/shared/ui';
 
 const NotFound: React.FC = () => {
   const navigate = useNavigate();

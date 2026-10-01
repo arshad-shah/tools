@@ -14,7 +14,7 @@ import {
   Kbd,
   Stack,
   Text,
-} from './ui';
+} from '@/shared/ui';
 
 interface Props {
   children: React.ReactNode;
