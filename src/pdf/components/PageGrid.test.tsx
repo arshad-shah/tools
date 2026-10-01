@@ -29,8 +29,10 @@ const renderGrid = (props: Partial<React.ComponentProps<typeof PageGrid>>) =>
     <PageGrid
       doc={doc}
       tiles={tiles}
-      renderActions={(tile) => (
-        <button type="button">Rotate {tile.pageIndex + 1}</button>
+      renderActions={(tile, _position, { tabIndex }) => (
+        <button type="button" tabIndex={tabIndex}>
+          Rotate {tile.pageIndex + 1}
+        </button>
       )}
       {...props}
     />,
@@ -128,5 +130,42 @@ describe('PageGrid Alt+Arrow at the edges (browser Back guard)', () => {
     expect(fireEvent.keyDown(first, { key: 'ArrowLeft', altKey: true })).toBe(
       false,
     );
+  });
+});
+
+describe('PageGrid roving focus', () => {
+  beforeEach(() => {
+    vi.stubGlobal('IntersectionObserver', NoopObserver);
+  });
+
+  const tabbable = () =>
+    screen.getAllByRole('listitem').map((li) => li.tabIndex);
+
+  it('puts only one tile, and only its actions, in the Tab order', () => {
+    renderGrid({ onReorder: () => {} });
+    expect(tabbable()).toEqual([0, -1, -1]);
+    expect(screen.getByRole('button', { name: 'Rotate 1' }).tabIndex).toBe(0);
+    expect(screen.getByRole('button', { name: 'Rotate 2' }).tabIndex).toBe(-1);
+  });
+
+  it('moves focus with plain arrows and Home/End, and the Tab stop follows', () => {
+    renderGrid({});
+    const items = screen.getAllByRole('listitem');
+    items[0].focus();
+    expect(fireEvent.keyDown(items[0], { key: 'ArrowRight' })).toBe(false);
+    expect(document.activeElement).toBe(items[1]);
+    expect(tabbable()).toEqual([-1, 0, -1]);
+    fireEvent.keyDown(items[1], { key: 'End' });
+    expect(document.activeElement).toBe(items[2]);
+    fireEvent.keyDown(items[2], { key: 'Home' });
+    expect(document.activeElement).toBe(items[0]);
+    fireEvent.keyDown(items[0], { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(items[0]);
+  });
+
+  it('makes a tile active when one of its controls gets focus', () => {
+    renderGrid({});
+    fireEvent.focus(screen.getByRole('button', { name: 'Rotate 3' }));
+    expect(tabbable()).toEqual([-1, -1, 0]);
   });
 });

@@ -102,6 +102,39 @@ export function useSortableList<T>(
   });
 }
 
+/**
+ * Target index for plain-arrow focus movement (no modifiers), or null.
+ * Lists: Up/Down. Grids: Left/Right ±1, Up/Down ±one row. Both: Home/End.
+ */
+export function focusByKey(
+  e: {
+    key: string;
+    altKey: boolean;
+    ctrlKey: boolean;
+    metaKey: boolean;
+    shiftKey: boolean;
+  },
+  index: number,
+  count: number,
+  axis: ReorderAxis,
+  columns = 1,
+): number | null {
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || count === 0)
+    return null;
+  if (e.key === 'Home') return 0;
+  if (e.key === 'End') return count - 1;
+  const row = Math.max(1, columns);
+  const deltas: Record<string, number> =
+    axis === 'list'
+      ? { ArrowUp: -1, ArrowDown: 1 }
+      : { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -row, ArrowDown: row };
+  const delta = deltas[e.key];
+  if (!delta) return null;
+  const target = index + delta;
+  // A row move past the end stops at the last item; past the start, at 0.
+  return Math.min(count - 1, Math.max(0, target));
+}
+
 interface KeyboardReorderOptions<T> {
   getKey: (item: T) => string;
   /** How the item is named in the announcement, e.g. "report.pdf". */
@@ -109,20 +142,36 @@ interface KeyboardReorderOptions<T> {
   onReorder: (next: T[]) => void;
   axis: ReorderAxis;
   disabled?: boolean;
+  /**
+   * Roving tabindex: only the active item (and its nested controls) is in
+   * the Tab order, so a long grid is one Tab stop and arrows move within it.
+   * Without it every item stays tabbable; arrows still move focus.
+   */
+  roving?: boolean;
 }
 
 /**
- * Alt+Arrow reordering on focused items (only when the item itself has
- * focus, never a nested control). Keeps focus on the moved item after React
- * re-renders and exposes a polite announcement for a live region.
+ * Keyboard model for sortable lists and grids (only when the item itself has
+ * focus, never a nested control):
+ * - plain arrows / Home / End move focus between items;
+ * - Alt+Arrow moves the focused item one position, keeps focus on it and
+ *   exposes a polite announcement for a live region.
  */
 export function useKeyboardReorder<T>(
   items: readonly T[],
-  { getKey, describe, onReorder, axis, disabled }: KeyboardReorderOptions<T>,
+  {
+    getKey,
+    describe,
+    onReorder,
+    axis,
+    disabled,
+    roving = false,
+  }: KeyboardReorderOptions<T>,
 ) {
   const nodes = useRef(new Map<string, HTMLElement>());
   const pendingFocus = useRef<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
   useEffect(() => {
     const key = pendingFocus.current;
@@ -139,27 +188,57 @@ export function useKeyboardReorder<T>(
     [],
   );
 
+  // The remembered item, or the first one if it is gone (e.g. deleted).
+  const active =
+    activeKey !== null && items.some((it) => getKey(it) === activeKey)
+      ? activeKey
+      : items.length > 0
+        ? getKey(items[0])
+        : null;
+
+  /** tabIndex for an item and its nested controls. */
+  const tabIndexFor = (key: string): 0 | -1 =>
+    !roving || key === active ? 0 : -1;
+
+  /** Attach to the item's onFocus (bubbles from nested controls too). */
+  const onItemFocus = (key: string) => {
+    if (key !== activeKey) setActiveKey(key);
+  };
+
   const onItemKeyDown = (
     e: React.KeyboardEvent<HTMLElement>,
     index: number,
   ) => {
     if (e.target !== e.currentTarget) return;
+    // A move the parent ignored must not steal focus on a later re-render.
+    pendingFocus.current = null;
     // Alt+Left is the browser's Back (and Alt+Right Forward): swallow every
     // Alt+Arrow on an item, even at the edges or while reordering is off, so
     // it can never navigate away from unsaved edits.
     if (e.altKey && ARROWS.has(e.key)) e.preventDefault();
-    if (disabled) return;
     const columns =
       axis === 'grid' ? gridColumns(e.currentTarget.parentElement) : 1;
+
+    const focusTo = focusByKey(e, index, items.length, axis, columns);
+    if (focusTo !== null) {
+      e.preventDefault(); // no page scroll
+      const key = getKey(items[focusTo]);
+      setActiveKey(key);
+      nodes.current.get(key)?.focus();
+      return;
+    }
+
+    if (disabled) return;
     const to = moveByKey(e, index, items.length, axis, columns);
     if (to === null) return;
     const item = items[index];
     pendingFocus.current = getKey(item);
+    setActiveKey(getKey(item));
     setAnnouncement(
       `Moved ${describe(item)} to position ${to + 1} of ${items.length}`,
     );
     onReorder(moveItem(items, index, to));
   };
 
-  return { itemRef, onItemKeyDown, announcement };
+  return { itemRef, onItemKeyDown, onItemFocus, tabIndexFor, announcement };
 }

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, expect, it } from 'vitest';
 import {
+  focusByKey,
   gridColumns,
   moveByKey,
   moveItem,
@@ -86,5 +87,40 @@ describe('gridColumns', () => {
     expect(gridColumns(el)).toBe(1);
     expect(gridColumns(null)).toBe(1);
     el.remove();
+  });
+});
+
+describe('focusByKey', () => {
+  const k = (key: string, mods: Partial<Record<string, boolean>> = {}) => ({
+    key,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    ...mods,
+  });
+  it('moves by one sideways and by a row vertically in grids', () => {
+    expect(focusByKey(k('ArrowRight'), 1, 10, 'grid', 4)).toBe(2);
+    expect(focusByKey(k('ArrowDown'), 1, 10, 'grid', 4)).toBe(5);
+    expect(focusByKey(k('ArrowUp'), 5, 10, 'grid', 4)).toBe(1);
+    expect(focusByKey(k('ArrowDown'), 8, 10, 'grid', 4)).toBe(9);
+    expect(focusByKey(k('ArrowUp'), 2, 10, 'grid', 4)).toBe(0);
+  });
+  it('uses Up/Down only in lists, and Home/End everywhere', () => {
+    expect(focusByKey(k('ArrowDown'), 0, 3, 'list')).toBe(1);
+    expect(focusByKey(k('ArrowRight'), 0, 3, 'list')).toBeNull();
+    expect(focusByKey(k('End'), 0, 3, 'list')).toBe(2);
+    expect(focusByKey(k('Home'), 2, 3, 'grid')).toBe(0);
+  });
+  it('ignores modified keys (Alt is a move, not focus)', () => {
+    expect(
+      focusByKey(k('ArrowRight', { altKey: true }), 0, 3, 'grid'),
+    ).toBeNull();
+    expect(
+      focusByKey(k('ArrowRight', { shiftKey: true }), 0, 3, 'grid'),
+    ).toBeNull();
+    expect(
+      focusByKey(k('ArrowRight', { ctrlKey: true }), 0, 3, 'grid'),
+    ).toBeNull();
   });
 });

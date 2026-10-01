@@ -27,7 +27,15 @@ interface PageGridProps {
   onToggle?: (key: string, mods: { shift: boolean; meta: boolean }) => void;
   /** Present → tiles can be dragged, or moved with Alt + arrow keys. */
   onReorder?: (next: PageTile[]) => void;
-  renderActions?: (tile: PageTile, position: number) => React.ReactNode;
+  /**
+   * Per-tile controls. Give every focusable control `ctx.tabIndex`: only the
+   * active tile's controls are in the Tab order (roving tabindex).
+   */
+  renderActions?: (
+    tile: PageTile,
+    position: number,
+    ctx: { tabIndex: 0 | -1 },
+  ) => React.ReactNode;
 }
 
 export const PageGrid: React.FC<PageGridProps> = ({
@@ -49,6 +57,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
     onReorder: (next) => onReorder?.(next),
     axis: 'grid',
     disabled: !onReorder,
+    roving: true,
   });
 
   return (
@@ -63,12 +72,14 @@ export const PageGrid: React.FC<PageGridProps> = ({
       >
         {tiles.map((tile, position) => {
           const isSelected = selected?.has(tile.key) ?? false;
+          const tabIndex = keyboard.tabIndexFor(tile.key);
           return (
             <li
               key={tile.key}
               ref={keyboard.itemRef(tile.key)}
               data-sortable-item
-              tabIndex={0}
+              tabIndex={tabIndex}
+              onFocus={() => keyboard.onItemFocus(tile.key)}
               aria-selected={onToggle ? isSelected : undefined}
               onClick={(e) => {
                 if (fromNestedControl(e)) return;
@@ -108,7 +119,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
                 <span className="font-mono text-xs text-fg-muted">
                   {tile.pageIndex + 1}
                 </span>
-                {renderActions?.(tile, position)}
+                {renderActions?.(tile, position, { tabIndex })}
               </div>
             </li>
           );
