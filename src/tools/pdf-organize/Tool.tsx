@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { RotateCcw, RotateCw, Trash2, Undo2, Download } from 'lucide-react';
 import {
   Alert,
@@ -23,23 +23,23 @@ import {
   JobPanel,
   PageGrid,
   PdfDropzone,
+  usePageSelection,
   type PageTile,
 } from '@/pdf/components';
 import {
   initialTiles,
-  rangeSelect,
   removeTiles,
   rotateTiles,
   tilesToEdits,
 } from './lib/edits';
 
-/** Edits belong to one opened document; a different docId discards them. */
+/**
+ * Edits belong to one loaded file (not to a worker docId, which changes if
+ * the render worker restarts and reopens it); a different file discards them.
+ */
 interface EditState {
-  docId: string;
+  file: LoadedFile;
   tiles: PageTile[];
-  selected: Set<string>;
-  /** Last plain or ctrl-clicked tile; start of a shift range. */
-  anchor: string | null;
 }
 
 const only = (key: string) => new Set([key]);
@@ -61,53 +61,24 @@ const OrganizeTool: React.FC<ToolProps> = () => {
     return { name, notes };
   });
 
-  const current = doc !== null && edit?.docId === doc.docId ? edit : null;
-  const tiles = current
-    ? current.tiles
-    : doc
-      ? initialTiles(doc.pageCount)
-      : [];
-  const selected = current ? current.selected : new Set<string>();
-  const anchor = current ? current.anchor : null;
+  const pageCount = doc?.pageCount ?? 0;
+  const pristine = useMemo(() => initialTiles(pageCount), [pageCount]);
+  const tiles = file && edit?.file === file ? edit.tiles : pristine;
+  const keys = useMemo(() => tiles.map((t) => t.key), [tiles]);
+  const selection = usePageSelection(keys);
+  const { selected } = selection;
   const busy = job.status === 'running';
 
-  const commit = (nextTiles: PageTile[], nextSelected = selected) => {
-    if (!doc) return;
+  const commit = (nextTiles: PageTile[]) => {
+    if (!file) return;
     job.reset();
-    setEdit({
-      docId: doc.docId,
-      tiles: nextTiles,
-      selected: nextSelected,
-      anchor,
-    });
+    setEdit({ file, tiles: nextTiles });
   };
-  const select = (nextSelected: Set<string>, nextAnchor: string | null) => {
-    if (!doc) return;
-    setEdit({
-      docId: doc.docId,
-      tiles,
-      selected: nextSelected,
-      anchor: nextAnchor,
-    });
-  };
-
-  const toggle = (key: string, mods: { shift: boolean; meta: boolean }) => {
-    if (mods.shift) {
-      const range = rangeSelect(tiles, anchor, key);
-      select(new Set([...selected, ...range]), anchor ?? key);
-      return;
-    }
-    if (mods.meta) {
-      const next = new Set(selected);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      select(next, key);
-      return;
-    }
-    select(
-      selected.has(key) && selected.size === 1 ? new Set() : only(key),
-      key,
-    );
+  const changeFile = (next: LoadedFile | null) => {
+    job.reset();
+    setEdit(null);
+    selection.clear();
+    setFile(next);
   };
 
   const dirty =
@@ -119,24 +90,14 @@ const OrganizeTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           {!file ? (
-            <PdfDropzone
-              onFiles={(f) => {
-                job.reset();
-                setEdit(null);
-                setFile(f[0]);
-              }}
-            />
+            <PdfDropzone onFiles={(f) => changeFile(f[0])} />
           ) : (
             <Inline justify="between" align="center" gap="3" wrap>
               <Text weight="semibold">{file.name}</Text>
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => {
-                  job.reset();
-                  setEdit(null);
-                  setFile(null);
-                }}
+                onClick={() => changeFile(null)}
               >
                 Choose another file
               </Button>
@@ -178,9 +139,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                   disabled={
                     busy || !selected.size || selected.size >= tiles.length
                   }
-                  onClick={() =>
-                    commit(removeTiles(tiles, selected), new Set())
-                  }
+                  onClick={() => commit(removeTiles(tiles, selected))}
                 >
                   Delete
                 </Button>
@@ -189,7 +148,10 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                   variant="ghost"
                   leftIcon={<Undo2 size={14} />}
                   disabled={busy || !dirty}
-                  onClick={() => commit(initialTiles(doc.pageCount), new Set())}
+                  onClick={() => {
+                    commit(initialTiles(doc.pageCount));
+                    selection.clear();
+                  }}
                 >
                   Reset
                 </Button>
@@ -198,7 +160,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 doc={doc}
                 tiles={tiles}
                 selected={selected}
-                onToggle={toggle}
+                onToggle={selection.toggle}
                 onReorder={busy ? undefined : (next) => commit(next)}
                 renderActions={(tile) => (
                   <span className="flex gap-1">
@@ -226,11 +188,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                       size="xs"
                       variant="ghost"
                       disabled={busy || tiles.length === 1}
-                      onClick={() => {
-                        const next = new Set(selected);
-                        next.delete(tile.key);
-                        commit(removeTiles(tiles, only(tile.key)), next);
-                      }}
+                      onClick={() => commit(removeTiles(tiles, only(tile.key)))}
                     />
                   </span>
                 )}

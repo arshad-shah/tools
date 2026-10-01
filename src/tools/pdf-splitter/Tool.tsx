@@ -26,7 +26,9 @@ import {
   PageGrid,
   PdfDropzone,
   ResultFiles,
+  usePageSelection,
   type PageTile,
+  type SelectionMods,
   type ResultFile,
 } from '@/pdf/components';
 import { planSplit, selectionLabel, type SplitMode } from './lib/plan';
@@ -42,7 +44,6 @@ const MODES: { value: SplitMode; label: string }[] = [
 const PdfSplitterTool: React.FC<ToolProps> = () => {
   const [file, setFile] = useState<LoadedFile | null>(null);
   const [rangeText, setRangeText] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const { mode, everyN, setMode, setEveryN } = useSplitterSettings();
   const { doc, loading, error } = usePdfDocument(file);
 
@@ -57,6 +58,10 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
         : [],
     [doc],
   );
+  const keys = useMemo(() => tiles.map((t) => t.key), [tiles]);
+  // Clicking pages builds up a selection; shift adds a range, ctrl toggles.
+  const selection = usePageSelection(keys, { plain: 'toggle' });
+  const { selected } = selection;
 
   const job = useJob(
     async (
@@ -99,13 +104,13 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
 
   const pick = (files: LoadedFile[]) => {
     job.reset();
-    setSelected(new Set());
+    selection.clear();
     setFile(files[0]);
   };
 
   const clearFile = () => {
     job.reset();
-    setSelected(new Set());
+    selection.clear();
     setFile(null);
   };
   const changeMode = (m: SplitMode) => {
@@ -123,21 +128,15 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
   };
   const selectAll = () => {
     job.reset();
-    setSelected(new Set(tiles.map((t) => t.key)));
+    selection.selectAll();
   };
   const clearSelection = () => {
     job.reset();
-    setSelected(new Set());
+    selection.clear();
   };
-
-  const toggle = (key: string) => {
+  const toggle = (key: string, mods: SelectionMods) => {
     job.reset();
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    selection.toggle(key, mods);
   };
 
   return (
@@ -210,8 +209,9 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
               {mode === 'selection' && (
                 <div className="flex flex-wrap items-center gap-3">
                   <Text size="sm" tone="muted">
-                    Click pages to select them. They are extracted into one new
-                    PDF ({selected.size} selected).
+                    Click pages to select them (Shift-click selects a range).
+                    They are extracted into one new PDF ({selected.size}{' '}
+                    selected).
                   </Text>
                   <Button size="sm" variant="soft" onClick={selectAll}>
                     Select all
