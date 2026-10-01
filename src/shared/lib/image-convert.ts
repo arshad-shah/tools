@@ -31,14 +31,21 @@ export async function convertToPng(
       { cause },
     );
   }
+  // Past decoding, failures come from the canvas: browsers refuse (or hand
+  // out no context for) canvases above their size or memory limits.
+  const tooLarge = (cause?: unknown) =>
+    new ToolError('INVALID_FILE', `${name} is too large to convert`, {
+      cause,
+    });
   try {
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     const ctx = canvas.getContext('2d');
-    if (!ctx)
-      throw new ToolError('UNKNOWN', 'Canvas is not available in this browser');
+    if (!ctx) throw tooLarge();
     ctx.drawImage(bitmap, 0, 0);
     const blob = await canvas.convertToBlob({ type: 'image/png' });
     return new Uint8Array(await blob.arrayBuffer());
+  } catch (e) {
+    throw e instanceof ToolError ? e : tooLarge(e);
   } finally {
     bitmap.close();
   }
