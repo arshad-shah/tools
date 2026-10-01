@@ -58,6 +58,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
+import { cn } from '@/lib/utils';
 import { toToolError } from '@/shared/lib/errors';
 import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
@@ -872,26 +873,18 @@ export default function RiveAnimationPlayer() {
                       onDragOver={handleDragOver}
                       onDragEnter={handleDragEnter}
                       onDragLeave={handleDragLeave}
-                      style={{
-                        position: 'relative',
-                        width: '100%',
-                        height: '60vh',
-                        minHeight: 400,
-                        overflow: 'hidden',
-                        borderRadius: 8,
-                      }}
+                      className="relative h-[60vh] min-h-[400px] w-full overflow-hidden rounded-lg"
                     >
                       <canvas
                         ref={canvasRef}
-                        style={{
-                          display: shouldDisplayCanvas() ? 'block' : 'none',
-                          background:
-                            background === 'white'
-                              ? '#ffffff'
-                              : background === 'black'
-                                ? '#000000'
-                                : 'transparent',
-                        }}
+                        className={cn(
+                          shouldDisplayCanvas() ? 'block' : 'hidden',
+                          background === 'white'
+                            ? 'bg-white'
+                            : background === 'black'
+                              ? 'bg-black'
+                              : 'bg-transparent',
+                        )}
                       />
 
                       {!shouldDisplayCanvas() && (
@@ -912,18 +905,13 @@ export default function RiveAnimationPlayer() {
                       )}
 
                       {status.current === PlayerState.Loading && (
-                        <Center
-                          className="absolute inset-0"
-                          style={{
-                            background: 'rgba(0,0,0,0.4)',
-                          }}
-                        >
+                        <Center className="absolute inset-0 bg-black/40">
                           <Stack gap="3" align="center">
                             <Spinner size="lg" />
                             <Text
                               size="sm"
                               weight="medium"
-                              style={{ color: '#fff' }}
+                              className="text-white"
                             >
                               Loading animation…
                             </Text>

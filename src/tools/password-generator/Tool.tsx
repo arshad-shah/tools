@@ -26,6 +26,7 @@ import {
   Switch,
   Text,
 } from '@/shared/ui';
+import { cn } from '@/lib/utils';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { charSets, getSecureRandom, secureShuffle } from './lib/secure-random';
 
@@ -38,11 +39,11 @@ const classifyChar = (ch: string): CharType => {
   return 'special';
 };
 
-const CHAR_CSS_VARS: Record<CharType, string> = {
-  uppercase: 'var(--color-warning)',
-  lowercase: 'var(--color-fg)',
-  number: 'var(--color-success)',
-  special: 'var(--color-info)',
+const CHAR_CLASS: Record<CharType, string> = {
+  uppercase: 'text-warning',
+  lowercase: 'text-fg',
+  number: 'text-success',
+  special: 'text-info',
 };
 
 interface HighlightedPasswordProps {
@@ -54,25 +55,13 @@ const HighlightedPassword: React.FC<HighlightedPasswordProps> = ({
   password,
   hidden,
 }) => (
-  <Box
-    className="overflow-hidden rounded-md border border-line bg-surface p-4 font-mono text-base"
-    style={{
-      lineHeight: 1.6,
-      wordBreak: 'break-all',
-      overflowWrap: 'anywhere',
-      whiteSpace: 'pre-wrap',
-      minWidth: 0,
-    }}
-  >
+  <Box className="min-w-0 overflow-hidden rounded-md border border-line bg-surface p-4 font-mono text-base leading-[1.6] break-all whitespace-pre-wrap [overflow-wrap:anywhere]">
     {hidden
       ? '•'.repeat(password.length)
       : Array.from(password).map((ch, i) => {
           const type = classifyChar(ch);
           return (
-            <span
-              key={i}
-              style={{ color: CHAR_CSS_VARS[type], fontWeight: 700 }}
-            >
+            <span key={i} className={cn('font-bold', CHAR_CLASS[type])}>
               {ch}
             </span>
           );
@@ -91,13 +80,7 @@ const CharLegend: React.FC = () => (
       ] as Array<[CharType, string, string]>
     ).map(([type, sample, label]) => (
       <Inline key={type} gap="1" align="center">
-        <span
-          className="font-mono text-sm"
-          style={{
-            color: CHAR_CSS_VARS[type],
-            fontWeight: 700,
-          }}
-        >
+        <span className={cn('font-mono text-sm font-bold', CHAR_CLASS[type])}>
           {sample}
         </span>
         <Text as="span" size="xs" tone="subtle">

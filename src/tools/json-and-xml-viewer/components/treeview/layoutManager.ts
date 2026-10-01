@@ -40,6 +40,6 @@ export const createEdge = (source: string, target: string): Edge => ({
   source,
   target,
   type: 'smoothstep',
-  style: { stroke: '#60A5FA', strokeWidth: 2 },
+  style: { stroke: 'var(--color-info)', strokeWidth: 2 },
   animated: true,
 });

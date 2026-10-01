@@ -52,6 +52,7 @@ import {
   Text,
   Textarea,
 } from '@/shared/ui';
+import { cn } from '@/lib/utils';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { useLogParser } from './hooks/useLogParser';
@@ -153,10 +154,10 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
                   icon={
                     <ChevronRight
                       size={14}
-                      style={{
-                        transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                        transition: 'transform 150ms',
-                      }}
+                      className={cn(
+                        'transition-transform duration-150',
+                        expanded && 'rotate-90',
+                      )}
                     />
                   }
                   onClick={() => setExpanded((e) => !e)}

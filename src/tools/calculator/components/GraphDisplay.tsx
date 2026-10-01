@@ -134,7 +134,7 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
 
         {/* Plotly React Component */}
         <Plot
-          style={{ width: '100%', height: '400px' }}
+          className="h-[400px] w-full"
           config={{ responsive: true }}
           data={[
             {

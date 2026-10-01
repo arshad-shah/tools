@@ -80,15 +80,6 @@ const DataViewer = () => {
       ? { backgroundColor: 'rgba(6, 182, 212, 0.2)' }
       : {};
 
-  const editorStyles = {
-    fontFamily:
-      'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
-    fontSize: '14px',
-    minHeight: '24rem',
-    borderRadius: '0.5rem',
-    paddingBottom: '2rem',
-  };
-
   useEffect(() => {
     if (!searchTerm) {
       setHighlightedLines([]);
@@ -231,7 +222,9 @@ const DataViewer = () => {
       placeholder={`Enter ${format.toUpperCase()} here…`}
       onChange={(evn) => setInputText(evn.target.value)}
       padding={15}
-      style={editorStyles}
+      // "!": the editor's unlayered CSS sets font-size/family and its inline
+      // container style sets padding: 0, both of which beat plain utilities.
+      className="min-h-96 rounded-lg pb-8! font-mono! text-[0.875rem]!"
       data-color-mode="dark"
       rehypePlugins={rehypePlugins}
     />

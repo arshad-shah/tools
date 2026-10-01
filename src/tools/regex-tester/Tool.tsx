@@ -479,7 +479,7 @@ const RegexStudio: React.FC = () => {
         <CardBody>
           <Inline justify="between" align="center" gap="3" wrap>
             <Inline align="center" gap="3" wrap>
-              <div className="relative" style={{ minWidth: 220 }}>
+              <div className="relative min-w-[220px]">
                 <select
                   value={selectedTemplate}
                   onChange={(e) => handleTemplateSelect(e.target.value)}

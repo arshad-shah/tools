@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
-  ArrowRight,
   Braces,
   Brackets,
   CheckCircle,
@@ -807,7 +806,6 @@ const JWTDecoder: React.FC = () => {
         <Text size="sm" tone="subtle">
           All processing happens in your browser — no data is sent to any server
         </Text>
-        <ArrowRight size={14} aria-hidden style={{ display: 'none' }} />
       </Inline>
     </Stack>
   );

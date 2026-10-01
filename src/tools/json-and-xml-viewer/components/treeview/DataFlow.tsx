@@ -17,6 +17,12 @@ import CustomNode from './CustomNode';
 import { AppNode, DataFlowProps } from './types';
 import { useDataProcessor } from './useDataProcessor';
 
+/** Theme colours handed to xyflow as props (edges, background dots). */
+const FLOW_COLORS = {
+  accent: 'var(--color-accent)',
+  muted: 'var(--color-fg-subtle)',
+} as const;
+
 const nodeTypes = {
   custom: CustomNode,
 } satisfies NodeTypes;
@@ -25,11 +31,6 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  const accent = 'var(--color-accent)';
-  const surface = 'var(--color-surface)';
-  const subtle = 'var(--color-surface-subtle)';
-  const muted = 'var(--color-fg-subtle)';
-
   const onConnect = useCallback(
     (params: any) =>
       setEdges((eds) =>
@@ -37,28 +38,19 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
           {
             ...params,
             type: 'smoothstep',
-            style: { stroke: accent, strokeWidth: 2 },
+            style: { stroke: FLOW_COLORS.accent, strokeWidth: 2 },
             animated: true,
           },
           eds,
         ),
       ),
-    [setEdges, accent],
+    [setEdges],
   );
 
   useDataProcessor({ initialData, setNodes, setEdges });
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        minHeight: 400,
-        borderRadius: 8,
-        overflow: 'hidden',
-        background: subtle,
-      }}
-    >
+    <div className="h-full min-h-[400px] w-full overflow-hidden rounded-lg bg-surface-subtle">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -71,24 +63,19 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
         fitViewOptions={{ padding: 0.2, duration: 300 }}
         defaultEdgeOptions={{
           type: 'smoothstep',
-          style: { stroke: accent, strokeWidth: 1.5 },
+          style: { stroke: FLOW_COLORS.accent, strokeWidth: 1.5 },
         }}
         proOptions={{ hideAttribution: true }}
       >
         <Background
           variant={BackgroundVariant.Dots}
-          color={muted}
+          color={FLOW_COLORS.muted}
           gap={20}
           size={1}
         />
         <Controls
           position="bottom-right"
-          style={{
-            background: surface,
-            border: `1px solid var(--color-line)`,
-            borderRadius: 8,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-          }}
+          className="rounded-lg! border! border-line! bg-surface! shadow-[0_4px_12px_rgba(0,0,0,0.4)]!"
         />
       </ReactFlow>
     </div>

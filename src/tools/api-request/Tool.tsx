@@ -129,7 +129,12 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
   if (item.type === 'folder') {
     return (
       <Stack gap="1">
-        <Inline align="center" gap="2" style={{ paddingLeft: depth * 12 }}>
+        <Inline
+          align="center"
+          gap="2"
+          // data-driven: tree depth
+          style={{ paddingLeft: depth * 12 }}
+        >
           <IconButton
             variant="ghost"
             size="sm"
@@ -175,6 +180,7 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
       interactive
       onClick={() => onSelectRequest(req)}
       className={isSelected ? 'border-accent' : undefined}
+      // data-driven: tree depth
       style={{ marginLeft: depth * 12 }}
     >
       <CardBody>
