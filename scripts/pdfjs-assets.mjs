@@ -1,4 +1,12 @@
-import { cp, mkdir, readFile, rename as fsRename, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  cp,
+  mkdir,
+  readFile,
+  rename as fsRename,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { join } from 'node:path';
 
 /** pdfjs-dist folders the app loads at runtime from /pdfjs/. */
