@@ -66,3 +66,28 @@ test('shows a precise error for a bad range', async ({ page }) => {
     page.getByRole('alert').filter({ hasText: 'Page 9 is out of range (1–3)' }),
   ).toBeVisible();
 });
+
+test('stale results disappear when settings change', async ({ page }) => {
+  await page.goto('/pdf-splitter');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-12.pdf');
+  await page.getByRole('tab', { name: 'Page ranges' }).click();
+  await page.getByLabel('Ranges').fill('1-3, 10-');
+  await page.getByRole('button', { name: 'Split PDF' }).click();
+  const zipButton = page.getByRole('button', { name: 'Download all (ZIP)' });
+  await expect(zipButton).toBeVisible();
+  await page.getByRole('tab', { name: 'Every page' }).click();
+  await expect(zipButton).toHaveCount(0);
+});
+
+test('select all and clear selection', async ({ page }) => {
+  await page.goto('/pdf-splitter');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-3.pdf');
+  await page.getByRole('button', { name: 'Select all' }).click();
+  await expect(page.locator('li[aria-selected=true]')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Clear selection' }).click();
+  await expect(page.locator('li[aria-selected=true]')).toHaveCount(0);
+});
