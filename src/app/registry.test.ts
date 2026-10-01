@@ -76,17 +76,12 @@ describe('buildRegistry', () => {
       }),
     ).toThrow(/Tool folder "constructor" must match its id "other"/);
   });
-  it('tolerates the legacy PdfCompressor folder only for its own id', () => {
-    expect(
+  it('has no legacy exceptions: the old PdfCompressor folder is rejected too', () => {
+    expect(() =>
       buildRegistry({
         '../tools/PdfCompressor/index.ts': { default: fake('pdf-compressor') },
       }),
-    ).toHaveLength(1);
-    expect(() =>
-      buildRegistry({
-        '../tools/PdfCompressor/index.ts': { default: fake('other') },
-      }),
-    ).toThrow(/Tool folder "PdfCompressor" must match its id "other"/);
+    ).toThrow(/Tool folder "PdfCompressor" must match its id "pdf-compressor"/);
   });
 });
 
@@ -95,7 +90,7 @@ describe('TOOLS', () => {
     const ids = TOOLS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
     // One per src/tools/*/index.ts at this commit.
-    expect(ids).toHaveLength(33);
+    expect(ids).toHaveLength(36);
     // Exact: an extra or missing manifest fails.
     expect([...ids].sort()).toEqual(
       [
