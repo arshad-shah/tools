@@ -28,6 +28,9 @@ importers:
       '@arshad-shah/detent-react':
         specifier: ^0.3.1
         version: 0.3.1(react@19.2.6)
+      '@arshad-shah/qpdf-wasm':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@arshad-shah/store-kit':
         specifier: ^1.0.3
         version: 1.0.3(zustand@5.0.15(@types/react@19.2.15)(immer@11.1.8)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6)))
@@ -137,9 +140,6 @@ importers:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.2.15)(immer@11.1.8)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
     devDependencies:
-      '@arshad-shah/qpdf-wasm':
-        specifier: ^0.1.0
-        version: 0.1.0
       '@cloudflare/vite-plugin':
         specifier: ^1.39.0
         version: 1.39.0(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))(workerd@1.20260526.1)(wrangler@4.95.0)

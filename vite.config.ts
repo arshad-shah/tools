@@ -10,6 +10,9 @@ import { buildDefines } from './build-info';
 export default defineConfig({
   plugins: [react(), tailwindcss(), cloudflare()],
   define: buildDefines(),
+  // Module workers everywhere: qpdf-wasm's loader uses dynamic import(),
+  // which the default IIFE worker format cannot code-split.
+  worker: { format: 'es' },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
