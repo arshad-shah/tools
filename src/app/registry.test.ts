@@ -89,6 +89,7 @@ describe('TOOLS', () => {
         'pdf-splitter',
         'pdf-to-images',
         'pdf-to-text',
+        'pdf-watermark',
         'pomodoro',
         'qr-code-generator',
         'random-data-generator',

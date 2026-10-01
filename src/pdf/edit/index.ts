@@ -51,3 +51,8 @@ export {
 } from './geometry';
 export { unsupportedChars, assertDrawable } from './fonts';
 export { hexToRgb } from './color';
+export {
+  watermark,
+  type WatermarkContent,
+  type WatermarkOptions,
+} from './markup';

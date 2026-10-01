@@ -23,6 +23,7 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
   '/pdf-organize',
   '/pdf-to-images',
   '/pdf-to-text',
+  '/pdf-watermark',
   // Image tools show <img> previews rather than pdf.js canvases.
   {
     route: '/images-to-pdf',
