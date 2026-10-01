@@ -64,6 +64,18 @@ describe('buildRegistry', () => {
       }),
     ).toThrow(/Tool folder "pdf-thing" must match its id "other"/);
   });
+  it('rejects a manifest path that is not tools/<folder>/index.ts', () => {
+    expect(() =>
+      buildRegistry({ '../elsewhere/index.ts': { default: fake('x') } }),
+    ).toThrow(/must live at tools\/<id>\/index\.ts/);
+  });
+  it('does not treat Object prototype keys as legacy folders', () => {
+    expect(() =>
+      buildRegistry({
+        '../tools/constructor/index.ts': { default: fake('other') },
+      }),
+    ).toThrow(/Tool folder "constructor" must match its id "other"/);
+  });
   it('tolerates the legacy PdfCompressor folder only for its own id', () => {
     expect(
       buildRegistry({
