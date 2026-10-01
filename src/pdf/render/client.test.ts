@@ -44,13 +44,28 @@ afterEach(() => {
 
 function setup() {
   const endpoints: RpcEndpoint[] = [];
+  const posted: string[] = [];
   const rpc = createRpcClient<RenderHandlers>(() => {
     const channel = new MessageChannel();
     channels.push(channel);
     exposeRpc(fakeWorkerHandlers(), channel.port2 as unknown as RpcEndpoint);
     channel.port1.start();
     channel.port2.start();
-    const ep = channel.port1 as unknown as RpcEndpoint;
+    const port = channel.port1;
+    const ep: RpcEndpoint = {
+      postMessage: (m, t) => {
+        const msg = m as { type: string; method?: string };
+        posted.push(msg.method ? `${msg.type}:${msg.method}` : msg.type);
+        port.postMessage(m, t as never);
+      },
+      addEventListener: (type, l) =>
+        port.addEventListener(type as 'message', l as never),
+      removeEventListener: (type, l) =>
+        port.removeEventListener(type as 'message', l as never),
+    };
+    Object.assign(ep, {
+      dispatchEvent: (e: Event) => port.dispatchEvent(e),
+    });
     endpoints.push(ep);
     return ep;
   });
@@ -58,7 +73,7 @@ function setup() {
     (endpoints[endpoints.length - 1] as unknown as EventTarget).dispatchEvent(
       new Event('error'),
     );
-  return { render: createPdfRender(rpc), rpc, crash };
+  return { render: createPdfRender(rpc), rpc, crash, posted };
 }
 
 describe('pdfRender after a worker restart', () => {
@@ -89,6 +104,15 @@ describe('pdfRender after a worker restart', () => {
     await expect(render.renderPage(reopened.docId, 0, 100)).resolves.toBe(
       'bitmap',
     );
+  });
+
+  it('on abort, cancels the open before it sends the releasing close', async () => {
+    const { render, posted } = setup();
+    const ctrl = new AbortController();
+    const opening = render.open(new Uint8Array([1]), ctrl.signal);
+    ctrl.abort();
+    await expect(opening).rejects.toMatchObject({ code: 'CANCELLED' });
+    expect(posted).toEqual(['call:open', 'abort', 'call:close']);
   });
 
   it('still reports a closed document as CANCELLED', async () => {

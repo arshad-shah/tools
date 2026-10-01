@@ -39,16 +39,20 @@ export function createPdfRender(client: RpcClient<RenderHandlers>) {
       const copy = bytes.slice();
       const docId = newId();
       const generation = client.generation;
-      // Worker messages are handled in order: this close lands after the open,
-      // so it either frees the registered doc or finds nothing (open bails out
-      // on its own aborted signal).
+      // Start the call first so its own abort listener (which posts 'abort'
+      // for the open) is registered before ours (which posts 'close').
+      const opening = client.call('open', [docId, copy], {
+        signal,
+        transfer: [copy.buffer],
+      });
+      // Worker handlers are async and interleave, so ordering alone is not
+      // what makes this safe: if the close runs first and finds nothing, the
+      // aborted open sees its signal and destroys the document itself
+      // (bailIfAborted); if the open already registered it, the close frees it.
       const release = () => void client.call('close', [docId]).catch(() => {});
       signal?.addEventListener('abort', release, { once: true });
       try {
-        const doc = await client.call('open', [docId, copy], {
-          signal,
-          transfer: [copy.buffer],
-        });
+        const doc = await opening;
         openedIn.set(docId, generation);
         return doc;
       } finally {

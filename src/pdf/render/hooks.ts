@@ -13,8 +13,16 @@ import type { DocInfo } from './types';
 
 const cache = new BitmapCache(150);
 const renders = createJobPool<ImageBitmap>();
-/** Docs closed by usePdfDocument; late bitmaps for them are discarded. */
+/**
+ * Docs being closed by usePdfDocument; late bitmaps for them are discarded.
+ * An entry is dropped once its close resolves: the worker answers in order
+ * and close awaits the document's destroy, so no render result for it can
+ * still arrive after that.
+ */
 const closedDocs = new Set<string>();
+
+/** For tests: how many closed docs are still being tracked. */
+export const closedDocCount = () => closedDocs.size;
 
 interface DocState {
   doc: DocInfo | null;
@@ -70,10 +78,17 @@ export function usePdfDocument(file: { bytes: Uint8Array } | null): DocState {
     return () => {
       alive = false;
       ctrl.abort(); // worker-side open bails out and releases the document
+      // A later effect for the same file (A -> null -> A) must show loading,
+      // never this closed doc.
+      setResult(null);
       if (opened) {
-        closedDocs.add(opened);
-        cache.deleteDoc(opened);
-        void pdfRender.close(opened).catch(() => {});
+        const closing = opened;
+        closedDocs.add(closing);
+        cache.deleteDoc(closing);
+        void pdfRender
+          .close(closing)
+          .catch(() => {})
+          .finally(() => closedDocs.delete(closing));
       }
     };
   }, [file, generation]);

@@ -9,6 +9,7 @@ import {
   type RpcEndpoint,
 } from '@/shared/lib/worker-rpc';
 import { NoopFilterFactory, OffscreenCanvasFactory } from './canvas-factory';
+import { readPageSizes } from './page-sizes';
 import { renderScale } from './render-scale';
 import { textFromItems } from './text';
 import type { DocInfo, PageText } from './types';
@@ -57,6 +58,14 @@ const handlers = {
       CanvasFactory: OffscreenCanvasFactory,
       FilterFactory: NoopFilterFactory,
       isOffscreenCanvasSupported: true,
+      // No isEvalSupported here: pdfjs-dist 6 removed the option along with
+      // the eval-based PostScript compiler (the CVE-2024-4367 path), so
+      // there is nothing to turn off. eval-free.test.ts pins that.
+      // Dev keeps warnings (e.g. the expected "Setting up fake worker", since
+      // the parser deliberately runs in this same worker); prod logs errors only.
+      verbosity: import.meta.env.DEV
+        ? pdfjs.VerbosityLevel.WARNINGS
+        : pdfjs.VerbosityLevel.ERRORS,
       disableFontFace: true, // FontFace needs a document; glyphs render as paths instead
       useSystemFonts: false,
       // Must be an explicit boolean: the default probe reads document.baseURI.
@@ -92,14 +101,12 @@ const handlers = {
       throw cancelled();
     };
     await bailIfAborted();
-    const pages = [];
+    let pages;
     try {
-      for (let i = 1; i <= doc.numPages; i++) {
-        const vp = (await doc.getPage(i)).getViewport({ scale: 1 });
-        pages.push({ width: vp.width, height: vp.height });
-      }
+      pages = await readPageSizes(doc, ctx.signal);
     } catch (cause) {
       await task.destroy();
+      if (cause instanceof ToolError && cause.code === 'CANCELLED') throw cause;
       throw invalidFile(cause);
     }
     await bailIfAborted();
