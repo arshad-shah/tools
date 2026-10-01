@@ -232,7 +232,25 @@ export async function fillForm(
       throw fail('this kind of field cannot be filled here');
     }
   }
-  form.updateFieldAppearances(font);
+  // Redraw only what needs it: the fields just changed (their values were
+  // checked above) and, when flattening, untouched fields that have no
+  // appearance yet (forms relying on NeedAppearances). Anything else keeps
+  // its own appearance, and an untouched value Helvetica can't draw is left
+  // alone rather than failing with a raw pdf-lib error.
+  const changed = new Set(Object.keys(values));
+  for (const field of form.getFields()) {
+    if (!field.needsAppearancesUpdate()) continue;
+    if (!changed.has(field.getName()) && !flatten) continue;
+    try {
+      field.defaultUpdateAppearances(font);
+    } catch (cause) {
+      throw new ToolError(
+        'INVALID_INPUT',
+        `"${field.getName()}": the form font can't draw its current value${flatten ? ", so the form can't be flattened" : ''}`,
+        { cause },
+      );
+    }
+  }
   if (flatten) form.flatten({ updateFieldAppearances: false });
-  return doc.save({ useObjectStreams: true });
+  return doc.save({ useObjectStreams: true, updateFieldAppearances: false });
 }

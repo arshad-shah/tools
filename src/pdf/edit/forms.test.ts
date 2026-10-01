@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PDFHexString, PDFName } from 'pdf-lib';
 import {
   makeFormPdf,
   makeTextPdf,
@@ -91,5 +91,36 @@ describe('fillForm', () => {
     await expect(
       fillForm(await makeFormPdf(), vals, { flatten: false }),
     ).rejects.toThrow(message);
+  });
+});
+
+describe('fillForm with fields that rely on NeedAppearances', () => {
+  /** An untouched field holding text Helvetica can't draw, with no appearance. */
+  const legacyForm = async () => {
+    const doc = await PDFDocument.load(await makeFormPdf());
+    const field = doc.getForm().createTextField('legacy');
+    field.addToPage(doc.getPage(0), { x: 320, y: 600, width: 120, height: 24 });
+    field.acroField.dict.set(PDFName.of('V'), PDFHexString.fromText('Ада'));
+    for (const w of field.acroField.getWidgets())
+      w.dict.delete(PDFName.of('AP'));
+    return doc.save({ updateFieldAppearances: false });
+  };
+  it('leaves untouched fields as they are when not flattening', async () => {
+    const out = await fillForm(
+      await legacyForm(),
+      { name: 'Ada' },
+      { flatten: false },
+    );
+    const form = (await PDFDocument.load(out)).getForm();
+    expect(form.getTextField('name').getText()).toBe('Ada');
+    expect(form.getTextField('legacy').getText()).toBe('Ада');
+  });
+  it('names the field it cannot flatten instead of a raw error', async () => {
+    await expect(
+      fillForm(await legacyForm(), { name: 'Ada' }, { flatten: true }),
+    ).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+      message: `"legacy": the form font can't draw its current value, so the form can't be flattened`,
+    });
   });
 });
