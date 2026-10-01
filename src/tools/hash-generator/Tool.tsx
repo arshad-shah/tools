@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import * as CryptoJS from 'crypto-js';
+import React, { useMemo, useState } from 'react';
 import { Check, Copy, X } from 'lucide-react';
 import {
   Alert,
@@ -12,90 +11,88 @@ import {
   Code,
   Heading,
   Inline,
+  Input,
   Label,
   Select,
   Stack,
+  Text,
   Textarea,
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
+import { toToolError } from '@/shared/lib/errors';
+import {
+  ALGORITHMS,
+  HMAC_ALGORITHMS,
+  computeHash,
+  computeHmac,
+  isHmac,
+  parseKey,
+  type KeyFormat,
+} from './lib/hash';
 
-interface Algorithm {
+interface Result {
   id: string;
   name: string;
-  hash: (input: string) => string;
+  value?: string;
+  error?: string;
 }
 
-const ALGORITHMS: Algorithm[] = [
-  { id: 'md5', name: 'MD5', hash: (i) => CryptoJS.MD5(i).toString() },
-  { id: 'sha1', name: 'SHA-1', hash: (i) => CryptoJS.SHA1(i).toString() },
-  { id: 'sha256', name: 'SHA-256', hash: (i) => CryptoJS.SHA256(i).toString() },
-  { id: 'sha224', name: 'SHA-224', hash: (i) => CryptoJS.SHA224(i).toString() },
-  { id: 'sha384', name: 'SHA-384', hash: (i) => CryptoJS.SHA384(i).toString() },
-  { id: 'sha512', name: 'SHA-512', hash: (i) => CryptoJS.SHA512(i).toString() },
-  { id: 'sha3', name: 'SHA-3', hash: (i) => CryptoJS.SHA3(i).toString() },
-  {
-    id: 'ripemd160',
-    name: 'RIPEMD-160',
-    hash: (i) => CryptoJS.RIPEMD160(i).toString(),
-  },
-  {
-    id: 'hmacmd5',
-    name: 'HMAC-MD5',
-    hash: (i) => CryptoJS.HmacMD5(i, 'key').toString(),
-  },
-  {
-    id: 'hmacsha1',
-    name: 'HMAC-SHA1',
-    hash: (i) => CryptoJS.HmacSHA1(i, 'key').toString(),
-  },
-  {
-    id: 'hmacsha256',
-    name: 'HMAC-SHA256',
-    hash: (i) => CryptoJS.HmacSHA256(i, 'key').toString(),
-  },
-  {
-    id: 'hmacsha512',
-    name: 'HMAC-SHA512',
-    hash: (i) => CryptoJS.HmacSHA512(i, 'key').toString(),
-  },
+const KEY_FORMATS = [
+  { value: 'text', label: 'Text (UTF-8)' },
+  { value: 'hex', label: 'Hex' },
 ];
 
 const HashGenerator: React.FC = () => {
   const [input, setInput] = useState('');
   const [selected, setSelected] = useState<string>('all');
-  const [results, setResults] = useState<Record<string, string>>({});
+  const [hmacKey, setHmacKey] = useState('');
+  const [keyFormat, setKeyFormat] = useState<KeyFormat>('text');
   const { copiedKey, copy } = useClipboard();
 
   const items = useMemo(
     () => [
       { value: 'all', label: 'All algorithms' },
       ...ALGORITHMS.map((a) => ({ value: a.id, label: a.name })),
+      ...HMAC_ALGORITHMS.map((a) => ({ value: a.id, label: a.name })),
     ],
     [],
   );
 
-  useEffect(() => {
-    if (!input) {
-      setResults({});
-      return;
+  const wantsHmac = selected === 'all' || isHmac(selected);
+
+  // The key is parsed once; a bad hex key is reported, never hashed.
+  const key = useMemo((): { bytes?: Uint8Array; error?: string } => {
+    if (!hmacKey) return {};
+    try {
+      return { bytes: parseKey(hmacKey, keyFormat) };
+    } catch (e) {
+      return { error: toToolError(e).message };
     }
-    const next: Record<string, string> = {};
-    const list =
-      selected === 'all'
-        ? ALGORITHMS
-        : ALGORITHMS.filter((a) => a.id === selected);
-    for (const algo of list) {
+  }, [hmacKey, keyFormat]);
+
+  const results = useMemo((): Result[] => {
+    if (!input) return [];
+    const out: Result[] = [];
+    const run = (id: string, name: string, fn: () => string) => {
       try {
-        next[algo.id] = algo.hash(input);
-      } catch (err) {
-        console.error(`Error generating ${algo.name}:`, err);
-        next[algo.id] = `Error generating ${algo.name}`;
+        out.push({ id, name, value: fn() });
+      } catch (e) {
+        out.push({ id, name, error: toToolError(e).message });
+      }
+    };
+    for (const a of ALGORITHMS) {
+      if (selected === 'all' || selected === a.id)
+        run(a.id, a.name, () => computeHash(a.id, input));
+    }
+    if (key.bytes) {
+      const bytes = key.bytes;
+      for (const a of HMAC_ALGORITHMS) {
+        if (selected === 'all' || selected === a.id)
+          run(a.id, a.name, () => computeHmac(a.id, bytes, input));
       }
     }
-    setResults(next);
-  }, [input, selected]);
-
-  const handleCopy = (text: string, id: string) => void copy(text, id);
+    return out;
+  }, [input, selected, key.bytes]);
 
   return (
     <Stack gap="6">
@@ -135,9 +132,44 @@ const HashGenerator: React.FC = () => {
                 aria-label="Hash algorithm"
               />
             </Stack>
+
+            {wantsHmac && (
+              <Stack gap="2">
+                <Label htmlFor="hmac-key">HMAC secret key</Label>
+                <Inline gap="2" align="center" wrap={false}>
+                  <Input
+                    id="hmac-key"
+                    value={hmacKey}
+                    onChange={setHmacKey}
+                    placeholder="Secret key used for HMAC only"
+                    autoComplete="off"
+                    spellCheck={false}
+                    invalid={!!key.error}
+                  />
+                  <div className="w-40 shrink-0">
+                    <Select
+                      value={keyFormat}
+                      onValueChange={(v) => setKeyFormat(v as KeyFormat)}
+                      items={KEY_FORMATS}
+                      aria-label="HMAC key format"
+                    />
+                  </div>
+                </Inline>
+                <Text size="sm" tone="subtle">
+                  HMAC values are only computed when you enter a key. The key
+                  never leaves your browser.
+                </Text>
+              </Stack>
+            )}
           </Stack>
         </CardBody>
       </Card>
+
+      {key.error && (
+        <Alert status="danger">
+          <AlertDescription>{key.error}</AlertDescription>
+        </Alert>
+      )}
 
       {!input ? (
         <Alert status="info">
@@ -150,35 +182,43 @@ const HashGenerator: React.FC = () => {
           <Heading level={2} size="lg">
             Hash results
           </Heading>
-          {Object.entries(results).map(([id, hash]) => {
-            const info = ALGORITHMS.find((a) => a.id === id);
-            const isError = hash.startsWith('Error');
+          {wantsHmac && !hmacKey && (
+            <Alert status="info">
+              <AlertDescription>
+                Enter an HMAC secret key to compute HMAC values.
+              </AlertDescription>
+            </Alert>
+          )}
+          {results.map(({ id, name, value, error }) => {
             const isCopied = copiedKey === id;
             return (
               <Card key={id}>
                 <CardHeader>
                   <Inline justify="between" align="center">
-                    <CardTitle as="h3">{info?.name || id}</CardTitle>
+                    <CardTitle as="h3">{name}</CardTitle>
                     <Button
                       variant={isCopied ? 'solid' : 'soft'}
                       size="sm"
-                      disabled={isError}
+                      disabled={value === undefined}
+                      aria-label={`Copy ${name}`}
                       leftIcon={
                         isCopied ? <Check size={16} /> : <Copy size={16} />
                       }
-                      onClick={() => handleCopy(hash, id)}
+                      onClick={() => value && void copy(value, id)}
                     >
                       {isCopied ? 'Copied' : 'Copy'}
                     </Button>
                   </Inline>
                 </CardHeader>
                 <CardBody>
-                  {isError ? (
+                  {error !== undefined ? (
                     <Alert status="danger">
-                      <AlertDescription>{hash}</AlertDescription>
+                      <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   ) : (
-                    <Code block>{hash}</Code>
+                    <Code block data-testid={`hash-${id}`}>
+                      {value}
+                    </Code>
                   )}
                 </CardBody>
               </Card>
