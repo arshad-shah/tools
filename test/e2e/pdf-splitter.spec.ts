@@ -91,3 +91,28 @@ test('select all and clear selection', async ({ page }) => {
   await page.getByRole('button', { name: 'Clear selection' }).click();
   await expect(page.locator('li[aria-selected=true]')).toHaveCount(0);
 });
+
+test('shift-click selects a range of pages', async ({ page }) => {
+  await page.goto('/pdf-splitter');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-12.pdf');
+  const tiles = page.locator('li[data-sortable-item]');
+  await expect(tiles).toHaveCount(12);
+  await tiles.nth(2).click();
+  await tiles.nth(6).click({ modifiers: ['Shift'] });
+  await expect(page.locator('li[aria-selected=true]')).toHaveCount(5);
+  await expect(page.getByText('(5 selected)')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Split PDF' }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download', exact: true }).click();
+  const bytes = readFileSync((await (await downloadPromise).path())!);
+  expect(await pdfPageTexts(new Uint8Array(bytes))).toEqual([
+    'Beta 3',
+    'Beta 4',
+    'Beta 5',
+    'Beta 6',
+    'Beta 7',
+  ]);
+});

@@ -15,3 +15,12 @@ export {
   type ReorderAxis,
 } from './useSortableList';
 export { thumbBoxSize } from './thumb-size';
+export {
+  usePageSelection,
+  nextSelection,
+  rangeSelect,
+  emptySelection,
+  type SelectionMods,
+  type PageSelectionState,
+  type PlainClick,
+} from './usePageSelection';
