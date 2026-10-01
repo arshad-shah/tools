@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { toToolError, type ToolError } from '@/shared/lib/errors';
+import { logToolError, toToolError, type ToolError } from '@/shared/lib/errors';
 
 export type JobStatus = 'idle' | 'running' | 'done' | 'error' | 'cancelled';
 
@@ -88,6 +88,7 @@ export function useJob<A extends unknown[], R>(
       if (ctrl.signal.aborted || error.code === 'CANCELLED') {
         setState({ ...idle, status: 'cancelled' });
       } else {
+        logToolError(error);
         setState({ status: 'error', progress: null, result: null, error });
       }
       return undefined;

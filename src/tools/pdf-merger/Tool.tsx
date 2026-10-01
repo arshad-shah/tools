@@ -12,7 +12,7 @@ import {
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
 import type { LoadedFile } from '@/shared/lib/files';
-import { ToolError, toToolError } from '@/shared/lib/errors';
+import { logToolError, ToolError, toToolError } from '@/shared/lib/errors';
 import { deriveFilename } from '@/shared/lib/download';
 import { useJob } from '@/shared/state/useJob';
 import {
@@ -80,7 +80,11 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
     const errors: string[] = [];
     results.forEach((r, i) => {
       if (r.status === 'fulfilled') ok.push(r.value);
-      else errors.push(`${files[i].name}: ${toToolError(r.reason).message}`);
+      else {
+        const error = toToolError(r.reason);
+        logToolError(error);
+        errors.push(`${files[i].name}: ${error.message}`);
+      }
     });
     setAddErrors(errors);
     setItems((prev) => [...prev, ...ok]);
