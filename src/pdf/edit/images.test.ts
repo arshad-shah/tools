@@ -13,7 +13,12 @@ import {
   noiseImage,
   withExifOrientation,
 } from '../../../test/fixtures/images';
-import { imagesToPdf, layoutImagePage, PAGE_SIZES } from './images';
+import {
+  imagesToPdf,
+  layoutImagePage,
+  MAX_PAGE_PT,
+  PAGE_SIZES,
+} from './images';
 
 /** The page's decoded content stream(s) as text. */
 function pageContent(doc: PDFDocument, index: number): string {
@@ -74,6 +79,19 @@ describe('layoutImagePage', () => {
       width: 300,
       height: 225,
     });
+  });
+  it('scales huge fit-to-image pages down to the 14 400 pt PDF limit', () => {
+    // 40 000 × 10 000 px would be 30 000 × 7 500 pt.
+    const l = layoutImagePage(40_000, 10_000, {
+      pageSize: 'fit',
+      orientation: 'auto',
+      marginPt: 20,
+    });
+    expect(l.pageWidth).toBeCloseTo(MAX_PAGE_PT);
+    expect(l.width).toBeCloseTo(MAX_PAGE_PT - 40);
+    expect(l.height).toBeCloseTo((MAX_PAGE_PT - 40) / 4);
+    expect(l.pageHeight).toBeCloseTo(l.height + 40);
+    expect([l.x, l.y]).toEqual([20, 20]);
   });
   it('rejects a margin that is not a number', () => {
     expect(() =>
