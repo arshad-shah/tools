@@ -1,8 +1,44 @@
 import { describe, expect, it } from 'vitest';
-import { parseDelimited } from './parse';
+import { coerceCell, detectDelimiter, parseDelimited } from './parse';
 
-describe('csv parse', () => {
-  it('parses headers with dynamic typing and skips empty lines', () => {
+describe('coerceCell', () => {
+  it('keeps values that typing would change as text', () => {
+    expect(coerceCell('00123')).toBe('00123');
+    expect(coerceCell('12345678901234567')).toBe('12345678901234567');
+    expect(coerceCell('2024-01-05')).toBe('2024-01-05');
+    expect(coerceCell('1,50')).toBe('1,50');
+    expect(coerceCell(' 7')).toBe(' 7');
+  });
+
+  it('types safe numbers, booleans and empty cells', () => {
+    expect(coerceCell('42')).toBe(42);
+    expect(coerceCell('-0.5')).toBe(-0.5);
+    expect(coerceCell('1e3')).toBe(1000);
+    expect(coerceCell('0')).toBe(0);
+    expect(coerceCell('0.25')).toBe(0.25);
+    expect(coerceCell('true')).toBe(true);
+    expect(coerceCell('FALSE')).toBe(false);
+    expect(coerceCell('')).toBeNull();
+  });
+});
+
+describe('detectDelimiter', () => {
+  it.each([
+    ['a,b,c\n1,2,3', ','],
+    ['a;b;c\n1;2;3', ';'],
+    ['x;y\n1,5;2,5\n3,0;4,1', ';'],
+    ['a\tb\n1\t2', '\t'],
+    ['a|b\n1|2', '|'],
+    ['a,b\n"x;y;z",2', ','],
+    ['a;b;c', ';'],
+    ['name\nAda', ','],
+  ])('%j uses %j', (text, expected) => {
+    expect(detectDelimiter(text)).toBe(expected);
+  });
+});
+
+describe('parseDelimited', () => {
+  it('parses headers, types safe values and skips empty lines', () => {
     const r = parseDelimited('name,age\nAda,36\n\nBob,7\n', 'auto');
     expect(r.columns).toEqual(['name', 'age']);
     expect(r.data).toEqual([
@@ -10,6 +46,18 @@ describe('csv parse', () => {
       { name: 'Bob', age: 7 },
     ]);
     expect(r.warnings).toEqual([]);
+  });
+
+  it('keeps leading zeros, long IDs and dates exact', () => {
+    const r = parseDelimited(
+      'zip,id,day\n00123,12345678901234567,2024-01-05',
+      'auto',
+    );
+    expect(r.data[0]).toEqual({
+      zip: '00123',
+      id: '12345678901234567',
+      day: '2024-01-05',
+    });
   });
 
   it.each([
@@ -30,31 +78,19 @@ describe('csv parse', () => {
     expect(r.data[0]).toEqual({ name: 'Tea', price: '1,50' });
   });
 
-  it('detects the delimiter despite a malformed row', () => {
-    const r = parseDelimited(
-      'name;price\nTea;1,50\nbroken\nCake;2,75\n',
-      'auto',
-    );
-    expect(r.delimiter).toBe(';');
-    expect(r.data.map((d) => d.name)).toEqual(['Tea', 'Cake']);
-    expect(r.warnings.map((w) => w.row)).toEqual([2]);
-  });
-
-  it('falls back to comma for a single column', () => {
-    expect(parseDelimited('word\nhello\nworld', 'auto').delimiter).toBe(',');
-  });
-
   it('honours a manual delimiter over detection', () => {
     const r = parseDelimited('a;b,c\n1;2,3', ',');
     expect(r.delimiter).toBe(',');
     expect(r.columns).toEqual(['a;b', 'c']);
   });
 
-  it('keeps valid rows and reports malformed ones with row numbers', () => {
+  it('keeps ragged rows (padded or cut) and lists them', () => {
     const r = parseDelimited('a,b\n1,2\n3\n4,5\n6,7,8\n9,10', 'auto');
     expect(r.data).toEqual([
       { a: 1, b: 2 },
+      { a: 3, b: null },
       { a: 4, b: 5 },
+      { a: 6, b: 7 },
       { a: 9, b: 10 },
     ]);
     expect(r.warnings.map((w) => w.row)).toEqual([2, 4]);
@@ -62,11 +98,33 @@ describe('csv parse', () => {
     expect(r.warnings[1].message).toMatch(/many/i);
   });
 
-  it('fails only when no row can be read', () => {
-    expect(() => parseDelimited('a,b\n"1,2', 'auto')).toThrow(
-      expect.objectContaining({ code: 'INVALID_INPUT' }),
-    );
-    expect(() => parseDelimited('', 'auto')).toThrow(
+  it('keeps a row that is missing its trailing empty cell', () => {
+    const r = parseDelimited('a,b,c\n1,2', 'auto');
+    expect(r.data).toEqual([{ a: 1, b: 2, c: null }]);
+    expect(r.warnings).toHaveLength(1);
+  });
+
+  it('explains an unterminated quote on the row where it starts', () => {
+    const r = parseDelimited('a,b\n1,2\n"3,4\n5,6', ',');
+    expect(r.data).toHaveLength(2);
+    expect(r.warnings).toEqual([
+      {
+        row: 2,
+        message:
+          'Unterminated quote from row 2; the rest of the file was read as one cell',
+      },
+    ]);
+  });
+
+  it('shows the columns of a header-only file with no rows', () => {
+    const r = parseDelimited('a;b;c\n', 'auto');
+    expect(r.columns).toEqual(['a', 'b', 'c']);
+    expect(r.data).toEqual([]);
+  });
+
+  it('accepts an empty file and fails only when nothing can be read', () => {
+    expect(parseDelimited('', 'auto').data).toEqual([]);
+    expect(() => parseDelimited('"', ',')).toThrow(
       expect.objectContaining({ code: 'INVALID_INPUT' }),
     );
   });

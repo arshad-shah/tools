@@ -235,17 +235,20 @@ const CSVTSVViewer: React.FC = () => {
     if (r) showData(r);
   };
 
+  /** True when the text parsed and is now shown. */
   const parseText = (
     text: string,
     fileName: string,
     choice: DelimiterChoice,
-  ) => {
+  ): boolean => {
     loadJob.reset();
     try {
       showData({ ...parseDelimited(text, choice), fileName, text });
       setSampleError(null);
+      return true;
     } catch (e) {
       setSampleError(toToolError(e).message);
+      return false;
     }
   };
 
@@ -257,8 +260,10 @@ const CSVTSVViewer: React.FC = () => {
 
   const changeDelimiter = (value: string) => {
     const choice = value as DelimiterChoice;
-    setDelimiterChoice(choice);
-    if (dataState) parseText(dataState.text, dataState.fileName, choice);
+    // On failure the select stays on the delimiter the shown table used,
+    // never on one that does not match the data.
+    if (!dataState || parseText(dataState.text, dataState.fileName, choice))
+      setDelimiterChoice(choice);
   };
 
   const delimiterControl = (
@@ -519,12 +524,13 @@ const CSVTSVViewer: React.FC = () => {
       {dataState.warnings.length > 0 && (
         <Alert status="warning">
           <AlertTitle>
-            {dataState.warnings.length}{' '}
-            {dataState.warnings.length === 1 ? 'row' : 'rows'} skipped
+            Loaded with {dataState.warnings.length} problem{' '}
+            {dataState.warnings.length === 1 ? 'row' : 'rows'}
           </AlertTitle>
           <Stack gap="1" className="mt-1">
             <Text size="sm">
-              These rows could not be read and were left out. Row numbers count
+              These rows did not parse cleanly. They are shown anyway: missing
+              cells are empty and extra cells are left out. Row numbers count
               data rows after the header.
             </Text>
             <ul className="list-disc pl-5 text-sm">

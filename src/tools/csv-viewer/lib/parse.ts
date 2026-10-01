@@ -60,42 +60,75 @@ export function detectDelimiter(content: string): Delimiter {
   return best.d;
 }
 
+// At most 15 significant digits (doubles hold them exactly), no leading
+// zeros: "00123" or a 17-digit ID stays text.
+const SAFE_NUMBER =
+  /^-?(?:0|[1-9]\d{0,14})(?:\.\d{1,15})?(?:[eE][+-]?\d{1,3})?$/;
+
 /**
- * Header row + dynamic typing. The delimiter is detected (comma, semicolon,
- * tab or pipe) unless one is chosen. Malformed rows are skipped and
- * reported; only a file with no readable row at all fails.
+ * A typed value, unless typing would lose information: leading zeros, long
+ * IDs, dates and anything else that is not a plain number stay text.
+ */
+export function coerceCell(raw: string): unknown {
+  if (raw === '') return null;
+  if (raw === 'true' || raw === 'TRUE') return true;
+  if (raw === 'false' || raw === 'FALSE') return false;
+  if (SAFE_NUMBER.test(raw)) {
+    const n = Number(raw);
+    if (Number.isFinite(n)) return n;
+  }
+  return raw;
+}
+
+/**
+ * Header row, with cells typed only when it is safe (see coerceCell). The
+ * delimiter is detected (comma, semicolon, tab or pipe) unless one is
+ * chosen. Ragged rows are kept (missing cells are empty, extra cells are
+ * dropped) and listed as warnings; only a file whose header cannot be read
+ * fails.
  */
 export function parseDelimited(
   content: string,
   choice: DelimiterChoice,
 ): ParseResult {
-  const r = Papa.parse<ParsedData>(content, {
+  const r = Papa.parse<Record<string, string | undefined>>(content, {
     delimiter: choice === 'auto' ? detectDelimiter(content) : choice,
     header: true,
-    dynamicTyping: true,
+    dynamicTyping: false,
     skipEmptyLines: true,
   });
+  const columns = r.meta.fields ?? [];
+  if (r.data.length === 0 && r.errors.length > 0) {
+    throw new ToolError(
+      'INVALID_INPUT',
+      `Could not read any rows: ${r.errors[0].message}`,
+    );
+  }
 
-  const bad = new Map<number, string>();
+  const issues = new Map<number, string>();
   for (const e of r.errors) {
     // "Undetectable delimiter" just means a single column: not a problem.
     if (e.code === 'UndetectableDelimiter' || e.row === undefined) continue;
-    if (!bad.has(e.row)) bad.set(e.row, e.message);
+    if (e.code === 'MissingQuotes') {
+      // Papa reports the row after the last one; the quote opened in the
+      // last row, which swallowed everything after it.
+      const row = Math.min(e.row, r.data.length - 1);
+      issues.set(
+        row,
+        `Unterminated quote from row ${row + 1}; the rest of the file was read as one cell`,
+      );
+    } else if (!issues.has(e.row)) {
+      issues.set(e.row, e.message);
+    }
   }
-  const data = r.data.filter((_, i) => !bad.has(i));
-  const warnings = [...bad.entries()]
+  const data: ParsedData[] = r.data.map((row) => {
+    const out: ParsedData = {};
+    for (const c of columns) out[c] = coerceCell(row[c] ?? '');
+    return out;
+  });
+  const warnings = [...issues.entries()]
     .sort(([a], [b]) => a - b)
     .map(([i, message]) => ({ row: i + 1, message }));
-
-  const columns = r.meta.fields ?? [];
-  if (data.length === 0) {
-    throw new ToolError(
-      'INVALID_INPUT',
-      warnings.length > 0
-        ? `No readable rows. Row ${warnings[0].row}: ${warnings[0].message}`
-        : 'The file has no data rows',
-    );
-  }
   const delimiter = isDelimiter(r.meta.delimiter) ? r.meta.delimiter : ',';
   return { data, columns, delimiter, warnings };
 }
