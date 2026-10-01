@@ -51,7 +51,9 @@ describe('usePdfDocument', () => {
     expect(result.current.loading).toBe(true);
     await waitFor(() => expect(result.current.doc?.docId).toBe('doc2'));
     expect(fake.pdfRender.open).toHaveBeenCalledTimes(2);
-    expect(fake.pdfRender.open.mock.calls[1][0]).toBe(file.bytes);
+    expect((fake.pdfRender.open.mock.calls[1] as unknown[])[0]).toBe(
+      file.bytes,
+    );
   });
 
   it('surfaces an error when reopening fails instead of spinning', async () => {
