@@ -29,10 +29,25 @@ export interface Base64Options {
 
 const CHUNK = 0x8000;
 
+type NativeToBase64 = (opts?: {
+  alphabet?: 'base64' | 'base64url';
+  omitPadding?: boolean;
+}) => string;
+
 export function bytesToBase64(
   bytes: Uint8Array,
   { urlSafe = false, padding = !urlSafe }: Base64Options = {},
 ): string {
+  // The native encoder (Uint8Array.prototype.toBase64) is much faster on
+  // large files; fall back to btoa where it does not exist yet.
+  const native = (Uint8Array.prototype as { toBase64?: NativeToBase64 })
+    .toBase64;
+  if (typeof native === 'function') {
+    return native.call(bytes, {
+      alphabet: urlSafe ? 'base64url' : 'base64',
+      omitPadding: !padding,
+    });
+  }
   let binary = '';
   for (let i = 0; i < bytes.length; i += CHUNK)
     binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
@@ -89,11 +104,31 @@ export function parseDataUri(
   if (isBase64) params.pop();
   const mime = params[0] || 'text/plain';
   if (isBase64) return { mime, bytes: base64ToBytes(m[2]) };
-  try {
-    return { mime, bytes: utf8Encode(decodeURIComponent(m[2])) };
-  } catch (cause) {
-    throw new ToolError('INVALID_INPUT', 'The data URI is malformed', {
-      cause,
-    });
+  return { mime, bytes: percentDecode(m[2]) };
+}
+
+/**
+ * Percent-decodes straight to bytes, so `%FF` (not valid UTF-8 on its own)
+ * is the byte 0xFF. Other characters are taken as UTF-8.
+ */
+function percentDecode(s: string): Uint8Array {
+  const out: number[] = [];
+  for (let i = 0; i < s.length; ) {
+    if (s[i] === '%') {
+      const hex = s.slice(i + 1, i + 3);
+      if (!/^[0-9a-fA-F]{2}$/.test(hex))
+        throw new ToolError(
+          'INVALID_INPUT',
+          `The data URI is malformed: bad escape at character ${i + 1}`,
+        );
+      out.push(parseInt(hex, 16));
+      i += 3;
+    } else {
+      const cp = s.codePointAt(i) ?? 0;
+      const ch = String.fromCodePoint(cp);
+      for (const b of utf8Encode(ch)) out.push(b);
+      i += ch.length;
+    }
   }
+  return new Uint8Array(out);
 }
