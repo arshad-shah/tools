@@ -62,13 +62,36 @@ export function normalizeRotation(angle: number): Rotation {
   return ((((Math.round(angle / 90) * 90) % 360) + 360) % 360) as Rotation;
 }
 
+type Box = { x: number; y: number; width: number; height: number };
+
+/** [x0, y0, x1, y1] with min/max sorted out (boxes may be stored inverted). */
+const corners = (b: Box) => [
+  Math.min(b.x, b.x + b.width),
+  Math.min(b.y, b.y + b.height),
+  Math.max(b.x, b.x + b.width),
+  Math.max(b.y, b.y + b.height),
+];
+
+/**
+ * The visible area, as viewers (and pdf.js, hence the editor) compute it: the
+ * crop box clipped to the media box, normalised. Falls back to the media box
+ * if the two don't overlap.
+ */
 export function pageFrame(page: PDFPage): PageFrame {
-  const box = page.getCropBox();
+  const [mx0, my0, mx1, my1] = corners(page.getMediaBox());
+  const [cx0, cy0, cx1, cy1] = corners(page.getCropBox());
+  let [x0, y0, x1, y1] = [
+    Math.max(mx0, cx0),
+    Math.max(my0, cy0),
+    Math.min(mx1, cx1),
+    Math.min(my1, cy1),
+  ];
+  if (x1 <= x0 || y1 <= y0) [x0, y0, x1, y1] = [mx0, my0, mx1, my1];
   return {
-    x0: box.x,
-    y0: box.y,
-    width: box.width,
-    height: box.height,
+    x0,
+    y0,
+    width: x1 - x0,
+    height: y1 - y0,
     rotation: normalizeRotation(page.getRotation().angle),
   };
 }

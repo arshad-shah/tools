@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { degrees, PDFDocument, StandardFonts } from 'pdf-lib';
+import { degrees, PDFDocument, PDFName, StandardFonts } from 'pdf-lib';
 import { makeRotatedPdf, textPositions } from '../../../test/fixtures/builders';
 import {
   anchoredOrigin,
@@ -131,5 +131,26 @@ describe('toPdfPlacement on real rotated pages', () => {
       rotation: 270,
     });
     expect(visualSize(f)).toEqual({ width: 782, height: 555 });
+  });
+});
+
+describe('pageFrame matches what viewers show', () => {
+  const pageWith = async (
+    media: [number, number, number, number],
+    crop?: [number, number, number, number],
+  ) => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([100, 100]);
+    page.node.set(PDFName.of('MediaBox'), doc.context.obj(media));
+    if (crop) page.node.set(PDFName.of('CropBox'), doc.context.obj(crop));
+    return page;
+  };
+  it('clips a crop box that is larger than the media box', async () => {
+    const f = pageFrame(await pageWith([0, 0, 612, 792], [-50, -50, 700, 900]));
+    expect(f).toMatchObject({ x0: 0, y0: 0, width: 612, height: 792 });
+  });
+  it('normalises inverted boxes', async () => {
+    const f = pageFrame(await pageWith([612, 792, 0, 0], [500, 700, 100, 50]));
+    expect(f).toMatchObject({ x0: 100, y0: 50, width: 400, height: 650 });
   });
 });
