@@ -385,6 +385,10 @@ export interface TextPosition {
   y: number;
   /** Reads left-to-right on screen. */
   upright: boolean;
+  /** Font size in viewport units (points at scale 1). */
+  size: number;
+  /** Text direction on screen, degrees counter-clockwise from left-to-right. */
+  angle: number;
   viewport: { width: number; height: number };
 }
 
@@ -417,6 +421,8 @@ export async function textPositions(
           x: e,
           y: f,
           upright: a > 0 && Math.abs(b) < 1e-3,
+          size: Math.hypot(a, b),
+          angle: (Math.atan2(-b, a) * 180) / Math.PI,
           viewport: { width: viewport.width, height: viewport.height },
         };
       });

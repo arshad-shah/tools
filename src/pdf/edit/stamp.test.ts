@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import fontkit from '@pdf-lib/fontkit';
 import { describe, expect, it } from 'vitest';
 import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
 import {
@@ -10,6 +11,7 @@ import {
 } from '../../../test/fixtures/builders';
 import { encodePng, noiseImage } from '../../../test/fixtures/images';
 import { stamp } from './stamp';
+import { layoutInk } from './text-fit';
 
 const font = new Uint8Array(
   readFileSync(
@@ -91,5 +93,51 @@ describe('stamp', () => {
         content: typed('Ада'),
       }),
     ).rejects.toThrow("Your name contains characters the font can't draw");
+  });
+});
+
+const fontFile = (name: string) =>
+  new Uint8Array(
+    readFileSync(
+      createRequire(import.meta.url).resolve(
+        `@fontsource/${name}/files/${name}-latin-400-normal.woff`,
+      ),
+    ),
+  );
+
+describe('typed text fills its box exactly (what you place is what you get)', () => {
+  it.each([
+    ['dancing-script', 0],
+    ['great-vibes', 0], // tall flourishes beyond ascent/descent
+    ['caveat', 1], // on a /Rotate 90 page
+  ] as const)('%s, page %i', async (name, pageIndex) => {
+    const bytes = fontFile(name);
+    const rect = { x: 120, y: 300, width: 260, height: 90 };
+    const text = 'Ada Lovelace';
+    const out = await stamp(await makeRotatedPdf(), {
+      pageIndex,
+      rect,
+      content: { kind: 'text', text, fontBytes: bytes, color: '#000000' },
+    });
+    const t = (await textPositions(out, pageIndex)).find((i) =>
+      i.str.startsWith('Ada'),
+    )!;
+    expect(t.upright).toBe(true);
+    const { ink } = layoutInk(fontkit.create(bytes), text);
+    const left = t.x + ink.minX * t.size;
+    const right = t.x + ink.maxX * t.size;
+    const top = t.y - ink.maxY * t.size;
+    const bottom = t.y - ink.minY * t.size;
+    const tol = 0.5;
+    expect(left).toBeGreaterThanOrEqual(rect.x - tol);
+    expect(right).toBeLessThanOrEqual(rect.x + rect.width + tol);
+    expect(top).toBeGreaterThanOrEqual(rect.y - tol);
+    expect(bottom).toBeLessThanOrEqual(rect.y + rect.height + tol);
+    // It fills the box in at least one direction, centred in the other.
+    const fillsW = Math.abs(right - left - rect.width) < tol;
+    const fillsH = Math.abs(bottom - top - rect.height) < tol;
+    expect(fillsW || fillsH).toBe(true);
+    expect((left + right) / 2).toBeCloseTo(rect.x + rect.width / 2, 0);
+    expect((top + bottom) / 2).toBeCloseTo(rect.y + rect.height / 2, 0);
   });
 });

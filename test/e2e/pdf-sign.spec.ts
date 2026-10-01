@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
-import { pdfPageTexts } from '../fixtures/builders';
+import { pdfPageTexts, textPositions } from '../fixtures/builders';
 
 async function open(page: Page) {
   await page.goto('/pdf-sign');
@@ -132,4 +132,58 @@ test('drags and corner-resizes the placement box with the pointer', async ({
 
   const texts = await pdfPageTexts(await download(page));
   expect(texts[0]).toContain('Ada');
+});
+
+test('typed preview and stamped text fill the same box', async ({ page }) => {
+  await open(page);
+  await page.getByRole('tab', { name: 'Type' }).click();
+  await page.getByLabel('Your name', { exact: true }).fill('Ada Lovelace');
+  await page.getByLabel('Font', { exact: true }).selectOption('great-vibes');
+  const placement = page.getByRole('group', { name: /Signature placement/ });
+  await expect(placement).toBeVisible();
+
+  // Inked pixel bounds of the preview canvas, relative to the box (CSS px).
+  const previewInk = await placement.locator('canvas').evaluate(async (c) => {
+    const canvas = c as HTMLCanvasElement;
+    const read = () => {
+      const { width, height } = canvas;
+      const data = canvas
+        .getContext('2d')!
+        .getImageData(0, 0, width, height).data;
+      let x0 = width,
+        y0 = height,
+        x1 = -1,
+        y1 = -1;
+      for (let y = 0; y < height; y++)
+        for (let x = 0; x < width; x++)
+          if (data[(y * width + x) * 4 + 3] > 0) {
+            x0 = Math.min(x0, x);
+            x1 = Math.max(x1, x);
+            y0 = Math.min(y0, y);
+            y1 = Math.max(y1, y);
+          }
+      return { x0, y0, x1, y1, width, height };
+    };
+    let r = read();
+    for (let i = 0; i < 50 && r.x1 < 0; i++) {
+      await new Promise((ok) => requestAnimationFrame(ok));
+      r = read();
+    }
+    return r;
+  });
+  const fillsW = previewInk.x0 <= 3 && previewInk.x1 >= previewInk.width - 4;
+  const fillsH = previewInk.y0 <= 3 && previewInk.y1 >= previewInk.height - 4;
+  expect(fillsW || fillsH).toBe(true);
+
+  const [x, y, w, h] = /Position: (\d+), (\d+) pt · Size: (\d+) × (\d+) pt/
+    .exec((await page.getByText(/^Position:/).textContent())!)!
+    .slice(1)
+    .map(Number);
+  const out = await download(page);
+  const t = (await textPositions(out, 0)).find((i) => i.str.startsWith('Ada'))!;
+  // The baseline sits inside the placed box (readout is rounded to 1 pt).
+  expect(t.x).toBeGreaterThanOrEqual(x - 1);
+  expect(t.x).toBeLessThanOrEqual(x + w);
+  expect(t.y).toBeGreaterThanOrEqual(y - 1);
+  expect(t.y).toBeLessThanOrEqual(y + h + 1);
 });

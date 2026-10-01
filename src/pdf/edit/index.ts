@@ -74,3 +74,10 @@ export {
   type FormField,
   type FormValue,
 } from './forms';
+export {
+  layoutInk,
+  fitInk,
+  type InkBox,
+  type InkFont,
+  type InkLayout,
+} from './text-fit';
