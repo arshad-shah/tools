@@ -13,19 +13,23 @@ import {
   Zap,
 } from 'lucide-react';
 import { ExpiryInfo } from '../types';
+import { isExpired } from './jwt';
 
 const formatTime = (timestamp: number): string => {
   return new Date(timestamp * 1000).toLocaleString();
 };
 
-const getExpiryInfo = (exp?: number, nowMs = Date.now()): ExpiryInfo => {
+const getExpiryInfo = (
+  exp?: number,
+  nowMs = Date.now(),
+  skewSec = 0,
+): ExpiryInfo => {
   if (!exp) return { isExpired: false };
 
   const expiryDate = new Date(exp * 1000);
   const now = new Date(nowMs);
-  const isExpired = expiryDate < now;
-
-  if (isExpired) {
+  // Same rule as timeClaimsStatus, so the two never disagree.
+  if (isExpired(exp, nowMs / 1000, skewSec)) {
     return { isExpired: true, expiryDate };
   }
 

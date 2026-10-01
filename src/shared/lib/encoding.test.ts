@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   base64ToBytes,
+  base64UrlToBytes,
   bytesToBase64,
   parseDataUri,
   toDataUri,
@@ -67,6 +68,23 @@ describe('base64ToBytes', () => {
     expect(() => base64ToBytes('Z')).toThrow(ToolError);
     expect(() => base64ToBytes('Zg=a')).toThrow(ToolError);
   });
+});
+
+describe('base64UrlToBytes (strict, RFC 7515)', () => {
+  it('decodes unpadded URL-safe Base64', () => {
+    expect(base64UrlToBytes('-_-_')).toEqual(
+      new Uint8Array([0xfb, 0xff, 0xbf]),
+    );
+    expect(utf8Decode(base64UrlToBytes('Zm9vYmE'))).toBe('fooba');
+    expect(base64UrlToBytes('')).toEqual(new Uint8Array());
+  });
+
+  it.each(['Zm9v+A', 'Zm9v/A', 'Zg==', 'Zm 9v', 'Z', 'Zm9v!'])(
+    'rejects %j',
+    (input) => {
+      expect(() => base64UrlToBytes(input)).toThrow(ToolError);
+    },
+  );
 });
 
 describe('data URIs', () => {

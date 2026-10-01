@@ -63,6 +63,17 @@ export function base64ToBytes(input: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/**
+ * Strict Base64url as JWS uses it (RFC 7515 section 2): only `A-Z a-z 0-9
+ * - _`, no padding, no whitespace.
+ */
+export function base64UrlToBytes(input: string): Uint8Array<ArrayBuffer> {
+  if (/[^A-Za-z0-9_-]/.test(input) || input.length % 4 === 1) {
+    throw new ToolError('INVALID_INPUT', 'The input is not valid Base64url');
+  }
+  return base64ToBytes(input);
+}
+
 export function toDataUri(bytes: Uint8Array, mime: string): string {
   return `data:${mime};base64,${bytesToBase64(bytes)}`;
 }

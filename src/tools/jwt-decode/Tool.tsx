@@ -36,6 +36,7 @@ import {
   CardHeader,
   Code,
   Grid,
+  Input,
   Inline,
   Label,
   Select,
@@ -58,7 +59,12 @@ import useJwtDecoder from './hooks/useJwtDecoder';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { timeClaimsStatus, type TimeStatus } from './lib/jwt';
-import { verifyJwt, type SecretEncoding } from './lib/verify';
+import {
+  verifyJwt,
+  type KeyInput,
+  type KeyKind,
+  type SecretEncoding,
+} from './lib/verify';
 
 const SAMPLE_JWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNhbXBsZS1rZXkifQ.eyJzdWIiOiJ1c2VyLTEyMzQ1IiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzI2MjM5MDIyLCJleHAiOjE3NTc3NzUwMjIsImlzcyI6Imh0dHBzOi8vYXV0aC5leGFtcGxlLmNvbSIsImF1ZCI6WyJhcGkuZXhhbXBsZS5jb20iLCJ3ZWIuZXhhbXBsZS5jb20iXSwicm9sZXMiOlsidXNlciIsIm1vZGVyYXRvciJdLCJwZXJtaXNzaW9ucyI6WyJyZWFkOnBvc3RzIiwid3JpdGU6cG9zdHMiLCJtb2RlcmF0ZTpjb21tZW50cyJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiZ3JvdXBzIjpbImRldmVsb3BlcnMiLCJiZXRhLXVzZXJzIl0sImN1c3RvbV9jbGFpbSI6eyJkZXBhcnRtZW50IjoiZW5naW5lZXJpbmciLCJ0ZWFtX2lkIjo0Mn19.Olk3AuFENIdCJiCYxGpglmauBWmLx42p7P3cjybazSI';
@@ -217,20 +223,34 @@ const ClaimCard: React.FC<ClaimCardProps> = ({
 );
 
 type SignatureStatus =
-  | { state: 'unverified' | 'checking' | 'verified' | 'invalid' }
+  | {
+      state: 'unverified' | 'unsigned' | 'checking' | 'verified' | 'invalid';
+    }
   | { state: 'error'; message: string };
+
+type Tone = 'neutral' | 'success' | 'warning' | 'danger';
 
 interface Verification {
   token: string;
-  key: string;
-  encoding: SecretEncoding;
+  key: KeyInput;
   status: SignatureStatus;
 }
 
+const sameKey = (a: KeyInput, b: KeyInput) =>
+  a.kind === b.kind &&
+  a.value === b.value &&
+  (a.kind !== 'secret' || b.kind !== 'secret' || a.encoding === b.encoding);
+
 const SIGNATURE_TEXT: Record<
   SignatureStatus['state'],
-  { title: string; detail: string; tone: 'neutral' | 'success' | 'danger' }
+  { title: string; detail: string; tone: Tone }
 > = {
+  unsigned: {
+    title: 'Unsigned token (alg: none)',
+    detail:
+      'This token has no signature, so nothing proves who issued it or that it was not changed. Treat its claims as untrusted.',
+    tone: 'warning',
+  },
   unverified: {
     title: 'Signature not verified',
     detail:
@@ -265,14 +285,14 @@ const timeText = (
 ): {
   title: string;
   detail: string;
-  tone: 'neutral' | 'success' | 'danger';
+  tone: Tone;
 } => {
   const at = (s?: number) => (s === undefined ? '' : formatTime(s));
   switch (status.state) {
     case 'none':
       return {
         title: 'No time claims',
-        detail: 'The token has no exp or nbf claim.',
+        detail: 'The token has no exp, nbf or iat claim.',
         tone: 'neutral',
       };
     case 'expired':
@@ -285,6 +305,12 @@ const timeText = (
       return {
         title: 'Not valid yet',
         detail: `Not before ${at(status.nbf)}.`,
+        tone: 'danger',
+      };
+    case 'issued-in-future':
+      return {
+        title: 'Issued in the future',
+        detail: `Issued at ${at(status.iat)}, which is ahead of this device's clock. Check the clock skew setting or the issuer's clock.`,
         tone: 'danger',
       };
     case 'current':
@@ -303,7 +329,7 @@ const StatusRow: React.FC<{
   label: string;
   title: string;
   detail: string;
-  tone: 'neutral' | 'success' | 'danger';
+  tone: Tone;
   icon: React.ReactNode;
 }> = ({ label, title, detail, tone, icon }) => (
   <Inline align="start" gap="3">
@@ -328,8 +354,17 @@ const StatusRow: React.FC<{
 
 const SECRET_ENCODINGS = [
   { value: 'text', label: 'Text (UTF-8)' },
+  { value: 'base64', label: 'Base64' },
   { value: 'base64url', label: 'Base64url' },
 ];
+
+const KEY_TYPES = [
+  { value: 'secret', label: 'Shared secret' },
+  { value: 'pem', label: 'PEM public key' },
+  { value: 'jwk', label: 'JWK or JWKS' },
+];
+
+const MAX_SKEW_SEC = 3600;
 
 const JWTDecoder: React.FC = () => {
   const { jwt, setJwt, decoded, error, decode, clear } = useJwtDecoder();
@@ -346,39 +381,51 @@ const JWTDecoder: React.FC = () => {
     return () => clearInterval(id);
   }, []);
 
+  const [skewSec, setSkewSec] = useState(0);
   const expiryInfo: ExpiryInfo = useMemo(
-    () => getExpiryInfo(decoded?.payload.exp, now),
-    [decoded?.payload.exp, now],
+    () => getExpiryInfo(decoded?.payload.exp, now, skewSec),
+    [decoded?.payload.exp, now, skewSec],
   );
   const timeStatus: TimeStatus | null = decoded
-    ? timeClaimsStatus(decoded.payload, Math.floor(now / 1000))
+    ? timeClaimsStatus(decoded.payload, Math.floor(now / 1000), skewSec)
     : null;
 
+  const unsigned = decoded?.header.alg === 'none';
+  const hmacAlg =
+    typeof decoded?.header.alg === 'string' &&
+    decoded.header.alg.startsWith('HS');
   const [keyText, setKeyText] = useState('');
+  const [keyKind, setKeyKind] = useState<KeyKind>('secret');
   const [secretEncoding, setSecretEncoding] = useState<SecretEncoding>('text');
+  // The default key type follows the algorithm; the user can still change it
+  // (and a mismatch is refused by verifyJwt, never guessed around).
+  const [kindFor, setKindFor] = useState<boolean | null>(null);
+  if (decoded && !unsigned && kindFor !== hmacAlg) {
+    setKindFor(hmacAlg);
+    setKeyKind(hmacAlg ? 'secret' : 'pem');
+  }
+  const keyInput: KeyInput =
+    keyKind === 'secret'
+      ? { kind: 'secret', value: keyText, encoding: secretEncoding }
+      : { kind: keyKind, value: keyText };
   const [verification, setVerification] = useState<Verification | null>(null);
-  // A result only counts for the exact token, key and encoding it checked.
-  const sigStatus: SignatureStatus =
-    decoded &&
-    verification &&
-    verification.token === decoded.raw &&
-    verification.key === keyText &&
-    verification.encoding === secretEncoding
+  // A result only counts for the exact token and key it checked.
+  const sigStatus: SignatureStatus = unsigned
+    ? { state: 'unsigned' }
+    : decoded &&
+        verification &&
+        verification.token === decoded.raw &&
+        sameKey(verification.key, keyInput)
       ? verification.status
       : { state: 'unverified' };
 
   const handleVerify = async () => {
     if (!decoded) return;
-    const attempt = {
-      token: decoded.raw,
-      key: keyText,
-      encoding: secretEncoding,
-    };
+    const attempt = { token: decoded.raw, key: keyInput };
     setVerification({ ...attempt, status: { state: 'checking' } });
     let status: SignatureStatus;
     try {
-      const ok = await verifyJwt(decoded, keyText, { secretEncoding });
-      status = { state: ok ? 'verified' : 'invalid' };
+      status = { state: await verifyJwt(decoded, keyInput) };
     } catch (e) {
       status = { state: 'error', message: toToolError(e).message };
     }
@@ -766,57 +813,91 @@ const JWTDecoder: React.FC = () => {
           colorScheme="warning"
         />
       )}
-      <Card>
-        <CardBody>
-          <Stack gap="3">
-            <Label htmlFor="jwt-verify-key">Secret or public key</Label>
-            <Textarea
-              id="jwt-verify-key"
-              value={keyText}
-              onChange={setKeyText}
-              rows={4}
-              spellCheck={false}
-              autoComplete="off"
-              placeholder={
-                algorithm?.startsWith('HS')
-                  ? 'Shared secret, or a JWK with kty "oct"'
-                  : 'PEM public key (BEGIN PUBLIC KEY), JWK or JWKS'
-              }
-            />
-            <Inline justify="between" align="center" gap="2" wrap>
-              {algorithm?.startsWith('HS') ? (
-                <div className="w-48">
-                  <Select
-                    value={secretEncoding}
-                    onValueChange={(v) =>
-                      setSecretEncoding(v as SecretEncoding)
-                    }
-                    items={SECRET_ENCODINGS}
-                    aria-label="Secret encoding"
-                  />
-                </div>
-              ) : (
+      {unsigned ? (
+        <Alert status="warning" icon={<ShieldAlert aria-hidden />}>
+          <AlertTitle>Unsigned token (alg: none)</AlertTitle>
+          <AlertDescription>
+            There is no signature to verify. Do not trust the claims of an
+            unsigned token.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Card>
+          <CardBody>
+            <Stack gap="3">
+              <Inline gap="3" wrap align="end">
+                <Stack gap="1">
+                  <Label htmlFor="jwt-key-type">Key type</Label>
+                  <div className="w-48">
+                    <Select
+                      id="jwt-key-type"
+                      value={keyKind}
+                      onValueChange={(v) => setKeyKind(v as KeyKind)}
+                      items={KEY_TYPES}
+                    />
+                  </div>
+                </Stack>
+                {keyKind === 'secret' && (
+                  <Stack gap="1">
+                    <Label htmlFor="jwt-secret-encoding">Secret encoding</Label>
+                    <div className="w-48">
+                      <Select
+                        id="jwt-secret-encoding"
+                        value={secretEncoding}
+                        onValueChange={(v) =>
+                          setSecretEncoding(v as SecretEncoding)
+                        }
+                        items={SECRET_ENCODINGS}
+                      />
+                    </div>
+                  </Stack>
+                )}
+              </Inline>
+              <Label htmlFor="jwt-verify-key">Secret or public key</Label>
+              <Textarea
+                id="jwt-verify-key"
+                value={keyText}
+                onChange={setKeyText}
+                rows={4}
+                spellCheck={false}
+                autoComplete="off"
+                placeholder={
+                  keyKind === 'secret'
+                    ? 'The shared secret used for HS256, HS384 or HS512'
+                    : keyKind === 'pem'
+                      ? 'PEM public key (BEGIN PUBLIC KEY)'
+                      : 'JWK or JWKS JSON'
+                }
+              />
+              <Inline justify="between" align="center" gap="2" wrap>
                 <Text size="sm" tone="subtle">
-                  Supports HS, RS, PS and ES with 256, 384 or 512 bits.
+                  {hmacAlg
+                    ? `${algorithm} is verified with a shared secret only. A public key is refused.`
+                    : `${algorithm} is verified with a public key (PEM or JWK). A shared secret is refused.`}
+                </Text>
+                <Button
+                  variant="solid"
+                  leftIcon={<ShieldCheck size={16} />}
+                  onClick={() => void handleVerify()}
+                  disabled={!keyText.trim() || sigStatus.state === 'checking'}
+                >
+                  Verify signature
+                </Button>
+              </Inline>
+              {sigStatus.state === 'error' && (
+                <Alert status="danger">
+                  <AlertDescription>{sigStatus.message}</AlertDescription>
+                </Alert>
+              )}
+              {jwt === SAMPLE_JWT && (
+                <Text size="sm" tone="subtle">
+                  The sample token is signed with the secret {SAMPLE_SECRET}.
                 </Text>
               )}
-              <Button
-                variant="solid"
-                leftIcon={<ShieldCheck size={16} />}
-                onClick={() => void handleVerify()}
-                disabled={!keyText.trim() || sigStatus.state === 'checking'}
-              >
-                Verify signature
-              </Button>
-            </Inline>
-            {jwt === SAMPLE_JWT && (
-              <Text size="sm" tone="subtle">
-                The sample token is signed with the secret {SAMPLE_SECRET}.
-              </Text>
-            )}
-          </Stack>
-        </CardBody>
-      </Card>
+            </Stack>
+          </CardBody>
+        </Card>
+      )}
       <Accordion type="single">
         <AccordionItem value="signature-value">
           <AccordionTrigger>
@@ -946,6 +1027,29 @@ const JWTDecoder: React.FC = () => {
                 {...timeText(timeStatus)}
                 icon={<Clock size={18} aria-hidden />}
               />
+              <Inline gap="2" align="center" wrap className="pl-8">
+                <Label htmlFor="jwt-clock-skew">Clock skew (seconds)</Label>
+                <div className="w-24">
+                  <Input
+                    id="jwt-clock-skew"
+                    type="number"
+                    min={0}
+                    max={MAX_SKEW_SEC}
+                    value={String(skewSec)}
+                    onChange={(v) => {
+                      const n = Math.floor(Number(v));
+                      setSkewSec(
+                        Number.isFinite(n)
+                          ? Math.min(MAX_SKEW_SEC, Math.max(0, n))
+                          : 0,
+                      );
+                    }}
+                  />
+                </div>
+                <Text size="xs" tone="subtle">
+                  Leeway for exp, nbf and iat when clocks differ.
+                </Text>
+              </Inline>
               <StatusRow
                 label="Signature"
                 title={SIGNATURE_TEXT[sigStatus.state].title}

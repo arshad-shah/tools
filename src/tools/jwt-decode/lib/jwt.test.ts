@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bytesToBase64, utf8Encode } from '@/shared/lib/encoding';
 import { ToolError } from '@/shared/lib/errors';
-import { decodeJwt, timeClaimsStatus } from './jwt';
+import { decodeJwt, isExpired, timeClaimsStatus } from './jwt';
 
 const b64url = (v: unknown) =>
   bytesToBase64(utf8Encode(JSON.stringify(v)), { urlSafe: true });
@@ -69,5 +69,52 @@ describe('timeClaimsStatus', () => {
     expect(timeClaimsStatus(JSON.parse('{"exp":"soon"}'), now).state).toBe(
       'none',
     );
+  });
+  it('is expired from the exp second itself', () => {
+    expect(timeClaimsStatus({ exp: now }, now).state).toBe('expired');
+    expect(timeClaimsStatus({ exp: now + 1 }, now).state).toBe('current');
+  });
+  it('reports a token issued in the future', () => {
+    expect(timeClaimsStatus({ iat: now + 10 }, now).state).toBe(
+      'issued-in-future',
+    );
+    expect(timeClaimsStatus({ iat: now }, now).state).toBe('current');
+  });
+  it('applies clock skew at the boundaries', () => {
+    // exp: expired when now - skew >= exp.
+    expect(timeClaimsStatus({ exp: now - 59 }, now, 60).state).toBe('current');
+    expect(timeClaimsStatus({ exp: now - 60 }, now, 60).state).toBe('expired');
+    // nbf: not yet valid when now + skew < nbf.
+    expect(timeClaimsStatus({ nbf: now + 60 }, now, 60).state).toBe('current');
+    expect(timeClaimsStatus({ nbf: now + 61 }, now, 60).state).toBe(
+      'not-yet-valid',
+    );
+    // iat: in the future when iat > now + skew.
+    expect(timeClaimsStatus({ iat: now + 60 }, now, 60).state).toBe('current');
+    expect(timeClaimsStatus({ iat: now + 61 }, now, 60).state).toBe(
+      'issued-in-future',
+    );
+  });
+  it('reports the worst claim first', () => {
+    expect(
+      timeClaimsStatus({ exp: now - 1, nbf: now + 5, iat: now + 5 }, now).state,
+    ).toBe('expired');
+  });
+});
+
+describe('isExpired', () => {
+  it('agrees with timeClaimsStatus at the exact second', () => {
+    const now = 1_700_000_000;
+    expect(isExpired(now, now)).toBe(true);
+    expect(isExpired(now + 1, now)).toBe(false);
+    expect(isExpired(now - 30, now, 60)).toBe(false);
+  });
+});
+
+describe('strict segments', () => {
+  it('rejects standard-alphabet or padded Base64 in a JWT', () => {
+    const header = b64url({ alg: 'HS256' });
+    expect(() => decodeJwt(`${header}.e30=.sig`)).toThrow(/Base64url/);
+    expect(() => decodeJwt(`${header}.e30.a+b/`)).toThrow(/signature/);
   });
 });

@@ -1,4 +1,4 @@
-import { base64ToBytes, utf8Decode } from '@/shared/lib/encoding';
+import { base64UrlToBytes, utf8Decode } from '@/shared/lib/encoding';
 import { ToolError } from '@/shared/lib/errors';
 import type { DecodedJWT, JWTHeader, JWTPayload } from '../types';
 
@@ -12,15 +12,21 @@ export function cleanToken(input: string): string {
 }
 
 const decodePart = (part: string, name: string): Record<string, unknown> => {
+  let bytes: Uint8Array;
+  try {
+    bytes = base64UrlToBytes(part);
+  } catch (cause) {
+    throw new ToolError('INVALID_INPUT', `The ${name} is not valid Base64url`, {
+      cause,
+    });
+  }
   let value: unknown;
   try {
-    value = JSON.parse(utf8Decode(base64ToBytes(part)));
+    value = JSON.parse(utf8Decode(bytes));
   } catch (cause) {
-    throw new ToolError(
-      'INVALID_INPUT',
-      `The ${name} is not valid Base64url-encoded JSON`,
-      { cause },
-    );
+    throw new ToolError('INVALID_INPUT', `The ${name} is not valid JSON`, {
+      cause,
+    });
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new ToolError('INVALID_INPUT', `The ${name} is not a JSON object`);
@@ -29,9 +35,9 @@ const decodePart = (part: string, name: string): Record<string, unknown> => {
 };
 
 /**
- * Decodes (never verifies) a JWS compact token. Header and payload are
- * Base64url-decoded to bytes and then read as UTF-8, so non-ASCII claims
- * come out intact.
+ * Decodes (never verifies) a JWS compact token. Each segment must be strict
+ * Base64url (RFC 7515); header and payload are read as UTF-8, so non-ASCII
+ * claims come out intact.
  */
 export function decodeJwt(input: string): DecodedJWT {
   const raw = cleanToken(input);
@@ -50,6 +56,12 @@ export function decodeJwt(input: string): DecodedJWT {
   }
   const header = decodePart(parts[0], 'header') as JWTHeader;
   const payload = decodePart(parts[1], 'payload') as JWTPayload;
+  if (/[^A-Za-z0-9_-]/.test(parts[2]) || parts[2].length % 4 === 1) {
+    throw new ToolError(
+      'INVALID_INPUT',
+      'The signature is not valid Base64url',
+    );
+  }
   return {
     header,
     payload,
@@ -60,30 +72,48 @@ export function decodeJwt(input: string): DecodedJWT {
   };
 }
 
-export type TimeState = 'none' | 'current' | 'expired' | 'not-yet-valid';
+export type TimeState =
+  | 'none'
+  | 'current'
+  | 'expired'
+  | 'not-yet-valid'
+  | 'issued-in-future';
 
 export interface TimeStatus {
   state: TimeState;
   exp?: number;
   nbf?: number;
+  iat?: number;
 }
 
 const numeric = (v: unknown): number | undefined =>
   typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 
+/** Expired from the `exp` second itself (RFC 7519 4.1.4), less the skew. */
+export const isExpired = (exp: number, nowSec: number, skewSec = 0) =>
+  nowSec - skewSec >= exp;
+
 /**
- * Checks only `exp` and `nbf` against `nowSec`. Says nothing about whether
- * the token is genuine; that is the signature's job.
+ * Checks `exp`, `nbf` and `iat` against `nowSec`, allowing `skewSec` of
+ * clock difference either way. The worst problem wins. Says nothing about
+ * whether the token is genuine; that is the signature's job.
  */
 export function timeClaimsStatus(
   payload: JWTPayload,
   nowSec: number,
+  skewSec = 0,
 ): TimeStatus {
   const exp = numeric(payload.exp);
   const nbf = numeric(payload.nbf);
-  if (exp === undefined && nbf === undefined) return { state: 'none' };
-  if (exp !== undefined && nowSec >= exp) return { state: 'expired', exp, nbf };
-  if (nbf !== undefined && nowSec < nbf)
-    return { state: 'not-yet-valid', exp, nbf };
-  return { state: 'current', exp, nbf };
+  const iat = numeric(payload.iat);
+  const claims = { exp, nbf, iat };
+  if (exp === undefined && nbf === undefined && iat === undefined)
+    return { state: 'none' };
+  if (exp !== undefined && isExpired(exp, nowSec, skewSec))
+    return { state: 'expired', ...claims };
+  if (nbf !== undefined && nowSec + skewSec < nbf)
+    return { state: 'not-yet-valid', ...claims };
+  if (iat !== undefined && iat > nowSec + skewSec)
+    return { state: 'issued-in-future', ...claims };
+  return { state: 'current', ...claims };
 }
