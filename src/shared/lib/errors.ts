@@ -7,6 +7,7 @@ export type ToolErrorCode =
   | 'UNSUPPORTED_FEATURE'
   | 'WORKER_CRASHED'
   | 'CANCELLED'
+  | 'TIMEOUT'
   | 'UNKNOWN';
 
 /** The one error type tools surface to users. `message` is user-facing. */

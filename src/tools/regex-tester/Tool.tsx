@@ -37,21 +37,32 @@ import {
   Textarea,
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
+import { toToolError } from '@/shared/lib/errors';
 import { ChevronDown } from 'lucide-react';
+import { compile, type Match } from './lib/match';
+import { createRegexRunner, type RegexRunner } from './lib/runner';
+
+const MATCH_DEBOUNCE_MS = 150;
+
+/** One worker-backed runner per mounted tool, disposed on unmount. */
+function useRegexRunner(): RegexRunner {
+  const [runner] = useState(() =>
+    createRegexRunner(
+      () =>
+        new Worker(new URL('./lib/regex.worker.ts', import.meta.url), {
+          type: 'module',
+        }),
+    ),
+  );
+  useEffect(() => () => runner.dispose(), [runner]);
+  return runner;
+}
 
 interface RegexTemplate {
   name: string;
   pattern: string;
   description: string;
   category: 'web' | 'validation' | 'format' | 'common';
-}
-
-interface Match {
-  text: string;
-  index: number;
-  length: number;
-  groups: string[] | null;
-  namedGroups: Record<string, string> | null;
 }
 
 interface Flags {
@@ -295,9 +306,6 @@ const MatchItem: React.FC<{
 const RegexStudio: React.FC = () => {
   const [pattern, setPattern] = useState('');
   const [testString, setTestString] = useState('');
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [isValid, setIsValid] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
   const [flags, setFlags] = useState<Flags>({
     global: true,
     ignoreCase: false,
@@ -318,57 +326,56 @@ const RegexStudio: React.FC = () => {
     [flags],
   );
 
-  useEffect(() => {
-    if (!pattern) {
-      setMatches([]);
-      setIsValid(true);
-      setErrorMessage('');
-      return;
-    }
+  // Syntax is checked here (cheap, never runs the pattern); matching runs
+  // in a worker with a timeout so a pathological pattern cannot freeze the
+  // tab.
+  const syntaxError = useMemo(() => {
+    if (!pattern) return '';
     try {
-      const regex = new RegExp(pattern, flagsStr);
-      setIsValid(true);
-      setErrorMessage('');
-      if (!testString) {
-        setMatches([]);
-        return;
-      }
-      const found: Match[] = [];
-      if (flags.global) {
-        let m: RegExpExecArray | null;
-        regex.lastIndex = 0;
-        while ((m = regex.exec(testString)) !== null) {
-          const groups = m.slice(1);
-          found.push({
-            text: m[0],
-            index: m.index,
-            length: m[0].length,
-            groups: groups.length > 0 ? groups : null,
-            namedGroups: m.groups || null,
-          });
-          if (m.index === regex.lastIndex) regex.lastIndex++;
-          if (found.length >= 1000) break;
-        }
-      } else {
-        const m = regex.exec(testString);
-        if (m) {
-          const groups = m.slice(1);
-          found.push({
-            text: m[0],
-            index: m.index,
-            length: m[0].length,
-            groups: groups.length > 0 ? groups : null,
-            namedGroups: m.groups || null,
-          });
-        }
-      }
-      setMatches(found);
-    } catch (err) {
-      setIsValid(false);
-      setMatches([]);
-      setErrorMessage(err instanceof Error ? err.message : 'Invalid regex');
+      compile(pattern, flagsStr);
+      return '';
+    } catch (e) {
+      return toToolError(e).message;
     }
-  }, [pattern, testString, flags, flagsStr]);
+  }, [pattern, flagsStr]);
+  const isValid = !syntaxError;
+
+  const runner = useRegexRunner();
+  const inputKey = JSON.stringify([pattern, flagsStr, testString]);
+  const [result, setResult] = useState<{
+    key: string;
+    matches: Match[];
+    error?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!pattern || !testString || syntaxError) return;
+    let live = true;
+    const timer = setTimeout(() => {
+      runner.match(pattern, flagsStr, testString).then(
+        (found) => live && setResult({ key: inputKey, matches: found }),
+        (e: unknown) => {
+          const err = toToolError(e);
+          // Superseded by a newer input: that call reports instead.
+          if (!live || err.code === 'CANCELLED') return;
+          setResult({ key: inputKey, matches: [], error: err.message });
+        },
+      );
+    }, MATCH_DEBOUNCE_MS);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [runner, inputKey, pattern, flagsStr, testString, syntaxError]);
+
+  const current =
+    pattern && testString && isValid && result?.key === inputKey
+      ? result
+      : null;
+  const matches = useMemo(() => current?.matches ?? [], [current]);
+  const runError = current?.error ?? '';
+  const matching = !!pattern && !!testString && isValid && !current;
+  const errorMessage = syntaxError;
 
   const copyToClipboard = useCallback(
     (text: string) => void copy(text),
@@ -635,6 +642,11 @@ const RegexStudio: React.FC = () => {
                     <AlertDescription>{errorMessage}</AlertDescription>
                   </Alert>
                 )}
+                {runError && (
+                  <Alert status="danger" icon={<AlertCircle aria-hidden />}>
+                    <AlertDescription>{runError}</AlertDescription>
+                  </Alert>
+                )}
               </Stack>
 
               <Stack gap="2">
@@ -725,7 +737,12 @@ const RegexStudio: React.FC = () => {
                 </div>
                 <div className={PREVIEW.content}>{renderHighlighted()}</div>
               </div>
-              {matches.length === 0 && pattern && isValid && (
+              {matching && (
+                <Text size="sm" tone="subtle" className="pt-3">
+                  Running the pattern
+                </Text>
+              )}
+              {matches.length === 0 && current && !runError && (
                 <Inline className="pt-3">
                   <Alert status="warning" icon={<AlertCircle aria-hidden />}>
                     <AlertDescription>
