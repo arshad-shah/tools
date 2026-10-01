@@ -24,7 +24,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '../../components/ui';
+} from '@/shared/ui';
 import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
