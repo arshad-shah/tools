@@ -55,7 +55,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
-import { store, persistor } from './store';
+import { store, persistor } from './store/index';
 import {
   addTask,
   deleteTask,
@@ -64,7 +64,7 @@ import {
   updateStats,
   updateTask,
   updateTimer,
-} from './store';
+} from './store/index';
 import { useAppDispatch, useAppSelector } from './hook';
 import { Task } from '../../types/PomodoroTypes';
 import { AUDIO_BASE_64 } from './Audio';
