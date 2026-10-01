@@ -6,7 +6,9 @@ import {
   Button,
   Card,
   CardBody,
+  Inline,
   Input,
+  Spinner,
   Stack,
   Text,
 } from '@/shared/ui';
@@ -39,6 +41,8 @@ interface MergeItem extends LoadedFile {
 const PdfMergerTool: React.FC<ToolProps> = () => {
   const [items, setItems] = useState<MergeItem[]>([]);
   const [addErrors, setAddErrors] = useState<string[]>([]);
+  /** Number of files being read after a drop (0 = idle). */
+  const [reading, setReading] = useState(0);
   const job = useJob(async (ctx, list: MergeItem[]): Promise<ResultFile> => {
     const inputs = list.map((item) => {
       if (!item.pages.trim()) return { bytes: item.bytes, pages: undefined };
@@ -72,6 +76,10 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
 
   const add = async (files: LoadedFile[]) => {
     job.reset();
+    // pdf-lib reads each file on the main thread to count pages (and to
+    // reject encrypted files up front, which pdf.js would open when only an
+    // owner password is set); show that it's working.
+    setReading(files.length);
     const results = await Promise.allSettled(
       files.map(async (f) => ({
         ...f,
@@ -89,9 +97,11 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
         errors.push(`${files[i].name}: ${error.message}`);
       }
     });
+    setReading(0);
     setAddErrors(errors);
     setItems((prev) => [...prev, ...ok]);
   };
+  const busy = job.status === 'running';
 
   const update = (next: MergeItem[]) => {
     job.reset();
@@ -102,7 +112,15 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
     <Card>
       <CardBody>
         <Stack gap="5">
-          <PdfDropzone multiple onFiles={add} />
+          <PdfDropzone multiple onFiles={add} disabled={busy || reading > 0} />
+          {reading > 0 && (
+            <Inline gap="2" align="center" aria-live="polite">
+              <Spinner size="sm" />
+              <Text size="sm" tone="muted">
+                Reading {reading} {reading === 1 ? 'file' : 'files'}…
+              </Text>
+            </Inline>
+          )}
           {addErrors.length > 0 && (
             <Alert status="danger">
               {addErrors.map((m, i) => (
@@ -119,18 +137,20 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
               </Text>
               <SortableFileList
                 items={items}
+                disabled={busy}
                 onReorder={update}
                 onRemove={(id) => update(items.filter((i) => i.id !== id))}
                 renderPreview={(item) => (
                   <FileThumb bytes={item.bytes} name={item.name} />
                 )}
                 renderExtra={(item) => (
-                  <div className="flex items-center gap-3">
-                    <span className="shrink-0 text-xs text-fg-muted">
+                  <Inline gap="3" align="center">
+                    <Text size="xs" tone="muted" className="shrink-0">
                       {item.pageCount} {item.pageCount === 1 ? 'page' : 'pages'}
-                    </span>
+                    </Text>
                     <div className="w-40">
                       <Input
+                        disabled={busy}
                         value={item.pages}
                         onChange={(pages) =>
                           update(
@@ -143,20 +163,21 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
                         aria-label={`Pages from ${item.name}`}
                       />
                     </div>
-                  </div>
+                  </Inline>
                 )}
               />
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="solid"
                   leftIcon={<Merge size={16} />}
-                  disabled={items.length < 2 || job.status === 'running'}
+                  disabled={items.length < 2 || busy || reading > 0}
                   onClick={() => job.run(items)}
                 >
                   Merge PDFs
                 </Button>
                 <Button
                   variant="ghost"
+                  disabled={busy}
                   onClick={() => {
                     setAddErrors([]);
                     update([]);

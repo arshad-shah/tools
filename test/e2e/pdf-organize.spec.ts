@@ -7,7 +7,9 @@ test('reorders, rotates and deletes pages', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  const tiles = page.locator('li[data-sortable-item]');
+  const tiles = page
+    .getByRole('list', { name: /^Pages/ })
+    .getByRole('listitem');
   await expect(tiles).toHaveCount(3);
   await expect(
     page.getByRole('img', { name: 'Page 1', exact: true }),
@@ -39,7 +41,9 @@ test('handles a 300-page document without rendering every page up front', async 
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-300.pdf');
-  await expect(page.locator('li[data-sortable-item]')).toHaveCount(300);
+  await expect(
+    page.getByRole('list', { name: /^Pages/ }).getByRole('listitem'),
+  ).toHaveCount(300);
   await expect(
     page.getByRole('img', { name: 'Page 1', exact: true }),
   ).toBeVisible();
@@ -70,7 +74,9 @@ test('guards keep one page, range-selects and resets', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  const tiles = page.locator('li[data-sortable-item]');
+  const tiles = page
+    .getByRole('list', { name: /^Pages/ })
+    .getByRole('listitem');
   await expect(tiles).toHaveCount(3);
 
   // Shift-click selects the range from the anchor; Delete is blocked when
@@ -108,7 +114,9 @@ test('keeps document structure and says plainly what it removed', async ({
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/structured-3.pdf');
-  await expect(page.locator('li[data-sortable-item]')).toHaveCount(3);
+  await expect(
+    page.getByRole('list', { name: /^Pages/ }).getByRole('listitem'),
+  ).toHaveCount(3);
   await page.getByRole('button', { name: 'Delete page 3' }).click();
 
   const downloadPromise = page.waitForEvent('download');
@@ -135,4 +143,24 @@ test('keeps document structure and says plainly what it removed', async ({
       '1 bookmark pointed to a deleted page and now leads nowhere.',
     ),
   ).toBeVisible();
+});
+
+test('arrow keys move focus between tiles; the grid is one Tab stop', async ({
+  page,
+}) => {
+  await page.goto('/pdf-organize');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-12.pdf');
+  const tiles = page
+    .getByRole('list', { name: /^Pages/ })
+    .getByRole('listitem');
+  await expect(tiles).toHaveCount(12);
+  await tiles.first().focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(tiles.nth(1)).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(tiles.nth(11)).toBeFocused();
+  await expect(tiles.nth(11)).toHaveAttribute('tabindex', '0');
+  await expect(tiles.first()).toHaveAttribute('tabindex', '-1');
 });

@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { saveZip } from '@/shared/lib/download';
+import { saveBlob, saveZip } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
 import { ResultFiles } from './ResultFiles';
 
@@ -29,6 +29,23 @@ describe('ResultFiles', () => {
     );
     expect(notify.success).not.toHaveBeenCalled();
     await waitFor(() => expect(button.hasAttribute('disabled')).toBe(false));
+  });
+
+  it('names each download button after its file and saves with its mime', () => {
+    render(
+      <ResultFiles
+        files={[
+          { name: 'p1.png', bytes: new Uint8Array(1), mime: 'image/png' },
+          { name: 'p2.pdf', bytes: new Uint8Array(2) },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Download p1.png' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Download p2.pdf' }));
+    expect(vi.mocked(saveBlob).mock.calls).toEqual([
+      [expect.any(Uint8Array), 'p1.png', 'image/png'],
+      [expect.any(Uint8Array), 'p2.pdf', 'application/pdf'],
+    ]);
   });
 
   it('renders duplicate names as separate rows', () => {

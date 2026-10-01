@@ -1,18 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Scissors } from 'lucide-react';
 import {
-  Alert,
-  AlertDescription,
   Button,
+  ButtonGroup,
   Card,
   CardBody,
   Input,
   Label,
   NumberInput,
   Stack,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
@@ -24,7 +20,7 @@ import { usePdfDocument } from '@/pdf/render';
 import {
   JobPanel,
   PageGrid,
-  PdfDropzone,
+  PdfFileHeader,
   ResultFiles,
   usePageSelection,
   type PageTile,
@@ -104,10 +100,10 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
     },
   );
 
-  const pick = (files: LoadedFile[]) => {
+  const pick = (picked: LoadedFile) => {
     job.reset();
     selection.clear();
-    setFile(files[0]);
+    setFile(picked);
   };
 
   const clearFile = () => {
@@ -145,37 +141,28 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
     <Card>
       <CardBody>
         <Stack gap="5">
-          {!file ? (
-            <PdfDropzone onFiles={pick} />
-          ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Text weight="semibold">{file.name}</Text>
-              <Button size="sm" variant="ghost" onClick={clearFile}>
-                Choose another file
-              </Button>
-            </div>
-          )}
-          {loading && <Text tone="muted">Opening…</Text>}
-          {error && (
-            <Alert status="danger">
-              <AlertDescription>{error.message}</AlertDescription>
-            </Alert>
-          )}
+          <PdfFileHeader
+            file={file}
+            onFile={pick}
+            onClear={clearFile}
+            loading={loading}
+            error={error}
+          />
           {file && doc && (
             <>
-              <Tabs
-                value={mode}
-                onValueChange={(v) => changeMode(v as SplitMode)}
-                variant="soft"
-              >
-                <TabsList>
-                  {MODES.map((m) => (
-                    <TabsTrigger key={m.value} value={m.value}>
-                      {m.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+              <ButtonGroup aria-label="Split mode" className="flex-wrap">
+                {MODES.map((m) => (
+                  <Button
+                    key={m.value}
+                    size="sm"
+                    variant={mode === m.value ? 'solid' : 'soft'}
+                    aria-pressed={mode === m.value}
+                    onClick={() => changeMode(m.value)}
+                  >
+                    {m.label}
+                  </Button>
+                ))}
+              </ButtonGroup>
               {mode === 'ranges' && (
                 <Stack gap="2">
                   <Label htmlFor="split-ranges">Ranges</Label>

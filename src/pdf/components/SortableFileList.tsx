@@ -12,6 +12,8 @@ interface FileItem {
 
 interface SortableFileListProps<T extends FileItem> {
   items: T[];
+  /** While true (e.g. a job is running) rows can't be moved or removed. */
+  disabled?: boolean;
   onReorder: (next: T[]) => void;
   onRemove: (id: string) => void;
   /** Visual preview (e.g. `<FileThumb>`), shown in a fixed-width first column. */
@@ -22,17 +24,22 @@ interface SortableFileListProps<T extends FileItem> {
 /** Drag, or focus a row and press Alt + Up/Down, to reorder. */
 export function SortableFileList<T extends FileItem>({
   items,
+  disabled = false,
   onReorder,
   onRemove,
   renderPreview,
   renderExtra,
 }: SortableFileListProps<T>) {
-  const ref = useSortableList(items, onReorder, { direction: 'y' });
+  const ref = useSortableList(items, onReorder, {
+    direction: 'y',
+    disabled,
+  });
   const keyboard = useKeyboardReorder(items, {
     getKey: (item) => item.id,
     describe: (item) => item.name,
     onReorder,
     axis: 'list',
+    disabled,
   });
   return (
     <>
@@ -73,6 +80,7 @@ export function SortableFileList<T extends FileItem>({
               icon={<X size={16} />}
               variant="ghost"
               size="sm"
+              disabled={disabled}
               onClick={() => onRemove(item.id)}
             />
           </li>

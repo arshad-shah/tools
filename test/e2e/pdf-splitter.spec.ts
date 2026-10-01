@@ -13,7 +13,7 @@ test('splits by ranges into a zip of documents', async ({ page }) => {
     page.getByRole('img', { name: 'Page 1', exact: true }),
   ).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Page ranges' }).click();
+  await page.getByRole('button', { name: 'Page ranges' }).click();
   await page.getByLabel('Ranges').fill('1-3, 10-');
   await page.getByRole('button', { name: 'Split PDF' }).click();
 
@@ -36,7 +36,9 @@ test('extracts selected pages into one document', async ({ page }) => {
     page.getByRole('img', { name: 'Page 1', exact: true }),
   ).toBeVisible();
 
-  const tiles = page.locator('li[data-sortable-item]');
+  const tiles = page
+    .getByRole('list', { name: /^Pages/ })
+    .getByRole('listitem');
   await tiles.nth(1).click();
   await tiles.nth(2).focus();
   await page.keyboard.press('Space');
@@ -49,7 +51,9 @@ test('extracts selected pages into one document', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Split PDF' }).click();
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download', exact: true }).click();
+  await page
+    .getByRole('button', { name: /^Download text-12\.pages-.+\.pdf$/ })
+    .click();
   const bytes = readFileSync((await (await downloadPromise).path())!);
   expect((await PDFDocument.load(bytes)).getPageCount()).toBe(2);
   expect(await pdfPageTexts(new Uint8Array(bytes))).toEqual([
@@ -63,7 +67,7 @@ test('shows a precise error for a bad range', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  await page.getByRole('tab', { name: 'Page ranges' }).click();
+  await page.getByRole('button', { name: 'Page ranges' }).click();
   await page.getByLabel('Ranges').fill('2-9');
   await page.getByRole('button', { name: 'Split PDF' }).click();
   await expect(
@@ -76,12 +80,12 @@ test('stale results disappear when settings change', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');
-  await page.getByRole('tab', { name: 'Page ranges' }).click();
+  await page.getByRole('button', { name: 'Page ranges' }).click();
   await page.getByLabel('Ranges').fill('1-3, 10-');
   await page.getByRole('button', { name: 'Split PDF' }).click();
   const zipButton = page.getByRole('button', { name: 'Download all (ZIP)' });
   await expect(zipButton).toBeVisible();
-  await page.getByRole('tab', { name: 'Every page' }).click();
+  await page.getByRole('button', { name: 'Every page' }).click();
   await expect(zipButton).toHaveCount(0);
 });
 
@@ -102,7 +106,9 @@ test('shift-click selects a range of pages', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');
-  const tiles = page.locator('li[data-sortable-item]');
+  const tiles = page
+    .getByRole('list', { name: /^Pages/ })
+    .getByRole('listitem');
   await expect(tiles).toHaveCount(12);
   await tiles.nth(2).click();
   await tiles.nth(6).click({ modifiers: ['Shift'] });
@@ -111,7 +117,9 @@ test('shift-click selects a range of pages', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Split PDF' }).click();
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download', exact: true }).click();
+  await page
+    .getByRole('button', { name: /^Download text-12\.pages-.+\.pdf$/ })
+    .click();
   const bytes = readFileSync((await (await downloadPromise).path())!);
   expect(await pdfPageTexts(new Uint8Array(bytes))).toEqual([
     'Beta 3',
