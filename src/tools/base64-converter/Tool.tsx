@@ -17,7 +17,7 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '../../components/ui';
+} from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 
 type Mode = 'encode' | 'decode';

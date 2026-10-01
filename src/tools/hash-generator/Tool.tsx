@@ -16,7 +16,7 @@ import {
   Select,
   Stack,
   Textarea,
-} from '../../components/ui';
+} from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 
 interface Algorithm {
