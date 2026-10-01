@@ -75,6 +75,8 @@ export const PageThumb: React.FC<PageThumbProps> = ({
     c.width = bitmap.width;
     c.height = bitmap.height;
     c.getContext('2d')?.drawImage(bitmap, 0, 0);
+    // Marker for tests/tools: pixels were drawn (kept after cache eviction).
+    c.dataset.rendered = 'true';
   }, [bitmap]);
 
   return (

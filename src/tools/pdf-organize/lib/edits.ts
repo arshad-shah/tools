@@ -34,3 +34,17 @@ export function removeTiles(
 export function tilesToEdits(tiles: PageTile[]): PageEdit[] {
   return tiles.map((t) => ({ source: t.pageIndex, rotate: t.rotation }));
 }
+
+/** Keys of every tile between anchor and key (inclusive), in display order. */
+export function rangeSelect(
+  tiles: PageTile[],
+  anchorKey: string | null,
+  key: string,
+): Set<string> {
+  const to = tiles.findIndex((t) => t.key === key);
+  if (to < 0) return new Set();
+  const from = anchorKey ? tiles.findIndex((t) => t.key === anchorKey) : -1;
+  if (from < 0) return new Set([key]);
+  const [lo, hi] = from < to ? [from, to] : [to, from];
+  return new Set(tiles.slice(lo, hi + 1).map((t) => t.key));
+}
