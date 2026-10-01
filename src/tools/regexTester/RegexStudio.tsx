@@ -36,6 +36,7 @@ import {
   Text,
   Textarea,
 } from '@/shared/ui';
+import { useClipboard } from '@/shared/lib/clipboard';
 import { ChevronDown } from 'lucide-react';
 import previewStyles from './LivePreview.module.css';
 
@@ -296,7 +297,7 @@ const RegexStudio: React.FC = () => {
     hasIndices: false,
   });
   const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useClipboard();
 
   const flagsStr = useMemo(
     () =>
@@ -358,11 +359,10 @@ const RegexStudio: React.FC = () => {
     }
   }, [pattern, testString, flags, flagsStr]);
 
-  const copyToClipboard = useCallback((text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, []);
+  const copyToClipboard = useCallback(
+    (text: string) => void copy(text),
+    [copy],
+  );
 
   const copyPattern = useCallback(() => {
     copyToClipboard(`/${pattern}/${flagsStr}`);

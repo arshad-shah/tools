@@ -52,7 +52,7 @@ import {
   getExpiryInfo,
 } from './utils/utils';
 import useJWTDecoder from './hooks/useJWTDecoder';
-import useClipboard from '../../hooks/useClipboard';
+import { useClipboard } from '@/shared/lib/clipboard';
 
 const SAMPLE_JWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNhbXBsZS1rZXkifQ.eyJzdWIiOiJ1c2VyLTEyMzQ1IiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzI2MjM5MDIyLCJleHAiOjE3NTc3NzUwMjIsImlzcyI6Imh0dHBzOi8vYXV0aC5leGFtcGxlLmNvbSIsImF1ZCI6WyJhcGkuZXhhbXBsZS5jb20iLCJ3ZWIuZXhhbXBsZS5jb20iXSwicm9sZXMiOlsidXNlciIsIm1vZGVyYXRvciJdLCJwZXJtaXNzaW9ucyI6WyJyZWFkOnBvc3RzIiwid3JpdGU6cG9zdHMiLCJtb2RlcmF0ZTpjb21tZW50cyJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiZ3JvdXBzIjpbImRldmVsb3BlcnMiLCJiZXRhLXVzZXJzIl0sImN1c3RvbV9jbGFpbSI6eyJkZXBhcnRtZW50IjoiZW5naW5lZXJpbmciLCJ0ZWFtX2lkIjo0Mn19.K8Xz9n4rQ6vKm3LpBtY8jE2dR7fN9sA1qW5cT3uI0Mn';
@@ -209,7 +209,8 @@ const ClaimCard: React.FC<ClaimCardProps> = ({
 
 const JWTDecoder: React.FC = () => {
   const { jwt, setJwt, decoded, error, decode, clear } = useJWTDecoder();
-  const { copied, copy } = useClipboard();
+  // Keyed so only the button pressed shows "Copied" (B10).
+  const { copiedKey, copy } = useClipboard();
   const [activeTab, setActiveTab] = useState<
     'header' | 'payload' | 'signature'
   >('payload');
@@ -226,7 +227,7 @@ const JWTDecoder: React.FC = () => {
   }, []);
 
   const handleSample = () => setJwt(SAMPLE_JWT);
-  const handleCopyJwt = () => copy(jwt);
+  const handleCopyJwt = () => void copy(jwt, 'jwt');
 
   const categorizedClaims = useMemo(() => {
     if (!decoded) {
@@ -327,11 +328,17 @@ const JWTDecoder: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   leftIcon={
-                    copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                    copiedKey === 'header' ? (
+                      <CheckCircle size={14} />
+                    ) : (
+                      <Copy size={14} />
+                    )
                   }
-                  onClick={() => copy(JSON.stringify(header, null, 2))}
+                  onClick={() =>
+                    void copy(JSON.stringify(header, null, 2), 'header')
+                  }
                 >
-                  {copied ? 'Copied' : 'Copy'}
+                  {copiedKey === 'header' ? 'Copied' : 'Copy'}
                 </Button>
               </Inline>
               <Code block>{JSON.stringify(header, null, 2)}</Code>
@@ -529,11 +536,17 @@ const JWTDecoder: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   leftIcon={
-                    copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                    copiedKey === 'payload' ? (
+                      <CheckCircle size={14} />
+                    ) : (
+                      <Copy size={14} />
+                    )
                   }
-                  onClick={() => copy(JSON.stringify(payload, null, 2))}
+                  onClick={() =>
+                    void copy(JSON.stringify(payload, null, 2), 'payload')
+                  }
                 >
-                  {copied ? 'Copied' : 'Copy'}
+                  {copiedKey === 'payload' ? 'Copied' : 'Copy'}
                 </Button>
               </Inline>
               <Code block>{JSON.stringify(payload, null, 2)}</Code>
@@ -588,11 +601,15 @@ const JWTDecoder: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   leftIcon={
-                    copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                    copiedKey === 'signature' ? (
+                      <CheckCircle size={14} />
+                    ) : (
+                      <Copy size={14} />
+                    )
                   }
-                  onClick={() => copy(signature)}
+                  onClick={() => void copy(signature, 'signature')}
                 >
-                  {copied ? 'Copied' : 'Copy'}
+                  {copiedKey === 'signature' ? 'Copied' : 'Copy'}
                 </Button>
               </Inline>
               <Code block>{signature}</Code>
@@ -625,11 +642,15 @@ const JWTDecoder: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 leftIcon={
-                  copied ? <CheckCircle size={14} /> : <Copy size={14} />
+                  copiedKey === 'jwt' ? (
+                    <CheckCircle size={14} />
+                  ) : (
+                    <Copy size={14} />
+                  )
                 }
                 onClick={handleCopyJwt}
               >
-                {copied ? 'Copied' : 'Copy'}
+                {copiedKey === 'jwt' ? 'Copied' : 'Copy'}
               </Button>
             </Inline>
           </Inline>

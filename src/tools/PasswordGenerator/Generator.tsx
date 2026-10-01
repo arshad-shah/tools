@@ -26,6 +26,7 @@ import {
   Switch,
   Text,
 } from '@/shared/ui';
+import { useClipboard } from '@/shared/lib/clipboard';
 import { charSets, getSecureRandom, secureShuffle } from './utils/utils';
 
 type CharType = 'uppercase' | 'lowercase' | 'number' | 'special';
@@ -245,7 +246,9 @@ const SecurePasswordGenerator: React.FC = () => {
   const [includeLowercase, setIncludeLowercase] = useState(true);
   const [includeNumbers, setIncludeNumbers] = useState(true);
   const [includeSpecial, setIncludeSpecial] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const { copiedKey, copy } = useClipboard();
+  // Keyed by the password itself so regenerating clears the "Copied" state.
+  const copied = copiedKey !== null && copiedKey === password;
   const [missingTypes, setMissingTypes] = useState(false);
 
   const generatePassword = () => {
@@ -295,18 +298,9 @@ const SecurePasswordGenerator: React.FC = () => {
       () => charset[Math.floor(getSecureRandom() * charset.length)],
     );
     setPassword(secureShuffle([...mandatoryChars, ...randomChars]).join(''));
-    setCopied(false);
   };
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(password);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy password:', err);
-    }
-  };
+  const copyToClipboard = () => void copy(password, password);
 
   useEffect(() => {
     generatePassword();

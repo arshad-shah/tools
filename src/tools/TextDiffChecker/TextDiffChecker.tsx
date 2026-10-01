@@ -38,6 +38,7 @@ import {
   Textarea,
 } from '@/shared/ui';
 import { DiffSegment, DiffViewMode } from '../../types/TextDiffCheckerTypes';
+import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import useNotification from './hooks/useNotification';
 import useDiffSettings from './hooks/useDiffSettings';
@@ -165,14 +166,13 @@ const TextDiffChecker: React.FC = () => {
     debouncedCalculateDiff,
   ]);
 
+  const { copy } = useClipboard();
   const copyToClipboard = useCallback(
-    (text: string) => {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => showNotification('Copied to clipboard!', 'success'))
-        .catch(() => showNotification('Failed to copy', 'error'));
+    async (text: string) => {
+      // useClipboard reports failures itself.
+      if (await copy(text)) showNotification('Copied to clipboard!', 'success');
     },
-    [showNotification],
+    [copy, showNotification],
   );
 
   const handleFileUpload = useCallback(

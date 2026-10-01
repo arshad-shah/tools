@@ -22,6 +22,7 @@ import {
   Text,
   Textarea,
 } from '../../components/ui';
+import { useClipboard } from '@/shared/lib/clipboard';
 
 type Mode = 'encode' | 'decode';
 
@@ -30,7 +31,7 @@ const URLEncoderDecoder: React.FC = () => {
   const [outputText, setOutputText] = useState('');
   const [mode, setMode] = useState<Mode>('encode');
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useClipboard();
 
   useEffect(() => {
     if (!inputText) {
@@ -51,11 +52,8 @@ const URLEncoderDecoder: React.FC = () => {
     }
   }, [inputText, mode]);
 
-  const handleCopy = async () => {
-    if (!outputText) return;
-    await navigator.clipboard.writeText(outputText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = () => {
+    if (outputText) void copy(outputText);
   };
 
   return (
