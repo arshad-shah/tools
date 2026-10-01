@@ -20,6 +20,11 @@ export function parsePageRanges(input: string, pageCount: number): PageRange[] {
     if (!/^\d+$/.test(raw))
       throw invalid(`"${token}" is not a page number or range`);
     const n = Number(raw);
+    // Don't echo a 20-digit number back in full.
+    if (raw.length > 6 || !Number.isSafeInteger(n))
+      throw invalid(
+        `Page ${raw.slice(0, 6)}… is out of range (1–${pageCount})`,
+      );
     if (n < 1 || n > pageCount)
       throw invalid(`Page ${n} is out of range (1–${pageCount})`);
     return n - 1;

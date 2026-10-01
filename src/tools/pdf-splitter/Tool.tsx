@@ -88,8 +88,10 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
           },
         ];
       }
-      ctx.progress({ done: 0, total: ranges.length, label: 'Splitting' });
-      const parts = await split(source.bytes, ranges);
+      const parts = await split(source.bytes, ranges, {
+        onProgress: (done, total) =>
+          ctx.progress({ done, total, label: 'Splitting' }),
+      });
       return parts.map((bytes, i) => ({
         name: deriveFilename(
           source.name,

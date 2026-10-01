@@ -54,8 +54,11 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
         });
       }
     });
-    ctx.progress({ done: 0, total: 1, label: 'Merging' });
-    const bytes = await merge(inputs);
+    // Until the first input is done JobPanel shows its indeterminate text.
+    const bytes = await merge(inputs, {
+      onProgress: (done, total) =>
+        ctx.progress({ done, total, label: 'Merging' }),
+    });
     const total = inputs.reduce(
       (n, inp, i) => n + (inp.pages?.length ?? list[i].pageCount),
       0,

@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {
+  makeEncryptMarkedPdf,
   makeStructuredPdf,
   makeTextPdf,
   pdfPageTexts,
@@ -31,6 +32,36 @@ describe('merge', () => {
   it('requires at least one input', async () => {
     await expect(merge([])).rejects.toMatchObject({ code: 'INVALID_INPUT' });
   });
+  it('rejects an encrypted input with ENCRYPTED', async () => {
+    const ok = await makeTextPdf({ pages: 1 });
+    await expect(
+      merge([{ bytes: ok }, { bytes: await makeEncryptMarkedPdf() }]),
+    ).rejects.toMatchObject({ code: 'ENCRYPTED' });
+  });
+  it('reports progress once per input', async () => {
+    const a = await makeTextPdf({ pages: 1 });
+    const seen: [number, number][] = [];
+    await merge([{ bytes: a }, { bytes: a }, { bytes: a }], {
+      onProgress: (done, total) => seen.push([done, total]),
+    });
+    expect(seen).toEqual([
+      [1, 3],
+      [2, 3],
+      [3, 3],
+    ]);
+  });
+  it('wraps pdf-lib rebuild failures as INVALID_FILE', async () => {
+    const a = await makeTextPdf({ pages: 1 });
+    vi.spyOn(PDFDocument.prototype, 'copyPages').mockRejectedValueOnce(
+      new Error('Expected instance of PDFDict, but got instance of undefined'),
+    );
+    await expect(merge([{ bytes: a }])).rejects.toMatchObject({
+      name: 'ToolError',
+      code: 'INVALID_FILE',
+      message:
+        'This PDF has a structure we could not rebuild. It may be damaged.',
+    });
+  });
 });
 
 describe('extract / split', () => {
@@ -59,6 +90,46 @@ describe('extract / split', () => {
     expect(parts).toHaveLength(2);
     expect(await pdfPageTexts(parts[0])).toEqual(['S 1', 'S 2']);
     expect(await pdfPageTexts(parts[1])).toEqual(['S 5']);
+  });
+  it('reports split progress once per range', async () => {
+    const src = await makeTextPdf({ pages: 4 });
+    const seen: number[] = [];
+    await split(
+      src,
+      [
+        { start: 0, end: 1 },
+        { start: 2, end: 3 },
+      ],
+      { onProgress: (done) => seen.push(done) },
+    );
+    expect(seen).toEqual([1, 2]);
+  });
+  it('validates range bounds before expanding them', async () => {
+    const src = await makeTextPdf({ pages: 2 });
+    const from = vi.spyOn(Array, 'from');
+    await expect(split(src, [{ start: 0, end: 1e9 }])).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+      message: 'Page 1000000001 is out of range (1–2)',
+    });
+    expect(from).not.toHaveBeenCalledWith(
+      expect.objectContaining({ length: 1e9 + 1 }),
+      expect.anything(),
+    );
+    await expect(split(src, [{ start: 1, end: 0 }])).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+    });
+    await expect(split(src, [{ start: 0.5, end: 1 }])).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+    });
+  });
+  it('wraps save failures as INVALID_FILE', async () => {
+    const src = await makeTextPdf({ pages: 2 });
+    vi.spyOn(PDFDocument.prototype, 'save').mockRejectedValueOnce(
+      new Error('boom'),
+    );
+    await expect(extract(src, [0])).rejects.toMatchObject({
+      code: 'INVALID_FILE',
+    });
   });
 });
 
@@ -203,6 +274,24 @@ describe('applyPageEdits', () => {
     ]);
     expect(await pdfPageTexts(bytes)).toEqual(['R 2', 'R 2']);
     expect(await rotations(bytes)).toEqual([0, 90]);
+  });
+  it('rejects rotations that are not a multiple of 90°', async () => {
+    const src = await makeTextPdf({ pages: 1 });
+    await expect(
+      applyPageEdits(src, [{ source: 0, rotate: 45 as never }]),
+    ).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+      message: 'Rotation must be a multiple of 90°',
+    });
+  });
+  it('wraps in-place rebuild failures as INVALID_FILE', async () => {
+    const src = await makeTextPdf({ pages: 2 });
+    vi.spyOn(PDFDocument.prototype, 'save').mockRejectedValueOnce(
+      new Error('Expected instance of PDFDict'),
+    );
+    await expect(
+      applyPageEdits(src, [{ source: 1, rotate: 0 }]),
+    ).rejects.toMatchObject({ code: 'INVALID_FILE' });
   });
   it('refuses to produce an empty document', async () => {
     await expect(

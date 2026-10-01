@@ -154,17 +154,20 @@ export async function pdfPageTexts(bytes: Uint8Array): Promise<string[]> {
     useSystemFonts: false,
     verbosity: 0,
   });
-  const pdf = await task.promise;
-  const out: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const content = await (await pdf.getPage(i)).getTextContent();
-    out.push(
-      content.items
-        .map((item) => ('str' in item ? item.str : ''))
-        .join('')
-        .trim(),
-    );
+  try {
+    const pdf = await task.promise;
+    const out: string[] = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const content = await (await pdf.getPage(i)).getTextContent();
+      out.push(
+        content.items
+          .map((item) => ('str' in item ? item.str : ''))
+          .join('')
+          .trim(),
+      );
+    }
+    return out;
+  } finally {
+    await task.destroy();
   }
-  await task.destroy();
-  return out;
 }
