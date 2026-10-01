@@ -171,3 +171,37 @@ export async function pdfPageTexts(bytes: Uint8Array): Promise<string[]> {
     await task.destroy();
   }
 }
+
+/**
+ * Text pages whose page tree is nested (an intermediate /Pages node holding
+ * pages 2..n, with an inherited /Rotate 90) and whose root /Count is wrong.
+ * Viewers walk /Kids and cope; code that trusts /Count does not.
+ */
+export async function makeBadCountPdf(
+  pages = 3,
+  count = 7,
+): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(await makeTextPdf({ pages, label: 'C' }));
+  const { context } = doc;
+  const root = doc.catalog.Pages();
+  const rootRef = doc.catalog.get(PDFName.of('Pages')) as PDFRef;
+  const refs = doc.getPages().map((p) => p.ref);
+  const midRef = context.nextRef();
+  for (const ref of refs.slice(1)) {
+    const page = context.lookup(ref) as ReturnType<typeof doc.catalog.Pages>;
+    page.set(PDFName.of('Parent'), midRef);
+  }
+  context.assign(
+    midRef,
+    context.obj({
+      Type: PDFName.of('Pages'),
+      Parent: rootRef,
+      Kids: refs.slice(1),
+      Count: refs.length - 1,
+      Rotate: 90,
+    }),
+  );
+  root.set(PDFName.of('Kids'), context.obj([refs[0], midRef]));
+  root.set(PDFName.of('Count'), context.obj(count));
+  return doc.save({ useObjectStreams: false });
+}
