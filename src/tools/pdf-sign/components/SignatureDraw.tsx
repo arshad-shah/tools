@@ -37,6 +37,11 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [live, setLive] = useState<Stroke | null>(null);
+  // The source of truth while drawing: several pointer events can arrive
+  // between renders, and reading `live`/`strokes` from the render closure
+  // would drop samples (or the whole stroke). State only mirrors these.
+  const liveRef = useRef<Stroke | null>(null);
+  const strokesRef = useRef<Stroke[]>([]);
   const [ink, setInk] = useState(INK_COLORS[0].value);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const exportRun = useRef(0);
@@ -92,8 +97,17 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
   };
 
   const commit = (next: Stroke[], color = ink) => {
+    strokesRef.current = next;
     setStrokes(next);
     void publish(next, color);
+  };
+
+  const finish = () => {
+    const stroke = liveRef.current;
+    if (!stroke) return;
+    liveRef.current = null;
+    setLive(null);
+    commit([...strokesRef.current, stroke]);
   };
 
   const point = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -110,22 +124,16 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
         onPointerDown={(e) => {
           if (disabled || (e.pointerType === 'mouse' && e.button !== 0)) return;
           e.currentTarget.setPointerCapture(e.pointerId);
-          setLive([point(e)]);
+          liveRef.current = [point(e)];
+          setLive(liveRef.current);
         }}
         onPointerMove={(e) => {
-          if (!live) return;
-          setLive(addPoint(live, point(e)));
+          if (!liveRef.current) return;
+          liveRef.current = addPoint(liveRef.current, point(e));
+          setLive(liveRef.current);
         }}
-        onPointerUp={() => {
-          if (!live) return;
-          setLive(null);
-          commit([...strokes, live]);
-        }}
-        onPointerCancel={() => {
-          if (!live) return;
-          setLive(null);
-          commit([...strokes, live]);
-        }}
+        onPointerUp={finish}
+        onPointerCancel={finish}
       />
       <Inline gap="3" align="end" wrap>
         <Stack gap="2">
