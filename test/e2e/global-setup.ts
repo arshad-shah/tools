@@ -15,12 +15,13 @@ const pdfRoute = (route: string): WarmRoute => ({
   fixture: FIXTURE,
   ready: RENDERED,
 });
-const TOOL_ROUTES: WarmRoute[] = [
-  pdfRoute('/pdf-merger'),
-  pdfRoute('/pdf-splitter'),
-  pdfRoute('/pdf-organize'),
-  pdfRoute('/pdf-to-images'),
-  pdfRoute('/pdf-to-text'),
+/** A plain route warms up by rendering FIXTURE with pdf.js. */
+const TOOL_ROUTES: (string | WarmRoute)[] = [
+  '/pdf-merger',
+  '/pdf-splitter',
+  '/pdf-organize',
+  '/pdf-to-images',
+  '/pdf-to-text',
   // Image tools show <img> previews rather than pdf.js canvases.
   {
     route: '/images-to-pdf',
@@ -43,7 +44,9 @@ async function warmUp(baseURL: string) {
   try {
     const page = await browser.newPage({ baseURL });
     await page.goto('/', { waitUntil: 'load', timeout: COLD_TIMEOUT });
-    for (const { route, fixture, ready } of TOOL_ROUTES) {
+    for (const entry of TOOL_ROUTES) {
+      const { route, fixture, ready } =
+        typeof entry === 'string' ? pdfRoute(entry) : entry;
       try {
         await page.goto(route, { waitUntil: 'load', timeout: COLD_TIMEOUT });
         await page
