@@ -1,5 +1,13 @@
-import { PDFDocument, type PDFImage } from 'pdf-lib';
+import {
+  concatTransformationMatrix,
+  drawObject,
+  PDFDocument,
+  popGraphicsState,
+  pushGraphicsState,
+  type PDFImage,
+} from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
+import { jpegOrientation, orientationMatrix, swapsAxes } from './exif';
 
 export const PAGE_SIZES = {
   a4: [595.28, 841.89] as [number, number],
@@ -80,7 +88,10 @@ export function layoutImagePage(
   };
 }
 
-/** PNG and JPEG are embedded natively (PNG alpha becomes an SMask). */
+/**
+ * PNG and JPEG are embedded natively (PNG alpha becomes an SMask; JPEG bytes
+ * are kept as-is and their EXIF orientation is honoured).
+ */
 export async function imagesToPdf(
   images: ImageInput[],
   opts: ImagesToPdfOptions,
@@ -102,13 +113,21 @@ export async function imagesToPdf(
         { cause },
       );
     }
-    const l = layoutImagePage(embedded.width, embedded.height, opts);
-    doc.addPage([l.pageWidth, l.pageHeight]).drawImage(embedded, {
-      x: l.x,
-      y: l.y,
-      width: l.width,
-      height: l.height,
-    });
+    // Camera JPEGs are often stored sideways with an EXIF tag saying how to
+    // show them. Rotate when drawing instead of re-encoding (lossless).
+    const orientation = img.kind === 'jpeg' ? jpegOrientation(img.bytes) : 1;
+    const [shownW, shownH] = swapsAxes(orientation)
+      ? [embedded.height, embedded.width]
+      : [embedded.width, embedded.height];
+    const l = layoutImagePage(shownW, shownH, opts);
+    const page = doc.addPage([l.pageWidth, l.pageHeight]);
+    const name = page.node.newXObject('Image', embedded.ref);
+    page.pushOperators(
+      pushGraphicsState(),
+      concatTransformationMatrix(...orientationMatrix(orientation, l)),
+      drawObject(name),
+      popGraphicsState(),
+    );
   }
   return doc.save({ useObjectStreams: true });
 }

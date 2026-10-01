@@ -173,3 +173,31 @@ export function radialAlpha(width: number, height: number): Uint8Array {
   }
   return out;
 }
+
+/** Inserts an EXIF APP1 segment carrying only an Orientation tag after SOI. */
+export function withExifOrientation(
+  jpg: Uint8Array,
+  orientation: number,
+  byteOrder: 'MM' | 'II' = 'MM',
+): Uint8Array {
+  const le = byteOrder === 'II';
+  const tiff = new Uint8Array(26);
+  const v = new DataView(tiff.buffer);
+  tiff[0] = tiff[1] = byteOrder.charCodeAt(0);
+  v.setUint16(2, 42, le);
+  v.setUint32(4, 8, le); // IFD0 offset
+  v.setUint16(8, 1, le); // one entry
+  v.setUint16(10, 0x0112, le); // Orientation
+  v.setUint16(12, 3, le); // SHORT
+  v.setUint32(14, 1, le); // count
+  v.setUint16(18, orientation, le);
+  v.setUint32(22, 0, le); // no next IFD
+  const exif = concat([new TextEncoder().encode('Exif\0\0'), tiff]);
+  const header = Uint8Array.from([
+    0xff,
+    0xe1,
+    (exif.length + 2) >> 8,
+    (exif.length + 2) & 0xff,
+  ]);
+  return concat([jpg.subarray(0, 2), header, exif, jpg.subarray(2)]);
+}
