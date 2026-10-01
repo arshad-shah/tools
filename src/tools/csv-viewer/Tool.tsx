@@ -51,13 +51,13 @@ import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { loadTextFile } from '@/shared/lib/files';
 import { useJob } from '@/shared/state/useJob';
-import { delimiterFor, parseDelimited } from './parse';
+import { delimiterFor, parseDelimited } from './lib/parse';
 import {
   ColumnStatistics,
   ParsedData,
   SortDirection,
   Statistics,
-} from '../../types/CsvTsvTypes';
+} from './types';
 
 const ROWS_PER_PAGE_OPTIONS = [
   { value: '5', label: '5 rows' },

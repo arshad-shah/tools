@@ -55,7 +55,7 @@ import {
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { useLogParser } from './hooks/useLogParser';
-import { LogEntry, LogLevel, LogType } from '../../types/LogParserTypes';
+import { LogEntry, LogLevel, LogType } from './types';
 
 const LOG_TYPE_OPTIONS = [
   { value: 'auto', label: 'Auto-detect' },

@@ -10,13 +10,13 @@ import {
   ContactData,
   WifiData,
   CryptoData,
-} from '../../../types/qrTypes';
+} from '../types';
 import {
   generateQRContent,
   encryptContent,
   generateRandomString,
-} from '../utils/qrUtils';
-import { qrFilename, qrToBlob } from '../utils/qrExport';
+} from '../lib/qr-content';
+import { qrFilename, qrToBlob } from '../lib/qr-export';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';

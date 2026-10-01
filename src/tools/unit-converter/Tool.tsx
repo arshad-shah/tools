@@ -42,7 +42,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
-import { Category, Conversion, Unit } from '../../types/UnitConverterTypes';
+import { Category, Conversion, Unit } from './types';
 
 const CATEGORIES: Category[] = [
   {

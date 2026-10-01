@@ -5,11 +5,7 @@
 // -----------------------
 import { useState, useEffect, useCallback } from 'react';
 import * as math from 'mathjs';
-import {
-  Mode,
-  AngleUnit,
-  PendingOperator,
-} from '../../../types/CalculatorTypes';
+import { Mode, AngleUnit, PendingOperator } from '../types';
 import { useCalculatorStore } from '../store';
 
 export function useCalculator() {

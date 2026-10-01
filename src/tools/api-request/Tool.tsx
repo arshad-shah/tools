@@ -55,13 +55,13 @@ import {
   ParamType,
   RequestItemType,
   ResponseType,
-} from '../../types/ApiTesterTypes';
+} from './types';
 import { toToolError } from '@/shared/lib/errors';
 import { newId } from '@/shared/lib/id';
 import { notify } from '@/shared/lib/notify';
 import { useJob } from '@/shared/state/useJob';
-import { addCollection, addRequest, deleteNode } from './collections';
-import { sendRequest, type RequestInput } from './request';
+import { addCollection, addRequest, deleteNode } from './lib/collections';
+import { sendRequest, type RequestInput } from './lib/request';
 import { useApiCollections } from './store';
 
 const METHOD_OPTIONS = [

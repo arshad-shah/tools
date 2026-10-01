@@ -27,7 +27,7 @@ import {
   Text,
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
-import { charSets, getSecureRandom, secureShuffle } from './utils/utils';
+import { charSets, getSecureRandom, secureShuffle } from './lib/secure-random';
 
 type CharType = 'uppercase' | 'lowercase' | 'number' | 'special';
 

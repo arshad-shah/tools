@@ -39,18 +39,18 @@ import {
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
-import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
+import { ColorHarmony, ColorInfo, TabType } from './types';
 
 interface ColorLike {
   toString: (format: 'hex') => string;
 }
-import { calculateHSL, hexToRgb } from './utils/ColorConverters';
+import { calculateHSL, hexToRgb } from './lib/color-convert';
 import {
   calculateContrastRatio,
   determineColorMood,
   determineColorName,
   generateHarmonyColors,
-} from './utils/CalculationUtils';
+} from './lib/color-analysis';
 
 const INITIAL_PALETTE: ColorInfo[] = [
   {
