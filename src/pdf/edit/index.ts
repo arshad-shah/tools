@@ -61,3 +61,9 @@ export {
   type PageNumberFormat,
   type PageNumberOptions,
 } from './markup';
+export {
+  stamp,
+  type VisualRect,
+  type StampContent,
+  type StampOptions,
+} from './stamp';
