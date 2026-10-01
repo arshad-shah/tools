@@ -2,17 +2,25 @@ import {
   cp,
   mkdir,
   readFile,
+  readdir,
   rename as fsRename,
   rm,
   stat,
   writeFile,
 } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 /** pdfjs-dist folders the app loads at runtime from /pdfjs/. */
 export const PDFJS_ASSET_DIRS = ['standard_fonts', 'cmaps', 'iccs', 'wasm'];
 
-const STAMP = '.version';
+/**
+ * Version stamp, kept in `workDir` rather than the served folder so it is
+ * never copied into dist/.
+ */
+export const PDFJS_STAMP_FILE = 'pdfjs-version';
+
+/** Codes Windows reports when another process holds a file in the folder. */
+const LOCKED = new Set(['EBUSY', 'EPERM', 'EACCES']);
 
 const exists = async (path) => {
   try {
@@ -23,11 +31,14 @@ const exists = async (path) => {
   }
 };
 
-const isCurrent = async (destDir, version) => {
+/**
+ * Cheap check: the stamp matches and every top-level asset folder exists.
+ * Individual files are not compared; a pdfjs-dist upgrade changes the stamp.
+ */
+const isCurrent = async (destDir, workDir, version) => {
   try {
-    if ((await readFile(join(destDir, STAMP), 'utf8')).trim() !== version) {
-      return false;
-    }
+    const stamped = await readFile(join(workDir, PDFJS_STAMP_FILE), 'utf8');
+    if (stamped.trim() !== version) return false;
   } catch {
     return false;
   }
@@ -50,16 +61,45 @@ const copyAssets = async (srcDir, targetDir) => {
 const tryRemove = (path) =>
   rm(path, { recursive: true, force: true }).catch(() => undefined);
 
+const isRunning = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // EPERM: the process exists but belongs to someone else.
+    return error.code === 'EPERM';
+  }
+};
+
+/** Remove fresh-/old- folders left by runs that crashed (their pid is gone). */
+const sweepLeftovers = async (workDir) => {
+  let entries;
+  try {
+    entries = await readdir(workDir);
+  } catch {
+    return;
+  }
+  for (const name of entries) {
+    const match = /^(?:fresh|old)-(\d+)-\d+$/.exec(name);
+    if (match && !isRunning(Number(match[1]))) {
+      await tryRemove(join(workDir, name));
+    }
+  }
+};
+
 /**
  * Keep `destDir` a copy of the pdf.js runtime assets for `version`.
  *
- * - Skips all work when `destDir/.version` already matches (the common case on
- *   every `pnpm dev` / `pnpm build`), so a dev server already serving the
- *   folder never sees it change.
+ * - Skips all work when the stamp in `workDir` already matches (the common
+ *   case on every `pnpm dev` / `pnpm build`), so a dev server already serving
+ *   the folder never sees it change.
  * - Otherwise copies into a fresh folder under `workDir` and swaps it in with
- *   two renames. If the live folder cannot be renamed (Windows EBUSY/EPERM
- *   while another process holds a file), it overwrites in place instead;
- *   nothing in use is ever deleted.
+ *   two renames. If the live folder is locked (Windows EBUSY/EPERM/EACCES
+ *   while another process holds a file), it overwrites in place instead.
+ *   Nothing in use is ever deleted, so files that a newer pdfjs-dist dropped
+ *   stay behind on that path; they are unused and go on the next clean swap.
+ * - Any other swap error is rethrown, with the previous copy and stamp kept.
+ * - The stamp is written last, so an interrupted run retries next time.
  *
  * @returns {Promise<'copied' | 'skipped'>}
  */
@@ -70,31 +110,37 @@ export async function syncPdfjsAssets({
   version,
   rename = fsRename,
 }) {
-  if (await isCurrent(destDir, version)) return 'skipped';
+  if (await isCurrent(destDir, workDir, version)) return 'skipped';
+
+  await mkdir(workDir, { recursive: true });
+  await mkdir(dirname(destDir), { recursive: true });
+  await sweepLeftovers(workDir);
 
   const id = `${process.pid}-${Date.now()}`;
   const fresh = join(workDir, `fresh-${id}`);
   const old = join(workDir, `old-${id}`);
-  await mkdir(workDir, { recursive: true });
-  await copyAssets(srcDir, fresh);
-  await writeFile(join(fresh, STAMP), version);
-
   try {
-    if (await exists(destDir)) await rename(destDir, old);
+    await copyAssets(srcDir, fresh);
     try {
-      await rename(fresh, destDir);
+      if (await exists(destDir)) await rename(destDir, old);
+      try {
+        await rename(fresh, destDir);
+      } catch (error) {
+        // Put the previous copy back before deciding what to do next.
+        if (await exists(old)) {
+          await rename(old, destDir).catch(() => undefined);
+        }
+        throw error;
+      }
     } catch (error) {
-      // Put the previous copy back before falling through to the in-place path.
-      if (await exists(old)) await rename(old, destDir).catch(() => undefined);
-      throw error;
+      if (!LOCKED.has(error?.code)) throw error;
+      await mkdir(destDir, { recursive: true });
+      await copyAssets(srcDir, destDir);
     }
-  } catch {
-    await mkdir(destDir, { recursive: true });
-    await copyAssets(srcDir, destDir);
-    await writeFile(join(destDir, STAMP), version);
+    await writeFile(join(workDir, PDFJS_STAMP_FILE), version);
+  } finally {
+    await tryRemove(fresh);
+    await tryRemove(old);
   }
-
-  await tryRemove(fresh);
-  await tryRemove(old);
   return 'copied';
 }
