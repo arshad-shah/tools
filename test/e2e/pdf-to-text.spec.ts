@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { unzipSync } from 'fflate';
 
 test('extracts text into one file', async ({ page }) => {
   await page.goto('/pdf-to-text');
@@ -34,6 +35,18 @@ test('flags pages without a text layer and offers per-page files', async ({
   ).toBeVisible();
   await page.getByRole('tab', { name: 'One file per page' }).click();
   await expect(page.getByText('2 files ready', { exact: false })).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download all (ZIP)' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('shapes-2.text.zip');
+  const entries = unzipSync(readFileSync((await download.path())!));
+  expect(Object.keys(entries).sort()).toEqual([
+    'shapes-2.page-1.txt',
+    'shapes-2.page-2.txt',
+  ]);
+  // No text layer: the files exist but are empty.
+  expect(Object.values(entries).map((b) => b.length)).toEqual([0, 0]);
 });
 
 test('copies the extracted text to the clipboard', async ({ page }) => {
