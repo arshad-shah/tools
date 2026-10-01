@@ -1,5 +1,5 @@
 import { MessageChannel } from 'node:worker_threads';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   createRpcClient,
   exposeRpc,
@@ -28,8 +28,18 @@ const handlers = {
   },
 };
 
+const channels: MessageChannel[] = [];
+afterEach(() => {
+  for (const c of channels.splice(0)) {
+    c.port1.close();
+    c.port2.close();
+  }
+});
+
 function connectPair() {
-  const { port1, port2 } = new MessageChannel();
+  const channel = new MessageChannel();
+  channels.push(channel);
+  const { port1, port2 } = channel;
   const server = port2 as unknown as RpcEndpoint;
   exposeRpc(handlers, server);
   port2.start();
@@ -106,5 +116,58 @@ describe('worker-rpc', () => {
       code: 'WORKER_CRASHED',
     });
     expect(connections).toBe(2);
+  });
+
+  it('restarts again after a crash if a call succeeded in between', async () => {
+    let connections = 0;
+    const endpoints: RpcEndpoint[] = [];
+    const client = createRpcClient<typeof handlers>(
+      () => {
+        connections++;
+        const ep = connectPair();
+        endpoints.push(ep);
+        return ep;
+      },
+      { maxRestarts: 1 },
+    );
+    const crash = (ep: RpcEndpoint) =>
+      (ep as unknown as EventTarget).dispatchEvent(new Event('error'));
+
+    const first = client.call('slow', []);
+    await new Promise((r) => setTimeout(r, 10));
+    crash(endpoints[0]);
+    await expect(first).rejects.toMatchObject({ code: 'WORKER_CRASHED' });
+
+    await expect(client.call('add', [1, 1])).resolves.toBe(2);
+    expect(connections).toBe(2);
+
+    const third = client.call('slow', []);
+    await new Promise((r) => setTimeout(r, 10));
+    crash(endpoints[1]);
+    await expect(third).rejects.toMatchObject({ code: 'WORKER_CRASHED' });
+
+    await expect(client.call('add', [2, 2])).resolves.toBe(4);
+    expect(connections).toBe(3);
+    client.terminate();
+  });
+
+  it('rejects with ToolError when connect throws', async () => {
+    const client = createRpcClient<typeof handlers>(() => {
+      throw new Error('boom');
+    });
+    await expect(client.call('add', [1, 1])).rejects.toMatchObject({
+      name: 'ToolError',
+      code: 'UNKNOWN',
+      message: 'boom',
+    });
+  });
+
+  it('rejects with ToolError when args cannot be cloned and stays usable', async () => {
+    const client = createRpcClient<typeof handlers>(connectPair);
+    await expect(
+      client.call('add', [(() => 1) as unknown as number, 1]),
+    ).rejects.toMatchObject({ name: 'ToolError' });
+    await expect(client.call('add', [1, 2])).resolves.toBe(3);
+    client.terminate();
   });
 });
