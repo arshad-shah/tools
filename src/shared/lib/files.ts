@@ -1,4 +1,5 @@
 import { ToolError } from './errors';
+import { newId } from './id';
 
 export type FileKind = 'pdf' | 'png' | 'jpeg' | 'webp' | 'gif';
 
@@ -59,7 +60,8 @@ export async function readBytes(file: Blob): Promise<Uint8Array> {
 
 export function describeKinds(kinds: readonly FileKind[]): string {
   const labels = kinds.map((k) => KIND_INFO[k].label);
-  if (labels.length <= 1) return labels.join('');
+  if (labels.length === 0) return 'supported';
+  if (labels.length === 1) return labels[0];
   return `${labels.slice(0, -1).join(', ')} or ${labels[labels.length - 1]}`;
 }
 
@@ -77,23 +79,27 @@ export async function loadFile(
 ): Promise<LoadedFile> {
   if (file.size === 0)
     throw new ToolError('INVALID_FILE', `${file.name} is empty`);
+  const notAccepted = () =>
+    new ToolError(
+      'INVALID_FILE',
+      `${file.name} is not a ${describeKinds(accept)} file`,
+    );
   let bytes: Uint8Array;
+  let kind: FileKind | null;
   try {
+    // Sniff the header first so a wrong (possibly huge) file is rejected
+    // without reading all of it.
+    kind = detectKind(await readBytes(file.slice(0, 1024)));
+    if (!kind || !accept.includes(kind)) throw notAccepted();
     bytes = await readBytes(file);
   } catch (cause) {
+    if (cause instanceof ToolError) throw cause;
     throw new ToolError('INVALID_FILE', `Couldn't read ${file.name}`, {
       cause: cause instanceof Error ? cause : new Error(String(cause)),
     });
   }
-  const kind = detectKind(bytes);
-  if (!kind || !accept.includes(kind)) {
-    throw new ToolError(
-      'INVALID_FILE',
-      `${file.name} is not a ${describeKinds(accept)} file`,
-    );
-  }
   return {
-    id: crypto.randomUUID(),
+    id: newId(),
     name: file.name,
     size: file.size,
     kind,

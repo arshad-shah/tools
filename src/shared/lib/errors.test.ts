@@ -22,6 +22,11 @@ describe('toToolError', () => {
     const abort = new DOMException('aborted', 'AbortError');
     expect(toToolError(abort).code).toBe('CANCELLED');
   });
+  it('maps any AbortError-named error to CANCELLED', () => {
+    const err = Object.assign(new Error('x'), { name: 'AbortError' });
+    expect(toToolError(err)).toMatchObject({ code: 'CANCELLED', cause: err });
+    expect(toToolError({ name: 'AbortError' }).code).toBe('CANCELLED');
+  });
   it('wraps plain errors as UNKNOWN keeping the message', () => {
     const out = toToolError(new Error('boom'));
     expect(out.code).toBe('UNKNOWN');

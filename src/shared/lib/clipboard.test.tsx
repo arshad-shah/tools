@@ -1,9 +1,17 @@
 /** @vitest-environment jsdom */
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useClipboard } from './clipboard';
 
+const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
+vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), toast) }));
+
 describe('useClipboard', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    toast.error.mockClear();
+  });
+
   it('copies and flips copied for resetMs', async () => {
     vi.useFakeTimers();
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -22,7 +30,6 @@ describe('useClipboard', () => {
     expect(result.current.copied).toBe(true);
     act(() => vi.advanceTimersByTime(1000));
     expect(result.current.copied).toBe(false);
-    vi.useRealTimers();
   });
 
   it('returns false when the clipboard rejects', async () => {
@@ -37,5 +44,6 @@ describe('useClipboard', () => {
     });
     expect(ok).toBe(false);
     expect(result.current.copied).toBe(false);
+    expect(toast.error).toHaveBeenCalledWith('Could not copy to clipboard');
   });
 });

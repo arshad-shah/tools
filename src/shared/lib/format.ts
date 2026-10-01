@@ -9,6 +9,11 @@ export function formatBytes(bytes: number, decimals = 1): string {
     value /= 1024;
     unit++;
   }
+  // 1023.99 KB would print as "1024.0 KB": roll over once rounding hits 1024.
+  if (Number(value.toFixed(decimals)) >= 1024 && unit < UNITS.length - 1) {
+    value /= 1024;
+    unit++;
+  }
   return `${value.toFixed(decimals)} ${UNITS[unit]}`;
 }
 

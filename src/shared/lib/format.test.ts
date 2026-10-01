@@ -13,6 +13,11 @@ describe('formatBytes', () => {
   ])('%d → %s', (n, expected) => {
     expect(formatBytes(n)).toBe(expected);
   });
+  it('rolls over to the next unit when rounding reaches 1024', () => {
+    expect(formatBytes(1048575)).toBe('1.0 MB');
+    expect(formatBytes(1024 * 1024 * 1024 - 1)).toBe('1.0 GB');
+    expect(formatBytes(1023.9 * 1024, 0)).toBe('1 MB');
+  });
   it('honours decimals', () => {
     expect(formatBytes(1536, 2)).toBe('1.50 KB');
   });
