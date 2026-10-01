@@ -9,6 +9,7 @@ import {
   type RpcEndpoint,
 } from '@/shared/lib/worker-rpc';
 import { NoopFilterFactory, OffscreenCanvasFactory } from './canvas-factory';
+import { freeCanvasOnFailure } from './canvas-release';
 import { readPageSizes } from './page-sizes';
 import { canvasPx, exportScale, renderScale } from './render-scale';
 import { textFromItems } from './text';
@@ -75,7 +76,7 @@ async function drawPage(
   const onAbort = () => task.cancel();
   ctx.signal.addEventListener('abort', onAbort, { once: true });
   try {
-    await task.promise;
+    await freeCanvasOnFailure(canvas, () => task.promise);
   } finally {
     ctx.signal.removeEventListener('abort', onAbort);
     page.cleanup();
