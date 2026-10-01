@@ -10,4 +10,9 @@ export type {
   PageInfo,
   PageText,
 } from './types';
-export { exportScale, MAX_EXPORT_DPI, MIN_EXPORT_DPI } from './render-scale';
+export {
+  exportScale,
+  MAX_CANVAS_PIXELS,
+  MAX_EXPORT_DPI,
+  MIN_EXPORT_DPI,
+} from './render-scale';

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Images } from 'lucide-react';
 import {
+  Alert,
+  AlertDescription,
   Button,
   Card,
   CardBody,
@@ -17,6 +19,7 @@ import {
 import type { ToolProps } from '@/app/tool';
 import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
+import { formatBytes } from '@/shared/lib/format';
 import { useJob } from '@/shared/state/useJob';
 import {
   MAX_EXPORT_DPI,
@@ -33,7 +36,13 @@ import {
   ResultFiles,
   type ResultFile,
 } from '@/pdf/components';
-import { IMAGE_MIME, imageFileName, pagesToExport } from './lib/plan';
+import {
+  estimateExportBytes,
+  IMAGE_MIME,
+  imageFileName,
+  LARGE_EXPORT_BYTES,
+  pagesToExport,
+} from './lib/plan';
 import { useImageExportSettings } from './store';
 
 interface Snapshot {
@@ -52,6 +61,15 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
   const { format, dpi, quality, setFormat, setDpi, setQuality } =
     useImageExportSettings();
   const { doc, loading, error } = usePdfDocument(file);
+  const estimate = useMemo(() => {
+    if (!doc) return 0;
+    try {
+      const indices = pagesToExport(pages, doc.pageCount);
+      return estimateExportBytes(doc.pages, indices, clampDpi(dpi));
+    } catch {
+      return 0; // invalid ranges are reported when converting
+    }
+  }, [doc, pages, dpi]);
 
   const job = useJob(
     async (
@@ -193,6 +211,15 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
                   placeholder={`All ${doc.pageCount} pages (or e.g. 1-3, 5)`}
                 />
               </Stack>
+              {estimate > LARGE_EXPORT_BYTES && (
+                <Alert status="warning">
+                  <AlertDescription>
+                    This export needs roughly {formatBytes(estimate)} of memory
+                    while the images wait to be downloaded. If your browser
+                    struggles, export fewer pages or use a lower resolution.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div>
                 <Button
                   variant="solid"
