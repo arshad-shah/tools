@@ -1,5 +1,6 @@
 import {
   decodePDFRawStream,
+  degrees,
   PDFDocument,
   PDFName,
   PDFRawStream,
@@ -9,7 +10,7 @@ import {
   type PDFRef,
 } from 'pdf-lib';
 import { encrypt } from '@arshad-shah/qpdf-wasm';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { getDocument, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export async function makeTextPdf({
   pages = 3,
@@ -353,4 +354,72 @@ export async function decodedObjects(bytes: Uint8Array): Promise<string> {
     } else parts.push(obj.toString());
   }
   return parts.join('\n');
+}
+
+export async function makeRotatedPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const specs: {
+    size: [number, number];
+    rotate: number;
+    crop?: [number, number, number, number];
+  }[] = [
+    { size: [612, 792], rotate: 0 },
+    { size: [612, 792], rotate: 90 },
+    { size: [595, 842], rotate: 270, crop: [20, 30, 555, 782] },
+  ];
+  specs.forEach((s, i) => {
+    const page = doc.addPage(s.size);
+    page.setRotation(degrees(s.rotate));
+    if (s.crop) page.setCropBox(...s.crop);
+    page.drawText(`Rotated ${i + 1}`, { x: 100, y: 400, size: 14, font });
+  });
+  return doc.save();
+}
+
+export interface TextPosition {
+  str: string;
+  /** pdf.js viewport (scale 1, rotation applied): origin top-left, y down. */
+  x: number;
+  y: number;
+  /** Reads left-to-right on screen. */
+  upright: boolean;
+  viewport: { width: number; height: number };
+}
+
+export async function textPositions(
+  bytes: Uint8Array,
+  pageIndex: number,
+): Promise<TextPosition[]> {
+  const task = getDocument({
+    data: bytes.slice(),
+    useSystemFonts: false,
+    verbosity: 0,
+  });
+  try {
+    const pdf = await task.promise;
+    const page = await pdf.getPage(pageIndex + 1);
+    const viewport = page.getViewport({ scale: 1 });
+    const { items } = await page.getTextContent();
+    return items
+      .filter(
+        (i): i is typeof i & { str: string; transform: number[] } =>
+          'str' in i && i.str.trim() !== '',
+      )
+      .map((i) => {
+        const [a, b, , , e, f] = Util.transform(
+          viewport.transform,
+          i.transform,
+        );
+        return {
+          str: i.str,
+          x: e,
+          y: f,
+          upright: a > 0 && Math.abs(b) < 1e-3,
+          viewport: { width: viewport.width, height: viewport.height },
+        };
+      });
+  } finally {
+    await task.destroy();
+  }
 }

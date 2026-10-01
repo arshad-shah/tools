@@ -25,3 +25,5 @@ export {
   type PlainClick,
 } from './usePageSelection';
 export { PdfFileHeader } from './PdfFileHeader';
+export { PdfPagePreview } from './PdfPagePreview';
+export { usePreviewBytes } from './usePreviewBytes';

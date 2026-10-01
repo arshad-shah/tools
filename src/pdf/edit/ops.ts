@@ -54,7 +54,7 @@ export interface OpProgress {
 
 const ROTATIONS: readonly number[] = [0, 90, 180, 270];
 
-function assertIndices(indices: number[], pageCount: number) {
+export function assertIndices(indices: number[], pageCount: number) {
   if (indices.length === 0)
     throw new ToolError('INVALID_INPUT', 'Select at least one page');
   const bad = indices.find(

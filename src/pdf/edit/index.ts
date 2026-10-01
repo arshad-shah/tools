@@ -27,3 +27,27 @@ export {
   type Orientation,
   type PageSizeName,
 } from './images';
+export { assertIndices } from './ops';
+export {
+  ANCHOR_OPTIONS,
+  EDGE_ANCHOR_OPTIONS,
+  normalizeRotation,
+  pageFrame,
+  visualSize,
+  visualToPdf,
+  toPdfPlacement,
+  placeBox,
+  rotatedBounds,
+  rotatedOrigin,
+  anchoredOrigin,
+  selectPages,
+  type PageFrame,
+  type Size,
+  type Point,
+  type Placement,
+  type Anchor,
+  type EdgeAnchor,
+  type PageSelection,
+} from './geometry';
+export { unsupportedChars, assertDrawable } from './fonts';
+export { hexToRgb } from './color';
