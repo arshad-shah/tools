@@ -93,3 +93,13 @@ export function inkAspect(layout: InkLayout): number {
   const { ink } = layout;
   return (ink.maxX - ink.minX) / (ink.maxY - ink.minY);
 }
+
+/** Characters of `text` the font can't draw (unique, in order; whitespace ignored). */
+export function missingChars(
+  text: string,
+  hasGlyph: (codePoint: number) => boolean,
+): string[] {
+  return [...new Set(Array.from(text))].filter(
+    (ch) => !/\s/.test(ch) && !hasGlyph(ch.codePointAt(0)!),
+  );
+}
