@@ -26,7 +26,7 @@ import {
   Switch,
   Text,
 } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { charSets, getSecureRandom, secureShuffle } from './lib/secure-random';
 

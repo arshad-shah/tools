@@ -58,7 +58,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import { toToolError } from '@/shared/lib/errors';
 import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';

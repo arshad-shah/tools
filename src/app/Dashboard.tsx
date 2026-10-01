@@ -16,7 +16,7 @@ import {
   EmptyStateDescription,
   EmptyStateActions,
 } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import { getEnabledTools } from './registry';
 import type { ToolDefinition } from './tool';
 import Footer from './Footer';

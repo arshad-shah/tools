@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Adds hover lift + accent border and a pointer cursor. */

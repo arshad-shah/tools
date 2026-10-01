@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { useDraggable, useResizable } from '@arshad-shah/detent-react';
 import { Text } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import type { VisualRect } from '@/pdf/edit';
 import type { DocInfo } from '@/pdf/render';
 import { PageThumb } from '@/pdf/components';

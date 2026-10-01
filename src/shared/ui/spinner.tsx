@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 const spinnerSize = {
   sm: 'size-4 border-2',

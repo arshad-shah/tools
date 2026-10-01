@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 export const List: React.FC<React.HTMLAttributes<HTMLUListElement>> = ({
   className,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 const statusStyles = {
   danger: 'border-danger/40 bg-danger-dim/60 text-danger',

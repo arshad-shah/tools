@@ -1,7 +1,7 @@
 import React from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Braces, Brackets, Hash } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import { MainNode, NodeType } from './types';
 
 /** Network-node classes (formerly a CSS module). */
