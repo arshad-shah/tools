@@ -1,0 +1,96 @@
+import React, { useEffect, useState } from 'react';
+import { Inline, Input, Label, Select, Stack, Text } from '@/shared/ui';
+import {
+  ensureFontFace,
+  fontById,
+  SIGNATURE_FONTS,
+  type SignatureFontId,
+} from '../lib/fonts';
+import { INK_COLORS, type SignatureSourceProps } from '../lib/signature';
+
+const FONT_ITEMS = SIGNATURE_FONTS.map((f) => ({
+  value: f.id,
+  label: f.label,
+}));
+
+export const SignatureType: React.FC<SignatureSourceProps> = ({
+  onChange,
+  disabled,
+}) => {
+  const [name, setName] = useState('');
+  const [fontId, setFontId] = useState<SignatureFontId>(SIGNATURE_FONTS[0].id);
+  const [color, setColor] = useState(INK_COLORS[0].value);
+
+  useEffect(() => {
+    // The preview falls back to a system font until this resolves.
+    ensureFontFace(fontId).catch(() => {});
+  }, [fontId]);
+
+  const publish = (next: {
+    name: string;
+    fontId: SignatureFontId;
+    color: string;
+  }) => {
+    setName(next.name);
+    setFontId(next.fontId);
+    setColor(next.color);
+    const text = next.name.trim();
+    onChange(
+      text
+        ? { kind: 'text', text, fontId: next.fontId, color: next.color }
+        : null,
+    );
+  };
+
+  return (
+    <Stack gap="3">
+      <Stack gap="2">
+        <Label htmlFor="sig-name">Your name</Label>
+        <Input
+          id="sig-name"
+          value={name}
+          disabled={disabled}
+          autoComplete="name"
+          onChange={(v) => publish({ name: v, fontId, color })}
+        />
+      </Stack>
+      <Inline gap="4" wrap>
+        <Stack gap="2" className="min-w-40 flex-1">
+          <Label htmlFor="sig-font">Font</Label>
+          <Select
+            id="sig-font"
+            value={fontId}
+            items={FONT_ITEMS}
+            disabled={disabled}
+            onValueChange={(v) =>
+              publish({ name, fontId: v as SignatureFontId, color })
+            }
+          />
+        </Stack>
+        <Stack gap="2" className="min-w-32">
+          <Label htmlFor="sig-type-ink">Ink colour</Label>
+          <Select
+            id="sig-type-ink"
+            value={color}
+            items={INK_COLORS}
+            disabled={disabled}
+            onValueChange={(v) => publish({ name, fontId, color: v })}
+          />
+        </Stack>
+      </Inline>
+      {name.trim() ? (
+        <p
+          aria-label="Typed signature preview"
+          className="min-h-14 truncate rounded-md border border-line bg-white px-3 py-2 text-4xl"
+          style={{ fontFamily: `"${fontById(fontId).family}"`, color }}
+        >
+          {name.trim()}
+        </p>
+      ) : (
+        <Text size="sm" tone="muted">
+          Type your name to preview it in the chosen font.
+        </Text>
+      )}
+    </Stack>
+  );
+};
