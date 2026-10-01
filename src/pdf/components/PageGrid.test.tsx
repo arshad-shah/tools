@@ -214,3 +214,23 @@ describe('PageGrid selection semantics', () => {
     ]);
   });
 });
+
+describe('PageGrid Alt+Arrow from nested controls', () => {
+  beforeEach(() => {
+    vi.stubGlobal('IntersectionObserver', NoopObserver);
+  });
+
+  it('swallows Alt+ArrowLeft on a tile action and the checkbox without moving', () => {
+    const onReorder = vi.fn();
+    renderGrid({ onReorder, onToggle: () => {} });
+    const action = screen.getByRole('button', { name: 'Rotate 1' });
+    const box = screen.getByRole('checkbox', { name: 'Select page 1' });
+    expect(fireEvent.keyDown(action, { key: 'ArrowLeft', altKey: true })).toBe(
+      false,
+    );
+    expect(fireEvent.keyDown(box, { key: 'ArrowLeft', altKey: true })).toBe(
+      false,
+    );
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+});

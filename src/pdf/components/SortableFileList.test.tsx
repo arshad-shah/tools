@@ -153,3 +153,29 @@ describe('SortableFileList pending focus', () => {
     expect(document.activeElement).toBe(screen.getAllByRole('listitem')[1]);
   });
 });
+
+describe('SortableFileList Alt+Arrow from nested controls', () => {
+  it.each(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])(
+    'prevents the browser default for Alt+%s on a nested control without reordering',
+    (key) => {
+      const onReorder = vi.fn();
+      render(
+        <SortableFileList
+          items={items}
+          onReorder={onReorder}
+          onRemove={() => {}}
+          renderExtra={(item) => (
+            <input aria-label={`Pages from ${item.name}`} />
+          )}
+        />,
+      );
+      const remove = screen.getByRole('button', { name: 'Remove alpha.pdf' });
+      const input = screen.getByRole('textbox', {
+        name: 'Pages from beta.pdf',
+      });
+      expect(fireEvent.keyDown(remove, { key, altKey: true })).toBe(false);
+      expect(fireEvent.keyDown(input, { key, altKey: true })).toBe(false);
+      expect(onReorder).not.toHaveBeenCalled();
+    },
+  );
+});
