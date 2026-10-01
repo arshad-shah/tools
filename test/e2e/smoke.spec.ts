@@ -3,6 +3,12 @@ import { toolRoutes } from './tool-routes';
 
 const ENABLED = toolRoutes().filter((t) => t.enabled);
 
+/** Tools that render more after load (timers, debounces): what to wait for. */
+const READY: Record<string, string> = {
+  // The sample token is decoded 300 ms after mount.
+  'jwt-decode': 'role=button[name="Raw JSON"]',
+};
+
 test('dashboard lists tools', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('tools');
@@ -59,6 +65,15 @@ for (const tool of ENABLED) {
       page.getByText(`${tool.name} encountered an error`),
     ).toHaveCount(0);
     await expect(page.locator('main')).not.toBeEmpty();
+    // Deferred work must render before the assertion, or its console errors
+    // land after it: wait for the tool's ready marker where it renders late,
+    // then for the browser to go idle.
+    const ready = READY[tool.id];
+    if (ready) await expect(page.locator(ready).first()).toBeVisible();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestIdleCallback(() => resolve())),
+    );
     expect(errors).toEqual([]);
   });
 }
