@@ -207,3 +207,36 @@ test('flags characters the signature font cannot draw while typing', async ({
     page.getByRole('button', { name: 'Apply signature' }),
   ).toBeEnabled();
 });
+
+test('keeps every pointer sample, even when events arrive between renders', async ({
+  page,
+}) => {
+  await open(page);
+  const pad = page.getByLabel('Draw your signature', { exact: true });
+  // One task: React has no chance to re-render between these events.
+  await pad.evaluate((canvas) => {
+    const r = canvas.getBoundingClientRect();
+    const fire = (type: string, x: number) =>
+      canvas.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          pointerId: 1,
+          pointerType: 'mouse',
+          button: 0,
+          buttons: 1,
+          clientX: r.left + x,
+          clientY: r.top + 80,
+        }),
+      );
+    fire('pointerdown', 20);
+    for (let x = 30; x <= 320; x += 10) fire('pointermove', x);
+    fire('pointerup', 320);
+  });
+  await expect(page.getByText(/^Position:/)).toBeVisible();
+  const [, , w, h] = /Position: (\d+), (\d+) pt · Size: (\d+) × (\d+) pt/
+    .exec((await page.getByText(/^Position:/).textContent())!)!
+    .slice(1)
+    .map(Number);
+  // A 300 px horizontal line, not a dot.
+  expect(w / h).toBeGreaterThan(8);
+});
