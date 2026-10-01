@@ -86,6 +86,7 @@ describe('TOOLS', () => {
         'pdf-merger',
         'pdf-organize',
         'pdf-splitter',
+        'pdf-to-images',
         'pomodoro',
         'qr-code-generator',
         'random-data-generator',

@@ -2,7 +2,12 @@ import { execSync } from 'node:child_process';
 import { chromium, type FullConfig } from '@playwright/test';
 
 const FIXTURE = 'test/fixtures/generated/text-3.pdf';
-const TOOL_ROUTES = ['/pdf-merger', '/pdf-splitter', '/pdf-organize'];
+const TOOL_ROUTES = [
+  '/pdf-merger',
+  '/pdf-splitter',
+  '/pdf-organize',
+  '/pdf-to-images',
+];
 const RENDERED = 'canvas[data-rendered="true"]';
 const COLD_TIMEOUT = 120_000;
 

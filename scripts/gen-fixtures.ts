@@ -28,6 +28,11 @@ const files: Record<string, Uint8Array> = {
   'text-12.pdf': await makeTextPdf({ pages: 12, label: 'Beta' }),
   'text-300.pdf': await makeTextPdf({ pages: 300, label: 'Big' }),
   'shapes-2.pdf': await makeShapesOnlyPdf(2),
+  'a2-1.pdf': await makeTextPdf({
+    pages: 1,
+    label: 'Poster',
+    size: [1191, 1684],
+  }),
   'structured-3.pdf': await makeStructuredPdf(3),
   'encrypted-aes.pdf': await makeAesEncryptedPdf(),
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),

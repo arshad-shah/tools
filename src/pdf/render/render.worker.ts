@@ -10,9 +10,9 @@ import {
 } from '@/shared/lib/worker-rpc';
 import { NoopFilterFactory, OffscreenCanvasFactory } from './canvas-factory';
 import { readPageSizes } from './page-sizes';
-import { renderScale } from './render-scale';
+import { canvasPx, exportScale, renderScale } from './render-scale';
 import { textFromItems } from './text';
-import type { DocInfo, PageText } from './types';
+import type { DocInfo, PageImage, PageImageOptions, PageText } from './types';
 
 // Run pdf.js's parser in this same worker (no nested worker).
 (globalThis as { pdfjsWorker?: unknown }).pdfjsWorker = pdfjsWorker;
@@ -41,6 +41,46 @@ function getDoc(docId: string) {
   // Closed under the caller (unmount, file change): not a real failure.
   if (!entry) throw new ToolError('CANCELLED', 'Document is no longer open');
   return entry.doc;
+}
+
+/** Renders one page onto a fresh OffscreenCanvas at the scale `scaleFor` picks. */
+async function drawPage(
+  ctx: RpcContext,
+  docId: string,
+  pageIndex: number,
+  scaleFor: (baseWidth: number, baseHeight: number) => number,
+): Promise<OffscreenCanvas> {
+  const page = await getDoc(docId).getPage(pageIndex + 1);
+  if (ctx.signal.aborted) throw cancelled();
+  const base = page.getViewport({ scale: 1 });
+  let viewport;
+  try {
+    viewport = page.getViewport({ scale: scaleFor(base.width, base.height) });
+  } catch (e) {
+    page.cleanup();
+    throw e;
+  }
+  const canvas = new OffscreenCanvas(
+    canvasPx(viewport.width),
+    canvasPx(viewport.height),
+  );
+  const task = page.render({
+    canvas: canvas as unknown as HTMLCanvasElement,
+    canvasContext: canvas.getContext(
+      '2d',
+    ) as unknown as CanvasRenderingContext2D,
+    viewport,
+    background: '#ffffff',
+  });
+  const onAbort = () => task.cancel();
+  ctx.signal.addEventListener('abort', onAbort, { once: true });
+  try {
+    await task.promise;
+  } finally {
+    ctx.signal.removeEventListener('abort', onAbort);
+    page.cleanup();
+  }
+  return canvas;
 }
 
 const handlers = {
@@ -120,34 +160,56 @@ const handlers = {
     pageIndex: number,
     widthPx: number,
   ) {
-    const page = await getDoc(docId).getPage(pageIndex + 1);
-    if (ctx.signal.aborted) throw cancelled();
-    const base = page.getViewport({ scale: 1 });
-    const viewport = page.getViewport({
-      scale: renderScale(base.width, base.height, widthPx),
-    });
-    const canvas = new OffscreenCanvas(
-      Math.ceil(viewport.width),
-      Math.ceil(viewport.height),
+    const canvas = await drawPage(ctx, docId, pageIndex, (w, h) =>
+      renderScale(w, h, widthPx),
     );
-    const task = page.render({
-      canvas: canvas as unknown as HTMLCanvasElement,
-      canvasContext: canvas.getContext(
-        '2d',
-      ) as unknown as CanvasRenderingContext2D,
-      viewport,
-      background: '#ffffff',
-    });
-    const onAbort = () => task.cancel();
-    ctx.signal.addEventListener('abort', onAbort, { once: true });
-    try {
-      await task.promise;
-    } finally {
-      ctx.signal.removeEventListener('abort', onAbort);
-      page.cleanup();
-    }
     const bitmap = canvas.transferToImageBitmap();
     return new Transferred(bitmap, [bitmap]);
+  },
+
+  async renderPageImage(
+    ctx: RpcContext,
+    docId: string,
+    pageIndex: number,
+    opts: PageImageOptions,
+  ): Promise<Transferred<PageImage>> {
+    if (opts.format !== 'png' && opts.format !== 'jpeg') {
+      throw new ToolError('INVALID_INPUT', 'Choose PNG or JPEG');
+    }
+    if (!(opts.quality > 0 && opts.quality <= 1)) {
+      throw new ToolError(
+        'INVALID_INPUT',
+        'JPEG quality must be between 1% and 100%',
+      );
+    }
+    let plan = { scale: 1, dpi: opts.dpi, capped: false };
+    const canvas = await drawPage(ctx, docId, pageIndex, (w, h) => {
+      plan = exportScale(w, h, opts.dpi);
+      return plan.scale;
+    });
+    try {
+      const blob = await canvas.convertToBlob(
+        opts.format === 'png'
+          ? { type: 'image/png' }
+          : { type: 'image/jpeg', quality: opts.quality },
+      );
+      if (ctx.signal.aborted) throw cancelled();
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      return new Transferred(
+        {
+          bytes,
+          width: canvas.width,
+          height: canvas.height,
+          dpi: plan.dpi,
+          capped: plan.capped,
+        },
+        [bytes.buffer],
+      );
+    } finally {
+      // Free the backing store now; large exports would otherwise pile up.
+      canvas.width = 0;
+      canvas.height = 0;
+    }
   },
 
   async extractText(
