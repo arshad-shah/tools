@@ -128,3 +128,28 @@ describe('SortableFileList', () => {
     },
   );
 });
+
+describe('SortableFileList pending focus', () => {
+  it('does not steal focus later when the parent ignored a move', () => {
+    const { rerender } = render(
+      <SortableFileList
+        items={items}
+        onReorder={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    const rows = screen.getAllByRole('listitem');
+    rows[0].focus();
+    fireEvent.keyDown(rows[0], { key: 'ArrowDown', altKey: true }); // ignored
+    rows[1].focus();
+    fireEvent.keyDown(rows[1], { key: 'x' }); // any later key clears it
+    rerender(
+      <SortableFileList
+        items={[...items]}
+        onReorder={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    expect(document.activeElement).toBe(screen.getAllByRole('listitem')[1]);
+  });
+});
