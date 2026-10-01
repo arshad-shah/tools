@@ -681,3 +681,30 @@ export async function makeImageHeavyPdf(): Promise<Uint8Array> {
   );
   return doc.save({ useObjectStreams: false });
 }
+
+/**
+ * Info fields (title "Quarterly report", author "Ada", …, created
+ * 2024-01-02T03:04:05Z) plus an XMP packet carrying dc:title and a PDF/A-2B
+ * identity, for the metadata tool.
+ */
+export async function makeMetadataPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create({ updateMetadata: false });
+  doc.addPage([612, 792]);
+  doc.setTitle('Quarterly report');
+  doc.setAuthor('Ada');
+  doc.setSubject('Numbers');
+  doc.setKeywords(['q3 finance']);
+  doc.setCreator('Writer');
+  doc.setProducer('Fixture');
+  doc.setCreationDate(new Date('2024-01-02T03:04:05Z'));
+  const xmp =
+    '<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"><dc:title><rdf:Alt><rdf:li xml:lang="x-default">Quarterly report</rdf:li></rdf:Alt></dc:title><pdfaid:part>2</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="w"?>';
+  const ref = doc.context.register(
+    doc.context.stream(new TextEncoder().encode(xmp), {
+      Type: 'Metadata',
+      Subtype: 'XML',
+    }),
+  );
+  doc.catalog.set(PDFName.of('Metadata'), ref);
+  return doc.save();
+}

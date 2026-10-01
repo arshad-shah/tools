@@ -82,3 +82,14 @@ export {
   type InkFont,
   type InkLayout,
 } from './text-fit';
+export {
+  METADATA_FIELDS,
+  buildXmp,
+  getMetadata,
+  setMetadata,
+  stripMetadata,
+  stripMetadataInPlace,
+  type MetadataField,
+  type MetadataPatch,
+  type PdfMetadata,
+} from './metadata';
