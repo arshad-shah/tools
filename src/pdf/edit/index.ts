@@ -53,6 +53,11 @@ export { unsupportedChars, assertDrawable } from './fonts';
 export { hexToRgb } from './color';
 export {
   watermark,
+  pageNumbers,
+  formatPageNumber,
+  PAGE_NUMBER_FORMATS,
   type WatermarkContent,
   type WatermarkOptions,
+  type PageNumberFormat,
+  type PageNumberOptions,
 } from './markup';

@@ -7,7 +7,13 @@ import {
   textPositions,
 } from '../../../test/fixtures/builders';
 import { encodePng, noiseImage } from '../../../test/fixtures/images';
-import { watermark, type WatermarkOptions } from './markup';
+import {
+  formatPageNumber,
+  pageNumbers,
+  watermark,
+  type PageNumberOptions,
+  type WatermarkOptions,
+} from './markup';
 
 const text = (over: Partial<WatermarkOptions> = {}): WatermarkOptions => ({
   content: { kind: 'text', text: 'DRAFT', fontSize: 48, color: '#888888' },
@@ -115,5 +121,67 @@ describe('watermark', () => {
     await expect(watermark(pdf, text({ pages: [] }))).rejects.toThrow(
       'Select at least one page',
     );
+  });
+});
+
+const numbers = (over: Partial<PageNumberOptions> = {}): PageNumberOptions => ({
+  format: 'n',
+  position: 'bottom-center',
+  startAt: 1,
+  pages: [0, 1, 2],
+  fontSize: 11,
+  margin: 28,
+  ...over,
+});
+
+describe('page numbers', () => {
+  it('formats', () => {
+    expect(formatPageNumber('n', 3, 9)).toBe('3');
+    expect(formatPageNumber('n-of-total', 3, 9)).toBe('3 / 9');
+    expect(formatPageNumber('page-n', 3, 9)).toBe('Page 3');
+  });
+  it('numbers selected pages consecutively from startAt, total = last number', async () => {
+    const out = await pageNumbers(
+      await makeTextPdf({ pages: 3 }),
+      numbers({ format: 'n-of-total', pages: [1, 2], startAt: 1 }),
+    );
+    // Join items: pdf.js may split a run at spaces.
+    const line = async (i: number) =>
+      (await textPositions(out, i)).map((t) => t.str).join(' ');
+    expect(await line(0)).not.toContain('/');
+    expect(await line(1)).toContain('1 / 2');
+    expect(await line(2)).toContain('2 / 2');
+  });
+  it('honours an explicit total (used by previews)', async () => {
+    const out = await pageNumbers(
+      await makeTextPdf({ pages: 1 }),
+      numbers({ format: 'n-of-total', pages: [0], startAt: 4, total: 9 }),
+    );
+    expect((await textPositions(out, 0)).map((t) => t.str).join(' ')).toContain(
+      '4 / 9',
+    );
+  });
+  it('lands bottom-centre and upright on rotated and cropped pages', async () => {
+    const out = await pageNumbers(
+      await makeRotatedPdf(),
+      numbers({ format: 'page-n' }),
+    );
+    for (const i of [0, 1, 2]) {
+      const label = (await textPositions(out, i)).find((t) =>
+        t.str.startsWith('Page'),
+      )!;
+      expect(label.upright).toBe(true);
+      expect(Math.abs(label.x + 16 - label.viewport.width / 2)).toBeLessThan(6); // "Page n" at 11pt ≈ 32pt wide
+      expect(label.y).toBeCloseTo(label.viewport.height - 28, 0);
+    }
+  });
+  it('validates startAt and font size', async () => {
+    const pdf = await makeTextPdf({ pages: 1 });
+    await expect(
+      pageNumbers(pdf, numbers({ startAt: -1, pages: [0] })),
+    ).rejects.toThrow('Start number must be a whole number of 0 or more');
+    await expect(
+      pageNumbers(pdf, numbers({ fontSize: 2, pages: [0] })),
+    ).rejects.toThrow('Font size must be between 6 and 72');
   });
 });

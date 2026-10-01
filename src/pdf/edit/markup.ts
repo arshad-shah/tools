@@ -8,6 +8,7 @@ import {
   toPdfPlacement,
   visualSize,
   type Anchor,
+  type EdgeAnchor,
 } from './geometry';
 import { loadPdf } from './load';
 import { assertIndices } from './ops';
@@ -115,5 +116,71 @@ export async function watermark(
       });
     }
   }
+  return doc.save({ useObjectStreams: true });
+}
+
+export type PageNumberFormat = 'n' | 'n-of-total' | 'page-n';
+export const PAGE_NUMBER_FORMATS: Record<PageNumberFormat, string> = {
+  n: '{n}',
+  'n-of-total': '{n} / {total}',
+  'page-n': 'Page {n}',
+};
+
+export function formatPageNumber(
+  format: PageNumberFormat,
+  n: number,
+  total: number,
+): string {
+  return PAGE_NUMBER_FORMATS[format]
+    .replace('{n}', String(n))
+    .replace('{total}', String(total));
+}
+
+export interface PageNumberOptions {
+  format: PageNumberFormat;
+  position: EdgeAnchor;
+  startAt: number;
+  pages: number[];
+  fontSize: number;
+  margin: number;
+  /** Defaults to the last number drawn (startAt + pages − 1). */
+  total?: number;
+}
+
+export async function pageNumbers(
+  bytes: Uint8Array,
+  opts: PageNumberOptions,
+): Promise<Uint8Array> {
+  if (!Number.isInteger(opts.startAt) || opts.startAt < 0)
+    throw invalid('Start number must be a whole number of 0 or more');
+  if (!(opts.fontSize >= 6 && opts.fontSize <= 72))
+    throw invalid('Font size must be between 6 and 72');
+  const doc = await loadPdf(bytes);
+  assertIndices(opts.pages, doc.getPageCount());
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const pages = [...new Set(opts.pages)].sort((a, b) => a - b);
+  const total = opts.total ?? opts.startAt + pages.length - 1;
+  pages.forEach((pageIndex, k) => {
+    const label = formatPageNumber(opts.format, opts.startAt + k, total);
+    const page = doc.getPage(pageIndex);
+    const frame = pageFrame(page);
+    const box = {
+      width: font.widthOfTextAtSize(label, opts.fontSize),
+      height: font.heightAtSize(opts.fontSize, { descender: false }),
+    };
+    const at = toPdfPlacement(
+      frame,
+      anchoredOrigin(visualSize(frame), opts.position, box, 0, opts.margin),
+      0,
+    );
+    page.drawText(label, {
+      x: at.x,
+      y: at.y,
+      size: opts.fontSize,
+      font,
+      color: rgb(0, 0, 0),
+      rotate: degrees(at.rotate),
+    });
+  });
   return doc.save({ useObjectStreams: true });
 }
