@@ -20,16 +20,6 @@ export const useLogParser = () => {
   const [logType, setLogType] = useState<LogType>('auto');
 
   // UI state
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return (
-        localStorage.getItem('darkMode') === 'true' ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-      );
-    }
-    return false;
-  });
-
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode['mode']>('split');
   const [expandedLogs, setExpandedLogs] = useState<{ [id: string]: boolean }>(
@@ -62,16 +52,6 @@ export const useLogParser = () => {
       setParsedLogs([]);
     }
   }, [logText, logType]);
-
-  // Persist dark mode preference
-  useEffect(() => {
-    localStorage.setItem('darkMode', darkMode.toString());
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
 
   // Apply filters to get filtered logs
   const filteredLogs = filterLogs(parsedLogs, {
@@ -149,8 +129,6 @@ export const useLogParser = () => {
     filteredLogs,
     logType,
     setLogType,
-    darkMode,
-    setDarkMode,
     showFilters,
     setShowFilters,
     viewMode,

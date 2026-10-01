@@ -44,18 +44,24 @@ const Dashboard: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [favorites, setFavorites] = useState<string[]>([]);
+  // Same key as before store-kit, so existing favourites carry over.
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('favoriteTools');
+      const parsed: unknown = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed)
+        ? parsed.filter((x): x is string => typeof x === 'string')
+        : [];
+    } catch {
+      return [];
+    }
+  });
 
   const categories = useMemo(
     () =>
       [...new Set(tools.map((t) => t.category).filter(Boolean))] as string[],
     [tools],
   );
-
-  useEffect(() => {
-    const saved = localStorage.getItem('favoriteTools');
-    if (saved) setFavorites(JSON.parse(saved));
-  }, []);
 
   useEffect(() => {
     localStorage.setItem('favoriteTools', JSON.stringify(favorites));
