@@ -17,10 +17,55 @@ const workerLost = () =>
  * "no longer open" CANCELLED that callers deliberately ignore) and
  * `onRestart` subscribers (usePdfDocument) reopen from their bytes.
  */
-export function createPdfRender(client: RpcClient<RenderHandlers>) {
+interface ReopenPolicy {
+  /** Reopens after a restart allowed per document within the window. */
+  maxReopens?: number;
+  reopenWindowMs?: number;
+  now?: () => number;
+}
+
+const keepsCrashing = () =>
+  new ToolError(
+    'WORKER_CRASHED',
+    'This document keeps crashing the background worker, so it was not reopened. Reload the page to try again, or try a different file.',
+  );
+
+export function createPdfRender(
+  client: RpcClient<RenderHandlers>,
+  {
+    maxReopens = 2,
+    reopenWindowMs = 60_000,
+    now = Date.now,
+  }: ReopenPolicy = {},
+) {
   // Bound concurrent page renders so a scrolled grid can't queue hundreds at once.
   const withSlot = createSlotLimiter(4);
   const openedIn = new Map<string, number>();
+  /**
+   * Per source bytes: the generation it was last opened in, and when it was
+   * reopened after a restart. A page that crashes the worker on every render
+   * would otherwise loop forever (each successful reopen proves the new
+   * worker healthy and resets the RPC's restart budget).
+   */
+  const reopens = new WeakMap<
+    Uint8Array,
+    { generation: number; times: number[] }
+  >();
+
+  const checkReopenBudget = (bytes: Uint8Array) => {
+    const generation = client.generation;
+    const seen = reopens.get(bytes);
+    if (!seen) {
+      reopens.set(bytes, { generation, times: [] });
+      return;
+    }
+    if (seen.generation === generation) return; // remount, not a reopen
+    const t = now();
+    seen.times = seen.times.filter((at) => t - at < reopenWindowMs);
+    if (seen.times.length >= maxReopens) throw keepsCrashing();
+    seen.times.push(t);
+    seen.generation = generation;
+  };
 
   /** Throws when `docId` belongs to a worker that has since been replaced. */
   const assertAlive = (docId: string) => {
@@ -36,6 +81,7 @@ export function createPdfRender(client: RpcClient<RenderHandlers>) {
      * would otherwise keep a doc nobody can close).
      */
     async open(bytes: Uint8Array, signal?: AbortSignal) {
+      checkReopenBudget(bytes);
       const copy = bytes.slice();
       const docId = newId();
       const generation = client.generation;
