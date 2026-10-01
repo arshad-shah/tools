@@ -443,6 +443,8 @@ export async function makeFormPdf(): Promise<Uint8Array> {
   notes.addToPage(page, { x: 72, y: 600, width: 240, height: 80 });
   const zip = form.createTextField('zip');
   zip.setMaxLength(5);
+  // An alternate (user-facing) name, as real forms carry for their fields.
+  zip.acroField.dict.set(PDFName.of('TU'), PDFString.of('Postcode'));
   zip.addToPage(page, { x: 72, y: 560, width: 80, height: 24 });
   form
     .createCheckBox('agree')

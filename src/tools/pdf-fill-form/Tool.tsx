@@ -169,7 +169,9 @@ const PdfFillFormTool: React.FC<ToolProps> = () => {
               {unsupported.length > 0 && (
                 <Text size="sm" tone="muted">
                   Not fillable here:{' '}
-                  {unsupported.map((f) => `${f.name} (${f.type})`).join(', ')}
+                  {unsupported
+                    .map((f) => `${f.label ?? f.name} (${f.type})`)
+                    .join(', ')}
                 </Text>
               )}
             </>

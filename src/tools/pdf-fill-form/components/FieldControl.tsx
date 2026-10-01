@@ -19,11 +19,28 @@ interface FieldControlProps {
   disabled?: boolean;
 }
 
-/** Kept outside the Label so the accessible name stays exactly the field name. */
-const ReadOnlyNote: React.FC<{ show: boolean }> = ({ show }) =>
-  show ? <span className="text-xs text-fg-muted">(read-only)</span> : null;
+/**
+ * Notes kept outside the label so its accessible name stays the field's
+ * title: "(read-only)", and the raw field name when an alternate name is
+ * shown instead (real forms name fields like "topmostSubform[0].f1_01[0]").
+ */
+const Notes: React.FC<{ field: FormField }> = ({ field }) => (
+  <>
+    {field.label && (
+      <span className="break-all font-mono text-xs text-fg-subtle">
+        {field.name}
+      </span>
+    )}
+    {field.kind !== 'unsupported' && field.readOnly && (
+      <span className="text-xs text-fg-muted">(read-only)</span>
+    )}
+  </>
+);
 
-/** One control per AcroForm field kind; its visible label is the field name. */
+/**
+ * One control per AcroForm field kind. Its visible label is the field's
+ * alternate name (/TU) when it has one, else the field name.
+ */
 export const FieldControl: React.FC<FieldControlProps> = ({
   field,
   value,
@@ -32,11 +49,12 @@ export const FieldControl: React.FC<FieldControlProps> = ({
   disabled,
 }) => {
   if (field.kind === 'unsupported') return null;
+  const title = field.label ?? field.name;
   const off = disabled || field.readOnly;
   const heading = (
-    <Inline gap="2" align="center">
-      <Label htmlFor={id}>{field.name}</Label>
-      <ReadOnlyNote show={field.readOnly} />
+    <Inline gap="2" align="center" wrap>
+      <Label htmlFor={id}>{title}</Label>
+      <Notes field={field} />
     </Inline>
   );
 
@@ -69,23 +87,65 @@ export const FieldControl: React.FC<FieldControlProps> = ({
 
   if (field.kind === 'checkbox') {
     return (
-      <Inline gap="2" align="center">
+      <Inline gap="2" align="center" wrap>
         <Checkbox
           id={id}
           checked={value === true}
           disabled={off}
           onCheckedChange={onChange}
         />
-        <Label htmlFor={id}>{field.name}</Label>
-        <ReadOnlyNote show={field.readOnly} />
+        <Label htmlFor={id}>{title}</Label>
+        <Notes field={field} />
       </Inline>
     );
   }
 
-  const multi =
-    (field.kind === 'dropdown' || field.kind === 'optionlist') &&
-    field.multiSelect;
-  if (multi) {
+  const groupHeading = (
+    <Inline gap="2" align="center" wrap>
+      <Text id={`${id}-label`} size="sm" weight="medium">
+        {title}
+      </Text>
+      <Notes field={field} />
+    </Inline>
+  );
+
+  const choice = typeof value === 'string' ? value : '';
+  if (field.kind === 'radio') {
+    const options = [
+      { value: '', label: 'None' },
+      ...field.options.map((o) => ({ value: o, label: o })),
+    ];
+    return (
+      <div
+        role="radiogroup"
+        aria-labelledby={`${id}-label`}
+        className="flex flex-col gap-2"
+      >
+        {groupHeading}
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {options.map((o, i) => (
+            <label
+              key={i}
+              className="flex items-center gap-2 text-sm text-fg has-[:disabled]:opacity-50"
+            >
+              <input
+                type="radio"
+                name={id}
+                value={o.value}
+                checked={choice === o.value}
+                disabled={off}
+                onChange={() => onChange(o.value)}
+                className="size-4 accent-accent"
+              />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (field.multiSelect) {
     const selected = new Set(Array.isArray(value) ? value : []);
     const toggle = (option: string, on: boolean) => {
       const next = new Set(selected);
@@ -95,17 +155,16 @@ export const FieldControl: React.FC<FieldControlProps> = ({
       onChange(field.options.filter((o) => next.has(o)));
     };
     return (
-      <div role="group" aria-label={field.name} className="flex flex-col gap-2">
-        <Inline gap="2" align="center">
-          <Text size="sm" weight="medium">
-            {field.name}
-          </Text>
-          <ReadOnlyNote show={field.readOnly} />
-        </Inline>
+      <div
+        role="group"
+        aria-labelledby={`${id}-label`}
+        className="flex flex-col gap-2"
+      >
+        {groupHeading}
         {field.options.map((option) => (
           <Inline key={option} gap="2" align="center">
             <Checkbox
-              aria-label={`${field.name}: ${option}`}
+              aria-label={`${title}: ${option}`}
               checked={selected.has(option)}
               disabled={off}
               onCheckedChange={(on) => toggle(option, on)}
@@ -117,7 +176,6 @@ export const FieldControl: React.FC<FieldControlProps> = ({
     );
   }
 
-  const choice = typeof value === 'string' ? value : '';
   if (field.kind === 'dropdown' && field.editable) {
     return (
       <Stack gap="2">
