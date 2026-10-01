@@ -4,10 +4,12 @@ import { defineTool } from '@/app/tool';
 export default defineTool({
   id: 'pdf-compressor',
   name: 'PDF Compressor',
-  description: 'Reduce PDF file size with customizable compression levels',
+  description:
+    'Shrink PDFs by recompressing images and restructuring the file, with a per-stage report',
   icon: Minimize2,
   category: 'pdf',
-  version: '1.0.0',
-  enabled: false,
-  load: () => import('./PdfCompressor'),
+  version: '2.0.0',
+  isNew: true,
+  enabled: true,
+  load: () => import('./Tool'),
 });
