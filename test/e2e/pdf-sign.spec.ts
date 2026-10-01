@@ -1,7 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
-import { pdfPageTexts, textPositions } from '../fixtures/builders';
+import {
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFNumber,
+  PDFRawStream,
+} from 'pdf-lib';
+import {
+  imagePlacements,
+  pdfPageTexts,
+  textPositions,
+} from '../fixtures/builders';
 
 async function open(page: Page) {
   await page.goto('/pdf-sign');
@@ -253,4 +263,26 @@ test('keeps every pointer sample, even when events arrive between renders', asyn
     .map(Number);
   // A 300 px horizontal line, not a dot.
   expect(w / h).toBeGreaterThan(8);
+});
+
+test('stamps a sideways phone photo (EXIF orientation) upright', async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole('tab', { name: 'Upload' }).click();
+  await page
+    .locator('input[type=file]')
+    .last()
+    .setInputFiles('test/fixtures/generated/signature-exif6.jpg');
+  await expect(
+    page.getByRole('img', { name: 'Signature preview' }),
+  ).toBeVisible();
+  const doc = await PDFDocument.load(await download(page));
+  const [img] = pageImages(doc, 0);
+  // Stored 300x100 with EXIF 6: shown (and so stamped) 100 wide, 300 tall.
+  const size = (k: string) =>
+    img.dict.lookup(PDFName.of(k), PDFNumber).asNumber();
+  expect([size('Width'), size('Height')]).toEqual([100, 300]);
+  const [placed] = await imagePlacements(await doc.save(), 0);
+  expect(placed.height / placed.width).toBeCloseTo(3, 1);
 });

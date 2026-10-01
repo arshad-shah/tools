@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
-import { pdfPageTexts } from '../fixtures/builders';
+import {
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFNumber,
+  PDFRawStream,
+} from 'pdf-lib';
+import { imagePlacements, pdfPageTexts } from '../fixtures/builders';
 
 test('adds a text watermark to the chosen pages with a live preview', async ({
   page,
@@ -70,4 +76,41 @@ test('checks page ranges as you type', async ({ page }) => {
   await expect(apply).toBeDisabled();
   await page.getByLabel('Page ranges', { exact: true }).fill('1-2');
   await expect(apply).toBeEnabled();
+});
+
+test('draws a sideways phone photo (EXIF orientation) upright', async ({
+  page,
+}) => {
+  await page.goto('/pdf-watermark');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-3.pdf');
+  await page.getByRole('tab', { name: 'Image' }).click();
+  await page.getByLabel('Rotation', { exact: true }).fill('0');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/signature-exif6.jpg');
+  await expect(
+    page.getByText('signature-exif6.jpg', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Add watermark' }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await page
+    .getByRole('button', { name: 'Download text-3.watermarked.pdf' })
+    .click();
+  const bytes = new Uint8Array(
+    readFileSync((await (await downloadPromise).path())!),
+  );
+  const [placed] = await imagePlacements(bytes, 0);
+  expect(placed.upright).toBe(true);
+  expect(placed.height / placed.width).toBeCloseTo(3, 1);
+  const doc = await PDFDocument.load(bytes);
+  const xo = doc
+    .getPage(0)
+    .node.Resources()!
+    .lookup(PDFName.of('XObject'), PDFDict);
+  const img = xo.lookup(xo.keys()[0]) as PDFRawStream;
+  const size = (k: string) =>
+    img.dict.lookup(PDFName.of(k), PDFNumber).asNumber();
+  expect([size('Width'), size('Height')]).toEqual([100, 300]);
 });

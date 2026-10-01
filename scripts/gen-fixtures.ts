@@ -12,6 +12,7 @@ import {
   encodeJpeg,
   encodePng,
   noiseImage,
+  withExifOrientation,
 } from '../test/fixtures/images';
 
 const out = new URL('../test/fixtures/generated/', import.meta.url);
@@ -52,6 +53,11 @@ const files: Record<string, Uint8Array> = {
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
   'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),
+  // Stored 300x100, shown 100x300: a phone photo taken sideways (EXIF 6).
+  'signature-exif6.jpg': withExifOrientation(
+    encodeJpeg(300, 100, signatureRgba(300, 100), 92),
+    6,
+  ),
   'tiny.gif': encodeGif(
     40,
     30,

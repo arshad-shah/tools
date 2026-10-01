@@ -12,6 +12,7 @@ import {
 import type { LoadedFile } from '@/shared/lib/files';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { useObjectUrl } from '@/shared/lib/object-url';
+import { uprightJpeg } from '@/shared/lib/upright-jpeg';
 import { PdfDropzone } from '@/pdf/components';
 import { opaqueBounds, removeWhiteBackground } from '../lib/pixels';
 import {
@@ -42,14 +43,15 @@ async function prepare(
   const bitmap = await decode(file);
   try {
     const { width, height } = bitmap;
-    if (!removeBg)
-      return {
-        kind: 'image',
-        bytes: file.bytes,
-        format: file.kind === 'jpeg' ? 'jpeg' : 'png',
-        width,
-        height,
-      };
+    if (!removeBg) {
+      if (file.kind === 'jpeg') {
+        // Store the pixels upright (EXIF orientation applied), so the stamp
+        // matches the preview and its box.
+        const upright = await uprightJpeg(file.bytes);
+        return { kind: 'image', format: 'jpeg', ...upright };
+      }
+      return { kind: 'image', bytes: file.bytes, format: 'png', width, height };
+    }
     const full = new OffscreenCanvas(width, height);
     const ctx = full.getContext('2d')!;
     ctx.drawImage(bitmap, 0, 0);
