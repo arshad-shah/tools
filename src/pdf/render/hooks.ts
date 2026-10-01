@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { toToolError, type ToolError } from '@/shared/lib/errors';
+import { ToolError, toToolError } from '@/shared/lib/errors';
 import { BitmapCache } from './bitmap-cache';
+import {
+  bitmapKey,
+  pickPageBitmap,
+  type KeyedPageBitmap,
+  type PageBitmap,
+} from './bitmap-state';
 import { pdfRender } from './client';
+import { createJobPool } from './scheduling';
 import type { DocInfo } from './types';
 
 const cache = new BitmapCache(150);
-const inflight = new Map<string, Promise<ImageBitmap>>();
+const renders = createJobPool<ImageBitmap>();
+/** Docs closed by usePdfDocument; late bitmaps for them are discarded. */
+const closedDocs = new Set<string>();
 
 interface DocState {
   doc: DocInfo | null;
@@ -13,86 +22,114 @@ interface DocState {
   error: ToolError | null;
 }
 
+interface OpenResult {
+  file: { bytes: Uint8Array };
+  doc: DocInfo | null;
+  error: ToolError | null;
+}
+
 /** Opens `file` in the render worker; closes it on change/unmount. */
 export function usePdfDocument(file: { bytes: Uint8Array } | null): DocState {
-  const [state, setState] = useState<DocState>({
-    doc: null,
-    loading: false,
-    error: null,
-  });
+  // Results are keyed by the file they belong to, so a stale result (or the
+  // previous file's doc) is never returned for a new input.
+  const [result, setResult] = useState<OpenResult | null>(null);
 
   useEffect(() => {
-    if (!file) {
-      setState({ doc: null, loading: false, error: null });
-      return;
-    }
+    if (!file) return;
     const ctrl = new AbortController();
     let opened: string | null = null;
     let alive = true;
-    setState({ doc: null, loading: true, error: null });
     pdfRender.open(file.bytes, ctrl.signal).then(
       (doc) => {
+        if (!alive) {
+          // Resolved in the same tick as cleanup: nobody else will close it.
+          void pdfRender.close(doc.docId).catch(() => {});
+          return;
+        }
         opened = doc.docId;
-        if (alive) setState({ doc, loading: false, error: null });
-        else void pdfRender.close(doc.docId);
+        setResult({ file, doc, error: null });
       },
       (e) => {
-        if (alive)
-          setState({ doc: null, loading: false, error: toToolError(e) });
+        if (alive) setResult({ file, doc: null, error: toToolError(e) });
       },
     );
     return () => {
       alive = false;
-      ctrl.abort();
+      ctrl.abort(); // worker-side open bails out and releases the document
       if (opened) {
+        closedDocs.add(opened);
         cache.deleteDoc(opened);
         void pdfRender.close(opened).catch(() => {});
       }
     };
   }, [file]);
 
-  return state;
+  if (!file) return { doc: null, loading: false, error: null };
+  if (result?.file !== file) return { doc: null, loading: true, error: null };
+  return { doc: result.doc, loading: false, error: result.error };
 }
 
-/** A rendered page bitmap, fetched once `enabled` (e.g. scrolled into view). */
+function startRender(
+  docId: string,
+  pageIndex: number,
+  widthPx: number,
+  signal: AbortSignal,
+) {
+  return pdfRender
+    .renderPage(docId, pageIndex, widthPx, signal)
+    .then((bitmap) => {
+      if (closedDocs.has(docId)) {
+        bitmap.close();
+        throw new ToolError('CANCELLED', 'Document is no longer open');
+      }
+      cache.set(docId, pageIndex, widthPx, bitmap);
+      return bitmap;
+    });
+}
+
+/**
+ * The rendered bitmap (or render error) for exactly this page and width,
+ * fetched once `enabled` (e.g. scrolled into view). Renders shared by several
+ * components are cancelled once none of them still wants the result.
+ */
 export function usePageBitmap(
   docId: string | null,
   pageIndex: number,
   widthPx: number,
   enabled: boolean,
-) {
-  const [bitmap, setBitmap] = useState<ImageBitmap | null>(() =>
-    docId ? (cache.get(docId, pageIndex, widthPx) ?? null) : null,
-  );
+): PageBitmap {
+  const [state, setState] = useState<KeyedPageBitmap | null>(null);
+  const key = docId ? bitmapKey(docId, pageIndex, widthPx) : null;
 
   useEffect(() => {
     if (!docId || !enabled) return;
-    const cached = cache.get(docId, pageIndex, widthPx);
-    if (cached) {
-      setBitmap(cached);
-      return;
-    }
+    const k = bitmapKey(docId, pageIndex, widthPx);
+    if (cache.get(docId, pageIndex, widthPx)) return; // shown via render path
+    // Invalid widths are rejected by the worker (INVALID_INPUT) like any
+    // other render error.
+    const job = renders.acquire(k, (signal) =>
+      startRender(docId, pageIndex, widthPx, signal),
+    );
     let alive = true;
-    const k = `${docId}:${pageIndex}:${widthPx}`;
-    let p = inflight.get(k);
-    if (!p) {
-      p = pdfRender
-        .renderPage(docId, pageIndex, widthPx)
-        .then((b) => {
-          cache.set(docId, pageIndex, widthPx, b);
-          return b;
-        })
-        .finally(() => inflight.delete(k));
-      inflight.set(k, p);
-    }
-    p.then(
-      (b) => alive && setBitmap(b),
-      () => {},
+    job.promise.then(
+      (bitmap) => {
+        if (alive) setState({ key: k, bitmap, error: null });
+      },
+      (e) => {
+        const error = toToolError(e);
+        if (alive && error.code !== 'CANCELLED')
+          setState({ key: k, bitmap: null, error });
+      },
     );
     return () => {
       alive = false;
+      job.release();
     };
   }, [docId, pageIndex, widthPx, enabled]);
 
-  return bitmap;
+  return pickPageBitmap(
+    key,
+    state,
+    docId ? cache.get(docId, pageIndex, widthPx) : undefined,
+  );
 }
