@@ -27,6 +27,7 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
   '/pdf-page-numbers',
   '/pdf-sign',
   '/pdf-compressor',
+  '/pdf-protect',
   // Image tools show <img> previews rather than pdf.js canvases.
   {
     route: '/images-to-pdf',
@@ -44,6 +45,12 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
     route: '/pdf-metadata',
     fixture: 'test/fixtures/generated/metadata.pdf',
     ready: '#meta-title',
+  },
+  // Unlock takes the encrypted file as it is and asks for its password.
+  {
+    route: '/pdf-unlock',
+    fixture: 'test/fixtures/generated/encrypted-aes.pdf',
+    ready: 'input[type=password]',
   },
 ];
 const COLD_TIMEOUT = 120_000;
