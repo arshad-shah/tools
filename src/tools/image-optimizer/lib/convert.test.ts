@@ -2,9 +2,32 @@ import { describe, expect, it } from 'vitest';
 import {
   aspectRatio,
   assertImageFile,
+  isHexColor,
   mimeFor,
+  needsBackground,
+  qualityApplies,
   reductionLabel,
 } from './convert';
+
+describe('image-optimizer format rules', () => {
+  it('flattens onto a background only for formats without alpha', () => {
+    expect(needsBackground('jpeg')).toBe(true);
+    expect(needsBackground('png')).toBe(false);
+    expect(needsBackground('webp')).toBe(false);
+  });
+  it('offers quality only for lossy formats (PNG is lossless)', () => {
+    expect(qualityApplies('jpeg')).toBe(true);
+    expect(qualityApplies('webp')).toBe(true);
+    expect(qualityApplies('png')).toBe(false);
+  });
+  it('accepts #rrggbb colours only', () => {
+    expect(isHexColor('#ffffff')).toBe(true);
+    expect(isHexColor('#A0b1C2')).toBe(true);
+    expect(isHexColor('fff')).toBe(false);
+    expect(isHexColor('#fff')).toBe(false);
+    expect(isHexColor('red')).toBe(false);
+  });
+});
 
 describe('image-optimizer helpers', () => {
   it('maps formats to MIME types', () => {

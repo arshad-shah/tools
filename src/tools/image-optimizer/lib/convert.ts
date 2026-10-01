@@ -4,6 +4,16 @@ export type OutputFormat = 'jpeg' | 'png' | 'webp';
 
 export const mimeFor = (f: OutputFormat) => `image/${f}`;
 
+/** JPEG has no alpha: transparent pixels must be painted onto a colour. */
+export const needsBackground = (f: OutputFormat) => f === 'jpeg';
+
+/** Canvas PNG encoding is lossless and ignores any quality value. */
+export const qualityApplies = (f: OutputFormat) => f !== 'png';
+
+export const DEFAULT_BACKGROUND = '#ffffff';
+
+export const isHexColor = (v: string) => /^#[0-9a-f]{6}$/i.test(v);
+
 export function aspectRatio(w: number, h: number): string {
   if (!w || !h) return 'Unknown';
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
@@ -52,7 +62,7 @@ export async function decodeImage(
 /** Re-encodes an image in the browser through a canvas. */
 export async function convertImage(
   file: Blob,
-  opts: { format: OutputFormat; quality: number },
+  opts: { format: OutputFormat; quality: number; background?: string },
   signal?: AbortSignal,
 ): Promise<{ bytes: Uint8Array; mime: string; width: number; height: number }> {
   const { image, width, height } = await decodeImage(file);
@@ -62,13 +72,18 @@ export async function convertImage(
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new ToolError('UNKNOWN', 'Unable to get canvas context');
+  if (needsBackground(opts.format)) {
+    // Otherwise transparent pixels come out black.
+    ctx.fillStyle = opts.background ?? DEFAULT_BACKGROUND;
+    ctx.fillRect(0, 0, width, height);
+  }
   ctx.drawImage(image, 0, 0, width, height);
   const mime = mimeFor(opts.format);
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(
       resolve,
       mime,
-      opts.format === 'png' ? undefined : opts.quality,
+      qualityApplies(opts.format) ? opts.quality : undefined,
     ),
   );
   if (!blob)
