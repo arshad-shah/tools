@@ -288,10 +288,12 @@ const JWTDecoder: React.FC = () => {
         <Accordion type="single">
           <AccordionItem value="extra">
             <AccordionTrigger>
-              <Inline gap="2" align="center">
+              <span className="inline-flex items-center gap-2">
                 <Settings size={16} aria-hidden />
-                <Text weight="medium">Additional header claims</Text>
-              </Inline>
+                <Text as="span" weight="medium">
+                  Additional header claims
+                </Text>
+              </span>
             </AccordionTrigger>
             <AccordionContent>
               <Grid max={2} gap="3">
@@ -313,10 +315,12 @@ const JWTDecoder: React.FC = () => {
       <Accordion type="single">
         <AccordionItem value="raw">
           <AccordionTrigger>
-            <Inline gap="2" align="center">
+            <span className="inline-flex items-center gap-2">
               <Braces size={16} aria-hidden />
-              <Text weight="medium">Raw JSON</Text>
-            </Inline>
+              <Text as="span" weight="medium">
+                Raw JSON
+              </Text>
+            </span>
           </AccordionTrigger>
           <AccordionContent>
             <Stack gap="2">
@@ -355,13 +359,15 @@ const JWTDecoder: React.FC = () => {
         <Accordion type="single" defaultValue="identity">
           <AccordionItem value="identity">
             <AccordionTrigger>
-              <Inline gap="2" align="center">
+              <span className="inline-flex items-center gap-2">
                 <User size={16} aria-hidden />
-                <Text weight="medium">Identity claims</Text>
+                <Text as="span" weight="medium">
+                  Identity claims
+                </Text>
                 <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.identity.length}
                 </Badge>
-              </Inline>
+              </span>
             </AccordionTrigger>
             <AccordionContent>
               <Grid max={2} gap="3">
@@ -382,13 +388,15 @@ const JWTDecoder: React.FC = () => {
         <Accordion type="single" defaultValue="access">
           <AccordionItem value="access">
             <AccordionTrigger>
-              <Inline gap="2" align="center">
+              <span className="inline-flex items-center gap-2">
                 <Shield size={16} aria-hidden />
-                <Text weight="medium">Access &amp; permissions</Text>
+                <Text as="span" weight="medium">
+                  Access &amp; permissions
+                </Text>
                 <Badge variant="soft" tone="warning" size="xs">
                   {categorizedClaims.access.length}
                 </Badge>
-              </Inline>
+              </span>
             </AccordionTrigger>
             <AccordionContent>
               <Grid max={2} gap="3">
@@ -410,13 +418,15 @@ const JWTDecoder: React.FC = () => {
         <Accordion type="single" defaultValue="timing">
           <AccordionItem value="timing">
             <AccordionTrigger>
-              <Inline gap="2" align="center">
+              <span className="inline-flex items-center gap-2">
                 <Clock size={16} aria-hidden />
-                <Text weight="medium">Timestamps</Text>
+                <Text as="span" weight="medium">
+                  Timestamps
+                </Text>
                 <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.timing.length}
                 </Badge>
-              </Inline>
+              </span>
             </AccordionTrigger>
             <AccordionContent>
               <Stack gap="3">
@@ -468,13 +478,15 @@ const JWTDecoder: React.FC = () => {
         <Accordion type="single" defaultValue="issuer">
           <AccordionItem value="issuer">
             <AccordionTrigger>
-              <Inline gap="2" align="center">
+              <span className="inline-flex items-center gap-2">
                 <Globe size={16} aria-hidden />
-                <Text weight="medium">Issuer information</Text>
+                <Text as="span" weight="medium">
+                  Issuer information
+                </Text>
                 <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.issuer.length}
                 </Badge>
-              </Inline>
+              </span>
             </AccordionTrigger>
             <AccordionContent>
               <Stack gap="3">
@@ -495,13 +507,15 @@ const JWTDecoder: React.FC = () => {
         <Accordion type="single">
           <AccordionItem value="custom">
             <AccordionTrigger>
-              <Inline gap="2" align="center">
+              <span className="inline-flex items-center gap-2">
                 <Settings size={16} aria-hidden />
-                <Text weight="medium">Custom claims</Text>
+                <Text as="span" weight="medium">
+                  Custom claims
+                </Text>
                 <Badge variant="soft" tone="accent" size="xs">
                   {categorizedClaims.custom.length}
                 </Badge>
-              </Inline>
+              </span>
             </AccordionTrigger>
             <AccordionContent>
               <Grid max={2} gap="3">
@@ -521,10 +535,12 @@ const JWTDecoder: React.FC = () => {
       <Accordion type="single">
         <AccordionItem value="raw">
           <AccordionTrigger>
-            <Inline gap="2" align="center">
+            <span className="inline-flex items-center gap-2">
               <Braces size={16} aria-hidden />
-              <Text weight="medium">Raw JSON</Text>
-            </Inline>
+              <Text as="span" weight="medium">
+                Raw JSON
+              </Text>
+            </span>
           </AccordionTrigger>
           <AccordionContent>
             <Stack gap="2">
@@ -586,10 +602,12 @@ const JWTDecoder: React.FC = () => {
       <Accordion type="single">
         <AccordionItem value="signature-value">
           <AccordionTrigger>
-            <Inline gap="2" align="center">
+            <span className="inline-flex items-center gap-2">
               <Key size={16} aria-hidden />
-              <Text weight="medium">Signature value</Text>
-            </Inline>
+              <Text as="span" weight="medium">
+                Signature value
+              </Text>
+            </span>
           </AccordionTrigger>
           <AccordionContent>
             <Stack gap="2">
@@ -743,20 +761,20 @@ const JWTDecoder: React.FC = () => {
             >
               <TabsList aria-label="JWT sections">
                 <TabsTrigger value="header">
-                  <Inline gap="2" align="center" wrap={false}>
+                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
                     <span>Header</span>
                     <Badge variant="soft" tone="accent" size="xs">
                       {decoded.header.alg}
                     </Badge>
-                  </Inline>
+                  </span>
                 </TabsTrigger>
                 <TabsTrigger value="payload">
-                  <Inline gap="2" align="center" wrap={false}>
+                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
                     <span>Payload</span>
                     <Badge variant="soft" tone="accent" size="xs">
                       {Object.keys(decoded.payload).length}
                     </Badge>
-                  </Inline>
+                  </span>
                 </TabsTrigger>
                 <TabsTrigger value="signature">Signature</TabsTrigger>
               </TabsList>
