@@ -864,25 +864,24 @@ const QRCodeGenerator: React.FC = () => {
                         </Alert>
 
                         <Alert status="info" icon={<Shield aria-hidden />}>
-                          <AlertDescription>
-                            <Stack gap="1">
-                              <Text size="sm" weight="semibold">
-                                Encryption details
-                              </Text>
-                              <Text size="xs">
-                                • AES-256 offers strongest security
-                              </Text>
-                              <Text size="xs">
-                                • Triple DES is widely supported but slower
-                              </Text>
-                              <Text size="xs">
-                                • RC4 is fast but has known vulnerabilities
-                              </Text>
-                              <Text size="xs">
-                                • Rabbit balances speed and security
-                              </Text>
-                            </Stack>
-                          </AlertDescription>
+                          {/* Not AlertDescription: a <p> can't hold block content. */}
+                          <Stack gap="1" className="mt-1 text-fg-muted">
+                            <Text size="sm" weight="semibold">
+                              Encryption details
+                            </Text>
+                            <Text size="xs">
+                              • AES-256 offers strongest security
+                            </Text>
+                            <Text size="xs">
+                              • Triple DES is widely supported but slower
+                            </Text>
+                            <Text size="xs">
+                              • RC4 is fast but has known vulnerabilities
+                            </Text>
+                            <Text size="xs">
+                              • Rabbit balances speed and security
+                            </Text>
+                          </Stack>
                         </Alert>
                       </>
                     )}
@@ -962,25 +961,24 @@ const QRCodeGenerator: React.FC = () => {
                 Download QR code
               </Button>
               <Alert status="info" icon={<Info aria-hidden />}>
-                <AlertDescription>
-                  <Stack gap="1">
+                {/* Not AlertDescription: a <p> can't hold block content. */}
+                <Stack gap="1" className="mt-1 text-fg-muted">
+                  <Text size="sm">
+                    <Text as="span" weight="semibold">
+                      Error correction:
+                    </Text>{' '}
+                    {state.errorCorrectionLevel} (
+                    {ERROR_LEVEL_PCT[state.errorCorrectionLevel]})
+                  </Text>
+                  {state.encryptionConfig.type !== 'none' && (
                     <Text size="sm">
                       <Text as="span" weight="semibold">
-                        Error correction:
+                        Encryption:
                       </Text>{' '}
-                      {state.errorCorrectionLevel} (
-                      {ERROR_LEVEL_PCT[state.errorCorrectionLevel]})
+                      {state.encryptionConfig.type.toUpperCase()}
                     </Text>
-                    {state.encryptionConfig.type !== 'none' && (
-                      <Text size="sm">
-                        <Text as="span" weight="semibold">
-                          Encryption:
-                        </Text>{' '}
-                        {state.encryptionConfig.type.toUpperCase()}
-                      </Text>
-                    )}
-                  </Stack>
-                </AlertDescription>
+                  )}
+                </Stack>
               </Alert>
               <Card>
                 <CardHeader>
