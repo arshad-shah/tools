@@ -162,9 +162,10 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 selected={selected}
                 onToggle={selection.toggle}
                 onReorder={busy ? undefined : (next) => commit(next)}
-                renderActions={(tile) => (
+                renderActions={(tile, _position, { tabIndex }) => (
                   <span className="flex gap-1">
                     <IconButton
+                      tabIndex={tabIndex}
                       label={`Rotate page ${tile.pageIndex + 1} left`}
                       icon={<RotateCcw size={12} />}
                       size="xs"
@@ -174,6 +175,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                       }
                     />
                     <IconButton
+                      tabIndex={tabIndex}
                       label={`Rotate page ${tile.pageIndex + 1} right`}
                       icon={<RotateCw size={12} />}
                       size="xs"
@@ -183,6 +185,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                       }
                     />
                     <IconButton
+                      tabIndex={tabIndex}
                       label={`Delete page ${tile.pageIndex + 1}`}
                       icon={<Trash2 size={12} />}
                       size="xs"
