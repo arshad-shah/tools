@@ -15,10 +15,10 @@ import {
   EmptyStateTitle,
   EmptyStateDescription,
   EmptyStateActions,
-} from './ui';
+} from '@/shared/ui';
 import { cn } from '@/lib/utils';
-import { getEnabledTools } from '../data/ToolDefinitions';
-import { ToolDefinition } from '../types/ToolTypes';
+import { getEnabledTools } from './registry';
+import type { ToolDefinition } from './tool';
 import AnimatedBackground from './AnimatedBackground';
 import Footer from './Footer';
 

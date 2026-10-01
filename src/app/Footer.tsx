@@ -1,6 +1,14 @@
 import React from 'react';
-import { Container, Section, Stack, Inline, Text, Button, Divider } from './ui';
-import { getEnabledTools } from '../data/ToolDefinitions';
+import {
+  Container,
+  Section,
+  Stack,
+  Inline,
+  Text,
+  Button,
+  Divider,
+} from '@/shared/ui';
+import { getEnabledTools } from './registry';
 
 const REPO_URL = 'https://github.com/arshad-shah/tools';
 const AUTHOR = 'Arshad Shah';
