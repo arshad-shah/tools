@@ -38,7 +38,9 @@ test('draws a signature, nudges it with the keyboard, and stamps it', async ({
   page,
 }) => {
   await open(page);
-  const pad = page.getByLabel('Draw your signature', { exact: true });
+  const pad = page.getByRole('img', { name: 'Draw your signature' });
+  // Screen readers get a role, and keyboard users are pointed to typing.
+  await expect(pad).toHaveAccessibleDescription(/Type tab/);
   const box = (await pad.boundingBox())!;
   await page.mouse.move(box.x + 30, box.y + 100);
   await page.mouse.down();
