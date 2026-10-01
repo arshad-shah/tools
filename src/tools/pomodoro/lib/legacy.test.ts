@@ -142,10 +142,24 @@ describe('parseLegacyPomodoro', () => {
     );
     expect(r?.tasks).toEqual([]);
     expect(r?.timer.mode).toBe('work');
-    expect(r?.timer.timeLeft).toBe(1500);
+    // The dropped timer takes its time from the migrated work duration.
+    expect(r?.timer.timeLeft).toBe(1800);
     expect(r?.settings.workDuration).toBe(30);
     expect(r?.settings.shortBreakDuration).toBe(5);
     expect(r?.stats).toMatchObject({ dailyPomodoros: 0, weeklyPomodoros: 2 });
+  });
+
+  it('a missing timer starts from the migrated work duration', () => {
+    const r = parseLegacyPomodoro(
+      persisted({ settings: { workDuration: 50 } }),
+      NOW,
+    );
+    expect(r?.timer).toEqual({
+      mode: 'work',
+      timeLeft: 3000,
+      isActive: false,
+      currentTask: null,
+    });
   });
 
   it('keeps valid tasks and skips malformed ones', () => {

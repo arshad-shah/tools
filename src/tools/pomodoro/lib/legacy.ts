@@ -6,7 +6,7 @@ import type {
   TimerMode,
   TimerState,
 } from '../types';
-import { defaultState } from './session';
+import { defaultState, durationFor } from './session';
 
 /** Where Redux Persist (key 'pomodoro-store') kept the old Redux state. */
 export const LEGACY_KEY = 'persist:pomodoro-store';
@@ -121,9 +121,14 @@ export function parseLegacyPomodoro(
   const tasks = parseTasks(decodeSlice(outer.tasks));
   const stats = parseStats(decodeSlice(outer.stats), base.stats);
   if (!timer && !settings && !tasks && !stats) return null;
+  const mergedSettings = settings ?? base.settings;
   return {
-    timer: timer ?? base.timer,
-    settings: settings ?? base.settings,
+    // Without a timer, start from the user's own work duration.
+    timer: timer ?? {
+      ...base.timer,
+      timeLeft: durationFor('work', mergedSettings),
+    },
+    settings: mergedSettings,
     tasks: tasks ?? base.tasks,
     stats: stats ?? base.stats,
   };
