@@ -11,7 +11,7 @@ import {
   type PDFRef,
 } from 'pdf-lib';
 import { encrypt } from '@arshad-shah/qpdf-wasm';
-import { getDocument, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { getDocument, OPS, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export async function makeTextPdf({
   pages = 3,
@@ -483,4 +483,76 @@ export async function makeXfaPdf(): Promise<Uint8Array> {
     ),
   );
   return doc.save();
+}
+
+export interface ImagePlacement {
+  /** Bounding box on the pdf.js viewport (scale 1, rotation applied, y down). */
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  /** The image's own left-to-right runs left-to-right on screen. */
+  upright: boolean;
+  viewport: { width: number; height: number };
+}
+
+type Matrix = [number, number, number, number, number, number];
+const mul = (m: Matrix, n: Matrix): Matrix => [
+  m[0] * n[0] + m[2] * n[1],
+  m[1] * n[0] + m[3] * n[1],
+  m[0] * n[2] + m[2] * n[3],
+  m[1] * n[2] + m[3] * n[3],
+  m[0] * n[4] + m[2] * n[5] + m[4],
+  m[1] * n[4] + m[3] * n[5] + m[5],
+];
+
+/** Where each image XObject is painted on a page, as a viewer shows it. */
+export async function imagePlacements(
+  bytes: Uint8Array,
+  pageIndex: number,
+): Promise<ImagePlacement[]> {
+  const task = getDocument({
+    data: bytes.slice(),
+    useSystemFonts: false,
+    verbosity: 0,
+  });
+  try {
+    const pdf = await task.promise;
+    const page = await pdf.getPage(pageIndex + 1);
+    const viewport = page.getViewport({ scale: 1 });
+    const { fnArray, argsArray } = await page.getOperatorList();
+    const out: ImagePlacement[] = [];
+    let ctm: Matrix = viewport.transform as Matrix;
+    const stack: Matrix[] = [];
+    fnArray.forEach((fn, i) => {
+      if (fn === OPS.save) stack.push(ctm);
+      else if (fn === OPS.restore) ctm = stack.pop() ?? ctm;
+      else if (fn === OPS.transform) ctm = mul(ctm, argsArray[i] as Matrix);
+      else if (fn === OPS.paintImageXObject) {
+        // Images fill the unit square of their current matrix.
+        const pts = [
+          [0, 0],
+          [1, 0],
+          [0, 1],
+          [1, 1],
+        ].map(([x, y]) => [
+          ctm[0] * x + ctm[2] * y + ctm[4],
+          ctm[1] * x + ctm[3] * y + ctm[5],
+        ]);
+        const xs = pts.map((p) => p[0]);
+        const ys = pts.map((p) => p[1]);
+        out.push({
+          left: Math.min(...xs),
+          top: Math.min(...ys),
+          width: Math.max(...xs) - Math.min(...xs),
+          height: Math.max(...ys) - Math.min(...ys),
+          upright: ctm[0] > 0 && Math.abs(ctm[1]) < 1e-6,
+          viewport: { width: viewport.width, height: viewport.height },
+        });
+      }
+    });
+    return out;
+  } finally {
+    await task.destroy();
+  }
 }

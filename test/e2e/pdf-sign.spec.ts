@@ -137,8 +137,15 @@ test('drags and corner-resizes the placement box with the pointer', async ({
   await page.mouse.up();
   await expect.poll(async () => (await parse())[2]).toBeLessThan(w0 - 20);
 
-  const texts = await pdfPageTexts(await download(page));
-  expect(texts[0]).toContain('Ada');
+  // The stamp lands where the readout (and the box on screen) says.
+  const [x, y, w, bh] = await parse();
+  const out = await download(page);
+  const t = (await textPositions(out, 0)).find((i) => i.str === 'Ada')!;
+  expect(t.upright).toBe(true);
+  expect(t.x).toBeGreaterThanOrEqual(x - 1);
+  expect(t.x).toBeLessThan(x + w / 2);
+  expect(t.y).toBeGreaterThan(y);
+  expect(t.y).toBeLessThanOrEqual(y + bh + 1);
 });
 
 test('typed preview and stamped text fill the same box', async ({ page }) => {
