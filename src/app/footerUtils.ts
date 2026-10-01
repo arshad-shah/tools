@@ -1,7 +1,7 @@
 import type { ToolDefinition } from './tool';
 
 export const REPO_URL = 'https://github.com/arshad-shah/tools';
-const DOT = '·';
+export const DOT = '·';
 
 export interface BuildStamp {
   label: string;
@@ -12,7 +12,10 @@ export interface BuildStamp {
   version: string | null;
 }
 
-/** "v2026.10.01 · a1b2c3d" in production, "dev" in dev or without git. */
+/**
+ * "v2026.10.01 · a1b2c3d" in production, "dev" in dev or without a SHA.
+ * `date` is the UTC date of the build (not of the commit), YYYY-MM-DD.
+ */
 export function formatBuildStamp(
   sha: string,
   date: string,

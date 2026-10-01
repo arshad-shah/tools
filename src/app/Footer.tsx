@@ -2,10 +2,9 @@ import React from 'react';
 import { Container, Section, Inline, Text } from '@/shared/ui';
 import type { ToolDefinition } from './tool';
 import { getEnabledTools } from './registry';
-import { formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
+import { DOT, formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
 
 const AUTHOR = 'Arshad Shah';
-const DOT = '·';
 
 const linkClass =
   'inline-flex items-center gap-1.5 rounded-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
@@ -27,6 +26,17 @@ const GithubIcon: React.FC<{ size?: number }> = ({ size = 14 }) => (
 const Sep: React.FC = () => (
   <span aria-hidden className="text-fg-faint">
     {DOT}
+  </span>
+);
+
+/**
+ * A footer item led by its separator, kept on one line together, so a
+ * wrap never leaves a dangling "·" at the end of a line.
+ */
+const Item: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="inline-flex items-center gap-3 whitespace-nowrap">
+    <Sep />
+    {children}
   </span>
 );
 
@@ -59,62 +69,70 @@ const Footer: React.FC<{ tool?: ToolDefinition }> = ({ tool }) => {
                 className="inline-block h-3 w-1.5 animate-caret bg-accent"
               />
             </span>
-            <Sep />
-            <span>{toolCount} tools</span>
-            <Sep />
-            <span className="inline-flex items-center gap-1.5">
-              <span
-                aria-hidden
-                className="inline-block size-1.5 rounded-full bg-success"
-              />
-              runs locally, no uploads
-            </span>
-            <Sep />
-            {stamp.href && stamp.sha ? (
-              <span>
-                {stamp.version} {DOT}{' '}
-                <a
-                  href={stamp.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Build ${stamp.sha} on GitHub`}
-                  className={linkClass}
-                >
-                  {stamp.sha}
-                </a>
+            <Item>
+              <span>{toolCount} tools</span>
+            </Item>
+            <Item>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="inline-block size-1.5 rounded-full bg-success"
+                />
+                runs locally, no uploads
               </span>
-            ) : (
-              <span>{stamp.label}</span>
-            )}
+            </Item>
+            <Item>
+              {stamp.href && stamp.sha ? (
+                <span className="inline-flex items-center gap-1.5">
+                  {stamp.version} <Sep />
+                  <a
+                    href={stamp.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Build ${stamp.sha} on GitHub`}
+                    className={linkClass}
+                  >
+                    {stamp.sha}
+                  </a>
+                </span>
+              ) : (
+                <span>{stamp.label}</span>
+              )}
+            </Item>
           </Inline>
 
           <Inline gap="3" wrap>
             <span>
               © {year} {AUTHOR}
             </span>
-            <Sep />
-            <a
-              href={REPO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="View source on GitHub"
-              className={linkClass}
-            >
-              <GithubIcon />
-              source
-            </a>
-            <Sep />
-            <a
-              href={issuesUrl(tool)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={
-                tool ? `Report an issue with ${tool.name}` : 'Report an issue'
-              }
-              className={linkClass}
-            >
-              issues
-            </a>
+            <Item>
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="View source on GitHub"
+                className={linkClass}
+              >
+                <GithubIcon />
+                source
+              </a>
+            </Item>
+            <Item>
+              <a
+                href={issuesUrl(tool)}
+                target="_blank"
+                rel="noopener noreferrer"
+                // Starts with the visible text (WCAG 2.5.3 label in name).
+                aria-label={
+                  tool
+                    ? `issues: report a problem with ${tool.name}`
+                    : 'issues: report a problem'
+                }
+                className={linkClass}
+              >
+                issues
+              </a>
+            </Item>
           </Inline>
         </Text>
       </Container>
