@@ -12,6 +12,7 @@ import {
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 import DataNode from './DataNode';
+import { matchesSearch } from '../lib/parse';
 
 interface TreeViewProps {
   data: any;
@@ -28,23 +29,25 @@ const TreeView: React.FC<TreeViewProps> = React.memo(({ data, searchTerm }) => {
 
   useEffect(() => {
     let count = 0;
-    const searchRegex = searchTerm ? new RegExp(searchTerm, 'i') : null;
+    // Literal text, never a regex: "(" or "[" must not throw.
+    const matchesTerm = (s: string) =>
+      !!searchTerm && matchesSearch(s, searchTerm);
     const matches = new Set<string>();
 
     const searchNode = (obj: any, path: string[] = []): void => {
       count++;
       const currentPath = path.join('.');
-      if (searchRegex) {
+      if (searchTerm) {
         let isMatch = false;
         if (
           typeof obj === 'string' ||
           typeof obj === 'number' ||
           typeof obj === 'boolean'
         ) {
-          if (String(obj).match(searchRegex)) isMatch = true;
+          if (matchesTerm(String(obj))) isMatch = true;
         }
         const nodeName = path[path.length - 1];
-        if (nodeName && String(nodeName).match(searchRegex)) isMatch = true;
+        if (nodeName && matchesTerm(String(nodeName))) isMatch = true;
         if (isMatch) {
           matches.add(currentPath);
           path.forEach((_, idx) => {

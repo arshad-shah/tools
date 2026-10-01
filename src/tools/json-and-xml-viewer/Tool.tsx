@@ -47,6 +47,7 @@ import {
 } from '@/shared/ui';
 import { saveBlob } from '@/shared/lib/download';
 import TreeView from './components/TreeView';
+import { parseJson, parseXml } from './lib/parse';
 import DataFlow from './components/treeview/DataFlow';
 
 type FormatType = 'json' | 'xml';
@@ -136,16 +137,12 @@ const DataViewer = () => {
   const formatCode = useCallback(() => {
     try {
       if (format === 'json') {
-        const formatted = JSON.stringify(JSON.parse(inputText), null, 2);
+        const formatted = JSON.stringify(parseJson(inputText), null, 2);
         setInputText(formatted);
         setParsedData(JSON.parse(formatted));
         setError('');
       } else {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(inputText, 'text/xml');
-        if (doc.getElementsByTagName('parsererror').length > 0) {
-          throw new Error('Invalid XML');
-        }
+        const doc = parseXml(inputText);
         const formatted = formatXML(inputText);
         setInputText(formatted);
         setParsedData(xmlToJson(doc.documentElement as XMLNode));
@@ -161,14 +158,10 @@ const DataViewer = () => {
   const handleParse = useCallback(() => {
     try {
       if (format === 'json') {
-        setParsedData(JSON.parse(inputText));
+        setParsedData(parseJson(inputText) as { [key: string]: any });
         setError('');
       } else {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(inputText, 'text/xml');
-        if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-          throw new Error('Invalid XML');
-        }
+        const xmlDoc = parseXml(inputText);
         setParsedData(xmlToJson(xmlDoc.documentElement as XMLNode));
         setError('');
       }
