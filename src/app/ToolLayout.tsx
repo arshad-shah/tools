@@ -56,9 +56,10 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
   ToolComponent,
 }) => {
   const navigate = useNavigate();
-  const [key, setKey] = useState<number>(Date.now());
+  // Bumped on retry to remount the tool.
+  const [key, setKey] = useState(0);
 
-  const handleRetry = () => setKey(Date.now());
+  const handleRetry = () => setKey((k) => k + 1);
   const handleNavigateHome = () => navigate('/');
   const versionBadge = getVersionBadge(definition);
   const Icon = definition.icon;
