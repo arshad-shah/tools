@@ -17,7 +17,6 @@ import {
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { formatBytes } from '@/shared/lib/format';
 import { useJob } from '@/shared/state/useJob';
@@ -35,6 +34,8 @@ import {
   PdfFileHeader,
   ResultFiles,
   type ResultFile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import {
   estimateExportBytes,
@@ -56,7 +57,7 @@ const clampDpi = (n: number) =>
   Math.min(MAX_EXPORT_DPI, Math.max(MIN_EXPORT_DPI, Math.round(n)));
 
 const PdfToImagesTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const [pages, setPages] = useState('');
   const { format, dpi, quality, setFormat, setDpi, setQuality } =
     useImageExportSettings();
@@ -74,7 +75,7 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
   const job = useJob(
     async (
       ctx,
-      source: LoadedFile,
+      source: PdfInputFile,
       info: DocInfo,
       snap: Snapshot,
     ): Promise<ResultFile[]> => {
@@ -117,7 +118,7 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
       job.reset();
       apply(v);
     };
-  const pick = (picked: LoadedFile) => {
+  const pick = (picked: PdfInputFile) => {
     job.reset();
     setPages('');
     setFile(picked);
@@ -246,6 +247,7 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
           >
             {job.result && file && (
               <ResultFiles
+                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
                 files={job.result}
                 zipName={deriveFilename(file.name, 'images', 'zip')}
               />

@@ -20,12 +20,15 @@ interface ResultFilesProps {
   inputSize?: number;
   /** When set and there are several files, offers a ZIP of all of them. */
   zipName?: string;
+  /** A line under the header, e.g. UNENCRYPTED_NOTE. */
+  note?: React.ReactNode;
 }
 
 export const ResultFiles: React.FC<ResultFilesProps> = ({
   files,
   inputSize,
   zipName,
+  note,
 }) => {
   const [zipping, setZipping] = useState(false);
   const downloadZip = async (name: string) => {
@@ -70,6 +73,7 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
           </Button>
         )}
       </div>
+      {note && <p className="text-sm text-fg-muted">{note}</p>}
       <ul className="flex flex-col gap-2">
         {files.map((f, i) => (
           // Names may repeat; position is the stable identity here.

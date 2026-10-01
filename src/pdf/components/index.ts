@@ -1,4 +1,6 @@
-export { PdfDropzone } from './PdfDropzone';
+export { PdfDropzone, type PdfInputFile } from './PdfDropzone';
+export { PasswordPrompt } from './PasswordPrompt';
+export { UNENCRYPTED_NOTE } from './notes';
 export { PageThumb } from './PageThumb';
 export { FileThumb } from './FileThumb';
 export { PageGrid, type PageTile } from './PageGrid';

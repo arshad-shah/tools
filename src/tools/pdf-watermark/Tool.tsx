@@ -42,13 +42,15 @@ import {
   uprightJpeg,
   usePreviewBytes,
   type ResultFile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { useWatermarkSettings, type WatermarkMode } from './store';
 
 const MARGIN = 24;
 
 const PdfWatermarkTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const [image, setImage] = useState<LoadedFile | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [pageMode, setPageMode] = useState<'all' | 'ranges'>('all');
@@ -104,7 +106,7 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
   const job = useJob(
     async (
       _ctx,
-      source: LoadedFile,
+      source: PdfInputFile,
       opts: WatermarkOptions,
     ): Promise<ResultFile[]> => {
       const { pages } = opts;
@@ -144,7 +146,7 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
     }
   };
 
-  const pick = change((picked: LoadedFile) => setFile(picked));
+  const pick = change((picked: PdfInputFile) => setFile(picked));
   const clearFile = () => {
     job.reset();
     setFile(null);
@@ -355,7 +357,12 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
             </div>
           )}
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Watermarking">
-            {job.result && <ResultFiles files={job.result} />}
+            {job.result && (
+              <ResultFiles
+                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
+                files={job.result}
+              />
+            )}
           </JobPanel>
         </Stack>
       </CardBody>

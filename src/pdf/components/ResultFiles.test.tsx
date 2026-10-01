@@ -53,3 +53,19 @@ describe('ResultFiles', () => {
     expect(screen.getAllByText('a.pdf')).toHaveLength(2);
   });
 });
+
+describe('ResultFiles note', () => {
+  it('shows a note under the header', () => {
+    render(
+      <ResultFiles
+        files={[{ name: 'n.pdf', bytes: new Uint8Array(1) }]}
+        note="The original was password-protected. This file is not."
+      />,
+    );
+    expect(
+      screen.getByText(
+        'The original was password-protected. This file is not.',
+      ),
+    ).toBeTruthy();
+  });
+});

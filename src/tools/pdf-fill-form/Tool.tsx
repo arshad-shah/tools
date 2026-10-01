@@ -14,7 +14,6 @@ import {
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { logToolError, toToolError, type ToolError } from '@/shared/lib/errors';
 import { useJob } from '@/shared/state/useJob';
@@ -24,19 +23,21 @@ import {
   PdfFileHeader,
   ResultFiles,
   type ResultFile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { FieldControl } from './components/FieldControl';
 import { changedValues, initialValues, type FormValues } from './lib/values';
 
 interface Listing {
-  file: LoadedFile;
+  file: PdfInputFile;
   fields: FormField[];
   initial: FormValues;
   error: ToolError | null;
 }
 
 const PdfFillFormTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const [listing, setListing] = useState<Listing | null>(null);
   const [values, setValues] = useState<FormValues>({});
   const [flatten, setFlatten] = useState(false);
@@ -74,7 +75,7 @@ const PdfFillFormTool: React.FC<ToolProps> = () => {
   const job = useJob(
     async (
       _ctx,
-      source: LoadedFile,
+      source: PdfInputFile,
       changes: FormValues,
       flat: boolean,
     ): Promise<ResultFile> => {
@@ -88,7 +89,7 @@ const PdfFillFormTool: React.FC<ToolProps> = () => {
     },
   );
 
-  const pick = (picked: LoadedFile) => {
+  const pick = (picked: PdfInputFile) => {
     job.reset();
     setFile(picked);
   };
@@ -177,7 +178,12 @@ const PdfFillFormTool: React.FC<ToolProps> = () => {
             </>
           )}
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Filling">
-            {job.result && <ResultFiles files={[job.result]} />}
+            {job.result && (
+              <ResultFiles
+                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
+                files={[job.result]}
+              />
+            )}
           </JobPanel>
         </Stack>
       </CardBody>

@@ -1,5 +1,6 @@
 import { EncryptedPDFError, PDFDocument } from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
+import { ENCRYPTED_MESSAGE } from './messages';
 
 // pdf-lib compiles to ES5, so subclasses of Error lose their prototype and
 // `instanceof EncryptedPDFError` is false at runtime; fall back to the message.
@@ -16,11 +17,7 @@ export async function loadPdf(bytes: Uint8Array): Promise<PDFDocument> {
     doc = await PDFDocument.load(bytes, { updateMetadata: false });
   } catch (cause) {
     if (isEncryptedError(cause)) {
-      throw new ToolError(
-        'ENCRYPTED',
-        'This PDF is password-protected. Encrypted files are not supported by this tool yet.',
-        { cause },
-      );
+      throw new ToolError('ENCRYPTED', ENCRYPTED_MESSAGE, { cause });
     }
     throw new ToolError(
       'INVALID_FILE',

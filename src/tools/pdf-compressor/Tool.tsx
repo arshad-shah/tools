@@ -24,7 +24,6 @@ import {
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
 import { useJob } from '@/shared/state/useJob';
@@ -34,6 +33,8 @@ import {
   PageThumb,
   PdfFileHeader,
   ResultFiles,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import {
   browserCompressDeps,
@@ -92,16 +93,16 @@ const SWITCHES: { key: SwitchKey; id: string; label: string }[] = [
 ];
 
 const PdfCompressorTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const { preset, advanced, choosePreset, updateAdvanced } =
     useCompressorSettings();
   const { doc, loading, error } = usePdfDocument(file);
 
-  const job = useJob((ctx, source: LoadedFile, settings: CompressSettings) =>
+  const job = useJob((ctx, source: PdfInputFile, settings: CompressSettings) =>
     compressPdf(source.bytes, settings, browserCompressDeps, ctx),
   );
 
-  const pick = (picked: LoadedFile) => {
+  const pick = (picked: PdfInputFile) => {
     job.reset();
     setFile(picked);
   };
@@ -250,6 +251,7 @@ const PdfCompressorTool: React.FC<ToolProps> = () => {
                   </Alert>
                 ) : (
                   <ResultFiles
+                    note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
                     files={[
                       {
                         name: deriveFilename(file.name, 'compressed', 'pdf'),

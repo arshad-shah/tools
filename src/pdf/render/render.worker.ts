@@ -2,6 +2,7 @@ import * as pdfjs from 'pdfjs-dist';
 import * as pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import { ToolError } from '@/shared/lib/errors';
+import { ENCRYPTED_MESSAGE } from '@/pdf/edit/messages';
 import {
   exposeRpc,
   Transferred,
@@ -147,11 +148,7 @@ const handlers = {
     } catch (cause) {
       void task.destroy();
       if (cause instanceof pdfjs.PasswordException) {
-        throw new ToolError(
-          'ENCRYPTED',
-          'This PDF is password-protected. Encrypted files are not supported by this tool yet.',
-          { cause },
-        );
+        throw new ToolError('ENCRYPTED', ENCRYPTED_MESSAGE, { cause });
       }
       throw invalidFile(cause);
     }

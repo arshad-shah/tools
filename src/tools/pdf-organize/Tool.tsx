@@ -13,7 +13,6 @@ import {
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
 import { useJob } from '@/shared/state/useJob';
@@ -25,6 +24,8 @@ import {
   PdfFileHeader,
   usePageSelection,
   type PageTile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import {
   initialTiles,
@@ -39,18 +40,18 @@ import {
  * the render worker restarts and reopens it); a different file discards them.
  */
 interface EditState {
-  file: LoadedFile;
+  file: PdfInputFile;
   tiles: PageTile[];
 }
 
 const only = (key: string) => new Set([key]);
 
 const OrganizeTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const [edit, setEdit] = useState<EditState | null>(null);
   const { doc, loading, error } = usePdfDocument(file);
 
-  const job = useJob(async (ctx, source: LoadedFile, current: PageTile[]) => {
+  const job = useJob(async (ctx, source: PdfInputFile, current: PageTile[]) => {
     const { bytes, notes } = await applyPageEdits(
       source.bytes,
       tilesToEdits(current),
@@ -58,7 +59,9 @@ const OrganizeTool: React.FC<ToolProps> = () => {
     const name = deriveFilename(source.name, 'organized', 'pdf');
     ctx.signal.throwIfAborted();
     saveBlob(bytes, name, 'application/pdf');
-    notify.success(`Saved ${name}`);
+    notify.success(
+      `Saved ${name}${source.wasEncrypted ? ' (not password-protected)' : ''}`,
+    );
     return { name, notes };
   });
 
@@ -75,7 +78,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
     job.reset();
     setEdit({ file, tiles: nextTiles });
   };
-  const changeFile = (next: LoadedFile | null) => {
+  const changeFile = (next: PdfInputFile | null) => {
     job.reset();
     setEdit(null);
     selection.clear();
@@ -195,6 +198,11 @@ const OrganizeTool: React.FC<ToolProps> = () => {
             </>
           )}
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Building PDF">
+            {job.result && file?.wasEncrypted && (
+              <Text size="sm" tone="muted">
+                {UNENCRYPTED_NOTE}
+              </Text>
+            )}
             {job.result && job.result.notes.length > 0 && (
               <Alert status="warning">
                 <AlertTitle>

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Alert, AlertDescription, Button, Inline, Text } from '@/shared/ui';
-import type { LoadedFile } from '@/shared/lib/files';
+import type { PdfInputFile } from './PdfDropzone';
 import type { ToolError } from '@/shared/lib/errors';
 import { PdfDropzone } from './PdfDropzone';
 
 interface PdfFileHeaderProps {
-  file: LoadedFile | null;
+  file: PdfInputFile | null;
   /** Called with the first dropped/picked file. */
-  onFile: (file: LoadedFile) => void;
+  onFile: (file: PdfInputFile) => void;
   /** "Choose another file". */
   onClear: () => void;
   /** From usePdfDocument. */
