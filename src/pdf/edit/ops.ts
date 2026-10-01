@@ -241,10 +241,23 @@ async function editInPlace(
       notes.push(
         `${plural(fields, 'form field')} that only appeared on deleted pages ${fields === 1 ? 'was' : 'were'} removed.`,
       );
-    const dead = countBookmarksTo(doc, gone);
+    const targetPage = makeTargetPage(doc);
+    // Count bookmarks first: they may go through named destinations that
+    // are removed next.
+    const dead = countBookmarksTo(doc, gone, targetPage);
     if (dead > 0)
       notes.push(
         `${plural(dead, 'bookmark')} pointed to a deleted page and now ${dead === 1 ? 'leads' : 'lead'} nowhere.`,
+      );
+    const links = removeLinksTo(doc, ordered, gone, targetPage);
+    if (links > 0)
+      notes.push(
+        `${plural(links, 'link')} to a deleted page ${links === 1 ? 'was' : 'were'} removed.`,
+      );
+    const dests = removeNamedDestsTo(doc, gone, targetPage);
+    if (dests > 0)
+      notes.push(
+        `${plural(dests, 'named destination')} to a deleted page ${dests === 1 ? 'was' : 'were'} removed.`,
       );
     // Bookmarks or links may still reference a deleted page object; strip it
     // to a bare stub so its content and annotations don't stay in the file.
@@ -343,15 +356,18 @@ function namedDests(doc: PDFDocument): Map<string, PDFObject> {
   return out;
 }
 
-/** Number of bookmarks whose destination is one of the `gone` pages. */
-function countBookmarksTo(doc: PDFDocument, gone: ReadonlySet<PDFRef>): number {
-  const { context, catalog } = doc;
-  const outlines = catalog.lookupMaybe(PDFName.of('Outlines'), PDFDict);
-  if (!outlines) return 0;
+type TargetPage = (dest: PDFObject | undefined) => PDFObject | undefined;
+
+/**
+ * Resolves a destination (explicit array, named destination, {D: [...]}
+ * dict, or a reference to any of those) to its target page object.
+ */
+function makeTargetPage(doc: PDFDocument): TargetPage {
+  const { context } = doc;
   let named: Map<string, PDFObject> | null = null;
   const deref = (o: PDFObject | undefined) =>
     o instanceof PDFRef ? context.lookup(o) : o;
-  const targetPage = (dest: PDFObject | undefined) => {
+  return (dest) => {
     let d = deref(dest);
     if (isText(d)) {
       named ??= namedDests(doc);
@@ -360,21 +376,114 @@ function countBookmarksTo(doc: PDFDocument, gone: ReadonlySet<PDFRef>): number {
     if (d instanceof PDFDict) d = deref(d.get(PDFName.of('D'))); // {D: [...]}
     return d instanceof PDFArray ? d.get(0) : undefined;
   };
+}
+
+/** A bookmark's or link's destination: /Dest, else its action's /D. */
+const destOf = (holder: PDFDict) =>
+  holder.get(PDFName.of('Dest')) ??
+  holder.lookupMaybe(PDFName.of('A'), PDFDict)?.get(PDFName.of('D'));
+
+const pointsInto = (
+  targetPage: TargetPage,
+  dest: PDFObject | undefined,
+  gone: ReadonlySet<PDFRef>,
+) => {
+  const page = targetPage(dest);
+  return page instanceof PDFRef && gone.has(page);
+};
+
+/** Number of bookmarks whose destination is one of the `gone` pages. */
+function countBookmarksTo(
+  doc: PDFDocument,
+  gone: ReadonlySet<PDFRef>,
+  targetPage: TargetPage,
+): number {
+  const outlines = doc.catalog.lookupMaybe(PDFName.of('Outlines'), PDFDict);
+  if (!outlines) return 0;
   let count = 0;
   const seen = new Set<PDFDict>();
   const visit = (first: PDFDict | undefined) => {
     for (let item = first; item && !seen.has(item); ) {
       seen.add(item);
-      const action = item.lookupMaybe(PDFName.of('A'), PDFDict);
-      const dest = item.get(PDFName.of('Dest')) ?? action?.get(PDFName.of('D'));
-      const page = targetPage(dest);
-      if (page instanceof PDFRef && gone.has(page)) count++;
+      if (pointsInto(targetPage, destOf(item), gone)) count++;
       visit(item.lookupMaybe(PDFName.of('First'), PDFDict));
       item = item.lookupMaybe(PDFName.of('Next'), PDFDict);
     }
   };
   visit(outlines.lookupMaybe(PDFName.of('First'), PDFDict));
   return count;
+}
+
+/**
+ * Removes link annotations on kept pages that go to a deleted page, and an
+ * /OpenAction that does. Returns the number of links removed.
+ */
+function removeLinksTo(
+  doc: PDFDocument,
+  kept: PDFPage[],
+  gone: ReadonlySet<PDFRef>,
+  targetPage: TargetPage,
+): number {
+  let removed = 0;
+  for (const page of kept) {
+    const annots = page.node.Annots();
+    if (!annots) continue;
+    for (let i = annots.size() - 1; i >= 0; i--) {
+      const annot = annots.lookupMaybe(i, PDFDict);
+      if (
+        annot?.get(PDFName.of('Subtype')) === PDFName.of('Link') &&
+        pointsInto(targetPage, destOf(annot), gone)
+      ) {
+        annots.remove(i);
+        removed++;
+      }
+    }
+  }
+  const open = doc.catalog.get(PDFName.of('OpenAction'));
+  const openDict = open instanceof PDFRef ? doc.context.lookup(open) : open;
+  const openDest =
+    openDict instanceof PDFDict ? openDict.get(PDFName.of('D')) : open;
+  if (open && pointsInto(targetPage, openDest, gone))
+    doc.catalog.delete(PDFName.of('OpenAction'));
+  return removed;
+}
+
+/** Removes named destinations that go to a deleted page; returns the count. */
+function removeNamedDestsTo(
+  doc: PDFDocument,
+  gone: ReadonlySet<PDFRef>,
+  targetPage: TargetPage,
+): number {
+  const { catalog } = doc;
+  let removed = 0;
+  const legacy = catalog.lookupMaybe(PDFName.of('Dests'), PDFDict);
+  for (const [key, value] of legacy?.entries() ?? []) {
+    if (pointsInto(targetPage, value, gone)) {
+      legacy!.delete(key);
+      removed++;
+    }
+  }
+  const walk = (node: PDFDict | undefined, depth: number) => {
+    if (!node || depth > 32) return;
+    const names = node.lookupMaybe(PDFName.of('Names'), PDFArray);
+    if (names) {
+      for (let i = names.size() - 2; i >= 0; i -= 2) {
+        if (pointsInto(targetPage, names.get(i + 1), gone)) {
+          names.remove(i + 1);
+          names.remove(i);
+          removed++;
+        }
+      }
+    }
+    const kids = node.lookupMaybe(PDFName.of('Kids'), PDFArray);
+    if (kids) {
+      for (let i = 0; i < kids.size(); i++)
+        walk(kids.lookupMaybe(i, PDFDict), depth + 1);
+    }
+  };
+  const tree = catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
+  walk(tree?.lookupMaybe(PDFName.of('Dests'), PDFDict), 0);
+  return removed;
 }
 
 /**

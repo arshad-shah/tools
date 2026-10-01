@@ -32,7 +32,9 @@ export async function makeTextPdf({
  * Text pages ("S 1", "S 2", ...) plus document-level structure that page
  * edits must keep: Info fields, a bookmark per page (one via a named
  * destination), a text field on the first and last page, page labels,
- * /Lang and viewer preferences.
+ * /Lang and viewer preferences. Page 1 also has two link annotations (to the
+ * last page via /Dest, to page 2 via a GoTo action), and an unused named
+ * destination "third" points at the last page.
  */
 export async function makeStructuredPdf(pages = 3): Promise<Uint8Array> {
   const doc = await PDFDocument.load(await makeTextPdf({ pages, label: 'S' }));
@@ -80,9 +82,38 @@ export async function makeStructuredPdf(pages = 3): Promise<Uint8Array> {
     }),
   );
   doc.catalog.set(PDFName.of('Outlines'), outlineRef);
+  const lastRef = pageRefs[pageRefs.length - 1];
+  names.push(
+    PDFString.of('third'),
+    context.register(context.obj([lastRef, PDFName.of('Fit')])),
+  );
   doc.catalog.set(
     PDFName.of('Names'),
     context.obj({ Dests: context.obj({ Names: names }) }),
+  );
+  const link = (rect: number[], extra: Record<string, unknown>) =>
+    context.register(
+      context.obj({
+        Type: PDFName.of('Annot'),
+        Subtype: PDFName.of('Link'),
+        Rect: rect,
+        Border: [0, 0, 0],
+        ...extra,
+      } as never),
+    );
+  doc.getPage(0).node.set(
+    PDFName.of('Annots'),
+    context.obj([
+      link([72, 600, 200, 620], {
+        Dest: context.obj([lastRef, PDFName.of('Fit')]),
+      }),
+      link([72, 640, 200, 660], {
+        A: context.obj({
+          S: PDFName.of('GoTo'),
+          D: context.obj([pageRefs[1], PDFName.of('Fit')]),
+        }),
+      }),
+    ]),
   );
 
   const form = doc.getForm();
