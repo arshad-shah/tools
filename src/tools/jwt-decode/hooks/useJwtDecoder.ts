@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { toToolError } from '@/shared/lib/errors';
+import { decodeJwt } from '../lib/jwt';
 import { DecodedJWT } from '../types';
 
 const useJwtDecoder = () => {
@@ -12,29 +14,10 @@ const useJwtDecoder = () => {
 
     if (!token?.trim()) return;
 
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      setError('Invalid JWT format. Expected 3 parts separated by dots.');
-      return;
-    }
-
     try {
-      const header = JSON.parse(
-        atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')),
-      );
-      const payload = JSON.parse(
-        atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-      );
-
-      setDecoded({
-        header,
-        payload,
-        signature: parts[2],
-        raw: token,
-        parts,
-      });
-    } catch {
-      setError('Failed to decode JWT: Invalid base64 encoding');
+      setDecoded(decodeJwt(token));
+    } catch (e) {
+      setError(toToolError(e, 'Failed to decode the JWT').message);
     }
   }, []);
 

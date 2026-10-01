@@ -14,6 +14,9 @@ import {
   RefreshCw,
   Settings,
   Shield,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldX,
   Trash2,
   User,
 } from 'lucide-react';
@@ -35,6 +38,7 @@ import {
   Grid,
   Inline,
   Label,
+  Select,
   Stack,
   Tabs,
   TabsContent,
@@ -52,9 +56,15 @@ import {
 } from './lib/claims';
 import useJwtDecoder from './hooks/useJwtDecoder';
 import { useClipboard } from '@/shared/lib/clipboard';
+import { toToolError } from '@/shared/lib/errors';
+import { timeClaimsStatus, type TimeStatus } from './lib/jwt';
+import { verifyJwt, type SecretEncoding } from './lib/verify';
 
 const SAMPLE_JWT =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNhbXBsZS1rZXkifQ.eyJzdWIiOiJ1c2VyLTEyMzQ1IiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzI2MjM5MDIyLCJleHAiOjE3NTc3NzUwMjIsImlzcyI6Imh0dHBzOi8vYXV0aC5leGFtcGxlLmNvbSIsImF1ZCI6WyJhcGkuZXhhbXBsZS5jb20iLCJ3ZWIuZXhhbXBsZS5jb20iXSwicm9sZXMiOlsidXNlciIsIm1vZGVyYXRvciJdLCJwZXJtaXNzaW9ucyI6WyJyZWFkOnBvc3RzIiwid3JpdGU6cG9zdHMiLCJtb2RlcmF0ZTpjb21tZW50cyJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiZ3JvdXBzIjpbImRldmVsb3BlcnMiLCJiZXRhLXVzZXJzIl0sImN1c3RvbV9jbGFpbSI6eyJkZXBhcnRtZW50IjoiZW5naW5lZXJpbmciLCJ0ZWFtX2lkIjo0Mn19.K8Xz9n4rQ6vKm3LpBtY8jE2dR7fN9sA1qW5cT3uI0Mn';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNhbXBsZS1rZXkifQ.eyJzdWIiOiJ1c2VyLTEyMzQ1IiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzI2MjM5MDIyLCJleHAiOjE3NTc3NzUwMjIsImlzcyI6Imh0dHBzOi8vYXV0aC5leGFtcGxlLmNvbSIsImF1ZCI6WyJhcGkuZXhhbXBsZS5jb20iLCJ3ZWIuZXhhbXBsZS5jb20iXSwicm9sZXMiOlsidXNlciIsIm1vZGVyYXRvciJdLCJwZXJtaXNzaW9ucyI6WyJyZWFkOnBvc3RzIiwid3JpdGU6cG9zdHMiLCJtb2RlcmF0ZTpjb21tZW50cyJdLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiZ3JvdXBzIjpbImRldmVsb3BlcnMiLCJiZXRhLXVzZXJzIl0sImN1c3RvbV9jbGFpbSI6eyJkZXBhcnRtZW50IjoiZW5naW5lZXJpbmciLCJ0ZWFtX2lkIjo0Mn19.Olk3AuFENIdCJiCYxGpglmauBWmLx42p7P3cjybazSI';
+
+// The sample is really signed (HS256) so verification can be tried out.
+const SAMPLE_SECRET = 'sample-secret';
 
 const IDENTITY_KEYS = [
   'sub',
@@ -206,6 +216,121 @@ const ClaimCard: React.FC<ClaimCardProps> = ({
   </Card>
 );
 
+type SignatureStatus =
+  | { state: 'unverified' | 'checking' | 'verified' | 'invalid' }
+  | { state: 'error'; message: string };
+
+interface Verification {
+  token: string;
+  key: string;
+  encoding: SecretEncoding;
+  status: SignatureStatus;
+}
+
+const SIGNATURE_TEXT: Record<
+  SignatureStatus['state'],
+  { title: string; detail: string; tone: 'neutral' | 'success' | 'danger' }
+> = {
+  unverified: {
+    title: 'Signature not verified',
+    detail:
+      'Decoding does not prove the token is genuine. Add the secret or public key in the Signature tab to verify it.',
+    tone: 'neutral',
+  },
+  checking: {
+    title: 'Checking signature',
+    detail: 'Verifying with the key you entered.',
+    tone: 'neutral',
+  },
+  verified: {
+    title: 'Signature verified',
+    detail: 'The signature matches the key you entered.',
+    tone: 'success',
+  },
+  invalid: {
+    title: 'Signature invalid',
+    detail:
+      'The signature does not match this key. The token was altered or signed with a different key.',
+    tone: 'danger',
+  },
+  error: {
+    title: 'Signature could not be checked',
+    detail: '',
+    tone: 'danger',
+  },
+};
+
+const timeText = (
+  status: TimeStatus,
+): {
+  title: string;
+  detail: string;
+  tone: 'neutral' | 'success' | 'danger';
+} => {
+  const at = (s?: number) => (s === undefined ? '' : formatTime(s));
+  switch (status.state) {
+    case 'none':
+      return {
+        title: 'No time claims',
+        detail: 'The token has no exp or nbf claim.',
+        tone: 'neutral',
+      };
+    case 'expired':
+      return {
+        title: 'Expired',
+        detail: `Expired on ${at(status.exp)}.`,
+        tone: 'danger',
+      };
+    case 'not-yet-valid':
+      return {
+        title: 'Not valid yet',
+        detail: `Not before ${at(status.nbf)}.`,
+        tone: 'danger',
+      };
+    case 'current':
+      return {
+        title: 'Within validity window',
+        detail:
+          status.exp !== undefined
+            ? `Expires ${at(status.exp)}.`
+            : 'No expiry (exp) claim.',
+        tone: 'success',
+      };
+  }
+};
+
+const StatusRow: React.FC<{
+  label: string;
+  title: string;
+  detail: string;
+  tone: 'neutral' | 'success' | 'danger';
+  icon: React.ReactNode;
+}> = ({ label, title, detail, tone, icon }) => (
+  <Inline align="start" gap="3">
+    <Box className="pt-0.5">{icon}</Box>
+    <Stack gap="1" className="min-w-0 flex-1">
+      <Inline gap="2" align="center" wrap>
+        <Text size="sm" tone="subtle">
+          {label}
+        </Text>
+        <Badge variant="soft" tone={tone} size="sm">
+          {title}
+        </Badge>
+      </Inline>
+      {detail && (
+        <Text size="sm" tone="subtle">
+          {detail}
+        </Text>
+      )}
+    </Stack>
+  </Inline>
+);
+
+const SECRET_ENCODINGS = [
+  { value: 'text', label: 'Text (UTF-8)' },
+  { value: 'base64url', label: 'Base64url' },
+];
+
 const JWTDecoder: React.FC = () => {
   const { jwt, setJwt, decoded, error, decode, clear } = useJwtDecoder();
   // Keyed so only the button pressed shows "Copied" (B10).
@@ -214,10 +339,51 @@ const JWTDecoder: React.FC = () => {
     'header' | 'payload' | 'signature'
   >('payload');
 
+  // Ticks so the countdown and the time-claim status stay live.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const expiryInfo: ExpiryInfo = useMemo(
-    () => getExpiryInfo(decoded?.payload.exp),
-    [decoded?.payload.exp],
+    () => getExpiryInfo(decoded?.payload.exp, now),
+    [decoded?.payload.exp, now],
   );
+  const timeStatus: TimeStatus | null = decoded
+    ? timeClaimsStatus(decoded.payload, Math.floor(now / 1000))
+    : null;
+
+  const [keyText, setKeyText] = useState('');
+  const [secretEncoding, setSecretEncoding] = useState<SecretEncoding>('text');
+  const [verification, setVerification] = useState<Verification | null>(null);
+  // A result only counts for the exact token, key and encoding it checked.
+  const sigStatus: SignatureStatus =
+    decoded &&
+    verification &&
+    verification.token === decoded.raw &&
+    verification.key === keyText &&
+    verification.encoding === secretEncoding
+      ? verification.status
+      : { state: 'unverified' };
+
+  const handleVerify = async () => {
+    if (!decoded) return;
+    const attempt = {
+      token: decoded.raw,
+      key: keyText,
+      encoding: secretEncoding,
+    };
+    setVerification({ ...attempt, status: { state: 'checking' } });
+    let status: SignatureStatus;
+    try {
+      const ok = await verifyJwt(decoded, keyText, { secretEncoding });
+      status = { state: ok ? 'verified' : 'invalid' };
+    } catch (e) {
+      status = { state: 'error', message: toToolError(e).message };
+    }
+    setVerification({ ...attempt, status });
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setJwt(SAMPLE_JWT), 300);
@@ -577,27 +743,80 @@ const JWTDecoder: React.FC = () => {
       <Alert status="info" icon={<Info aria-hidden />}>
         <AlertTitle>About signatures</AlertTitle>
         <AlertDescription>
-          The signature verifies that the token hasn&apos;t been tampered with
-          and confirms the sender&apos;s identity using cryptographic
-          algorithms.
+          The signature proves the token was issued by the key holder and not
+          altered. It is only checked when you enter the key below; the key
+          never leaves your browser.
         </AlertDescription>
       </Alert>
       {algorithm && (
         <ClaimCard
           label="Signing algorithm"
           value={`${algorithm} - ${
-            algorithm.includes('HS')
+            algorithm.startsWith('HS')
               ? 'HMAC (symmetric)'
-              : algorithm.includes('RS')
+              : algorithm.startsWith('RS')
                 ? 'RSA (asymmetric)'
-                : algorithm.includes('ES')
-                  ? 'ECDSA (elliptic curve)'
-                  : 'Other algorithm'
+                : algorithm.startsWith('PS')
+                  ? 'RSA-PSS (asymmetric)'
+                  : algorithm.startsWith('ES')
+                    ? 'ECDSA (elliptic curve)'
+                    : 'Other algorithm'
           }`}
           icon={<Lock size={16} aria-hidden />}
           colorScheme="warning"
         />
       )}
+      <Card>
+        <CardBody>
+          <Stack gap="3">
+            <Label htmlFor="jwt-verify-key">Secret or public key</Label>
+            <Textarea
+              id="jwt-verify-key"
+              value={keyText}
+              onChange={setKeyText}
+              rows={4}
+              spellCheck={false}
+              autoComplete="off"
+              placeholder={
+                algorithm?.startsWith('HS')
+                  ? 'Shared secret, or a JWK with kty "oct"'
+                  : 'PEM public key (BEGIN PUBLIC KEY), JWK or JWKS'
+              }
+            />
+            <Inline justify="between" align="center" gap="2" wrap>
+              {algorithm?.startsWith('HS') ? (
+                <div className="w-48">
+                  <Select
+                    value={secretEncoding}
+                    onValueChange={(v) =>
+                      setSecretEncoding(v as SecretEncoding)
+                    }
+                    items={SECRET_ENCODINGS}
+                    aria-label="Secret encoding"
+                  />
+                </div>
+              ) : (
+                <Text size="sm" tone="subtle">
+                  Supports HS, RS, PS and ES with 256, 384 or 512 bits.
+                </Text>
+              )}
+              <Button
+                variant="solid"
+                leftIcon={<ShieldCheck size={16} />}
+                onClick={() => void handleVerify()}
+                disabled={!keyText.trim() || sigStatus.state === 'checking'}
+              >
+                Verify signature
+              </Button>
+            </Inline>
+            {jwt === SAMPLE_JWT && (
+              <Text size="sm" tone="subtle">
+                The sample token is signed with the secret {SAMPLE_SECRET}.
+              </Text>
+            )}
+          </Stack>
+        </CardBody>
+      </Card>
       <Accordion type="single">
         <AccordionItem value="signature-value">
           <AccordionTrigger>
@@ -711,40 +930,45 @@ const JWTDecoder: React.FC = () => {
         </Alert>
       )}
 
-      {decoded && decoded.payload.exp && (
-        <Alert
-          status={expiryInfo.isExpired ? 'danger' : 'success'}
-          icon={
-            expiryInfo.isExpired ? (
-              <AlertCircle aria-hidden />
-            ) : (
-              <CheckCircle aria-hidden />
-            )
-          }
-        >
-          <AlertTitle>
-            {expiryInfo.isExpired ? 'Token expired' : 'Token valid'}
-          </AlertTitle>
-          {/* Not AlertDescription: a <p> can't hold block content. */}
-          <Inline
-            justify="between"
-            align="center"
-            wrap
-            gap="2"
-            className="mt-1"
-          >
-            <Text size="sm">
-              {expiryInfo.isExpired
-                ? `Expired on ${expiryInfo.expiryDate?.toLocaleString()}`
-                : formatTime(decoded.payload.exp)}
-            </Text>
-            {!expiryInfo.isExpired && (
-              <Badge variant="soft" tone="success" size="sm">
-                Expires in {expiryInfo.timeLeft}
-              </Badge>
-            )}
-          </Inline>
-        </Alert>
+      {decoded && timeStatus && (
+        <Card>
+          <CardBody>
+            <Stack gap="4" role="group" aria-label="Token status">
+              <StatusRow
+                label="Decoded"
+                title="Header and payload decoded"
+                detail=""
+                tone="neutral"
+                icon={<FileJson size={18} aria-hidden />}
+              />
+              <StatusRow
+                label="Time claims"
+                {...timeText(timeStatus)}
+                icon={<Clock size={18} aria-hidden />}
+              />
+              <StatusRow
+                label="Signature"
+                title={SIGNATURE_TEXT[sigStatus.state].title}
+                detail={
+                  sigStatus.state === 'error'
+                    ? sigStatus.message
+                    : SIGNATURE_TEXT[sigStatus.state].detail
+                }
+                tone={SIGNATURE_TEXT[sigStatus.state].tone}
+                icon={
+                  sigStatus.state === 'verified' ? (
+                    <ShieldCheck size={18} aria-hidden />
+                  ) : sigStatus.state === 'invalid' ||
+                    sigStatus.state === 'error' ? (
+                    <ShieldX size={18} aria-hidden />
+                  ) : (
+                    <ShieldAlert size={18} aria-hidden />
+                  )
+                }
+              />
+            </Stack>
+          </CardBody>
+        </Card>
       )}
 
       {decoded && (
