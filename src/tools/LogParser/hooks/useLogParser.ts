@@ -1,46 +1,46 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
 import {
   LogEntry,
   LogType,
   FilterCriteria,
   LogCounts,
   ViewMode,
-} from "../../../types/LogParserTypes";
+} from '../../../types/LogParserTypes';
 import {
   parseLogsByType,
   filterLogs,
   countLogsByLevel,
   createSampleLogs,
-} from "../utils/utils";
+} from '../utils/utils';
 
 export const useLogParser = () => {
   // Core state
-  const [logText, setLogText] = useState<string>("");
+  const [logText, setLogText] = useState<string>('');
   const [parsedLogs, setParsedLogs] = useState<LogEntry[]>([]);
-  const [logType, setLogType] = useState<LogType>("auto");
+  const [logType, setLogType] = useState<LogType>('auto');
 
   // UI state
   const [darkMode, setDarkMode] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       return (
-        localStorage.getItem("darkMode") === "true" ||
-        window.matchMedia("(prefers-color-scheme: dark)").matches
+        localStorage.getItem('darkMode') === 'true' ||
+        window.matchMedia('(prefers-color-scheme: dark)').matches
       );
     }
     return false;
   });
 
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<ViewMode["mode"]>("split");
+  const [viewMode, setViewMode] = useState<ViewMode['mode']>('split');
   const [expandedLogs, setExpandedLogs] = useState<{ [id: string]: boolean }>(
-    {}
+    {},
   );
 
   // Filter state
-  const [filter, setFilter] = useState<string>("");
-  const [searchComponent, setSearchComponent] = useState<string>("");
+  const [filter, setFilter] = useState<string>('');
+  const [searchComponent, setSearchComponent] = useState<string>('');
   const [activeFilters, setActiveFilters] = useState<
-    FilterCriteria["levelFilters"]
+    FilterCriteria['levelFilters']
   >({
     error: true,
     warn: true,
@@ -48,7 +48,7 @@ export const useLogParser = () => {
     debug: true,
     success: true,
   });
-  const [timeRange, setTimeRange] = useState<FilterCriteria["timeRange"]>({
+  const [timeRange, setTimeRange] = useState<FilterCriteria['timeRange']>({
     start: undefined,
     end: undefined,
   });
@@ -65,11 +65,11 @@ export const useLogParser = () => {
 
   // Persist dark mode preference
   useEffect(() => {
-    localStorage.setItem("darkMode", darkMode.toString());
+    localStorage.setItem('darkMode', darkMode.toString());
     if (darkMode) {
-      document.documentElement.classList.add("dark");
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
 
@@ -86,26 +86,26 @@ export const useLogParser = () => {
 
   // Toggle a specific log level filter
   const toggleLevelFilter = useCallback(
-    (level: keyof FilterCriteria["levelFilters"]) => {
+    (level: keyof FilterCriteria['levelFilters']) => {
       setActiveFilters((prev) => ({
         ...prev,
         [level]: !prev[level],
       }));
     },
-    []
+    [],
   );
 
   // Clear all logs
   const clearLogs = useCallback(() => {
-    setLogText("");
+    setLogText('');
     setParsedLogs([]);
     setExpandedLogs({});
   }, []);
 
   // Reset all filters
   const resetFilters = useCallback(() => {
-    setFilter("");
-    setSearchComponent("");
+    setFilter('');
+    setSearchComponent('');
     setActiveFilters({
       error: true,
       warn: true,
@@ -135,10 +135,10 @@ export const useLogParser = () => {
   // Check if any filters are active
   const hasActiveFilters = Boolean(
     filter ||
-      searchComponent ||
-      timeRange.start ||
-      timeRange.end ||
-      !Object.values(activeFilters).every(Boolean)
+    searchComponent ||
+    timeRange.start ||
+    timeRange.end ||
+    !Object.values(activeFilters).every(Boolean),
   );
 
   return {
@@ -179,25 +179,6 @@ export const useLogParser = () => {
   };
 };
 
-// Hook for managing copy to clipboard functionality
-export const useCopyToClipboard = () => {
-  const [copied, setCopied] = useState<boolean>(false);
-
-  const copyToClipboard = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      return true;
-    } catch (error) {
-      console.error("Failed to copy text:", error);
-      return false;
-    }
-  }, []);
-
-  return { copied, copyToClipboard };
-};
-
 // Hook for managing animations
 export const useAnimations = () => {
   const fadeInUp = {
@@ -205,7 +186,7 @@ export const useAnimations = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.3, ease: "easeOut" },
+      transition: { duration: 0.3, ease: 'easeOut' },
     },
   };
 
@@ -222,7 +203,7 @@ export const useAnimations = () => {
     visible: {
       opacity: 1,
       x: 0,
-      transition: { duration: 0.3, ease: "easeOut" },
+      transition: { duration: 0.3, ease: 'easeOut' },
     },
   };
 
@@ -231,7 +212,7 @@ export const useAnimations = () => {
     visible: {
       opacity: 1,
       scale: 1,
-      transition: { duration: 0.2, ease: "easeOut" },
+      transition: { duration: 0.2, ease: 'easeOut' },
     },
   };
 

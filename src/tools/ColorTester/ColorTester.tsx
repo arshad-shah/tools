@@ -37,6 +37,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
+import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
 
@@ -145,7 +146,7 @@ const ColorTester: React.FC = () => {
   const [alpha, setAlpha] = useState(1);
 
   const [savedColors, setSavedColors] = useState<ColorInfo[]>(INITIAL_PALETTE);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { copiedKey, copy } = useClipboard();
   const [colorNameSuggestion, setColorNameSuggestion] =
     useState<string>('Steel Blue');
   const [colorHarmony, setColorHarmony] = useState<ColorHarmony | null>(null);
@@ -175,12 +176,7 @@ const ColorTester: React.FC = () => {
     });
   }, [red, green, blue]);
 
-  const copyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
-    });
-  };
+  const copyToClipboard = (text: string, key: string) => void copy(text, key);
 
   const generateRandomColor = () => {
     setRed(Math.floor(Math.random() * 256));

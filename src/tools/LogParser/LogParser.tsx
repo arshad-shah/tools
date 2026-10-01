@@ -52,8 +52,9 @@ import {
   Text,
   Textarea,
 } from '@/shared/ui';
+import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
-import { useCopyToClipboard, useLogParser } from './hooks/useLogParser';
+import { useLogParser } from './hooks/useLogParser';
 import { LogEntry, LogLevel, LogType } from '../../types/LogParserTypes';
 
 const LOG_TYPE_OPTIONS = [
@@ -211,7 +212,8 @@ const LogParserTool: React.FC = () => {
     loadSampleLogs,
   } = useLogParser();
 
-  const { copied, copyToClipboard } = useCopyToClipboard();
+  // Keyed so only the row whose button was pressed shows "Copied" (B10).
+  const { copiedKey, copy } = useClipboard();
 
   const downloadFiltered = () => {
     saveBlob(
@@ -340,8 +342,8 @@ const LogParserTool: React.FC = () => {
               <LogRow
                 key={log.id}
                 log={log}
-                copied={copied}
-                onCopy={copyToClipboard}
+                copied={copiedKey === String(log.id)}
+                onCopy={(text) => void copy(text, String(log.id))}
               />
             ))}
           </Stack>

@@ -23,6 +23,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
+import { useClipboard } from '@/shared/lib/clipboard';
 
 type NumberKey = 'binary' | 'decimal' | 'hexadecimal' | 'octal';
 
@@ -85,7 +86,7 @@ const NumberConverter: React.FC = () => {
     octal: '',
   });
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState<NumberKey | null>(null);
+  const { copiedKey, copy } = useClipboard();
 
   useEffect(() => {
     if (!inputValue) {
@@ -117,10 +118,7 @@ const NumberConverter: React.FC = () => {
   }, [inputValue, inputType]);
 
   const handleCopy = (value: string, key: NumberKey) => {
-    if (!value) return;
-    navigator.clipboard.writeText(value);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
+    if (value) void copy(value, key);
   };
 
   const currentType = NUMBER_TYPES.find((t) => t.value === inputType)!;
@@ -216,7 +214,7 @@ const NumberConverter: React.FC = () => {
                                 variant="ghost"
                                 size="sm"
                                 leftIcon={
-                                  copied === t.value ? (
+                                  copiedKey === t.value ? (
                                     <Check size={14} />
                                   ) : (
                                     <Copy size={14} />
@@ -224,7 +222,7 @@ const NumberConverter: React.FC = () => {
                                 }
                                 onClick={() => handleCopy(value, t.value)}
                               >
-                                {copied === t.value ? 'Copied' : 'Copy'}
+                                {copiedKey === t.value ? 'Copied' : 'Copy'}
                               </Button>
                             )}
                           </Inline>

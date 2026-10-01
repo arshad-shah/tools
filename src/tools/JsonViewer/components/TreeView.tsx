@@ -10,6 +10,7 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
+import { useClipboard } from '@/shared/lib/clipboard';
 import DataNode from './DataNode';
 
 interface TreeViewProps {
@@ -81,9 +82,8 @@ const TreeView: React.FC<TreeViewProps> = React.memo(({ data, searchTerm }) => {
     setCollapsedCount(Math.max(0, totalNodesCount - visibleCount));
   }, [expandedNodes, totalNodesCount, data]);
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
+  const { copy } = useClipboard();
+  const copyToClipboard = (text: string) => void copy(text);
 
   const renderNode = (
     nodeData: any,

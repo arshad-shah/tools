@@ -25,6 +25,9 @@ import {
   TabsTrigger,
   Text,
 } from '../../components/ui';
+import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
+import { toToolError } from '@/shared/lib/errors';
+import { notify } from '@/shared/lib/notify';
 
 interface ParsedUrl {
   protocol: string;
@@ -54,7 +57,7 @@ const URLParser: React.FC = () => {
   );
   const [parsed, setParsed] = useState<ParsedUrl | null>(null);
   const [isValid, setIsValid] = useState(true);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { copiedKey, copy } = useClipboard();
   const [activeTab, setActiveTab] = useState('visualization');
 
   useEffect(() => {
@@ -81,18 +84,14 @@ const URLParser: React.FC = () => {
   }, [url]);
 
   const handleCopy = (text: string, key: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    if (text) void copy(text, key);
   };
 
   const handlePaste = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      setUrl(text);
-    } catch (err) {
-      console.error('Failed to read clipboard:', err);
+      setUrl(await readClipboardText());
+    } catch (e) {
+      notify.error(toToolError(e));
     }
   };
 

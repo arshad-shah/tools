@@ -18,7 +18,7 @@ import {
   Text,
   Textarea,
 } from '../../components/ui';
-import useClipboard from '../../hooks/useClipboard';
+import { useClipboard } from '@/shared/lib/clipboard';
 
 type Mode = 'encode' | 'decode';
 

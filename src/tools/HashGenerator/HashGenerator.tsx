@@ -17,7 +17,7 @@ import {
   Stack,
   Textarea,
 } from '../../components/ui';
-import useClipboard from '../../hooks/useClipboard';
+import { useClipboard } from '@/shared/lib/clipboard';
 
 interface Algorithm {
   id: string;
@@ -64,8 +64,7 @@ const HashGenerator: React.FC = () => {
   const [input, setInput] = useState('');
   const [selected, setSelected] = useState<string>('all');
   const [results, setResults] = useState<Record<string, string>>({});
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const { copy } = useClipboard();
+  const { copiedKey, copy } = useClipboard();
 
   const items = useMemo(
     () => [
@@ -96,11 +95,7 @@ const HashGenerator: React.FC = () => {
     setResults(next);
   }, [input, selected]);
 
-  const handleCopy = (text: string, id: string) => {
-    copy(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  const handleCopy = (text: string, id: string) => void copy(text, id);
 
   return (
     <Stack gap="6">
@@ -158,7 +153,7 @@ const HashGenerator: React.FC = () => {
           {Object.entries(results).map(([id, hash]) => {
             const info = ALGORITHMS.find((a) => a.id === id);
             const isError = hash.startsWith('Error');
-            const isCopied = copiedId === id;
+            const isCopied = copiedKey === id;
             return (
               <Card key={id}>
                 <CardHeader>
