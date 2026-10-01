@@ -3,12 +3,11 @@ import * as math from 'mathjs';
 import PlotModule from 'react-plotly.js';
 import { Box, Inline, Label, NumberInput, Stack, Text } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
+import { unwrapDefault } from '@/shared/lib/interop';
 
-// react-plotly.js is CommonJS (`exports.default = Plot`); Vite hands the
-// default import back as the module object, so unwrap it when needed.
-const Plot =
-  (PlotModule as unknown as { default?: typeof PlotModule }).default ??
-  PlotModule;
+// react-plotly.js is CommonJS (`exports.default = Plot`); Vite may hand the
+// default import back as the module object.
+const Plot = unwrapDefault(PlotModule);
 
 interface GraphDisplayProps {
   /**
