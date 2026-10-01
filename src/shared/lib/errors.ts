@@ -61,7 +61,13 @@ export function toToolError(
   fallback = 'Something went wrong',
 ): ToolError {
   if (e instanceof ToolError) return e;
-  if (e instanceof DOMException && e.name === 'AbortError') {
+  // DOMException, AbortSignal reasons and plain errors named AbortError
+  // (some libraries throw those) all mean "cancelled".
+  if (
+    typeof e === 'object' &&
+    e !== null &&
+    (e as { name?: unknown }).name === 'AbortError'
+  ) {
     return new ToolError('CANCELLED', 'Cancelled', { cause: e });
   }
   if (e instanceof Error) {

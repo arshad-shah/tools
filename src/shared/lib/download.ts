@@ -12,22 +12,40 @@ export function deriveFilename(
   return suffix ? `${base}.${suffix}.${cleanExt}` : `${base}.${cleanExt}`;
 }
 
+/**
+ * Disambiguates repeated names as "a (2).pdf", "a (3).pdf", ... never
+ * producing a name that is already in the list (e.g. an existing "a (2).pdf").
+ */
 export function uniqueNames(names: string[]): string[] {
-  const counts = new Map<string, number>();
+  const used = new Set(names);
+  const seen = new Set<string>();
+  const next = new Map<string, number>();
   return names.map((name) => {
-    const n = (counts.get(name) ?? 0) + 1;
-    counts.set(name, n);
-    if (n === 1) return name;
+    if (!seen.has(name)) {
+      seen.add(name);
+      return name;
+    }
     const dot = name.lastIndexOf('.');
-    return dot > 0
-      ? `${name.slice(0, dot)} (${n})${name.slice(dot)}`
-      : `${name} (${n})`;
+    const withN = (n: number) =>
+      dot > 0
+        ? `${name.slice(0, dot)} (${n})${name.slice(dot)}`
+        : `${name} (${n})`;
+    let n = next.get(name) ?? 2;
+    while (used.has(withN(n))) n++;
+    const candidate = withN(n);
+    next.set(name, n + 1);
+    used.add(candidate);
+    return candidate;
   });
 }
 
 // Long enough for every browser to have started reading the blob.
 const REVOKE_DELAY_MS = 30_000;
 
+/**
+ * Downloads `data` as `filename`. Bytes get `mime`; a Blob keeps its own
+ * type, and only an untyped Blob takes `mime`.
+ */
 export function saveBlob(
   data: Blob | Uint8Array,
   filename: string,
@@ -36,7 +54,9 @@ export function saveBlob(
   // Our byte arrays are never backed by SharedArrayBuffer, so the cast is sound.
   const blob =
     data instanceof Blob
-      ? data
+      ? data.type
+        ? data
+        : new Blob([data], { type: mime })
       : new Blob([data as Uint8Array<ArrayBuffer>], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

@@ -1,4 +1,5 @@
 import { ToolError } from '@/shared/lib/errors';
+import { newId } from '@/shared/lib/id';
 import { createRpcClient, type RpcClient } from '@/shared/lib/worker-rpc';
 import type { RenderHandlers } from './render.worker';
 import { createSlotLimiter } from './scheduling';
@@ -36,7 +37,7 @@ export function createPdfRender(client: RpcClient<RenderHandlers>) {
      */
     async open(bytes: Uint8Array, signal?: AbortSignal) {
       const copy = bytes.slice();
-      const docId = crypto.randomUUID();
+      const docId = newId();
       const generation = client.generation;
       // Worker messages are handled in order: this close lands after the open,
       // so it either frees the registered doc or finds nothing (open bails out

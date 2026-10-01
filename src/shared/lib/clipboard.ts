@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ToolError } from './errors';
+import { notify } from './notify';
 
 export async function copyText(text: string): Promise<void> {
   try {
@@ -19,7 +20,11 @@ export function useClipboard(resetMs = 2000) {
     async (text: string): Promise<boolean> => {
       try {
         await copyText(text);
-      } catch {
+      } catch (e) {
+        // Spec §6: no silent failures.
+        notify.error(
+          e instanceof ToolError ? e : 'Could not copy to clipboard',
+        );
         setCopied(false);
         return false;
       }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   acceptAttribute,
   describeKinds,
@@ -73,8 +73,18 @@ describe('loadFile', () => {
       message: 'empty.pdf is empty',
     });
   });
+  it('rejects a non-matching file after reading only its first 1 KB', async () => {
+    const file = new File([ascii('not a pdf'), new Uint8Array(4096)], 'x.pdf');
+    const arrayBuffer = vi.spyOn(file, 'arrayBuffer');
+    const slice = vi.spyOn(file, 'slice');
+    await expect(loadFile(file, ['pdf'])).rejects.toMatchObject({
+      code: 'INVALID_FILE',
+    });
+    expect(slice).toHaveBeenCalledWith(0, 1024);
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
   it('converts file read errors to ToolError', async () => {
-    const file = Object.assign(new File([new Uint8Array([1])], 'locked.pdf'), {
+    const file = Object.assign(new File([ascii('%PDF-1.7')], 'locked.pdf'), {
       arrayBuffer: () =>
         Promise.reject(new DOMException('x', 'NotReadableError')),
     });
@@ -92,6 +102,7 @@ describe('helpers', () => {
       '.png,image/png,.jpg,.jpeg,image/jpeg',
     );
     expect(describeKinds(['pdf'])).toBe('PDF');
+    expect(describeKinds([])).toBe('supported');
     expect(describeKinds(['png', 'jpeg', 'webp'])).toBe('PNG, JPEG or WebP');
   });
   it('flags the soft size limit', () => {
