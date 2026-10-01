@@ -1,8 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { Inline, Input, Label, Select, Stack, Text } from '@/shared/ui';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  AlertDescription,
+  Inline,
+  Input,
+  Label,
+  Select,
+  Stack,
+  Text,
+} from '@/shared/ui';
 import {
   ensureFontFace,
   fontById,
+  loadSignatureFont,
+  missingChars,
   SIGNATURE_FONTS,
   type SignatureFontId,
 } from '../lib/fonts';
@@ -20,6 +31,9 @@ export const SignatureType: React.FC<SignatureSourceProps> = ({
   const [name, setName] = useState('');
   const [fontId, setFontId] = useState<SignatureFontId>(SIGNATURE_FONTS[0].id);
   const [color, setColor] = useState(INK_COLORS[0].value);
+  /** Characters the chosen font can't draw (checked against the real font). */
+  const [missing, setMissing] = useState<string[]>([]);
+  const run = useRef(0);
 
   useEffect(() => {
     // The preview falls back to a system font until this resolves.
@@ -35,10 +49,32 @@ export const SignatureType: React.FC<SignatureSourceProps> = ({
     setFontId(next.fontId);
     setColor(next.color);
     const text = next.name.trim();
-    onChange(
-      text
-        ? { kind: 'text', text, fontId: next.fontId, color: next.color }
-        : null,
+    const id = ++run.current;
+    if (!text) {
+      setMissing([]);
+      onChange(null);
+      return;
+    }
+    const source = {
+      kind: 'text' as const,
+      text,
+      fontId: next.fontId,
+      color: next.color,
+    };
+    // Check every character now rather than failing at Apply. If the font
+    // can't be loaded, pass the source on: placing it reports the error.
+    loadSignatureFont(next.fontId).then(
+      (font) => {
+        if (id !== run.current) return;
+        const bad = missingChars(text, (cp) => font.hasGlyphForCodePoint(cp));
+        setMissing(bad);
+        onChange(bad.length ? null : source);
+      },
+      () => {
+        if (id !== run.current) return;
+        setMissing([]);
+        onChange(source);
+      },
     );
   };
 
@@ -78,6 +114,14 @@ export const SignatureType: React.FC<SignatureSourceProps> = ({
           />
         </Stack>
       </Inline>
+      {missing.length > 0 && (
+        <Alert status="danger">
+          <AlertDescription>
+            {fontById(fontId).label} can't draw: {missing.join(' ')}. Try
+            another font, or draw or upload your signature instead.
+          </AlertDescription>
+        </Alert>
+      )}
       {name.trim() ? (
         <p
           aria-label="Typed signature preview"

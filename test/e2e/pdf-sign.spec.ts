@@ -187,3 +187,23 @@ test('typed preview and stamped text fill the same box', async ({ page }) => {
   expect(t.y).toBeGreaterThanOrEqual(y - 1);
   expect(t.y).toBeLessThanOrEqual(y + h + 1);
 });
+
+test('flags characters the signature font cannot draw while typing', async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole('tab', { name: 'Type' }).click();
+  await page.getByLabel('Your name', { exact: true }).fill('Łukasz');
+  await expect(
+    page.getByRole('alert').getByText("Dancing Script can't draw: Ł", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Apply signature' }),
+  ).toBeDisabled();
+  await page.getByLabel('Your name', { exact: true }).fill('Lukasz');
+  await expect(
+    page.getByRole('button', { name: 'Apply signature' }),
+  ).toBeEnabled();
+});
