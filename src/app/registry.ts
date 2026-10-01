@@ -3,8 +3,14 @@ import type { ToolManifest } from './tool';
 type ManifestModules = Record<string, { default: ToolManifest }>;
 
 const REQUIRED_STRINGS = ['name', 'description', 'category'] as const;
-/** New-style tool folders; legacy PascalCase ones are exempt until phase 4. */
-const KEBAB_FOLDER = /^[a-z0-9-]+$/;
+/**
+ * Legacy folders still allowed to differ from their id: folder → its id.
+ * PdfCompressor is rebuilt as pdf-compressor/ by phase 3 Part C; this entry
+ * is removed when that lands.
+ */
+const LEGACY_FOLDERS: Readonly<Record<string, string>> = {
+  PdfCompressor: 'pdf-compressor',
+};
 
 function validate(path: string, manifest: ToolManifest | undefined) {
   if (!manifest || typeof manifest.id !== 'string' || !manifest.id) {
@@ -22,9 +28,13 @@ function validate(path: string, manifest: ToolManifest | undefined) {
     );
   // Spec §3.2: a tool's id is its folder name.
   const folder = /\/tools\/([^/]+)\/index\.ts$/.exec(path)?.[1];
-  if (folder && KEBAB_FOLDER.test(folder) && manifest.id !== folder)
+  if (
+    folder !== undefined &&
+    folder !== manifest.id &&
+    LEGACY_FOLDERS[folder] !== manifest.id
+  )
     throw new Error(
-      `${path}: tool id "${manifest.id}" must match its folder "${folder}"`,
+      `Tool folder "${folder}" must match its id "${manifest.id}" (${path})`,
     );
 }
 
