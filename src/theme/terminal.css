@@ -1,32 +1,32 @@
 @import 'tailwindcss';
 
 /*
- * Terminal Precision — the app's single, dark-only design language.
+ * Tools — everyday utility — the app's single, dark-only design language.
  * All tokens live here; components consume them via Tailwind utilities
  * (bg-surface, text-fg-muted, border-accent, font-mono, animate-caret …).
  */
 @theme {
   /* Surfaces */
-  --color-canvas: #0b0e14;
-  --color-surface: #12161f;
-  --color-surface-subtle: #161b26;
-  --color-surface-strong: #1b2130;
+  --color-canvas: #10130f;
+  --color-surface: #181c17;
+  --color-surface-subtle: #20251e;
+  --color-surface-strong: #293026;
 
   /* Borders */
-  --color-line: #1e2430;
-  --color-line-strong: #232a38;
+  --color-line: #30372c;
+  --color-line-strong: #404a39;
 
   /* Foreground */
-  --color-fg: #e5e9f0;
-  --color-fg-muted: #8b93a7;
-  --color-fg-subtle: #6b7385;
-  --color-fg-faint: #5a6373;
+  --color-fg: #f0f2eb;
+  --color-fg-muted: #b0b8a7;
+  --color-fg-subtle: #9da792;
+  --color-fg-faint: #8a9580;
 
   /* Accent — lime */
-  --color-accent: #a3e635;
-  --color-accent-hover: #bef264;
+  --color-accent: #b6ec64;
+  --color-accent-hover: #caf58e;
   --color-accent-dim: #4d5e1f;
-  --color-accent-ink: #0b0e14;
+  --color-accent-ink: #10130f;
 
   /* Status */
   --color-danger: #f87171;
@@ -113,4 +113,15 @@
     32px 32px,
     32px 32px;
   background-repeat: no-repeat, repeat, repeat;
+}
+
+/* A restrained accent wash keeps the tool grid visually quiet. */
+@utility brand-dashboard {
+  background-image: radial-gradient(ellipse at 90% 0%, #b6ec640a, transparent 45%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-caret {
+    animation: none;
+  }
 }
