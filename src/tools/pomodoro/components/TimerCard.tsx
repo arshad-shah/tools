@@ -33,7 +33,7 @@ export const TimerCard: React.FC = () => {
   const timer = usePomodoroStore((s) => s.timer);
   const settings = usePomodoroStore((s) => s.settings);
   const dailyPomodoros = usePomodoroStore((s) => s.stats.dailyPomodoros);
-  const { skip } = useTimerWorker();
+  const { skip, prime, announcement } = useTimerWorker();
 
   const info = MODE_INFO[timer.mode];
   const Icon = info.icon;
@@ -69,9 +69,17 @@ export const TimerCard: React.FC = () => {
               )}
             </Inline>
 
-            <Heading level={1} size="5xl" className="tabular-nums">
+            <p
+              role="timer"
+              aria-label="Time left"
+              className="text-5xl font-bold tracking-tight text-fg tabular-nums"
+            >
               {formatTime(timer.timeLeft)}
-            </Heading>
+            </p>
+            {/* Announces session changes only, never the per-second ticks. */}
+            <p className="sr-only" role="status" aria-live="polite">
+              {announcement}
+            </p>
 
             <Inline align="center" gap="2">
               <Clock size={14} aria-hidden />
@@ -100,7 +108,10 @@ export const TimerCard: React.FC = () => {
                 leftIcon={
                   timer.isActive ? <Pause size={20} /> : <Play size={20} />
                 }
-                onClick={() => usePomodoroStore.getState().toggle()}
+                onClick={() => {
+                  if (settings.soundEnabled) prime();
+                  usePomodoroStore.getState().toggle();
+                }}
               >
                 {timer.isActive ? 'Pause' : 'Start'}
               </Button>
