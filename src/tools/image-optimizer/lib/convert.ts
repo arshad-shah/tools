@@ -65,6 +65,14 @@ export async function convertImage(
   opts: { format: OutputFormat; quality: number; background?: string },
   signal?: AbortSignal,
 ): Promise<{ bytes: Uint8Array; mime: string; width: number; height: number }> {
+  const background = opts.background ?? DEFAULT_BACKGROUND;
+  // An invalid fillStyle is silently ignored by canvas (it stays black).
+  if (needsBackground(opts.format) && !isHexColor(background)) {
+    throw new ToolError(
+      'INVALID_INPUT',
+      `The background colour must be #rrggbb, not "${background}"`,
+    );
+  }
   const { image, width, height } = await decodeImage(file);
   if (signal?.aborted) throw new ToolError('CANCELLED', 'Cancelled');
   const canvas = document.createElement('canvas');
@@ -74,7 +82,7 @@ export async function convertImage(
   if (!ctx) throw new ToolError('UNKNOWN', 'Unable to get canvas context');
   if (needsBackground(opts.format)) {
     // Otherwise transparent pixels come out black.
-    ctx.fillStyle = opts.background ?? DEFAULT_BACKGROUND;
+    ctx.fillStyle = background;
     ctx.fillRect(0, 0, width, height);
   }
   ctx.drawImage(image, 0, 0, width, height);
