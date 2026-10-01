@@ -87,6 +87,7 @@ describe('TOOLS', () => {
         'pdf-merger',
         'pdf-organize',
         'pdf-page-numbers',
+        'pdf-sign',
         'pdf-splitter',
         'pdf-to-images',
         'pdf-to-text',
