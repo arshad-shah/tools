@@ -123,6 +123,7 @@ export const FileThumb: React.FC<FileThumbProps> = ({
             if (panel && wrapper.current) placePopover(panel, wrapper.current);
           }}
           aria-hidden
+          aria-label={`Preview of ${name}`}
           className="pointer-events-none absolute top-0 left-full z-50 hidden rounded-md border border-line-strong bg-surface-subtle p-2 shadow-lg sm:block"
         >
           <PageThumb

@@ -7,7 +7,7 @@ export default defineTool({
   description: 'Merge multiple PDF files into a single document',
   icon: FilePlus,
   category: 'pdf',
-  version: '1.0.0',
+  version: '2.0.0',
   enabled: true,
-  load: () => import('./PdfMerger'),
+  load: () => import('./Tool'),
 });
