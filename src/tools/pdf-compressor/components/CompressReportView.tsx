@@ -62,6 +62,14 @@ export const CompressReportView: React.FC<CompressReportViewProps> = ({
             Images: {images.processed} recompressed, {images.unchanged} already
             optimal, {skippedTotal} left untouched
           </Text>
+          {images.grayToRgb > 0 && (
+            <Text size="sm" tone="muted">
+              {images.grayToRgb === 1
+                ? '1 grayscale image was'
+                : `${images.grayToRgb} grayscale images were`}{' '}
+              re-encoded as colour JPEG: browsers cannot write grayscale JPEGs.
+            </Text>
+          )}
           {skippedTotal > 0 && (
             <Stack gap="1">
               <Text size="sm" weight="semibold" id="cmp-untouched">

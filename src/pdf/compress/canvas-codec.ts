@@ -2,70 +2,49 @@ import { ToolError } from '@/shared/lib/errors';
 import type { ImageCodec } from './codec';
 import { toRgba } from './pixels';
 
-interface Drawable {
-  image: CanvasImageSource;
-  width: number;
-  height: number;
-  close(): void;
-}
-
-async function drawable(bytes: Uint8Array): Promise<Drawable> {
-  const data = bytes as Uint8Array<ArrayBuffer>;
-  if (typeof ImageDecoder !== 'undefined') {
-    const decoder = new ImageDecoder({
-      data,
-      type: 'image/jpeg',
-      colorSpaceConversion: 'none',
-    });
-    try {
-      const { image } = await decoder.decode();
-      return {
-        image,
-        width: image.displayWidth,
-        height: image.displayHeight,
-        close: () => {
-          image.close();
-          decoder.close();
-        },
-      };
-    } catch {
-      decoder.close(); // fall through to createImageBitmap
-    }
-  }
-  const bitmap = await createImageBitmap(
-    new Blob([data], { type: 'image/jpeg' }),
-    { colorSpaceConversion: 'none', premultiplyAlpha: 'none' },
-  );
-  return {
-    image: bitmap,
-    width: bitmap.width,
-    height: bitmap.height,
-    close: () => bitmap.close(),
-  };
-}
-
 /**
- * The browser/worker codec: exact pixels in, JPEG out. Colour management is
- * off, so sample values round-trip unchanged.
+ * The browser/worker codec: exact pixels in, JPEG out.
+ * - Colour management is off, so sample values round-trip unchanged.
+ * - `imageOrientation: 'none'`: EXIF orientation is never applied (the
+ *   caller strips EXIF too; PDF viewers ignore it in a DCT stream).
+ * - When the caller passes a target size the decoder scales straight to it,
+ *   so a large photo is never held at full size.
+ * - The canvas's RGBA is handed back as is (no RGB copy), and encoding views
+ *   it again without copying.
+ * `ImageDecoder` is not used: Chromium applies EXIF orientation there.
  */
 export const canvasCodec: ImageCodec = {
-  async decodeJpeg(bytes) {
-    const src = await drawable(bytes);
+  async decodeJpeg(bytes, size) {
+    const bitmap = await createImageBitmap(
+      new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' }),
+      {
+        colorSpaceConversion: 'none',
+        premultiplyAlpha: 'none',
+        imageOrientation: 'none',
+        ...(size
+          ? {
+              resizeWidth: size.width,
+              resizeHeight: size.height,
+              resizeQuality: 'high' as const,
+            }
+          : {}),
+      },
+    );
     try {
-      const canvas = new OffscreenCanvas(src.width, src.height);
+      const { width, height } = bitmap;
+      const canvas = new OffscreenCanvas(width, height);
       const g = canvas.getContext('2d', { willReadFrequently: true });
       if (!g) throw new ToolError('UNKNOWN', 'Canvas is not available');
-      g.drawImage(src.image, 0, 0);
-      const { data } = g.getImageData(0, 0, src.width, src.height);
-      const rgb = new Uint8Array(src.width * src.height * 3);
-      for (let i = 0, j = 0; i < data.length; i += 4, j += 3) {
-        rgb[j] = data[i];
-        rgb[j + 1] = data[i + 1];
-        rgb[j + 2] = data[i + 2];
-      }
-      return { width: src.width, height: src.height, channels: 3, pixels: rgb };
+      g.drawImage(bitmap, 0, 0);
+      const { data } = g.getImageData(0, 0, width, height);
+      return {
+        width,
+        height,
+        channels: 4,
+        pixels: new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+      };
     } finally {
-      src.close();
+      bitmap.close();
     }
   },
   async encodeJpeg(img, quality) {

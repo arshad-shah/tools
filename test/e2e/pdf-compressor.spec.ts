@@ -63,3 +63,60 @@ test('changing an advanced setting switches the preset to Custom', async ({
     page.getByRole('switch', { name: 'Recompress images' }),
   ).toHaveAttribute('aria-checked', 'false');
 });
+
+test('JPEGs tagged with EXIF orientation keep their pixels, and gray images are processed (review I1)', async ({
+  page,
+}) => {
+  await page.goto('/pdf-compressor');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/exif-photos.pdf');
+  await page.getByRole('tab', { name: 'Balanced' }).click();
+  await page.getByRole('button', { name: 'Compress PDF' }).click();
+  await expect(
+    page.getByText('Images: 3 recompressed', { exact: false }),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page.getByText('1 grayscale image was re-encoded as colour JPEG', {
+      exact: false,
+    }),
+  ).toBeVisible();
+  const promise = page.waitForEvent('download');
+  await page
+    .getByRole('button', { name: 'Download exif-photos.compressed.pdf' })
+    .click();
+  const doc = await PDFDocument.load(
+    readFileSync((await (await promise).path())!),
+  );
+  for (const pageIndex of [0, 1]) {
+    const xo = doc
+      .getPage(pageIndex)
+      .node.Resources()!
+      .lookup(PDFName.of('XObject'), PDFDict);
+    const img = xo.lookup(xo.keys()[0]) as PDFRawStream;
+    expect(img.dict.lookup(PDFName.of('Filter'))).toEqual(
+      PDFName.of('DCTDecode'),
+    );
+    // Decoded the way a PDF viewer does: ignoring any EXIF orientation.
+    const probe = await page.evaluate(async (arr) => {
+      const b = await createImageBitmap(
+        new Blob([new Uint8Array(arr)], { type: 'image/jpeg' }),
+        { imageOrientation: 'none' },
+      );
+      const c = new OffscreenCanvas(b.width, b.height);
+      const g = c.getContext('2d')!;
+      g.drawImage(b, 0, 0);
+      const at = (x: number) =>
+        Array.from(g.getImageData(x, Math.floor(b.height / 2), 1, 1).data);
+      return {
+        size: [b.width, b.height],
+        left: at(10),
+        right: at(b.width - 10),
+      };
+    }, Array.from(img.contents));
+    expect(probe.size).toEqual([300, 225]);
+    // Left stays red and right stays blue: not rotated, not mirrored.
+    expect(probe.left[0]).toBeGreaterThan(probe.left[2] + 100);
+    expect(probe.right[2]).toBeGreaterThan(probe.right[0] + 100);
+  }
+});

@@ -15,6 +15,7 @@ import {
   predictorOf,
   type ImageEntry,
 } from './inventory';
+import { stripJpegExif } from './jpeg-exif';
 import { resample, unpredictPng } from './pixels';
 
 export interface ImageSettings {
@@ -30,7 +31,19 @@ export interface ImageReport {
   skipped: { reason: string; count: number }[];
   bytesBefore: number;
   bytesAfter: number;
+  /**
+   * Gray images re-encoded as RGB JPEG (a canvas cannot write a gray JPEG);
+   * a gray ICC profile is replaced by DeviceRGB.
+   */
+  grayToRgb: number;
 }
+
+/**
+ * Images (or soft masks) above this many pixels are skipped: decoding one
+ * holds several full-size copies at once, and a worker that runs out of
+ * memory takes the whole tab down in Chromium. 40 MP is a 7,300 × 5,500 scan.
+ */
+export const MAX_IMAGE_PIXELS = 40_000_000;
 
 /** Downsample only when meaningfully above target (5% tolerance). */
 const DPI_TOLERANCE = 1.05;
@@ -52,7 +65,7 @@ const CARRIED_KEYS = [
 const toGray = (img: RawImage): RawImage => {
   if (img.channels === 1) return img;
   const out = new Uint8Array(img.width * img.height);
-  for (let i = 0; i < out.length; i++) out[i] = img.pixels[i * 3];
+  for (let i = 0; i < out.length; i++) out[i] = img.pixels[i * img.channels];
   return { ...img, channels: 1, pixels: out };
 };
 
@@ -61,18 +74,31 @@ const sizeOf = (stream: PDFRawStream, key: string) => {
   return v instanceof PDFNumber ? v.asNumber() : 0;
 };
 
+/**
+ * The stream's pixels, either at full size or (JPEGs, when the codec can)
+ * already at `target`.
+ */
 async function decodePixels(
   stream: PDFRawStream,
   channels: 1 | 3,
   width: number,
   height: number,
   codec: ImageCodec,
+  target: { width: number; height: number },
 ): Promise<RawImage | null> {
   // Eligible images (and soft masks) have at most one filter.
   const filter = filtersOf(stream.dict)[0] ?? null;
   if (filter === 'DCTDecode') {
-    const img = await codec.decodeJpeg(stream.contents);
-    return img.width === width && img.height === height ? img : null;
+    // PDF viewers ignore EXIF in a DCT stream; browser decoders would
+    // rotate or mirror by its Orientation tag.
+    const img = await codec.decodeJpeg(
+      stripJpegExif(stream.contents),
+      target.width === width && target.height === height ? undefined : target,
+    );
+    const fits = (w: number, h: number) => img.width === w && img.height === h;
+    return fits(width, height) || fits(target.width, target.height)
+      ? img
+      : null;
   }
   let data = filter === 'FlateDecode' ? decodeStream(stream) : stream.contents;
   if (!data) return null;
@@ -85,7 +111,7 @@ async function decodePixels(
 }
 
 type Outcome =
-  | { before: number; after: number }
+  | { before: number; after: number; grayToRgb: boolean }
   | 'unchanged'
   | { skipped: string };
 
@@ -97,34 +123,36 @@ async function recompressOne(
 ): Promise<Outcome> {
   const stream = doc.context.lookup(e.ref) as PDFRawStream;
   const channels = e.components as 1 | 3;
-  const image = await decodePixels(
-    stream,
-    channels,
-    e.width,
-    e.height,
-    codec,
-  ).catch(() => null);
-  if (!image) return { skipped: 'unreadable image data' };
-  let mask: { ref: PDFRef; stream: PDFRawStream; image: RawImage } | null =
-    null;
-  if (e.smask) {
-    const ms = doc.context.lookup(e.smask) as PDFRawStream;
-    const mi = await decodePixels(
-      ms,
-      1,
-      sizeOf(ms, 'Width'),
-      sizeOf(ms, 'Height'),
-      codec,
-    ).catch(() => null);
-    if (!mi) return { skipped: 'unreadable soft mask' };
-    mask = { ref: e.smask, stream: ms, image: toGray(mi) };
-  }
+  const ms = e.smask ? (doc.context.lookup(e.smask) as PDFRawStream) : null;
+  const mw = ms ? sizeOf(ms, 'Width') : 0;
+  const mh = ms ? sizeOf(ms, 'Height') : 0;
+  if (e.width * e.height > MAX_IMAGE_PIXELS || mw * mh > MAX_IMAGE_PIXELS)
+    return { skipped: 'too large to recompress safely' };
   const scale =
     e.effectiveDpi && e.effectiveDpi > s.targetDpi * DPI_TOLERANCE
       ? s.targetDpi / e.effectiveDpi
       : 1;
   const w = Math.max(1, Math.round(e.width * scale));
   const h = Math.max(1, Math.round(e.height * scale));
+  const target = { width: w, height: h };
+  const image = await decodePixels(
+    stream,
+    channels,
+    e.width,
+    e.height,
+    codec,
+    target,
+  ).catch(() => null);
+  if (!image) return { skipped: 'unreadable image data' };
+  let mask: { ref: PDFRef; stream: PDFRawStream; image: RawImage } | null =
+    null;
+  if (e.smask && ms) {
+    const mi = await decodePixels(ms, 1, mw, mh, codec, target).catch(
+      () => null,
+    );
+    if (!mi) return { skipped: 'unreadable soft mask' };
+    mask = { ref: e.smask, stream: ms, image: toGray(mi) };
+  }
   const jpeg = await codec.encodeJpeg(resample(image, w, h), s.quality);
   // The soft mask is resampled to the new image size, and stays lossless.
   const newMask = mask
@@ -166,7 +194,11 @@ async function recompressOne(
     replacement.dict.set(PDFName.of('SMask'), mask.ref);
   }
   doc.context.assign(e.ref, replacement);
-  return { before, after };
+  return {
+    before,
+    after,
+    grayToRgb: e.components === 1 && jpeg.channels === 3,
+  };
 }
 
 /**
@@ -202,6 +234,7 @@ export async function recompressImages(
   let unchanged = 0;
   let bytesBefore = 0;
   let bytesAfter = 0;
+  let grayToRgb = 0;
   const eligible = entries.filter((e) => e.eligible);
   for (const e of entries) if (!e.eligible) skip(e.reason ?? 'unsupported');
   for (const [i, entry] of eligible.entries()) {
@@ -218,6 +251,7 @@ export async function recompressImages(
       processed++;
       bytesBefore += r.before;
       bytesAfter += r.after;
+      if (r.grayToRgb) grayToRgb++;
     }
   }
   ctx.signal?.throwIfAborted();
@@ -230,5 +264,6 @@ export async function recompressImages(
       .sort((a, b) => b.count - a.count),
     bytesBefore,
     bytesAfter,
+    grayToRgb,
   };
 }

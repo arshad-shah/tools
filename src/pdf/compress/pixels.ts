@@ -76,9 +76,20 @@ export function unpredictPng(
   return out;
 }
 
-/** Gray or RGB samples as opaque RGBA (canvas ImageData layout). */
+/**
+ * Gray or RGB samples as opaque RGBA (canvas ImageData layout). RGBA input
+ * is viewed, not copied, when it owns its buffer.
+ */
 export function toRgba(img: RawImage): Uint8ClampedArray<ArrayBuffer> {
   const n = img.width * img.height;
+  if (img.channels === 4) {
+    const p = img.pixels;
+    return p.buffer instanceof ArrayBuffer &&
+      p.byteOffset === 0 &&
+      p.byteLength === p.buffer.byteLength
+      ? new Uint8ClampedArray(p.buffer, 0, n * 4)
+      : new Uint8ClampedArray(p.subarray(0, n * 4));
+  }
   const out = new Uint8ClampedArray(n * 4);
   for (let i = 0; i < n; i++) {
     const o = i * 4;
