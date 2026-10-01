@@ -117,3 +117,68 @@ describe('metadata', () => {
     expect(xml.endsWith('<?xpacket end="w"?>')).toBe(true);
   });
 });
+
+/** One page, Info title "T", and the given XMP description body. */
+async function withXmp(description: string): Promise<Uint8Array> {
+  const doc = await PDFDocument.create({ updateMetadata: false });
+  doc.addPage([200, 200]);
+  doc.setTitle('T');
+  const xmp = `<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">${description}</rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="w"?>`;
+  const ref = doc.context.register(
+    doc.context.stream(new TextEncoder().encode(xmp), {
+      Type: 'Metadata',
+      Subtype: 'XML',
+    }),
+  );
+  doc.catalog.set(PDFName.of('Metadata'), ref);
+  return doc.save({ useObjectStreams: false });
+}
+
+describe('metadata review fixes', () => {
+  it('carries a PDF/UA claim across (review I3)', async () => {
+    const out = await setMetadata(
+      await withXmp(
+        '<pdfuaid:part>1</pdfuaid:part><dc:rights><rdf:Alt><rdf:li xml:lang="x-default">CC0</rdf:li></rdf:Alt></dc:rights>',
+      ),
+      { author: 'Ada' },
+    );
+    const xmp = (await xmpOf(out))!;
+    expect(xmp).toContain('<pdfuaid:part>1</pdfuaid:part>');
+    expect(xmp).toContain('xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/"');
+    expect(xmp).toContain('<dc:creator><rdf:Seq><rdf:li>Ada</rdf:li>');
+    // Documented: other XMP properties are not kept.
+    expect(xmp).not.toContain('dc:rights');
+  });
+
+  it('keeps a PDF/A-1 file free of object streams (review M10)', async () => {
+    const latin1 = (b: Uint8Array) => Buffer.from(b).toString('latin1');
+    const a1 = await setMetadata(
+      await withXmp(
+        '<pdfaid:part>1</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance>',
+      ),
+      { title: 'New' },
+    );
+    expect(latin1(a1)).not.toContain('/ObjStm');
+    expect((await xmpOf(a1))!).toContain('<pdfaid:part>1</pdfaid:part>');
+    const a2 = await setMetadata(
+      await withXmp('<pdfaid:part>2</pdfaid:part>'),
+      { title: 'New' },
+    );
+    expect(latin1(a2)).toContain('/ObjStm');
+  });
+
+  it('drops characters XML cannot hold (review M11)', () => {
+    const xml = buildXmp({
+      title: 'A\u0001B\u001FC￾D\uD800E',
+      author: '',
+      subject: '',
+      keywords: '',
+      creator: '',
+      producer: '',
+      creationDate: null,
+      modificationDate: null,
+      hasXmp: true,
+    });
+    expect(xml).toContain('<rdf:li xml:lang="x-default">ABCDE</rdf:li>');
+  });
+});

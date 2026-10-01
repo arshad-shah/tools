@@ -73,18 +73,41 @@ function readMeta(doc: PDFDocument): PdfMetadata {
   };
 }
 
+/**
+ * Drops what XML 1.0 cannot hold: C0 controls other than tab, LF and CR,
+ * U+FFFE/U+FFFF and unpaired surrogates (Info strings can contain any of them).
+ */
+function xmlSafe(s: string): string {
+  let out = '';
+  for (const ch of s) {
+    const c = ch.codePointAt(0)!;
+    const control = c < 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d;
+    const lone = c >= 0xd800 && c <= 0xdfff; // for..of yields pairs whole
+    if (!control && !lone && c !== 0xfffe && c !== 0xffff) out += ch;
+  }
+  return out;
+}
+
 const esc = (s: string) =>
-  s
+  xmlSafe(s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-/** A document-level XMP packet mirroring the Info fields. */
-export function buildXmp(
-  m: PdfMetadata,
-  extras: { part?: string; conformance?: string } = {},
-): string {
+export interface XmpIdentity {
+  /** PDF/A part and conformance (pdfaid). */
+  part?: string;
+  conformance?: string;
+  /** PDF/UA part (pdfuaid): the claim that the document is accessible. */
+  uaPart?: string;
+}
+
+/**
+ * A document-level XMP packet mirroring the Info fields, plus the PDF/A and
+ * PDF/UA identification. Nothing else from an earlier packet survives.
+ */
+export function buildXmp(m: PdfMetadata, extras: XmpIdentity = {}): string {
   const lines: string[] = [];
   if (m.title)
     lines.push(
@@ -119,11 +142,13 @@ export function buildXmp(
     lines.push(
       `<pdfaid:conformance>${esc(extras.conformance)}</pdfaid:conformance>`,
     );
+  if (extras.uaPart)
+    lines.push(`<pdfuaid:part>${esc(extras.uaPart)}</pdfuaid:part>`);
   return [
     '<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>',
     '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
     '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
-    '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:pdf="http://ns.adobe.com/pdf/1.3/" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">',
+    '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:pdf="http://ns.adobe.com/pdf/1.3/" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">',
     ...lines,
     '</rdf:Description>',
     '</rdf:RDF>',
@@ -132,13 +157,14 @@ export function buildXmp(
   ].join('\n');
 }
 
-/** The PDF/A identity (element or attribute form), carried into new XMP. */
-function pdfaIdentity(xmp: string): { part?: string; conformance?: string } {
+/** The PDF/A and PDF/UA identity (element or attribute form). */
+function xmpIdentity(xmp: string): XmpIdentity {
   const part = /pdfaid:part(?:="|>)\s*(\d)/.exec(xmp)?.[1];
   const conformance = /pdfaid:conformance(?:="|>)\s*([ABUabu])/
     .exec(xmp)?.[1]
     ?.toUpperCase();
-  return { part, conformance };
+  const uaPart = /pdfuaid:part(?:="|>)\s*(\d)/.exec(xmp)?.[1];
+  return { part, conformance, uaPart };
 }
 
 export async function getMetadata(bytes: Uint8Array): Promise<PdfMetadata> {
@@ -147,8 +173,10 @@ export async function getMetadata(bytes: Uint8Array): Promise<PdfMetadata> {
 
 /**
  * Applies `patch` to the Info dictionary and stamps ModDate. An existing XMP
- * packet is regenerated to match (keeping a PDF/A identity); XMP is never
- * added to a file that had none.
+ * packet is rewritten from these fields, keeping its PDF/A and PDF/UA
+ * identification; its other properties are not kept (the UI says so). XMP is
+ * never added to a file that had none. A PDF/A-1 file is saved without
+ * object streams, which PDF/A-1 forbids.
  */
 export async function setMetadata(
   bytes: Uint8Array,
@@ -173,8 +201,9 @@ export async function setMetadata(
   }
   doc.setModificationDate(now);
   const ref = xmpRef(doc);
+  const identity = ref ? xmpIdentity(readXmp(doc, ref)) : {};
   if (ref) {
-    const xml = buildXmp(readMeta(doc), pdfaIdentity(readXmp(doc, ref)));
+    const xml = buildXmp(readMeta(doc), identity);
     doc.context.assign(
       ref,
       doc.context.stream(new TextEncoder().encode(xml), {
@@ -183,7 +212,7 @@ export async function setMetadata(
       }),
     );
   }
-  return doc.save({ useObjectStreams: true });
+  return doc.save({ useObjectStreams: identity.part !== '1' });
 }
 
 /** Removes the Info dictionary and the document-level XMP (catalog /Metadata). */
