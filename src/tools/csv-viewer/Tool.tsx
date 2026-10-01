@@ -89,6 +89,7 @@ const LineChart: React.FC<{
     return (
       <div
         className="flex items-center justify-center text-sm text-fg-subtle"
+        // data-driven: chart height prop
         style={{ height }}
       >
         No numeric data to plot
@@ -593,7 +594,7 @@ const CSVTSVViewer: React.FC = () => {
                           <TableHead
                             key={col}
                             onClick={() => handleSort(col)}
-                            style={{ cursor: 'pointer' }}
+                            className="cursor-pointer"
                           >
                             <Inline gap="1" align="center" wrap={false}>
                               <span>{col}</span>

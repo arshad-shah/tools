@@ -39,6 +39,7 @@ import {
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
+import { cn } from '@/lib/utils';
 import { ColorHarmony, ColorInfo, TabType } from './types';
 
 interface ColorLike {
@@ -122,22 +123,18 @@ const Swatch: React.FC<{
   color: string;
   size?: 'sm' | 'md' | 'lg';
   rounded?: boolean;
-}> = ({ color, size = 'md', rounded = true }) => {
-  const px = size === 'sm' ? 32 : size === 'lg' ? 64 : 48;
-  return (
-    <div
-      aria-hidden
-      style={{
-        width: px,
-        height: px,
-        background: color,
-        borderRadius: rounded ? '999px' : '8px',
-        border: '1px solid rgba(0,0,0,0.1)',
-        flexShrink: 0,
-      }}
-    />
-  );
-};
+}> = ({ color, size = 'md', rounded = true }) => (
+  <div
+    aria-hidden
+    className={cn(
+      'shrink-0 border border-black/10',
+      size === 'sm' ? 'size-8' : size === 'lg' ? 'size-16' : 'size-12',
+      rounded ? 'rounded-full' : 'rounded-lg',
+    )}
+    // data-driven: user colour
+    style={{ background: color }}
+  />
+);
 
 const ColorTester: React.FC = () => {
   const [red, setRed] = useState(70);
@@ -306,13 +303,17 @@ const ColorTester: React.FC = () => {
 
   const renderPreview = () => (
     <Stack gap="3">
-      <Card style={{ background: rgbString, color: textColor }}>
+      <Card
+        // data-driven: user colour and its luminance-derived text colour
+        style={{ background: rgbString, color: textColor }}
+      >
         <CardBody>
           <Stack gap="3" align="center">
             <Heading
               level={3}
               size="2xl"
               className="text-center"
+              // data-driven: luminance-derived text colour
               style={{ color: textColor }}
             >
               Sample heading
@@ -320,6 +321,7 @@ const ColorTester: React.FC = () => {
             <Text
               size="md"
               className="text-center"
+              // data-driven: luminance-derived text colour
               style={{ color: textColor }}
             >
               The quick brown fox jumps over the lazy dog.
@@ -348,13 +350,16 @@ const ColorTester: React.FC = () => {
     const blackLevel = wcagLevel(contrastRatios.black);
     return (
       <Stack gap="3">
-        <Card style={{ background: rgbString }}>
+        <Card
+          // data-driven: user colour
+          style={{ background: rgbString }}
+        >
           <CardBody>
             <Stack gap="2">
-              <Text size="lg" weight="bold" style={{ color: '#ffffff' }}>
+              <Text size="lg" weight="bold" className="text-white">
                 White text on this colour
               </Text>
-              <Text size="sm" style={{ color: '#ffffff' }}>
+              <Text size="sm" className="text-white">
                 Contrast ratio: {contrastRatios.white.toFixed(2)}:1
               </Text>
               <Inline gap="2">
@@ -365,13 +370,16 @@ const ColorTester: React.FC = () => {
             </Stack>
           </CardBody>
         </Card>
-        <Card style={{ background: rgbString }}>
+        <Card
+          // data-driven: user colour
+          style={{ background: rgbString }}
+        >
           <CardBody>
             <Stack gap="2">
-              <Text size="lg" weight="bold" style={{ color: '#000000' }}>
+              <Text size="lg" weight="bold" className="text-black">
                 Black text on this colour
               </Text>
-              <Text size="sm" style={{ color: '#000000' }}>
+              <Text size="sm" className="text-black">
                 Contrast ratio: {contrastRatios.black.toFixed(2)}:1
               </Text>
               <Inline gap="2">
@@ -409,14 +417,26 @@ const ColorTester: React.FC = () => {
             </CardHeader>
             <CardBody>
               <Stack gap="4">
-                <Card style={{ background: rgbString, color: textColor }}>
+                <Card
+                  // data-driven: user colour and its luminance-derived text colour
+                  style={{ background: rgbString, color: textColor }}
+                >
                   <CardBody>
                     <Stack gap="2" align="center">
                       <Sparkles size={36} aria-hidden />
-                      <Heading level={3} size="xl" style={{ color: textColor }}>
+                      <Heading
+                        level={3}
+                        size="xl"
+                        // data-driven: luminance-derived text colour
+                        style={{ color: textColor }}
+                      >
                         {colorNameSuggestion}
                       </Heading>
-                      <Text size="sm" style={{ color: textColor }}>
+                      <Text
+                        size="sm"
+                        // data-driven: luminance-derived text colour
+                        style={{ color: textColor }}
+                      >
                         {hexCode}
                       </Text>
                     </Stack>
