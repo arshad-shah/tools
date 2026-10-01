@@ -2,182 +2,109 @@
 
 ## Architecture Overview
 
-This is a React + TypeScript utility dashboard with a **plugin-style architecture** where each tool is a self-contained module. The app uses:
+A fully client-side React 19 + TypeScript utility dashboard with a **plugin-style architecture**: every tool is a self-contained folder under `src/tools/`, discovered automatically.
 
-- **Vite** for build tooling with `pnpm` package manager
-- **React Router** for routing with lazy-loaded components
-- **TailwindCSS** for styling with Radix UI primitives
-- **Tool Registry pattern** for dynamic component loading
+- **Vite** build, **pnpm** package manager
+- **React Router** with one lazy route per tool
+- **Tailwind CSS v4** theme tokens and the in-repo UI kit (`@/shared/ui`)
+- **zustand** stores via `createToolStore` for persisted state
+- No document bytes leave the browser
 
-## Key Architecture Patterns
+## Adding a Tool
 
-### 3-Step Tool Integration
+Create one folder; nothing else needs registering.
 
-Every new tool requires exactly 3 files to be modified:
+```
+src/tools/<tool-id>/
+├── index.ts       # manifest: default-exports defineTool({...})
+├── Tool.tsx       # main component
+├── types.ts       # co-located types (optional)
+├── store.ts       # createToolStore (optional)
+├── components/    # PascalCase .tsx sub-components
+├── hooks/         # useX.ts hooks
+└── lib/           # kebab-case pure .ts helpers, tests alongside
+```
 
-1. **Create component**: `src/tools/ToolName/ToolName.tsx`
-2. **Add definition**: `src/data/ToolDefinitions.ts`
-3. **Register component**: `src/registry/ToolRegistry.ts`
+The folder name **must equal** the manifest `id`. It is also the URL (`/<tool-id>`). `src/app/registry.ts` discovers manifests with `import.meta.glob('../tools/*/index.ts')` and throws if:
 
-### Tool Component Structure
+- a folder name differs from its manifest id;
+- two tools share an id;
+- a manifest is malformed.
 
-All tools must follow this contract:
+```ts
+// src/tools/your-tool/index.ts
+import { Calculator } from 'lucide-react';
+import { defineTool } from '@/app/tool';
+
+export default defineTool({
+  id: 'your-tool',
+  name: 'Your Tool',
+  description: 'One-line description',
+  icon: Calculator,
+  category: 'data', // ToolCategory in src/app/tool.ts
+  enabled: true,
+  load: () => import('./Tool'),
+});
+```
 
 ```tsx
-import { ToolProps } from '../types/ToolTypes';
+// src/tools/your-tool/Tool.tsx
+import type { ToolProps } from '@/app/tool';
+import { Stack, Text } from '@/shared/ui';
 
-const YourTool: React.FC<ToolProps> = ({ definition }) => {
+export default function YourTool({ definition }: ToolProps) {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-3 mb-8">
-        <definition.icon size={24} className="text-blue-400" />
-        <h2 className="text-2xl font-bold">{definition.name}</h2>
-      </div>
-      {/* Tool content */}
-    </div>
+    <Stack gap="4">
+      <Text>{definition.description}</Text>
+    </Stack>
   );
-};
+}
 ```
 
-### Lazy Loading Registry
+`ToolLayout` renders the header and back button around the tool and wraps it in `ToolErrorBoundary`.
 
-The `ToolRegistry.ts` uses dynamic imports for code splitting:
+## Shared Code
 
-```tsx
-[TOOL_IDS.YOUR_TOOL]: () => import('../tools/YourTool/YourTool')
-```
+- `src/app/`: router, `Dashboard`, `ToolLayout`, error boundaries, `registry.ts`, `tool.ts`.
+- `src/shared/ui/`: the UI kit (Button, Card, Tabs, Select, FileUpload, FilePicker, Alert, …).
+- `src/shared/lib/`:
+  - downloads: `saveBlob`, `saveZip`, `deriveFilename`
+  - clipboard: `useClipboard`, `copyText`, `readClipboardText`
+  - files: `loadFile`, `readBytes`, `loadTextFile`
+  - also `formatBytes`, `notify`, `ToolError`/`toToolError`, `newId` and `worker-rpc`
+- `src/shared/state/`:
+  - `createToolStore`: persisted under `kit:store:tool:<id>`, with a one-time import of legacy keys.
+  - `useJob`: async work with progress and cancellation.
+- `src/pdf/`:
+  - `edit/`: pdf-lib.
+  - `render/`: pdf.js worker, thumbnails, text.
+  - `qpdf/` and `compress/`: added with the PDF security tools.
+  - `components/`: shared PDF UI.
 
-## File Organization Conventions
+## Conventions
 
-### Tool Structure
+- Use `@/` imports. Relative imports never climb out of a tool folder (no `../../`).
+- Non-JSX files are `.ts`.
+- Use kit components and Tailwind tokens: `bg-surface`, `text-fg`, `text-fg-muted`, `border-line`, `text-danger`, and so on.
+  - No CSS modules and no JS style objects.
+  - Inline `style` only for data-driven values, each with a `// data-driven:` comment.
+- Never hand-roll download anchors, `navigator.clipboard`, `FileReader`, size formatting, per-tool toasts, or raw `<input type="file">`. Use the shared helpers.
+- No silent failures: report through `notify.error(...)` or an inline `Alert`.
+- Icons come from **lucide-react** only.
 
-Complex tools use this folder pattern:
+### Persisted data keys
 
-```
-src/tools/ToolName/
-├── ToolName.tsx          # Main component
-├── components/           # Tool-specific UI components
-├── hooks/               # Tool-specific React hooks
-├── utils/               # Tool utility functions
-└── types/               # Tool-specific TypeScript types (if complex)
-```
+Existing users' data must survive changes:
 
-### Shared Resources
+- `favoriteTools`: dashboard favourites, read and written directly in `Dashboard.tsx`.
+- `apiTesterCollections`: api-request. Imported once into its `createToolStore` key.
+- `calcHistory`, `savedCalculations`, `memories`: calculator. Imported once into its store.
+- `persist:pomodoro-store`: pomodoro. Imported once into its store.
 
-- `src/constants.ts` - Tool IDs as constants (prevents typos)
-- `src/types/ToolTypes.ts` - Core interfaces for tool system
-- `src/components/` - Shared UI components (Button, Card, etc.)
-- `src/lib/utils.ts` - Shared utility functions
+## Testing
 
-## Development Workflows
-
-### Adding a New Tool
-
-1. Add ID to `TOOL_IDS` in `src/constants.ts`
-2. Create tool definition in `src/data/ToolDefinitions.ts`
-3. Create component in `src/tools/ToolName/`
-4. Register in `src/registry/ToolRegistry.ts`
-
-### Running the App
-
-- **Dev server**: `pnpm dev` (Vite dev server on port 5173)
-- **Build**: `pnpm build` (TypeScript + Vite build)
-- **Lint**: `pnpm lint` (ESLint with TypeScript rules)
-
-## Project-Specific Conventions
-
-### Tool Categories
-
-Use predefined categories: `'design' | 'development' | 'security' | 'productivity' | 'utility' | 'science' | 'ai'`
-
-### Icons and Colors
-
-- Icons: Use **Lucide React** icons only
-- Colors: Use **TailwindCSS** `bg-{color}-500` format for consistency
-- Example: `icon: Calculator, color: "bg-amber-500"`
-
-### State Management Patterns
-
-#### Local State (Default)
-
-Most tools use React's `useState` for temporary data that doesn't need persistence.
-
-#### Persistent State with useLocalStorage Hook
-
-Tools that need to save user data use the custom `useLocalStorage` hook:
-
-```tsx
-import { useLocalStorage } from '../../hooks/useLocalStorage.hook';
-
-const [collections, setCollections] = useLocalStorage<CollectionType[]>(
-  'apiTesterCollections', // localStorage key
-  defaultValue,
-);
-```
-
-#### Direct localStorage Usage
-
-Some tools use direct localStorage for specific needs:
-
-```tsx
-// Dashboard favorites
-localStorage.setItem('favoriteTools', JSON.stringify(favorites));
-
-// Calculator history/memory
-localStorage.setItem('calcHistory', JSON.stringify(calculationHistory));
-localStorage.setItem('memories', JSON.stringify(memories));
-```
-
-#### Redux + Persistence (Pomodoro Only)
-
-The Pomodoro timer uses Redux Toolkit with Redux Persist:
-
-```tsx
-// Wrapped with Provider and PersistGate
-<Provider store={store}>
-  <PersistGate loading={null} persistor={persistor}>
-```
-
-### Storage Keys by Tool
-
-- `favoriteTools` - Dashboard starred tools
-- `apiTesterCollections` - API Tester saved requests
-- `calcHistory`, `savedCalculations`, `memories` - Calculator data
-- `darkMode` - Log Parser theme preference
-
-### Styling Patterns
-
-- **Dark theme** with slate color palette as primary
-- **Gradient backgrounds**: `bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800`
-- **Glass morphism**: Use `backdrop-filter: blur()` for modern UI effects
-- **Consistent spacing**: `space-y-6` for vertical rhythm
-
-## Error Handling
-
-- `ErrorBoundary` wraps the entire app
-- `ToolErrorBoundary` for individual tool failures
-- Tools should handle their own input validation and edge cases
-
-## Integration Points
-
-### Router Integration
-
-Tools are automatically routed at `/{tool-id}` based on `ToolDefinitions.ts`. The `App.tsx` dynamically generates routes.
-
-### Shared UI Components
-
-Leverage existing components in `src/components/`:
-
-- `Button`, `Card`, `Badge` for basic UI
-- `Switch`, `Slider`, `Select` for form controls
-- `Progress`, `LoadingFallback` for feedback
-
-### External Libraries
-
-Common libraries already included:
-
-- `mathjs` - Mathematical calculations
-- `crypto-js` - Cryptographic functions
-- `papaparse` - CSV parsing
-- `framer-motion` - Animations
-- `qrcode.react` - QR code generation
+- `pnpm test`: Vitest. Unit and component tests sit next to the code (`lib/x.test.ts`).
+- `pnpm test:e2e`: Playwright specs in `test/e2e/`.
+  - `smoke.spec.ts` visits every enabled tool and fails on any console error.
+  - It starts a dev server on port 5174. Set `E2E_PORT` to run several checkouts side by side.
+- The merge gate is `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` and `pnpm test:e2e`.
