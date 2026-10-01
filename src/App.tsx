@@ -2,6 +2,7 @@
 
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { Center, Stack, Spinner, Text } from './components/ui';
 import { TOOL_DEFINITIONS } from './data/ToolDefinitions';
 import { getToolComponent } from './registry/ToolRegistry';
@@ -30,6 +31,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <Toaster theme="dark" richColors position="bottom-right" />
         <Suspense fallback={<GlobalLoadingFallback />}>
           <Routes>
             {/* Dashboard as home route */}
