@@ -15,6 +15,8 @@ export const PAGE_SIZES = {
 };
 /** Fit-to-image pages treat image pixels as CSS pixels (96 DPI). */
 export const PX_TO_PT = 0.75;
+/** Largest page side PDF viewers reliably support (ISO 32000 implementation limit). */
+export const MAX_PAGE_PT = 14_400;
 
 export type PageSizeName = 'a4' | 'letter' | 'fit';
 export type Orientation = 'auto' | 'portrait' | 'landscape';
@@ -51,8 +53,19 @@ export function layoutImagePage(
   }
   const m = Math.max(0, opts.marginPt);
   if (opts.pageSize === 'fit') {
-    const width = imgW * PX_TO_PT;
-    const height = imgH * PX_TO_PT;
+    const room = MAX_PAGE_PT - 2 * m;
+    if (room <= 0) {
+      throw new ToolError(
+        'INVALID_INPUT',
+        'The margin is too large for this page size',
+      );
+    }
+    // Keep within the PDF page-size limit, shrinking (never cropping) huge images.
+    const s =
+      PX_TO_PT *
+      Math.min(1, room / (imgW * PX_TO_PT), room / (imgH * PX_TO_PT));
+    const width = imgW * s;
+    const height = imgH * s;
     return {
       pageWidth: width + 2 * m,
       pageHeight: height + 2 * m,

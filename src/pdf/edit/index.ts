@@ -20,6 +20,7 @@ export {
   layoutImagePage,
   PAGE_SIZES,
   PX_TO_PT,
+  MAX_PAGE_PT,
   type ImageInput,
   type ImagePageLayout,
   type ImagesToPdfOptions,
