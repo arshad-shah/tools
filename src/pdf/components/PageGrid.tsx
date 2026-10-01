@@ -73,6 +73,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
         {tiles.map((tile, position) => {
           const isSelected = selected?.has(tile.key) ?? false;
           const tabIndex = keyboard.tabIndexFor(tile.key);
+          const n = tile.pageIndex + 1;
           return (
             <li
               key={tile.key}
@@ -80,7 +81,9 @@ export const PageGrid: React.FC<PageGridProps> = ({
               data-sortable-item
               tabIndex={tabIndex}
               onFocus={() => keyboard.onItemFocus(tile.key)}
-              aria-selected={onToggle ? isSelected : undefined}
+              // The original number is the page's identity; the position
+              // says where it sits now (they differ after a reorder).
+              aria-label={`Page ${n}, position ${position + 1}`}
               onClick={(e) => {
                 if (fromNestedControl(e)) return;
                 onToggle?.(tile.key, {
@@ -113,11 +116,26 @@ export const PageGrid: React.FC<PageGridProps> = ({
                 page={doc.pages[tile.pageIndex]}
                 width={thumbWidth}
                 rotation={tile.rotation}
-                label={`Page ${tile.pageIndex + 1}`}
+                label={`Page ${n}`}
               />
               <div className="flex w-full items-center justify-between gap-2">
-                <span className="font-mono text-xs text-fg-muted">
-                  {tile.pageIndex + 1}
+                <span className="flex items-center gap-1.5">
+                  {onToggle && (
+                    // Tiles hold buttons, so they can't be listbox options:
+                    // a real checkbox carries the selection semantics.
+                    <input
+                      type="checkbox"
+                      className="size-3.5 accent-accent"
+                      aria-label={`Select page ${n}`}
+                      checked={isSelected}
+                      tabIndex={tabIndex}
+                      onChange={() => {}}
+                      onClick={(e) =>
+                        onToggle(tile.key, { shift: e.shiftKey, meta: true })
+                      }
+                    />
+                  )}
+                  <span className="font-mono text-xs text-fg-muted">{n}</span>
                 </span>
                 {renderActions?.(tile, position, { tabIndex })}
               </div>

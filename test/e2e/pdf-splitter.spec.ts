@@ -40,8 +40,12 @@ test('extracts selected pages into one document', async ({ page }) => {
   await tiles.nth(1).click();
   await tiles.nth(2).focus();
   await page.keyboard.press('Space');
-  await expect(tiles.nth(1)).toHaveAttribute('aria-selected', 'true');
-  await expect(tiles.nth(2)).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    page.getByRole('checkbox', { name: 'Select page 2' }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('checkbox', { name: 'Select page 3' }),
+  ).toBeChecked();
 
   await page.getByRole('button', { name: 'Split PDF' }).click();
   const downloadPromise = page.waitForEvent('download');
@@ -87,9 +91,10 @@ test('select all and clear selection', async ({ page }) => {
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
   await page.getByRole('button', { name: 'Select all' }).click();
-  await expect(page.locator('li[aria-selected=true]')).toHaveCount(3);
+  const checked = page.getByRole('checkbox', { checked: true });
+  await expect(checked).toHaveCount(3);
   await page.getByRole('button', { name: 'Clear selection' }).click();
-  await expect(page.locator('li[aria-selected=true]')).toHaveCount(0);
+  await expect(checked).toHaveCount(0);
 });
 
 test('shift-click selects a range of pages', async ({ page }) => {
@@ -101,7 +106,7 @@ test('shift-click selects a range of pages', async ({ page }) => {
   await expect(tiles).toHaveCount(12);
   await tiles.nth(2).click();
   await tiles.nth(6).click({ modifiers: ['Shift'] });
-  await expect(page.locator('li[aria-selected=true]')).toHaveCount(5);
+  await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(5);
   await expect(page.getByText('(5 selected)')).toBeVisible();
 
   await page.getByRole('button', { name: 'Split PDF' }).click();

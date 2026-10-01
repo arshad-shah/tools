@@ -77,7 +77,9 @@ test('guards keep one page, range-selects and resets', async ({ page }) => {
   // every page is selected.
   await tiles.first().click();
   await tiles.nth(2).click({ modifiers: ['Shift'] });
-  await expect(tiles.nth(1)).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    page.getByRole('checkbox', { name: 'Select page 2' }),
+  ).toBeChecked();
   await expect(
     page.getByRole('button', { name: 'Delete', exact: true }),
   ).toBeDisabled();

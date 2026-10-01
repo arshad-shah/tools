@@ -34,3 +34,11 @@ export function removeTiles(
 export function tilesToEdits(tiles: PageTile[]): PageEdit[] {
   return tiles.map((t) => ({ source: t.pageIndex, rotate: t.rotation }));
 }
+
+/** True when the tiles are exactly the untouched document (cheap, no JSON). */
+export function isPristine(tiles: PageTile[], pageCount: number): boolean {
+  return (
+    tiles.length === pageCount &&
+    tiles.every((t, i) => t.pageIndex === i && t.rotation === 0)
+  );
+}

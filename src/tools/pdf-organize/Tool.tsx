@@ -28,6 +28,7 @@ import {
 } from '@/pdf/components';
 import {
   initialTiles,
+  isPristine,
   removeTiles,
   rotateTiles,
   tilesToEdits,
@@ -81,9 +82,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
     setFile(next);
   };
 
-  const dirty =
-    doc !== null &&
-    JSON.stringify(tiles) !== JSON.stringify(initialTiles(doc.pageCount));
+  const dirty = doc !== null && !isPristine(tiles, doc.pageCount);
 
   return (
     <Card>
