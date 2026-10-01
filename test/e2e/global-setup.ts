@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { chromium, type FullConfig } from '@playwright/test';
+import { toolRoutes } from './tool-routes';
 
 const FIXTURE = 'test/fixtures/generated/text-3.pdf';
 const RENDERED = 'canvas[data-rendered="true"]';
@@ -44,6 +45,17 @@ async function warmUp(baseURL: string) {
   try {
     const page = await browser.newPage({ baseURL });
     await page.goto('/', { waitUntil: 'load', timeout: COLD_TIMEOUT });
+    // Load every tool once so cold dependency optimisation (plotly, xyflow,
+    // rive) can't reload a page mid-test.
+    for (const tool of toolRoutes().filter((t) => t.enabled)) {
+      await page.goto(`/${tool.id}`, {
+        waitUntil: 'load',
+        timeout: COLD_TIMEOUT,
+      });
+      await page
+        .getByText(`Loading ${tool.name}…`)
+        .waitFor({ state: 'detached', timeout: COLD_TIMEOUT });
+    }
     for (const entry of TOOL_ROUTES) {
       const { route, fixture, ready } =
         typeof entry === 'string' ? pdfRoute(entry) : entry;
