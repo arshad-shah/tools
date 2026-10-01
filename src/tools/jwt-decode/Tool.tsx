@@ -51,7 +51,7 @@ import {
   getClaimLabel,
   getExpiryInfo,
 } from './lib/claims';
-import useJWTDecoder from './hooks/useJwtDecoder';
+import useJwtDecoder from './hooks/useJwtDecoder';
 import { useClipboard } from '@/shared/lib/clipboard';
 
 const SAMPLE_JWT =
@@ -208,7 +208,7 @@ const ClaimCard: React.FC<ClaimCardProps> = ({
 );
 
 const JWTDecoder: React.FC = () => {
-  const { jwt, setJwt, decoded, error, decode, clear } = useJWTDecoder();
+  const { jwt, setJwt, decoded, error, decode, clear } = useJwtDecoder();
   // Keyed so only the button pressed shows "Copied" (B10).
   const { copiedKey, copy } = useClipboard();
   const [activeTab, setActiveTab] = useState<

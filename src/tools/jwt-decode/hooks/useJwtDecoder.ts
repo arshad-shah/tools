@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DecodedJWT } from '../types';
 
-const useJWTDecoder = () => {
+const useJwtDecoder = () => {
   const [jwt, setJwt] = useState('');
   const [decoded, setDecoded] = useState<DecodedJWT | null>(null);
   const [error, setError] = useState('');
@@ -51,4 +51,4 @@ const useJWTDecoder = () => {
   return { jwt, setJwt, decoded, error, decode, clear };
 };
 
-export default useJWTDecoder;
+export default useJwtDecoder;
