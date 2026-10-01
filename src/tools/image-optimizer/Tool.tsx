@@ -15,6 +15,7 @@ import {
   Grid,
   Heading,
   Inline,
+  Input,
   Label,
   Select,
   Slider,
@@ -32,6 +33,10 @@ import {
   assertImageFile,
   convertImage,
   decodeImage,
+  DEFAULT_BACKGROUND,
+  isHexColor,
+  needsBackground,
+  qualityApplies,
   reductionLabel,
   type OutputFormat,
 } from './lib/convert';
@@ -65,8 +70,12 @@ const ImageOptimiser: React.FC = () => {
     }
   });
 
-  const job = useJob((ctx, file: File, format: OutputFormat, quality: number) =>
-    convertImage(file, { format, quality }, ctx.signal),
+  const [background, setBackground] = useState(DEFAULT_BACKGROUND);
+  const backgroundValid = isHexColor(background);
+
+  const job = useJob(
+    (ctx, file: File, format: OutputFormat, quality: number, fill: string) =>
+      convertImage(file, { format, quality, background: fill }, ctx.signal),
   );
   const { reset: resetJob } = job;
   const result = job.result;
@@ -103,7 +112,12 @@ const ImageOptimiser: React.FC = () => {
 
   const processImage = () => {
     if (!selectedFile) return;
-    void job.run(selectedFile, outputFormat, compressionLevel / 100);
+    void job.run(
+      selectedFile,
+      outputFormat,
+      compressionLevel / 100,
+      background,
+    );
   };
 
   const downloadImage = () => {
@@ -233,28 +247,60 @@ const ImageOptimiser: React.FC = () => {
                     aria-label="Output format"
                   />
                 </Stack>
-                <Stack gap="2">
-                  <Label>Compression quality: {compressionLevel}%</Label>
-                  <Slider
-                    value={compressionLevel}
-                    onValueChange={(v) => {
-                      setCompressionLevel(v);
-                      resetJob();
-                    }}
-                    min={1}
-                    max={100}
-                    step={1}
-                    aria-label="Compression quality"
-                  />
-                  <Text size="xs" tone="subtle">
-                    {qualityHint}
+                {qualityApplies(outputFormat) ? (
+                  <Stack gap="2">
+                    <Label>Compression quality: {compressionLevel}%</Label>
+                    <Slider
+                      value={compressionLevel}
+                      onValueChange={(v) => {
+                        setCompressionLevel(v);
+                        resetJob();
+                      }}
+                      min={1}
+                      max={100}
+                      step={1}
+                      aria-label="Compression quality"
+                    />
+                    <Text size="xs" tone="subtle">
+                      {qualityHint}
+                    </Text>
+                  </Stack>
+                ) : (
+                  <Text size="sm" tone="subtle">
+                    PNG is lossless, so there is no quality setting and the file
+                    can end up larger than the original. Choose JPEG or WebP for
+                    a smaller file.
                   </Text>
-                </Stack>
+                )}
+                {needsBackground(outputFormat) && (
+                  <Stack gap="2">
+                    <Label htmlFor="image-background">Background colour</Label>
+                    <Input
+                      id="image-background"
+                      value={background}
+                      onChange={(v) => {
+                        setBackground(v.trim());
+                        resetJob();
+                      }}
+                      invalid={!backgroundValid}
+                      spellCheck={false}
+                      autoComplete="off"
+                    />
+                    <Text size="xs" tone="subtle">
+                      {backgroundValid
+                        ? 'JPEG has no transparency: transparent areas are filled with this colour.'
+                        : 'Enter a colour as #rrggbb, for example #ffffff.'}
+                    </Text>
+                  </Stack>
+                )}
                 <Button
                   variant="solid"
                   fullWidth
                   loading={isProcessing}
-                  disabled={!selectedFile}
+                  disabled={
+                    !selectedFile ||
+                    (needsBackground(outputFormat) && !backgroundValid)
+                  }
                   onClick={processImage}
                 >
                   {isProcessing ? 'Processing…' : 'Convert & compress'}
