@@ -4,6 +4,7 @@ import { Spinner } from '@/shared/ui';
 import { cn } from '@/lib/utils';
 import { usePageBitmap, type PageInfo } from '@/pdf/render';
 import type { Rotation } from '@/pdf/edit';
+import { thumbBoxSize } from './thumb-size';
 
 const rotationClass: Record<Rotation, string> = {
   0: '',
@@ -50,12 +51,18 @@ export const PageThumb: React.FC<PageThumbProps> = ({
   // Adjust state during render; the effect below draws this bitmap on commit.
   if (drawable && drawnKey !== key) setDrawnKey(key);
   const hasDrawn = drawable || drawnKey === key;
+  const { outerHeight, innerWidth } = thumbBoxSize(page, width, rotation);
 
   useEffect(() => {
     const el = box.current;
     if (!el) return;
+    // One-shot: once near the viewport it stays rendered, so stop observing.
     const io = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && setVisible(true),
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setVisible(true);
+        io.disconnect();
+      },
       { rootMargin: '400px' },
     );
     io.observe(el);
@@ -74,18 +81,17 @@ export const PageThumb: React.FC<PageThumbProps> = ({
     <div
       ref={box}
       className="flex items-center justify-center overflow-hidden"
-      style={{
-        width,
-        height:
-          width * Math.max(page.height / page.width, page.width / page.height),
-      }}
+      style={{ width, height: outerHeight }}
     >
       <div
         className={cn(
-          'relative bg-white shadow-sm transition-transform',
+          'relative shrink-0 bg-white shadow-sm transition-transform',
           rotationClass[rotation],
         )}
-        style={{ width, aspectRatio: `${page.width} / ${page.height}` }}
+        style={{
+          width: innerWidth,
+          aspectRatio: `${page.width} / ${page.height}`,
+        }}
       >
         <canvas
           ref={canvas}
@@ -105,7 +111,10 @@ export const PageThumb: React.FC<PageThumbProps> = ({
                 <AlertTriangle size={16} aria-hidden />
               </span>
             ) : (
-              <Spinner size="sm" />
+              // Decorative: a grid of thumbs must not create a live region each.
+              <span aria-hidden>
+                <Spinner size="sm" />
+              </span>
             )}
           </div>
         )}

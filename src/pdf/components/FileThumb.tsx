@@ -5,6 +5,26 @@ import { usePdfDocument } from '@/pdf/render';
 import { PageThumb } from './PageThumb';
 
 const PREVIEW_WIDTH = 240;
+/** Gap between thumb and popover, and minimum distance to the viewport edge. */
+const GAP = 12;
+const EDGE = 8;
+
+/**
+ * Places the popover beside the thumb: on the right when it fits, else on
+ * the left, vertically centred on the thumb but clamped inside the viewport.
+ * Measured imperatively when the popover mounts, so no extra render.
+ */
+function placePopover(panel: HTMLElement, anchor: HTMLElement) {
+  const a = anchor.getBoundingClientRect();
+  const pw = panel.offsetWidth;
+  const ph = panel.offsetHeight;
+  const fitsRight = a.right + GAP + pw + EDGE <= window.innerWidth;
+  panel.style.left = `${fitsRight ? a.width + GAP : -(pw + GAP)}px`;
+  const centred = a.top + a.height / 2 - ph / 2;
+  const maxTop = Math.max(EDGE, window.innerHeight - ph - EDGE);
+  const top = Math.min(maxTop, Math.max(EDGE, centred));
+  panel.style.top = `${top - a.top}px`;
+}
 /** A4 portrait, used for the box before the real page size is known. */
 const PLACEHOLDER_RATIO = Math.SQRT2;
 
@@ -19,7 +39,8 @@ interface FileThumbProps {
  * Page 1 of a PDF as a small thumbnail, with a larger preview on hover or
  * when the surrounding focusable row (e.g. a SortableFileList item) has
  * keyboard focus. The thumbnail itself never takes focus, so it can't get in
- * the way of the row's Space/arrow reordering.
+ * the way of the row's keyboard reordering. The preview is hidden below the
+ * `sm` breakpoint, where there is no room beside the list.
  */
 export const FileThumb: React.FC<FileThumbProps> = ({
   bytes,
@@ -34,8 +55,7 @@ export const FileThumb: React.FC<FileThumbProps> = ({
   const [rowFocused, setRowFocused] = useState(false);
 
   useEffect(() => {
-    const row =
-      wrapper.current?.parentElement?.closest<HTMLElement>('[tabindex]');
+    const row = wrapper.current?.closest<HTMLElement>('[data-sortable-item]');
     if (!row) return;
     // focus/blur (not focusin/out): only the row itself, not its buttons.
     const onFocus = () => setRowFocused(true);
@@ -78,7 +98,10 @@ export const FileThumb: React.FC<FileThumbProps> = ({
             <AlertTriangle size={16} aria-hidden />
           </span>
         ) : (
-          <Spinner size="sm" label={`Opening ${name}`} />
+          // Decorative: a long list must not create a live region per row.
+          <span aria-hidden>
+            <Spinner size="sm" label={`Opening ${name}`} />
+          </span>
         )}
       </div>
     );
@@ -96,8 +119,11 @@ export const FileThumb: React.FC<FileThumbProps> = ({
       {thumb}
       {showPreview && (
         <div
+          ref={(panel) => {
+            if (panel && wrapper.current) placePopover(panel, wrapper.current);
+          }}
           aria-hidden
-          className="pointer-events-none absolute top-1/2 left-full z-50 ml-3 -translate-y-1/2 rounded-md border border-line-strong bg-surface-subtle p-2 shadow-lg"
+          className="pointer-events-none absolute top-0 left-full z-50 hidden rounded-md border border-line-strong bg-surface-subtle p-2 shadow-lg sm:block"
         >
           <PageThumb
             docId={doc.docId}
