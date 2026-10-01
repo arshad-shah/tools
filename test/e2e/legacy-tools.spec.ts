@@ -108,16 +108,26 @@ test('csv-viewer loads a CSV and exports it', async ({ page }) => {
   expect((await download).suggestedFilename()).toBe('people.exported.csv');
 });
 
-test('csv-viewer rejects a non-CSV file inline', async ({ page }) => {
+test('csv-viewer rejects a non-text file inline', async ({ page }) => {
   await page.goto('/csv-viewer');
   await page.locator('input[type=file]').setInputFiles({
-    name: 'notes.txt',
-    mimeType: 'text/plain',
-    buffer: Buffer.from('hello'),
+    name: 'photo.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('png'),
   });
   await expect(
-    page.getByText('notes.txt is not a supported text file (.csv, .tsv)'),
+    page.getByText('photo.png is not a supported text file (.csv, .tsv, .txt)'),
   ).toBeVisible();
+});
+
+test('csv-viewer still parses a dropped .txt as CSV', async ({ page }) => {
+  await page.goto('/csv-viewer');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'data.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('city,pop\nOslo,700000\n'),
+  });
+  await expect(page.getByRole('cell', { name: 'Oslo' })).toBeVisible();
 });
 
 test('text-diff-checker loads a file into the left pane', async ({ page }) => {
