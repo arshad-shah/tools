@@ -9,6 +9,7 @@ import {
   type RpcEndpoint,
 } from '@/shared/lib/worker-rpc';
 import { NoopFilterFactory, OffscreenCanvasFactory } from './canvas-factory';
+import { renderScale } from './render-scale';
 import { textFromItems } from './text';
 import type { DocInfo, PageText } from './types';
 
@@ -25,14 +26,32 @@ const docs = new Map<
   { doc: PDFDocumentProxy; task: PDFDocumentLoadingTask }
 >();
 
+const cancelled = () => new ToolError('CANCELLED', 'Cancelled');
+
+const invalidFile = (cause: unknown) =>
+  new ToolError(
+    'INVALID_FILE',
+    'This file could not be read as a PDF. It may be damaged.',
+    { cause },
+  );
+
 function getDoc(docId: string) {
   const entry = docs.get(docId);
-  if (!entry) throw new ToolError('UNKNOWN', 'Document is no longer open');
+  // Closed under the caller (unmount, file change): not a real failure.
+  if (!entry) throw new ToolError('CANCELLED', 'Document is no longer open');
   return entry.doc;
 }
 
 const handlers = {
-  async open(_ctx: RpcContext, bytes: Uint8Array): Promise<DocInfo> {
+  /**
+   * `docId` comes from the client so it can `close(docId)` after an abort:
+   * a small file can finish parsing before the abort message is even read.
+   */
+  async open(
+    ctx: RpcContext,
+    docId: string,
+    bytes: Uint8Array,
+  ): Promise<DocInfo> {
     const task = pdfjs.getDocument({
       data: bytes,
       CanvasFactory: OffscreenCanvasFactory,
@@ -63,18 +82,27 @@ const handlers = {
           { cause },
         );
       }
-      throw new ToolError(
-        'INVALID_FILE',
-        'This file could not be read as a PDF. It may be damaged.',
-        { cause },
-      );
+      throw invalidFile(cause);
     }
+    // The caller may abort (unmount, StrictMode remount) while we parse; its
+    // result would be dropped, so never register a doc nobody will close.
+    const bailIfAborted = async () => {
+      if (!ctx.signal.aborted) return;
+      await task.destroy();
+      throw cancelled();
+    };
+    await bailIfAborted();
     const pages = [];
-    for (let i = 1; i <= doc.numPages; i++) {
-      const vp = (await doc.getPage(i)).getViewport({ scale: 1 });
-      pages.push({ width: vp.width, height: vp.height });
+    try {
+      for (let i = 1; i <= doc.numPages; i++) {
+        const vp = (await doc.getPage(i)).getViewport({ scale: 1 });
+        pages.push({ width: vp.width, height: vp.height });
+      }
+    } catch (cause) {
+      await task.destroy();
+      throw invalidFile(cause);
     }
-    const docId = crypto.randomUUID();
+    await bailIfAborted();
     docs.set(docId, { doc, task });
     return { docId, pageCount: doc.numPages, pages };
   },
@@ -86,9 +114,10 @@ const handlers = {
     widthPx: number,
   ) {
     const page = await getDoc(docId).getPage(pageIndex + 1);
+    if (ctx.signal.aborted) throw cancelled();
     const base = page.getViewport({ scale: 1 });
     const viewport = page.getViewport({
-      scale: Math.min(4, widthPx / base.width),
+      scale: renderScale(base.width, base.height, widthPx),
     });
     const canvas = new OffscreenCanvas(
       Math.ceil(viewport.width),
