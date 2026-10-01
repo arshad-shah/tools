@@ -29,6 +29,8 @@
     ]
   },
   "dependencies": {
+    "@arshad-shah/detent": "^0.3.1",
+    "@arshad-shah/detent-react": "^0.3.1",
     "@arshad-shah/store-kit": "^1.0.3",
     "@internationalized/date": "^3.12.2",
     "@reduxjs/toolkit": "^2.12.0",
