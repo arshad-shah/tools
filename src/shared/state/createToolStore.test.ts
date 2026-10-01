@@ -103,6 +103,31 @@ describe('createToolStore legacy import', () => {
     warn.mockRestore();
   });
 
+  it('keeps the legacy key when the imported state could not be saved', () => {
+    localStorage.setItem('old', JSON.stringify(['a', 'b']));
+    const realSetItem = Storage.prototype.setItem;
+    const setItem = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(function (this: Storage, key: string, value: string) {
+        if (key.startsWith('kit:store:tool:')) {
+          throw new DOMException('full', 'QuotaExceededError');
+        }
+        realSetItem.call(this, key, value);
+      });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { store, toolId } = make();
+    // Still usable this session, but the old data is not thrown away.
+    expect(store.getState().items).toEqual(['a', 'b']);
+    expect(localStorage.getItem(kitKeyFor(toolId))).toBeNull();
+    expect(localStorage.getItem('old')).toBe(JSON.stringify(['a', 'b']));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(':legacy]'),
+      expect.anything(),
+    );
+    setItem.mockRestore();
+    warn.mockRestore();
+  });
+
   it('removes the legacy keys when read finds nothing to import', () => {
     localStorage.setItem('old', '');
     const { store } = make();
