@@ -29,7 +29,7 @@ export async function loadPdf(bytes: Uint8Array): Promise<PDFDocument> {
     );
   }
   // pdf-lib is lenient: a header plus garbage can "load" with no page tree.
-  let count = 0;
+  let count: number;
   try {
     count = doc.getPageCount();
   } catch (cause) {

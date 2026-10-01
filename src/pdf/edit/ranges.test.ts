@@ -39,6 +39,8 @@ describe('parsePageRanges', () => {
     ['9', 5, 'Page 9 is out of range (1–5)'],
     ['2-9', 5, 'Page 9 is out of range (1–5)'],
     ['5-2', 5, 'Range 5-2 runs backwards'],
+    ['12345678901234567890', 5, 'Page 123456… is out of range (1–5)'],
+    ['1-99999999', 5, 'Page 999999… is out of range (1–5)'],
     ['abc', 5, '"abc" is not a page number or range'],
     ['1-2-3', 5, '"1-2-3" is not a page number or range'],
   ])('%j on %d pages fails with %s', (input, count, message) => {

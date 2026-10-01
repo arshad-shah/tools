@@ -25,7 +25,33 @@ export interface PageEdit {
   rotate: Rotation;
 }
 
-const save = (doc: PDFDocument) => doc.save({ useObjectStreams: true });
+/**
+ * pdf-lib throws raw internals ("Expected instance of PDFDict...") when a
+ * file's structure is broken in ways it only notices while copying or
+ * serializing. Users get a plain message; the original stays as the cause.
+ */
+async function rebuilding<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (cause) {
+    if (cause instanceof ToolError) throw cause;
+    throw new ToolError(
+      'INVALID_FILE',
+      'This PDF has a structure we could not rebuild. It may be damaged.',
+      { cause },
+    );
+  }
+}
+
+const save = (doc: PDFDocument) =>
+  rebuilding(() => doc.save({ useObjectStreams: true }));
+
+/** Called after each input (merge) or output (split) is done. */
+export interface OpProgress {
+  onProgress?: (done: number, total: number) => void;
+}
+
+const ROTATIONS: readonly number[] = [0, 90, 180, 270];
 
 function assertIndices(indices: number[], pageCount: number) {
   if (indices.length === 0)
@@ -45,22 +71,26 @@ async function copyInto(
   source: PDFDocument,
   indices: number[],
 ) {
-  const pages = await target.copyPages(source, indices);
-  pages.forEach((p) => target.addPage(p));
-  return pages;
+  return rebuilding(async () => {
+    const pages = await target.copyPages(source, indices);
+    pages.forEach((p) => target.addPage(p));
+    return pages;
+  });
 }
 
 export async function merge(
   inputs: { bytes: Uint8Array; pages?: number[] }[],
+  { onProgress }: OpProgress = {},
 ): Promise<Uint8Array> {
   if (inputs.length === 0)
     throw new ToolError('INVALID_INPUT', 'Add at least one PDF');
   const out = await PDFDocument.create();
-  for (const input of inputs) {
+  for (const [i, input] of inputs.entries()) {
     const src = await loadPdf(input.bytes);
     const indices = input.pages ?? src.getPageIndices();
     assertIndices(indices, src.getPageCount());
     await copyInto(out, src, indices);
+    onProgress?.(i + 1, inputs.length);
   }
   return save(out);
 }
@@ -79,17 +109,25 @@ export async function extract(
 export async function split(
   bytes: Uint8Array,
   ranges: PageRange[],
+  { onProgress }: OpProgress = {},
 ): Promise<Uint8Array[]> {
   if (ranges.length === 0)
     throw new ToolError('INVALID_INPUT', 'Enter at least one page or range');
   const src = await loadPdf(bytes);
+  const pageCount = src.getPageCount();
   const results: Uint8Array[] = [];
-  for (const range of ranges) {
-    const indices = rangesToIndices([range]);
-    assertIndices(indices, src.getPageCount());
+  for (const [i, range] of ranges.entries()) {
+    // Check the bounds before expanding: {0, 1e9} must not allocate.
+    assertIndices([range.start, range.end], pageCount);
+    if (range.start > range.end)
+      throw new ToolError(
+        'INVALID_INPUT',
+        `Range ${range.start + 1}-${range.end + 1} runs backwards`,
+      );
     const out = await PDFDocument.create();
-    await copyInto(out, src, indices);
+    await copyInto(out, src, rangesToIndices([range]));
     results.push(await save(out));
+    onProgress?.(i + 1, ranges.length);
   }
   return results;
 }
@@ -131,12 +169,22 @@ export async function applyPageEdits(
       'INVALID_INPUT',
       'The document must keep at least one page',
     );
+  if (edits.some((e) => !ROTATIONS.includes(e.rotate)))
+    throw new ToolError('INVALID_INPUT', 'Rotation must be a multiple of 90°');
   const doc = await loadPdf(bytes);
   const original = doc.getPages();
   assertIndices(
     edits.map((e) => e.source),
     original.length,
   );
+  return rebuilding(() => editInPlace(doc, original, edits));
+}
+
+async function editInPlace(
+  doc: PDFDocument,
+  original: PDFPage[],
+  edits: PageEdit[],
+): Promise<PageEditResult> {
   const notes: string[] = [];
 
   // Pages end up directly under the root /Pages node, so give each page its
