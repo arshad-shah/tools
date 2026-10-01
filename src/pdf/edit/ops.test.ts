@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {
+  decodedObjects,
   makeBadCountPdf,
+  makeTaggedFormPdf,
+  TAGGED_SECRET,
   makeEncryptMarkedPdf,
   makeStructuredPdf,
   makeTextPdf,
@@ -316,6 +319,44 @@ describe('applyPageEdits', () => {
       expect(out.catalog.Pages().Count().asNumber()).toBe(2);
     },
   );
+  it('prunes the structure tree so deleted pages leave nothing behind', async () => {
+    const src = await makeTaggedFormPdf();
+    // A value can be stored literally, as ASCII hex, or as UTF-16BE hex.
+    const forms = (s: string) => [
+      s,
+      Buffer.from(s).toString('hex').toUpperCase(),
+      Buffer.from(s, 'utf16le').swap16().toString('hex').toUpperCase(),
+    ];
+    const contains = (text: string, s: string) =>
+      forms(s).some((f) => text.toUpperCase().includes(f.toUpperCase()));
+    // Sanity: the fixture really carries both values, in every place.
+    const before = await decodedObjects(src);
+    expect(contains(before, TAGGED_SECRET)).toBe(true);
+    expect(contains(before, 'KeepMe')).toBe(true);
+
+    const { bytes } = await applyPageEdits(src, [{ source: 0, rotate: 0 }]);
+    const text = await decodedObjects(bytes);
+    for (const f of forms(TAGGED_SECRET))
+      expect(text.toUpperCase()).not.toContain(f.toUpperCase());
+    expect(contains(text, 'KeepMe')).toBe(true);
+
+    // The kept page's tags still work.
+    const task = getDocument({ data: bytes.slice(), verbosity: 0 });
+    try {
+      const pdf = await task.promise;
+      const tree = await (await pdf.getPage(1)).getStructTree();
+      expect(JSON.stringify(tree)).toContain('"role":"P"');
+    } finally {
+      await task.destroy();
+    }
+    const out = await PDFDocument.load(bytes);
+    expect(
+      out
+        .getForm()
+        .getFields()
+        .map((f) => f.getName()),
+    ).toEqual(['keep']);
+  });
   it('can repeat a page', async () => {
     const src = await makeTextPdf({ pages: 2, label: 'R' });
     const { bytes } = await applyPageEdits(src, [
