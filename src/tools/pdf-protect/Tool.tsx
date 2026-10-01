@@ -91,13 +91,20 @@ const ProtectTool: React.FC<ToolProps> = () => {
     },
   );
 
+  // Passwords never outlive their use: cleared with the file and after a
+  // successful protect.
   const pick = (picked: PdfInputFile) => {
     job.reset();
+    setPasswords(EMPTY);
     setFile(picked);
   };
   const clearFile = () => {
     job.reset();
+    setPasswords(EMPTY);
     setFile(null);
+  };
+  const protect = async (source: PdfInputFile) => {
+    if (await job.run(source, passwords, choices)) setPasswords(EMPTY);
   };
   const setPassword = (key: keyof PasswordInput, value: string) => {
     job.reset();
@@ -201,16 +208,26 @@ const ProtectTool: React.FC<ToolProps> = () => {
                     className="max-w-64"
                   />
                 </Stack>
-                {FLAGS.map(({ key, id, label }) => (
-                  <Inline key={key} gap="2" align="center">
-                    <Checkbox
-                      id={id}
-                      checked={choices[key]}
-                      onCheckedChange={(v) => setPermission({ [key]: v })}
-                    />
-                    <Label htmlFor={id}>{label}</Label>
-                  </Inline>
-                ))}
+                {FLAGS.map(({ key, id, label }) => {
+                  // Comments imply form filling in PDF readers.
+                  const implied = key === 'fillForms' && choices.annotate;
+                  return (
+                    <Inline key={key} gap="2" align="center" wrap>
+                      <Checkbox
+                        id={id}
+                        checked={choices[key] || implied}
+                        disabled={implied}
+                        onCheckedChange={(v) => setPermission({ [key]: v })}
+                      />
+                      <Label htmlFor={id}>{label}</Label>
+                      {implied && (
+                        <Text size="sm" tone="muted">
+                          Included when comments are allowed.
+                        </Text>
+                      )}
+                    </Inline>
+                  );
+                })}
               </Stack>
               <Text size="sm" tone="muted">
                 Uses AES-256. PDF readers enforce the permissions; the file
@@ -221,7 +238,7 @@ const ProtectTool: React.FC<ToolProps> = () => {
                   variant="solid"
                   leftIcon={<Lock size={16} />}
                   disabled={!!problem || job.status === 'running'}
-                  onClick={() => job.run(file, passwords, choices)}
+                  onClick={() => void protect(file)}
                 >
                   Protect PDF
                 </Button>

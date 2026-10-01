@@ -64,6 +64,31 @@ test('protects a PDF and unlocks it again (round trip)', async ({ page }) => {
   expect((await PDFDocument.load(plain)).getPageCount()).toBe(3);
 });
 
+test('comments force form filling on, and a new file starts with empty passwords (review M1, M2)', async ({
+  page,
+}) => {
+  await page.goto('/pdf-protect');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-3.pdf');
+  const forms = page.getByRole('checkbox', { name: 'Allow filling forms' });
+  const comments = page.getByRole('checkbox', { name: 'Allow comments' });
+  await expect(comments).toHaveAttribute('aria-checked', 'true');
+  await expect(forms).toHaveAttribute('aria-checked', 'true');
+  await expect(forms).toBeDisabled();
+  await comments.click();
+  await expect(forms).toBeEnabled();
+  await comments.click();
+  await page.getByLabel('Password to open', { exact: true }).fill('x');
+  await page.getByRole('button', { name: 'Choose another file' }).click();
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-3.pdf');
+  await expect(
+    page.getByLabel('Password to open', { exact: true }),
+  ).toHaveValue('');
+});
+
 test('unlock explains when there is nothing to unlock', async ({ page }) => {
   await page.goto('/pdf-unlock');
   await page

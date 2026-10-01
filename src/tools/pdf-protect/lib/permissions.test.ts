@@ -30,6 +30,23 @@ describe('protect permissions', () => {
     });
   });
 
+  it('comments imply form filling, as readers treat them (review M2)', () => {
+    expect(
+      toQpdfPermissions({
+        ...DEFAULT_PERMISSIONS,
+        annotate: true,
+        fillForms: false,
+      }).form,
+    ).toBe(true);
+    expect(
+      toQpdfPermissions({
+        ...DEFAULT_PERMISSIONS,
+        annotate: false,
+        fillForms: false,
+      }).form,
+    ).toBe(false);
+  });
+
   it('validates passwords', () => {
     expect(
       validatePasswords(pw({ userPassword: '', confirmPassword: '' }))?.message,
