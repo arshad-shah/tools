@@ -202,3 +202,18 @@ export function selectPages(
     ...new Set(rangesToIndices(parsePageRanges(selection.text, pageCount))),
   ].sort((a, b) => a - b);
 }
+
+/** Like selectPages, but returns a user-facing message instead of throwing. */
+export function trySelectPages(
+  selection: PageSelection,
+  pageCount: number,
+): { pages: number[]; error: string | null } {
+  try {
+    return { pages: selectPages(selection, pageCount), error: null };
+  } catch (e) {
+    return {
+      pages: [],
+      error: e instanceof Error ? e.message : 'Invalid page selection',
+    };
+  }
+}

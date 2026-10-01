@@ -54,3 +54,20 @@ test('adds an image watermark', async ({ page }) => {
     ).toHaveLength(1);
   }
 });
+
+test('checks page ranges as you type', async ({ page }) => {
+  await page.goto('/pdf-watermark');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-3.pdf');
+  await page.getByRole('tab', { name: 'Some pages' }).click();
+  const apply = page.getByRole('button', { name: 'Add watermark' });
+  await expect(apply).toBeDisabled(); // nothing entered yet
+  await page.getByLabel('Page ranges', { exact: true }).fill('9');
+  await expect(
+    page.getByRole('alert').getByText('Page 9 is out of range (1–3)'),
+  ).toBeVisible();
+  await expect(apply).toBeDisabled();
+  await page.getByLabel('Page ranges', { exact: true }).fill('1-2');
+  await expect(apply).toBeEnabled();
+});
