@@ -213,6 +213,51 @@ describe('rolloverDay', () => {
     // The old listener left lastUpdate alone here and re-fired on every action.
     expect(rolloverDay(r, DAY2 + 1000)).toBe(r);
   });
+  it('counts skipped days as zero days: productive day then a 3-day gap drops the streak by 2', () => {
+    // Thu 1 Oct productive; back Sun 4 Oct: Fri and Sat were zero days.
+    const r = rolloverDay(
+      { ...base, dailyPomodoros: 4, currentStreak: 5 },
+      new Date(2026, 9, 4, 9).getTime(),
+    );
+    expect(r.currentStreak).toBe(3);
+    expect(r.dailyPomodoros).toBe(0);
+  });
+  it('counts a zero last day plus the skipped days, across a month boundary', () => {
+    // Tue 29 Sep had nothing; back Fri 2 Oct: 29 Sep, 30 Sep and 1 Oct missed.
+    const r = rolloverDay(
+      {
+        ...base,
+        currentStreak: 5,
+        lastUpdate: new Date(2026, 8, 29, 20).getTime(),
+      },
+      new Date(2026, 9, 2, 8).getTime(),
+    );
+    expect(r.currentStreak).toBe(2);
+  });
+  it('a long absence ends the streak', () => {
+    const r = rolloverDay(
+      { ...base, dailyPomodoros: 2, currentStreak: 4 },
+      new Date(2026, 10, 1, 9).getTime(),
+    );
+    expect(r.currentStreak).toBe(0);
+  });
+  it('resets the weekly count when a new (Monday-based) week starts', () => {
+    // Thu 1 Oct → Sun 4 Oct is the same week; Mon 5 Oct is a new one.
+    expect(
+      rolloverDay(base, new Date(2026, 9, 4, 9).getTime()).weeklyPomodoros,
+    ).toBe(5);
+    expect(
+      rolloverDay(base, new Date(2026, 9, 5, 9).getTime()).weeklyPomodoros,
+    ).toBe(0);
+  });
+  it('treats a clock that went backwards like a single day change', () => {
+    const r = rolloverDay(
+      { ...base, dailyPomodoros: 1 },
+      new Date(2026, 8, 30, 9).getTime(),
+    );
+    expect(r.currentStreak).toBe(3);
+    expect(r.dailyPomodoros).toBe(0);
+  });
   it('never goes below zero', () => {
     expect(rolloverDay({ ...base, currentStreak: 0 }, DAY2).currentStreak).toBe(
       0,

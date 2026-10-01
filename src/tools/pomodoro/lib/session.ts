@@ -6,7 +6,7 @@ import type {
   TimerMode,
   TimerState,
 } from '../types';
-import { isSameDay } from './time';
+import { daysBetween, isSameDay, isSameWeek } from './time';
 
 /**
  * Pure Pomodoro transitions. Each returns only the slices it changes, so the
@@ -56,18 +56,23 @@ export const nextIncompleteTaskId = (tasks: Task[]): string | null =>
   tasks.find((t) => !t.completed)?.id ?? null;
 
 /**
- * On the first call of a new day: reset the daily count, drop the streak by
- * one if yesterday had no pomodoros, and stamp `lastUpdate` so it runs once.
+ * On the first call of a new day: reset the daily count, take one off the
+ * streak for every zero day since `lastUpdate` (the last active day if it had
+ * no pomodoros, plus every day skipped entirely), reset the weekly count in a
+ * new Monday-based week, and stamp `lastUpdate` so it runs once.
  */
 export function rolloverDay(stats: Stats, now: number): Stats {
   if (isSameDay(stats.lastUpdate, now)) return stats;
+  // A clock that went backwards counts as a single day change.
+  const days = Math.max(1, daysBetween(stats.lastUpdate, now));
+  const missed = days - 1 + (stats.dailyPomodoros === 0 ? 1 : 0);
   return {
     ...stats,
     dailyPomodoros: 0,
-    currentStreak:
-      stats.dailyPomodoros === 0
-        ? Math.max(0, stats.currentStreak - 1)
-        : stats.currentStreak,
+    weeklyPomodoros: isSameWeek(stats.lastUpdate, now)
+      ? stats.weeklyPomodoros
+      : 0,
+    currentStreak: Math.max(0, stats.currentStreak - missed),
     lastUpdate: now,
   };
 }
