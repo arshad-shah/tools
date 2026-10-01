@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Spinner } from '@/shared/ui';
 import { usePdfDocument } from '@/pdf/render';
@@ -12,7 +18,7 @@ const EDGE = 8;
 /**
  * Places the popover beside the thumb: on the right when it fits, else on
  * the left, vertically centred on the thumb but clamped inside the viewport.
- * Measured imperatively when the popover mounts, so no extra render.
+ * Measured imperatively in a layout effect when the popover opens.
  */
 function placePopover(panel: HTMLElement, anchor: HTMLElement) {
   const a = anchor.getBoundingClientRect();
@@ -47,12 +53,32 @@ export const FileThumb: React.FC<FileThumbProps> = ({
   name,
   width = 48,
 }) => {
-  // Stable identity per bytes: usePdfDocument reopens whenever this changes.
-  const file = useMemo(() => ({ bytes }), [bytes]);
-  const { doc, error } = usePdfDocument(file);
   const wrapper = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  // Open the worker document only once the row nears the viewport: a long
+  // list must not parse every file up front.
+  const [near, setNear] = useState(false);
+  // Stable identity per bytes: usePdfDocument reopens whenever this changes.
+  const file = useMemo(() => (near ? { bytes } : null), [bytes, near]);
+  const { doc, error } = usePdfDocument(file);
   const [hovered, setHovered] = useState(false);
   const [rowFocused, setRowFocused] = useState(false);
+
+  useEffect(() => {
+    const el = wrapper.current;
+    if (!el) return;
+    // One-shot: once opened, the document stays open for the row's lifetime.
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setNear(true);
+        io.disconnect();
+      },
+      { rootMargin: '400px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     const row = wrapper.current?.closest<HTMLElement>('[data-sortable-item]');
@@ -70,6 +96,11 @@ export const FileThumb: React.FC<FileThumbProps> = ({
 
   const page = doc?.pages[0];
   const showPreview = (hovered || rowFocused) && doc !== null && !!page;
+
+  useLayoutEffect(() => {
+    if (showPreview && panel.current && wrapper.current)
+      placePopover(panel.current, wrapper.current);
+  }, [showPreview]);
 
   let thumb: React.ReactNode;
   if (doc && page) {
@@ -119,9 +150,7 @@ export const FileThumb: React.FC<FileThumbProps> = ({
       {thumb}
       {showPreview && (
         <div
-          ref={(panel) => {
-            if (panel && wrapper.current) placePopover(panel, wrapper.current);
-          }}
+          ref={panel}
           aria-hidden
           aria-label={`Preview of ${name}`}
           className="pointer-events-none absolute top-0 left-full z-50 hidden rounded-md border border-line-strong bg-surface-subtle p-2 shadow-lg sm:block"
