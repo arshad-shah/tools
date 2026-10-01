@@ -61,3 +61,35 @@ describe('calculator store', () => {
     );
   });
 });
+
+describe('calculator store legacy shape', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+  it('imports the valid keys even when another key is malformed', async () => {
+    localStorage.setItem('calcHistory', 'not json');
+    localStorage.setItem(
+      'savedCalculations',
+      JSON.stringify([{ calculation: '2*3=6', isFavorite: true }]),
+    );
+    localStorage.setItem('memories', 'null');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { useCalculatorStore } = await import('./store');
+    const s = useCalculatorStore.getState();
+    expect(s.history).toEqual([]);
+    expect(s.saved).toEqual([{ calculation: '2*3=6', isFavorite: true }]);
+    expect(s.memories).toHaveLength(3);
+    warn.mockRestore();
+  });
+  it('ignores non-array values', async () => {
+    localStorage.setItem('calcHistory', '{}');
+    localStorage.setItem('memories', JSON.stringify([{ nope: true }]));
+    const { useCalculatorStore } = await import('./store');
+    expect(useCalculatorStore.getState().history).toEqual([]);
+    expect(useCalculatorStore.getState().memories[0]).toEqual({
+      label: 'M1',
+      value: null,
+    });
+  });
+});

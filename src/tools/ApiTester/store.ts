@@ -14,13 +14,25 @@ export const useApiCollections = createToolStore<
   }),
   legacy: {
     keys: ['apiTesterCollections'],
-    read: (raw) =>
-      raw.apiTesterCollections
-        ? {
-            collections: JSON.parse(
-              raw.apiTesterCollections,
-            ) as CollectionType[],
-          }
-        : null,
+    read: (raw) => {
+      if (!raw.apiTesterCollections) return null;
+      const parsed: unknown = JSON.parse(raw.apiTesterCollections);
+      // Well-formed JSON of the wrong shape would crash the tool on every
+      // load once persisted: import nothing instead.
+      return isCollectionList(parsed) ? { collections: parsed } : null;
+    },
   },
 });
+
+function isCollectionList(v: unknown): v is CollectionType[] {
+  return (
+    Array.isArray(v) &&
+    v.every(
+      (c) =>
+        typeof c === 'object' &&
+        c !== null &&
+        (c as CollectionType).type === 'folder' &&
+        Array.isArray((c as CollectionType).children),
+    )
+  );
+}
