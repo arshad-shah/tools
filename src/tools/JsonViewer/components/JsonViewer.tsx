@@ -45,6 +45,7 @@ import {
   Text,
   Tooltip,
 } from '@/shared/ui';
+import { saveBlob } from '@/shared/lib/download';
 import TreeView from './TreeView';
 import DataFlow from './treeview/DataFlow';
 
@@ -194,17 +195,12 @@ const DataViewer = () => {
   }, [format, inputText]);
 
   const handleDownload = useCallback(() => {
-    const blob = new Blob([inputText], {
-      type: format === 'json' ? 'application/json' : 'text/xml',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `data.${format}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    saveBlob(
+      new Blob([inputText], {
+        type: format === 'json' ? 'application/json' : 'text/xml',
+      }),
+      `data.${format}`,
+    );
   }, [format, inputText]);
 
   const rehypePlugins = [

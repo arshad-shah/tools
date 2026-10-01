@@ -38,6 +38,7 @@ import {
   Textarea,
 } from '@/shared/ui';
 import { DiffSegment, DiffViewMode } from '../../types/TextDiffCheckerTypes';
+import { saveBlob } from '@/shared/lib/download';
 import useNotification from './hooks/useNotification';
 import useDiffSettings from './hooks/useDiffSettings';
 import useIntelligentDiff from './hooks/useIntelligentDiff';
@@ -244,17 +245,12 @@ const TextDiffChecker: React.FC = () => {
         lineNumber: s.lineNumber,
       })),
     };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `diff-results-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    saveBlob(
+      new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json',
+      }),
+      `diff-results-${Date.now()}.json`,
+    );
     showNotification('Results exported successfully', 'success');
   }, [diffSegments, diffStats, diffSettings, showNotification]);
 

@@ -37,6 +37,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
+import { saveBlob } from '@/shared/lib/download';
 import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
 
 interface ColorLike {
@@ -227,16 +228,12 @@ const ColorTester: React.FC = () => {
   };
 
   const exportPalette = () => {
-    const data = JSON.stringify(savedColors, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'color-palette.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    saveBlob(
+      new Blob([JSON.stringify(savedColors, null, 2)], {
+        type: 'application/json',
+      }),
+      'color-palette.json',
+    );
   };
 
   const handleColorPicker = (color: ColorLike) => {
