@@ -15,7 +15,9 @@ test('footer shows on dashboard and tool pages with per-tool issue link', async 
   const footer = page.locator('footer');
   await expect(footer).toBeVisible();
   await expect(
-    footer.getByRole('link', { name: /report an issue/i }),
+    footer.getByRole('link', {
+      name: 'issues: report a problem with PDF Merger',
+    }),
   ).toHaveAttribute('href', /%5Bpdf-merger%5D/);
 });
 
