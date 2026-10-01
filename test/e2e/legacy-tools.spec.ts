@@ -39,12 +39,32 @@ test('jwt-decode shows "Copied" only on the button pressed', async ({
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/jwt-decode');
   await page.getByRole('tab', { name: 'Signature' }).click();
-  await page.getByText('Signature value').click();
+  await page.getByRole('button', { name: 'Signature value' }).click();
   const copy = page.getByRole('button', { name: 'Copy', exact: true });
   await expect(copy).toHaveCount(2); // token + signature
   await copy.last().click();
   await expect(page.getByRole('button', { name: 'Copied' })).toHaveCount(1);
   await expect(copy).toHaveCount(1);
+});
+
+test('jwt-decode accordion triggers have accessible names', async ({
+  page,
+}) => {
+  await page.goto('/jwt-decode');
+  for (const name of [
+    'Identity claims',
+    'Access & permissions',
+    'Timestamps',
+    'Issuer information',
+    'Custom claims',
+    'Raw JSON',
+  ]) {
+    await expect(page.getByRole('button', { name })).toBeVisible();
+  }
+  // A <button> may only hold phrasing content (no <div>/<p>).
+  await expect(page.locator('main button :is(div, p)')).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Signature' }).click();
+  await expect(page.locator('main button :is(div, p)')).toHaveCount(0);
 });
 
 const PNG_1PX =
