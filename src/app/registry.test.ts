@@ -84,6 +84,7 @@ describe('TOOLS', () => {
         'number-converter',
         'password-generator',
         'pdf-compressor',
+        'pdf-fill-form',
         'pdf-merger',
         'pdf-organize',
         'pdf-page-numbers',

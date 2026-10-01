@@ -32,6 +32,12 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
     fixture: 'test/fixtures/generated/photo.png',
     ready: 'li[data-sortable-item] img',
   },
+  // Fill Form renders no page canvas: it lists the form's fields.
+  {
+    route: '/pdf-fill-form',
+    fixture: 'test/fixtures/generated/form.pdf',
+    ready: 'label[for="field-0"]',
+  },
 ];
 const COLD_TIMEOUT = 120_000;
 
