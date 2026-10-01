@@ -1,0 +1,244 @@
+import { ToolError, toToolError, type ToolErrorCode } from './errors';
+import type { JobProgress } from '@/shared/state/useJob';
+
+/** Anything message-shaped: Worker, MessagePort, a worker's `self`. */
+export interface RpcEndpoint {
+  postMessage(message: unknown, transfer: Transferable[]): void;
+  addEventListener(type: string, listener: (event: MessageEvent) => void): void;
+  removeEventListener(
+    type: string,
+    listener: (event: MessageEvent) => void,
+  ): void;
+  terminate?(): void;
+}
+
+export interface RpcContext {
+  signal: AbortSignal;
+  progress(p: JobProgress): void;
+}
+
+export type RpcHandlers = Record<
+  string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (ctx: RpcContext, ...args: any[]) => unknown
+>;
+
+/** Return this from a handler to transfer (not copy) buffers back. */
+export class Transferred<T> {
+  constructor(
+    readonly value: T,
+    readonly transfer: Transferable[],
+  ) {}
+}
+
+type ArgsOf<F> = F extends (ctx: RpcContext, ...args: infer A) => unknown
+  ? A
+  : never;
+type ResultOf<F> = F extends (...args: never[]) => infer R
+  ? Awaited<R> extends Transferred<infer V>
+    ? V
+    : Awaited<R>
+  : never;
+
+type Request =
+  | { type: 'call'; id: number; method: string; args: unknown[] }
+  | { type: 'abort'; id: number };
+type Response =
+  | { type: 'result'; id: number; value: unknown }
+  | {
+      type: 'error';
+      id: number;
+      error: { code: ToolErrorCode; message: string };
+    }
+  | { type: 'progress'; id: number; value: JobProgress };
+
+export function exposeRpc<H extends RpcHandlers>(
+  handlers: H,
+  endpoint: RpcEndpoint,
+): () => void {
+  const controllers = new Map<number, AbortController>();
+
+  const onMessage = async (event: MessageEvent) => {
+    const msg = event.data as Request;
+    if (msg.type === 'abort') {
+      controllers.get(msg.id)?.abort();
+      return;
+    }
+    if (msg.type !== 'call') return;
+    const { id } = msg;
+    const handler = handlers[msg.method];
+    if (!handler) {
+      endpoint.postMessage(
+        {
+          type: 'error',
+          id,
+          error: { code: 'UNKNOWN', message: `Unknown method ${msg.method}` },
+        },
+        [],
+      );
+      return;
+    }
+    const ctrl = new AbortController();
+    controllers.set(id, ctrl);
+    try {
+      const out = await handler(
+        {
+          signal: ctrl.signal,
+          progress: (value) =>
+            endpoint.postMessage({ type: 'progress', id, value }, []),
+        },
+        ...msg.args,
+      );
+      if (out instanceof Transferred)
+        endpoint.postMessage(
+          { type: 'result', id, value: out.value },
+          out.transfer,
+        );
+      else endpoint.postMessage({ type: 'result', id, value: out }, []);
+    } catch (e) {
+      const err = ctrl.signal.aborted
+        ? new ToolError('CANCELLED', 'Cancelled')
+        : toToolError(e);
+      endpoint.postMessage(
+        { type: 'error', id, error: { code: err.code, message: err.message } },
+        [],
+      );
+    } finally {
+      controllers.delete(id);
+    }
+  };
+
+  endpoint.addEventListener('message', onMessage);
+  return () => endpoint.removeEventListener('message', onMessage);
+}
+
+export interface CallOptions {
+  signal?: AbortSignal;
+  transfer?: Transferable[];
+  onProgress?: (p: JobProgress) => void;
+}
+
+export interface RpcClient<H extends RpcHandlers> {
+  call<K extends keyof H & string>(
+    method: K,
+    args: ArgsOf<H[K]>,
+    opts?: CallOptions,
+  ): Promise<ResultOf<H[K]>>;
+  terminate(): void;
+}
+
+interface Pending {
+  resolve(v: unknown): void;
+  reject(e: unknown): void;
+  onProgress?: (p: JobProgress) => void;
+  cleanup(): void;
+}
+
+export function createRpcClient<H extends RpcHandlers>(
+  connect: () => RpcEndpoint,
+  { maxRestarts = 1 }: { maxRestarts?: number } = {},
+): RpcClient<H> {
+  let endpoint: RpcEndpoint | null = null;
+  let nextId = 1;
+  let crashes = 0;
+  const pending = new Map<number, Pending>();
+
+  const failAll = (err: ToolError) => {
+    for (const p of pending.values()) {
+      p.cleanup();
+      p.reject(err);
+    }
+    pending.clear();
+  };
+
+  const onMessage = (event: MessageEvent) => {
+    const msg = event.data as Response;
+    const p = pending.get(msg.id);
+    if (!p) return;
+    if (msg.type === 'progress') {
+      p.onProgress?.(msg.value);
+      return;
+    }
+    pending.delete(msg.id);
+    p.cleanup();
+    crashes = 0;
+    if (msg.type === 'result') p.resolve(msg.value);
+    else p.reject(new ToolError(msg.error.code, msg.error.message));
+  };
+
+  const detach = (ep: RpcEndpoint) => {
+    ep.removeEventListener('message', onMessage);
+    ep.removeEventListener('error', onCrash);
+    ep.removeEventListener('messageerror', onCrash);
+    ep.terminate?.();
+  };
+
+  function onCrash() {
+    if (!endpoint) return;
+    detach(endpoint);
+    endpoint = null;
+    crashes++;
+    failAll(
+      new ToolError(
+        'WORKER_CRASHED',
+        'The background worker stopped unexpectedly. Please try again.',
+      ),
+    );
+  }
+
+  const ensure = (): RpcEndpoint => {
+    if (endpoint) return endpoint;
+    if (crashes > maxRestarts) {
+      throw new ToolError(
+        'WORKER_CRASHED',
+        'The background worker keeps crashing. Reload the page and try again.',
+      );
+    }
+    const ep = connect();
+    ep.addEventListener('message', onMessage);
+    ep.addEventListener('error', onCrash);
+    ep.addEventListener('messageerror', onCrash);
+    endpoint = ep;
+    return ep;
+  };
+
+  return {
+    call(method, args, opts = {}) {
+      return new Promise((resolve, reject) => {
+        if (opts.signal?.aborted) {
+          reject(new ToolError('CANCELLED', 'Cancelled'));
+          return;
+        }
+        let target: RpcEndpoint;
+        try {
+          target = ensure();
+        } catch (e) {
+          reject(e);
+          return;
+        }
+        const id = nextId++;
+        const onAbort = () => {
+          if (!pending.delete(id)) return;
+          target.postMessage({ type: 'abort', id } satisfies Request, []);
+          reject(new ToolError('CANCELLED', 'Cancelled'));
+        };
+        opts.signal?.addEventListener('abort', onAbort, { once: true });
+        pending.set(id, {
+          resolve: resolve as (v: unknown) => void,
+          reject,
+          onProgress: opts.onProgress,
+          cleanup: () => opts.signal?.removeEventListener('abort', onAbort),
+        });
+        target.postMessage(
+          { type: 'call', id, method, args } satisfies Request,
+          opts.transfer ?? [],
+        );
+      });
+    },
+    terminate() {
+      if (endpoint) detach(endpoint);
+      endpoint = null;
+      failAll(new ToolError('CANCELLED', 'Worker terminated'));
+    },
+  };
+}
