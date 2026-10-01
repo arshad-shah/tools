@@ -78,6 +78,25 @@ export function rolloverDay(stats: Stats, now: number): Stats {
 }
 
 /**
+ * Sets the run state. A running timer carries its wall-clock end, so a
+ * reload can tell how much time is really left; a paused one has none.
+ */
+const run = (t: TimerState, active: boolean, now: number): TimerState => ({
+  ...t,
+  isActive: active,
+  endsAt: active ? now + t.timeLeft * 1000 : undefined,
+});
+
+/** Start or pause. Starting work without a current task changes nothing. */
+export function toggleTimer(
+  s: PomodoroState,
+  now: number,
+): Pick<PomodoroState, 'timer'> {
+  if (!s.timer.isActive && !canStart(s.timer)) return { timer: s.timer };
+  return { timer: run(s.timer, !s.timer.isActive, now) };
+}
+
+/**
  * The end of a session (timer reached zero or Skip). Work counts one
  * pomodoro and one task step, then moves to a short break; a break only moves
  * back to work.
@@ -91,12 +110,11 @@ export function completeSession(
     return {
       stats: day,
       tasks: s.tasks,
-      timer: {
-        ...s.timer,
-        mode: 'work',
-        timeLeft: durationFor('work', s.settings),
-        isActive: s.settings.autoStartPomodoros,
-      },
+      timer: run(
+        { ...s.timer, mode: 'work', timeLeft: durationFor('work', s.settings) },
+        s.settings.autoStartPomodoros,
+        now,
+      ),
     };
   }
   const stats: Stats = {
@@ -122,13 +140,40 @@ export function completeSession(
   return {
     stats,
     tasks,
-    timer: {
-      ...s.timer,
-      currentTask,
-      mode: 'shortBreak',
-      timeLeft: durationFor('shortBreak', s.settings),
-      isActive: s.settings.autoStartBreaks,
-    },
+    timer: run(
+      {
+        ...s.timer,
+        currentTask,
+        mode: 'shortBreak',
+        timeLeft: durationFor('shortBreak', s.settings),
+      },
+      s.settings.autoStartBreaks,
+      now,
+    ),
+  };
+}
+
+/**
+ * After a reload. A paused timer is left alone. A running one gets the time
+ * really left from its wall-clock end; if that passed while the tab was
+ * closed, the session is completed as of its end (so it counts on its own
+ * day), silently, and the next one waits paused. A running timer without an
+ * end time (older data) comes back paused.
+ */
+export function resumeTimer(
+  s: PomodoroState,
+  now: number,
+): Partial<Pick<PomodoroState, 'timer' | 'stats' | 'tasks'>> {
+  const { timer } = s;
+  if (!timer.isActive) return {};
+  if (timer.endsAt == null) return { timer: run(timer, false, now) };
+  const left = Math.ceil((timer.endsAt - now) / 1000);
+  if (left > 0) return { timer: { ...timer, timeLeft: left } };
+  const done = completeSession(s, timer.endsAt);
+  return {
+    ...done,
+    stats: rolloverDay(done.stats, now),
+    timer: run(done.timer, false, now),
   };
 }
 
@@ -155,6 +200,7 @@ export const selectMode = (
     mode,
     timeLeft: durationFor(mode, s.settings),
     isActive: false,
+    endsAt: undefined,
   },
 });
 
@@ -163,6 +209,7 @@ export const resetTimer = (s: PomodoroState): Pick<PomodoroState, 'timer'> => ({
     ...s.timer,
     timeLeft: durationFor(s.timer.mode, s.settings),
     isActive: false,
+    endsAt: undefined,
   },
 });
 

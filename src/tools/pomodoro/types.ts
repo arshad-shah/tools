@@ -20,6 +20,8 @@ export interface TimerState {
   timeLeft: number;
   isActive: boolean;
   currentTask: string | null;
+  /** Wall-clock end (ms) while running; absent when paused. */
+  endsAt?: number;
 }
 
 export interface Stats {

@@ -57,6 +57,26 @@ describe('pomodoro store', () => {
     );
   });
 
+  it('a timer that was running under Redux Persist comes back paused', async () => {
+    localStorage.setItem(
+      'persist:pomodoro-store',
+      legacyBlob({
+        timer: {
+          mode: 'work',
+          timeLeft: 900,
+          isActive: true,
+          currentTask: null,
+        },
+      }),
+    );
+    const { usePomodoroStore } = await import('./store');
+    usePomodoroStore.getState().resume();
+    expect(usePomodoroStore.getState().timer).toMatchObject({
+      timeLeft: 900,
+      isActive: false,
+    });
+  });
+
   it('does not re-import once the store has its own data', async () => {
     localStorage.setItem(
       'kit:store:tool:pomodoro',
