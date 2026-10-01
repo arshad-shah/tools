@@ -120,7 +120,7 @@ export function createPdfRender(
         });
       }, signal);
     },
-    /** Encoded PNG/JPEG of one page at  (capped to the canvas limit). */
+    /** Encoded PNG/JPEG of one page at `opts.dpi` (capped to the canvas limit). */
     renderPageImage(
       docId: string,
       pageIndex: number,
