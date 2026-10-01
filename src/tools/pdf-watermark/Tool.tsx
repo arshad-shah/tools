@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Droplets } from 'lucide-react';
 import {
+  Alert,
+  AlertDescription,
   Button,
   Card,
   CardBody,
@@ -19,6 +21,8 @@ import {
 import type { ToolProps } from '@/app/tool';
 import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
+import { logToolError, toToolError } from '@/shared/lib/errors';
+import { uprightJpeg } from '@/shared/lib/upright-jpeg';
 import { useJob } from '@/shared/state/useJob';
 import {
   ANCHOR_OPTIONS,
@@ -46,6 +50,7 @@ const MARGIN = 24;
 const PdfWatermarkTool: React.FC<ToolProps> = () => {
   const [file, setFile] = useState<LoadedFile | null>(null);
   const [image, setImage] = useState<LoadedFile | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [pageMode, setPageMode] = useState<'all' | 'ranges'>('all');
   const [rangeText, setRangeText] = useState('');
   const s = useWatermarkSettings();
@@ -121,6 +126,23 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
       job.reset();
       fn(v);
     };
+
+  /** JPEGs are stored upright (EXIF orientation applied) before use. */
+  const pickImage = async (picked: LoadedFile) => {
+    job.reset();
+    setImageError(null);
+    if (picked.kind !== 'jpeg') {
+      setImage(picked);
+      return;
+    }
+    try {
+      const { bytes } = await uprightJpeg(picked.bytes);
+      setImage({ ...picked, bytes, size: bytes.byteLength });
+    } catch (e) {
+      logToolError(toToolError(e));
+      setImageError('This image could not be read. Try a PNG instead.');
+    }
+  };
 
   const pick = change((picked: LoadedFile) => setFile(picked));
   const clearFile = () => {
@@ -226,11 +248,13 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
                       <PdfDropzone
                         accept={['png', 'jpeg']}
                         label="Drop a PNG or JPEG for the watermark"
-                        onFiles={(files) => {
-                          job.reset();
-                          setImage(files[0]);
-                        }}
+                        onFiles={(files) => void pickImage(files[0])}
                       />
+                    )}
+                    {imageError && (
+                      <Alert status="danger">
+                        <AlertDescription>{imageError}</AlertDescription>
+                      </Alert>
                     )}
                     <Stack gap="2">
                       <Label htmlFor="wm-width">Image width (% of page)</Label>
