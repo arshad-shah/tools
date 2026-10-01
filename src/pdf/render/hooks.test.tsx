@@ -36,7 +36,7 @@ const fake = vi.hoisted(() => {
 
 vi.mock('./client', () => ({ pdfRender: fake.pdfRender }));
 
-const { usePdfDocument } = await import('./hooks');
+const { usePdfDocument, closedDocCount } = await import('./hooks');
 
 describe('usePdfDocument', () => {
   beforeEach(() => fake.reset());
@@ -54,6 +54,30 @@ describe('usePdfDocument', () => {
     expect((fake.pdfRender.open.mock.calls[1] as unknown[])[0]).toBe(
       file.bytes,
     );
+  });
+
+  it('shows loading, not the closed doc, when the same file comes back', async () => {
+    const file = { bytes: new Uint8Array([1]) };
+    const { result, rerender } = renderHook(
+      ({ f }: { f: { bytes: Uint8Array } | null }) => usePdfDocument(f),
+      { initialProps: { f: file as { bytes: Uint8Array } | null } },
+    );
+    await waitFor(() => expect(result.current.doc?.docId).toBe('doc1'));
+    rerender({ f: null });
+    rerender({ f: file });
+    expect(result.current.doc).toBeNull();
+    expect(result.current.loading).toBe(true);
+    await waitFor(() => expect(result.current.doc?.docId).toBe('doc2'));
+  });
+
+  it('forgets closed docs once the close has completed', async () => {
+    const file = { bytes: new Uint8Array([1]) };
+    const { result, unmount } = renderHook(() => usePdfDocument(file));
+    await waitFor(() => expect(result.current.doc).not.toBeNull());
+    const before = closedDocCount();
+    unmount();
+    await waitFor(() => expect(fake.pdfRender.close).toHaveBeenCalled());
+    await waitFor(() => expect(closedDocCount()).toBe(before));
   });
 
   it('surfaces an error when reopening fails instead of spinning', async () => {
