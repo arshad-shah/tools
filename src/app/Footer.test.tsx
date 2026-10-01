@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Box } from 'lucide-react';
 import Footer from './Footer';
@@ -25,24 +25,51 @@ describe('Footer', () => {
     expect(screen.getByText(/runs locally, no uploads/)).toBeTruthy();
   });
 
-  it('links issues without a tool context', () => {
+  it('links issues without a tool context, name starting with the visible text', () => {
     render(<Footer />);
-    expect(
-      screen
-        .getByRole('link', { name: /report an issue/i })
-        .getAttribute('href'),
-    ).toBe(`${REPO}/issues/new`);
+    const link = screen.getByRole('link', { name: 'issues: report a problem' });
+    expect(link.getAttribute('href')).toBe(`${REPO}/issues/new`);
+    expect(link.textContent).toBe('issues');
   });
 
   it('prefills the issue title with the tool id', () => {
     render(<Footer tool={tool} />);
     const href = screen
-      .getByRole('link', { name: /report an issue/i })
+      .getByRole('link', { name: 'issues: report a problem with PDF Merger' })
       .getAttribute('href');
     expect(href).not.toBeNull();
     const url = new URL(href ?? '');
     expect(url.pathname).toBe('/arshad-shah/tools/issues/new');
     expect(url.searchParams.get('title')).toBe('[pdf-merger] ');
+  });
+
+  describe('production build stamp', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    });
+
+    it('links the commit and keeps separators decorative', () => {
+      vi.stubEnv('DEV', false);
+      vi.stubGlobal('__BUILD_SHA__', 'a1b2c3d');
+      vi.stubGlobal('__BUILD_DATE__', '2026-10-01');
+      render(<Footer />);
+      const link = screen.getByRole('link', {
+        name: 'Build a1b2c3d on GitHub',
+      });
+      expect(link.getAttribute('href')).toBe(`${REPO}/commit/a1b2c3d`);
+      expect(screen.getByText(/v2026\.10\.01/)).toBeTruthy();
+      for (const dot of screen.getAllByText('·'))
+        expect(dot.getAttribute('aria-hidden')).toBe('true');
+    });
+  });
+
+  it('starts every non-first item with its separator, on one line', () => {
+    const { container } = render(<Footer />);
+    const items = container.querySelectorAll('.whitespace-nowrap');
+    expect(items.length).toBeGreaterThanOrEqual(5);
+    for (const item of items)
+      expect(item.firstElementChild?.textContent).toBe('·');
   });
 
   it('links the source to the repo', () => {
