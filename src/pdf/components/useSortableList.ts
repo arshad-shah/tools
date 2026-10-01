@@ -3,6 +3,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSortable } from '@arshad-shah/detent-react';
 
 const ITEM = '[data-sortable-item]';
+const ARROWS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
+
+/**
+ * Pointer drags never start from these: text selection in an input, or a
+ * slightly wobbly click on a nested button, must not pick up the item.
+ */
+export const DRAG_CANCEL =
+  'input, textarea, select, button, a, [contenteditable="true"]';
 
 export type ReorderAxis = 'list' | 'grid';
 
@@ -86,6 +94,7 @@ export function useSortableList<T>(
     direction: opts.direction ?? 'auto',
     disabled: opts.disabled,
     keyboard: false,
+    cancel: DRAG_CANCEL,
     onSort: ({ item, from, to }) => {
       restoreDomOrder(from.container, item, from.index);
       onReorder(moveItem(items, from.index, to.index));
@@ -134,12 +143,16 @@ export function useKeyboardReorder<T>(
     e: React.KeyboardEvent<HTMLElement>,
     index: number,
   ) => {
-    if (disabled || e.target !== e.currentTarget) return;
+    if (e.target !== e.currentTarget) return;
+    // Alt+Left is the browser's Back (and Alt+Right Forward): swallow every
+    // Alt+Arrow on an item, even at the edges or while reordering is off, so
+    // it can never navigate away from unsaved edits.
+    if (e.altKey && ARROWS.has(e.key)) e.preventDefault();
+    if (disabled) return;
     const columns =
       axis === 'grid' ? gridColumns(e.currentTarget.parentElement) : 1;
     const to = moveByKey(e, index, items.length, axis, columns);
     if (to === null) return;
-    e.preventDefault();
     const item = items[index];
     pendingFocus.current = getKey(item);
     setAnnouncement(
