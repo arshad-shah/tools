@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { planSplit } from './plan';
+import { planSplit, selectionLabel } from './plan';
 
 const base = {
   pageCount: 5,
@@ -38,5 +38,27 @@ describe('planSplit', () => {
         message: 'Select at least one page',
       }),
     );
+  });
+});
+
+describe('selectionLabel', () => {
+  it('one run', () => {
+    expect(selectionLabel([{ start: 0, end: 2 }])).toBe('1-3');
+  });
+  it('three runs stay explicit', () => {
+    expect(
+      selectionLabel([
+        { start: 0, end: 2 },
+        { start: 4, end: 4 },
+        { start: 7, end: 8 },
+      ]),
+    ).toBe('1-3_5_8-9');
+  });
+  it('many runs collapse to a count', () => {
+    const ranges = Array.from({ length: 150 }, (_, i) => ({
+      start: i * 2,
+      end: i * 2,
+    }));
+    expect(selectionLabel(ranges)).toBe('150-selected');
   });
 });

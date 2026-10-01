@@ -1,5 +1,10 @@
 import { ToolError } from '@/shared/lib/errors';
-import { everyNPages, parsePageRanges, type PageRange } from '@/pdf/edit';
+import {
+  everyNPages,
+  formatRange,
+  parsePageRanges,
+  type PageRange,
+} from '@/pdf/edit';
 
 export type SplitMode = 'ranges' | 'every-n' | 'individual' | 'selection';
 
@@ -35,4 +40,11 @@ export function planSplit(
       return runs;
     }
   }
+}
+
+/** Bounded filename label: explicit runs when few, otherwise a count. */
+export function selectionLabel(ranges: PageRange[]): string {
+  if (ranges.length <= 3) return ranges.map(formatRange).join('_');
+  const count = ranges.reduce((n, r) => n + (r.end - r.start + 1), 0);
+  return `${count}-selected`;
 }

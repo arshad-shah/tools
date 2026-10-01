@@ -29,7 +29,7 @@ import {
   type PageTile,
   type ResultFile,
 } from '@/pdf/components';
-import { planSplit, type SplitMode } from './lib/plan';
+import { planSplit, selectionLabel, type SplitMode } from './lib/plan';
 import { useSplitterSettings } from './store';
 
 const MODES: { value: SplitMode; label: string }[] = [
@@ -63,16 +63,18 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
       ctx,
       source: LoadedFile,
       pageCount: number,
+      snap: {
+        mode: SplitMode;
+        rangeText: string;
+        everyN: number;
+        selected: number[];
+      },
     ): Promise<ResultFile[]> => {
-      const ranges = planSplit(mode, {
-        pageCount,
-        rangeText,
-        everyN,
-        selected: [...selected].map(Number),
-      });
+      const { mode } = snap;
+      const ranges = planSplit(mode, { ...snap, pageCount });
       if (mode === 'selection') {
         const indices = rangesToIndices(ranges);
-        const label = ranges.map(formatRange).join('_');
+        const label = selectionLabel(ranges);
         return [
           {
             name: deriveFilename(source.name, `pages-${label}`, 'pdf'),
@@ -101,13 +103,42 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
     setFile(files[0]);
   };
 
-  const toggle = (key: string) =>
+  const clearFile = () => {
+    job.reset();
+    setSelected(new Set());
+    setFile(null);
+  };
+  const changeMode = (m: SplitMode) => {
+    job.reset();
+    setMode(m);
+  };
+  const changeRangeText = (v: string) => {
+    job.reset();
+    setRangeText(v);
+  };
+  const changeEveryN = (n: number) => {
+    if (!Number.isFinite(n)) return;
+    job.reset();
+    setEveryN(Math.max(1, Math.floor(n)));
+  };
+  const selectAll = () => {
+    job.reset();
+    setSelected(new Set(tiles.map((t) => t.key)));
+  };
+  const clearSelection = () => {
+    job.reset();
+    setSelected(new Set());
+  };
+
+  const toggle = (key: string) => {
+    job.reset();
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
+  };
 
   return (
     <Card>
@@ -118,7 +149,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Text weight="semibold">{file.name}</Text>
-              <Button size="sm" variant="ghost" onClick={() => setFile(null)}>
+              <Button size="sm" variant="ghost" onClick={clearFile}>
                 Choose another file
               </Button>
             </div>
@@ -133,7 +164,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
             <>
               <Tabs
                 value={mode}
-                onValueChange={(v) => setMode(v as SplitMode)}
+                onValueChange={(v) => changeMode(v as SplitMode)}
                 variant="soft"
               >
                 <TabsList>
@@ -150,9 +181,8 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
                   <Input
                     id="split-ranges"
                     value={rangeText}
-                    onChange={setRangeText}
+                    onChange={changeRangeText}
                     placeholder="e.g. 1-3, 4-6, 10-"
-                    aria-label="Ranges"
                   />
                   <Text size="sm" tone="muted">
                     Each range becomes its own file. {doc.pageCount} pages in
@@ -166,7 +196,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
                   <NumberInput
                     id="split-every"
                     value={everyN}
-                    onValueChange={setEveryN}
+                    onValueChange={changeEveryN}
                     min={1}
                     max={doc.pageCount}
                   />
@@ -178,10 +208,23 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
                 </Text>
               )}
               {mode === 'selection' && (
-                <Text size="sm" tone="muted">
-                  Click pages to select them. They are extracted into one new
-                  PDF ({selected.size} selected).
-                </Text>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Text size="sm" tone="muted">
+                    Click pages to select them. They are extracted into one new
+                    PDF ({selected.size} selected).
+                  </Text>
+                  <Button size="sm" variant="soft" onClick={selectAll}>
+                    Select all
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={selected.size === 0}
+                    onClick={clearSelection}
+                  >
+                    Clear selection
+                  </Button>
+                </div>
               )}
               <PageGrid
                 doc={doc}
@@ -193,7 +236,14 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
                 variant="solid"
                 leftIcon={<Scissors size={16} />}
                 disabled={job.status === 'running'}
-                onClick={() => job.run(file, doc.pageCount)}
+                onClick={() =>
+                  job.run(file, doc.pageCount, {
+                    mode,
+                    rangeText,
+                    everyN,
+                    selected: [...selected].map(Number),
+                  })
+                }
               >
                 Split PDF
               </Button>
