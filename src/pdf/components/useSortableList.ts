@@ -209,13 +209,14 @@ export function useKeyboardReorder<T>(
     e: React.KeyboardEvent<HTMLElement>,
     index: number,
   ) => {
+    // Alt+Left is the browser's Back (and Alt+Right Forward): swallow every
+    // Alt+Arrow anywhere inside an item (nested controls included), even at
+    // the edges or while reordering is off, so it can never navigate away
+    // from unsaved edits. Only the item itself reorders.
+    if (e.altKey && ARROWS.has(e.key)) e.preventDefault();
     if (e.target !== e.currentTarget) return;
     // A move the parent ignored must not steal focus on a later re-render.
     pendingFocus.current = null;
-    // Alt+Left is the browser's Back (and Alt+Right Forward): swallow every
-    // Alt+Arrow on an item, even at the edges or while reordering is off, so
-    // it can never navigate away from unsaved edits.
-    if (e.altKey && ARROWS.has(e.key)) e.preventDefault();
     const columns =
       axis === 'grid' ? gridColumns(e.currentTarget.parentElement) : 1;
 
