@@ -708,20 +708,25 @@ const JWTDecoder: React.FC = () => {
           <AlertTitle>
             {expiryInfo.isExpired ? 'Token expired' : 'Token valid'}
           </AlertTitle>
-          <AlertDescription>
-            <Inline justify="between" align="center" wrap gap="2">
-              <Text size="sm">
-                {expiryInfo.isExpired
-                  ? `Expired on ${expiryInfo.expiryDate?.toLocaleString()}`
-                  : formatTime(decoded.payload.exp)}
-              </Text>
-              {!expiryInfo.isExpired && (
-                <Badge variant="soft" tone="success" size="sm">
-                  Expires in {expiryInfo.timeLeft}
-                </Badge>
-              )}
-            </Inline>
-          </AlertDescription>
+          {/* Not AlertDescription: a <p> can't hold block content. */}
+          <Inline
+            justify="between"
+            align="center"
+            wrap
+            gap="2"
+            className="mt-1"
+          >
+            <Text size="sm">
+              {expiryInfo.isExpired
+                ? `Expired on ${expiryInfo.expiryDate?.toLocaleString()}`
+                : formatTime(decoded.payload.exp)}
+            </Text>
+            {!expiryInfo.isExpired && (
+              <Badge variant="soft" tone="success" size="sm">
+                Expires in {expiryInfo.timeLeft}
+              </Badge>
+            )}
+          </Inline>
         </Alert>
       )}
 
