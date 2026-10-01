@@ -28,11 +28,14 @@ function validate(path: string, manifest: ToolManifest | undefined) {
     );
   // Spec §3.2: a tool's id is its folder name.
   const folder = /\/tools\/([^/]+)\/index\.ts$/.exec(path)?.[1];
-  if (
-    folder !== undefined &&
-    folder !== manifest.id &&
-    LEGACY_FOLDERS[folder] !== manifest.id
-  )
+  if (folder === undefined)
+    throw new Error(
+      `${path}: tool "${manifest.id}" must live at tools/<id>/index.ts`,
+    );
+  const legacyId = Object.hasOwn(LEGACY_FOLDERS, folder)
+    ? LEGACY_FOLDERS[folder]
+    : undefined;
+  if (folder !== manifest.id && legacyId !== manifest.id)
     throw new Error(
       `Tool folder "${folder}" must match its id "${manifest.id}" (${path})`,
     );
