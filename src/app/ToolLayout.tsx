@@ -142,7 +142,7 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
           </ToolErrorBoundary>
         </Container>
       </Section>
-      <Footer />
+      <Footer tool={definition} />
     </Box>
   );
 };

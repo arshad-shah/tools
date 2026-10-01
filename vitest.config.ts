@@ -1,10 +1,12 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
+import { buildDefines } from './build-info';
 
 // Separate from vite.config.ts so the Cloudflare plugin never runs under test.
 export default defineConfig({
   plugins: [react()],
+  define: buildDefines(),
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

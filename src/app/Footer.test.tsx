@@ -1,0 +1,79 @@
+/** @vitest-environment jsdom */
+import { describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { Box } from 'lucide-react';
+import Footer from './Footer';
+import { formatBuildStamp } from './footerUtils';
+import { getEnabledTools } from './registry';
+import type { ToolDefinition } from './tool';
+
+const REPO = 'https://github.com/arshad-shah/tools';
+
+const tool: ToolDefinition = {
+  id: 'pdf-merger',
+  name: 'PDF Merger',
+  description: 'Merge PDFs',
+  icon: Box,
+  enabled: true,
+  category: 'pdf',
+};
+
+describe('Footer', () => {
+  it('shows tool count and the local-processing note', () => {
+    render(<Footer />);
+    expect(screen.getByText(`${getEnabledTools().length} tools`)).toBeTruthy();
+    expect(screen.getByText(/runs locally, no uploads/)).toBeTruthy();
+  });
+
+  it('links issues without a tool context', () => {
+    render(<Footer />);
+    expect(
+      screen
+        .getByRole('link', { name: /report an issue/i })
+        .getAttribute('href'),
+    ).toBe(`${REPO}/issues/new`);
+  });
+
+  it('prefills the issue title with the tool id', () => {
+    render(<Footer tool={tool} />);
+    const href = screen
+      .getByRole('link', { name: /report an issue/i })
+      .getAttribute('href');
+    expect(href).not.toBeNull();
+    const url = new URL(href ?? '');
+    expect(url.pathname).toBe('/arshad-shah/tools/issues/new');
+    expect(url.searchParams.get('title')).toBe('[pdf-merger] ');
+  });
+
+  it('links the source to the repo', () => {
+    render(<Footer />);
+    const link = screen.getByRole('link', { name: /view source/i });
+    expect(link.getAttribute('href')).toBe(REPO);
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+});
+
+describe('formatBuildStamp', () => {
+  it('renders dev in dev mode', () => {
+    expect(formatBuildStamp('abc1234', '2026-10-01', true)).toEqual({
+      label: 'dev',
+      href: null,
+      sha: null,
+      version: null,
+    });
+  });
+
+  it('renders dev when the sha is empty', () => {
+    expect(formatBuildStamp('', '2026-10-01', false).label).toBe('dev');
+    expect(formatBuildStamp('', '2026-10-01', false).href).toBeNull();
+  });
+
+  it('renders version and commit link for a real sha', () => {
+    expect(formatBuildStamp('a1b2c3d', '2026-10-01', false)).toEqual({
+      label: 'v2026.10.01 · a1b2c3d',
+      href: `${REPO}/commit/a1b2c3d`,
+      sha: 'a1b2c3d',
+      version: 'v2026.10.01',
+    });
+  });
+});
