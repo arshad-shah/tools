@@ -708,3 +708,15 @@ export async function makeMetadataPdf(): Promise<Uint8Array> {
   doc.catalog.set(PDFName.of('Metadata'), ref);
   return doc.save();
 }
+
+/** AES-256 with permissions only: opens without a password. */
+export async function makeOwnerOnlyEncryptedPdf(): Promise<Uint8Array> {
+  const bytes = await makeTextPdf({ pages: 1, label: 'Restricted' });
+  return (
+    await encrypt(bytes, {
+      userPassword: '',
+      ownerPassword: AES_FIXTURE_OWNER_PASSWORD,
+      permissions: { extract: false },
+    })
+  ).bytes;
+}

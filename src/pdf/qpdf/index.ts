@@ -6,3 +6,10 @@ export type {
   OptimizeOptions,
   Permissions,
 } from '@arshad-shah/qpdf-wasm';
+export {
+  mayBeEncrypted,
+  preparePdf,
+  unlockWithPassword,
+  type PreparedPdf,
+  type UnlockEngine,
+} from './unlock';

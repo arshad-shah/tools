@@ -16,7 +16,6 @@ import {
   Textarea,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { notify } from '@/shared/lib/notify';
@@ -32,6 +31,8 @@ import {
   PageThumb,
   PdfFileHeader,
   ResultFiles,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import {
   combinedText,
@@ -43,7 +44,7 @@ import {
 import { useTextSettings } from './store';
 
 const PdfToTextTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const { mode, setMode } = useTextSettings();
   const { doc, loading, error } = usePdfDocument(file);
   const { copied, copy } = useClipboard();
@@ -69,7 +70,7 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
   const preview = useMemo(() => previewText(fullText), [fullText]);
   const missing = job.result ? pagesWithoutText(job.result) : [];
 
-  const pick = (picked: LoadedFile) => {
+  const pick = (picked: PdfInputFile) => {
     job.reset();
     setFile(picked);
   };
@@ -174,6 +175,7 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
                   </Button>
                 </div>
                 <ResultFiles
+                  note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
                   files={outputs}
                   zipName={deriveFilename(file.name, 'text', 'zip')}
                 />

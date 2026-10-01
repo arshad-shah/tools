@@ -17,7 +17,6 @@ import {
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { useObjectUrl } from '@/shared/lib/object-url';
 import { toToolError } from '@/shared/lib/errors';
@@ -35,6 +34,8 @@ import {
   PdfFileHeader,
   ResultFiles,
   type ResultFile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { PlacementEditor } from './components/PlacementEditor';
 import { SignatureDraw } from './components/SignatureDraw';
@@ -64,7 +65,7 @@ function fitRect(
 }
 
 const PdfSignTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const [source, setSource] = useState<SignatureSource | null>(null);
   const [tab, setTab] = useState<SourceTab>('draw');
   const [pageIndex, setPageIndex] = useState(0);
@@ -86,7 +87,7 @@ const PdfSignTool: React.FC<ToolProps> = () => {
   const job = useJob(
     async (
       _ctx,
-      input: LoadedFile,
+      input: PdfInputFile,
       at: { pageIndex: number; rect: VisualRect },
       src: SignatureSource,
     ): Promise<ResultFile> => {
@@ -158,7 +159,7 @@ const PdfSignTool: React.FC<ToolProps> = () => {
     setRect(null);
   };
 
-  const pick = (picked: LoadedFile) => {
+  const pick = (picked: PdfInputFile) => {
     job.reset();
     setFile(picked);
     setPageIndex(0);
@@ -292,7 +293,12 @@ const PdfSignTool: React.FC<ToolProps> = () => {
             </>
           )}
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Signing">
-            {job.result && <ResultFiles files={[job.result]} />}
+            {job.result && (
+              <ResultFiles
+                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
+                files={[job.result]}
+              />
+            )}
           </JobPanel>
         </Stack>
       </CardBody>

@@ -13,7 +13,6 @@ import {
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { logToolError, ToolError, toToolError } from '@/shared/lib/errors';
 import { deriveFilename } from '@/shared/lib/download';
 import { useJob } from '@/shared/state/useJob';
@@ -30,9 +29,11 @@ import {
   ResultFiles,
   SortableFileList,
   type ResultFile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 
-interface MergeItem extends LoadedFile {
+interface MergeItem extends PdfInputFile {
   pageCount: number;
   /** Blank = all pages. 1-based range syntax. */
   pages: string;
@@ -74,7 +75,7 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
     };
   });
 
-  const add = async (files: LoadedFile[]) => {
+  const add = async (files: PdfInputFile[]) => {
     job.reset();
     // pdf-lib reads each file on the main thread to count pages (and to
     // reject encrypted files up front, which pdf.js would open when only an
@@ -194,7 +195,16 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
             </>
           )}
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Merging">
-            {job.result && <ResultFiles files={[job.result]} />}
+            {job.result && (
+              <ResultFiles
+                files={[job.result]}
+                note={
+                  items.some((i) => i.wasEncrypted)
+                    ? UNENCRYPTED_NOTE
+                    : undefined
+                }
+              />
+            )}
           </JobPanel>
         </Stack>
       </CardBody>

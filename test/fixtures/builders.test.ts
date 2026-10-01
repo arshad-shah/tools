@@ -7,6 +7,7 @@ import {
   makeFormPdf,
   makeRotatedPdf,
   makeImageHeavyPdf,
+  makeOwnerOnlyEncryptedPdf,
   makeShapesOnlyPdf,
   makeTextPdf,
   pdfPageTexts,
@@ -51,6 +52,12 @@ describe('fixture builders', () => {
       needsPassword: true,
     });
     await expect(PDFDocument.load(bytes)).rejects.toThrow(/encrypted/i);
+  });
+  it('makeOwnerOnlyEncryptedPdf is encrypted but opens without a password', async () => {
+    expect(await inspect(await makeOwnerOnlyEncryptedPdf())).toMatchObject({
+      encrypted: true,
+      needsPassword: false,
+    });
   });
   it('makeRotatedPdf has rotated and cropped pages', async () => {
     const bytes = await makeRotatedPdf();

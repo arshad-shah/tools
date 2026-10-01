@@ -12,7 +12,6 @@ import {
   Text,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { useJob } from '@/shared/state/useJob';
 import { extract, formatRange, rangesToIndices, split } from '@/pdf/edit';
@@ -26,6 +25,8 @@ import {
   type PageTile,
   type SelectionMods,
   type ResultFile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { planSplit, selectionLabel, type SplitMode } from './lib/plan';
 import { useSplitterSettings } from './store';
@@ -38,7 +39,7 @@ const MODES: { value: SplitMode; label: string }[] = [
 ];
 
 const PdfSplitterTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const [rangeText, setRangeText] = useState('');
   const { mode, everyN, setMode, setEveryN } = useSplitterSettings();
   const { doc, loading, error } = usePdfDocument(file);
@@ -62,7 +63,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
   const job = useJob(
     async (
       ctx,
-      source: LoadedFile,
+      source: PdfInputFile,
       pageCount: number,
       snap: {
         mode: SplitMode;
@@ -100,7 +101,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
     },
   );
 
-  const pick = (picked: LoadedFile) => {
+  const pick = (picked: PdfInputFile) => {
     job.reset();
     selection.clear();
     setFile(picked);
@@ -241,6 +242,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Splitting">
             {job.result && (
               <ResultFiles
+                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
                 files={job.result}
                 zipName={
                   file ? deriveFilename(file.name, 'split', 'zip') : 'split.zip'

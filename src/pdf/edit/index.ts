@@ -93,3 +93,4 @@ export {
   type MetadataPatch,
   type PdfMetadata,
 } from './metadata';
+export { ENCRYPTED_MESSAGE } from './messages';

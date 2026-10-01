@@ -2,15 +2,16 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ToolError } from '@/shared/lib/errors';
-import type { LoadedFile } from '@/shared/lib/files';
+import type { PdfInputFile } from './PdfDropzone';
 import { PdfFileHeader } from './PdfFileHeader';
 
-const loaded: LoadedFile = {
+const loaded: PdfInputFile = {
   id: '1',
   name: 'report.pdf',
   size: 10,
   kind: 'pdf',
   bytes: new Uint8Array([1]),
+  wasEncrypted: false,
 };
 
 describe('PdfFileHeader', () => {

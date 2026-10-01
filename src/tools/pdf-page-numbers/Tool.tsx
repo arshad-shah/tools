@@ -11,7 +11,6 @@ import {
   Stack,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
-import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { useJob } from '@/shared/state/useJob';
 import {
@@ -31,6 +30,8 @@ import {
   ResultFiles,
   usePreviewBytes,
   type ResultFile,
+  type PdfInputFile,
+  UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { usePageNumberSettings } from './store';
 
@@ -45,7 +46,7 @@ const FORMAT_ITEMS: { value: PageNumberFormat; label: string }[] = [
 type NumberSettings = Omit<PageNumberOptions, 'pages' | 'total'>;
 
 const PdfPageNumbersTool: React.FC<ToolProps> = () => {
-  const [file, setFile] = useState<LoadedFile | null>(null);
+  const [file, setFile] = useState<PdfInputFile | null>(null);
   const [pageMode, setPageMode] = useState<'all' | 'ranges'>('all');
   const [rangeText, setRangeText] = useState('');
   const s = usePageNumberSettings();
@@ -91,7 +92,7 @@ const PdfPageNumbersTool: React.FC<ToolProps> = () => {
   const job = useJob(
     async (
       _ctx,
-      source: LoadedFile,
+      source: PdfInputFile,
       opts: PageNumberOptions,
     ): Promise<ResultFile[]> => {
       const bytes = await pageNumbers(source.bytes, opts);
@@ -211,7 +212,12 @@ const PdfPageNumbersTool: React.FC<ToolProps> = () => {
             </div>
           )}
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Numbering">
-            {job.result && <ResultFiles files={job.result} />}
+            {job.result && (
+              <ResultFiles
+                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
+                files={job.result}
+              />
+            )}
           </JobPanel>
         </Stack>
       </CardBody>

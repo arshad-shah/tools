@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ENCRYPTED_MESSAGE } from './messages';
 import {
   makeEncryptMarkedPdf,
   makeTextPdf,
@@ -14,8 +15,7 @@ describe('loadPdf', () => {
   it('rejects encrypted PDFs with ENCRYPTED', async () => {
     await expect(loadPdf(await makeEncryptMarkedPdf())).rejects.toMatchObject({
       code: 'ENCRYPTED',
-      message:
-        'This PDF is password-protected. Encrypted files are not supported by this tool yet.',
+      message: ENCRYPTED_MESSAGE,
     });
   });
   it('rejects a header followed by garbage with INVALID_FILE', async () => {
