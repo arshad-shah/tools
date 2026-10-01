@@ -51,7 +51,13 @@ import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { loadTextFile } from '@/shared/lib/files';
 import { useJob } from '@/shared/state/useJob';
-import { delimiterFor, parseDelimited } from './lib/parse';
+import {
+  DELIMITER_LABEL,
+  DELIMITERS,
+  parseDelimited,
+  type DelimiterChoice,
+  type ParseResult,
+} from './lib/parse';
 import {
   ColumnStatistics,
   ParsedData,
@@ -175,22 +181,33 @@ const LineChart: React.FC<{
   );
 };
 
-interface DataState {
-  data: ParsedData[];
-  columns: string[];
+interface DataState extends ParseResult {
   fileName: string;
+  /** Kept so a delimiter change can re-parse without reopening the file. */
+  text: string;
 }
+
+const DELIMITER_ITEMS = [
+  { value: 'auto', label: 'Auto-detect' },
+  ...DELIMITERS.map((d) => ({ value: d, label: DELIMITER_LABEL[d] })),
+];
+
+const MAX_WARNINGS_SHOWN = 20;
 
 const CSVTSVViewer: React.FC = () => {
   const [dataState, setDataState] = useState<DataState | null>(null);
   const [sampleError, setSampleError] = useState<string | null>(null);
-  const loadJob = useJob(async (_ctx, file: File) => {
-    const { name, text } = await loadTextFile(file, {
-      // .txt parsed as CSV before (dropped files skip the accept filter).
-      extensions: ['csv', 'tsv', 'txt'],
-    });
-    return { ...parseDelimited(text, delimiterFor(name)), fileName: name };
-  });
+  const [delimiterChoice, setDelimiterChoice] =
+    useState<DelimiterChoice>('auto');
+  const loadJob = useJob(
+    async (_ctx, file: File, choice: DelimiterChoice): Promise<DataState> => {
+      const { name, text } = await loadTextFile(file, {
+        // .txt parsed as CSV before (dropped files skip the accept filter).
+        extensions: ['csv', 'tsv', 'txt'],
+      });
+      return { ...parseDelimited(text, choice), fileName: name, text };
+    },
+  );
   const loading = loadJob.status === 'running';
   const parseError = loadJob.error?.message ?? sampleError;
 
@@ -214,21 +231,54 @@ const CSVTSVViewer: React.FC = () => {
 
   const processFile = async (file: File) => {
     setSampleError(null);
-    const r = await loadJob.run(file);
+    const r = await loadJob.run(file, delimiterChoice);
     if (r) showData(r);
   };
 
-  const loadSample = () => {
-    const sample =
-      'Name,Age,City,Salary\nJohn,28,New York,75000\nSarah,32,San Francisco,92000\nMike,45,Chicago,68000\nEmma,37,Boston,83000\nDavid,29,Seattle,79000';
+  const parseText = (
+    text: string,
+    fileName: string,
+    choice: DelimiterChoice,
+  ) => {
     loadJob.reset();
     try {
-      showData({ ...parseDelimited(sample, ','), fileName: 'Sample Data' });
+      showData({ ...parseDelimited(text, choice), fileName, text });
       setSampleError(null);
     } catch (e) {
       setSampleError(toToolError(e).message);
     }
   };
+
+  const loadSample = () => {
+    const sample =
+      'Name,Age,City,Salary\nJohn,28,New York,75000\nSarah,32,San Francisco,92000\nMike,45,Chicago,68000\nEmma,37,Boston,83000\nDavid,29,Seattle,79000';
+    parseText(sample, 'Sample Data', delimiterChoice);
+  };
+
+  const changeDelimiter = (value: string) => {
+    const choice = value as DelimiterChoice;
+    setDelimiterChoice(choice);
+    if (dataState) parseText(dataState.text, dataState.fileName, choice);
+  };
+
+  const delimiterControl = (
+    <Inline gap="2" align="center" wrap>
+      <Label htmlFor="csv-delimiter">Delimiter</Label>
+      <div className="w-40">
+        <Select
+          id="csv-delimiter"
+          value={delimiterChoice}
+          onValueChange={changeDelimiter}
+          items={DELIMITER_ITEMS}
+        />
+      </div>
+      {dataState && delimiterChoice === 'auto' && (
+        <Text size="sm" tone="subtle">
+          Detected: {DELIMITER_LABEL[dataState.delimiter]}
+        </Text>
+      )}
+    </Inline>
+  );
 
   const reset = () => {
     setDataState(null);
@@ -408,7 +458,8 @@ const CSVTSVViewer: React.FC = () => {
               if (files[0]) void processFile(files[0]);
             }}
           />
-          <Inline gap="2" wrap justify="center">
+          <Inline gap="4" wrap justify="center" align="center">
+            {delimiterControl}
             <Button
               variant="soft"
               leftIcon={<Upload size={16} />}
@@ -452,15 +503,45 @@ const CSVTSVViewer: React.FC = () => {
             {dataState.columns.length} columns
           </Badge>
         </Inline>
-        <Button
-          variant="danger"
-          size="sm"
-          leftIcon={<RefreshCw size={14} />}
-          onClick={reset}
-        >
-          New file
-        </Button>
+        <Inline align="center" gap="3" wrap>
+          {delimiterControl}
+          <Button
+            variant="danger"
+            size="sm"
+            leftIcon={<RefreshCw size={14} />}
+            onClick={reset}
+          >
+            New file
+          </Button>
+        </Inline>
       </Inline>
+
+      {dataState.warnings.length > 0 && (
+        <Alert status="warning">
+          <AlertTitle>
+            {dataState.warnings.length}{' '}
+            {dataState.warnings.length === 1 ? 'row' : 'rows'} skipped
+          </AlertTitle>
+          <Stack gap="1" className="mt-1">
+            <Text size="sm">
+              These rows could not be read and were left out. Row numbers count
+              data rows after the header.
+            </Text>
+            <ul className="list-disc pl-5 text-sm">
+              {dataState.warnings.slice(0, MAX_WARNINGS_SHOWN).map((w) => (
+                <li key={w.row}>
+                  Row {w.row}: {w.message}
+                </li>
+              ))}
+            </ul>
+            {dataState.warnings.length > MAX_WARNINGS_SHOWN && (
+              <Text size="sm">
+                And {dataState.warnings.length - MAX_WARNINGS_SHOWN} more.
+              </Text>
+            )}
+          </Stack>
+        </Alert>
+      )}
 
       <Tabs
         value={activeTab}
