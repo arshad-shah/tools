@@ -26,6 +26,7 @@ import {
 } from '@/pdf/components';
 import {
   initialTiles,
+  rangeSelect,
   removeTiles,
   rotateTiles,
   tilesToEdits,
@@ -36,6 +37,8 @@ interface EditState {
   docId: string;
   tiles: PageTile[];
   selected: Set<string>;
+  /** Last plain or ctrl-clicked tile; start of a shift range. */
+  anchor: string | null;
 }
 
 const only = (key: string) => new Set([key]);
@@ -45,9 +48,10 @@ const OrganizeTool: React.FC<ToolProps> = () => {
   const [edit, setEdit] = useState<EditState | null>(null);
   const { doc, loading, error } = usePdfDocument(file);
 
-  const job = useJob(async (_ctx, source: LoadedFile, current: PageTile[]) => {
+  const job = useJob(async (ctx, source: LoadedFile, current: PageTile[]) => {
     const bytes = await applyPageEdits(source.bytes, tilesToEdits(current));
     const name = deriveFilename(source.name, 'organized', 'pdf');
+    ctx.signal.throwIfAborted();
     saveBlob(bytes, name, 'application/pdf');
     notify.success(`Saved ${name}`);
     return name;
@@ -60,26 +64,46 @@ const OrganizeTool: React.FC<ToolProps> = () => {
       ? initialTiles(doc.pageCount)
       : [];
   const selected = current ? current.selected : new Set<string>();
+  const anchor = current ? current.anchor : null;
+  const busy = job.status === 'running';
 
   const commit = (nextTiles: PageTile[], nextSelected = selected) => {
     if (!doc) return;
     job.reset();
-    setEdit({ docId: doc.docId, tiles: nextTiles, selected: nextSelected });
+    setEdit({
+      docId: doc.docId,
+      tiles: nextTiles,
+      selected: nextSelected,
+      anchor,
+    });
   };
-  const select = (nextSelected: Set<string>) => {
+  const select = (nextSelected: Set<string>, nextAnchor: string | null) => {
     if (!doc) return;
-    setEdit({ docId: doc.docId, tiles, selected: nextSelected });
+    setEdit({
+      docId: doc.docId,
+      tiles,
+      selected: nextSelected,
+      anchor: nextAnchor,
+    });
   };
 
   const toggle = (key: string, mods: { shift: boolean; meta: boolean }) => {
-    if (!mods.meta && !mods.shift) {
-      select(selected.has(key) && selected.size === 1 ? new Set() : only(key));
+    if (mods.shift) {
+      const range = rangeSelect(tiles, anchor, key);
+      select(new Set([...selected, ...range]), anchor ?? key);
       return;
     }
-    const next = new Set(selected);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    select(next);
+    if (mods.meta) {
+      const next = new Set(selected);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      select(next, key);
+      return;
+    }
+    select(
+      selected.has(key) && selected.size === 1 ? new Set() : only(key),
+      key,
+    );
   };
 
   const dirty =
@@ -130,7 +154,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 <Button
                   size="sm"
                   leftIcon={<RotateCcw size={14} />}
-                  disabled={!selected.size}
+                  disabled={busy || !selected.size}
                   onClick={() => commit(rotateTiles(tiles, selected, -90))}
                 >
                   Rotate left
@@ -138,7 +162,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 <Button
                   size="sm"
                   leftIcon={<RotateCw size={14} />}
-                  disabled={!selected.size}
+                  disabled={busy || !selected.size}
                   onClick={() => commit(rotateTiles(tiles, selected, 90))}
                 >
                   Rotate right
@@ -147,7 +171,9 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                   size="sm"
                   variant="danger"
                   leftIcon={<Trash2 size={14} />}
-                  disabled={!selected.size || selected.size >= tiles.length}
+                  disabled={
+                    busy || !selected.size || selected.size >= tiles.length
+                  }
                   onClick={() =>
                     commit(removeTiles(tiles, selected), new Set())
                   }
@@ -158,7 +184,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                   size="sm"
                   variant="ghost"
                   leftIcon={<Undo2 size={14} />}
-                  disabled={!dirty}
+                  disabled={busy || !dirty}
                   onClick={() => commit(initialTiles(doc.pageCount), new Set())}
                 >
                   Reset
@@ -169,7 +195,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 tiles={tiles}
                 selected={selected}
                 onToggle={toggle}
-                onReorder={(next) => commit(next)}
+                onReorder={busy ? undefined : (next) => commit(next)}
                 renderActions={(tile) => (
                   <span className="flex gap-1">
                     <IconButton
@@ -195,7 +221,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                       icon={<Trash2 size={12} />}
                       size="xs"
                       variant="ghost"
-                      disabled={tiles.length === 1}
+                      disabled={busy || tiles.length === 1}
                       onClick={() => {
                         const next = new Set(selected);
                         next.delete(tile.key);
@@ -208,7 +234,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
               <Button
                 variant="solid"
                 leftIcon={<Download size={16} />}
-                disabled={job.status === 'running'}
+                disabled={busy}
                 onClick={() => job.run(file, tiles)}
               >
                 Apply &amp; download
