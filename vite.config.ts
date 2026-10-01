@@ -18,4 +18,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    // Static pdf.js assets, (re)written by scripts/copy-pdfjs-assets.mjs.
+    // Watching them lets a parallel copy crash this server with EBUSY on Windows.
+    watch: { ignored: ['**/public/pdfjs/**'] },
+  },
 });
