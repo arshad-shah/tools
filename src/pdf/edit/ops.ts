@@ -1,4 +1,16 @@
-import { degrees, PDFDocument } from 'pdf-lib';
+import {
+  degrees,
+  PDFAcroTerminal,
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFRef,
+  PDFStream,
+  type PDFObject,
+  type PDFPage,
+  type PDFWidgetAnnotation,
+} from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
 import { loadPdf } from './load';
 import type { PageRange } from './ranges';
@@ -82,30 +94,248 @@ export async function split(
   return results;
 }
 
+export interface PageEditResult {
+  bytes: Uint8Array;
+  /**
+   * Plain-language notes about document structure that could not be kept
+   * (e.g. bookmarks that pointed at deleted pages). Empty when nothing was
+   * lost. Tools must show these to the user.
+   */
+  notes: string[];
+}
+
+const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
+
+/** Attributes a page can inherit from its /Pages ancestors (PDF 1.7 §7.7.3.4). */
+const INHERITABLE = ['Resources', 'MediaBox', 'CropBox', 'Rotate'].map((k) =>
+  PDFName.of(k),
+);
+
+/**
+ * Edits pages in place on the loaded source, so everything document-level
+ * survives: Info and XMP metadata, bookmarks, the AcroForm, named
+ * destinations, viewer preferences and /Lang. (Split and extract build new
+ * documents on purpose.) What can't survive is removed explicitly and
+ * reported in `notes`:
+ * - page labels, when pages move or are deleted (they number by position);
+ * - form fields whose every widget was on a deleted page;
+ * - bookmarks to deleted pages are kept but lead nowhere (counted).
+ * Deleted pages' content is dropped from the file, not merely unlinked.
+ */
 export async function applyPageEdits(
   bytes: Uint8Array,
   edits: PageEdit[],
-): Promise<Uint8Array> {
+): Promise<PageEditResult> {
   if (edits.length === 0)
     throw new ToolError(
       'INVALID_INPUT',
       'The document must keep at least one page',
     );
-  const src = await loadPdf(bytes);
+  const doc = await loadPdf(bytes);
+  const original = doc.getPages();
   assertIndices(
     edits.map((e) => e.source),
-    src.getPageCount(),
+    original.length,
   );
-  const out = await PDFDocument.create();
-  const pages = await copyInto(
-    out,
-    src,
-    edits.map((e) => e.source),
-  );
-  pages.forEach((page, i) => {
+  const notes: string[] = [];
+
+  // Pages end up directly under the root /Pages node, so give each page its
+  // own copy of anything it inherited (size, resources, rotation) first.
+  for (const page of original) {
+    for (const key of INHERITABLE) {
+      if (page.node.get(key)) continue;
+      const value = page.node.getInheritableAttribute(key);
+      if (value) page.node.set(key, value);
+    }
+  }
+
+  // The first use of a page moves the page itself; a repeat gets a copy.
+  const used = new Set<number>();
+  const ordered: PDFPage[] = [];
+  for (const edit of edits) {
+    if (used.has(edit.source)) {
+      const [copy] = await doc.copyPages(doc, [edit.source]);
+      ordered.push(copy);
+    } else {
+      used.add(edit.source);
+      ordered.push(original[edit.source]);
+    }
+  }
+  for (let i = original.length - 1; i >= 0; i--) doc.removePage(i);
+  ordered.forEach((page, i) => {
+    doc.addPage(page);
     const angle =
       (((page.getRotation().angle + edits[i].rotate) % 360) + 360) % 360;
     page.setRotation(degrees(angle));
   });
-  return save(out);
+
+  const deleted = original.filter((_, i) => !used.has(i));
+  const moved = deleted.length > 0 || edits.some((e, i) => e.source !== i);
+  if (moved && doc.catalog.has(PDFName.of('PageLabels'))) {
+    doc.catalog.delete(PDFName.of('PageLabels'));
+    notes.push(
+      'Page labels were removed because pages were moved or deleted (they number pages by position).',
+    );
+  }
+  if (deleted.length > 0) {
+    const gone = new Set(deleted.map((p) => p.ref));
+    const fields = removeFieldsOnPages(doc, deleted, gone);
+    if (fields > 0)
+      notes.push(
+        `${plural(fields, 'form field')} that only appeared on deleted pages ${fields === 1 ? 'was' : 'were'} removed.`,
+      );
+    const dead = countBookmarksTo(doc, gone);
+    if (dead > 0)
+      notes.push(
+        `${plural(dead, 'bookmark')} pointed to a deleted page and now ${dead === 1 ? 'leads' : 'lead'} nowhere.`,
+      );
+    // Bookmarks or links may still reference a deleted page object; strip it
+    // to a bare stub so its content and annotations don't stay in the file.
+    for (const page of deleted) {
+      for (const key of page.node.keys()) {
+        if (key !== PDFName.Type && key !== PDFName.Parent)
+          page.node.delete(key);
+      }
+    }
+  }
+  pruneUnreachable(doc);
+  // Keep the fields' own appearances; don't regenerate them with pdf-lib's.
+  const out = await doc.save({
+    useObjectStreams: true,
+    updateFieldAppearances: false,
+  });
+  return { bytes: out, notes };
+}
+
+/** Removes widgets on deleted pages, and fields left with none. */
+function removeFieldsOnPages(
+  doc: PDFDocument,
+  deleted: PDFPage[],
+  gone: ReadonlySet<PDFRef>,
+): number {
+  const acroForm = doc.catalog.getAcroForm();
+  if (!acroForm) return 0;
+  const annotsOnDeleted = new Set<PDFRef>();
+  for (const page of deleted) {
+    const annots = page.node.Annots();
+    if (!annots) continue;
+    for (let i = 0; i < annots.size(); i++) {
+      const ref = annots.get(i);
+      if (ref instanceof PDFRef) annotsOnDeleted.add(ref);
+    }
+  }
+  const onDeletedPage = (w: PDFWidgetAnnotation) => {
+    const p = w.P();
+    if (p instanceof PDFRef && gone.has(p)) return true;
+    const ref = doc.context.getObjectRef(w.dict);
+    return ref !== undefined && annotsOnDeleted.has(ref);
+  };
+  let removed = 0;
+  for (const [field] of acroForm.getAllFields()) {
+    if (!(field instanceof PDFAcroTerminal)) continue;
+    const widgets = field.getWidgets();
+    const doomed = widgets.map(onDeletedPage);
+    if (widgets.length > 0 && doomed.every(Boolean)) {
+      acroForm.removeField(field);
+      removed++;
+    } else {
+      for (let i = widgets.length - 1; i >= 0; i--)
+        if (doomed[i]) field.removeWidget(i);
+    }
+  }
+  return removed;
+}
+
+type TextObject = PDFObject & { decodeText(): string };
+const isText = (o: PDFObject | undefined): o is TextObject =>
+  o !== undefined && 'decodeText' in o;
+
+/** All named destinations: the legacy /Dests dict and the /Names tree. */
+function namedDests(doc: PDFDocument): Map<string, PDFObject> {
+  const { catalog } = doc;
+  const out = new Map<string, PDFObject>();
+  const legacy = catalog.lookupMaybe(PDFName.of('Dests'), PDFDict);
+  for (const [k, v] of legacy?.entries() ?? []) out.set(k.decodeText(), v);
+  const walk = (node: PDFDict | undefined, depth: number) => {
+    if (!node || depth > 32) return;
+    const names = node.lookupMaybe(PDFName.of('Names'), PDFArray);
+    if (names) {
+      for (let i = 0; i + 1 < names.size(); i += 2) {
+        const key = names.lookup(i);
+        if (isText(key)) out.set(key.decodeText(), names.get(i + 1));
+      }
+    }
+    const kids = node.lookupMaybe(PDFName.of('Kids'), PDFArray);
+    if (kids) {
+      for (let i = 0; i < kids.size(); i++)
+        walk(kids.lookupMaybe(i, PDFDict), depth + 1);
+    }
+  };
+  const tree = catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
+  walk(tree?.lookupMaybe(PDFName.of('Dests'), PDFDict), 0);
+  return out;
+}
+
+/** Number of bookmarks whose destination is one of the `gone` pages. */
+function countBookmarksTo(doc: PDFDocument, gone: ReadonlySet<PDFRef>): number {
+  const { context, catalog } = doc;
+  const outlines = catalog.lookupMaybe(PDFName.of('Outlines'), PDFDict);
+  if (!outlines) return 0;
+  let named: Map<string, PDFObject> | null = null;
+  const deref = (o: PDFObject | undefined) =>
+    o instanceof PDFRef ? context.lookup(o) : o;
+  const targetPage = (dest: PDFObject | undefined) => {
+    let d = deref(dest);
+    if (isText(d)) {
+      named ??= namedDests(doc);
+      d = deref(named.get(d.decodeText()));
+    }
+    if (d instanceof PDFDict) d = deref(d.get(PDFName.of('D'))); // {D: [...]}
+    return d instanceof PDFArray ? d.get(0) : undefined;
+  };
+  let count = 0;
+  const seen = new Set<PDFDict>();
+  const visit = (first: PDFDict | undefined) => {
+    for (let item = first; item && !seen.has(item); ) {
+      seen.add(item);
+      const action = item.lookupMaybe(PDFName.of('A'), PDFDict);
+      const dest = item.get(PDFName.of('Dest')) ?? action?.get(PDFName.of('D'));
+      const page = targetPage(dest);
+      if (page instanceof PDFRef && gone.has(page)) count++;
+      visit(item.lookupMaybe(PDFName.of('First'), PDFDict));
+      item = item.lookupMaybe(PDFName.of('Next'), PDFDict);
+    }
+  };
+  visit(outlines.lookupMaybe(PDFName.of('First'), PDFDict));
+  return count;
+}
+
+/**
+ * Deletes every indirect object no longer reachable from the trailer, so
+ * removed pages (and their streams, fonts and annotations) leave the file.
+ */
+function pruneUnreachable(doc: PDFDocument) {
+  const { context } = doc;
+  const { Root, Info, Encrypt, ID } = context.trailerInfo;
+  const reachable = new Set<PDFRef>();
+  const stack = [Root, Info, Encrypt, ID].filter(
+    (o): o is PDFObject => o !== undefined,
+  );
+  while (stack.length > 0) {
+    const obj = stack.pop()!;
+    if (obj instanceof PDFRef) {
+      if (reachable.has(obj)) continue;
+      reachable.add(obj);
+      const target = context.lookup(obj);
+      if (target) stack.push(target);
+    } else if (obj instanceof PDFDict) {
+      for (const [, value] of obj.entries()) stack.push(value);
+    } else if (obj instanceof PDFArray) {
+      for (let i = 0; i < obj.size(); i++) stack.push(obj.get(i));
+    } else if (obj instanceof PDFStream) {
+      stack.push(obj.dict);
+    }
+  }
+  for (const [ref] of context.enumerateIndirectObjects())
+    if (!reachable.has(ref)) context.delete(ref);
 }

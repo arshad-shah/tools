@@ -12,5 +12,6 @@ export {
   split,
   applyPageEdits,
   type PageEdit,
+  type PageEditResult,
   type Rotation,
 } from './ops';

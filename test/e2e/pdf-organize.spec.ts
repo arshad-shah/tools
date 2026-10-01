@@ -98,3 +98,39 @@ test('guards keep one page, range-selects and resets', async ({ page }) => {
     page.getByRole('button', { name: 'Delete page 3' }),
   ).toBeDisabled();
 });
+
+test('keeps document structure and says plainly what it removed', async ({
+  page,
+}) => {
+  await page.goto('/pdf-organize');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/structured-3.pdf');
+  await expect(page.locator('li[data-sortable-item]')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Delete page 3' }).click();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Apply & download' }).click();
+  const download = await downloadPromise;
+  const doc = await PDFDocument.load(readFileSync((await download.path())!));
+  expect(doc.getTitle()).toBe('Structured fixture');
+  expect(doc.getAuthor()).toBe('Fixture Author');
+  expect(
+    doc
+      .getForm()
+      .getFields()
+      .map((f) => f.getName()),
+  ).toEqual(['first.name']);
+
+  await expect(page.getByText(/Page labels were removed/)).toBeVisible();
+  await expect(
+    page.getByText(
+      '1 form field that only appeared on deleted pages was removed.',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      '1 bookmark pointed to a deleted page and now leads nowhere.',
+    ),
+  ).toBeVisible();
+});
