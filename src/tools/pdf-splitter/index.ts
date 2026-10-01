@@ -7,7 +7,7 @@ export default defineTool({
   description: 'Split PDF files into multiple documents by pages or ranges',
   icon: Scissors,
   category: 'pdf',
-  version: '1.0.0',
+  version: '2.0.0',
   enabled: true,
-  load: () => import('./PdfSplitter'),
+  load: () => import('./Tool'),
 });
