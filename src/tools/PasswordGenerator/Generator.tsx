@@ -25,7 +25,7 @@ import {
   Stack,
   Switch,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { charSets, getSecureRandom, secureShuffle } from './utils/utils';
 
 type CharType = 'uppercase' | 'lowercase' | 'number' | 'special';

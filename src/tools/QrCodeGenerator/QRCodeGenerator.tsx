@@ -60,7 +60,7 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { useQRCode } from './hooks/useQrCode';
 import {
   ContactData,

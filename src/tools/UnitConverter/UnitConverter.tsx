@@ -41,7 +41,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { Category, Conversion, Unit } from '../../types/UnitConverterTypes';
 
 const CATEGORIES: Category[] = [

@@ -1,7 +1,7 @@
 import { FC, useState } from 'react';
 import * as math from 'mathjs';
 import Plot from 'react-plotly.js';
-import { Box, Inline, Label, NumberInput, Stack, Text } from '@/components/ui';
+import { Box, Inline, Label, NumberInput, Stack, Text } from '@/shared/ui';
 import { cn } from '@/lib/utils';
 
 interface GraphDisplayProps {

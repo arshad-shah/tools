@@ -26,7 +26,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 
 type TimeUnit = 'minutes' | 'hours' | 'days' | 'months' | 'years';
 type Operation = 'add' | 'subtract';

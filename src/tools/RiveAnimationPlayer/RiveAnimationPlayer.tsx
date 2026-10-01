@@ -57,7 +57,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { Toaster, toast } from 'sonner';
 
 enum PlayerState {

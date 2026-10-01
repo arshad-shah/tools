@@ -20,7 +20,7 @@ import {
   Slider,
   Stack,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 
 type OutputFormat = 'jpeg' | 'png' | 'webp';
 

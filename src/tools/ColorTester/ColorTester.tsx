@@ -36,7 +36,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { ColorHarmony, ColorInfo, TabType } from '../../types/ColorTesterTypes';
 
 interface ColorLike {

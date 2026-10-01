@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { ChevronDown, ChevronRight, Copy, Link2 } from 'lucide-react';
-import { Tooltip } from '@/components/ui';
+import { Tooltip } from '@/shared/ui';
 import styles from './DataNode.module.css';
 
 type ValueKind =

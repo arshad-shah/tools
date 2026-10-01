@@ -38,7 +38,7 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { useCalculator } from './hooks/useCalculator';
 import PlotlyGraphDisplay from './GraphDisplay';
 

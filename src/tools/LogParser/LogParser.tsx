@@ -51,7 +51,7 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { useCopyToClipboard, useLogParser } from './hooks/useLogParser';
 import { LogEntry, LogLevel, LogType } from '../../types/LogParserTypes';
 
