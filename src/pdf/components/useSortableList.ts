@@ -213,6 +213,10 @@ export function useKeyboardReorder<T>(
     // Alt+Arrow anywhere inside an item (nested controls included), even at
     // the edges or while reordering is off, so it can never navigate away
     // from unsaved edits. Only the item itself reorders.
+    // Intended, not an oversight: this also fires for Alt+Arrow bubbling out
+    // of React portals rendered inside an item (React bubbles through the
+    // component tree) and for text inputs, where Alt+Arrow has no editing
+    // meaning anyway. Both are harmless.
     if (e.altKey && ARROWS.has(e.key)) e.preventDefault();
     if (e.target !== e.currentTarget) return;
     // A move the parent ignored must not steal focus on a later re-render.
