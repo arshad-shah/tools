@@ -5,9 +5,9 @@
 - Deleted-files check: 5 "No such file" lines; 0 references to `PdfMergerTypes|PdfSplitterTypes|TOOL_IDS`.
 - `pnpm lint`: 0 errors, 38 warnings (pre-existing, in untouched tools).
 - `pnpm typecheck`: clean.
-- `pnpm test` (vitest): 30 files, 178 tests passed.
+- `pnpm test` (vitest): 30 files, 179 tests passed.
 - `pnpm build`: succeeds (only the usual chunk-size warning).
-- `pnpm test:e2e` (Playwright): 14 tests passed. Stable across 3 consecutive runs after the warm-up fix below.
+- `pnpm test:e2e` (Playwright): 17 tests passed (includes 3 encrypted-PDF specs). Stable across 3 consecutive runs (17/17 each) on the final code.
 
 ### E2E flake
 
@@ -17,7 +17,7 @@ parallel workers hit on-demand dependency optimisation and the first pdf.js
 worker boot together, the dev server reloads mid-test, and the 5s assertions
 time out. Fix: `test/e2e/global-setup.ts` now warms the server (visits every
 route, loads a fixture once). Verified on a cold cache (4 failed before, 14
-passed after). No retries or sleeps were added.
+passed after). The warm-up reads the base URL from the Playwright config, waits on `canvas[data-rendered="true"]` and throws if a tool cannot render the fixture. No retries or sleeps were added.
 
 ### Scripted browser pass (one-off, not committed)
 
@@ -41,8 +41,9 @@ passed after). No retries or sleeps were added.
 
 ## Upstream issues opened
 
-- arshad-shah/detent#74, arshad-shah/detent#75
-- arshad-shah/Kit#94
-- arshad-shah/qpdf-wasm#2
+- arshad-shah/detent#74: keyboard sort hijacks Space/Enter from nested controls
+- arshad-shah/detent#75: controlled sorting so React owns DOM order
+- arshad-shah/Kit#94: store-kit persists under `kit:store:<name>` while the docs say `name`
+- arshad-shah/qpdf-wasm#2: post-0.1.0 follow-ups
 
 Suggestion for `@arshad-shah/detent-react`: offer an option to revert the DOM move in `onSort`, so React consumers don't need `restoreDomOrder`.

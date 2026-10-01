@@ -35,11 +35,17 @@ export async function makeShapesOnlyPdf(pages = 2): Promise<Uint8Array> {
   return doc.save();
 }
 
+export const AES_FIXTURE_USER_PASSWORD = 'user-pw';
+export const AES_FIXTURE_OWNER_PASSWORD = 'owner-pw';
+
 /** A real AES-256 (R6) encrypted PDF that needs a user password to open. */
 export async function makeAesEncryptedPdf(): Promise<Uint8Array> {
   const bytes = await makeTextPdf({ pages: 2, label: 'Locked' });
   return (
-    await encrypt(bytes, { userPassword: 'user-pw', ownerPassword: 'owner-pw' })
+    await encrypt(bytes, {
+      userPassword: AES_FIXTURE_USER_PASSWORD,
+      ownerPassword: AES_FIXTURE_OWNER_PASSWORD,
+    })
   ).bytes;
 }
 
