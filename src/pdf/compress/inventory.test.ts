@@ -39,6 +39,8 @@ describe('classifyImage', () => {
     [{ predictor: 2 }, 'TIFF predictor'],
     [{ smask: 'unsupported' }, 'unsupported soft mask'],
     [{ smask: 'shared' }, 'shared soft mask'],
+    [{ filters: ['DCTDecode'], hasDecodeParms: true }, 'DCT decode parameters'],
+    [{ hasDecodeParms: true }, null],
   ] as [Partial<ClassifyInput>, string | null][])('%j → %s', (over, reason) => {
     expect(classifyImage({ ...base, ...over })).toBe(reason);
   });
