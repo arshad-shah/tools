@@ -25,10 +25,12 @@ describe('buildRegistry', () => {
   it('rejects duplicate ids, naming both files', () => {
     expect(() =>
       buildRegistry({
-        '../tools/Xold/index.ts': { default: fake('dup') },
-        '../tools/Yold/index.ts': { default: fake('dup') },
+        '../tools/dup/index.ts': { default: fake('dup') },
+        './tools/dup/index.ts': { default: fake('dup') },
       }),
-    ).toThrow(/Duplicate tool id "dup".*Yold\/index\.ts.*Xold\/index\.ts/);
+    ).toThrow(
+      /Duplicate tool id "dup".*\.\/tools\/dup\/index\.ts.*\.\.\/tools\/dup\/index\.ts/,
+    );
   });
   it('rejects modules without a manifest', () => {
     expect(() =>
@@ -50,15 +52,29 @@ describe('buildRegistry', () => {
       buildRegistry({ '../tools/m/index.ts': { default: bad } }),
     ).toThrow(/load to be a function/);
   });
-  it('requires the id to match a kebab-case folder, skipping legacy folders', () => {
+  it('rejects a folder whose name differs from the id', () => {
+    expect(() =>
+      buildRegistry({
+        '../tools/ColorTester/index.ts': { default: fake('color-tester') },
+      }),
+    ).toThrow(/Tool folder "ColorTester" must match its id "color-tester"/);
     expect(() =>
       buildRegistry({
         '../tools/pdf-thing/index.ts': { default: fake('other') },
       }),
-    ).toThrow(/must match its folder "pdf-thing"/);
+    ).toThrow(/Tool folder "pdf-thing" must match its id "other"/);
+  });
+  it('tolerates the legacy PdfCompressor folder only for its own id', () => {
     expect(
-      buildRegistry({ '../tools/LegacyTool/index.ts': { default: fake('x') } }),
+      buildRegistry({
+        '../tools/PdfCompressor/index.ts': { default: fake('pdf-compressor') },
+      }),
     ).toHaveLength(1);
+    expect(() =>
+      buildRegistry({
+        '../tools/PdfCompressor/index.ts': { default: fake('other') },
+      }),
+    ).toThrow(/Tool folder "PdfCompressor" must match its id "other"/);
   });
 });
 
@@ -66,6 +82,8 @@ describe('TOOLS', () => {
   it('discovers every existing tool exactly once', () => {
     const ids = TOOLS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
+    // One per src/tools/*/index.ts at this commit.
+    expect(ids).toHaveLength(33);
     // Exact: an extra or missing manifest fails.
     expect([...ids].sort()).toEqual(
       [
