@@ -26,6 +26,8 @@ interface DecodedJWT {
   header: JWTHeader;
   payload: JWTPayload;
   signature: string;
+  /** `header.payload` exactly as sent: what the signature covers. */
+  signingInput: string;
   raw: string;
   parts: string[];
 }

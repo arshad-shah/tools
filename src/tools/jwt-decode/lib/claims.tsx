@@ -18,11 +18,11 @@ const formatTime = (timestamp: number): string => {
   return new Date(timestamp * 1000).toLocaleString();
 };
 
-const getExpiryInfo = (exp?: number): ExpiryInfo => {
+const getExpiryInfo = (exp?: number, nowMs = Date.now()): ExpiryInfo => {
   if (!exp) return { isExpired: false };
 
   const expiryDate = new Date(exp * 1000);
-  const now = new Date();
+  const now = new Date(nowMs);
   const isExpired = expiryDate < now;
 
   if (isExpired) {

@@ -5,7 +5,7 @@ import { ToolError } from './errors';
  * `btoa`/`atob` alone only handle Latin-1 strings.
  */
 
-export function utf8Encode(text: string): Uint8Array {
+export function utf8Encode(text: string): Uint8Array<ArrayBuffer> {
   return new TextEncoder().encode(text);
 }
 
@@ -46,7 +46,7 @@ export function bytesToBase64(
  * Decodes standard or URL-safe Base64. Whitespace and line breaks are
  * ignored and padding is optional.
  */
-export function base64ToBytes(input: string): Uint8Array {
+export function base64ToBytes(input: string): Uint8Array<ArrayBuffer> {
   const clean = input.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
   const body = clean.replace(/=+$/, '');
   if (
