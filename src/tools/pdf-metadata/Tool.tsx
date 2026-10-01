@@ -162,7 +162,8 @@ const PdfMetadataTool: React.FC<ToolProps> = () => {
                 <Inline gap="2" align="center" wrap>
                   <Badge tone="info">XMP metadata present</Badge>
                   <Text size="sm" tone="muted">
-                    It will be updated to match.
+                    Saving rewrites it from these fields. Other XMP properties
+                    are removed, except the PDF/A and PDF/UA identification.
                   </Text>
                 </Inline>
               )}
@@ -186,6 +187,11 @@ const PdfMetadataTool: React.FC<ToolProps> = () => {
                   Remove all metadata
                 </Button>
               </Inline>
+              <Text size="sm" tone="muted">
+                Removing clears the document&apos;s Info and XMP metadata.
+                Metadata stored inside pages or images (such as photo EXIF) is
+                not touched.
+              </Text>
             </>
           )}
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Saving">
