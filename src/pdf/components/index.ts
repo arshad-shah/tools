@@ -24,3 +24,4 @@ export {
   type PageSelectionState,
   type PlainClick,
 } from './usePageSelection';
+export { PdfFileHeader } from './PdfFileHeader';

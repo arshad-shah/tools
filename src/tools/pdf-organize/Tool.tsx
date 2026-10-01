@@ -22,7 +22,7 @@ import { usePdfDocument } from '@/pdf/render';
 import {
   JobPanel,
   PageGrid,
-  PdfDropzone,
+  PdfFileHeader,
   usePageSelection,
   type PageTile,
 } from '@/pdf/components';
@@ -88,26 +88,13 @@ const OrganizeTool: React.FC<ToolProps> = () => {
     <Card>
       <CardBody>
         <Stack gap="5">
-          {!file ? (
-            <PdfDropzone onFiles={(f) => changeFile(f[0])} />
-          ) : (
-            <Inline justify="between" align="center" gap="3" wrap>
-              <Text weight="semibold">{file.name}</Text>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => changeFile(null)}
-              >
-                Choose another file
-              </Button>
-            </Inline>
-          )}
-          {loading && <Text tone="muted">Opening…</Text>}
-          {error && (
-            <Alert status="danger">
-              <AlertDescription>{error.message}</AlertDescription>
-            </Alert>
-          )}
+          <PdfFileHeader
+            file={file}
+            onFile={changeFile}
+            onClear={() => changeFile(null)}
+            loading={loading}
+            error={error}
+          />
           {file && doc && (
             <>
               <Inline gap="2" wrap align="center">
@@ -169,6 +156,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                       icon={<RotateCcw size={12} />}
                       size="xs"
                       variant="ghost"
+                      disabled={busy}
                       onClick={() =>
                         commit(rotateTiles(tiles, only(tile.key), -90))
                       }
@@ -179,6 +167,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                       icon={<RotateCw size={12} />}
                       size="xs"
                       variant="ghost"
+                      disabled={busy}
                       onClick={() =>
                         commit(rotateTiles(tiles, only(tile.key), 90))
                       }

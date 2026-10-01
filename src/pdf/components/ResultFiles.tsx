@@ -9,6 +9,8 @@ import { logToolError, toToolError } from '@/shared/lib/errors';
 export interface ResultFile {
   name: string;
   bytes: Uint8Array;
+  /** Defaults to application/pdf. */
+  mime?: string;
   detail?: string;
 }
 
@@ -83,7 +85,10 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
               size="sm"
               variant={files.length === 1 ? 'solid' : 'soft'}
               leftIcon={<FileDown size={14} />}
-              onClick={() => saveBlob(f.bytes, f.name, 'application/pdf')}
+              aria-label={`Download ${f.name}`}
+              onClick={() =>
+                saveBlob(f.bytes, f.name, f.mime ?? 'application/pdf')
+              }
             >
               Download
             </Button>

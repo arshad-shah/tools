@@ -86,6 +86,26 @@ describe('SortableFileList', () => {
     expect(onRemove).toHaveBeenCalledExactlyOnceWith('a');
   });
 
+  it('cannot move or remove rows while disabled', () => {
+    const onReorder = vi.fn();
+    const onRemove = vi.fn();
+    render(
+      <SortableFileList
+        items={items}
+        disabled
+        onReorder={onReorder}
+        onRemove={onRemove}
+      />,
+    );
+    const rows = screen.getAllByRole('listitem');
+    fireEvent.keyDown(rows[0], { key: 'ArrowDown', altKey: true });
+    const remove = screen.getByRole('button', { name: 'Remove alpha.pdf' });
+    expect(remove.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(remove);
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(onRemove).not.toHaveBeenCalled();
+  });
+
   it.each([
     [0, 'ArrowUp'],
     [0, 'ArrowLeft'],
