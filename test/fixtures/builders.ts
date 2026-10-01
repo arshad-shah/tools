@@ -1,4 +1,5 @@
 import { PDFDocument, PDFName, rgb, StandardFonts } from 'pdf-lib';
+import { encrypt } from '@arshad-shah/qpdf-wasm';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export async function makeTextPdf({
@@ -34,10 +35,19 @@ export async function makeShapesOnlyPdf(pages = 2): Promise<Uint8Array> {
   return doc.save();
 }
 
+/** A real AES-256 (R6) encrypted PDF that needs a user password to open. */
+export async function makeAesEncryptedPdf(): Promise<Uint8Array> {
+  const bytes = await makeTextPdf({ pages: 2, label: 'Locked' });
+  return (
+    await encrypt(bytes, { userPassword: 'user-pw', ownerPassword: 'owner-pw' })
+  ).bytes;
+}
+
 /**
  * A PDF whose trailer references a Standard security handler. pdf-lib detects
- * this as encrypted. It is NOT decryptable; real encrypted fixtures arrive with
- * qpdf-wasm in phase 3.
+ * this as encrypted. It is NOT valid for pdf.js (no /O, /U or /ID, so pdf.js
+ * throws UnknownErrorException, not PasswordException). Use it for pdf-lib unit
+ * tests only; use `makeAesEncryptedPdf` for anything that reaches pdf.js.
  */
 export async function makeEncryptMarkedPdf(): Promise<Uint8Array> {
   const doc = await PDFDocument.create();

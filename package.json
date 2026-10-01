@@ -69,6 +69,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@arshad-shah/qpdf-wasm": "^0.1.0",
     "@cloudflare/vite-plugin": "^1.39.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",

@@ -24,8 +24,8 @@ passed after). No retries or sleeps were added.
 - `/`, `/pdf-merger`, `/pdf-splitter`, `/pdf-organize` load with no console errors and no page errors.
 - Known warning: pdf.js "Setting up fake worker" (logged twice).
 - Dashboard shows "Organize PDF Pages" with a NEW badge.
-- Encrypt-marked fixture (`makeEncryptMarkedPdf`): the merger shows the ENCRYPTED message. The splitter and organize show the INVALID_FILE message ("This file could not be read as a PDF. It may be damaged.") instead.
-  Cause: the fixture only adds an `/Encrypt` dict with no `/O`, `/U` or `/ID`. pdf-lib flags it as encrypted, but pdf.js throws `UnknownErrorException` ("Invalid argument for stringToBytes"), not `PasswordException`. The pdf.js-first tools therefore map it to INVALID_FILE. A genuinely encrypted PDF should raise `PasswordException` and show ENCRYPTED, but this is unverified; a real encrypted fixture (e.g. from qpdf) should be added in a later phase.
+- Encrypt-marked fixture (`makeEncryptMarkedPdf`) is valid for pdf-lib only: it has no /O, /U or /ID, so pdf.js throws UnknownErrorException and the pdf.js-first tools (splitter, organize) show INVALID_FILE. It is kept for the pdf-lib unit test.
+- Verified with a REAL AES-256 (R6) encrypted fixture (`makeAesEncryptedPdf`, built with `@arshad-shah/qpdf-wasm`, written to `test/fixtures/generated/encrypted-aes.pdf`): the merger, splitter and organize all show the ENCRYPTED message (pdf.js raises PasswordException; `test/e2e/encrypted.spec.ts`). No worker mapping change was needed.
 
 ## Deviations and findings
 

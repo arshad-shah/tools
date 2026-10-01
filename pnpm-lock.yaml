@@ -138,6 +138,9 @@ importers:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.2.15)(immer@11.1.8)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
     devDependencies:
+      '@arshad-shah/qpdf-wasm':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@cloudflare/vite-plugin':
         specifier: ^1.39.0
         version: 1.39.0(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))(workerd@1.20260526.1)(wrangler@4.95.0)
@@ -229,6 +232,10 @@ packages:
 
   '@arshad-shah/detent@0.3.1':
     resolution: {integrity: sha512-LT0QFpWtb0+WTGO0Sgw2ESnjt/JDKv/k4zi/hd9HYOM63wspN4K1FFt9OTteXhrxNXVhyShyAzVJB3S81BkU1A==}
+
+  '@arshad-shah/qpdf-wasm@0.1.0':
+    resolution: {integrity: sha512-f3dJdk7+Tc2Q8hp9NJIAh/jyyYZYfsrP7sKD2Kw4ZY9oH17kEbk+HXDdW1hMcTks/euT8Xk/8HqBQ5BSyqBZNw==}
+    engines: {node: '>=20'}
 
   '@arshad-shah/store-kit@1.0.3':
     resolution: {integrity: sha512-dTeXyp2p6K4P5Vxr1N2pbPUFXYPeed+Dizl/o1YV+8U2hj7WQt48ResRIwjeK/rKAdqK2Wdo84VipVb99HnIQw==}
@@ -3750,6 +3757,8 @@ snapshots:
       react: 19.2.6
 
   '@arshad-shah/detent@0.3.1': {}
+
+  '@arshad-shah/qpdf-wasm@0.1.0': {}
 
   '@arshad-shah/store-kit@1.0.3(zustand@5.0.15(@types/react@19.2.15)(immer@11.1.8)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6)))':
     dependencies:
