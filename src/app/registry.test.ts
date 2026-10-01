@@ -116,6 +116,7 @@ describe('TOOLS', () => {
         'pdf-compressor',
         'pdf-fill-form',
         'pdf-merger',
+        'pdf-metadata',
         'pdf-organize',
         'pdf-page-numbers',
         'pdf-sign',
