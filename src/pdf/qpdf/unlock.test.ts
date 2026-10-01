@@ -34,6 +34,15 @@ describe('mayBeEncrypted', () => {
     expect(mayBeEncrypted(enc('%PDF-1.7 /Encrypt'))).toBe(true);
     expect(mayBeEncrypted(enc('%PDF-1.7 /EncryptMetadata false'))).toBe(false);
   });
+
+  it('decodes #xx escapes in names (review M8)', () => {
+    expect(mayBeEncrypted(enc('%PDF-1.7 /Encr#79pt 5 0 R'))).toBe(true);
+    expect(mayBeEncrypted(enc('%PDF-1.7 /#45#6e#63#72#79#70#74<<'))).toBe(true);
+    expect(mayBeEncrypted(enc('%PDF-1.7 /Encr#79ptMetadata false'))).toBe(
+      false,
+    );
+    expect(mayBeEncrypted(enc('%PDF-1.7 /Encr#7'))).toBe(false);
+  });
 });
 
 describe('preparePdf', () => {
