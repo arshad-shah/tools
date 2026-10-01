@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { ToolError, toToolError } from '@/shared/lib/errors';
+import { logToolError, ToolError, toToolError } from '@/shared/lib/errors';
 import { BitmapCache } from './bitmap-cache';
 import {
   bitmapKey,
@@ -61,8 +61,10 @@ export function usePdfDocument(file: { bytes: Uint8Array } | null): DocState {
         setResult({ file, generation, doc, error: null });
       },
       (e) => {
-        if (alive)
-          setResult({ file, generation, doc: null, error: toToolError(e) });
+        if (!alive) return;
+        const error = toToolError(e);
+        if (error.code !== 'CANCELLED') logToolError(error);
+        setResult({ file, generation, doc: null, error });
       },
     );
     return () => {
@@ -130,8 +132,10 @@ export function usePageBitmap(
       },
       (e) => {
         const error = toToolError(e);
-        if (alive && error.code !== 'CANCELLED')
+        if (alive && error.code !== 'CANCELLED') {
+          logToolError(error);
           setState({ key: k, bitmap: null, error });
+        }
       },
     );
     return () => {

@@ -4,7 +4,7 @@ import { Button, Text } from '@/shared/ui';
 import { saveBlob, saveZip } from '@/shared/lib/download';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
-import { toToolError } from '@/shared/lib/errors';
+import { logToolError, toToolError } from '@/shared/lib/errors';
 
 export interface ResultFile {
   name: string;
@@ -35,7 +35,9 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
       );
       notify.success(`Saved ${name}`);
     } catch (e) {
-      notify.error(toToolError(e).message);
+      const error = toToolError(e);
+      logToolError(error);
+      notify.error(error.message);
     } finally {
       setZipping(false);
     }

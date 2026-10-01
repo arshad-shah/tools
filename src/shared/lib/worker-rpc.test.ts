@@ -1,5 +1,6 @@
 import { MessageChannel } from 'node:worker_threads';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ToolError } from './errors';
 import {
   createRpcClient,
   exposeRpc,
@@ -22,6 +23,11 @@ const handlers = {
         reject(new DOMException('aborted', 'AbortError'));
       });
     }),
+  wrapped: () => {
+    throw new ToolError('INVALID_FILE', 'Unreadable', {
+      cause: new TypeError('bad xref'),
+    });
+  },
   bytes: (_ctx: RpcContext, n: number) => {
     const out = new Uint8Array(n).fill(7);
     return new Transferred(out, [out.buffer]);
@@ -61,6 +67,28 @@ describe('worker-rpc', () => {
       code: 'UNKNOWN',
       message: 'kaboom',
     });
+    client.terminate();
+  });
+
+  it('carries the cause (name and message) across the boundary and logs it in dev', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const client = createRpcClient<typeof handlers>(connectPair);
+    const err = await client.call('wrapped', []).catch((e: unknown) => e);
+    expect(err).toMatchObject({ code: 'INVALID_FILE', message: 'Unreadable' });
+    expect((err as ToolError).cause).toMatchObject({
+      name: 'TypeError',
+      message: 'bad xref',
+    });
+    const plain = await client.call('fail', []).catch((e: unknown) => e);
+    expect((plain as ToolError).cause).toMatchObject({
+      name: 'Error',
+      message: 'kaboom',
+    });
+    expect(spy).toHaveBeenCalledWith(
+      '[rpc]',
+      'wrapped',
+      expect.objectContaining({ code: 'INVALID_FILE' }),
+    );
     client.terminate();
   });
 

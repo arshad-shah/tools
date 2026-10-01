@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ToolError } from '@/shared/lib/errors';
 import { useJob, type JobContext } from './useJob';
 
@@ -53,6 +53,23 @@ describe('useJob', () => {
     });
     expect(result.current.status).toBe('error');
     expect(result.current.error?.code).toBe('INVALID_INPUT');
+  });
+
+  it('logs the underlying cause to the console in dev', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const inner = new Error('pdf.js parse failure');
+    const { result } = renderHook(() =>
+      useJob(async () => {
+        throw new ToolError('INVALID_FILE', 'Could not read', { cause: inner });
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining('Could not read'),
+      inner,
+    );
   });
 
   it('cancel aborts the signal, ignores the late result, and reports cancelled', async () => {

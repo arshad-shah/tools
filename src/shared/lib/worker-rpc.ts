@@ -1,4 +1,11 @@
-import { ToolError, toToolError, type ToolErrorCode } from './errors';
+import {
+  deserializeCause,
+  serializeCause,
+  ToolError,
+  toToolError,
+  type SerializedCause,
+  type ToolErrorCode,
+} from './errors';
 import type { JobProgress } from '@/shared/state/useJob';
 
 /** Anything message-shaped: Worker, MessagePort, a worker's `self`. */
@@ -48,7 +55,11 @@ type Response =
   | {
       type: 'error';
       id: number;
-      error: { code: ToolErrorCode; message: string };
+      error: {
+        code: ToolErrorCode;
+        message: string;
+        cause?: SerializedCause;
+      };
     }
   | { type: 'progress'; id: number; value: JobProgress };
 
@@ -99,8 +110,19 @@ export function exposeRpc<H extends RpcHandlers>(
       const err = ctrl.signal.aborted
         ? new ToolError('CANCELLED', 'Cancelled')
         : toToolError(e);
+      // Logged on the worker's own console too: its stack is only there.
+      if (import.meta.env.DEV && err.code !== 'CANCELLED')
+        console.error('[rpc]', msg.method, err);
       endpoint.postMessage(
-        { type: 'error', id, error: { code: err.code, message: err.message } },
+        {
+          type: 'error',
+          id,
+          error: {
+            code: err.code,
+            message: err.message,
+            cause: serializeCause(err.cause),
+          },
+        },
         [],
       );
     } finally {
@@ -175,7 +197,16 @@ export function createRpcClient<H extends RpcHandlers>(
     // response proves the worker is healthy, so reset the counter.
     crashes = 0;
     if (msg.type === 'result') p.resolve(msg.value);
-    else p.reject(new ToolError(msg.error.code, msg.error.message));
+    else {
+      const { code, message, cause } = msg.error;
+      p.reject(
+        new ToolError(
+          code,
+          message,
+          cause ? { cause: deserializeCause(cause) } : undefined,
+        ),
+      );
+    }
   };
 
   const detach = (ep: RpcEndpoint) => {

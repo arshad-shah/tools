@@ -8,7 +8,7 @@ import {
   type FileKind,
   type LoadedFile,
 } from '@/shared/lib/files';
-import { toToolError } from '@/shared/lib/errors';
+import { logToolError, toToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
 
@@ -42,7 +42,11 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
     const errors: string[] = [];
     for (const r of results) {
       if (r.status === 'fulfilled') ok.push(r.value);
-      else errors.push(toToolError(r.reason).message);
+      else {
+        const error = toToolError(r.reason);
+        logToolError(error);
+        errors.push(error.message);
+      }
     }
     setRejected(errors);
     for (const f of ok) {
