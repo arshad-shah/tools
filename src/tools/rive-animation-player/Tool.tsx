@@ -63,42 +63,20 @@ import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
 import { useJob } from '@/shared/state/useJob';
-import { assertRiveFile } from './riveFile';
-
-enum PlayerState {
-  Idle,
-  Loading,
-  Active,
-  Error,
-}
-
-enum PlayerError {
-  NoAnimation,
-}
-
-type BackgroundColor = 'transparent' | 'white' | 'black';
-type AlignFitIndex = { alignment: number; fit: number };
-type Dimensions = { width: number; height: number };
-type Status = {
-  current: PlayerState;
-  hovering?: boolean;
-  error?: PlayerError | null;
-};
-type RiveAnimations = { animations: string[]; active: string };
-type RiveStateMachines = { stateMachines: string[]; active: string };
-type RiveController = { active: 'animations' | 'state-machines' };
-type RiveInfo = {
-  version: string;
-  fileSize: number;
-  fps: number | string;
-  artboardCount: number;
-};
-type DebugLog = {
-  id: string;
-  timestamp: string;
-  message: string;
-  type: 'info' | 'error' | 'warning' | 'success';
-};
+import { assertRiveFile } from './lib/rive-file';
+import {
+  PlayerError,
+  PlayerState,
+  type AlignFitIndex,
+  type BackgroundColor,
+  type DebugLog,
+  type Dimensions,
+  type RiveAnimations,
+  type RiveController,
+  type RiveInfo,
+  type RiveStateMachines,
+  type Status,
+} from './types';
 
 const fitValues: (keyof typeof Fit)[] = [
   'Cover',

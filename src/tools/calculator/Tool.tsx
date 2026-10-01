@@ -40,7 +40,7 @@ import {
   Textarea,
 } from '@/shared/ui';
 import { useCalculator } from './hooks/useCalculator';
-import PlotlyGraphDisplay from './GraphDisplay';
+import PlotlyGraphDisplay from './components/GraphDisplay';
 
 type KeyColorScheme = 'accent' | 'neutral' | 'danger' | 'success' | 'warning';
 type KeyVariant = 'solid' | 'soft' | 'outline' | 'ghost';

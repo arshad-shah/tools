@@ -1,6 +1,6 @@
 import { createToolStore } from '@/shared/state/createToolStore';
-import type { CollectionType } from '../../types/ApiTesterTypes'; // PR C moves this to ./types
-import { DEFAULT_COLLECTIONS } from './collections';
+import type { CollectionType } from './types'; // PR C moves this to ./types
+import { DEFAULT_COLLECTIONS } from './lib/collections';
 
 /** Saved request collections. Before store-kit they lived in `apiTesterCollections`. */
 export const useApiCollections = createToolStore<

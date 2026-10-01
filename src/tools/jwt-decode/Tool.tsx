@@ -44,14 +44,14 @@ import {
   Text,
   Textarea,
 } from '@/shared/ui';
-import { ExpiryInfo, JWTHeader, JWTPayload } from '../../types/JwtTypes';
+import { ExpiryInfo, JWTHeader, JWTPayload } from './types';
 import {
   formatTime,
   getClaimIcon,
   getClaimLabel,
   getExpiryInfo,
-} from './utils/utils';
-import useJWTDecoder from './hooks/useJWTDecoder';
+} from './lib/claims';
+import useJWTDecoder from './hooks/useJwtDecoder';
 import { useClipboard } from '@/shared/lib/clipboard';
 
 const SAMPLE_JWT =

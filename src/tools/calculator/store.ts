@@ -3,7 +3,7 @@ import type {
   CalculationHistoryItem,
   MemoryRegister,
   SavedCalculation,
-} from '../../types/CalculatorTypes'; // PR C moves this to ./types
+} from './types'; // PR C moves this to ./types
 
 export interface CalculatorPersisted {
   history: CalculationHistoryItem[];

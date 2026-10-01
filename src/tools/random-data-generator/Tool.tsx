@@ -45,11 +45,8 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
-import * as DataUtils from './utils';
-import {
-  FieldSchema,
-  GeneratedDataItem,
-} from '../../types/RandomDataGeneratorTypes';
+import * as DataUtils from './lib/schema';
+import { FieldSchema, GeneratedDataItem } from './types';
 
 interface FieldEditorProps {
   field: FieldSchema;

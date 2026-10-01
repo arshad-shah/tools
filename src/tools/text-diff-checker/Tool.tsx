@@ -38,7 +38,7 @@ import {
   Text,
   Textarea,
 } from '@/shared/ui';
-import { DiffSegment, DiffViewMode } from '../../types/TextDiffCheckerTypes';
+import { DiffSegment, DiffViewMode } from './types';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { loadDiffFile, TEXT_ACCEPT } from './textFile';

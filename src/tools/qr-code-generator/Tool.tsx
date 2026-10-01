@@ -70,7 +70,7 @@ import {
   ErrorCorrectionLevel,
   QRCodeType,
   WifiData,
-} from '../../types/qrTypes';
+} from './types';
 
 const QR_TYPE_OPTIONS: Array<{
   value: QRCodeType;

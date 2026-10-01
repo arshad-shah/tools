@@ -5,13 +5,13 @@ import {
   FilterCriteria,
   LogCounts,
   ViewMode,
-} from '../../../types/LogParserTypes';
+} from '../types';
 import {
   parseLogsByType,
   filterLogs,
   countLogsByLevel,
   createSampleLogs,
-} from '../utils/utils';
+} from '../lib/parse';
 
 export const useLogParser = () => {
   // Core state

@@ -34,7 +34,7 @@ import {
   decodeImage,
   reductionLabel,
   type OutputFormat,
-} from './convert';
+} from './lib/convert';
 
 interface LoadedImage {
   file: File;
