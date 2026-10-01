@@ -3,6 +3,7 @@ import { newId } from '@/shared/lib/id';
 import { createRpcClient, type RpcClient } from '@/shared/lib/worker-rpc';
 import type { RenderHandlers } from './render.worker';
 import { createSlotLimiter } from './scheduling';
+import type { PageImageOptions } from './types';
 
 const workerLost = () =>
   new ToolError(
@@ -115,6 +116,20 @@ export function createPdfRender(
         // Checked once the slot is ours: a crash may happen while queued.
         assertAlive(docId);
         return client.call('renderPage', [docId, pageIndex, widthPx], {
+          signal,
+        });
+      }, signal);
+    },
+    /** Encoded PNG/JPEG of one page at  (capped to the canvas limit). */
+    renderPageImage(
+      docId: string,
+      pageIndex: number,
+      opts: PageImageOptions,
+      signal?: AbortSignal,
+    ) {
+      return withSlot(async () => {
+        assertAlive(docId);
+        return client.call('renderPageImage', [docId, pageIndex, opts], {
           signal,
         });
       }, signal);

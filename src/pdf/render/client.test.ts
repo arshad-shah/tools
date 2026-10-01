@@ -23,6 +23,16 @@ function fakeWorkerHandlers() {
         throw new ToolError('CANCELLED', 'Document is no longer open');
       return 'bitmap';
     },
+    renderPageImage: (
+      _ctx: RpcContext,
+      docId: string,
+      pageIndex: number,
+      opts: { dpi: number; format: string },
+    ) => {
+      if (!docs.has(docId))
+        throw new ToolError('CANCELLED', 'Document is no longer open');
+      return `${opts.format}@${opts.dpi}:${pageIndex}`;
+    },
     extractText: (_ctx: RpcContext, docId: string) => {
       if (!docs.has(docId))
         throw new ToolError('CANCELLED', 'Document is no longer open');
@@ -88,6 +98,19 @@ describe('pdfRender after a worker restart', () => {
     await expect(render.extractText(doc.docId, 0)).rejects.toMatchObject({
       code: 'WORKER_CRASHED',
     });
+  });
+
+  it('exports page images with the given options, failing fast after a crash', async () => {
+    const { render, crash } = setup();
+    const doc = await render.open(new Uint8Array([1, 2, 3]));
+    const opts = { dpi: 150, format: 'png' as const, quality: 0.9 };
+    await expect(render.renderPageImage(doc.docId, 2, opts)).resolves.toBe(
+      'png@150:2',
+    );
+    crash();
+    await expect(
+      render.renderPageImage(doc.docId, 0, opts),
+    ).rejects.toMatchObject({ code: 'WORKER_CRASHED' });
   });
 
   it('notifies subscribers and serves documents reopened in the new worker', async () => {
