@@ -6,7 +6,7 @@ const upload = (name: string, text: string) => ({
   buffer: Buffer.from(text),
 });
 
-test('csv-viewer detects semicolons and keeps rows around a bad one', async ({
+test('csv-viewer detects semicolons and keeps a ragged row', async ({
   page,
 }) => {
   await page.goto('/csv-viewer');
@@ -18,11 +18,34 @@ test('csv-viewer detects semicolons and keeps rows around a bad one', async ({
 
   await expect(page.getByRole('columnheader', { name: /price/ })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Tea' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'broken' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Cake' })).toBeVisible();
   await expect(page.getByLabel('Delimiter')).toHaveValue('auto');
   await expect(page.getByText(/Detected: Semicolon/)).toBeVisible();
-  await expect(page.getByText(/1 row skipped/)).toBeVisible();
+  await expect(page.getByText('Loaded with 1 problem row')).toBeVisible();
   await expect(page.getByText(/Row 2:/)).toBeVisible();
+});
+
+test('csv-viewer keeps leading zeros and long IDs exact', async ({ page }) => {
+  await page.goto('/csv-viewer');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles(
+      upload('ids.csv', 'name,zip,id\nAda,00123,12345678901234567\n'),
+    );
+  await expect(page.getByRole('cell', { name: '00123' })).toBeVisible();
+  await expect(
+    page.getByRole('cell', { name: '12345678901234567' }),
+  ).toBeVisible();
+});
+
+test('csv-viewer shows the columns of a header-only file', async ({ page }) => {
+  await page.goto('/csv-viewer');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles(upload('empty.csv', 'a,b,c\n'));
+  await expect(page.getByRole('columnheader', { name: /^c/ })).toBeVisible();
+  await expect(page.getByText('0 rows', { exact: true })).toBeVisible();
 });
 
 test('csv-viewer lets the user override the delimiter', async ({ page }) => {
