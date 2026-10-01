@@ -88,6 +88,7 @@ describe('TOOLS', () => {
         'pdf-organize',
         'pdf-splitter',
         'pdf-to-images',
+        'pdf-to-text',
         'pomodoro',
         'qr-code-generator',
         'random-data-generator',

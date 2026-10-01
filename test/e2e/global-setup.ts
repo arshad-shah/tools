@@ -20,6 +20,7 @@ const TOOL_ROUTES: WarmRoute[] = [
   pdfRoute('/pdf-splitter'),
   pdfRoute('/pdf-organize'),
   pdfRoute('/pdf-to-images'),
+  pdfRoute('/pdf-to-text'),
   // Image tools show <img> previews rather than pdf.js canvases.
   {
     route: '/images-to-pdf',
