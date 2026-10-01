@@ -12,7 +12,7 @@ import {
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
 import type { LoadedFile } from '@/shared/lib/files';
-import { toToolError } from '@/shared/lib/errors';
+import { ToolError, toToolError } from '@/shared/lib/errors';
 import { deriveFilename } from '@/shared/lib/download';
 import { useJob } from '@/shared/state/useJob';
 import {
@@ -40,12 +40,20 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
   const [items, setItems] = useState<MergeItem[]>([]);
   const [addErrors, setAddErrors] = useState<string[]>([]);
   const job = useJob(async (ctx, list: MergeItem[]): Promise<ResultFile> => {
-    const inputs = list.map((item) => ({
-      bytes: item.bytes,
-      pages: item.pages.trim()
-        ? rangesToIndices(parsePageRanges(item.pages, item.pageCount))
-        : undefined,
-    }));
+    const inputs = list.map((item) => {
+      if (!item.pages.trim()) return { bytes: item.bytes, pages: undefined };
+      try {
+        return {
+          bytes: item.bytes,
+          pages: rangesToIndices(parsePageRanges(item.pages, item.pageCount)),
+        };
+      } catch (err) {
+        const e = toToolError(err);
+        throw new ToolError(e.code, `${item.name}: ${e.message}`, {
+          cause: err,
+        });
+      }
+    });
     ctx.progress({ done: 0, total: 1, label: 'Merging' });
     const bytes = await merge(inputs);
     const total = inputs.reduce(
@@ -90,8 +98,8 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
           <PdfDropzone multiple onFiles={add} />
           {addErrors.length > 0 && (
             <Alert status="danger">
-              {addErrors.map((m) => (
-                <AlertDescription key={m}>{m}</AlertDescription>
+              {addErrors.map((m, i) => (
+                <AlertDescription key={i}>{m}</AlertDescription>
               ))}
             </Alert>
           )}
@@ -140,7 +148,13 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
                 >
                   Merge PDFs
                 </Button>
-                <Button variant="ghost" onClick={() => update([])}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setAddErrors([]);
+                    update([]);
+                  }}
+                >
                   Clear
                 </Button>
               </div>
