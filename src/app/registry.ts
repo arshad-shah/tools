@@ -3,15 +3,6 @@ import type { ToolManifest } from './tool';
 type ManifestModules = Record<string, { default: ToolManifest }>;
 
 const REQUIRED_STRINGS = ['name', 'description', 'category'] as const;
-/**
- * Legacy folders still allowed to differ from their id: folder → its id.
- * PdfCompressor is rebuilt as pdf-compressor/ by phase 3 Part C; this entry
- * is removed when that lands.
- */
-const LEGACY_FOLDERS: Readonly<Record<string, string>> = {
-  PdfCompressor: 'pdf-compressor',
-};
-
 function validate(path: string, manifest: ToolManifest | undefined) {
   if (!manifest || typeof manifest.id !== 'string' || !manifest.id) {
     throw new Error(`${path} must default-export defineTool({...})`);
@@ -32,10 +23,7 @@ function validate(path: string, manifest: ToolManifest | undefined) {
     throw new Error(
       `${path}: tool "${manifest.id}" must live at tools/<id>/index.ts`,
     );
-  const legacyId = Object.hasOwn(LEGACY_FOLDERS, folder)
-    ? LEGACY_FOLDERS[folder]
-    : undefined;
-  if (folder !== manifest.id && legacyId !== manifest.id)
+  if (folder !== manifest.id)
     throw new Error(
       `Tool folder "${folder}" must match its id "${manifest.id}" (${path})`,
     );
