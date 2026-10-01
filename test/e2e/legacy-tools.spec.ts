@@ -131,3 +131,52 @@ test('rive-animation-player rejects a non-Rive file with a toast', async ({
       .getByText('fake.riv is not a Rive (.riv) file'),
   ).toBeVisible();
 });
+
+test('api-request keeps collections saved under the legacy key', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('kit:store:tool:api-request')) return;
+    localStorage.setItem(
+      'apiTesterCollections',
+      JSON.stringify([
+        {
+          id: 'legacy',
+          type: 'folder',
+          name: 'Legacy Collection',
+          children: [
+            {
+              id: 'legacy-req',
+              type: 'request',
+              name: 'Legacy Request',
+              method: 'GET',
+              url: 'https://example.com',
+            },
+          ],
+        },
+      ]),
+    );
+  });
+  await page.goto('/api-request');
+  await expect(page.getByText('Legacy Collection')).toBeVisible();
+  await expect(page.getByText('Legacy Request')).toBeVisible();
+  expect(
+    await page.evaluate(() => localStorage.getItem('apiTesterCollections')),
+  ).toBeNull();
+  await page.reload();
+  await expect(page.getByText('Legacy Collection')).toBeVisible();
+});
+
+test('api-request toasts invalid input instead of window.alert', async ({
+  page,
+}) => {
+  page.on('dialog', () => {
+    throw new Error('unexpected window dialog');
+  });
+  await page.goto('/api-request');
+  await page.getByRole('button', { name: 'New request' }).first().click();
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect(
+    page.locator('[data-sonner-toast]').getByText('Please enter a URL'),
+  ).toBeVisible();
+});

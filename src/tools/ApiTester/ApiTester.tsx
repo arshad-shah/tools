@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -50,14 +50,18 @@ import {
 } from '@/shared/ui';
 import {
   BodyType,
-  CollectionType,
   FolderItemType,
   HeaderType,
   ParamType,
   RequestItemType,
-  ResponseType,
 } from '../../types/ApiTesterTypes';
-import { useLocalStorage } from '../../hooks/useLocalStorage.hook';
+import { toToolError } from '@/shared/lib/errors';
+import { newId } from '@/shared/lib/id';
+import { notify } from '@/shared/lib/notify';
+import { useJob } from '@/shared/state/useJob';
+import { addCollection, addRequest, deleteNode } from './collections';
+import { sendRequest, type RequestInput } from './request';
+import { useApiCollections } from './store';
 
 const METHOD_OPTIONS = [
   { value: 'GET', label: 'GET' },
@@ -215,8 +219,16 @@ const ApiTester: React.FC = () => {
   const [graphqlVariables, setGraphqlVariables] = useState<string>('');
 
   // Response state
-  const [response, setResponse] = useState<ResponseType | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const job = useJob((ctx, input: RequestInput) =>
+    sendRequest(input, ctx.signal),
+  );
+  const response = job.result;
+  const isLoading = job.status === 'running';
+  // Invalid input (no URL, bad JSON) is toasted; network failures show as a
+  // status-0 response instead.
+  useEffect(() => {
+    if (job.error) notify.error(job.error);
+  }, [job.error]);
 
   // UI state
   const [sidebarActive, setSidebarActive] = useState<boolean>(true);
@@ -234,32 +246,8 @@ const ApiTester: React.FC = () => {
     'body' | 'headers'
   >('body');
 
-  const [collections, setCollections] = useLocalStorage<CollectionType[]>(
-    'apiTesterCollections',
-    [
-      {
-        id: '1',
-        type: 'folder',
-        name: 'My Collection',
-        children: [
-          {
-            id: '2',
-            type: 'request',
-            name: 'Get Users',
-            method: 'GET',
-            url: 'https://jsonplaceholder.typicode.com/users',
-          },
-          {
-            id: '3',
-            type: 'request',
-            name: 'Create User',
-            method: 'POST',
-            url: 'https://jsonplaceholder.typicode.com/users',
-          },
-        ],
-      },
-    ],
-  );
+  const collections = useApiCollections((s) => s.collections);
+  const { setCollections } = useApiCollections.getState();
 
   // Header helpers
   const addHeader = () => setHeaders([...headers, { key: '', value: '' }]);
@@ -288,131 +276,18 @@ const ApiTester: React.FC = () => {
     setParams(next);
   };
 
-  const buildUrl = () => {
-    try {
-      const parsed = new URL(url);
-      params
-        .filter((p) => p.enabled && p.key.trim())
-        .forEach((p) => parsed.searchParams.append(p.key, p.value));
-      return parsed.toString();
-    } catch {
-      return url;
-    }
-  };
-
-  const sendRequest = async () => {
-    if (!url) {
-      window.alert('Please enter a URL');
-      return;
-    }
-    setIsLoading(true);
-    const startTime = performance.now();
-    try {
-      let res: ResponseType;
-      if (requestType === 'rest') {
-        const headerObj: Record<string, string> = {};
-        headers.forEach((h) => {
-          if (h.key.trim() && h.value.trim()) {
-            headerObj[h.key.trim()] = h.value.trim();
-          }
-        });
-        let reqUrl = url;
-        if (method === 'GET') reqUrl = buildUrl();
-        let reqBody: any = undefined;
-        if (method !== 'GET' && bodyType === 'json' && body.trim()) {
-          try {
-            reqBody = JSON.parse(body);
-            headerObj['Content-Type'] = 'application/json';
-            reqBody = JSON.stringify(reqBody);
-          } catch {
-            window.alert('Invalid JSON in request body');
-            setIsLoading(false);
-            return;
-          }
-        } else if (method !== 'GET' && bodyType === 'x-www-form-urlencoded') {
-          const formData = new URLSearchParams();
-          body.split('&').forEach((pair) => {
-            const [k, v] = pair.split('=');
-            if (k) formData.append(k, v || '');
-          });
-          reqBody = formData;
-          headerObj['Content-Type'] = 'application/x-www-form-urlencoded';
-        }
-        const fetchRes = await fetch(reqUrl, {
-          method,
-          headers: headerObj,
-          body: reqBody,
-        });
-        const respHeaders: Record<string, string> = {};
-        fetchRes.headers.forEach((value, key) => {
-          respHeaders[key] = value;
-        });
-        const contentType = fetchRes.headers.get('content-type');
-        const data =
-          contentType && contentType.includes('application/json')
-            ? await fetchRes.json()
-            : await fetchRes.text();
-        res = {
-          status: fetchRes.status,
-          statusText: fetchRes.statusText,
-          time: Math.round(performance.now() - startTime),
-          headers: respHeaders,
-          data,
-        };
-      } else {
-        const headerObj: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        headers.forEach((h) => {
-          if (h.key.trim() && h.value.trim()) {
-            headerObj[h.key.trim()] = h.value.trim();
-          }
-        });
-        let variables: Record<string, unknown> = {};
-        if (graphqlVariables.trim()) {
-          try {
-            variables = JSON.parse(graphqlVariables);
-          } catch {
-            window.alert('Invalid JSON in GraphQL variables');
-            setIsLoading(false);
-            return;
-          }
-        }
-        const fetchRes = await fetch(url, {
-          method: 'POST',
-          headers: headerObj,
-          body: JSON.stringify({ query: graphqlQuery, variables }),
-        });
-        const respHeaders: Record<string, string> = {};
-        fetchRes.headers.forEach((value, key) => {
-          respHeaders[key] = value;
-        });
-        const data = await fetchRes.json();
-        res = {
-          status: fetchRes.status,
-          statusText: fetchRes.statusText,
-          time: Math.round(performance.now() - startTime),
-          headers: respHeaders,
-          data,
-        };
-      }
-      setResponse(res);
-    } catch (err) {
-      setResponse({
-        status: 0,
-        statusText: 'Network error',
-        time: Math.round(performance.now() - startTime),
-        headers: {},
-        data: {
-          error:
-            err instanceof Error
-              ? err.message
-              : 'Failed to connect to the server',
-        },
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSend = () => {
+    void job.run({
+      requestType,
+      method,
+      url,
+      params,
+      headers,
+      bodyType,
+      body,
+      graphqlQuery,
+      graphqlVariables,
+    });
   };
 
   const handleSelectRequest = (req: RequestItemType) => {
@@ -439,11 +314,12 @@ const ApiTester: React.FC = () => {
 
   const handleSaveRequest = () => {
     if (!saveName) {
-      window.alert('Please enter a name');
+      notify.error('Please enter a name');
       return;
     }
+    const now = Date.now();
     const newReq: RequestItemType = {
-      id: Date.now().toString(),
+      id: newId(),
       type: 'request',
       name: saveName,
       method,
@@ -455,92 +331,58 @@ const ApiTester: React.FC = () => {
       body,
       graphqlQuery,
       graphqlVariables,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
     };
-    const targetId =
-      selectedCollectionId ||
-      (collections.length > 0 ? collections[0].id : null);
-    if (!targetId) {
-      window.alert('No collection available. Create one first.');
+    try {
+      setCollections(
+        addRequest(collections, selectedCollectionId || null, newReq),
+      );
+    } catch (e) {
+      notify.error(toToolError(e));
       return;
     }
-    const next = [...collections];
-    const addTo = (items: (RequestItemType | FolderItemType)[]) => {
-      for (const item of items) {
-        if (item.type === 'folder' && item.id === targetId) {
-          item.children = [...item.children, newReq];
-          return true;
-        }
-        if (item.type === 'folder' && addTo(item.children)) return true;
-      }
-      return false;
-    };
-    if (
-      addTo(next) ||
-      (next.length > 0 && (next[0].children = [...next[0].children, newReq]))
-    ) {
-      setCollections(next);
-      setSelectedRequest(newReq.id);
-      setSaveModalOpen(false);
-      setSaveName('');
-    }
+    setSelectedRequest(newReq.id);
+    setSaveModalOpen(false);
+    setSaveName('');
   };
 
   const handleCreateCollection = () => {
     if (!newCollectionName.trim()) return;
-    setCollections([
-      ...collections,
-      {
-        id: Date.now().toString(),
-        type: 'folder',
-        name: newCollectionName.trim(),
-        children: [],
-      },
-    ]);
+    setCollections(addCollection(collections, newCollectionName));
     setNewCollectionName('');
     setNewCollectionModalOpen(false);
   };
 
   const handleCreateNewRequest = () => {
+    if (collections.length === 0) {
+      setNewCollectionModalOpen(true);
+      return;
+    }
     const newReq: RequestItemType = {
-      id: Date.now().toString(),
+      id: newId(),
       type: 'request',
       name: 'New Request',
       method: 'GET',
       url: '',
       requestType: 'rest',
     };
-    if (collections.length > 0) {
-      const next = [...collections];
-      next[0].children = [...next[0].children, newReq];
-      setCollections(next);
-      setMethod('GET');
-      setUrl('');
-      setHeaders([{ key: '', value: '' }]);
-      setParams([{ key: '', value: '', enabled: true }]);
-      setBodyType('none');
-      setBody('');
-      setGraphqlQuery('');
-      setGraphqlVariables('');
-      setSelectedRequest(newReq.id);
-    } else {
-      setNewCollectionModalOpen(true);
-    }
+    setCollections(addRequest(collections, collections[0].id, newReq));
+    setMethod('GET');
+    setUrl('');
+    setHeaders([{ key: '', value: '' }]);
+    setParams([{ key: '', value: '', enabled: true }]);
+    setBodyType('none');
+    setBody('');
+    setGraphqlQuery('');
+    setGraphqlVariables('');
+    setSelectedRequest(newReq.id);
   };
 
-  const handleDelete = (id: string, type: 'folder' | 'request') => {
-    if (type === 'request') {
-      const next = [...collections];
-      const idx = next[0]?.children.findIndex((r) => r.id === id);
-      if (idx !== undefined && idx !== -1) {
-        next[0].children.splice(idx, 1);
-        setCollections(next);
-        if (selectedRequest === id) setSelectedRequest(null);
-      }
-    } else if (type === 'folder') {
-      setCollections(collections.filter((c) => c.id !== id));
-    }
+  // Finds and removes the folder or request anywhere in the tree (B6).
+  const handleDelete = (id: string) => {
+    setCollections(deleteNode(collections, id));
+    if (selectedRequest === id) setSelectedRequest(null);
   };
 
   const renderResponse = () => {
@@ -653,10 +495,15 @@ const ApiTester: React.FC = () => {
           variant="solid"
           loading={isLoading}
           leftIcon={<Send size={14} />}
-          onClick={sendRequest}
+          onClick={handleSend}
         >
           Send
         </Button>
+        {isLoading && (
+          <Button variant="soft" onClick={job.cancel}>
+            Cancel
+          </Button>
+        )}
       </Inline>
 
       <Tabs
