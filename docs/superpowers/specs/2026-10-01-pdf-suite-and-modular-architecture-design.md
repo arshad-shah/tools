@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-01
 **Branch:** `feat/pdf-suite-foundation`
-**Status:** Phase 1 implemented on feat/pdf-suite-foundation; phases 3–4 pending
+**Status:** Phases 1–3 implemented; phase 4 in progress
 
 ## 1. Intent
 
