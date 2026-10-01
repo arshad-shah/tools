@@ -15,6 +15,7 @@ const ROUTES = [
   '/pdf-fill-form',
   '/pdf-compressor',
   '/pdf-metadata',
+  '/pdf-protect',
 ];
 
 for (const route of ROUTES) {

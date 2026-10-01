@@ -13,6 +13,8 @@ interface PdfFileHeaderProps {
   /** From usePdfDocument. */
   loading: boolean;
   error: ToolError | null;
+  /** Passed to PdfDropzone: false hands over encrypted files as they are. */
+  unlock?: boolean;
 }
 
 /**
@@ -25,10 +27,11 @@ export const PdfFileHeader: React.FC<PdfFileHeaderProps> = ({
   onClear,
   loading,
   error,
+  unlock,
 }) => (
   <>
     {!file ? (
-      <PdfDropzone onFiles={(files) => onFile(files[0])} />
+      <PdfDropzone unlock={unlock} onFiles={(files) => onFile(files[0])} />
     ) : (
       <Inline justify="between" align="center" gap="3" wrap>
         <Text weight="semibold">{file.name}</Text>
