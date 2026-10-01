@@ -3,10 +3,12 @@ import {
   PDFCheckBox,
   PDFDict,
   PDFDropdown,
+  PDFHexString,
   PDFName,
   PDFOptionList,
   PDFRadioGroup,
   PDFSignature,
+  PDFString,
   PDFTextField,
   StandardFonts,
   type PDFDocument,
@@ -16,19 +18,31 @@ import { ToolError } from '@/shared/lib/errors';
 import { unsupportedChars } from './fonts';
 import { loadPdf } from './load';
 
+/**
+ * `name` is the fully qualified field name; `label` is the field's alternate
+ * (user-facing) name, /TU, when the form has one.
+ */
 export type FormField =
   | {
       kind: 'text';
       name: string;
+      label: string | null;
       value: string;
       multiline: boolean;
       maxLength: number | null;
       readOnly: boolean;
     }
-  | { kind: 'checkbox'; name: string; checked: boolean; readOnly: boolean }
+  | {
+      kind: 'checkbox';
+      name: string;
+      label: string | null;
+      checked: boolean;
+      readOnly: boolean;
+    }
   | {
       kind: 'radio';
       name: string;
+      label: string | null;
       options: string[];
       selected: string | null;
       readOnly: boolean;
@@ -36,6 +50,7 @@ export type FormField =
   | {
       kind: 'dropdown';
       name: string;
+      label: string | null;
       options: string[];
       selected: string[];
       multiSelect: boolean;
@@ -45,6 +60,7 @@ export type FormField =
   | {
       kind: 'optionlist';
       name: string;
+      label: string | null;
       options: string[];
       selected: string[];
       multiSelect: boolean;
@@ -53,6 +69,7 @@ export type FormField =
   | {
       kind: 'unsupported';
       name: string;
+      label: string | null;
       type: 'button' | 'signature' | 'unknown';
     };
 
@@ -76,24 +93,41 @@ async function loadForm(bytes: Uint8Array) {
   return { doc, form: doc.getForm() };
 }
 
+/** The field's /TU (alternate name shown to users), if it has a usable one. */
+function alternateName(field: PDFField): string | null {
+  const tu = field.acroField.dict.lookup(PDFName.of('TU'));
+  if (!(tu instanceof PDFString || tu instanceof PDFHexString)) return null;
+  const text = tu.decodeText().replace(/\s+/g, ' ').trim();
+  return text || null;
+}
+
 function describe(field: PDFField): FormField {
   const name = field.getName();
   const readOnly = field.isReadOnly();
+  const label = alternateName(field);
   if (field instanceof PDFTextField)
     return {
       kind: 'text',
       name,
+      label,
       value: field.getText() ?? '',
       multiline: field.isMultiline(),
       maxLength: field.getMaxLength() ?? null,
       readOnly,
     };
   if (field instanceof PDFCheckBox)
-    return { kind: 'checkbox', name, checked: field.isChecked(), readOnly };
+    return {
+      kind: 'checkbox',
+      name,
+      label,
+      checked: field.isChecked(),
+      readOnly,
+    };
   if (field instanceof PDFRadioGroup)
     return {
       kind: 'radio',
       name,
+      label,
       options: field.getOptions(),
       selected: field.getSelected() ?? null,
       readOnly,
@@ -102,6 +136,7 @@ function describe(field: PDFField): FormField {
     return {
       kind: 'dropdown',
       name,
+      label,
       options: field.getOptions(),
       selected: field.getSelected(),
       multiSelect: field.isMultiselect(),
@@ -112,6 +147,7 @@ function describe(field: PDFField): FormField {
     return {
       kind: 'optionlist',
       name,
+      label,
       options: field.getOptions(),
       selected: field.getSelected(),
       multiSelect: field.isMultiselect(),
@@ -120,6 +156,7 @@ function describe(field: PDFField): FormField {
   return {
     kind: 'unsupported',
     name,
+    label,
     type:
       field instanceof PDFButton
         ? 'button'

@@ -11,7 +11,12 @@ async function fill(page: Page) {
   await page.getByLabel('name', { exact: true }).fill('Ada Lovelace');
   await page.getByLabel('notes', { exact: true }).fill('Line one\nLine two');
   await page.getByRole('checkbox', { name: 'agree', exact: true }).click();
-  await page.getByLabel('size', { exact: true }).selectOption('M');
+  await page
+    .getByRole('radiogroup', { name: 'size' })
+    .getByRole('radio', { name: 'M', exact: true })
+    .check();
+  // A field with an alternate name (/TU) is labelled by it.
+  await page.getByLabel('Postcode', { exact: true }).fill('D02');
   await page.getByLabel('country', { exact: true }).selectOption('France');
   await page.getByRole('checkbox', { name: 'toppings: Cheese' }).click();
   await page.getByRole('checkbox', { name: 'toppings: Olives' }).click();
@@ -33,6 +38,7 @@ test('fills every field kind', async ({ page }) => {
   expect(form.getTextField('name').getText()).toBe('Ada Lovelace');
   expect(form.getCheckBox('agree').isChecked()).toBe(true);
   expect(form.getRadioGroup('size').getSelected()).toBe('M');
+  expect(form.getTextField('zip').getText()).toBe('D02');
   expect(form.getDropdown('country').getSelected()).toEqual(['France']);
   expect(form.getOptionList('toppings').getSelected()).toEqual([
     'Cheese',

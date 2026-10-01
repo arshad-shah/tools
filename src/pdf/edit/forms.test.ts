@@ -22,7 +22,8 @@ describe('listFormFields', () => {
       ['text', 'ref'],
     ]);
     expect(fields[1]).toMatchObject({ multiline: true });
-    expect(fields[2]).toMatchObject({ maxLength: 5 });
+    expect(fields[2]).toMatchObject({ maxLength: 5, label: 'Postcode' });
+    expect(fields[0]).toMatchObject({ label: null });
     expect(fields[4]).toMatchObject({
       options: ['S', 'M', 'L'],
       selected: null,

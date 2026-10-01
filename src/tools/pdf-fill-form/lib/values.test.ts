@@ -6,15 +6,23 @@ const fields: FormField[] = [
   {
     kind: 'text',
     name: 'name',
+    label: null,
     value: 'Ada',
     multiline: false,
     maxLength: null,
     readOnly: false,
   },
-  { kind: 'checkbox', name: 'agree', checked: false, readOnly: false },
+  {
+    kind: 'checkbox',
+    name: 'agree',
+    label: null,
+    checked: false,
+    readOnly: false,
+  },
   {
     kind: 'radio',
     name: 'size',
+    label: null,
     options: ['S', 'M'],
     selected: null,
     readOnly: false,
@@ -22,6 +30,7 @@ const fields: FormField[] = [
   {
     kind: 'dropdown',
     name: 'country',
+    label: null,
     options: ['IE', 'FR'],
     selected: ['IE'],
     multiSelect: false,
@@ -31,6 +40,7 @@ const fields: FormField[] = [
   {
     kind: 'optionlist',
     name: 'toppings',
+    label: null,
     options: ['Cheese', 'Olives'],
     selected: [],
     multiSelect: true,
@@ -39,12 +49,13 @@ const fields: FormField[] = [
   {
     kind: 'text',
     name: 'ref',
+    label: null,
     value: 'R-1',
     multiline: false,
     maxLength: null,
     readOnly: true,
   },
-  { kind: 'unsupported', name: 'sig', type: 'signature' },
+  { kind: 'unsupported', name: 'sig', label: null, type: 'signature' },
 ];
 
 describe('form values', () => {
