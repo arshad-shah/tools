@@ -96,11 +96,16 @@ describe('worker-rpc', () => {
     const client = createRpcClient<typeof handlers>(connectPair);
     const ctrl = new AbortController();
     const seen: number[] = [];
+    let progressed!: () => void;
+    const firstProgress = new Promise<void>((r) => (progressed = r));
     const p = client.call('slow', [], {
       signal: ctrl.signal,
-      onProgress: (pr) => seen.push(pr.done),
+      onProgress: (pr) => {
+        seen.push(pr.done);
+        progressed();
+      },
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await firstProgress;
     ctrl.abort();
     await expect(p).rejects.toMatchObject({ code: 'CANCELLED' });
     expect(seen).toEqual([1]);
@@ -198,6 +203,97 @@ describe('worker-rpc', () => {
     (endpoints[1] as unknown as EventTarget).dispatchEvent(new Event('error'));
     expect(client.generation).toBe(2);
     expect(seen).toEqual([1]);
+    client.terminate();
+  });
+
+  it('refuses calls after terminate() instead of starting a new worker', async () => {
+    let connections = 0;
+    const client = createRpcClient<typeof handlers>(() => {
+      connections++;
+      return connectPair();
+    });
+    await client.call('add', [1, 1]);
+    client.terminate();
+    await expect(client.call('add', [1, 1])).rejects.toMatchObject({
+      code: 'CANCELLED',
+      message: 'Worker terminated',
+    });
+    expect(connections).toBe(1);
+  });
+
+  it('treats messageerror as a failed response, not a crash', async () => {
+    const endpoints: RpcEndpoint[] = [];
+    const client = createRpcClient<typeof handlers>(() => {
+      const ep = connectPair();
+      endpoints.push(ep);
+      return ep;
+    });
+    const pending = client.call('slow', []);
+    await new Promise((r) => setTimeout(r, 10));
+    (endpoints[0] as unknown as EventTarget).dispatchEvent(
+      new Event('messageerror'),
+    );
+    await expect(pending).rejects.toMatchObject({
+      code: 'UNKNOWN',
+      message: 'A response from the background worker could not be read',
+    });
+    expect(client.generation).toBe(0);
+    await expect(client.call('add', [2, 3])).resolves.toBe(5);
+    expect(endpoints).toHaveLength(1);
+    client.terminate();
+  });
+
+  it('ignores foreign and malformed messages on both sides', async () => {
+    const channel = new MessageChannel();
+    channels.push(channel);
+    exposeRpc(handlers, channel.port2 as unknown as RpcEndpoint);
+    channel.port1.start();
+    channel.port2.start();
+    const client = createRpcClient<typeof handlers>(
+      () => channel.port1 as unknown as RpcEndpoint,
+    );
+    const errors: unknown[] = [];
+    const record = (e: unknown) => errors.push(e);
+    process.on('uncaughtException', record);
+    process.on('unhandledRejection', record);
+    try {
+      channel.port1.postMessage(null);
+      channel.port1.postMessage({ type: 'call', id: 1, method: 'add' });
+      channel.port1.postMessage({ rpc: 1, type: 'call', id: 2, method: 'add' });
+      channel.port2.postMessage(null);
+      channel.port2.postMessage({ type: 'result', id: 1, value: 1 });
+      await expect(client.call('add', [1, 2])).resolves.toBe(3);
+      await new Promise((r) => setTimeout(r, 10));
+      expect(errors).toEqual([]);
+    } finally {
+      process.off('uncaughtException', record);
+      process.off('unhandledRejection', record);
+      client.terminate();
+    }
+  });
+
+  it('aborts in-flight handlers when the server is disposed', async () => {
+    const channel = new MessageChannel();
+    channels.push(channel);
+    let signal: AbortSignal | undefined;
+    const dispose = exposeRpc(
+      {
+        wait: (ctx: RpcContext) => {
+          signal = ctx.signal;
+          return new Promise(() => {});
+        },
+      },
+      channel.port2 as unknown as RpcEndpoint,
+    );
+    channel.port1.start();
+    channel.port2.start();
+    const client = createRpcClient<{ wait: (ctx: RpcContext) => unknown }>(
+      () => channel.port1 as unknown as RpcEndpoint,
+    );
+    void client.call('wait', []).catch(() => {});
+    await new Promise((r) => setTimeout(r, 10));
+    dispose();
+    expect(signal?.aborted).toBe(true);
     client.terminate();
   });
 

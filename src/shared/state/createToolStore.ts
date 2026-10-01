@@ -23,6 +23,8 @@ export function createToolStore<S extends object, A extends object = object>(
   config: ToolStoreConfig<S, A>,
 ) {
   return createStore<S, A>({
+    // store-kit prefixes this: the real localStorage key is
+    // `kit:store:tool:<toolId>` (see arshad-shah/Kit#94).
     name: `tool:${config.toolId}`,
     initial: config.initial,
     actions: config.actions,
