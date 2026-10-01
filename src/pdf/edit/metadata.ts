@@ -1,5 +1,6 @@
 import {
   decodePDFRawStream,
+  PDFDict,
   PDFName,
   PDFRawStream,
   PDFRef,
@@ -34,6 +35,13 @@ const INFO_KEY: Record<MetadataField, string> = {
   keywords: 'Keywords',
   creator: 'Creator',
   producer: 'Producer',
+};
+
+/** The trailer's Info dictionary, if the file has one. */
+const infoDict = (doc: PDFDocument): PDFDict | undefined => {
+  const info = doc.context.trailerInfo.Info;
+  const dict = info ? doc.context.lookup(info) : undefined;
+  return dict instanceof PDFDict ? dict : undefined;
 };
 
 const xmpRef = (doc: PDFDocument): PDFRef | null => {
@@ -148,13 +156,12 @@ export async function setMetadata(
   now = new Date(),
 ): Promise<Uint8Array> {
   const doc = await loadPdf(bytes);
-  const info = doc.getInfoDict();
   for (const field of METADATA_FIELDS) {
     const raw = patch[field];
     if (raw === undefined) continue;
     const value = raw.trim();
     if (!value) {
-      info.delete(PDFName.of(INFO_KEY[field]));
+      infoDict(doc)?.delete(PDFName.of(INFO_KEY[field]));
       continue;
     }
     if (field === 'title') doc.setTitle(value);
