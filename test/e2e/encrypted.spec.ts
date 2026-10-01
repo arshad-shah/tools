@@ -9,6 +9,7 @@ for (const route of [
   '/pdf-organize',
   '/pdf-to-images',
   '/pdf-to-text',
+  '/pdf-compressor',
 ]) {
   test(`${route} rejects a real AES-256 encrypted PDF as ENCRYPTED`, async ({
     page,
