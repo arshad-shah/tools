@@ -23,6 +23,16 @@ function photoRgba(width: number, height: number): Uint8Array {
   return rgba;
 }
 
+/** White card with a dark diagonal band: a scanned signature stand-in. */
+function signatureRgba(width: number, height: number): Uint8Array {
+  const rgba = new Uint8Array(width * height * 4).fill(255);
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++)
+      if (Math.abs(y - x / 3) < 6)
+        rgba.set([20, 20, 40, 255], (y * width + x) * 4);
+  return rgba;
+}
+
 const files: Record<string, Uint8Array> = {
   'text-3.pdf': await makeTextPdf({ pages: 3, label: 'Alpha' }),
   'text-12.pdf': await makeTextPdf({ pages: 12, label: 'Beta' }),
@@ -37,6 +47,7 @@ const files: Record<string, Uint8Array> = {
   'encrypted-aes.pdf': await makeAesEncryptedPdf(),
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
+  'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),
   'tiny.gif': encodeGif(
     40,
     30,
