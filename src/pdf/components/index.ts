@@ -27,3 +27,4 @@ export {
 export { PdfFileHeader } from './PdfFileHeader';
 export { PdfPagePreview } from './PdfPagePreview';
 export { usePreviewBytes } from './usePreviewBytes';
+export { PageRangeField } from './PageRangeField';

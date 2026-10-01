@@ -41,6 +41,7 @@ export {
   rotatedOrigin,
   anchoredOrigin,
   selectPages,
+  trySelectPages,
   type PageFrame,
   type Size,
   type Point,

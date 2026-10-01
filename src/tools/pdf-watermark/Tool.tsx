@@ -22,10 +22,9 @@ import { deriveFilename } from '@/shared/lib/download';
 import { useJob } from '@/shared/state/useJob';
 import {
   ANCHOR_OPTIONS,
-  selectPages,
+  trySelectPages,
   watermark,
   type Anchor,
-  type PageSelection,
   type WatermarkContent,
   type WatermarkOptions,
 } from '@/pdf/edit';
@@ -33,6 +32,7 @@ import { usePdfDocument } from '@/pdf/render';
 import {
   JobPanel,
   PdfDropzone,
+  PageRangeField,
   PdfFileHeader,
   PdfPagePreview,
   ResultFiles,
@@ -100,12 +100,10 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
     async (
       _ctx,
       source: LoadedFile,
-      pageCount: number,
-      selection: PageSelection,
-      opts: Omit<WatermarkOptions, 'pages'>,
+      opts: WatermarkOptions,
     ): Promise<ResultFile[]> => {
-      const pages = selectPages(selection, pageCount);
-      const bytes = await watermark(source.bytes, { ...opts, pages });
+      const { pages } = opts;
+      const bytes = await watermark(source.bytes, opts);
       return [
         {
           name: deriveFilename(source.name, 'watermarked', 'pdf'),
@@ -129,8 +127,20 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
     job.reset();
     setFile(null);
   };
-  const selection: PageSelection =
-    pageMode === 'all' ? { mode: 'all' } : { mode: 'ranges', text: rangeText };
+  // Checked as you type, like Page Numbers: errors show inline and the
+  // button stays disabled until the range is valid.
+  const selection = useMemo(
+    () =>
+      doc
+        ? trySelectPages(
+            pageMode === 'all'
+              ? { mode: 'all' }
+              : { mode: 'ranges', text: rangeText },
+            doc.pageCount,
+          )
+        : { pages: [], error: null },
+    [doc, pageMode, rangeText],
+  );
 
   return (
     <Card>
@@ -282,38 +292,28 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
                     )}
                   />
                 </Stack>
-                <Stack gap="2">
-                  <Label id="wm-pages-label">Pages</Label>
-                  <Tabs
-                    value={pageMode}
-                    onValueChange={change((v: string) =>
-                      setPageMode(v as 'all' | 'ranges'),
-                    )}
-                    variant="soft"
-                  >
-                    <TabsList aria-labelledby="wm-pages-label">
-                      <TabsTrigger value="all">All pages</TabsTrigger>
-                      <TabsTrigger value="ranges">Some pages</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                  {pageMode === 'ranges' && (
-                    <Input
-                      aria-label="Page ranges"
-                      value={rangeText}
-                      onChange={change(setRangeText)}
-                      placeholder="e.g. 1-3, 5"
-                    />
-                  )}
-                </Stack>
+                <PageRangeField
+                  id="wm"
+                  mode={pageMode}
+                  text={rangeText}
+                  onModeChange={change(setPageMode)}
+                  onTextChange={change(setRangeText)}
+                  error={selection.error}
+                />
                 <Button
                   variant="solid"
                   leftIcon={<Droplets size={16} />}
-                  disabled={job.status === 'running' || content === null}
+                  disabled={
+                    job.status === 'running' ||
+                    content === null ||
+                    selection.error !== null
+                  }
                   onClick={() =>
                     content &&
-                    job.run(file, doc.pageCount, selection, {
+                    job.run(file, {
                       ...options,
                       content,
+                      pages: selection.pages,
                     })
                   }
                 >

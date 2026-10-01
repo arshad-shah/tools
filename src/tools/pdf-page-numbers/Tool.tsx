@@ -1,39 +1,32 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ListOrdered } from 'lucide-react';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Card,
   CardBody,
   Inline,
-  Input,
   Label,
   NumberInput,
   Select,
   Stack,
-  Tabs,
-  TabsList,
-  TabsTrigger,
 } from '@/shared/ui';
 import type { ToolProps } from '@/app/tool';
 import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
-import { toToolError } from '@/shared/lib/errors';
 import { useJob } from '@/shared/state/useJob';
 import {
   EDGE_ANCHOR_OPTIONS,
   pageNumbers,
-  selectPages,
+  trySelectPages,
   type EdgeAnchor,
   type PageNumberFormat,
   type PageNumberOptions,
-  type PageSelection,
 } from '@/pdf/edit';
 import { usePdfDocument } from '@/pdf/render';
 import {
   JobPanel,
   PdfFileHeader,
+  PageRangeField,
   PdfPagePreview,
   ResultFiles,
   usePreviewBytes,
@@ -58,18 +51,18 @@ const PdfPageNumbersTool: React.FC<ToolProps> = () => {
   const s = usePageNumberSettings();
   const { doc, loading, error } = usePdfDocument(file);
 
-  const selection = useMemo<{ pages: number[]; error: string | null }>(() => {
-    if (!doc) return { pages: [], error: null };
-    const sel: PageSelection =
-      pageMode === 'all'
-        ? { mode: 'all' }
-        : { mode: 'ranges', text: rangeText };
-    try {
-      return { pages: selectPages(sel, doc.pageCount), error: null };
-    } catch (e) {
-      return { pages: [], error: toToolError(e).message };
-    }
-  }, [doc, pageMode, rangeText]);
+  const selection = useMemo(
+    () =>
+      doc
+        ? trySelectPages(
+            pageMode === 'all'
+              ? { mode: 'all' }
+              : { mode: 'ranges', text: rangeText },
+            doc.pageCount,
+          )
+        : { pages: [], error: null },
+    [doc, pageMode, rangeText],
+  );
 
   const settings = useMemo<NumberSettings>(
     () => ({
@@ -186,34 +179,14 @@ const PdfPageNumbersTool: React.FC<ToolProps> = () => {
                     />
                   </Stack>
                 </Inline>
-                <Stack gap="2">
-                  <Label id="pn-pages-label">Pages</Label>
-                  <Tabs
-                    value={pageMode}
-                    onValueChange={change((v: string) =>
-                      setPageMode(v as 'all' | 'ranges'),
-                    )}
-                    variant="soft"
-                  >
-                    <TabsList aria-labelledby="pn-pages-label">
-                      <TabsTrigger value="all">All pages</TabsTrigger>
-                      <TabsTrigger value="ranges">Some pages</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                  {pageMode === 'ranges' && (
-                    <Input
-                      aria-label="Page ranges"
-                      value={rangeText}
-                      onChange={change(setRangeText)}
-                      placeholder="e.g. 1-3, 5"
-                    />
-                  )}
-                  {selection.error && rangeText.trim() !== '' && (
-                    <Alert status="danger">
-                      <AlertDescription>{selection.error}</AlertDescription>
-                    </Alert>
-                  )}
-                </Stack>
+                <PageRangeField
+                  id="pn"
+                  mode={pageMode}
+                  text={rangeText}
+                  onModeChange={change(setPageMode)}
+                  onTextChange={change(setRangeText)}
+                  error={selection.error}
+                />
                 <Button
                   variant="solid"
                   leftIcon={<ListOrdered size={16} />}

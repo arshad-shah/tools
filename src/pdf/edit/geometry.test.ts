@@ -8,6 +8,7 @@ import {
   placeBox,
   rotatedOrigin,
   selectPages,
+  trySelectPages,
   toPdfPlacement,
   visualSize,
   visualToPdf,
@@ -152,5 +153,18 @@ describe('pageFrame matches what viewers show', () => {
   it('normalises inverted boxes', async () => {
     const f = pageFrame(await pageWith([612, 792, 0, 0], [500, 700, 100, 50]));
     expect(f).toMatchObject({ x0: 100, y0: 50, width: 400, height: 650 });
+  });
+});
+
+describe('trySelectPages', () => {
+  it('returns the pages, or the message instead of throwing', () => {
+    expect(trySelectPages({ mode: 'ranges', text: '2-3' }, 3)).toEqual({
+      pages: [1, 2],
+      error: null,
+    });
+    expect(trySelectPages({ mode: 'ranges', text: '9' }, 3)).toEqual({
+      pages: [],
+      error: 'Page 9 is out of range (1–3)',
+    });
   });
 });
