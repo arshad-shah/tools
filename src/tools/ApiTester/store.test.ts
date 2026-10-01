@@ -42,3 +42,21 @@ describe('api-request store', () => {
     );
   });
 });
+
+describe('api-request store legacy shape', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+  it.each(['null', '{}', '"text"', '[1, 2]'])(
+    'ignores well-formed JSON of the wrong shape (%s)',
+    async (raw) => {
+      localStorage.setItem('apiTesterCollections', raw);
+      const { useApiCollections } = await import('./store');
+      expect(useApiCollections.getState().collections[0].name).toBe(
+        'My Collection',
+      );
+      expect(localStorage.getItem('kit:store:tool:api-request')).toBeNull();
+    },
+  );
+});
