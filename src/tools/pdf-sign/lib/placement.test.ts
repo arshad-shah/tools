@@ -47,4 +47,10 @@ describe('placement', () => {
       rectFromPixels({ left: 50, top: 100, width: 25, height: 10 }, 0.5, page),
     ).toEqual(r);
   });
+  it('keeps the aspect ratio when the minimum size kicks in', () => {
+    let r = { x: 100, y: 100, width: 200, height: 20 };
+    for (let i = 0; i < 40; i++) r = scaleRect(r, 0.9, page);
+    expect(r.height).toBeCloseTo(12);
+    expect(r.width / r.height).toBeCloseTo(10);
+  });
 });

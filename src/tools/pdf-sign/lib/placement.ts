@@ -5,9 +5,13 @@ export const MIN_SIZE_PT = 12;
 const MARGIN = 36;
 
 export function clampRect(r: VisualRect, page: PageInfo): VisualRect {
-  const s = Math.min(1, page.width / r.width, page.height / r.height);
-  const width = Math.max(MIN_SIZE_PT, r.width * s);
-  const height = Math.max(MIN_SIZE_PT, r.height * s);
+  // One uniform scale, so the aspect ratio never changes: shrink to fit the
+  // page, grow to the minimum size, but never past the page.
+  const fit = Math.min(page.width / r.width, page.height / r.height);
+  const grow = MIN_SIZE_PT / Math.min(r.width, r.height);
+  const s = Math.min(fit, Math.max(Math.min(1, fit), grow));
+  const width = r.width * s;
+  const height = r.height * s;
   return {
     width,
     height,
