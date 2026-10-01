@@ -1,6 +1,8 @@
 import {
+  decodePDFRawStream,
   PDFDocument,
   PDFName,
+  PDFRawStream,
   PDFString,
   rgb,
   StandardFonts,
@@ -235,4 +237,120 @@ export async function makeBadCountPdf(
   root.set(PDFName.of('Kids'), context.obj([refs[0], midRef]));
   root.set(PDFName.of('Count'), context.obj(count));
   return doc.save({ useObjectStreams: false });
+}
+
+export const TAGGED_SECRET = 'SECRET-VALUE-123';
+
+/**
+ * A tagged two-page form: each page has marked content (MCID 0) and a text
+ * field ('KeepMe' on page 1, TAGGED_SECRET on page 2), and the structure tree
+ * references both: P elements with /Pg + MCID, Form elements with OBJR to
+ * the widgets, a /ParentTree and an /IDTree.
+ */
+export async function makeTaggedFormPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(
+    await makeTextPdf({ pages: 2, label: 'T' }),
+  );
+  const { context } = doc;
+  const form = doc.getForm();
+  const widgetRefs: PDFRef[] = [];
+  (['keep', 'secret'] as const).forEach((name, i) => {
+    const field = form.createTextField(name);
+    field.setText(i === 0 ? 'KeepMe' : TAGGED_SECRET);
+    field.addToPage(doc.getPage(i), { x: 72, y: 500, width: 200, height: 24 });
+    widgetRefs.push(field.acroField.ref);
+  });
+  const pageRefs = doc.getPages().map((p) => p.ref);
+  const rootRef = context.nextRef();
+  const docElRef = context.nextRef();
+  const els = pageRefs.map((pageRef, i) => {
+    const pRef = context.register(
+      context.obj({
+        Type: PDFName.of('StructElem'),
+        S: PDFName.of('P'),
+        P: docElRef,
+        Pg: pageRef,
+        K: 0,
+        ID: PDFString.of(`p${i + 1}`),
+        ActualText: PDFString.of(i === 0 ? 'Visible text' : TAGGED_SECRET),
+      }),
+    );
+    const formRef = context.register(
+      context.obj({
+        Type: PDFName.of('StructElem'),
+        S: PDFName.of('Form'),
+        P: docElRef,
+        K: context.obj({
+          Type: PDFName.of('OBJR'),
+          Pg: pageRef,
+          Obj: widgetRefs[i],
+        }),
+      }),
+    );
+    doc.getPage(i).node.set(PDFName.of('StructParents'), context.obj(i));
+    (context.lookup(widgetRefs[i]) as typeof doc.catalog).set(
+      PDFName.of('StructParent'),
+      context.obj(2 + i),
+    );
+    return { pRef, formRef };
+  });
+  context.assign(
+    docElRef,
+    context.obj({
+      Type: PDFName.of('StructElem'),
+      S: PDFName.of('Document'),
+      P: rootRef,
+      K: els.flatMap((e) => [e.pRef, e.formRef]),
+    }),
+  );
+  context.assign(
+    rootRef,
+    context.obj({
+      Type: PDFName.of('StructTreeRoot'),
+      K: docElRef,
+      ParentTree: context.obj({
+        Nums: [
+          0,
+          [els[0].pRef],
+          1,
+          [els[1].pRef],
+          2,
+          els[0].formRef,
+          3,
+          els[1].formRef,
+        ],
+      }),
+      ParentTreeNextKey: 4,
+      IDTree: context.obj({
+        Names: [
+          PDFString.of('p1'),
+          els[0].pRef,
+          PDFString.of('p2'),
+          els[1].pRef,
+        ],
+      }),
+    }),
+  );
+  doc.catalog.set(PDFName.of('StructTreeRoot'), rootRef);
+  doc.catalog.set(PDFName.of('MarkInfo'), context.obj({ Marked: true }));
+  return doc.save();
+}
+
+/** Every object in the file as text, with streams decompressed. */
+export async function decodedObjects(bytes: Uint8Array): Promise<string> {
+  const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+  const parts: string[] = [];
+  for (const [, obj] of doc.context.enumerateIndirectObjects()) {
+    if (obj instanceof PDFRawStream) {
+      parts.push(obj.dict.toString());
+      try {
+        parts.push(
+          new TextDecoder('latin1').decode(decodePDFRawStream(obj).decode()),
+        );
+      } catch {
+        parts.push(new TextDecoder('latin1').decode(obj.contents));
+      }
+    } else parts.push(obj.toString());
+  }
+  return parts.join('\n');
 }
