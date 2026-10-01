@@ -20,7 +20,15 @@ import { PasswordPrompt } from './PasswordPrompt';
 export interface PdfInputFile extends LoadedFile {
   /** The original was encrypted and has been decrypted in memory. */
   wasEncrypted: boolean;
+  /**
+   * Increases in drop order, across drops. A locked file is handed over
+   * only once unlocked, so hosts that keep a list (Merger) use this to put
+   * it back where it was dropped.
+   */
+  order: number;
 }
+
+let nextOrder = 0;
 
 interface PdfDropzoneProps {
   onFiles: (files: PdfInputFile[]) => void;
@@ -38,12 +46,15 @@ interface PdfDropzoneProps {
 }
 
 interface LockedEntry {
-  file: LoadedFile;
+  file: LoadedFile & { order: number };
   error: string | null;
   busy: boolean;
 }
 
-const decrypted = (file: LoadedFile, bytes: Uint8Array): PdfInputFile => ({
+const decrypted = (
+  file: LoadedFile & { order: number },
+  bytes: Uint8Array,
+): PdfInputFile => ({
   ...file,
   bytes,
   size: bytes.byteLength,
@@ -62,6 +73,11 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
   const [rejected, setRejected] = useState<string[]>([]);
   const [locked, setLocked] = useState<LockedEntry[]>([]);
   const [busy, setBusy] = useState(false);
+  // What is locked right now, for async work that outlives a render.
+  const lockedNow = useRef<LockedEntry[]>([]);
+  useEffect(() => {
+    lockedNow.current = locked;
+  }, [locked]);
   // A decryption that finishes after unmount must not hand files over.
   const alive = useRef(true);
   useEffect(() => {
@@ -73,13 +89,16 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
 
   const handle = async (files: File[]) => {
     setBusy(true);
+    // Numbered now, in drop order, before any async work reorders them.
+    const orders = files.map(() => nextOrder++);
     const loaded = await Promise.allSettled(
       files.map((f) => loadFile(f, accept)),
     );
     const errors: string[] = [];
-    const candidates: LoadedFile[] = [];
-    for (const r of loaded) {
-      if (r.status === 'fulfilled') candidates.push(r.value);
+    const candidates: (LoadedFile & { order: number })[] = [];
+    for (const [i, r] of loaded.entries()) {
+      if (r.status === 'fulfilled')
+        candidates.push({ ...r.value, order: orders[i] });
       else {
         const error = toToolError(r.reason);
         logToolError(error);
@@ -135,7 +154,9 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
     patch(id, { busy: true, error: null });
     try {
       const bytes = await unlockWithPassword(entry.file.bytes, password, qpdf);
-      if (!alive.current) return;
+      // Gone meanwhile (unmounted, skipped, or replaced by a newer drop).
+      if (!alive.current || !lockedNow.current.some((l) => l.file.id === id))
+        return;
       drop(id);
       onFiles([decrypted(entry.file, bytes)]);
     } catch (e) {
@@ -185,6 +206,7 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
           fileName={l.file.name}
           error={l.error}
           busy={l.busy}
+          disabled={disabled}
           onSubmit={(pw) => void submit(l, pw)}
           onCancel={() => drop(l.file.id)}
         />

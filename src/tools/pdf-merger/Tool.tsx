@@ -32,6 +32,7 @@ import {
   type PdfInputFile,
   UNENCRYPTED_NOTE,
 } from '@/pdf/components';
+import { insertByOrder } from './lib/order';
 
 interface MergeItem extends PdfInputFile {
   pageCount: number;
@@ -77,9 +78,8 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
 
   const add = async (files: PdfInputFile[]) => {
     job.reset();
-    // pdf-lib reads each file on the main thread to count pages (and to
-    // reject encrypted files up front, which pdf.js would open when only an
-    // owner password is set); show that it's working.
+    // pdf-lib reads each file on the main thread to count pages (encrypted
+    // files arrive already decrypted by PdfDropzone); show that it's working.
     setReading(files.length);
     const results = await Promise.allSettled(
       files.map(async (f) => ({
@@ -100,7 +100,8 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
     });
     setReading(0);
     setAddErrors(errors);
-    setItems((prev) => [...prev, ...ok]);
+    // A file unlocked after its siblings goes back to its drop position.
+    setItems((prev) => insertByOrder(prev, ok));
   };
   const busy = job.status === 'running';
 
