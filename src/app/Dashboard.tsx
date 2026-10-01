@@ -19,7 +19,6 @@ import {
 import { cn } from '@/lib/utils';
 import { getEnabledTools } from './registry';
 import type { ToolDefinition } from './tool';
-import AnimatedBackground from './AnimatedBackground';
 import Footer from './Footer';
 
 /** A mono section label with count and a trailing hairline rule. */
@@ -152,7 +151,10 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <AnimatedBackground />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-terminal-grid"
+      />
       <Section as="main" className="py-12">
         <Container size="xl">
           <Stack gap="8">
