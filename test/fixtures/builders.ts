@@ -1,17 +1,23 @@
 import {
+  concatTransformationMatrix,
   decodePDFRawStream,
   degrees,
   PDFDict,
+  drawObject,
   PDFDocument,
   PDFName,
   PDFRawStream,
   PDFString,
+  popGraphicsState,
+  pushGraphicsState,
   rgb,
   StandardFonts,
+  type PDFPage,
   type PDFRef,
 } from 'pdf-lib';
 import { encrypt } from '@arshad-shah/qpdf-wasm';
 import { getDocument, OPS, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { encodeJpeg, noiseImage, radialAlpha } from './images';
 
 export async function makeTextPdf({
   pages = 3,
@@ -555,4 +561,123 @@ export async function imagePlacements(
   } finally {
     await task.destroy();
   }
+}
+
+function placeImage(
+  page: PDFPage,
+  ref: PDFRef,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  const name = page.node.newXObject('Im', ref);
+  page.pushOperators(
+    pushGraphicsState(),
+    concatTransformationMatrix(w, 0, 0, h, x, y),
+    drawObject(name),
+    popGraphicsState(),
+  );
+}
+
+/**
+ * Four pages of images for the compressor (title "Heavy images"):
+ * 1. Flate RGB 1000×750 noise drawn 240×180 pt (300 DPI);
+ * 2. DCT RGB 1000×750 (q95) drawn 240×180 pt (300 DPI);
+ * 3. Flate RGB 600×600 with a Flate gray SMask drawn 144×144 pt (300 DPI);
+ * 4. Flate DeviceCMYK 64×64 and a 1-bit DeviceGray 64×64 (never recompressed).
+ */
+export async function makeImageHeavyPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  doc.setTitle('Heavy images');
+  const ctx = doc.context;
+  const image = (
+    contents: Uint8Array,
+    dict: Record<string, unknown>,
+    filter: 'flate' | 'raw',
+  ) => {
+    const full = {
+      Type: 'XObject',
+      Subtype: 'Image',
+      BitsPerComponent: 8,
+      ...dict,
+    } as never;
+    return ctx.register(
+      filter === 'flate'
+        ? ctx.flateStream(contents, full)
+        : ctx.stream(contents, full),
+    );
+  };
+  placeImage(
+    doc.addPage([612, 792]),
+    image(
+      noiseImage(1000, 750, 3, 1),
+      { Width: 1000, Height: 750, ColorSpace: 'DeviceRGB' },
+      'flate',
+    ),
+    72,
+    400,
+    240,
+    180,
+  );
+  placeImage(
+    doc.addPage([612, 792]),
+    image(
+      encodeJpeg(1000, 750, noiseImage(1000, 750, 4, 2), 95),
+      {
+        Width: 1000,
+        Height: 750,
+        ColorSpace: 'DeviceRGB',
+        Filter: 'DCTDecode',
+      },
+      'raw',
+    ),
+    72,
+    400,
+    240,
+    180,
+  );
+  const mask = image(
+    radialAlpha(600, 600),
+    { Width: 600, Height: 600, ColorSpace: 'DeviceGray' },
+    'flate',
+  );
+  placeImage(
+    doc.addPage([612, 792]),
+    image(
+      noiseImage(600, 600, 3, 3),
+      { Width: 600, Height: 600, ColorSpace: 'DeviceRGB', SMask: mask },
+      'flate',
+    ),
+    72,
+    400,
+    144,
+    144,
+  );
+  const p4 = doc.addPage([612, 792]);
+  placeImage(
+    p4,
+    image(
+      noiseImage(64, 64, 4, 4),
+      { Width: 64, Height: 64, ColorSpace: 'DeviceCMYK' },
+      'flate',
+    ),
+    72,
+    600,
+    72,
+    72,
+  );
+  placeImage(
+    p4,
+    image(
+      new Uint8Array(8 * 64).fill(0xaa),
+      { Width: 64, Height: 64, ColorSpace: 'DeviceGray', BitsPerComponent: 1 },
+      'flate',
+    ),
+    200,
+    600,
+    72,
+    72,
+  );
+  return doc.save({ useObjectStreams: false });
 }

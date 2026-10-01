@@ -6,6 +6,7 @@ import {
   makeEncryptMarkedPdf,
   makeFormPdf,
   makeRotatedPdf,
+  makeImageHeavyPdf,
   makeShapesOnlyPdf,
   makeTextPdf,
   pdfPageTexts,
@@ -29,6 +30,11 @@ describe('fixture builders', () => {
     expect(doc.getPageCount()).toBe(3);
     expect(doc.getTitle()).toBe('Doc fixture');
     expect(await pdfPageTexts(bytes)).toEqual(['Doc 1', 'Doc 2', 'Doc 3']);
+  });
+  it('makeImageHeavyPdf has 4 titled pages of images', async () => {
+    const doc = await PDFDocument.load(await makeImageHeavyPdf());
+    expect(doc.getPageCount()).toBe(4);
+    expect(doc.getTitle()).toBe('Heavy images');
   });
   it('makeShapesOnlyPdf has no text', async () => {
     expect(await pdfPageTexts(await makeShapesOnlyPdf(2))).toEqual(['', '']);
