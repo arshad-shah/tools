@@ -4,9 +4,11 @@ import { PDFDocument } from 'pdf-lib';
 import {
   makeAesEncryptedPdf,
   makeEncryptMarkedPdf,
+  makeRotatedPdf,
   makeShapesOnlyPdf,
   makeTextPdf,
   pdfPageTexts,
+  textPositions,
 } from './builders';
 import { detectKind } from '@/shared/lib/files';
 import {
@@ -40,6 +42,18 @@ describe('fixture builders', () => {
       needsPassword: true,
     });
     await expect(PDFDocument.load(bytes)).rejects.toThrow(/encrypted/i);
+  });
+  it('makeRotatedPdf has rotated and cropped pages', async () => {
+    const bytes = await makeRotatedPdf();
+    const doc = await PDFDocument.load(bytes);
+    expect(doc.getPages().map((p) => p.getRotation().angle)).toEqual([
+      0, 90, 270,
+    ]);
+    // Drawn in unrotated space, so on screen it reads sideways.
+    const items = await textPositions(bytes, 1);
+    expect(items.find((i) => i.str === 'Rotated 2')?.upright).toBe(false);
+    const flat = await textPositions(bytes, 0);
+    expect(flat.find((i) => i.str === 'Rotated 1')?.upright).toBe(true);
   });
 });
 
