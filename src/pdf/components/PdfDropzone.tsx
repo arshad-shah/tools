@@ -76,8 +76,8 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
               ? 'A file was skipped'
               : `${rejected.length} files were skipped`}
           </AlertTitle>
-          {rejected.map((m) => (
-            <AlertDescription key={m}>{m}</AlertDescription>
+          {rejected.map((m, i) => (
+            <AlertDescription key={i}>{m}</AlertDescription>
           ))}
         </Alert>
       )}

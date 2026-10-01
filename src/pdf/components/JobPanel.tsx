@@ -28,7 +28,10 @@ export const JobPanel: React.FC<JobPanelProps> = ({
   if (job.status === 'running') {
     const p = job.progress;
     return (
-      <div className="flex flex-col gap-3 rounded-md border border-line p-4">
+      <div
+        aria-live="polite"
+        className="flex flex-col gap-3 rounded-md border border-line p-4"
+      >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Spinner size="sm" />
@@ -47,11 +50,13 @@ export const JobPanel: React.FC<JobPanelProps> = ({
     );
   }
 
-  if (job.status === 'error' && job.error) {
+  if (job.status === 'error') {
     return (
       <Alert status="danger">
         <AlertTitle>That didn't work</AlertTitle>
-        <AlertDescription>{job.error.message}</AlertDescription>
+        <AlertDescription>
+          {job.error?.message ?? 'Something went wrong. Please try again.'}
+        </AlertDescription>
       </Alert>
     );
   }

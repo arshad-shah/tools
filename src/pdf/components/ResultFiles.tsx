@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Download, FileDown } from 'lucide-react';
 import { Button, Text } from '@/shared/ui';
 import { saveBlob, saveZip } from '@/shared/lib/download';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
+import { toToolError } from '@/shared/lib/errors';
 
 export interface ResultFile {
   name: string;
@@ -24,6 +25,21 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
   inputSize,
   zipName,
 }) => {
+  const [zipping, setZipping] = useState(false);
+  const downloadZip = async (name: string) => {
+    setZipping(true);
+    try {
+      await saveZip(
+        files.map((f) => ({ name: f.name, data: f.bytes })),
+        name,
+      );
+      notify.success(`Saved ${name}`);
+    } catch (e) {
+      notify.error(toToolError(e).message);
+    } finally {
+      setZipping(false);
+    }
+  };
   const total = files.reduce((n, f) => n + f.bytes.byteLength, 0);
   return (
     <div className="flex flex-col gap-3 rounded-md border border-success/40 bg-success/5 p-4">
@@ -43,21 +59,17 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
             size="sm"
             variant="solid"
             leftIcon={<Download size={14} />}
-            onClick={async () => {
-              await saveZip(
-                files.map((f) => ({ name: f.name, data: f.bytes })),
-                zipName,
-              );
-              notify.success(`Saved ${zipName}`);
-            }}
+            loading={zipping}
+            onClick={() => void downloadZip(zipName)}
           >
             Download all (ZIP)
           </Button>
         )}
       </div>
       <ul className="flex flex-col gap-2">
-        {files.map((f) => (
-          <li key={f.name} className="flex items-center justify-between gap-3">
+        {files.map((f, i) => (
+          // Names may repeat; position is the stable identity here.
+          <li key={i} className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm text-fg">{f.name}</p>
               <p className="font-mono text-xs text-fg-muted">

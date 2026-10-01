@@ -44,6 +44,21 @@ describe('JobPanel', () => {
       'Range 5-2 runs backwards',
     );
   });
+  it('shows a generic error, not children, when the error is missing', () => {
+    render(
+      <JobPanel job={{ ...base, status: 'error' }} onCancel={() => {}}>
+        <p>result here</p>
+      </JobPanel>,
+    );
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.queryByText('result here')).toBeNull();
+  });
+  it('announces progress politely', () => {
+    const { container } = render(
+      <JobPanel job={{ ...base, status: 'running' }} onCancel={() => {}} />,
+    );
+    expect(container.querySelector('[aria-live="polite"]')).toBeTruthy();
+  });
   it('shows children when done', () => {
     render(
       <JobPanel
