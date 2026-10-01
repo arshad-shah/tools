@@ -15,8 +15,31 @@ import { canvasPx, exportScale, renderScale } from './render-scale';
 import { textFromItems } from './text';
 import type { DocInfo, PageImage, PageImageOptions, PageText } from './types';
 
-// Run pdf.js's parser in this same worker (no nested worker).
-(globalThis as { pdfjsWorker?: unknown }).pdfjsWorker = pdfjsWorker;
+const VERBOSITY = import.meta.env.DEV
+  ? pdfjs.VerbosityLevel.WARNINGS
+  : pdfjs.VerbosityLevel.ERRORS;
+
+/**
+ * Runs pdf.js's parser in this same worker (no nested worker), connected
+ * over a MessageChannel. Handing pdf.js a real port means it does not fall
+ * back to its "fake worker" (and warn about it), and every document shares
+ * one parser instance; destroying a loading task leaves this worker alone.
+ */
+let parser: pdfjs.PDFWorker | null = null;
+function parserWorker(): pdfjs.PDFWorker {
+  if (parser) return parser;
+  const { port1, port2 } = new MessageChannel();
+  pdfjsWorker.WorkerMessageHandler.initializeFromPort(port2);
+  parser = new pdfjs.PDFWorker({
+    // The typings (generated from JSDoc) say `null`; pdf.js takes any port.
+    port: port1 as unknown as null,
+    verbosity: VERBOSITY,
+  });
+  // pdf.js listens with addEventListener, which does not start a port.
+  port1.start();
+  port2.start();
+  return parser;
+}
 
 const asset = (dir: string) =>
   new URL(`/pdfjs/${dir}/`, self.location.origin).href;
@@ -102,11 +125,9 @@ const handlers = {
       // No isEvalSupported here: pdfjs-dist 6 removed the option along with
       // the eval-based PostScript compiler (the CVE-2024-4367 path), so
       // there is nothing to turn off. eval-free.test.ts pins that.
-      // Dev keeps warnings (e.g. the expected "Setting up fake worker", since
-      // the parser deliberately runs in this same worker); prod logs errors only.
-      verbosity: import.meta.env.DEV
-        ? pdfjs.VerbosityLevel.WARNINGS
-        : pdfjs.VerbosityLevel.ERRORS,
+      worker: parserWorker(),
+      // Dev keeps warnings (damaged-file diagnostics); prod logs errors only.
+      verbosity: VERBOSITY,
       disableFontFace: true, // FontFace needs a document; glyphs render as paths instead
       useSystemFonts: false,
       // Must be an explicit boolean: the default probe reads document.baseURI.
