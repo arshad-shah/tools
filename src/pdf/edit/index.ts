@@ -15,3 +15,14 @@ export {
   type PageEditResult,
   type Rotation,
 } from './ops';
+export {
+  imagesToPdf,
+  layoutImagePage,
+  PAGE_SIZES,
+  PX_TO_PT,
+  type ImageInput,
+  type ImagePageLayout,
+  type ImagesToPdfOptions,
+  type Orientation,
+  type PageSizeName,
+} from './images';
