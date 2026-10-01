@@ -2,6 +2,7 @@ import dancingScript from '@fontsource/dancing-script/files/dancing-script-latin
 import greatVibes from '@fontsource/great-vibes/files/great-vibes-latin-400-normal.woff?url';
 import caveat from '@fontsource/caveat/files/caveat-latin-400-normal.woff?url';
 import { ToolError } from '@/shared/lib/errors';
+import type { InkFont, InkLayout } from '@/pdf/edit';
 
 export type SignatureFontId = 'dancing-script' | 'great-vibes' | 'caveat';
 
@@ -46,18 +47,49 @@ export function ensureFontFace(id: SignatureFontId): Promise<void> {
   return p;
 }
 
-/** The same font file, for embedding with fontkit. */
-export async function fetchFontBytes(id: SignatureFontId): Promise<Uint8Array> {
-  const res = await fetch(fontById(id).url);
-  if (!res.ok)
-    throw new ToolError('UNKNOWN', 'Could not load the signature font');
-  return new Uint8Array(await res.arrayBuffer());
+const bytesCache = new Map<SignatureFontId, Promise<Uint8Array>>();
+
+/** The same font file, for embedding with fontkit (fetched once per font). */
+export function fetchFontBytes(id: SignatureFontId): Promise<Uint8Array> {
+  let p = bytesCache.get(id);
+  if (!p) {
+    p = fetch(fontById(id).url).then(async (res) => {
+      if (!res.ok)
+        throw new ToolError('UNKNOWN', 'Could not load the signature font');
+      return new Uint8Array(await res.arrayBuffer());
+    });
+    p.catch(() => bytesCache.delete(id));
+    bytesCache.set(id, p);
+  }
+  return p;
 }
 
-/** Width ÷ height of `text` set in the font (call after ensureFontFace). */
-export function measureTextAspect(text: string, id: SignatureFontId): number {
-  const ctx = document.createElement('canvas').getContext('2d');
-  if (!ctx) return 3;
-  ctx.font = `100px "${fontById(id).family}"`;
-  return Math.max(0.5, ctx.measureText(text).width / 125);
+/** A parsed signature font: layout and outlines for previews, glyph coverage. */
+export type SignatureFont = InkFont & {
+  hasGlyphForCodePoint(codePoint: number): boolean;
+};
+
+const parsed = new Map<SignatureFontId, Promise<SignatureFont>>();
+
+/**
+ * Parses the font with fontkit, the same library that embeds it in the PDF,
+ * so previews and character checks match the output exactly. fontkit is
+ * loaded on demand (it is large).
+ */
+export function loadSignatureFont(id: SignatureFontId): Promise<SignatureFont> {
+  let p = parsed.get(id);
+  if (!p) {
+    p = Promise.all([import('@pdf-lib/fontkit'), fetchFontBytes(id)]).then(
+      ([{ default: fontkit }, bytes]) => fontkit.create(bytes),
+    );
+    p.catch(() => parsed.delete(id));
+    parsed.set(id, p);
+  }
+  return p;
+}
+
+/** Width ÷ height of the inked text, the box aspect a typed signature needs. */
+export function inkAspect(layout: InkLayout): number {
+  const { ink } = layout;
+  return (ink.maxX - ink.minX) / (ink.maxY - ink.minY);
 }

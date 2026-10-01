@@ -20,8 +20,15 @@ import type { ToolProps } from '@/app/tool';
 import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { useObjectUrl } from '@/shared/lib/object-url';
+import { toToolError } from '@/shared/lib/errors';
 import { useJob } from '@/shared/state/useJob';
-import { stamp, type StampContent, type VisualRect } from '@/pdf/edit';
+import {
+  layoutInk,
+  stamp,
+  type InkLayout,
+  type StampContent,
+  type VisualRect,
+} from '@/pdf/edit';
 import { usePdfDocument, type PageInfo } from '@/pdf/render';
 import {
   JobPanel,
@@ -33,12 +40,8 @@ import { PlacementEditor } from './components/PlacementEditor';
 import { SignatureDraw } from './components/SignatureDraw';
 import { SignatureType } from './components/SignatureType';
 import { SignatureUpload } from './components/SignatureUpload';
-import {
-  ensureFontFace,
-  fetchFontBytes,
-  fontById,
-  measureTextAspect,
-} from './lib/fonts';
+import { TypedSignaturePreview } from './components/TypedSignaturePreview';
+import { fetchFontBytes, inkAspect, loadSignatureFont } from './lib/fonts';
 import { clampRect, defaultRect, rectToPixels } from './lib/placement';
 import type { SignatureSource } from './lib/signature';
 
@@ -67,6 +70,9 @@ const PdfSignTool: React.FC<ToolProps> = () => {
   const [pageIndex, setPageIndex] = useState(0);
   const [rect, setRect] = useState<VisualRect | null>(null);
   const [aspect, setAspect] = useState(3);
+  /** Glyph layout of a typed signature (same metrics as the stamped text). */
+  const [typed, setTyped] = useState<InkLayout | null>(null);
+  const [sourceError, setSourceError] = useState<string | null>(null);
   const sourceRun = useRef(0);
   const { doc, loading, error } = usePdfDocument(file);
 
@@ -109,19 +115,29 @@ const PdfSignTool: React.FC<ToolProps> = () => {
   const changeSource = async (next: SignatureSource | null) => {
     const run = ++sourceRun.current;
     job.reset();
+    setSourceError(null);
     if (!next || !doc) {
       setSource(next);
       setRect(null);
       return;
     }
     let ratio: number;
+    let layout: InkLayout | null = null;
     if (next.kind === 'image') ratio = next.width / next.height;
     else {
-      // Measure in the real font; fall back to the system font if it fails.
-      await ensureFontFace(next.fontId).catch(() => {});
+      try {
+        layout = layoutInk(await loadSignatureFont(next.fontId), next.text);
+      } catch (e) {
+        if (run !== sourceRun.current) return;
+        setSourceError(toToolError(e).message);
+        setSource(null);
+        setRect(null);
+        return;
+      }
       if (run !== sourceRun.current) return;
-      ratio = measureTextAspect(next.text, next.fontId);
+      ratio = inkAspect(layout);
     }
+    setTyped(layout);
     setSource(next);
     setAspect(ratio);
     setRect((prev) => fitRect(prev, doc.pages[pageIndex], ratio));
@@ -165,17 +181,12 @@ const PdfSignTool: React.FC<ToolProps> = () => {
         draggable={false}
         className="pointer-events-none size-full object-contain"
       />
-    ) : source?.kind === 'text' && rect && page ? (
-      <span
-        style={{
-          fontFamily: `"${fontById(source.fontId).family}"`,
-          color: source.color,
-          fontSize: rectToPixels(rect, EDITOR_WIDTH / page.width).height * 0.6,
-        }}
-        className="pointer-events-none flex size-full items-center justify-center whitespace-nowrap"
-      >
-        {source.text}
-      </span>
+    ) : source?.kind === 'text' && typed && rect && page ? (
+      <TypedSignaturePreview
+        layout={typed}
+        color={source.color}
+        {...rectToPixels(rect, EDITOR_WIDTH / page.width)}
+      />
     ) : null;
 
   const sourceProps = {
@@ -220,6 +231,11 @@ const PdfSignTool: React.FC<ToolProps> = () => {
                   <TabsContent value="type">
                     <SignatureType {...sourceProps} />
                   </TabsContent>
+                  {sourceError && (
+                    <Alert status="danger">
+                      <AlertDescription>{sourceError}</AlertDescription>
+                    </Alert>
+                  )}
                 </Tabs>
                 <Stack gap="3">
                   <Inline gap="2" align="center">

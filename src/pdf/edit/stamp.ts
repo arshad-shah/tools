@@ -5,6 +5,7 @@ import { assertDrawable } from './fonts';
 import { pageFrame, toPdfPlacement, visualSize } from './geometry';
 import { loadPdf } from './load';
 import { assertIndices } from './ops';
+import { fitInk, layoutInk } from './text-fit';
 
 /** Points, on the page as displayed; origin top-left, y down (like the preview). */
 export interface VisualRect {
@@ -88,17 +89,11 @@ export async function stamp(
       );
     }
     assertDrawable(font, text, 'Your name');
-    const unitW = font.widthOfTextAtSize(text, 1);
-    const unitH = font.heightAtSize(1); // ascender to descender
-    const size = Math.min(r.width / unitW, r.height / unitH);
-    const w = unitW * size;
-    const h = unitH * size;
-    const descent = h - font.heightAtSize(size, { descender: false });
-    const at = toPdfPlacement(
-      frame,
-      { x: r.x + (r.width - w) / 2, y: bottom + (r.height - h) / 2 + descent },
-      0,
-    );
+    // Fit the real ink (script flourishes included), exactly as the
+    // on-screen preview does, so nothing pokes out of the placed box.
+    const fit = fitInk(r, layoutInk(fontkit.create(c.fontBytes), text).ink);
+    const size = fit.size;
+    const at = toPdfPlacement(frame, { x: r.x + fit.x, y: bottom + fit.y }, 0);
     const color = hexToRgb(c.color);
     page.drawText(text, {
       x: at.x,
