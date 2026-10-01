@@ -10,7 +10,8 @@ export {
   type Gap,
 } from './layout';
 export { Heading, Text, Label, Code, Kbd } from './typography';
-export { Button, IconButton, buttonVariants, type ButtonProps } from './button';
+export { Button, IconButton, type ButtonProps } from './button';
+export { buttonVariants } from './button-variants';
 export {
   Card,
   CardHeader,

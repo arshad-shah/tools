@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 /**
  * Groups buttons into a single segmented control — collapses the borders/radii

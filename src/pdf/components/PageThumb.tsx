@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Spinner } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import { usePageBitmap, type PageInfo } from '@/pdf/render';
 import type { Rotation } from '@/pdf/edit';
 import { thumbBoxSize } from './thumb-size';

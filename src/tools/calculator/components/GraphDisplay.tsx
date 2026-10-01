@@ -2,7 +2,7 @@ import { FC, useState } from 'react';
 import * as math from 'mathjs';
 import PlotModule from 'react-plotly.js';
 import { Box, Inline, Label, NumberInput, Stack, Text } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 // react-plotly.js is CommonJS (`exports.default = Plot`); Vite hands the
 // default import back as the module object, so unwrap it when needed.

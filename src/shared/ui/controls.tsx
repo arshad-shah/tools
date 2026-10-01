@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check, Minus, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 /* ------------------------------------------------------------------ *
  * Switch — controlled toggle (role=switch)

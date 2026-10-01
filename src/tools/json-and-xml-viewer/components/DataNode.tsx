@@ -2,7 +2,7 @@
 import React from 'react';
 import { ChevronDown, ChevronRight, Copy, Link2 } from 'lucide-react';
 import { Tooltip } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 /** Tree-row classes (formerly a CSS module). */
 const styles = {

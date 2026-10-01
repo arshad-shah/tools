@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 
 /* ------------------------------------------------------------------ *
  * Spacing / alignment maps — literal classes so Tailwind can see them

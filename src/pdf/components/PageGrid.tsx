@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import type { DocInfo } from '@/pdf/render';
 import type { Rotation } from '@/pdf/edit';
 import { PageThumb } from './PageThumb';

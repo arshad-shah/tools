@@ -52,7 +52,7 @@ import {
   Text,
   Textarea,
 } from '@/shared/ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { useLogParser } from './hooks/useLogParser';
