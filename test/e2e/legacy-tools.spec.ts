@@ -67,22 +67,34 @@ test('jwt-decode accordion triggers have accessible names', async ({
   await expect(page.locator('main button :is(div, p)')).toHaveCount(0);
 });
 
-const PNG_1PX =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-
 test('image-optimizer converts and downloads', async ({ page }) => {
   await page.goto('/image-optimizer');
-  await page.locator('input[type=file]').setInputFiles({
-    name: 'dot.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from(PNG_1PX, 'base64'),
-  });
-  await expect(page.getByText('1 × 1px')).toBeVisible();
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/photo.png');
+  await expect(page.getByText(/^\d+ × \d+px$/)).toBeVisible();
   await page.getByRole('button', { name: 'Convert & compress' }).click();
   await expect(page.getByText('Processing complete')).toBeVisible();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download image' }).click();
-  expect((await download).suggestedFilename()).toBe('dot.optimized.jpeg');
+  expect((await download).suggestedFilename()).toBe('photo.optimized.jpeg');
+});
+
+test('image-optimizer converts an SVG', async ({ page }) => {
+  await page.goto('/image-optimizer');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'logo.svg',
+    mimeType: 'image/svg+xml',
+    buffer: Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="red"/></svg>',
+    ),
+  });
+  await expect(page.getByText('40 × 20px')).toBeVisible();
+  await page.getByRole('button', { name: 'Convert & compress' }).click();
+  await expect(page.getByText('Processing complete')).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download image' }).click();
+  expect((await download).suggestedFilename()).toBe('logo.optimized.jpeg');
 });
 
 test('image-optimizer rejects non-images inline', async ({ page }) => {
