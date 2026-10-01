@@ -5,6 +5,8 @@ import {
   detectKind,
   isOverSoftLimit,
   loadFile,
+  loadTextFile,
+  readText,
   SOFT_SIZE_LIMIT,
 } from './files';
 import { ToolError } from './errors';
@@ -108,5 +110,37 @@ describe('helpers', () => {
   it('flags the soft size limit', () => {
     expect(isOverSoftLimit(SOFT_SIZE_LIMIT)).toBe(false);
     expect(isOverSoftLimit(SOFT_SIZE_LIMIT + 1)).toBe(true);
+  });
+});
+
+describe('readText / loadTextFile', () => {
+  const file = (text: string, name: string) => new File([text], name);
+
+  it('reads UTF-8 text', async () => {
+    expect(await readText(file('héllo', 'a.txt'))).toBe('héllo');
+  });
+  it('returns name, size and text', async () => {
+    const r = await loadTextFile(file('a,b\n1,2', 'data.csv'), {
+      extensions: ['csv', 'tsv'],
+    });
+    expect(r).toEqual({ name: 'data.csv', size: 7, text: 'a,b\n1,2' });
+  });
+  it('matches extensions case-insensitively, with or without a dot', async () => {
+    await expect(
+      loadTextFile(file('x', 'LOG.TXT'), { extensions: ['.txt'] }),
+    ).resolves.toMatchObject({ text: 'x' });
+  });
+  it('rejects a wrong extension with INVALID_FILE naming the file', async () => {
+    await expect(
+      loadTextFile(file('x', 'pic.png'), { extensions: ['csv'] }),
+    ).rejects.toMatchObject({
+      code: 'INVALID_FILE',
+      message: expect.stringContaining('pic.png'),
+    });
+  });
+  it('rejects oversize files with TOO_LARGE', async () => {
+    await expect(
+      loadTextFile(file('12345', 'big.txt'), { maxBytes: 4 }),
+    ).rejects.toMatchObject({ code: 'TOO_LARGE' });
   });
 });

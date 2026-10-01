@@ -47,7 +47,7 @@ export {
 export { ButtonGroup } from './button-group';
 export { Tooltip } from './tooltip';
 export { Statistic } from './stat';
-export { FileUpload } from './file-upload';
+export { FilePicker, FileUpload } from './file-upload';
 export {
   Accordion,
   AccordionItem,

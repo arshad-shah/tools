@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -80,3 +80,45 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   );
 };
 FileUpload.displayName = 'FileUpload';
+
+interface FilePickerProps {
+  onFiles: (files: File[]) => void;
+  accept?: string;
+  multiple?: boolean;
+  /** Render the trigger; call `open()` to show the file dialog. */
+  children: (open: () => void) => React.ReactNode;
+}
+
+/**
+ * Headless file picker for icon-button style triggers. The kit owns the only
+ * hidden `<input type="file">`; tools never render one themselves.
+ */
+export const FilePicker: React.FC<FilePickerProps> = ({
+  onFiles,
+  accept,
+  multiple,
+  children,
+}) => {
+  // A callback ref into state (not useRef) because `open` is handed to
+  // `children` during render.
+  const [input, setInput] = useState<HTMLInputElement | null>(null);
+  const open = useCallback(() => input?.click(), [input]);
+  return (
+    <>
+      {children(open)}
+      <input
+        ref={setInput}
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = '';
+          if (files.length) onFiles(files);
+        }}
+      />
+    </>
+  );
+};
+FilePicker.displayName = 'FilePicker';
