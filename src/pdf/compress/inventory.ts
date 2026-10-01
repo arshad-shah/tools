@@ -183,6 +183,11 @@ export interface ClassifyInput {
   colorKeyMask: boolean;
   predictor: number;
   smask: 'none' | 'ok' | 'unsupported' | 'shared';
+  /**
+   * DCT with explicit /DecodeParms (e.g. /ColorTransform): a browser decoder
+   * follows the JPEG's own markers instead, and could get the colours wrong.
+   */
+  hasDecodeParms?: boolean;
 }
 
 const FILTER_REASON: Record<string, string> = {
@@ -218,6 +223,7 @@ export function classifyImage(i: ClassifyInput): string | null {
   if (i.colorKeyMask) return 'colour-key mask';
   if (f === 'FlateDecode' && i.predictor > 1 && i.predictor < 10)
     return 'TIFF predictor';
+  if (f === 'DCTDecode' && i.hasDecodeParms) return 'DCT decode parameters';
   if (i.smask === 'unsupported') return 'unsupported soft mask';
   if (i.smask === 'shared') return 'shared soft mask';
   return null;
@@ -301,7 +307,9 @@ export function inventoryImages(doc: PDFDocument): ImageEntry[] {
     const p = predictorOf(s.dict);
     const okFilter =
       f.length === 0 ||
-      (f.length === 1 && (f[0] === 'FlateDecode' || f[0] === 'DCTDecode'));
+      (f.length === 1 &&
+        (f[0] === 'FlateDecode' ||
+          (f[0] === 'DCTDecode' && !s.dict.has(PDFName.of('DecodeParms')))));
     // /Matte (pre-multiplied colour) and /Decode change what the samples
     // mean; resampling those masks independently would be wrong.
     return okFilter &&
@@ -331,6 +339,7 @@ export function inventoryImages(doc: PDFDocument): ImageEntry[] {
         colorKeyMask: mask instanceof PDFArray,
         predictor: predictorOf(d),
         smask: smaskStatus(smask),
+        hasDecodeParms: d.has(PDFName.of('DecodeParms')),
       });
       return {
         ref,

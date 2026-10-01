@@ -48,6 +48,12 @@ describe('contentOps', () => {
     expect(ops(b).map((o) => o.op)).toEqual(['q', 'BI', 'Q']);
   });
 
+  it('copes with a huge run of regular bytes (review M9)', () => {
+    const long = new Uint8Array(300_000).fill(0x61);
+    const r = ops(new Uint8Array([...enc('q '), ...long, ...enc(' Q')]));
+    expect(r.map((o) => o.op.length)).toEqual([1, 300_000, 1]);
+  });
+
   it('survives unterminated strings, dicts and arrays', () => {
     expect(ops(enc('q (open')).map((o) => o.op)).toEqual(['q']);
     expect(ops(enc('q << /A 1')).map((o) => o.op)).toEqual(['q']);

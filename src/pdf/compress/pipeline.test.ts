@@ -102,3 +102,42 @@ describe('compressPdf', () => {
     ).rejects.toMatchObject({ name: 'AbortError' });
   });
 });
+
+describe('PDF/A-1 input (review M10)', () => {
+  it('does not generate object streams, and says why', async () => {
+    const doc = await PDFDocument.create();
+    doc.addPage([200, 200]);
+    const xmp =
+      '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" pdfaid:part="1" pdfaid:conformance="B"/></rdf:RDF></x:xmpmeta>';
+    doc.catalog.set(
+      PDFName.of('Metadata'),
+      doc.context.register(
+        doc.context.stream(new TextEncoder().encode(xmp), {
+          Type: 'Metadata',
+          Subtype: 'XML',
+        }),
+      ),
+    );
+    const input = await doc.save({ useObjectStreams: false });
+    const seen: string[] = [];
+    const spy: CompressDeps = {
+      ...deps,
+      optimize: async (b, o) => {
+        seen.push(String(o.objectStreams));
+        return deps.optimize(b, o, new AbortController().signal);
+      },
+    };
+    const { report } = await compressPdf(input, PRESETS.lossless, spy, ctx());
+    expect(seen).toEqual(['preserve']);
+    expect(report.warnings).toContain(
+      'This is a PDF/A-1 file, so object streams were not generated (PDF/A-1 does not allow them).',
+    );
+    await compressPdf(
+      await makeTextPdf({ pages: 1 }),
+      PRESETS.lossless,
+      spy,
+      ctx(),
+    );
+    expect(seen).toEqual(['preserve', 'generate']);
+  });
+});

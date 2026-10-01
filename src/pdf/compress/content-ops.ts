@@ -15,8 +15,13 @@ const DELIM = new Set([
   0x28, 0x29, 0x3c, 0x3e, 0x5b, 0x5d, 0x7b, 0x7d, 0x2f, 0x25,
 ]);
 const isRegular = (c: number) => !WS.has(c) && !DELIM.has(c);
-const text = (b: Uint8Array, s: number, e: number) =>
-  String.fromCharCode(...b.subarray(s, e));
+/** Bytes as a latin1 string, in chunks: spreading a huge run would throw. */
+function text(b: Uint8Array, s: number, e: number): string {
+  let out = '';
+  for (let i = s; i < e; i += 8192)
+    out += String.fromCharCode(...b.subarray(i, Math.min(e, i + 8192)));
+  return out;
+}
 const NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)$/;
 
 function skipString(b: Uint8Array, i: number): number {

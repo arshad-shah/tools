@@ -70,6 +70,33 @@ export interface CompressDeps {
   ): Promise<{ bytes: Uint8Array; warnings: string[] }>;
 }
 
+const PDFA_PART = Array.from('pdfaid:part', (c) => c.charCodeAt(0));
+
+/**
+ * Whether the file claims PDF/A-1 in uncompressed XMP (element or attribute
+ * form). PDF/A-1 forbids object streams, so they must not be generated.
+ * Compressed XMP is not looked into; such files are rare.
+ */
+export function claimsPdfA1(bytes: Uint8Array): boolean {
+  outer: for (let i = 0; i + PDFA_PART.length < bytes.length; i++) {
+    for (let k = 0; k < PDFA_PART.length; k++)
+      if (bytes[i + k] !== PDFA_PART[k]) continue outer;
+    let j = i + PDFA_PART.length;
+    if (bytes[j] === 0x3d && bytes[j + 1] === 0x22)
+      j += 2; // ="
+    else if (bytes[j] === 0x3e)
+      j += 1; // >
+    else continue;
+    while (bytes[j] === 0x20 || bytes[j] === 0x0a || bytes[j] === 0x0d) j++;
+    if (bytes[j] === 0x31 && !(bytes[j + 1] >= 0x30 && bytes[j + 1] <= 0x39))
+      return true;
+  }
+  return false;
+}
+
+export const PDFA1_WARNING =
+  'This is a PDF/A-1 file, so object streams were not generated (PDF/A-1 does not allow them).';
+
 /**
  * Spec §3.5's pipeline: (1) recompress images / strip metadata with pdf-lib,
  * (2) restructure with qpdf, (3) keep the original if nothing was gained.
@@ -112,10 +139,11 @@ export async function compressPdf(
   ctx.signal.throwIfAborted();
   ctx.progress({ done: 0, total: 1, label: 'Restructuring' });
   const q = settings.qpdf;
+  const pdfA1 = q.objectStreams && claimsPdfA1(bytes);
   const optimized = await deps.optimize(
     current,
     {
-      objectStreams: q.objectStreams ? 'generate' : 'preserve',
+      objectStreams: q.objectStreams && !pdfA1 ? 'generate' : 'preserve',
       compressStreams: true,
       recompressFlate: q.recompressFlate,
       removeUnreferenced: q.removeUnreferenced,
@@ -139,7 +167,9 @@ export async function compressPdf(
       outputSize: out.length,
       stages,
       images,
-      warnings: optimized.warnings,
+      warnings: pdfA1
+        ? [PDFA1_WARNING, ...optimized.warnings]
+        : optimized.warnings,
       keptOriginal,
     },
   };

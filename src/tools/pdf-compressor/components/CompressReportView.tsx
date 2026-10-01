@@ -89,9 +89,7 @@ export const CompressReportView: React.FC<CompressReportViewProps> = ({
       {warnings.length > 0 && (
         <Accordion type="single">
           <AccordionItem value="warnings">
-            <AccordionTrigger>
-              qpdf warnings ({warnings.length})
-            </AccordionTrigger>
+            <AccordionTrigger>Warnings ({warnings.length})</AccordionTrigger>
             <AccordionContent>
               <pre className="text-xs whitespace-pre-wrap">
                 {warnings.join('\n')}
