@@ -169,3 +169,48 @@ describe('PageGrid roving focus', () => {
     expect(tabbable()).toEqual([-1, -1, 0]);
   });
 });
+
+describe('PageGrid selection semantics', () => {
+  beforeEach(() => {
+    vi.stubGlobal('IntersectionObserver', NoopObserver);
+  });
+
+  it('renders a real checkbox per tile instead of aria-selected', () => {
+    const onToggle = vi.fn();
+    renderGrid({ onToggle, selected: new Set(['k1']) });
+    const boxes = screen.getAllByRole('checkbox');
+    expect(boxes.map((b) => (b as HTMLInputElement).checked)).toEqual([
+      false,
+      true,
+      false,
+    ]);
+    expect(
+      screen.getByRole('checkbox', { name: 'Select page 3' }),
+    ).toBeTruthy();
+    for (const li of screen.getAllByRole('listitem'))
+      expect(li.hasAttribute('aria-selected')).toBe(false);
+    fireEvent.click(boxes[2], { shiftKey: true });
+    expect(onToggle).toHaveBeenCalledExactlyOnceWith('k2', {
+      shift: true,
+      meta: true,
+    });
+  });
+
+  it('has no checkboxes when selection is off', () => {
+    renderGrid({});
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('names tiles by original page and current position', () => {
+    renderGrid({ tiles: [tiles[2], tiles[0], tiles[1]] });
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((li) => li.getAttribute('aria-label')),
+    ).toEqual([
+      'Page 3, position 1',
+      'Page 1, position 2',
+      'Page 2, position 3',
+    ]);
+  });
+});

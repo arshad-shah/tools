@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { initialTiles, removeTiles, rotateTiles, tilesToEdits } from './edits';
+import {
+  initialTiles,
+  isPristine,
+  removeTiles,
+  rotateTiles,
+  tilesToEdits,
+} from './edits';
 
 describe('organize edits', () => {
   it('starts with one unrotated tile per page', () => {
@@ -23,5 +29,19 @@ describe('organize edits', () => {
       { source: 2, rotate: 0 },
       { source: 0, rotate: 90 },
     ]);
+  });
+});
+
+describe('isPristine', () => {
+  it('is true only for the untouched document', () => {
+    expect(isPristine(initialTiles(3), 3)).toBe(true);
+    expect(isPristine(initialTiles(3).reverse(), 3)).toBe(false);
+    expect(
+      isPristine(rotateTiles(initialTiles(3), new Set(['p1']), 90), 3),
+    ).toBe(false);
+    expect(isPristine(removeTiles(initialTiles(3), new Set(['p2'])), 3)).toBe(
+      false,
+    );
+    expect(isPristine([], 0)).toBe(true);
   });
 });
