@@ -16,8 +16,10 @@ import {
 
 const xmpOf = async (bytes: Uint8Array) => {
   const doc = await PDFDocument.load(bytes);
-  const s = doc.catalog.lookupMaybe(PDFName.of('Metadata'), PDFRawStream);
-  return s ? new TextDecoder().decode(decodePDFRawStream(s).decode()) : null;
+  const s = doc.catalog.lookup(PDFName.of('Metadata'));
+  return s instanceof PDFRawStream
+    ? new TextDecoder().decode(decodePDFRawStream(s).decode())
+    : null;
 };
 
 describe('metadata', () => {
