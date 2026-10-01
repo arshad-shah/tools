@@ -71,6 +71,12 @@ export function createPdfRender(
       if (call.generation < client.generation) suspects.add(call.bytes);
   });
 
+  /**
+   * Known gap, accepted: a call the client cancels leaves `running` at once,
+   * while the worker may still be executing it. A crash it then causes is
+   * attributed to no document. The RPC client's cap on consecutive restarts
+   * still bounds that case.
+   */
   const track = <T>(
     bytes: Uint8Array | undefined,
     call: () => Promise<T>,
