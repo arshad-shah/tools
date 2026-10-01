@@ -1,4 +1,3 @@
-import fontkit from '@pdf-lib/fontkit';
 import { degrees, rgb, type PDFFont, type PDFImage } from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
 import { hexToRgb } from './color';
@@ -75,6 +74,8 @@ export async function stamp(
   } else {
     const text = c.text.trim();
     if (!text) throw invalid('Type your name');
+    // Loaded on demand: fontkit is large and only typed signatures need it.
+    const { default: fontkit } = await import('@pdf-lib/fontkit');
     doc.registerFontkit(fontkit);
     let font: PDFFont;
     try {
