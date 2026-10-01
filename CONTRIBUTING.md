@@ -18,99 +18,124 @@ The first install wires up the pre-commit hook (`pnpm exec lint-staged`), which 
 
 ## Useful scripts
 
-| Script              | What it does                                              |
-| ------------------- | --------------------------------------------------------- |
-| `pnpm dev`          | Vite dev server with HMR                                  |
-| `pnpm build`        | Type-check (`tsc -b`) + production build                  |
-| `pnpm lint`         | ESLint over the whole repo                                |
-| `pnpm typecheck`    | `tsc --noEmit` (faster than `build` for type-only checks) |
-| `pnpm format`       | Prettier-write everything                                 |
-| `pnpm format:check` | CI-style Prettier check                                   |
-| `pnpm preview`      | Build + run via Wrangler (Cloudflare local)               |
+| Script              | What it does                                                          |
+| ------------------- | --------------------------------------------------------------------- |
+| `pnpm dev`          | Vite dev server with HMR                                              |
+| `pnpm build`        | Type-check (`tsc -b`) + production build                              |
+| `pnpm lint`         | ESLint over the whole repo                                            |
+| `pnpm typecheck`    | `tsc -b` (faster than `build` for type-only checks)                   |
+| `pnpm test`         | Vitest unit and component tests (`src/**/*.test.ts(x)`, `test/*.ts`)  |
+| `pnpm test:e2e`     | Playwright end-to-end tests in `test/e2e` (starts its own dev server) |
+| `pnpm format`       | Prettier-write everything                                             |
+| `pnpm format:check` | CI-style Prettier check                                               |
+| `pnpm preview`      | Build + run via Wrangler (Cloudflare local)                           |
+
+## Project layout
+
+```
+src/
+  app/        App shell: router, Dashboard, ToolLayout, error boundaries,
+              registry.ts (tool discovery) and tool.ts (defineTool, ToolProps)
+  shared/
+    ui/       the UI kit (Button, Card, Tabs, FileUpload, …), imported from '@/shared/ui'
+    lib/      browser plumbing: download, clipboard, files, format, errors, notify, id, worker-rpc
+    state/    createToolStore (persisted zustand stores) and useJob (async work with progress/cancel)
+  pdf/
+    edit/        pdf-lib based editing (load, page ops, stamps, forms, markup)
+    render/      pdf.js rendering in a worker, thumbnails and text extraction
+    qpdf/        qpdf-wasm wrapper (encrypt, unlock, optimise) — arrives with the PDF security tools
+    compress/    the PDF compression pipeline — arrives with the PDF security tools
+    components/  shared PDF UI (dropzone, page grid, thumbnails, job panel, result files)
+  theme/      terminal.css: Tailwind v4 theme tokens (dark-only)
+  tools/<id>/ one folder per tool (see below)
+test/
+  e2e/        Playwright specs; smoke.spec.ts visits every enabled tool
+  fixtures/   generated PDF/image fixtures (`pnpm fixtures`)
+```
+
+Everything is client-side: no document bytes leave the browser.
 
 ## Project conventions
 
-- **UI components**: use `@arshad-shah/cynosure-react` primitives (`Stack`, `Inline`, `Card`, `Button`, …). Don't introduce Tailwind, CSS-in-JS, or styled-components — Cynosure tokens cover spacing, colors, and theming.
-- **Theming**: two custom themes (`dashboard-light` / `dashboard-dark`) defined in `src/theme/dashboard-theme.css`. Always go through Cynosure semantic tokens (`color="accent.solid"`, `background="bg.surface"`) so changes track both themes automatically.
+- **Imports**: use `@/` paths. Relative imports stay inside the tool folder (`./x`, `../lib/x`); never `../../`.
+- **UI**: build from the kit in `@/shared/ui` and Tailwind theme tokens (`bg-surface`, `text-fg-muted`, `border-line`, `text-danger`, …). No CSS modules or JS style objects; inline `style` only for data-driven values.
+- **Browser plumbing**: use the shared helpers, never hand-rolled versions — `saveBlob`/`saveZip`/`deriveFilename` for downloads, `useClipboard`/`copyText` for the clipboard, `loadFile`/`readBytes` and the kit's `FileUpload`/`FilePicker` for files, `formatBytes` for sizes, `notify` for toasts, `newId()` for ids.
+- **Errors**: no silent failures. User-visible failures go through `notify.error(...)` or an inline kit `Alert`.
+- **State**: local `useState` first. Settings or data that must survive a reload go in a `store.ts` built with `createToolStore` (stored under `kit:store:tool:<id>`).
 - **Icons**: `lucide-react`.
-- **State**: local `useState` first. Reach for `@reduxjs/toolkit` only when state needs to cross tool boundaries.
-- **Routing**: each tool registers itself once; the router picks it up automatically (see below).
 
 ## Adding a new tool
 
-### 1. Build the tool component
+A tool is one folder whose name is the tool id, which is also its URL (`/<id>`):
 
-Create `src/tools/YourTool/YourTool.tsx`. Keep tool-internal pieces (`utils/`, sub-components) inside the tool's folder.
-
-```tsx
-// src/tools/YourTool/YourTool.tsx
-import React from 'react';
-import {
-  Card,
-  CardBody,
-  Stack,
-  Heading,
-  Text,
-} from '@arshad-shah/cynosure-react';
-import { ToolProps } from '../../types/ToolTypes';
-
-const YourTool: React.FC<ToolProps> = ({ definition }) => (
-  <Stack gap="4">
-    <Card variant="elevated" size="md">
-      <CardBody>
-        <Stack gap="2">
-          <Heading level={2} size="lg">
-            {definition.name}
-          </Heading>
-          <Text variant="caption">{definition.description}</Text>
-        </Stack>
-      </CardBody>
-    </Card>
-  </Stack>
-);
-
-export default YourTool;
+```
+src/tools/<tool-id>/
+  index.ts      manifest: default-exports defineTool({...})
+  Tool.tsx      the tool component (lazy-loaded)
+  types.ts      the tool's types (optional)
+  store.ts      persisted state via createToolStore (optional)
+  components/   PascalCase .tsx sub-components (optional)
+  hooks/        useX.ts hooks (optional)
+  lib/          kebab-case pure .ts helpers, with tests next to them (optional)
 ```
 
-`ToolLayout` already renders the back button, header, and theme toggle around your component — don't render those yourself.
-
-### 2. Register the tool definition
-
-Add an entry to `TOOL_DEFINITIONS` in `src/data/ToolDefinitions.ts`:
+### 1. The manifest
 
 ```ts
+// src/tools/your-tool/index.ts
 import { Calculator } from 'lucide-react';
+import { defineTool } from '@/app/tool';
 
-{
-  id: 'your-tool-id',          // URL slug
+export default defineTool({
+  id: 'your-tool', // must equal the folder name
   name: 'Your Tool',
   description: 'One-line description shown on the dashboard card',
-  icon: Calculator,            // lucide-react icon
-  enabled: true,
-  category: 'development',     // or 'design' | 'security' | 'productivity' | …
+  icon: Calculator,
+  category: 'data', // see ToolCategory in src/app/tool.ts
   version: '1.0.0',
-  isNew: true,                 // shows the "New" badge
+  enabled: true,
+  isNew: true, // shows the "New" badge
+  load: () => import('./Tool'),
+});
+```
+
+`src/app/registry.ts` discovers every `src/tools/*/index.ts` with `import.meta.glob`. It throws at startup if a manifest is malformed, if two tools share an id, or if the folder name differs from the id. There is nothing else to register: the dashboard card, route, search and favourites pick the tool up automatically.
+
+### 2. The component
+
+```tsx
+// src/tools/your-tool/Tool.tsx
+import type { ToolProps } from '@/app/tool';
+import { Card, CardBody, Stack, Text } from '@/shared/ui';
+
+export default function YourTool({ definition }: ToolProps) {
+  return (
+    <Stack gap="4">
+      <Card>
+        <CardBody>
+          <Text>{definition.description}</Text>
+        </CardBody>
+      </Card>
+    </Stack>
+  );
 }
 ```
 
-### 3. Register the component
+`ToolLayout` already renders the back button and header around your component, and wraps it in an error boundary; don't render those yourself.
 
-In `src/registry/ToolRegistry.ts`, register your component:
+### 3. Tests
 
-```ts
-import YourTool from '../tools/YourTool/YourTool';
-
-toolRegistry.register('your-tool-id', YourTool);
-```
-
-That's it — the dashboard card, route (`/your-tool-id`), search index, and favorites integration all light up automatically.
+- Put unit tests next to the code (`lib/parse.test.ts`). Vitest runs them with `pnpm test`.
+- The Playwright smoke test (`test/e2e/smoke.spec.ts`) visits every enabled tool and fails on any console error, so a new tool is covered automatically. Add a focused spec in `test/e2e/` for flows such as uploads and downloads.
+- `pnpm test:e2e` starts a dev server on port 5174. Set `E2E_PORT` to run several checkouts side by side, e.g. `E2E_PORT=5193 pnpm test:e2e`.
 
 ## Before you open a PR
 
 - [ ] `pnpm lint` clean
 - [ ] `pnpm typecheck` clean
+- [ ] `pnpm test` passes
 - [ ] `pnpm build` succeeds
-- [ ] Tested in both light and dark themes
+- [ ] `pnpm test:e2e` passes
 - [ ] Tested at mobile, tablet, and desktop widths
 - [ ] No new dependencies added without discussion in the PR
 
