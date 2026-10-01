@@ -118,6 +118,20 @@ describe('computeHmac', () => {
   });
 });
 
+describe('empty message', () => {
+  it('hashes the empty string to the published digests', () => {
+    expect(computeHash('sha256', '')).toBe(
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    );
+    expect(computeHash('sha3-256', '')).toBe(
+      'a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a',
+    );
+    expect(computeHmac('hmac-sha256', parseKey('key', 'text'), '')).toBe(
+      createHmac('sha256', 'key').update('').digest('hex'),
+    );
+  });
+});
+
 describe('parseKey', () => {
   it('accepts hex with whitespace and either case', () => {
     expect(Buffer.from(parseKey('0B 0b\n0B', 'hex')).toString('hex')).toBe(

@@ -15,6 +15,7 @@ import {
   Label,
   Select,
   Stack,
+  Switch,
   Text,
   Textarea,
 } from '@/shared/ui';
@@ -47,6 +48,10 @@ const HashGenerator: React.FC = () => {
   const [selected, setSelected] = useState<string>('all');
   const [hmacKey, setHmacKey] = useState('');
   const [keyFormat, setKeyFormat] = useState<KeyFormat>('text');
+  // An empty message is a valid input (SHA-256("") is well known), but
+  // only hashed when asked, so the page does not open full of results.
+  const [hashEmpty, setHashEmpty] = useState(false);
+  const hasInput = input !== '' || hashEmpty;
   const { copiedKey, copy } = useClipboard();
 
   const items = useMemo(
@@ -71,7 +76,7 @@ const HashGenerator: React.FC = () => {
   }, [hmacKey, keyFormat]);
 
   const results = useMemo((): Result[] => {
-    if (!input) return [];
+    if (!hasInput) return [];
     const out: Result[] = [];
     const run = (id: string, name: string, fn: () => string) => {
       try {
@@ -92,7 +97,7 @@ const HashGenerator: React.FC = () => {
       }
     }
     return out;
-  }, [input, selected, key.bytes]);
+  }, [input, hasInput, selected, key.bytes]);
 
   return (
     <Stack gap="6">
@@ -120,6 +125,17 @@ const HashGenerator: React.FC = () => {
                 placeholder="Enter text to generate hashes…"
                 rows={4}
               />
+              {!input && (
+                <Inline gap="2" align="center">
+                  <Switch
+                    id="hash-empty"
+                    checked={hashEmpty}
+                    onCheckedChange={setHashEmpty}
+                    aria-label="Hash an empty message"
+                  />
+                  <Label htmlFor="hash-empty">Hash an empty message</Label>
+                </Inline>
+              )}
             </Stack>
 
             <Stack gap="2">
@@ -171,7 +187,7 @@ const HashGenerator: React.FC = () => {
         </Alert>
       )}
 
-      {!input ? (
+      {!hasInput ? (
         <Alert status="info">
           <AlertDescription>
             Enter text above to generate hash values.

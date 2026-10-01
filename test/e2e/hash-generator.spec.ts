@@ -31,3 +31,18 @@ test('hash-generator offers FIPS 202 SHA3-256 and a labelled Keccak-256', async 
     page.getByRole('heading', { name: 'Keccak-256 (Ethereum)' }),
   ).toBeVisible();
 });
+
+test('hash-generator can hash an empty message', async ({ page }) => {
+  await page.goto('/hash-generator');
+  await expect(page.getByTestId('hash-sha256')).toHaveCount(0);
+  await page.getByRole('switch', { name: 'Hash an empty message' }).click();
+  await expect(page.getByTestId('hash-sha256')).toHaveText(
+    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+  );
+  // HMAC of the empty message once a key is set (RFC 4231 style check
+  // against node:crypto: HMAC-SHA256("key", "")).
+  await page.getByLabel('HMAC secret key').fill('key');
+  await expect(page.getByTestId('hash-hmac-sha256')).toHaveText(
+    '5d5d139563c95b5967b9bd9a8c9b233a9dedb45072794cd232dc1b74832607d0',
+  );
+});
