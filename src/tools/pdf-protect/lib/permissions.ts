@@ -19,13 +19,18 @@ export const DEFAULT_PERMISSIONS: PermissionChoices = {
   assemble: false,
 };
 
+/**
+ * Readers treat "annotate" (bit 6) as also allowing form filling, so comments
+ * imply forms; the UI shows the forms box as on and locked while comments
+ * are allowed.
+ */
 export function toQpdfPermissions(c: PermissionChoices): Permissions {
   return {
     print: c.printing,
     modify: c.modify ? 'all' : 'none',
     extract: c.copy,
     annotate: c.annotate,
-    form: c.fillForms,
+    form: c.fillForms || c.annotate,
     assemble: c.assemble,
   };
 }
