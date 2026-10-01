@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { Star, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import {
   Container,
   Section,
@@ -20,8 +20,9 @@ import { cn } from '@/shared/lib/cn';
 import { getEnabledTools } from './registry';
 import type { ToolDefinition } from './tool';
 import Footer from './Footer';
+import Brand from './Brand';
 
-/** A mono section label with count and a trailing hairline rule. */
+/** A section label with count and a trailing hairline rule. */
 const SectionLabel: React.FC<{
   label: string;
   count: number;
@@ -29,7 +30,7 @@ const SectionLabel: React.FC<{
 }> = ({ label, count, icon }) => (
   <Inline gap="3" align="center">
     {icon}
-    <span className="font-mono text-sm font-bold text-fg">{label}</span>
+    <span className="text-sm font-semibold text-fg">{label}</span>
     <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[0.65rem] text-fg-subtle">
       {count}
     </span>
@@ -94,19 +95,20 @@ const Dashboard: React.FC = () => {
         tabIndex={0}
         onClick={() => navigate(`/${tool.id}`)}
         onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             navigate(`/${tool.id}`);
           }
         }}
-        className="group flex cursor-pointer flex-col gap-2.5 rounded-lg border border-line bg-surface p-4 transition-[transform,border-color] duration-150 hover:-translate-y-0.5 hover:border-accent focus-visible:border-accent"
+        className="group flex cursor-pointer flex-col gap-2.5 rounded-2xl border border-line bg-surface p-5 transition-[transform,border-color,background-color] duration-150 hover:-translate-y-0.5 hover:border-accent/50 hover:bg-surface-subtle focus-visible:border-accent motion-reduce:transform-none"
       >
         <div className="flex items-start justify-between">
           <span
             aria-hidden
-            className="flex size-9 items-center justify-center rounded-md border border-line-strong bg-surface-subtle text-accent"
+            className="flex size-11 items-center justify-center rounded-xl border border-line-strong bg-surface-subtle text-accent"
           >
-            <Icon size={18} />
+            <Icon size={21} />
           </span>
           <button
             type="button"
@@ -119,7 +121,7 @@ const Dashboard: React.FC = () => {
               toggleFavorite(tool.id);
             }}
             className={cn(
-              'transition-colors',
+              'flex size-9 items-center justify-center rounded-lg transition-colors',
               isFavorite ? 'text-accent' : 'text-fg-faint hover:text-fg-muted',
             )}
           >
@@ -130,7 +132,7 @@ const Dashboard: React.FC = () => {
         <p className="text-xs leading-relaxed text-fg-muted">
           {tool.description}
         </p>
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-auto flex items-center gap-2 pt-3">
           {tool.isNew && (
             <Badge variant="solid" tone="accent" size="sm" mono>
               NEW
@@ -144,6 +146,11 @@ const Dashboard: React.FC = () => {
               v{tool.version}
             </span>
           )}
+          <ArrowUpRight
+            size={15}
+            aria-hidden
+            className="ml-auto text-fg-subtle transition-colors group-hover:text-accent"
+          />
         </div>
       </div>
     );
@@ -151,32 +158,45 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-terminal-grid"
-      />
-      <Section as="main" className="py-12">
+      <Section as="header" className="border-b border-line py-5">
+        <Container size="xl">
+          <Inline justify="between" gap="4">
+            <Brand />
+            <span className="inline-flex items-center gap-2 text-xs text-fg-muted">
+              <ShieldCheck size={16} className="text-accent" aria-hidden />
+              Private by design
+            </span>
+          </Inline>
+        </Container>
+      </Section>
+      <Section as="main" className="brand-dashboard py-8 sm:py-12">
         <Container size="xl">
           <Stack gap="8">
-            {/* Prompt header */}
-            <Stack gap="2">
-              <h1 className="flex items-center font-mono text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
-                <span className="text-fg-faint">~/</span>tools
-                <span
-                  aria-hidden
-                  className="ml-1 inline-block h-7 w-2.5 animate-caret bg-accent sm:h-8"
-                />
+            <Stack gap="4" className="max-w-2xl pb-2 sm:pb-4">
+              <Text
+                mono
+                size="xs"
+                tone="muted"
+                className="uppercase tracking-widest"
+              >
+                Small tools. Real possibilities.
+              </Text>
+              <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-fg sm:text-6xl">
+                Your everyday work,
+                <br />
+                <span className="text-accent">simplified.</span>
               </h1>
-              <Text mono size="sm" tone="muted">
-                {tools.length} utilities · {categories.join(' / ')}
+              <Text size="md" tone="muted" className="max-w-lg leading-relaxed">
+                {tools.length} useful tools for documents, development, and
+                everything in between. Right here in your browser.
               </Text>
             </Stack>
 
-            {/* grep search */}
+            {/* Search the tool registry */}
             <SearchInput
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="grep tools…"
+              placeholder="Find a tool — try PDF, JSON, or colour…"
               size="lg"
               aria-label="Search tools"
             />
@@ -188,17 +208,18 @@ const Dashboard: React.FC = () => {
                   const active = selectedCategory === category;
                   return (
                     <button
-                      key={category || 'all'}
+                      key={category || 'All tools'}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => setSelectedCategory(category)}
                       className={cn(
-                        'rounded-md border px-3 py-1.5 font-mono text-xs transition-colors',
+                        'rounded-full border px-4 py-2 text-xs font-medium transition-colors',
                         active
                           ? 'border-accent bg-accent font-bold text-accent-ink'
                           : 'border-line text-fg-muted hover:border-line-strong hover:text-fg',
                       )}
                     >
-                      {category || 'all'}
+                      {category || 'All tools'}
                     </button>
                   );
                 })}
@@ -209,7 +230,7 @@ const Dashboard: React.FC = () => {
             {favoriteTools.length > 0 && (
               <Stack gap="4">
                 <SectionLabel
-                  label="favorites"
+                  label="Your favourites"
                   count={favoriteTools.length}
                   icon={
                     <Star
@@ -228,7 +249,7 @@ const Dashboard: React.FC = () => {
             {/* All tools */}
             <Stack gap="4">
               <SectionLabel
-                label={selectedCategory || 'all tools'}
+                label={selectedCategory || 'All tools'}
                 count={filteredTools.length}
               />
               {filteredTools.length > 0 ? (

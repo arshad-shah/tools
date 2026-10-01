@@ -11,8 +11,19 @@ const READY: Record<string, string> = {
 
 test('dashboard lists tools', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('tools');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your everyday work,');
   await expect(page.getByText('PDF Merger')).toBeVisible();
+});
+
+test('keyboard favourite stays on the dashboard and persists', async ({ page }) => {
+  await page.goto('/');
+  const favorite = page.getByRole('button', { name: 'Add to favorites', exact: true }).first();
+  await favorite.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText('Your favourites', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Your favourites', { exact: true })).toBeVisible();
 });
 
 test('footer shows on dashboard and tool pages with per-tool issue link', async ({

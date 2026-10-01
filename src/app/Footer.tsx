@@ -1,4 +1,5 @@
 import React from 'react';
+import Brand from './Brand';
 import { Container, Section, Inline, Text } from '@/shared/ui';
 import type { ToolDefinition } from './tool';
 import { getEnabledTools } from './registry';
@@ -60,15 +61,7 @@ const Footer: React.FC<{ tool?: ToolDefinition }> = ({ tool }) => {
           className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2"
         >
           <Inline gap="3" wrap>
-            <span className="inline-flex items-baseline gap-1.5 font-bold text-fg">
-              <span>
-                <span className="text-fg-faint">~/</span>tools
-              </span>
-              <span
-                aria-hidden
-                className="inline-block h-3 w-1.5 animate-caret bg-accent"
-              />
-            </span>
+            <Brand />
             <Item>
               <span>{toolCount} tools</span>
             </Item>
