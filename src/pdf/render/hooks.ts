@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { BitmapCache } from './bitmap-cache';
 import {
@@ -24,15 +24,26 @@ interface DocState {
 
 interface OpenResult {
   file: { bytes: Uint8Array };
+  /** Worker generation the doc was opened in. */
+  generation: number;
   doc: DocInfo | null;
   error: ToolError | null;
 }
 
-/** Opens `file` in the render worker; closes it on change/unmount. */
+/**
+ * Opens `file` in the render worker; closes it on change/unmount. If the
+ * worker crashes and restarts, every document it held is gone: the hook
+ * notices the new generation and reopens the same bytes (or reports the
+ * error, e.g. when the worker keeps crashing), so nothing waits forever.
+ */
 export function usePdfDocument(file: { bytes: Uint8Array } | null): DocState {
-  // Results are keyed by the file they belong to, so a stale result (or the
-  // previous file's doc) is never returned for a new input.
+  // Results are keyed by the file and worker generation they belong to, so a
+  // stale result (or a doc the crashed worker lost) is never returned.
   const [result, setResult] = useState<OpenResult | null>(null);
+  const generation = useSyncExternalStore(
+    pdfRender.onRestart,
+    pdfRender.generation,
+  );
 
   useEffect(() => {
     if (!file) return;
@@ -47,10 +58,11 @@ export function usePdfDocument(file: { bytes: Uint8Array } | null): DocState {
           return;
         }
         opened = doc.docId;
-        setResult({ file, doc, error: null });
+        setResult({ file, generation, doc, error: null });
       },
       (e) => {
-        if (alive) setResult({ file, doc: null, error: toToolError(e) });
+        if (alive)
+          setResult({ file, generation, doc: null, error: toToolError(e) });
       },
     );
     return () => {
@@ -62,10 +74,11 @@ export function usePdfDocument(file: { bytes: Uint8Array } | null): DocState {
         void pdfRender.close(opened).catch(() => {});
       }
     };
-  }, [file]);
+  }, [file, generation]);
 
   if (!file) return { doc: null, loading: false, error: null };
-  if (result?.file !== file) return { doc: null, loading: true, error: null };
+  if (result?.file !== file || result.generation !== generation)
+    return { doc: null, loading: true, error: null };
   return { doc: result.doc, loading: false, error: result.error };
 }
 
