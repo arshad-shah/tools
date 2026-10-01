@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   aspectRatio,
+  convertImage,
   assertImageFile,
   isHexColor,
   mimeFor,
@@ -59,5 +60,17 @@ describe('image-optimizer helpers', () => {
     expect(() =>
       assertImageFile(new File(['x'], 'a.bmp', { type: 'image/bmp' })),
     ).not.toThrow();
+  });
+});
+
+describe('convertImage', () => {
+  it('rejects an invalid background colour before touching the image', async () => {
+    await expect(
+      convertImage(new Blob([]), {
+        format: 'jpeg',
+        quality: 0.8,
+        background: 'not-a-colour',
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
   });
 });
