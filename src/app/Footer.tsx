@@ -1,22 +1,18 @@
 import React from 'react';
-import {
-  Container,
-  Section,
-  Stack,
-  Inline,
-  Text,
-  Button,
-  Divider,
-} from '@/shared/ui';
+import { Container, Section, Inline, Text } from '@/shared/ui';
+import type { ToolDefinition } from './tool';
 import { getEnabledTools } from './registry';
+import { formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
 
-const REPO_URL = 'https://github.com/arshad-shah/tools';
 const AUTHOR = 'Arshad Shah';
 const DOT = '·';
 
+const linkClass =
+  'inline-flex items-center gap-1.5 rounded-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+
 // GitHub is a brand mark and is intentionally not part of the icon set
 // (lucide v1 dropped brand glyphs), so it ships as an inline SVG.
-const GithubIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
+const GithubIcon: React.FC<{ size?: number }> = ({ size = 14 }) => (
   <svg
     width={size}
     height={size}
@@ -28,67 +24,99 @@ const GithubIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   </svg>
 );
 
-const Footer: React.FC = () => {
+const Sep: React.FC = () => (
+  <span aria-hidden className="text-fg-faint">
+    {DOT}
+  </span>
+);
+
+const Footer: React.FC<{ tool?: ToolDefinition }> = ({ tool }) => {
   const year = new Date().getFullYear();
   const toolCount = getEnabledTools().length;
+  const stamp = formatBuildStamp(
+    __BUILD_SHA__,
+    __BUILD_DATE__,
+    import.meta.env.DEV,
+  );
 
   return (
-    <Section as="footer" className="pb-10 pt-16">
+    <Section as="footer" className="border-t border-line py-4">
       <Container size="xl">
-        <Stack gap="6" align="center">
-          <Divider />
-
-          <Inline gap="2" align="baseline">
-            <span className="font-mono text-lg font-bold text-fg">
-              <span className="text-fg-faint">~/</span>tools
+        <Text
+          as="div"
+          mono
+          size="xs"
+          tone="muted"
+          className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2"
+        >
+          <Inline gap="3" wrap>
+            <span className="inline-flex items-baseline gap-1.5 font-bold text-fg">
+              <span>
+                <span className="text-fg-faint">~/</span>tools
+              </span>
+              <span
+                aria-hidden
+                className="inline-block h-3 w-1.5 animate-caret bg-accent"
+              />
             </span>
-            <span
-              aria-hidden
-              className="inline-block h-4 w-2 animate-caret bg-accent"
-            />
+            <Sep />
+            <span>{toolCount} tools</span>
+            <Sep />
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                className="inline-block size-1.5 rounded-full bg-success"
+              />
+              runs locally, no uploads
+            </span>
+            <Sep />
+            {stamp.href && stamp.sha ? (
+              <span>
+                {stamp.version} {DOT}{' '}
+                <a
+                  href={stamp.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Build ${stamp.sha} on GitHub`}
+                  className={linkClass}
+                >
+                  {stamp.sha}
+                </a>
+              </span>
+            ) : (
+              <span>{stamp.label}</span>
+            )}
           </Inline>
 
-          <Text mono size="sm" tone="muted" className="text-center">
-            {toolCount} client-side utilities {DOT} no tracking {DOT} open
-            source
-          </Text>
-
-          <Button
-            asChild
-            variant="soft"
-            size="sm"
-            leftIcon={<GithubIcon size={14} />}
-          >
+          <Inline gap="3" wrap>
+            <span>
+              © {year} {AUTHOR}
+            </span>
+            <Sep />
             <a
               href={REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="View source on GitHub"
+              className={linkClass}
             >
-              View on GitHub
+              <GithubIcon />
+              source
             </a>
-          </Button>
-
-          <Inline gap="2" wrap justify="center">
-            {[`© ${year} ${AUTHOR}`, 'React', 'Tailwind', 'Vite'].map(
-              (item, i, arr) => (
-                <React.Fragment key={item}>
-                  <span className="font-mono text-xs text-fg-subtle">
-                    {item}
-                  </span>
-                  {i < arr.length - 1 && (
-                    <span
-                      className="font-mono text-xs text-fg-faint"
-                      aria-hidden
-                    >
-                      {DOT}
-                    </span>
-                  )}
-                </React.Fragment>
-              ),
-            )}
+            <Sep />
+            <a
+              href={issuesUrl(tool)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={
+                tool ? `Report an issue with ${tool.name}` : 'Report an issue'
+              }
+              className={linkClass}
+            >
+              issues
+            </a>
           </Inline>
-        </Stack>
+        </Text>
       </Container>
     </Section>
   );
