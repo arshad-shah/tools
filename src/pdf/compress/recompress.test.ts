@@ -6,6 +6,7 @@ import {
   PDFDict,
   PDFDocument,
   PDFName,
+  PDFNumber,
   PDFRawStream,
 } from 'pdf-lib';
 import { makeImageHeavyPdf } from '../../../test/fixtures/builders';
@@ -21,7 +22,7 @@ const firstImage = (doc: PDFDocument, page: number) => {
   return xo.lookup(xo.keys()[0]) as PDFRawStream;
 };
 const dim = (s: PDFRawStream, k: string) =>
-  (s.dict.lookup(PDFName.of(k)) as { asNumber(): number }).asNumber();
+  s.dict.lookup(PDFName.of(k), PDFNumber).asNumber();
 
 describe('recompressImages', () => {
   it('downsamples to the target DPI, keeps SMasks, leaves ineligible images byte-identical', async () => {
