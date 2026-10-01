@@ -185,7 +185,8 @@ const CSVTSVViewer: React.FC = () => {
   const [sampleError, setSampleError] = useState<string | null>(null);
   const loadJob = useJob(async (_ctx, file: File) => {
     const { name, text } = await loadTextFile(file, {
-      extensions: ['csv', 'tsv'],
+      // .txt parsed as CSV before (dropped files skip the accept filter).
+      extensions: ['csv', 'tsv', 'txt'],
     });
     return { ...parseDelimited(text, delimiterFor(name)), fileName: name };
   });
