@@ -23,6 +23,19 @@ const FLOW_COLORS = {
   muted: 'var(--color-fg-subtle)',
 } as const;
 
+/**
+ * xyflow's Controls panel and buttons, on theme tokens. "!" and the CSS
+ * variables override xyflow's own unlayered stylesheet (light buttons).
+ */
+const CONTROLS_CLASS = [
+  'rounded-lg! border! border-line! bg-surface! shadow-overlay!',
+  '[--xy-controls-button-background-color:var(--color-surface)]',
+  '[--xy-controls-button-background-color-hover:var(--color-surface-strong)]',
+  '[--xy-controls-button-color:var(--color-fg-muted)]',
+  '[--xy-controls-button-color-hover:var(--color-fg)]',
+  '[--xy-controls-button-border-color:var(--color-line)]',
+].join(' ');
+
 const nodeTypes = {
   custom: CustomNode,
 } satisfies NodeTypes;
@@ -73,10 +86,7 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
           gap={20}
           size={1}
         />
-        <Controls
-          position="bottom-right"
-          className="rounded-lg! border! border-line! bg-surface! shadow-[0_4px_12px_rgba(0,0,0,0.4)]!"
-        />
+        <Controls position="bottom-right" className={CONTROLS_CLASS} />
       </ReactFlow>
     </div>
   );

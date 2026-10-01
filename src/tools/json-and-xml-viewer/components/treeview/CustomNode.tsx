@@ -6,7 +6,7 @@ import { MainNode, NodeType } from './types';
 
 /** Network-node classes (formerly a CSS module). */
 const styles = {
-  node: 'max-w-[280px] min-w-[180px] overflow-hidden rounded-lg border border-line bg-surface font-sans text-[12px] text-fg shadow-[0_2px_6px_rgba(0,0,0,0.06)]',
+  node: 'max-w-[280px] min-w-[180px] overflow-hidden rounded-lg border border-line bg-surface font-sans text-[12px] text-fg shadow-raised',
   header:
     'flex items-center gap-1.5 border-b border-line bg-surface-subtle px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.04em] text-fg-muted uppercase',
   label:

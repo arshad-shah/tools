@@ -75,11 +75,6 @@ const DataViewer = () => {
   const [layout, setLayout] = useState<LayoutType>('split');
   const [activePane, setActivePane] = useState<PaneType>('editor');
 
-  const getHighlightStyles = (lineNumber: number) =>
-    highlightedLines.includes(lineNumber)
-      ? { backgroundColor: 'rgba(6, 182, 212, 0.2)' }
-      : {};
-
   useEffect(() => {
     if (!searchTerm) {
       setHighlightedLines([]);
@@ -203,11 +198,9 @@ const DataViewer = () => {
           if (node.properties?.className?.includes('code-line')) {
             const lineNumber = index + 1;
             if (highlightedLines.includes(lineNumber)) {
-              node.properties.style = {
-                ...node.properties.style,
-                ...getHighlightStyles(lineNumber),
-              };
-              node.properties.className.push('highlighted-line');
+              // A class, not a style object: hast stringified the old object
+              // to style="[object Object]", so matches were never highlighted.
+              node.properties.className.push('highlighted-line', 'bg-info/20');
             }
           }
         },
