@@ -22,7 +22,6 @@ import type { ToolProps } from '@/app/tool';
 import type { LoadedFile } from '@/shared/lib/files';
 import { deriveFilename } from '@/shared/lib/download';
 import { logToolError, toToolError } from '@/shared/lib/errors';
-import { uprightJpeg } from '@/shared/lib/upright-jpeg';
 import { useJob } from '@/shared/state/useJob';
 import {
   ANCHOR_OPTIONS,
@@ -40,6 +39,7 @@ import {
   PdfFileHeader,
   PdfPagePreview,
   ResultFiles,
+  uprightJpeg,
   usePreviewBytes,
   type ResultFile,
 } from '@/pdf/components';
