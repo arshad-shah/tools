@@ -10,6 +10,7 @@ export interface RpcEndpoint {
     listener: (event: MessageEvent) => void,
   ): void;
   terminate?(): void;
+  close?(): void;
 }
 
 export interface RpcContext {
@@ -34,10 +35,9 @@ export class Transferred<T> {
 type ArgsOf<F> = F extends (ctx: RpcContext, ...args: infer A) => unknown
   ? A
   : never;
+type Unwrap<T> = T extends Transferred<infer V> ? V : T;
 type ResultOf<F> = F extends (...args: never[]) => infer R
-  ? Awaited<R> extends Transferred<infer V>
-    ? V
-    : Awaited<R>
+  ? Unwrap<Awaited<R>>
   : never;
 
 type Request =
@@ -161,6 +161,8 @@ export function createRpcClient<H extends RpcHandlers>(
     }
     pending.delete(msg.id);
     p.cleanup();
+    // The restart limit applies to CONSECUTIVE crashes: any successful
+    // response proves the worker is healthy, so reset the counter.
     crashes = 0;
     if (msg.type === 'result') p.resolve(msg.value);
     else p.reject(new ToolError(msg.error.code, msg.error.message));
@@ -171,6 +173,7 @@ export function createRpcClient<H extends RpcHandlers>(
     ep.removeEventListener('error', onCrash);
     ep.removeEventListener('messageerror', onCrash);
     ep.terminate?.();
+    ep.close?.();
   };
 
   function onCrash() {
@@ -213,7 +216,7 @@ export function createRpcClient<H extends RpcHandlers>(
         try {
           target = ensure();
         } catch (e) {
-          reject(e);
+          reject(toToolError(e));
           return;
         }
         const id = nextId++;
@@ -229,10 +232,17 @@ export function createRpcClient<H extends RpcHandlers>(
           onProgress: opts.onProgress,
           cleanup: () => opts.signal?.removeEventListener('abort', onAbort),
         });
-        target.postMessage(
-          { type: 'call', id, method, args } satisfies Request,
-          opts.transfer ?? [],
-        );
+        try {
+          target.postMessage(
+            { type: 'call', id, method, args } satisfies Request,
+            opts.transfer ?? [],
+          );
+        } catch (e) {
+          const p = pending.get(id);
+          pending.delete(id);
+          p?.cleanup();
+          reject(toToolError(e));
+        }
       });
     },
     terminate() {
