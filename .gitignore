@@ -32,3 +32,9 @@ dist-ssr
 
 # Superpowers visual companion
 .superpowers/
+
+# test + generated assets
+playwright-report
+test-results
+test/fixtures/generated
+public/pdfjs
