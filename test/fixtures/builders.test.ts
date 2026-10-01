@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { inspect } from '@arshad-shah/qpdf-wasm';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import {
   makeAesEncryptedPdf,
   makeEncryptMarkedPdf,
+  makeFormPdf,
   makeRotatedPdf,
   makeShapesOnlyPdf,
   makeTextPdf,
   pdfPageTexts,
   textPositions,
+  makeXfaPdf,
 } from './builders';
 import { detectKind } from '@/shared/lib/files';
 import {
@@ -54,6 +56,27 @@ describe('fixture builders', () => {
     expect(items.find((i) => i.str === 'Rotated 2')?.upright).toBe(false);
     const flat = await textPositions(bytes, 0);
     expect(flat.find((i) => i.str === 'Rotated 1')?.upright).toBe(true);
+  });
+  it('makeFormPdf has every field kind; makeXfaPdf adds an XFA stream', async () => {
+    const doc = await PDFDocument.load(await makeFormPdf());
+    expect(
+      doc
+        .getForm()
+        .getFields()
+        .map((f) => f.getName()),
+    ).toEqual([
+      'name',
+      'notes',
+      'zip',
+      'agree',
+      'size',
+      'country',
+      'toppings',
+      'ref',
+    ]);
+    const xfa = await PDFDocument.load(await makeXfaPdf());
+    const acro = xfa.catalog.lookup(PDFName.of('AcroForm'), PDFDict);
+    expect(acro.has(PDFName.of('XFA'))).toBe(true);
   });
 });
 

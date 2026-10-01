@@ -1,6 +1,7 @@
 import {
   decodePDFRawStream,
   degrees,
+  PDFDict,
   PDFDocument,
   PDFName,
   PDFRawStream,
@@ -422,4 +423,56 @@ export async function textPositions(
   } finally {
     await task.destroy();
   }
+}
+
+export async function makeFormPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([612, 792]);
+  const form = doc.getForm();
+  form
+    .createTextField('name')
+    .addToPage(page, { x: 72, y: 700, width: 240, height: 24 });
+  const notes = form.createTextField('notes');
+  notes.enableMultiline();
+  notes.addToPage(page, { x: 72, y: 600, width: 240, height: 80 });
+  const zip = form.createTextField('zip');
+  zip.setMaxLength(5);
+  zip.addToPage(page, { x: 72, y: 560, width: 80, height: 24 });
+  form
+    .createCheckBox('agree')
+    .addToPage(page, { x: 72, y: 520, width: 16, height: 16 });
+  const size = form.createRadioGroup('size');
+  ['S', 'M', 'L'].forEach((opt, i) =>
+    size.addOptionToPage(opt, page, {
+      x: 72 + i * 40,
+      y: 480,
+      width: 16,
+      height: 16,
+    }),
+  );
+  const country = form.createDropdown('country');
+  country.addOptions(['Ireland', 'France', 'Spain']);
+  country.addToPage(page, { x: 72, y: 440, width: 160, height: 24 });
+  const toppings = form.createOptionList('toppings');
+  toppings.addOptions(['Cheese', 'Olives', 'Peppers']);
+  toppings.enableMultiselect();
+  toppings.addToPage(page, { x: 72, y: 340, width: 160, height: 80 });
+  const ref = form.createTextField('ref');
+  ref.setText('R-1');
+  ref.enableReadOnly();
+  ref.addToPage(page, { x: 320, y: 700, width: 120, height: 24 });
+  return doc.save();
+}
+
+/** An AcroForm that also carries XFA (pdf-lib cannot fill XFA). */
+export async function makeXfaPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(await makeFormPdf());
+  const acro = doc.catalog.lookup(PDFName.of('AcroForm'), PDFDict);
+  acro.set(
+    PDFName.of('XFA'),
+    doc.context.register(
+      doc.context.stream('<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/"/>'),
+    ),
+  );
+  return doc.save();
 }

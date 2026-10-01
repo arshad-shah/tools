@@ -67,3 +67,10 @@ export {
   type StampContent,
   type StampOptions,
 } from './stamp';
+export {
+  listFormFields,
+  fillForm,
+  XFA_MESSAGE,
+  type FormField,
+  type FormValue,
+} from './forms';

@@ -1,9 +1,11 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import {
   makeAesEncryptedPdf,
+  makeFormPdf,
   makeShapesOnlyPdf,
   makeStructuredPdf,
   makeTextPdf,
+  makeXfaPdf,
 } from '../test/fixtures/builders';
 import {
   encodeGif,
@@ -45,6 +47,8 @@ const files: Record<string, Uint8Array> = {
   }),
   'structured-3.pdf': await makeStructuredPdf(3),
   'encrypted-aes.pdf': await makeAesEncryptedPdf(),
+  'form.pdf': await makeFormPdf(),
+  'xfa-form.pdf': await makeXfaPdf(),
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
   'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),
