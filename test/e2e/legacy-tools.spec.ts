@@ -259,3 +259,14 @@ test('api-request keeps the last response when a send fails validation', async (
   ).toBeVisible();
   await expect(page.getByText('Mocked')).toBeVisible();
 });
+
+test('calculator plots an expression without crashing', async ({ page }) => {
+  await page.goto('/calculator');
+  await page.getByRole('tab', { name: 'Expression' }).click();
+  await page.getByRole('textbox', { name: 'Expression' }).fill('sin(x)');
+  await page.getByRole('button', { name: 'Plot expression' }).click();
+  await expect(page.locator('.js-plotly-plot')).toBeVisible();
+  await expect(page.getByText('Calculator encountered an error')).toHaveCount(
+    0,
+  );
+});
