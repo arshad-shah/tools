@@ -58,7 +58,7 @@ test('merges two PDFs honouring order and page selection', async ({ page }) => {
   await page.getByRole('button', { name: 'Merge PDFs' }).click();
 
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download' }).click();
+  await page.getByRole('button', { name: 'Download', exact: true }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('text-12.merged.pdf');
   const doc = await PDFDocument.load(readFileSync((await download.path())!));
@@ -72,5 +72,24 @@ test('rejects an invalid file by name', async ({ page }) => {
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4 not really a pdf'),
   });
-  await expect(page.getByRole('alert')).toContainText('broken.pdf');
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'broken.pdf' }),
+  ).toBeVisible();
+});
+
+test('names the file when a page range is out of range', async ({ page }) => {
+  await page.goto('/pdf-merger');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles([
+      'test/fixtures/generated/text-3.pdf',
+      'test/fixtures/generated/text-12.pdf',
+    ]);
+  await page.getByLabel('Pages from text-3.pdf').fill('9');
+  await page.getByRole('button', { name: 'Merge PDFs' }).click();
+  await expect(
+    page
+      .getByRole('alert')
+      .filter({ hasText: 'text-3.pdf: Page 9 is out of range (1–3)' }),
+  ).toBeVisible();
 });
