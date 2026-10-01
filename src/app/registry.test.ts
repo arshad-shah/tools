@@ -25,15 +25,40 @@ describe('buildRegistry', () => {
   it('rejects duplicate ids, naming both files', () => {
     expect(() =>
       buildRegistry({
-        '../tools/x/index.ts': { default: fake('dup') },
-        '../tools/y/index.ts': { default: fake('dup') },
+        '../tools/Xold/index.ts': { default: fake('dup') },
+        '../tools/Yold/index.ts': { default: fake('dup') },
       }),
-    ).toThrow(/Duplicate tool id "dup".*y\/index\.ts.*x\/index\.ts/);
+    ).toThrow(/Duplicate tool id "dup".*Yold\/index\.ts.*Xold\/index\.ts/);
   });
   it('rejects modules without a manifest', () => {
     expect(() =>
       buildRegistry({ '../tools/z/index.ts': { default: undefined as never } }),
     ).toThrow(/must default-export defineTool/);
+  });
+  it.each(['name', 'description', 'icon', 'category'] as const)(
+    'rejects a manifest missing %s',
+    (key) => {
+      const bad = { ...fake('m'), [key]: undefined } as never;
+      expect(() =>
+        buildRegistry({ '../tools/m/index.ts': { default: bad } }),
+      ).toThrow(new RegExp(`missing ${key}`));
+    },
+  );
+  it('rejects a manifest whose load is not a function', () => {
+    const bad = { ...fake('m'), load: 'nope' } as never;
+    expect(() =>
+      buildRegistry({ '../tools/m/index.ts': { default: bad } }),
+    ).toThrow(/load to be a function/);
+  });
+  it('requires the id to match a kebab-case folder, skipping legacy folders', () => {
+    expect(() =>
+      buildRegistry({
+        '../tools/pdf-thing/index.ts': { default: fake('other') },
+      }),
+    ).toThrow(/must match its folder "pdf-thing"/);
+    expect(
+      buildRegistry({ '../tools/LegacyTool/index.ts': { default: fake('x') } }),
+    ).toHaveLength(1);
   });
 });
 
@@ -41,34 +66,36 @@ describe('TOOLS', () => {
   it('discovers every existing tool exactly once', () => {
     const ids = TOOLS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toEqual(
-      expect.arrayContaining([
+    // Exact: an extra or missing manifest fails.
+    expect([...ids].sort()).toEqual(
+      [
+        'api-request',
+        'base64-converter',
+        'calculator',
         'color-tester',
-        'password-generator',
-        'regex-tester',
-        'number-converter',
-        'qr-code-generator',
-        'json-and-xml-viewer',
-        'pomodoro',
-        'unit-converter',
-        'text-diff-checker',
-        'image-optimizer',
         'csv-viewer',
-        'random-data-generator',
-        'url-encoder-decoder',
         'date-calculator',
         'hash-generator',
-        'base64-converter',
+        'image-optimizer',
+        'json-and-xml-viewer',
         'jwt-decode',
-        'url-parser',
-        'api-request',
-        'calculator',
         'log-parser',
-        'rive-animation-player',
-        'pdf-merger',
-        'pdf-splitter',
+        'number-converter',
+        'password-generator',
         'pdf-compressor',
-      ]),
+        'pdf-merger',
+        'pdf-organize',
+        'pdf-splitter',
+        'pomodoro',
+        'qr-code-generator',
+        'random-data-generator',
+        'regex-tester',
+        'rive-animation-player',
+        'text-diff-checker',
+        'unit-converter',
+        'url-encoder-decoder',
+        'url-parser',
+      ].sort(),
     );
     for (const t of TOOLS) expect(typeof t.load).toBe('function');
   });
