@@ -12,6 +12,7 @@ const loaded: PdfInputFile = {
   kind: 'pdf',
   bytes: new Uint8Array([1]),
   wasEncrypted: false,
+  order: 0,
 };
 
 describe('PdfFileHeader', () => {

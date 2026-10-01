@@ -12,6 +12,8 @@ interface PasswordPromptProps {
   fileName: string;
   error?: string | null;
   busy?: boolean;
+  /** The host is busy (e.g. merging): nothing can be submitted. */
+  disabled?: boolean;
   onSubmit: (password: string) => void;
   /** Shows "Skip this file" when set. */
   onCancel?: () => void;
@@ -24,6 +26,7 @@ export const PasswordPrompt: React.FC<PasswordPromptProps> = ({
   fileName,
   error,
   busy,
+  disabled,
   onSubmit,
   onCancel,
   submitLabel = 'Unlock',
@@ -38,7 +41,7 @@ export const PasswordPrompt: React.FC<PasswordPromptProps> = ({
       className="flex flex-col gap-3 rounded-md border border-warning/40 bg-warning/5 p-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (password && !busy) onSubmit(password);
+        if (password && !busy && !disabled) onSubmit(password);
       }}
     >
       <Text size="sm" weight="semibold">
@@ -56,7 +59,7 @@ export const PasswordPrompt: React.FC<PasswordPromptProps> = ({
           value={password}
           onChange={setPassword}
           invalid={!!error}
-          disabled={busy}
+          disabled={busy || disabled}
         />
         <Button
           type="button"
@@ -78,7 +81,7 @@ export const PasswordPrompt: React.FC<PasswordPromptProps> = ({
           type="submit"
           variant="solid"
           loading={busy}
-          disabled={!password || busy}
+          disabled={!password || busy || disabled}
         >
           {submitLabel}
         </Button>

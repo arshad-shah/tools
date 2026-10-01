@@ -134,4 +134,74 @@ describe('PdfDropzone', () => {
     });
     expect(qpdf.inspect).not.toHaveBeenCalled();
   });
+
+  it('disables its prompts while the host is busy (review M3)', async () => {
+    vi.mocked(qpdf.inspect).mockResolvedValue(lockedInfo);
+    const onFiles = vi.fn();
+    const { container, rerender } = render(<PdfDropzone onFiles={onFiles} />);
+    fireEvent.change(container.querySelector('input[type=file]')!, {
+      target: { files: [locked('busy.pdf')] },
+    });
+    const input = await screen.findByLabelText('Password for busy.pdf');
+    fireEvent.change(input, { target: { value: 'pw' } });
+    rerender(<PdfDropzone onFiles={onFiles} disabled />);
+    const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+    expect(unlockButton.hasAttribute('disabled')).toBe(true);
+    fireEvent.submit(screen.getByRole('form', { name: 'Unlock busy.pdf' }));
+    expect(qpdf.decrypt).not.toHaveBeenCalledWith(
+      expect.anything(),
+      'pw',
+      expect.anything(),
+    );
+  });
+
+  it('does not hand over a file the user has since replaced (review M4)', async () => {
+    vi.mocked(qpdf.inspect).mockResolvedValue(lockedInfo);
+    let finish: (v: {
+      bytes: Uint8Array;
+      warnings: string[];
+    }) => void = () => {};
+    vi.mocked(qpdf.decrypt).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const onFiles = vi.fn();
+    const { container } = render(<PdfDropzone onFiles={onFiles} />);
+    const input = container.querySelector('input[type=file]')!;
+    fireEvent.change(input, { target: { files: [locked('old.pdf')] } });
+    fireEvent.change(await screen.findByLabelText('Password for old.pdf'), {
+      target: { value: 'pw' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+    fireEvent.change(input, { target: { files: [pdf('new.pdf')] } });
+    await waitFor(() => expect(onFiles).toHaveBeenCalledOnce());
+    expect(onFiles.mock.calls[0][0][0].name).toBe('new.pdf');
+    finish({ bytes: new Uint8Array([7]), warnings: [] });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onFiles).toHaveBeenCalledOnce();
+  });
+
+  it('numbers files in drop order, locked or not (review M3)', async () => {
+    vi.mocked(qpdf.inspect).mockResolvedValue(lockedInfo);
+    vi.mocked(qpdf.decrypt).mockResolvedValueOnce({
+      bytes: new Uint8Array([1]),
+      warnings: [],
+    });
+    const onFiles = vi.fn();
+    const { container } = render(<PdfDropzone multiple onFiles={onFiles} />);
+    fireEvent.change(container.querySelector('input[type=file]')!, {
+      target: { files: [locked('first.pdf'), pdf('second.pdf')] },
+    });
+    await waitFor(() => expect(onFiles).toHaveBeenCalledOnce());
+    fireEvent.change(await screen.findByLabelText('Password for first.pdf'), {
+      target: { value: 'pw' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+    await waitFor(() => expect(onFiles).toHaveBeenCalledTimes(2));
+    const second = onFiles.mock.calls[0][0][0];
+    const first = onFiles.mock.calls[1][0][0];
+    expect([first.name, second.name]).toEqual(['first.pdf', 'second.pdf']);
+    expect(first.order).toBeLessThan(second.order);
+  });
 });
