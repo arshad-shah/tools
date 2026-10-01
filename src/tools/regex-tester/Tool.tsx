@@ -38,7 +38,6 @@ import {
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { ChevronDown } from 'lucide-react';
-import previewStyles from './LivePreview.module.css';
 
 interface RegexTemplate {
   name: string;
@@ -132,6 +131,18 @@ const TEMPLATES: RegexTemplate[] = [
     category: 'format',
   },
 ];
+
+/** Live-preview classes (formerly a CSS module). */
+const PREVIEW = {
+  preview:
+    'relative grid max-h-[420px] grid-cols-[auto_1fr] overflow-auto rounded-lg border border-line bg-surface font-mono text-sm leading-[1.7] text-fg shadow-[inset_3px_0_0_0_var(--color-accent)]',
+  gutter:
+    'sticky left-0 select-none border-r border-line bg-surface-subtle py-3 pr-3 pl-[18px] text-right text-fg-subtle tabular-nums',
+  gutterLine: 'block text-[0.85em] opacity-70',
+  content:
+    'min-w-0 px-4 py-3 whitespace-pre-wrap [word-break:break-word] [overflow-wrap:anywhere]',
+  mark: 'rounded-[3px] bg-warning px-[3px] py-px text-canvas box-decoration-clone',
+} as const;
 
 const CATEGORY_LABEL: Record<RegexTemplate['category'], string> = {
   web: 'Web & URLs',
@@ -390,7 +401,7 @@ const RegexStudio: React.FC = () => {
         <mark
           key={`m-${i}`}
           title={`Match #${i + 1}: "${m.text}"`}
-          className={previewStyles.mark}
+          className={PREVIEW.mark}
         >
           {testString.substring(m.index, m.index + m.length)}
         </mark>,
@@ -702,19 +713,17 @@ const RegexStudio: React.FC = () => {
               </Inline>
             </CardHeader>
             <CardBody>
-              <div className={previewStyles.preview}>
-                <div className={previewStyles.gutter} aria-hidden>
+              <div className={PREVIEW.preview}>
+                <div className={PREVIEW.gutter} aria-hidden>
                   {Array.from({ length: testString.split('\n').length }).map(
                     (_, i) => (
-                      <span key={i} className={previewStyles.gutterLine}>
+                      <span key={i} className={PREVIEW.gutterLine}>
                         {i + 1}
                       </span>
                     ),
                   )}
                 </div>
-                <div className={previewStyles.content}>
-                  {renderHighlighted()}
-                </div>
+                <div className={PREVIEW.content}>{renderHighlighted()}</div>
               </div>
               {matches.length === 0 && pattern && isValid && (
                 <Inline className="pt-3">
