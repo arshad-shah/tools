@@ -119,6 +119,70 @@ describe('useJob', () => {
     expect(result.current.result).toBe('two');
   });
 
+  it('ignores progress reported after the run settled', async () => {
+    let late!: JobContext;
+    const { result } = renderHook(() =>
+      useJob(async (ctx: JobContext) => {
+        late = ctx;
+        return 'ok';
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    act(() => late.progress({ done: 1, total: 2 }));
+    expect(result.current.status).toBe('done');
+    expect(result.current.progress).toBeNull();
+  });
+
+  it('reset() returns to idle and drops a late result', async () => {
+    const d = deferred<string>();
+    const { result } = renderHook(() => useJob(async () => d.promise));
+    let pending!: Promise<string | undefined>;
+    act(() => {
+      pending = result.current.run();
+    });
+    act(() => result.current.reset());
+    expect(result.current.status).toBe('idle');
+    await act(async () => {
+      d.resolve('late');
+      await pending;
+    });
+    expect(result.current.status).toBe('idle');
+    expect(result.current.result).toBeNull();
+  });
+
+  it('treats a thrown CANCELLED ToolError (no abort) as cancelled', async () => {
+    const { result } = renderHook(() =>
+      useJob(async () => {
+        throw new ToolError('CANCELLED', 'Stopped');
+      }),
+    );
+    await act(async () => {
+      await result.current.run();
+    });
+    expect(result.current.status).toBe('cancelled');
+    expect(result.current.error).toBeNull();
+  });
+
+  it('does not update state when a run resolves after unmount', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const d = deferred<string>();
+    const { result, unmount } = renderHook(() => useJob(async () => d.promise));
+    let pending!: Promise<string | undefined>;
+    act(() => {
+      pending = result.current.run();
+    });
+    const before = result.current;
+    unmount();
+    await act(async () => {
+      d.resolve('late');
+      expect(await pending).toBeUndefined();
+    });
+    expect(result.current).toBe(before);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
   it('aborts on unmount', () => {
     let seen: AbortSignal | undefined;
     const { result, unmount } = renderHook(() =>

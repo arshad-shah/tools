@@ -47,10 +47,15 @@ type ResultOf<F> = F extends (...args: never[]) => infer R
   ? Unwrap<Awaited<R>>
   : never;
 
-type Request =
+/**
+ * Every message carries `rpc: 1` so either side can ignore anything else
+ * posted on the same channel (null, foreign libraries, browser extensions).
+ */
+type Request = { rpc: 1 } & (
   | { type: 'call'; id: number; method: string; args: unknown[] }
-  | { type: 'abort'; id: number };
-type Response =
+  | { type: 'abort'; id: number }
+);
+type Response = { rpc: 1 } & (
   | { type: 'result'; id: number; value: unknown }
   | {
       type: 'error';
@@ -61,7 +66,13 @@ type Response =
         cause?: SerializedCause;
       };
     }
-  | { type: 'progress'; id: number; value: JobProgress };
+  | { type: 'progress'; id: number; value: JobProgress }
+);
+
+const isTagged = (msg: unknown): msg is { rpc: 1 } =>
+  typeof msg === 'object' &&
+  msg !== null &&
+  (msg as { rpc?: unknown }).rpc === 1;
 
 export function exposeRpc<H extends RpcHandlers>(
   handlers: H,
@@ -69,24 +80,28 @@ export function exposeRpc<H extends RpcHandlers>(
 ): () => void {
   const controllers = new Map<number, AbortController>();
 
+  const post = (msg: Response, transfer: Transferable[] = []) =>
+    endpoint.postMessage(msg, transfer);
+
   const onMessage = async (event: MessageEvent) => {
+    if (!isTagged(event.data)) return;
     const msg = event.data as Request;
     if (msg.type === 'abort') {
       controllers.get(msg.id)?.abort();
       return;
     }
-    if (msg.type !== 'call') return;
+    if (msg.type !== 'call' || !Array.isArray(msg.args)) return;
     const { id } = msg;
-    const handler = handlers[msg.method];
+    const handler = Object.hasOwn(handlers, msg.method)
+      ? handlers[msg.method]
+      : undefined;
     if (!handler) {
-      endpoint.postMessage(
-        {
-          type: 'error',
-          id,
-          error: { code: 'UNKNOWN', message: `Unknown method ${msg.method}` },
-        },
-        [],
-      );
+      post({
+        rpc: 1,
+        type: 'error',
+        id,
+        error: { code: 'UNKNOWN', message: `Unknown method ${msg.method}` },
+      });
       return;
     }
     const ctrl = new AbortController();
@@ -95,17 +110,13 @@ export function exposeRpc<H extends RpcHandlers>(
       const out = await handler(
         {
           signal: ctrl.signal,
-          progress: (value) =>
-            endpoint.postMessage({ type: 'progress', id, value }, []),
+          progress: (value) => post({ rpc: 1, type: 'progress', id, value }),
         },
         ...msg.args,
       );
       if (out instanceof Transferred)
-        endpoint.postMessage(
-          { type: 'result', id, value: out.value },
-          out.transfer,
-        );
-      else endpoint.postMessage({ type: 'result', id, value: out }, []);
+        post({ rpc: 1, type: 'result', id, value: out.value }, out.transfer);
+      else post({ rpc: 1, type: 'result', id, value: out });
     } catch (e) {
       const err = ctrl.signal.aborted
         ? new ToolError('CANCELLED', 'Cancelled')
@@ -113,25 +124,28 @@ export function exposeRpc<H extends RpcHandlers>(
       // Logged on the worker's own console too: its stack is only there.
       if (import.meta.env.DEV && err.code !== 'CANCELLED')
         console.error('[rpc]', msg.method, err);
-      endpoint.postMessage(
-        {
-          type: 'error',
-          id,
-          error: {
-            code: err.code,
-            message: err.message,
-            cause: serializeCause(err.cause),
-          },
+      post({
+        rpc: 1,
+        type: 'error',
+        id,
+        error: {
+          code: err.code,
+          message: err.message,
+          cause: serializeCause(err.cause),
         },
-        [],
-      );
+      });
     } finally {
       controllers.delete(id);
     }
   };
 
   endpoint.addEventListener('message', onMessage);
-  return () => endpoint.removeEventListener('message', onMessage);
+  return () => {
+    // Nobody will read the results: stop the work too.
+    for (const c of controllers.values()) c.abort();
+    controllers.clear();
+    endpoint.removeEventListener('message', onMessage);
+  };
 }
 
 export interface CallOptions {
@@ -164,11 +178,23 @@ interface Pending {
   cleanup(): void;
 }
 
+/**
+ * The calling side. A worker `error` event is treated as a crash: pending
+ * calls fail with WORKER_CRASHED, the next call starts a fresh worker (at
+ * most `maxRestarts` consecutive times) and `generation` is bumped.
+ *
+ * There is deliberately no per-call timeout for a worker that dies
+ * silently: our worker never calls self.close(), a Chromium worker OOM takes
+ * the whole renderer down (no timer could fire), and Firefox raises
+ * `error`, which is handled. A timeout would also misfire on legitimately
+ * slow renders of huge pages.
+ */
 export function createRpcClient<H extends RpcHandlers>(
   connect: () => RpcEndpoint,
   { maxRestarts = 1 }: { maxRestarts?: number } = {},
 ): RpcClient<H> {
   let endpoint: RpcEndpoint | null = null;
+  let terminated = false;
   let nextId = 1;
   let crashes = 0;
   let generation = 0;
@@ -184,6 +210,7 @@ export function createRpcClient<H extends RpcHandlers>(
   };
 
   const onMessage = (event: MessageEvent) => {
+    if (!isTagged(event.data)) return;
     const msg = event.data as Response;
     const p = pending.get(msg.id);
     if (!p) return;
@@ -212,7 +239,7 @@ export function createRpcClient<H extends RpcHandlers>(
   const detach = (ep: RpcEndpoint) => {
     ep.removeEventListener('message', onMessage);
     ep.removeEventListener('error', onCrash);
-    ep.removeEventListener('messageerror', onCrash);
+    ep.removeEventListener('messageerror', onUnreadable);
     ep.terminate?.();
     ep.close?.();
   };
@@ -232,6 +259,19 @@ export function createRpcClient<H extends RpcHandlers>(
     for (const listener of [...restartListeners]) listener();
   }
 
+  /**
+   * A response that could not be deserialized. The worker is alive, so this
+   * is not a crash; we can't tell which call it belonged to, so fail them all.
+   */
+  function onUnreadable() {
+    failAll(
+      new ToolError(
+        'UNKNOWN',
+        'A response from the background worker could not be read',
+      ),
+    );
+  }
+
   const ensure = (): RpcEndpoint => {
     if (endpoint) return endpoint;
     if (crashes > maxRestarts) {
@@ -243,7 +283,7 @@ export function createRpcClient<H extends RpcHandlers>(
     const ep = connect();
     ep.addEventListener('message', onMessage);
     ep.addEventListener('error', onCrash);
-    ep.addEventListener('messageerror', onCrash);
+    ep.addEventListener('messageerror', onUnreadable);
     endpoint = ep;
     return ep;
   };
@@ -258,6 +298,10 @@ export function createRpcClient<H extends RpcHandlers>(
     },
     call(method, args, opts = {}) {
       return new Promise((resolve, reject) => {
+        if (terminated) {
+          reject(new ToolError('CANCELLED', 'Worker terminated'));
+          return;
+        }
         if (opts.signal?.aborted) {
           reject(new ToolError('CANCELLED', 'Cancelled'));
           return;
@@ -272,7 +316,10 @@ export function createRpcClient<H extends RpcHandlers>(
         const id = nextId++;
         const onAbort = () => {
           if (!pending.delete(id)) return;
-          target.postMessage({ type: 'abort', id } satisfies Request, []);
+          target.postMessage(
+            { rpc: 1, type: 'abort', id } satisfies Request,
+            [],
+          );
           reject(new ToolError('CANCELLED', 'Cancelled'));
         };
         opts.signal?.addEventListener('abort', onAbort, { once: true });
@@ -284,7 +331,7 @@ export function createRpcClient<H extends RpcHandlers>(
         });
         try {
           target.postMessage(
-            { type: 'call', id, method, args } satisfies Request,
+            { rpc: 1, type: 'call', id, method, args } satisfies Request,
             opts.transfer ?? [],
           );
         } catch (e) {
@@ -296,6 +343,7 @@ export function createRpcClient<H extends RpcHandlers>(
       });
     },
     terminate() {
+      terminated = true;
       if (endpoint) detach(endpoint);
       endpoint = null;
       failAll(new ToolError('CANCELLED', 'Worker terminated'));

@@ -65,6 +65,9 @@ export function useJob<A extends unknown[], R>(
     controller.current = ctrl;
     const id = ++runId.current;
     const isCurrent = () => id === runId.current;
+    // Once settled, a stray progress() from the finished run must not
+    // overwrite the done/error state.
+    let settled = false;
     setState({ status: 'running', progress: null, result: null, error: null });
 
     try {
@@ -72,16 +75,19 @@ export function useJob<A extends unknown[], R>(
         {
           signal: ctrl.signal,
           progress: (p) => {
-            if (isCurrent()) setState((s) => ({ ...s, progress: p }));
+            if (isCurrent() && !settled)
+              setState((s) => ({ ...s, progress: p }));
           },
         },
         ...args,
       );
+      settled = true;
       if (!isCurrent()) return undefined;
       controller.current = null;
       setState({ status: 'done', progress: null, result, error: null });
       return result;
     } catch (e) {
+      settled = true;
       if (!isCurrent()) return undefined;
       controller.current = null;
       const error = toToolError(e);
