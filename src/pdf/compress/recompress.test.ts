@@ -11,8 +11,60 @@ import {
 } from 'pdf-lib';
 import { makeImageHeavyPdf } from '../../../test/fixtures/builders';
 import { nodeJpegCodec } from '../../../test/fixtures/jpeg-codec';
-import { noiseImage } from '../../../test/fixtures/images';
-import { recompressImages } from './recompress';
+import {
+  encodeJpeg,
+  noiseImage,
+  withExifOrientation,
+} from '../../../test/fixtures/images';
+import { jpegOrientation } from '@/pdf/edit/exif';
+import type { ImageCodec } from './codec';
+import { resample } from './pixels';
+import { MAX_IMAGE_PIXELS, recompressImages } from './recompress';
+
+/** One image XObject drawn at `drawW`×`drawH` pt, saved and reloaded. */
+async function oneImageDoc(
+  contents: Uint8Array,
+  dict: Record<string, unknown>,
+  drawW: number,
+  drawH: number,
+  flate = false,
+) {
+  const doc = await PDFDocument.create();
+  const full = {
+    Type: 'XObject',
+    Subtype: 'Image',
+    BitsPerComponent: 8,
+    ...dict,
+  } as never;
+  const ref = doc.context.register(
+    flate
+      ? doc.context.flateStream(contents, full)
+      : doc.context.stream(contents, full),
+  );
+  const page = doc.addPage([612, 792]);
+  page.pushOperators(
+    concatTransformationMatrix(drawW, 0, 0, drawH, 0, 0),
+    drawObject(page.node.newXObject('Im', ref)),
+  );
+  return PDFDocument.load(await doc.save());
+}
+
+/** Records what it is asked to decode; resizes like the browser codec. */
+function spyCodec() {
+  const calls: {
+    orientation: number;
+    size?: { width: number; height: number };
+  }[] = [];
+  const codec: ImageCodec = {
+    async decodeJpeg(bytes, size) {
+      calls.push({ orientation: jpegOrientation(bytes), size });
+      const img = await nodeJpegCodec.decodeJpeg(bytes);
+      return size ? resample(img, size.width, size.height) : img;
+    },
+    encodeJpeg: (img, q) => nodeJpegCodec.encodeJpeg(img, q),
+  };
+  return { codec, calls };
+}
 
 const firstImage = (doc: PDFDocument, page: number) => {
   const xo = doc
@@ -139,6 +191,57 @@ describe('recompressImages', () => {
     expect(report.processed).toBe(1);
     const img = firstImage(loaded, 0);
     expect(img.dict.get(PDFName.of('Mask'))).toEqual(stencil);
+  });
+
+  it('decodes without the EXIF orientation, at the target size (review I1, I2)', async () => {
+    const tagged = withExifOrientation(
+      encodeJpeg(400, 300, noiseImage(400, 300, 4, 5), 95),
+      6,
+    );
+    // 400 px over 2 in = 200 DPI; Balanced targets 150 → 300×225.
+    const doc = await oneImageDoc(
+      tagged,
+      { Width: 400, Height: 300, ColorSpace: 'DeviceRGB', Filter: 'DCTDecode' },
+      144,
+      108,
+    );
+    const { codec, calls } = spyCodec();
+    const report = await recompressImages(
+      doc,
+      { targetDpi: 150, quality: 0.75 },
+      codec,
+    );
+    expect(report.processed).toBe(1);
+    expect(calls).toEqual([
+      { orientation: 1, size: { width: 300, height: 225 } },
+    ]);
+    const img = firstImage(doc, 0);
+    expect([dim(img, 'Width'), dim(img, 'Height')]).toEqual([300, 225]);
+  });
+
+  it('skips images too large to decode safely, before decoding (review I2)', async () => {
+    const side = Math.ceil(Math.sqrt(MAX_IMAGE_PIXELS)) + 1;
+    const doc = await oneImageDoc(
+      encodeJpeg(4, 4, noiseImage(4, 4, 4)),
+      {
+        Width: side,
+        Height: side,
+        ColorSpace: 'DeviceRGB',
+        Filter: 'DCTDecode',
+      },
+      72,
+      72,
+    );
+    const { codec, calls } = spyCodec();
+    const report = await recompressImages(
+      doc,
+      { targetDpi: 150, quality: 0.75 },
+      codec,
+    );
+    expect(report.skipped).toEqual([
+      { reason: 'too large to recompress safely', count: 1 },
+    ]);
+    expect(calls).toEqual([]);
   });
 
   it('stops when cancelled', async () => {

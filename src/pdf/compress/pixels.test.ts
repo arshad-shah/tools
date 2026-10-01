@@ -80,4 +80,21 @@ describe('pixels', () => {
       }),
     ]).toEqual([1, 2, 3, 255]);
   });
+
+  it('views RGBA input without copying it', () => {
+    const pixels = Uint8Array.of(9, 8, 7, 255);
+    const out = toRgba({ width: 1, height: 1, channels: 4, pixels });
+    expect([...out]).toEqual([9, 8, 7, 255]);
+    expect(out.buffer).toBe(pixels.buffer);
+  });
+
+  it('resamples RGBA like any other layout', () => {
+    const img = {
+      width: 2,
+      height: 1,
+      channels: 4 as const,
+      pixels: Uint8Array.of(0, 0, 0, 255, 255, 255, 255, 255),
+    };
+    expect([...resample(img, 1, 1).pixels]).toEqual([128, 128, 128, 255]);
+  });
 });

@@ -6,6 +6,7 @@ import {
   makeEncryptMarkedPdf,
   makeFormPdf,
   makeRotatedPdf,
+  makeExifPhotoPdf,
   makeImageHeavyPdf,
   makeOwnerOnlyEncryptedPdf,
   makeShapesOnlyPdf,
@@ -52,6 +53,11 @@ describe('fixture builders', () => {
       needsPassword: true,
     });
     await expect(PDFDocument.load(bytes)).rejects.toThrow(/encrypted/i);
+  });
+  it('makeExifPhotoPdf has three pages of images, two with EXIF tags', async () => {
+    const bytes = await makeExifPhotoPdf();
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(3);
+    expect(Buffer.from(bytes).includes(Buffer.from('Exif'))).toBe(true);
   });
   it('makeOwnerOnlyEncryptedPdf is encrypted but opens without a password', async () => {
     expect(await inspect(await makeOwnerOnlyEncryptedPdf())).toMatchObject({

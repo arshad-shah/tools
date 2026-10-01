@@ -17,7 +17,12 @@ import {
 } from 'pdf-lib';
 import { encrypt } from '@arshad-shah/qpdf-wasm';
 import { getDocument, OPS, Util } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { encodeJpeg, noiseImage, radialAlpha } from './images';
+import {
+  encodeJpeg,
+  noiseImage,
+  radialAlpha,
+  withExifOrientation,
+} from './images';
 
 export async function makeTextPdf({
   pages = 3,
@@ -719,4 +724,56 @@ export async function makeOwnerOnlyEncryptedPdf(): Promise<Uint8Array> {
       permissions: { extract: false },
     })
   ).bytes;
+}
+
+/** Left half red, right half blue, with a little noise (so JPEG still wins). */
+function splitRgba(width: number, height: number): Uint8Array {
+  const rgba = noiseImage(width, height, 4, 11);
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const o = (y * width + x) * 4;
+      const red = x < width / 2;
+      rgba[o] = red ? 200 + (rgba[o] % 40) : rgba[o] % 40;
+      rgba[o + 1] = rgba[o + 1] % 40;
+      rgba[o + 2] = red ? rgba[o + 2] % 40 : 200 + (rgba[o + 2] % 40);
+    }
+  return rgba;
+}
+
+/**
+ * Three 400×300 images, each drawn 144×108 pt (200 DPI): a JPEG tagged EXIF
+ * orientation 3, one tagged 6 (both left red / right blue), and a Flate
+ * DeviceGray image. PDF viewers ignore the EXIF tags.
+ */
+export async function makeExifPhotoPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  doc.setTitle('EXIF photos');
+  const ctx = doc.context;
+  const base = encodeJpeg(400, 300, splitRgba(400, 300), 95);
+  const dict = (extra: Record<string, unknown>) =>
+    ({
+      Type: 'XObject',
+      Subtype: 'Image',
+      BitsPerComponent: 8,
+      Width: 400,
+      Height: 300,
+      ...extra,
+    }) as never;
+  for (const orientation of [3, 6]) {
+    const ref = ctx.register(
+      ctx.stream(
+        withExifOrientation(base, orientation),
+        dict({ ColorSpace: 'DeviceRGB', Filter: 'DCTDecode' }),
+      ),
+    );
+    placeImage(doc.addPage([612, 792]), ref, 72, 400, 144, 108);
+  }
+  const gray = ctx.register(
+    ctx.flateStream(
+      noiseImage(400, 300, 1, 12),
+      dict({ ColorSpace: 'DeviceGray' }),
+    ),
+  );
+  placeImage(doc.addPage([612, 792]), gray, 72, 400, 144, 108);
+  return doc.save({ useObjectStreams: false });
 }
