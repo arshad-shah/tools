@@ -52,18 +52,6 @@ importers:
       '@rive-app/react-canvas':
         specifier: ^4.28.6
         version: 4.28.6(react@19.2.6)
-      '@types/crypto-js':
-        specifier: ^4.2.2
-        version: 4.2.2
-      '@types/lodash':
-        specifier: ^4.17.24
-        version: 4.17.24
-      '@types/react':
-        specifier: ^19.2.15
-        version: 19.2.15
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.15)
       '@uiw/react-textarea-code-editor':
         specifier: ^3.1.1
         version: 3.1.1(@babel/runtime@7.29.7)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -158,9 +146,15 @@ importers:
       '@testing-library/react':
         specifier: ^16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@types/crypto-js':
+        specifier: ^4.2.2
+        version: 4.2.2
       '@types/dagre':
         specifier: ^0.7.54
         version: 0.7.54
+      '@types/lodash':
+        specifier: ^4.17.24
+        version: 4.17.24
       '@types/node':
         specifier: ^25.9.1
         version: 25.9.1
@@ -170,6 +164,12 @@ importers:
       '@types/plotly.js':
         specifier: ^3.0.10
         version: 3.0.10
+      '@types/react':
+        specifier: ^19.2.15
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.15)
       '@types/react-plotly.js':
         specifier: ^2.6.4
         version: 2.6.4
