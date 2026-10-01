@@ -48,6 +48,10 @@ import {
   Text,
 } from '@/shared/ui';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
+import { toToolError } from '@/shared/lib/errors';
+import { loadTextFile } from '@/shared/lib/files';
+import { useJob } from '@/shared/state/useJob';
+import { delimiterFor, parseDelimited } from './parse';
 import {
   ColumnStatistics,
   ParsedData,
@@ -178,8 +182,15 @@ interface DataState {
 
 const CSVTSVViewer: React.FC = () => {
   const [dataState, setDataState] = useState<DataState | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [parseError, setParseError] = useState<string | null>(null);
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const loadJob = useJob(async (_ctx, file: File) => {
+    const { name, text } = await loadTextFile(file, {
+      extensions: ['csv', 'tsv'],
+    });
+    return { ...parseDelimited(text, delimiterFor(name)), fileName: name };
+  });
+  const loading = loadJob.status === 'running';
+  const parseError = loadJob.error?.message ?? sampleError;
 
   // viewer state
   const [activeTab, setActiveTab] = useState<'data' | 'stats' | 'chart'>(
@@ -194,62 +205,33 @@ const CSVTSVViewer: React.FC = () => {
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [chartColumn, setChartColumn] = useState('');
 
-  const parseFile = (content: string, delimiter: string, fileName: string) => {
-    Papa.parse<ParsedData>(content, {
-      delimiter,
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          setParseError(`Parsing error: ${results.errors[0].message}`);
-        } else {
-          const cols = results.meta.fields || [];
-          setDataState({
-            data: results.data as ParsedData[],
-            columns: cols,
-            fileName,
-          });
-          setSelectedColumns(cols);
-          setParseError(null);
-        }
-        setLoading(false);
-      },
-      error: (err: Error) => {
-        setParseError(`Parsing error: ${err.message}`);
-        setLoading(false);
-      },
-    });
+  const showData = (next: DataState) => {
+    setDataState(next);
+    setSelectedColumns(next.columns);
   };
 
-  const processFile = (file: File) => {
-    setLoading(true);
-    setParseError(null);
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const delimiter = ext === 'tsv' ? '\t' : ',';
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      if (content) parseFile(content, delimiter, file.name);
-    };
-    reader.onerror = () => {
-      setParseError('Failed to read the file. Please try again.');
-      setLoading(false);
-    };
-    reader.readAsText(file);
+  const processFile = async (file: File) => {
+    setSampleError(null);
+    const r = await loadJob.run(file);
+    if (r) showData(r);
   };
 
   const loadSample = () => {
     const sample =
       'Name,Age,City,Salary\nJohn,28,New York,75000\nSarah,32,San Francisco,92000\nMike,45,Chicago,68000\nEmma,37,Boston,83000\nDavid,29,Seattle,79000';
-    setLoading(true);
-    parseFile(sample, ',', 'Sample Data');
+    loadJob.reset();
+    try {
+      showData({ ...parseDelimited(sample, ','), fileName: 'Sample Data' });
+      setSampleError(null);
+    } catch (e) {
+      setSampleError(toToolError(e).message);
+    }
   };
 
   const reset = () => {
     setDataState(null);
-    setLoading(false);
-    setParseError(null);
+    loadJob.reset();
+    setSampleError(null);
     setFilterColumn('');
     setFilterValue('');
     setSortColumn('');
@@ -420,7 +402,9 @@ const CSVTSVViewer: React.FC = () => {
         <Stack gap="4">
           <FileUpload
             accept=".csv,.tsv"
-            onFiles={(files) => files[0] && processFile(files[0])}
+            onFiles={(files) => {
+              if (files[0]) void processFile(files[0]);
+            }}
           />
           <Inline gap="2" wrap justify="center">
             <Button

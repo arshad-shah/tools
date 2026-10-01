@@ -74,3 +74,60 @@ test('image-optimizer rejects non-images inline', async ({ page }) => {
   });
   await expect(page.getByText('notes.txt is not an image')).toBeVisible();
 });
+
+test('csv-viewer loads a CSV and exports it', async ({ page }) => {
+  await page.goto('/csv-viewer');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'people.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('name,age\nAda,36\nBob,7\n'),
+  });
+  await expect(page.getByRole('cell', { name: 'Ada' })).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export' }).click();
+  expect((await download).suggestedFilename()).toBe('people.exported.csv');
+});
+
+test('csv-viewer rejects a non-CSV file inline', async ({ page }) => {
+  await page.goto('/csv-viewer');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('hello'),
+  });
+  await expect(
+    page.getByText('notes.txt is not a supported text file (.csv, .tsv)'),
+  ).toBeVisible();
+});
+
+test('text-diff-checker loads a file into the left pane', async ({ page }) => {
+  await page.goto('/text-diff-checker');
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles({
+      name: 'left.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('hello left'),
+    });
+  await expect(page.getByText('left.txt loaded successfully')).toBeVisible();
+  await expect(
+    page.getByRole('textbox', { name: 'Original text' }),
+  ).toHaveValue('hello left');
+});
+
+test('rive-animation-player rejects a non-Rive file with a toast', async ({
+  page,
+}) => {
+  await page.goto('/rive-animation-player');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'fake.riv',
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from('nope'),
+  });
+  await expect(
+    page
+      .locator('[data-sonner-toast]')
+      .getByText('fake.riv is not a Rive (.riv) file'),
+  ).toBeVisible();
+});
