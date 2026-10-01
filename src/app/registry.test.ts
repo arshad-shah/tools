@@ -77,6 +77,7 @@ describe('TOOLS', () => {
         'date-calculator',
         'hash-generator',
         'image-optimizer',
+        'images-to-pdf',
         'json-and-xml-viewer',
         'jwt-decode',
         'log-parser',

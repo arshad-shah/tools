@@ -2,13 +2,31 @@ import { execSync } from 'node:child_process';
 import { chromium, type FullConfig } from '@playwright/test';
 
 const FIXTURE = 'test/fixtures/generated/text-3.pdf';
-const TOOL_ROUTES = [
-  '/pdf-merger',
-  '/pdf-splitter',
-  '/pdf-organize',
-  '/pdf-to-images',
-];
 const RENDERED = 'canvas[data-rendered="true"]';
+
+interface WarmRoute {
+  route: string;
+  fixture: string;
+  /** Selector that appears once the tool has processed the fixture. */
+  ready: string;
+}
+const pdfRoute = (route: string): WarmRoute => ({
+  route,
+  fixture: FIXTURE,
+  ready: RENDERED,
+});
+const TOOL_ROUTES: WarmRoute[] = [
+  pdfRoute('/pdf-merger'),
+  pdfRoute('/pdf-splitter'),
+  pdfRoute('/pdf-organize'),
+  pdfRoute('/pdf-to-images'),
+  // Image tools show <img> previews rather than pdf.js canvases.
+  {
+    route: '/images-to-pdf',
+    fixture: 'test/fixtures/generated/photo.png',
+    ready: 'li[data-sortable-item] img',
+  },
+];
 const COLD_TIMEOUT = 120_000;
 
 /**
@@ -24,20 +42,20 @@ async function warmUp(baseURL: string) {
   try {
     const page = await browser.newPage({ baseURL });
     await page.goto('/', { waitUntil: 'load', timeout: COLD_TIMEOUT });
-    for (const route of TOOL_ROUTES) {
+    for (const { route, fixture, ready } of TOOL_ROUTES) {
       try {
         await page.goto(route, { waitUntil: 'load', timeout: COLD_TIMEOUT });
         await page
           .locator('input[type=file]')
           .first()
-          .setInputFiles(FIXTURE, { timeout: COLD_TIMEOUT });
+          .setInputFiles(fixture, { timeout: COLD_TIMEOUT });
         await page
-          .locator(RENDERED)
+          .locator(ready)
           .first()
           .waitFor({ state: 'attached', timeout: COLD_TIMEOUT });
       } catch (cause) {
         throw new Error(
-          `E2E warm-up failed: ${route} did not render ${FIXTURE} (${RENDERED}) at ${baseURL}. Is the dev server healthy?`,
+          `E2E warm-up failed: ${route} did not render ${fixture} (${ready}) at ${baseURL}. Is the dev server healthy?`,
           { cause },
         );
       }
