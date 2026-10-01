@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
+import {
+  PDFArray,
+  PDFContext,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFNumber,
+} from 'pdf-lib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {
   decodedObjects,
@@ -388,5 +395,100 @@ describe('applyPageEdits', () => {
     await expect(
       applyPageEdits(await makeTextPdf({ pages: 1 }), []),
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+  });
+});
+
+/** Two tagged pages; page 1 has a tagged link (OBJR + /StructParent 5) to page 2. */
+async function makeTaggedLinkPdf() {
+  const doc = await PDFDocument.load(await makeTextPdf({ pages: 2 }));
+  const { context } = doc;
+  const [p0, p1] = doc.getPages();
+  const rootRef = context.nextRef();
+  const linkElRef = context.nextRef();
+  const linkRef = context.register(
+    context.obj({
+      Type: 'Annot',
+      Subtype: 'Link',
+      Rect: [72, 600, 200, 620],
+      Dest: [p1.ref, PDFName.of('Fit')],
+      StructParent: 5,
+    }),
+  );
+  p0.node.set(PDFName.of('Annots'), context.obj([linkRef]));
+  p0.node.set(PDFName.of('StructParents'), PDFNumber.of(0));
+  context.assign(
+    linkElRef,
+    context.obj({
+      Type: 'StructElem',
+      S: 'Link',
+      P: rootRef,
+      Pg: p0.ref,
+      K: [{ Type: 'OBJR', Obj: linkRef, Pg: p0.ref }],
+    }),
+  );
+  const paraRef = context.register(
+    context.obj({ Type: 'StructElem', S: 'P', P: rootRef, Pg: p0.ref, K: 0 }),
+  );
+  context.assign(
+    rootRef,
+    context.obj({
+      Type: 'StructTreeRoot',
+      K: [paraRef, linkElRef],
+      ParentTree: { Nums: [0, [paraRef], 5, linkElRef] },
+      ParentTreeNextKey: 6,
+    }),
+  );
+  doc.catalog.set(PDFName.of('StructTreeRoot'), rootRef);
+  return { bytes: await doc.save(), linkRef };
+}
+
+describe('applyPageEdits: structure tree upkeep', () => {
+  it('prunes the OBJR and /ParentTree entry of a link it removes (review M-b)', async () => {
+    const { bytes: src } = await makeTaggedLinkPdf();
+    const { bytes, notes } = await applyPageEdits(src, [
+      { source: 0, rotate: 0 },
+    ]);
+    expect(notes.join(' ')).toMatch(/1 link to a deleted page was removed/);
+    const out = await PDFDocument.load(bytes);
+    const root = out.catalog.lookup(PDFName.of('StructTreeRoot'), PDFDict);
+    const kids = root.lookup(PDFName.of('K'), PDFArray);
+    const roles = kids
+      .asArray()
+      .map((k) => (out.context.lookup(k) as PDFDict).get(PDFName.of('S')));
+    expect(roles).toEqual([PDFName.of('P')]);
+    const nums = root
+      .lookup(PDFName.of('ParentTree'), PDFDict)
+      .lookup(PDFName.of('Nums'), PDFArray);
+    expect(nums.size()).toBe(2);
+    expect((nums.get(0) as PDFNumber).asNumber()).toBe(0);
+    expect(await decodedObjects(bytes)).not.toMatch(/\/OBJR/);
+  });
+
+  it('visits a shared structure element once (review M-c)', async () => {
+    const doc = await PDFDocument.load(await makeTextPdf({ pages: 2 }));
+    const { context } = doc;
+    const p0 = doc.getPage(0);
+    // A DAG 18 levels deep in which every level lists the next one twice:
+    // walked as a tree that is 2^18 visits of the kept leaf.
+    let next = context.register(
+      context.obj({ Type: 'StructElem', S: 'Span', Pg: p0.ref, K: 0 }),
+    );
+    for (let i = 0; i < 18; i++)
+      next = context.register(
+        context.obj({ Type: 'StructElem', S: 'Div', K: [next, next] }),
+      );
+    doc.catalog.set(
+      PDFName.of('StructTreeRoot'),
+      context.register(context.obj({ Type: 'StructTreeRoot', K: [next] })),
+    );
+    const src = await doc.save();
+    const lookups = vi.spyOn(PDFContext.prototype, 'lookup');
+    const { bytes } = await applyPageEdits(src, [{ source: 0, rotate: 0 }]);
+    // Linear in the number of elements, not in the number of paths.
+    expect(lookups.mock.calls.length).toBeLessThan(20_000);
+    lookups.mockRestore();
+    const out = await PDFDocument.load(bytes);
+    const root = out.catalog.lookup(PDFName.of('StructTreeRoot'), PDFDict);
+    expect(root.lookup(PDFName.of('K'), PDFArray).size()).toBe(1);
   });
 });

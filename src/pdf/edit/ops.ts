@@ -236,21 +236,24 @@ async function editInPlace(
   }
   if (deleted.length > 0) {
     const gone = new Set(deleted.map((p) => p.ref));
-    pruneStructTree(doc, deleted, gone);
+    const targetPage = makeTargetPage(doc);
+    // Count bookmarks first: they may go through named destinations that
+    // are removed below.
+    const dead = countBookmarksTo(doc, gone, targetPage);
+    // Links go before the structure tree is pruned, so their OBJRs and
+    // /ParentTree entries are pruned with the deleted pages' own.
+    const removedLinks = removeLinksTo(doc, ordered, gone, targetPage);
+    pruneStructTree(doc, deleted, gone, removedLinks.refs);
     const fields = removeFieldsOnPages(doc, deleted, gone);
     if (fields > 0)
       notes.push(
         `${plural(fields, 'form field')} that only appeared on deleted pages ${fields === 1 ? 'was' : 'were'} removed.`,
       );
-    const targetPage = makeTargetPage(doc);
-    // Count bookmarks first: they may go through named destinations that
-    // are removed next.
-    const dead = countBookmarksTo(doc, gone, targetPage);
     if (dead > 0)
       notes.push(
         `${plural(dead, 'bookmark')} pointed to a deleted page and now ${dead === 1 ? 'leads' : 'lead'} nowhere.`,
       );
-    const links = removeLinksTo(doc, ordered, gone, targetPage);
+    const links = removedLinks.count;
     if (links > 0)
       notes.push(
         `${plural(links, 'link')} to a deleted page ${links === 1 ? 'was' : 'were'} removed.`,
@@ -285,7 +288,8 @@ const N = (name: string) => PDFName.of(name);
  * to the deleted pages, so it can't keep their content alive (ActualText,
  * annotations, removed fields' values) through /StructTreeRoot:
  * - marked-content kids (MCIDs, MCRs) whose page is deleted;
- * - OBJR kids for annotations on deleted pages;
+ * - OBJR kids for annotations on deleted pages, and for `removedAnnots`
+ *   (links on kept pages that went to a deleted page);
  * - structure elements left with no kids (recursively);
  * - /ParentTree entries keyed by a deleted page's /StructParents or a
  *   deleted annotation's /StructParent, or pointing at a dropped element;
@@ -296,31 +300,41 @@ function pruneStructTree(
   doc: PDFDocument,
   deleted: PDFPage[],
   gone: ReadonlySet<PDFRef>,
+  removedAnnots: ReadonlySet<PDFRef>,
 ) {
   const { context, catalog } = doc;
   const root = catalog.lookupMaybe(N('StructTreeRoot'), PDFDict);
   if (!root) return;
   const doomedAnnots = new Set<PDFRef>();
   const doomedKeys = new Set<number>();
+  const doomAnnot = (ref: PDFRef) => {
+    doomedAnnots.add(ref);
+    const key = context
+      .lookupMaybe(ref, PDFDict)
+      ?.lookupMaybe(N('StructParent'), PDFNumber);
+    if (key) doomedKeys.add(key.asNumber());
+  };
   for (const page of deleted) {
     const sp = page.node.lookupMaybe(N('StructParents'), PDFNumber);
     if (sp) doomedKeys.add(sp.asNumber());
     const annots = page.node.Annots();
     for (let i = 0; i < (annots?.size() ?? 0); i++) {
       const ref = annots!.get(i);
-      if (!(ref instanceof PDFRef)) continue;
-      doomedAnnots.add(ref);
-      const key = context
-        .lookupMaybe(ref, PDFDict)
-        ?.lookupMaybe(N('StructParent'), PDFNumber);
-      if (key) doomedKeys.add(key.asNumber());
+      if (ref instanceof PDFRef) doomAnnot(ref);
     }
   }
+  for (const ref of removedAnnots) doomAnnot(ref);
   const onGonePage = (pg: PDFObject | undefined) =>
     pg instanceof PDFRef && gone.has(pg);
   const deref = (o: PDFObject | undefined) =>
     o instanceof PDFRef ? context.lookup(o) : o;
   const dropped = new Set<PDFDict>();
+  /**
+   * Elements already pruned. Real files are trees, but a structure that
+   * shares elements (a DAG) would otherwise be walked once per path, which
+   * is exponential in its depth.
+   */
+  const visited = new Set<PDFDict>();
 
   const keepKid = (
     kid: PDFObject,
@@ -341,6 +355,8 @@ function pruneStructTree(
       );
     }
     if (depth > 256) return true; // pathological nesting: leave it be
+    if (visited.has(dict)) return !dropped.has(dict);
+    visited.add(dict);
     const keep = pruneKids(dict, ownPg, depth + 1);
     if (!keep) dropped.add(dict);
     return keep;
@@ -553,15 +569,17 @@ function countBookmarksTo(
 
 /**
  * Removes link annotations on kept pages that go to a deleted page, and an
- * /OpenAction that does. Returns the number of links removed.
+ * /OpenAction that does. Returns how many links were removed, and the
+ * references of those that were indirect (for pruning their structure).
  */
 function removeLinksTo(
   doc: PDFDocument,
   kept: PDFPage[],
   gone: ReadonlySet<PDFRef>,
   targetPage: TargetPage,
-): number {
-  let removed = 0;
+): { count: number; refs: Set<PDFRef> } {
+  let count = 0;
+  const refs = new Set<PDFRef>();
   for (const page of kept) {
     const annots = page.node.Annots();
     if (!annots) continue;
@@ -571,8 +589,10 @@ function removeLinksTo(
         annot?.get(PDFName.of('Subtype')) === PDFName.of('Link') &&
         pointsInto(targetPage, destOf(annot), gone)
       ) {
+        const ref = annots.get(i);
+        if (ref instanceof PDFRef) refs.add(ref);
         annots.remove(i);
-        removed++;
+        count++;
       }
     }
   }
@@ -582,7 +602,7 @@ function removeLinksTo(
     openDict instanceof PDFDict ? openDict.get(PDFName.of('D')) : open;
   if (open && pointsInto(targetPage, openDest, gone))
     doc.catalog.delete(PDFName.of('OpenAction'));
-  return removed;
+  return { count, refs };
 }
 
 /** Removes named destinations that go to a deleted page; returns the count. */
