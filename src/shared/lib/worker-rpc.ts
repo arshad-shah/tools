@@ -125,6 +125,14 @@ export interface RpcClient<H extends RpcHandlers> {
     opts?: CallOptions,
   ): Promise<ResultOf<H[K]>>;
   terminate(): void;
+  /**
+   * Bumped each time the worker is lost to a crash. Anything the old worker
+   * held (open documents, caches) is gone; callers compare generations to
+   * detect that and re-create their state.
+   */
+  readonly generation: number;
+  /** Called after a crash has bumped `generation`. Returns an unsubscribe. */
+  onRestart(listener: () => void): () => void;
 }
 
 interface Pending {
@@ -141,6 +149,8 @@ export function createRpcClient<H extends RpcHandlers>(
   let endpoint: RpcEndpoint | null = null;
   let nextId = 1;
   let crashes = 0;
+  let generation = 0;
+  const restartListeners = new Set<() => void>();
   const pending = new Map<number, Pending>();
 
   const failAll = (err: ToolError) => {
@@ -187,6 +197,8 @@ export function createRpcClient<H extends RpcHandlers>(
         'The background worker stopped unexpectedly. Please try again.',
       ),
     );
+    generation++;
+    for (const listener of [...restartListeners]) listener();
   }
 
   const ensure = (): RpcEndpoint => {
@@ -206,6 +218,13 @@ export function createRpcClient<H extends RpcHandlers>(
   };
 
   return {
+    get generation() {
+      return generation;
+    },
+    onRestart(listener) {
+      restartListeners.add(listener);
+      return () => restartListeners.delete(listener);
+    },
     call(method, args, opts = {}) {
       return new Promise((resolve, reject) => {
         if (opts.signal?.aborted) {

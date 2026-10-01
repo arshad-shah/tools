@@ -151,6 +151,28 @@ describe('worker-rpc', () => {
     client.terminate();
   });
 
+  it('bumps generation and notifies onRestart listeners on a crash', async () => {
+    const endpoints: RpcEndpoint[] = [];
+    const client = createRpcClient<typeof handlers>(() => {
+      const ep = connectPair();
+      endpoints.push(ep);
+      return ep;
+    });
+    const seen: number[] = [];
+    const off = client.onRestart(() => seen.push(client.generation));
+    expect(client.generation).toBe(0);
+    await client.call('add', [1, 1]);
+    (endpoints[0] as unknown as EventTarget).dispatchEvent(new Event('error'));
+    expect(client.generation).toBe(1);
+    expect(seen).toEqual([1]);
+    off();
+    await client.call('add', [1, 1]);
+    (endpoints[1] as unknown as EventTarget).dispatchEvent(new Event('error'));
+    expect(client.generation).toBe(2);
+    expect(seen).toEqual([1]);
+    client.terminate();
+  });
+
   it('rejects with ToolError when connect throws', async () => {
     const client = createRpcClient<typeof handlers>(() => {
       throw new Error('boom');
