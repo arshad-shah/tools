@@ -8,7 +8,7 @@ import type {
 } from '../types';
 import { defaultState } from './session';
 
-/** Where redux-persist (key 'pomodoro-store') kept the old Redux state. */
+/** Where Redux Persist (key 'pomodoro-store') kept the old Redux state. */
 export const LEGACY_KEY = 'persist:pomodoro-store';
 
 type Obj = Record<string, unknown>;
@@ -102,7 +102,7 @@ function decodeSlice(v: unknown): unknown {
 }
 
 /**
- * redux-persist v6 stored `JSON.stringify({ timer: JSON.stringify(timer), …,
+ * Redux Persist v6 stored `JSON.stringify({ timer: JSON.stringify(timer), …,
  * _persist: … })`. Each valid slice is merged field by field over the
  * defaults; invalid slices and fields fall back to them. Returns null when
  * nothing usable is left. A malformed outer document throws, so

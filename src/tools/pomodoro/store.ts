@@ -23,7 +23,7 @@ export interface PomodoroActions {
 
 /**
  * Timer, settings, tasks and stats. The timer is persisted too, so a running
- * timer resumes after a reload. Before store-kit this lived in redux-persist's
+ * timer resumes after a reload. Before store-kit this lived in Redux Persist's
  * `persist:pomodoro-store`, imported once.
  */
 export const usePomodoroStore = createToolStore<PomodoroState, PomodoroActions>(

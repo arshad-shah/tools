@@ -9,5 +9,5 @@ export default defineTool({
   category: 'time',
   version: '1.0.0',
   enabled: true,
-  load: () => import('./main'),
+  load: () => import('./Tool'),
 });

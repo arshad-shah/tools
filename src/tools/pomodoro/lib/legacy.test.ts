@@ -11,7 +11,7 @@ const persisted = (slices: Record<string, unknown>) =>
   });
 
 /**
- * A blob as redux-persist v6 wrote it (persistReducer, key 'pomodoro-store',
+ * A blob as Redux Persist v6 wrote it (persistReducer, key 'pomodoro-store',
  * no version → -1): every slice is a JSON string inside the outer JSON.
  */
 const CAPTURED =
@@ -22,11 +22,11 @@ const CAPTURED =
   '"_persist":"{\\"version\\":-1,\\"rehydrated\\":true}"}';
 
 describe('parseLegacyPomodoro', () => {
-  it('uses the redux-persist key', () => {
+  it('uses the Redux Persist key', () => {
     expect(LEGACY_KEY).toBe('persist:pomodoro-store');
   });
 
-  it('decodes a captured redux-persist blob', () => {
+  it('decodes a captured Redux Persist blob', () => {
     const r = parseLegacyPomodoro(CAPTURED, NOW);
     expect(r).toEqual({
       timer: {
@@ -69,7 +69,7 @@ describe('parseLegacyPomodoro', () => {
     });
   });
 
-  it('decodes redux-persist double-encoded slices', () => {
+  it('decodes Redux Persist double-encoded slices', () => {
     const r = parseLegacyPomodoro(
       persisted({
         timer: {
