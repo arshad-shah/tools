@@ -2,8 +2,15 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import fontkit from '@pdf-lib/fontkit';
 import { describe, expect, it } from 'vitest';
-import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
 import {
+  decodePDFRawStream,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFRawStream,
+} from 'pdf-lib';
+import {
+  imagePlacements,
   makeRotatedPdf,
   makeTextPdf,
   pdfPageTexts,
@@ -139,5 +146,64 @@ describe('typed text fills its box exactly (what you place is what you get)', ()
     expect(fillsW || fillsH).toBe(true);
     expect((left + right) / 2).toBeCloseTo(rect.x + rect.width / 2, 0);
     expect((top + bottom) / 2).toBeCloseTo(rect.y + rect.height / 2, 0);
+  });
+});
+
+describe('image stamps land where they were placed', () => {
+  it('on a /Rotate 90 page: same visual box, upright', async () => {
+    const rect = { x: 400, y: 100, width: 150, height: 50 };
+    const out = await stamp(await makeRotatedPdf(), {
+      pageIndex: 1,
+      rect,
+      content: {
+        kind: 'image',
+        bytes: encodePng(30, 10, noiseImage(30, 10, 4)),
+        format: 'png',
+      },
+    });
+    const [img] = await imagePlacements(out, 1);
+    expect(img.viewport).toEqual({ width: 792, height: 612 });
+    expect(img.upright).toBe(true);
+    expect(img.left).toBeCloseTo(rect.x, 3);
+    expect(img.top).toBeCloseTo(rect.y, 3);
+    expect(img.width).toBeCloseTo(rect.width, 3);
+    expect(img.height).toBeCloseTo(rect.height, 3);
+  });
+});
+
+describe('typed signatures embed real glyph outlines', () => {
+  it('the subset font program draws every letter of the name', async () => {
+    const out = await stamp(await makeTextPdf({ pages: 1 }), {
+      pageIndex: 0,
+      rect: { x: 72, y: 600, width: 200, height: 60 },
+      content: typed('Ada Lovelace'),
+    });
+    const doc = await PDFDocument.load(out);
+    // The font program the FontDescriptor points at.
+    const programs = [...doc.context.enumerateIndirectObjects()]
+      .map(([, o]) => o)
+      .filter(
+        (o): o is PDFDict =>
+          o instanceof PDFDict &&
+          o.get(PDFName.of('Type')) === PDFName.of('FontDescriptor'),
+      )
+      .map((d) =>
+        ['FontFile', 'FontFile2', 'FontFile3']
+          .map((k) => d.lookup(PDFName.of(k)))
+          .find((o) => o instanceof PDFRawStream),
+      )
+      .filter((x): x is PDFRawStream => x instanceof PDFRawStream);
+    expect(programs).toHaveLength(1);
+    const subset = fontkit.create(
+      decodePDFRawStream(programs[0]).decode() as Uint8Array,
+    );
+    // The subset maps glyph ids, not code points; every used glyph has ink.
+    const original = fontkit.create(font);
+    const ids = new Set(original.layout('AdaLovelace').glyphs.map((g) => g.id));
+    expect(subset.numGlyphs).toBeGreaterThanOrEqual(ids.size);
+    let inked = 0;
+    for (let id = 1; id < subset.numGlyphs; id++)
+      if (subset.getGlyph(id).path.toSVG() !== '') inked++;
+    expect(inked).toBeGreaterThanOrEqual(ids.size);
   });
 });

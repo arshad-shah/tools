@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { PDFDict, PDFDocument, PDFName, PDFNumber, PDFStream } from 'pdf-lib';
 import {
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFNumber,
+  PDFStream,
+  StandardFonts,
+} from 'pdf-lib';
+import {
+  imagePlacements,
   makeRotatedPdf,
   makeTextPdf,
   pdfPageTexts,
@@ -183,5 +191,45 @@ describe('page numbers', () => {
     await expect(
       pageNumbers(pdf, numbers({ fontSize: 2, pages: [0] })),
     ).rejects.toThrow('Font size must be between 6 and 72');
+  });
+});
+
+describe('watermark on rotated pages, rotated and anchored', () => {
+  it('turns text 45° on screen and centres it on a /Rotate 90 page', async () => {
+    const out = await watermark(
+      await makeRotatedPdf(),
+      text({ pages: [1], rotation: 45 }),
+    );
+    const t = (await textPositions(out, 1)).find((i) => i.str === 'DRAFT')!;
+    expect(t.angle).toBeCloseTo(45, 3);
+    // Centre of the rotated text box, from its baseline origin (y down).
+    const font = await (
+      await PDFDocument.create()
+    ).embedFont(StandardFonts.HelveticaBold);
+    const w = font.widthOfTextAtSize('DRAFT', 48);
+    const h = font.heightAtSize(48, { descender: false });
+    const c = Math.SQRT1_2;
+    const cx = t.x + (w / 2) * c - (h / 2) * c;
+    const cy = t.y - ((w / 2) * c + (h / 2) * c);
+    expect(cx).toBeCloseTo(t.viewport.width / 2, 0);
+    expect(cy).toBeCloseTo(t.viewport.height / 2, 0);
+  });
+  it('anchors an image top-left (with its margin) on a cropped /Rotate 270 page', async () => {
+    const out = await watermark(await makeRotatedPdf(), {
+      ...text({ pages: [2], position: 'top-left', margin: 24 }),
+      content: {
+        kind: 'image',
+        bytes: encodePng(20, 10, noiseImage(20, 10, 4)),
+        format: 'png',
+        widthFraction: 0.25,
+      },
+    });
+    const [img] = await imagePlacements(out, 2);
+    expect(img.viewport).toEqual({ width: 782, height: 555 });
+    expect(img.upright).toBe(true);
+    expect(img.left).toBeCloseTo(24, 3);
+    expect(img.top).toBeCloseTo(24, 3);
+    expect(img.width).toBeCloseTo(782 * 0.25, 3);
+    expect(img.height).toBeCloseTo((782 * 0.25) / 2, 3);
   });
 });

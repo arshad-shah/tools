@@ -11,6 +11,7 @@ import {
   pdfPageTexts,
   textPositions,
   makeXfaPdf,
+  imagePlacements,
 } from './builders';
 import { detectKind } from '@/shared/lib/files';
 import {
@@ -105,5 +106,18 @@ describe('image encoders', () => {
     expect(new TextDecoder().decode(gif.subarray(0, 6))).toBe('GIF89a');
     expect([gif[6] | (gif[7] << 8), gif[8] | (gif[9] << 8)]).toEqual([3, 2]);
     expect(gif[gif.length - 1]).toBe(0x3b);
+  });
+});
+
+describe('imagePlacements', () => {
+  it('reports where an image is painted, as a viewer shows it', async () => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([612, 792]);
+    const img = await doc.embedPng(encodePng(4, 2, noiseImage(4, 2, 4)));
+    page.drawImage(img, { x: 72, y: 600, width: 150, height: 50 });
+    const [p] = await imagePlacements(await doc.save(), 0);
+    expect(p).toMatchObject({ upright: true, width: 150, height: 50 });
+    expect(p.left).toBeCloseTo(72);
+    expect(p.top).toBeCloseTo(792 - 650);
   });
 });
