@@ -254,7 +254,8 @@ const Calculator: React.FC = () => {
     <Stack gap="3">
       <Alert status="info">
         <AlertDescription>
-          Use expressions like 2+3*4, sin(30), or x^2+1. Parentheses balanced:{' '}
+          Use expressions like 2+3*4, sin(30), or x^2+1. Trig functions use the
+          DEG or RAD setting above. Parentheses balanced:{' '}
           <Badge
             variant="soft"
             tone={isBalanced ? 'success' : 'danger'}
@@ -399,7 +400,7 @@ const Calculator: React.FC = () => {
                 </TabsList>
               </Tabs>
 
-              {mode === 'scientific' && (
+              {mode !== 'standard' && (
                 <Inline justify="between" align="center" gap="2" wrap>
                   <ButtonGroup>
                     <Button

@@ -7,6 +7,8 @@ import { useState, useEffect, useCallback } from 'react';
 import * as math from 'mathjs';
 import { Mode, AngleUnit, PendingOperator } from '../types';
 import { useCalculatorStore } from '../store';
+import { evaluateWithAngle } from '../lib/evaluate';
+import { shouldHandleCalculatorKey } from '../lib/keyboard';
 
 export function useCalculator() {
   // Core State
@@ -42,6 +44,7 @@ export function useCalculator() {
   // Keyboard handling
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      if (!shouldHandleCalculatorKey(event)) return;
       const { key } = event;
       // Add your logic for mapping keys -> actions
       // For brevity, only a few examples:
@@ -466,7 +469,7 @@ export function useCalculator() {
   const evaluateExpression = () => {
     animateButton();
     try {
-      const result = math.evaluate(display);
+      const result = evaluateWithAngle(display, angleUnit);
       if (typeof result === 'number') {
         setDisplay(String(result));
         const expr = `${display} = ${result}`;
