@@ -158,11 +158,25 @@ async function inspect(bytes: Uint8Array) {
       }),
     );
     const fields: string[] = [];
+    const links: { page: number; target: number | null }[] = [];
     for (let i = 1; i <= pdf.numPages; i++) {
-      for (const a of await (await pdf.getPage(i)).getAnnotations())
+      for (const a of await (await pdf.getPage(i)).getAnnotations()) {
         if (a.subtype === 'Widget') fields.push(a.fieldName as string);
+        if (a.subtype === 'Link' && Array.isArray(a.dest)) {
+          let target: number | null;
+          try {
+            target = await pdf.getPageIndex(a.dest[0]);
+          } catch {
+            target = null;
+          }
+          links.push({ page: i - 1, target });
+        }
+      }
     }
     fields.sort();
+    const destinations: string[] = [];
+    for (const name of ['second', 'third'])
+      if (await pdf.getDestination(name)) destinations.push(name);
     return {
       title: info.Title,
       author: info.Author,
@@ -171,6 +185,8 @@ async function inspect(bytes: Uint8Array) {
       lang: info.Language,
       outline,
       fields,
+      links,
+      destinations,
       labels: await pdf.getPageLabels(),
     };
   } finally {
@@ -218,6 +234,14 @@ describe('applyPageEdits', () => {
     const form = (await PDFDocument.load(bytes)).getForm();
     expect(form.getTextField('first.name').getText()).toBe('Ada');
     expect(form.getTextField('last.page').getText()).toBe('Zed');
+    // Links follow their target pages too.
+    expect(out.links).toEqual(
+      expect.arrayContaining([
+        { page: 1, target: 0 },
+        { page: 1, target: 2 },
+      ]),
+    );
+    expect(out.destinations).toEqual(['second', 'third']);
     // Bookmarks follow their pages to the new positions.
     expect(out.outline).toEqual([
       { title: 'Bookmark 1', page: 1 },
@@ -257,6 +281,16 @@ describe('applyPageEdits', () => {
       ]),
     );
     // The deleted page's drawing is gone from the file, not just hidden.
+    // Links and named destinations to the deleted page are removed (and
+    // reported); the link to a kept page stays.
+    expect(out.links).toEqual([{ page: 0, target: 1 }]);
+    expect(out.destinations).toEqual(['second']);
+    expect(notes).toEqual(
+      expect.arrayContaining([
+        '1 link to a deleted page was removed.',
+        '1 named destination to a deleted page was removed.',
+      ]),
+    );
     const reloaded = await PDFDocument.load(bytes);
     expect(reloaded.getPageCount()).toBe(2);
     expect(
