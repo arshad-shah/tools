@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import {
   makeAesEncryptedPdf,
   makeFormPdf,
+  makeImageHeavyPdf,
   makeShapesOnlyPdf,
   makeStructuredPdf,
   makeTextPdf,
@@ -50,6 +51,7 @@ const files: Record<string, Uint8Array> = {
   'encrypted-aes.pdf': await makeAesEncryptedPdf(),
   'form.pdf': await makeFormPdf(),
   'xfa-form.pdf': await makeXfaPdf(),
+  'images-heavy.pdf': await makeImageHeavyPdf(),
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
   'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),
