@@ -1,4 +1,5 @@
 import { ToolError } from './errors';
+import { formatBytes } from './format';
 import { newId } from './id';
 
 export type FileKind = 'pdf' | 'png' | 'jpeg' | 'webp' | 'gif';
@@ -105,4 +106,42 @@ export async function loadFile(
     kind,
     bytes,
   };
+}
+
+export async function readText(file: Blob): Promise<string> {
+  return file.text();
+}
+
+const extOf = (name: string) =>
+  name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : '';
+
+/**
+ * Reads a text file after checking its extension (case-insensitive, with or
+ * without a leading dot) and size. Text formats have no magic numbers, so the
+ * extension is the only signal.
+ */
+export async function loadTextFile(
+  file: File,
+  opts: { maxBytes?: number; extensions?: readonly string[] } = {},
+): Promise<{ name: string; size: number; text: string }> {
+  const exts = opts.extensions?.map((e) => e.replace(/^\./, '').toLowerCase());
+  if (exts && !exts.includes(extOf(file.name))) {
+    throw new ToolError(
+      'INVALID_FILE',
+      `${file.name} is not a supported text file (${exts.map((e) => `.${e}`).join(', ')})`,
+    );
+  }
+  if (opts.maxBytes !== undefined && file.size > opts.maxBytes) {
+    throw new ToolError(
+      'TOO_LARGE',
+      `${file.name} is larger than ${formatBytes(opts.maxBytes)}`,
+    );
+  }
+  try {
+    return { name: file.name, size: file.size, text: await readText(file) };
+  } catch (cause) {
+    throw new ToolError('INVALID_FILE', `Couldn't read ${file.name}`, {
+      cause,
+    });
+  }
 }

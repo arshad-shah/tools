@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useClipboard } from './clipboard';
+import { readClipboardText, useClipboard } from './clipboard';
 
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), toast) }));
@@ -45,5 +45,51 @@ describe('useClipboard', () => {
     expect(ok).toBe(false);
     expect(result.current.copied).toBe(false);
     expect(toast.error).toHaveBeenCalledWith('Could not copy to clipboard');
+  });
+
+  it('tracks the key of the last copy', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    });
+    const { result } = renderHook(() => useClipboard());
+    await act(async () => {
+      await result.current.copy('#ff0000', 'hex');
+    });
+    expect(result.current.copiedKey).toBe('hex');
+    expect(result.current.copied).toBe(true);
+  });
+
+  it('uses the default key when none is given', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    });
+    const { result } = renderHook(() => useClipboard());
+    await act(async () => {
+      await result.current.copy('x');
+    });
+    expect(result.current.copiedKey).toBe('default');
+  });
+});
+
+describe('readClipboardText', () => {
+  it('returns the clipboard text', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { readText: vi.fn().mockResolvedValue('pasted') },
+      configurable: true,
+    });
+    await expect(readClipboardText()).resolves.toBe('pasted');
+  });
+
+  it('wraps failures as ToolError', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { readText: vi.fn().mockRejectedValue(new Error('denied')) },
+      configurable: true,
+    });
+    await expect(readClipboardText()).rejects.toMatchObject({
+      code: 'UNKNOWN',
+      message: 'Could not read from clipboard',
+    });
   });
 });
