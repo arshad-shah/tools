@@ -42,7 +42,7 @@ afterEach(() => {
   }
 });
 
-function setup() {
+function setup(opts: Parameters<typeof createPdfRender>[1] = {}) {
   const endpoints: RpcEndpoint[] = [];
   const posted: string[] = [];
   const rpc = createRpcClient<RenderHandlers>(() => {
@@ -73,7 +73,7 @@ function setup() {
     (endpoints[endpoints.length - 1] as unknown as EventTarget).dispatchEvent(
       new Event('error'),
     );
-  return { render: createPdfRender(rpc), rpc, crash, posted };
+  return { render: createPdfRender(rpc, opts), rpc, crash, posted };
 }
 
 describe('pdfRender after a worker restart', () => {
@@ -113,6 +113,45 @@ describe('pdfRender after a worker restart', () => {
     ctrl.abort();
     await expect(opening).rejects.toMatchObject({ code: 'CANCELLED' });
     expect(posted).toEqual(['call:open', 'abort', 'call:close']);
+  });
+
+  it('stops auto-reopening a document that keeps crashing the worker', async () => {
+    const { render, crash } = setup();
+    const bytes = new Uint8Array([9]);
+    await render.open(bytes);
+    for (let i = 0; i < 2; i++) {
+      crash();
+      await expect(render.open(bytes)).resolves.toBeTruthy(); // reopen i+1
+    }
+    crash();
+    await expect(render.open(bytes)).rejects.toMatchObject({
+      code: 'WORKER_CRASHED',
+      message: expect.stringMatching(/keeps crashing/),
+    });
+    // Another document is unaffected.
+    await expect(render.open(new Uint8Array([1]))).resolves.toBeTruthy();
+  });
+
+  it('allows reopening again once earlier crashes are outside the window', async () => {
+    let t = 0;
+    const { render, crash } = setup({ now: () => t, reopenWindowMs: 1000 });
+    const bytes = new Uint8Array([9]);
+    await render.open(bytes);
+    for (let i = 0; i < 2; i++) {
+      crash();
+      await render.open(bytes);
+    }
+    t = 5000;
+    crash();
+    await expect(render.open(bytes)).resolves.toBeTruthy();
+  });
+
+  it('does not count a same-generation reopen (remount) against the budget', async () => {
+    const { render, crash } = setup();
+    const bytes = new Uint8Array([9]);
+    for (let i = 0; i < 5; i++) await render.open(bytes);
+    crash();
+    await expect(render.open(bytes)).resolves.toBeTruthy();
   });
 
   it('still reports a closed document as CANCELLED', async () => {
