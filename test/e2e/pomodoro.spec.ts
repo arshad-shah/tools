@@ -90,6 +90,20 @@ test('start counts down and pause stops; state persists across reload', async ({
   await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
 });
 
+test('a running timer keeps going across a reload, with the time really left', async ({
+  page,
+}) => {
+  await seedLegacy(page);
+  await page.goto('/pomodoro');
+  await page.getByRole('button', { name: 'Start' }).click();
+  await expect(timerHeading(page)).toHaveText('29:59', { timeout: 5_000 });
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  // Wall-clock based: never back at the full 30:00 after the reload.
+  await expect(timerHeading(page)).not.toHaveText('30:00');
+  await expect(timerHeading(page)).toHaveText(/^29:5\d$/, { timeout: 5_000 });
+});
+
 test('a finished work session counts once, chimes once and the break auto-starts', async ({
   page,
 }) => {

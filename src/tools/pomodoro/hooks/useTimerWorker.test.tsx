@@ -126,16 +126,50 @@ describe('useTimerWorker', () => {
     expect(document.title).toBe('Tools');
   });
 
-  it('resumes a persisted running timer on mount', async () => {
+  it('resumes a persisted running timer with the time really left', async () => {
     const { usePomodoroStore } = await import('../store');
+    // Closed with 10:00 left; reopened 4 minutes later.
     usePomodoroStore.setState({
-      timer: { mode: 'work', timeLeft: 600, isActive: true, currentTask: 'x' },
+      timer: {
+        mode: 'work',
+        timeLeft: 600,
+        isActive: true,
+        currentTask: 'x',
+        endsAt: Date.now() + 360_000,
+      },
     });
     const { useTimerWorker } = await import('./useTimerWorker');
     renderHook(() => useTimerWorker());
-    expect(FakeWorker.instances.at(-1)!.posted).toEqual([
-      { type: 'STOP' },
-      { type: 'START', payload: { timeLeft: 600 } },
-    ]);
+    const posted = FakeWorker.instances.at(-1)!.posted as {
+      type: string;
+      payload?: { timeLeft: number };
+    }[];
+    expect(posted.at(-1)?.type).toBe('START');
+    expect(posted.at(-1)?.payload?.timeLeft).toBeGreaterThan(355);
+    expect(posted.at(-1)?.payload?.timeLeft).toBeLessThanOrEqual(360);
+    expect(posted.filter((m) => m.type === 'START')).toHaveLength(1);
+  });
+
+  it('a session that ended while closed counts once, silently, and waits paused (review M2)', async () => {
+    const { usePomodoroStore } = await import('../store');
+    usePomodoroStore.setState({
+      timer: {
+        mode: 'work',
+        timeLeft: 600,
+        isActive: true,
+        currentTask: null,
+        endsAt: Date.now() - 60_000,
+      },
+    });
+    const { useTimerWorker } = await import('./useTimerWorker');
+    renderHook(() => useTimerWorker());
+    const st = usePomodoroStore.getState();
+    // totalFocusTime never resets, so this holds even across midnight.
+    expect(st.stats.totalFocusTime).toBe(25);
+    expect(st.timer).toMatchObject({ mode: 'shortBreak', isActive: false });
+    expect(FakeWorker.instances.at(-1)!.posted).not.toContainEqual(
+      expect.objectContaining({ type: 'START' }),
+    );
+    expect(audioCtor).not.toHaveBeenCalled();
   });
 });

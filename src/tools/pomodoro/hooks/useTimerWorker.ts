@@ -34,6 +34,7 @@ export function useTimerWorker(): { skip(): void } {
 
   useEffect(() => {
     const originalTitle = document.title;
+    usePomodoroStore.getState().resume();
     usePomodoroStore.getState().rollover();
     if (typeof Worker === 'undefined') return;
     const worker = new Worker(
@@ -62,9 +63,14 @@ export function useTimerWorker(): { skip(): void } {
     const worker = workerRef.current;
     if (!worker) return;
     worker.postMessage({ type: 'STOP' });
-    if (isActive) {
-      const { timeLeft } = usePomodoroStore.getState().timer;
-      worker.postMessage({ type: 'START', payload: { timeLeft } });
+    // Read the store, not the render: resume() on mount may have just
+    // paused the timer or corrected its time.
+    const timer = usePomodoroStore.getState().timer;
+    if (timer.isActive) {
+      worker.postMessage({
+        type: 'START',
+        payload: { timeLeft: timer.timeLeft },
+      });
     }
   }, [isActive, mode]);
 

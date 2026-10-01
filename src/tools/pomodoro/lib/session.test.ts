@@ -9,9 +9,11 @@ import {
   durationFor,
   nextIncompleteTaskId,
   resetTimer,
+  resumeTimer,
   rolloverDay,
   selectMode,
   toggleTask,
+  toggleTimer,
 } from './session';
 import type { PomodoroState, Task } from '../types';
 
@@ -77,6 +79,7 @@ describe('completeSession', () => {
       timeLeft: 300,
       isActive: true, // autoStartBreaks default true
       currentTask: 'a',
+      endsAt: DAY1_LATER + 300_000,
     });
   });
   it('builds a streak of one per productive day (B5: the old listener never incremented)', () => {
@@ -186,6 +189,72 @@ describe('completeSession', () => {
       weeklyPomodoros: 4,
       currentStreak: 3,
     });
+  });
+});
+
+describe('running timer: start, pause and resume after a reload (review M2)', () => {
+  const T = DAY1;
+  const running = (timeLeft: number, endsAt: number | undefined) =>
+    state({
+      tasks: [task('a')],
+      timer: {
+        mode: 'work',
+        timeLeft,
+        isActive: true,
+        currentTask: 'a',
+        endsAt,
+      },
+    });
+
+  it('starting stamps the wall-clock end; pausing clears it', () => {
+    const s = state({
+      timer: { mode: 'work', timeLeft: 600, isActive: false, currentTask: 'a' },
+    });
+    const started = toggleTimer(s, T).timer;
+    expect(started).toMatchObject({ isActive: true, endsAt: T + 600_000 });
+    const paused = toggleTimer({ ...s, timer: started }, T + 5000).timer;
+    expect(paused.isActive).toBe(false);
+    expect(paused.endsAt).toBeUndefined();
+  });
+  it('starting work without a task changes nothing', () => {
+    const s = state();
+    expect(toggleTimer(s, T).timer).toBe(s.timer);
+  });
+  it('mode select and reset clear the end time', () => {
+    const s = running(100, T + 100_000);
+    expect(selectMode(s, 'shortBreak').timer.endsAt).toBeUndefined();
+    expect(resetTimer(s).timer.endsAt).toBeUndefined();
+  });
+  it('a paused timer resumes unchanged', () => {
+    const s = state();
+    expect(resumeTimer(s, T)).toEqual({});
+  });
+  it('a running timer resumes with the time actually left', () => {
+    const r = resumeTimer(running(600, T + 600_000), T + 61_500);
+    expect(r.timer).toMatchObject({ isActive: true, timeLeft: 539 });
+    expect(r.stats).toBeUndefined();
+  });
+  it('a session that ended while the tab was closed counts once, on its own day, and comes back paused', () => {
+    // Ended on day 1 at T+10 min; reopened the next day.
+    const s = running(600, T + 600_000);
+    const r = resumeTimer(s, DAY2);
+    expect(r.stats).toMatchObject({
+      dailyPomodoros: 0, // counted for day 1, then rolled over to day 2
+      weeklyPomodoros: 1,
+      currentStreak: 1,
+      lastUpdate: DAY2,
+    });
+    expect(r.tasks?.[0].completedPomodoros).toBe(1);
+    expect(r.timer).toMatchObject({
+      mode: 'shortBreak',
+      timeLeft: 300,
+      isActive: false,
+    });
+    expect(r.timer?.endsAt).toBeUndefined();
+  });
+  it('a running timer without an end time (older data) comes back paused', () => {
+    const r = resumeTimer(running(420, undefined), T);
+    expect(r.timer).toMatchObject({ isActive: false, timeLeft: 420 });
   });
 });
 

@@ -10,7 +10,9 @@ export interface PomodoroActions {
   /** The session ended (timer reached zero or Skip). */
   complete(now?: number): void;
   /** Start/pause; starting work without a current task is a no-op. */
-  toggle(): void;
+  toggle(now?: number): void;
+  /** On mount: correct a running timer from its wall-clock end. */
+  resume(now?: number): void;
   selectMode(mode: TimerMode): void;
   resetTimer(): void;
   updateSettings(patch: Partial<Settings>): void;
@@ -37,12 +39,8 @@ export const usePomodoroStore = createToolStore<PomodoroState, PomodoroActions>(
           stats: session.rolloverDay(s.stats, now),
         })),
       complete: (now = Date.now()) => set(session.completeSession(get(), now)),
-      toggle: () =>
-        set((s) =>
-          !s.timer.isActive && !session.canStart(s.timer)
-            ? {}
-            : { timer: { ...s.timer, isActive: !s.timer.isActive } },
-        ),
+      toggle: (now = Date.now()) => set(session.toggleTimer(get(), now)),
+      resume: (now = Date.now()) => set(session.resumeTimer(get(), now)),
       selectMode: (mode) => set(session.selectMode(get(), mode)),
       resetTimer: () => set(session.resetTimer(get())),
       updateSettings: (patch) => set(session.applySettings(get(), patch)),
