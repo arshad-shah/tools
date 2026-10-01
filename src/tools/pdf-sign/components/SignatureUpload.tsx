@@ -12,8 +12,7 @@ import {
 import type { LoadedFile } from '@/shared/lib/files';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { useObjectUrl } from '@/shared/lib/object-url';
-import { uprightJpeg } from '@/shared/lib/upright-jpeg';
-import { PdfDropzone } from '@/pdf/components';
+import { PdfDropzone, uprightJpeg } from '@/pdf/components';
 import { opaqueBounds, removeWhiteBackground } from '../lib/pixels';
 import {
   canvasToPng,

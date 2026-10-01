@@ -1,8 +1,11 @@
+import { jpegOrientation } from '@/pdf/edit/exif';
+
 /**
  * Re-encodes a JPEG through the browser's decoder, which applies its EXIF
  * orientation, so the returned pixels are stored the way the photo is shown.
  * pdf-lib embeds JPEG bytes as-is (ignoring EXIF), so a sideways phone photo
  * would otherwise be drawn sideways and squashed into its upright-shaped box.
+ * A JPEG with no rotation (EXIF orientation 1, or none) is returned as is.
  */
 export async function uprightJpeg(
   bytes: Uint8Array,
@@ -13,6 +16,7 @@ export async function uprightJpeg(
   );
   try {
     const { width, height } = bitmap;
+    if (jpegOrientation(bytes) === 1) return { bytes, width, height };
     const canvas = new OffscreenCanvas(width, height);
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('No 2D canvas context');
