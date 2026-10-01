@@ -53,6 +53,34 @@ export function createPdfRender(
     { generation: number; times: number[] }
   >();
 
+  /** Source bytes of every open document, to attribute its calls. */
+  const sourceOf = new Map<string, Uint8Array>();
+  /** Calls the worker is running, with the generation they were sent to. */
+  const running = new Set<{ bytes: Uint8Array; generation: number }>();
+  /**
+   * Sources that had a call in flight when the worker crashed: the possible
+   * culprits. Only their reopens count against the budget, so one document
+   * that keeps crashing the worker does not use up the budgets of innocent
+   * documents that merely lived in the same worker.
+   */
+  const suspects = new WeakSet<Uint8Array>();
+  // Registered before any usePdfDocument subscriber, so suspects are known
+  // before anything reopens.
+  client.onRestart(() => {
+    for (const call of running)
+      if (call.generation < client.generation) suspects.add(call.bytes);
+  });
+
+  const track = <T>(
+    bytes: Uint8Array | undefined,
+    call: () => Promise<T>,
+  ): Promise<T> => {
+    if (!bytes) return call();
+    const entry = { bytes, generation: client.generation };
+    running.add(entry);
+    return call().finally(() => running.delete(entry));
+  };
+
   const checkReopenBudget = (bytes: Uint8Array) => {
     const generation = client.generation;
     const seen = reopens.get(bytes);
@@ -61,10 +89,14 @@ export function createPdfRender(
       return;
     }
     if (seen.generation === generation) return; // remount, not a reopen
-    const t = now();
-    seen.times = seen.times.filter((at) => t - at < reopenWindowMs);
-    if (seen.times.length >= maxReopens) throw keepsCrashing();
-    seen.times.push(t);
+    if (suspects.has(bytes)) {
+      const t = now();
+      seen.times = seen.times.filter((at) => t - at < reopenWindowMs);
+      // The generation stays stale, so every later open is refused too.
+      if (seen.times.length >= maxReopens) throw keepsCrashing();
+      seen.times.push(t);
+      suspects.delete(bytes);
+    }
     seen.generation = generation;
   };
 
@@ -88,10 +120,12 @@ export function createPdfRender(
       const generation = client.generation;
       // Start the call first so its own abort listener (which posts 'abort'
       // for the open) is registered before ours (which posts 'close').
-      const opening = client.call('open', [docId, copy], {
-        signal,
-        transfer: [copy.buffer],
-      });
+      const opening = track(bytes, () =>
+        client.call('open', [docId, copy], {
+          signal,
+          transfer: [copy.buffer],
+        }),
+      );
       // Worker handlers are async and interleave, so ordering alone is not
       // what makes this safe: if the close runs first and finds nothing, the
       // aborted open sees its signal and destroys the document itself
@@ -101,6 +135,7 @@ export function createPdfRender(
       try {
         const doc = await opening;
         openedIn.set(docId, generation);
+        sourceOf.set(docId, bytes);
         return doc;
       } finally {
         signal?.removeEventListener('abort', release);
@@ -115,9 +150,9 @@ export function createPdfRender(
       return withSlot(async () => {
         // Checked once the slot is ours: a crash may happen while queued.
         assertAlive(docId);
-        return client.call('renderPage', [docId, pageIndex, widthPx], {
-          signal,
-        });
+        return track(sourceOf.get(docId), () =>
+          client.call('renderPage', [docId, pageIndex, widthPx], { signal }),
+        );
       }, signal);
     },
     /** Encoded PNG/JPEG of one page at `opts.dpi` (capped to the canvas limit). */
@@ -129,18 +164,21 @@ export function createPdfRender(
     ) {
       return withSlot(async () => {
         assertAlive(docId);
-        return client.call('renderPageImage', [docId, pageIndex, opts], {
-          signal,
-        });
+        return track(sourceOf.get(docId), () =>
+          client.call('renderPageImage', [docId, pageIndex, opts], { signal }),
+        );
       }, signal);
     },
     async extractText(docId: string, pageIndex: number, signal?: AbortSignal) {
       assertAlive(docId);
-      return client.call('extractText', [docId, pageIndex], { signal });
+      return track(sourceOf.get(docId), () =>
+        client.call('extractText', [docId, pageIndex], { signal }),
+      );
     },
     close(docId: string) {
       const gen = openedIn.get(docId);
       openedIn.delete(docId);
+      sourceOf.delete(docId);
       // The worker that held it is gone: nothing to free.
       if (gen !== undefined && gen !== client.generation)
         return Promise.resolve();

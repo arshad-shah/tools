@@ -83,7 +83,18 @@ function setup(opts: Parameters<typeof createPdfRender>[1] = {}) {
     (endpoints[endpoints.length - 1] as unknown as EventTarget).dispatchEvent(
       new Event('error'),
     );
-  return { render: createPdfRender(rpc, opts), rpc, crash, posted };
+  const render = createPdfRender(rpc, opts);
+  /** Crashes the worker while it is rendering a page of `docId`. */
+  const crashWhileRendering = async (docId: string) => {
+    const sent = () => posted.filter((p) => p === 'call:renderPage').length;
+    const before = sent();
+    const rendering = render.renderPage(docId, 0, 100).catch((e) => e);
+    for (let i = 0; i < 50 && sent() === before; i++) await Promise.resolve();
+    expect(sent()).toBe(before + 1);
+    crash();
+    expect(await rendering).toMatchObject({ code: 'WORKER_CRASHED' });
+  };
+  return { render, rpc, crash, crashWhileRendering, posted };
 }
 
 describe('pdfRender after a worker restart', () => {
@@ -139,33 +150,72 @@ describe('pdfRender after a worker restart', () => {
   });
 
   it('stops auto-reopening a document that keeps crashing the worker', async () => {
-    const { render, crash } = setup();
+    const { render, crashWhileRendering } = setup();
     const bytes = new Uint8Array([9]);
-    await render.open(bytes);
+    let doc = await render.open(bytes);
     for (let i = 0; i < 2; i++) {
-      crash();
-      await expect(render.open(bytes)).resolves.toBeTruthy(); // reopen i+1
+      await crashWhileRendering(doc.docId);
+      doc = await render.open(bytes); // reopen i+1
     }
-    crash();
+    await crashWhileRendering(doc.docId);
     await expect(render.open(bytes)).rejects.toMatchObject({
       code: 'WORKER_CRASHED',
+      message: expect.stringMatching(/keeps crashing/),
+    });
+    // Refused for good, not just once.
+    await expect(render.open(bytes)).rejects.toMatchObject({
       message: expect.stringMatching(/keeps crashing/),
     });
     // Another document is unaffected.
     await expect(render.open(new Uint8Array([1]))).resolves.toBeTruthy();
   });
 
+  it('counts a crash during the open itself against that document', async () => {
+    const { render, crash } = setup({ maxReopens: 1 });
+    const bytes = new Uint8Array([9]);
+    for (let i = 0; i < 2; i++) {
+      const opening = render.open(bytes);
+      crash();
+      await expect(opening).rejects.toMatchObject({ code: 'WORKER_CRASHED' });
+    }
+    await expect(render.open(bytes)).rejects.toMatchObject({
+      message: expect.stringMatching(/keeps crashing/),
+    });
+  });
+
+  it("does not charge innocent documents for another document's crashes", async () => {
+    const { render, crashWhileRendering } = setup();
+    const culprit = new Uint8Array([9]);
+    const innocent = new Uint8Array([1]);
+    let bad = await render.open(culprit);
+    await render.open(innocent);
+    for (let i = 0; i < 2; i++) {
+      await crashWhileRendering(bad.docId);
+      bad = await render.open(culprit);
+      await expect(render.open(innocent)).resolves.toBeTruthy();
+    }
+    await crashWhileRendering(bad.docId);
+    await expect(render.open(culprit)).rejects.toMatchObject({
+      message: expect.stringMatching(/keeps crashing/),
+    });
+    // Three restarts, none of them caused by it: still reopens.
+    await expect(render.open(innocent)).resolves.toBeTruthy();
+  });
+
   it('allows reopening again once earlier crashes are outside the window', async () => {
     let t = 0;
-    const { render, crash } = setup({ now: () => t, reopenWindowMs: 1000 });
+    const { render, crashWhileRendering } = setup({
+      now: () => t,
+      reopenWindowMs: 1000,
+    });
     const bytes = new Uint8Array([9]);
-    await render.open(bytes);
+    let doc = await render.open(bytes);
     for (let i = 0; i < 2; i++) {
-      crash();
-      await render.open(bytes);
+      await crashWhileRendering(doc.docId);
+      doc = await render.open(bytes);
     }
     t = 5000;
-    crash();
+    await crashWhileRendering(doc.docId);
     await expect(render.open(bytes)).resolves.toBeTruthy();
   });
 
