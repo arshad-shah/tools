@@ -1,4 +1,11 @@
-import { PDFDocument, PDFName, rgb, StandardFonts } from 'pdf-lib';
+import {
+  PDFDocument,
+  PDFName,
+  PDFString,
+  rgb,
+  StandardFonts,
+  type PDFRef,
+} from 'pdf-lib';
 import { encrypt } from '@arshad-shah/qpdf-wasm';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
@@ -18,6 +25,78 @@ export async function makeTextPdf({
     page.drawText(`${label} ${i}`, { x: 72, y: size[1] - 96, size: 24, font });
   }
   doc.setTitle(`${label} fixture`);
+  return doc.save();
+}
+
+/**
+ * Text pages ("S 1", "S 2", ...) plus document-level structure that page
+ * edits must keep: Info fields, a bookmark per page (one via a named
+ * destination), a text field on the first and last page, page labels,
+ * /Lang and viewer preferences.
+ */
+export async function makeStructuredPdf(pages = 3): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(await makeTextPdf({ pages, label: 'S' }));
+  doc.setTitle('Structured fixture');
+  doc.setAuthor('Fixture Author');
+  doc.setSubject('Fixture Subject');
+  doc.setKeywords(['alpha', 'beta']);
+  doc.setLanguage('en-GB');
+  doc.catalog.set(
+    PDFName.of('ViewerPreferences'),
+    doc.context.obj({ DisplayDocTitle: true }),
+  );
+  doc.catalog.set(
+    PDFName.of('PageLabels'),
+    doc.context.obj({ Nums: [0, { S: PDFName.of('r') }] }),
+  );
+
+  const { context } = doc;
+  const pageRefs = doc.getPages().map((p) => p.ref);
+  const outlineRef = context.nextRef();
+  const itemRefs = pageRefs.map(() => context.nextRef());
+  // Bookmark 2 uses a named destination; the rest use explicit ones.
+  const names: (PDFString | PDFRef)[] = [];
+  pageRefs.forEach((pageRef, i) => {
+    const dest = context.obj([pageRef, PDFName.of('Fit')]);
+    const entry: Record<string, unknown> = {
+      Title: PDFString.of(`Bookmark ${i + 1}`),
+      Parent: outlineRef,
+    };
+    if (i === 1) {
+      entry.Dest = PDFString.of('second');
+      names.push(PDFString.of('second'), context.register(dest));
+    } else entry.Dest = dest;
+    if (i > 0) entry.Prev = itemRefs[i - 1];
+    if (i < pageRefs.length - 1) entry.Next = itemRefs[i + 1];
+    context.assign(itemRefs[i], context.obj(entry as never));
+  });
+  context.assign(
+    outlineRef,
+    context.obj({
+      Type: PDFName.of('Outlines'),
+      First: itemRefs[0],
+      Last: itemRefs[itemRefs.length - 1],
+      Count: itemRefs.length,
+    }),
+  );
+  doc.catalog.set(PDFName.of('Outlines'), outlineRef);
+  doc.catalog.set(
+    PDFName.of('Names'),
+    context.obj({ Dests: context.obj({ Names: names }) }),
+  );
+
+  const form = doc.getForm();
+  const first = form.createTextField('first.name');
+  first.setText('Ada');
+  first.addToPage(doc.getPage(0), { x: 72, y: 500, width: 200, height: 24 });
+  const last = form.createTextField('last.page');
+  last.setText('Zed');
+  last.addToPage(doc.getPage(pages - 1), {
+    x: 72,
+    y: 500,
+    width: 200,
+    height: 24,
+  });
   return doc.save();
 }
 

@@ -3,6 +3,7 @@ import { RotateCcw, RotateCw, Trash2, Undo2, Download } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
+  AlertTitle,
   Button,
   Card,
   CardBody,
@@ -49,12 +50,15 @@ const OrganizeTool: React.FC<ToolProps> = () => {
   const { doc, loading, error } = usePdfDocument(file);
 
   const job = useJob(async (ctx, source: LoadedFile, current: PageTile[]) => {
-    const bytes = await applyPageEdits(source.bytes, tilesToEdits(current));
+    const { bytes, notes } = await applyPageEdits(
+      source.bytes,
+      tilesToEdits(current),
+    );
     const name = deriveFilename(source.name, 'organized', 'pdf');
     ctx.signal.throwIfAborted();
     saveBlob(bytes, name, 'application/pdf');
     notify.success(`Saved ${name}`);
-    return name;
+    return { name, notes };
   });
 
   const current = doc !== null && edit?.docId === doc.docId ? edit : null;
@@ -241,11 +245,18 @@ const OrganizeTool: React.FC<ToolProps> = () => {
               </Button>
             </>
           )}
-          <JobPanel
-            job={job}
-            onCancel={job.cancel}
-            runningLabel="Building PDF"
-          />
+          <JobPanel job={job} onCancel={job.cancel} runningLabel="Building PDF">
+            {job.result && job.result.notes.length > 0 && (
+              <Alert status="warning">
+                <AlertTitle>
+                  Saved {job.result.name} with these changes to the document
+                </AlertTitle>
+                {job.result.notes.map((note, i) => (
+                  <AlertDescription key={i}>{note}</AlertDescription>
+                ))}
+              </Alert>
+            )}
+          </JobPanel>
         </Stack>
       </CardBody>
     </Card>

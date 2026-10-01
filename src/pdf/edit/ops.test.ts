@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
-import { makeTextPdf, pdfPageTexts } from '../../../test/fixtures/builders';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import {
+  makeStructuredPdf,
+  makeTextPdf,
+  pdfPageTexts,
+} from '../../../test/fixtures/builders';
 import { applyPageEdits, extract, merge, split } from './ops';
 
 const rotations = async (bytes: Uint8Array) =>
@@ -57,10 +62,54 @@ describe('extract / split', () => {
   });
 });
 
+/** Document-level structure as pdf.js (what viewers use) sees it. */
+async function inspect(bytes: Uint8Array) {
+  const task = getDocument({ data: bytes.slice(), verbosity: 0 });
+  try {
+    const pdf = await task.promise;
+    const { info } = (await pdf.getMetadata()) as unknown as {
+      info: Record<string, unknown>;
+    };
+    const outline = await Promise.all(
+      ((await pdf.getOutline()) ?? []).map(async (item) => {
+        const dest =
+          typeof item.dest === 'string'
+            ? await pdf.getDestination(item.dest)
+            : item.dest;
+        let page: number | null;
+        try {
+          page = dest ? await pdf.getPageIndex(dest[0]) : null;
+        } catch {
+          page = null; // points outside the page tree
+        }
+        return { title: item.title, page };
+      }),
+    );
+    const fields: string[] = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      for (const a of await (await pdf.getPage(i)).getAnnotations())
+        if (a.subtype === 'Widget') fields.push(a.fieldName as string);
+    }
+    fields.sort();
+    return {
+      title: info.Title,
+      author: info.Author,
+      subject: info.Subject,
+      keywords: info.Keywords,
+      lang: info.Language,
+      outline,
+      fields,
+      labels: await pdf.getPageLabels(),
+    };
+  } finally {
+    await task.destroy();
+  }
+}
+
 describe('applyPageEdits', () => {
   it('reorders, deletes and rotates in one pass', async () => {
     const src = await makeTextPdf({ pages: 3, label: 'O' });
-    const out = await applyPageEdits(src, [
+    const { bytes: out } = await applyPageEdits(src, [
       { source: 2, rotate: 90 },
       { source: 0, rotate: 0 },
     ]);
@@ -68,11 +117,92 @@ describe('applyPageEdits', () => {
     expect(await rotations(out)).toEqual([90, 0]);
   });
   it('adds to existing rotation modulo 360', async () => {
-    const once = await applyPageEdits(await makeTextPdf({ pages: 1 }), [
-      { source: 0, rotate: 270 },
+    const { bytes: once } = await applyPageEdits(
+      await makeTextPdf({ pages: 1 }),
+      [{ source: 0, rotate: 270 }],
+    );
+    const { bytes: twice } = await applyPageEdits(once, [
+      { source: 0, rotate: 180 },
     ]);
-    const twice = await applyPageEdits(once, [{ source: 0, rotate: 180 }]);
     expect(await rotations(twice)).toEqual([90]);
+  });
+  it('keeps metadata, bookmarks, form fields and language when reordering', async () => {
+    const src = await makeStructuredPdf(3);
+    const { bytes, notes } = await applyPageEdits(src, [
+      { source: 2, rotate: 0 },
+      { source: 0, rotate: 90 },
+      { source: 1, rotate: 0 },
+    ]);
+    expect(await pdfPageTexts(bytes)).toEqual(['S 3', 'S 1', 'S 2']);
+    const out = await inspect(bytes);
+    expect(out).toMatchObject({
+      title: 'Structured fixture',
+      author: 'Fixture Author',
+      subject: 'Fixture Subject',
+      keywords: 'alpha beta',
+      lang: 'en-GB',
+      fields: ['first.name', 'last.page'],
+    });
+    const form = (await PDFDocument.load(bytes)).getForm();
+    expect(form.getTextField('first.name').getText()).toBe('Ada');
+    expect(form.getTextField('last.page').getText()).toBe('Zed');
+    // Bookmarks follow their pages to the new positions.
+    expect(out.outline).toEqual([
+      { title: 'Bookmark 1', page: 1 },
+      { title: 'Bookmark 2', page: 2 },
+      { title: 'Bookmark 3', page: 0 },
+    ]);
+    // Labels number by position, so they're dropped (and said so) on a move.
+    expect(out.labels).toBeNull();
+    expect(notes).toEqual([expect.stringMatching(/page labels were removed/i)]);
+  });
+  it('keeps page labels and reports nothing when only rotating', async () => {
+    const src = await makeStructuredPdf(2);
+    const { bytes, notes } = await applyPageEdits(src, [
+      { source: 0, rotate: 90 },
+      { source: 1, rotate: 0 },
+    ]);
+    expect((await inspect(bytes)).labels).toEqual(['i', 'ii']);
+    expect(notes).toEqual([]);
+  });
+  it('drops fields and reports dead bookmarks for deleted pages, and removes their content', async () => {
+    const src = await makeStructuredPdf(3);
+    const { bytes, notes } = await applyPageEdits(src, [
+      { source: 0, rotate: 0 },
+      { source: 1, rotate: 0 },
+    ]);
+    const out = await inspect(bytes);
+    expect(out.fields).toEqual(['first.name']);
+    expect(out.outline).toEqual([
+      { title: 'Bookmark 1', page: 0 },
+      { title: 'Bookmark 2', page: 1 },
+      { title: 'Bookmark 3', page: null },
+    ]);
+    expect(notes).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/1 form field .*removed/i),
+        expect.stringMatching(/1 bookmark .*deleted page/i),
+      ]),
+    );
+    // The deleted page's drawing is gone from the file, not just hidden.
+    const reloaded = await PDFDocument.load(bytes);
+    expect(reloaded.getPageCount()).toBe(2);
+    expect(
+      reloaded
+        .getForm()
+        .getFields()
+        .map((f) => f.getName()),
+    ).toEqual(['first.name']);
+    expect(bytes.byteLength).toBeLessThan(src.byteLength);
+  });
+  it('can repeat a page', async () => {
+    const src = await makeTextPdf({ pages: 2, label: 'R' });
+    const { bytes } = await applyPageEdits(src, [
+      { source: 1, rotate: 0 },
+      { source: 1, rotate: 90 },
+    ]);
+    expect(await pdfPageTexts(bytes)).toEqual(['R 2', 'R 2']);
+    expect(await rotations(bytes)).toEqual([0, 90]);
   });
   it('refuses to produce an empty document', async () => {
     await expect(
