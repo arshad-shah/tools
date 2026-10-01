@@ -52,6 +52,9 @@ export const PlacementEditor: React.FC<PlacementEditorProps> = ({
   const scale = width / page.width;
   const frameRef = useRef<HTMLDivElement>(null);
   const [revision, setRevision] = useState(0);
+  // The remount after a gesture would drop focus; the user just handled the
+  // box, so give it focus back (arrow keys then work straight away).
+  const refocus = useRef(false);
 
   const commit = (el: HTMLElement) => {
     const frame = frameRef.current;
@@ -70,6 +73,7 @@ export const PlacementEditor: React.FC<PlacementEditorProps> = ({
         page,
       ),
     );
+    refocus.current = true;
     setRevision((n) => n + 1);
   };
 
@@ -101,6 +105,10 @@ export const PlacementEditor: React.FC<PlacementEditorProps> = ({
     (node: HTMLElement | null) => {
       dragRef(node);
       resizeRef(node);
+      if (node && refocus.current) {
+        refocus.current = false;
+        node.focus({ preventScroll: true });
+      }
     },
     [dragRef, resizeRef],
   );
