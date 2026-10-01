@@ -28,6 +28,7 @@
     ]
   },
   "dependencies": {
+    "@arshad-shah/store-kit": "^1.0.3",
     "@internationalized/date": "^3.12.2",
     "@reduxjs/toolkit": "^2.12.0",
     "@rive-app/react-canvas": "^4.28.6",
@@ -60,7 +61,8 @@
     "rehype-prism-plus": "^2.0.2",
     "rehype-rewrite": "^4.0.4",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.39.0",
