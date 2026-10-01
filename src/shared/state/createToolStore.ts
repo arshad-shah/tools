@@ -40,6 +40,9 @@ const storageKeyFor = (toolId: string) => `kit:store:tool:${toolId}`;
 export function createToolStore<S extends object, A extends object = object>(
   config: ToolStoreConfig<S, A>,
 ) {
+  // Set when store-kit fails to write the state (full quota, …), so the
+  // legacy import can tell a saved import from one that lives only in memory.
+  let persistFailed = false;
   const store = createStore<S, A>({
     // store-kit prefixes this: the real localStorage key is
     // `kit:store:tool:<toolId>` (see arshad-shah/Kit#94).
@@ -50,13 +53,19 @@ export function createToolStore<S extends object, A extends object = object>(
       config.persist === false
         ? undefined
         : { storage: 'local', version: 1, ...config.persist },
-    onError: (error, info) =>
-      console.warn(`[tool:${config.toolId}:${info.op}]`, error),
+    onError: (error, info) => {
+      if (info.op === 'persist') persistFailed = true;
+      console.warn(`[tool:${config.toolId}:${info.op}]`, error);
+    },
   });
   if (config.persist !== false && config.legacy) {
     importLegacy(
       // Partial<S> only touches state fields, never actions.
-      (partial) => store.setState(partial as Partial<S & A>),
+      (partial) => {
+        persistFailed = false;
+        store.setState(partial as Partial<S & A>);
+        return !persistFailed;
+      },
       config.toolId,
       config.legacy,
     );
@@ -65,7 +74,8 @@ export function createToolStore<S extends object, A extends object = object>(
 }
 
 function importLegacy<S>(
-  apply: (partial: Partial<S>) => void,
+  /** Applies the import; false when it could not be saved. */
+  apply: (partial: Partial<S>) => boolean,
   toolId: string,
   legacy: LegacyImport<S>,
 ): void {
@@ -82,7 +92,10 @@ function importLegacy<S>(
     const partial = legacy.read(raw);
     // setState (not `initial`) so store-kit persists it and reset() still
     // returns to the defaults.
-    if (partial) apply(partial);
+    if (partial && !apply(partial)) {
+      // Only in memory: keep the legacy keys so the next visit can retry.
+      throw new Error('Imported data could not be saved; legacy keys kept');
+    }
     legacy.keys.forEach((k) => ls.removeItem(k));
   } catch (error) {
     console.warn(`[tool:${toolId}:legacy]`, error);
