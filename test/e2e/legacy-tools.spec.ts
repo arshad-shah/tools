@@ -46,3 +46,31 @@ test('jwt-decode shows "Copied" only on the button pressed', async ({
   await expect(page.getByRole('button', { name: 'Copied' })).toHaveCount(1);
   await expect(copy).toHaveCount(1);
 });
+
+const PNG_1PX =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+test('image-optimizer converts and downloads', async ({ page }) => {
+  await page.goto('/image-optimizer');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'dot.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(PNG_1PX, 'base64'),
+  });
+  await expect(page.getByText('1 × 1px')).toBeVisible();
+  await page.getByRole('button', { name: 'Convert & compress' }).click();
+  await expect(page.getByText('Processing complete')).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download image' }).click();
+  expect((await download).suggestedFilename()).toBe('dot.optimized.jpeg');
+});
+
+test('image-optimizer rejects non-images inline', async ({ page }) => {
+  await page.goto('/image-optimizer');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('hi'),
+  });
+  await expect(page.getByText('notes.txt is not an image')).toBeVisible();
+});

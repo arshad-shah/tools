@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Save, Settings } from 'lucide-react';
 import {
   Alert,
@@ -21,8 +21,17 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
-
-type OutputFormat = 'jpeg' | 'png' | 'webp';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
+import { ToolError, toToolError } from '@/shared/lib/errors';
+import { formatBytes } from '@/shared/lib/format';
+import { useJob } from '@/shared/state/useJob';
+import {
+  aspectRatio,
+  assertImageFile,
+  convertImage,
+  reductionLabel,
+  type OutputFormat,
+} from './convert';
 
 interface ImageMetadata {
   filename: string;
@@ -31,141 +40,92 @@ interface ImageMetadata {
   aspectRatio: string;
 }
 
-const formatFileSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} bytes`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(2)} KB`;
-  return `${(bytes / 1048576).toFixed(2)} MB`;
-};
-
-const calculateAspectRatio = (w: number, h: number): string => {
-  if (!w || !h) return 'Unknown';
-  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-  const d = gcd(w, h);
-  return `${w / d}:${h / d}`;
-};
-
-const calculateReduction = (
-  originalSize: string | null,
-  newSize: string | null,
-): string => {
-  if (!originalSize || !newSize) return 'N/A';
-  const parse = (s: string): number => {
-    const m = s.match(/^([\d.]+)\s*(\w+)$/);
-    if (!m) return parseFloat(s);
-    const v = parseFloat(m[1]);
-    const u = m[2].toLowerCase();
-    if (u === 'mb' || u === 'mib') return v * 1048576;
-    if (u === 'kb' || u === 'kib') return v * 1024;
-    return v;
-  };
-  const o = parse(originalSize);
-  const n = parse(newSize);
-  if (o <= 0) return 'N/A';
-  const r = ((o - n) / o) * 100;
-  if (r <= 0) return 'No reduction';
-  return `${r.toFixed(1)}%`;
-};
-
 const ImageOptimiser: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('jpeg');
   const [compressionLevel, setCompressionLevel] = useState<number>(80);
-  const [processedImage, setProcessedImage] = useState<string | null>(null);
-  const [originalSize, setOriginalSize] = useState<string | null>(null);
-  const [newSize, setNewSize] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [metadata, setMetadata] = useState<ImageMetadata | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const handleFiles = (files: File[]) => {
+  const job = useJob(
+    async (ctx, file: File, format: OutputFormat, quality: number) => {
+      const out = await convertImage(file, { format, quality }, ctx.signal);
+      const url = URL.createObjectURL(out.blob);
+      if (ctx.signal.aborted) {
+        // Superseded: nobody will show (or revoke) this URL.
+        URL.revokeObjectURL(url);
+        throw new ToolError('CANCELLED', 'Cancelled');
+      }
+      return { ...out, url };
+    },
+  );
+  const { reset: resetJob } = job;
+  const result = job.result;
+  const isProcessing = job.status === 'running';
+
+  // Object URLs are revoked when replaced and on unmount.
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview);
+    },
+    [preview],
+  );
+  useEffect(
+    () => () => {
+      if (result) URL.revokeObjectURL(result.url);
+    },
+    [result],
+  );
+
+  const handleFiles = async (files: File[]) => {
     const file = files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setErrorMessage('Please select an image file.');
+    try {
+      assertImageFile(file);
+    } catch (e) {
+      setErrorMessage(toToolError(e).message);
+      return;
+    }
+    let width: number;
+    let height: number;
+    try {
+      const bitmap = await createImageBitmap(file);
+      ({ width, height } = bitmap);
+      bitmap.close();
+    } catch {
+      setErrorMessage('Failed to load the image');
       return;
     }
     setErrorMessage('');
+    resetJob();
     setSelectedFile(file);
-    setOriginalSize(formatFileSize(file.size));
-    setProcessedImage(null);
-    setNewSize(null);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new window.Image();
-      img.onload = () => {
-        setDimensions({ width: img.width, height: img.height });
-        setPreview(event.target?.result as string);
-        setMetadata({
-          filename: file.name,
-          fileType: file.type,
-          lastModified: new Date(file.lastModified).toLocaleString(),
-          aspectRatio: calculateAspectRatio(img.width, img.height),
-        });
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    setDimensions({ width, height });
+    setPreview(URL.createObjectURL(file));
+    setMetadata({
+      filename: file.name,
+      fileType: file.type,
+      lastModified: new Date(file.lastModified).toLocaleString(),
+      aspectRatio: aspectRatio(width, height),
+    });
   };
 
   const processImage = () => {
-    if (!selectedFile || !preview) return;
-    setIsProcessing(true);
-    const img = new window.Image();
-    img.onload = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        setErrorMessage('Canvas reference is not available');
-        setIsProcessing(false);
-        return;
-      }
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        setErrorMessage('Unable to get canvas context');
-        setIsProcessing(false);
-        return;
-      }
-      ctx.drawImage(img, 0, 0);
-      try {
-        const quality = compressionLevel / 100;
-        const dataUrl =
-          outputFormat === 'png'
-            ? canvas.toDataURL('image/png')
-            : canvas.toDataURL(`image/${outputFormat}`, quality);
-        const base64 = dataUrl.split(',')[1];
-        if (!base64) throw new Error('Failed to extract base64 data');
-        const binarySize = Math.ceil(base64.length * 0.75);
-        setProcessedImage(dataUrl);
-        setNewSize(formatFileSize(binarySize));
-      } catch (err) {
-        setErrorMessage(
-          `Failed to process image: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        );
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-    img.onerror = () => {
-      setErrorMessage('Failed to load the image');
-      setIsProcessing(false);
-    };
-    img.src = preview;
+    if (!selectedFile) return;
+    void job.run(selectedFile, outputFormat, compressionLevel / 100);
   };
 
   const downloadImage = () => {
-    if (!processedImage) return;
-    const link = document.createElement('a');
-    link.href = processedImage;
-    link.download = `converted-image.${outputFormat}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (!result || !selectedFile) return;
+    saveBlob(
+      result.blob,
+      deriveFilename(selectedFile.name, 'optimized', outputFormat),
+    );
   };
+
+  const originalSize = selectedFile ? formatBytes(selectedFile.size) : null;
+  const newSize = result ? formatBytes(result.blob.size) : null;
 
   const qualityHint =
     compressionLevel < 40
@@ -174,9 +134,13 @@ const ImageOptimiser: React.FC = () => {
         ? 'Balanced size and quality'
         : 'High quality, larger file';
 
-  const reduction = calculateReduction(originalSize, newSize);
+  const reduction =
+    selectedFile && result
+      ? reductionLabel(selectedFile.size, result.blob.size)
+      : 'N/A';
   const reductionStatus: 'success' | 'warning' =
     reduction === 'No reduction' ? 'warning' : 'success';
+  const shownError = errorMessage || job.error?.message;
 
   return (
     <Stack gap="6">
@@ -184,7 +148,7 @@ const ImageOptimiser: React.FC = () => {
         <CardBody>
           <Stack gap="3" align="center">
             <FileUpload
-              onFiles={handleFiles}
+              onFiles={(f) => void handleFiles(f)}
               accept="image/*"
               className="w-full"
               label="Select an image"
@@ -205,9 +169,9 @@ const ImageOptimiser: React.FC = () => {
         </CardBody>
       </Card>
 
-      {errorMessage && (
+      {shownError && (
         <Alert status="danger">
-          <AlertDescription>{errorMessage}</AlertDescription>
+          <AlertDescription>{shownError}</AlertDescription>
         </Alert>
       )}
 
@@ -266,7 +230,10 @@ const ImageOptimiser: React.FC = () => {
                   <Label>Output format</Label>
                   <Select
                     value={outputFormat}
-                    onValueChange={(v) => setOutputFormat(v as OutputFormat)}
+                    onValueChange={(v) => {
+                      setOutputFormat(v as OutputFormat);
+                      resetJob();
+                    }}
                     items={[
                       { value: 'jpeg', label: 'JPEG' },
                       { value: 'png', label: 'PNG' },
@@ -279,7 +246,10 @@ const ImageOptimiser: React.FC = () => {
                   <Label>Compression quality: {compressionLevel}%</Label>
                   <Slider
                     value={compressionLevel}
-                    onValueChange={(v) => setCompressionLevel(v)}
+                    onValueChange={(v) => {
+                      setCompressionLevel(v);
+                      resetJob();
+                    }}
                     min={1}
                     max={100}
                     step={1}
@@ -304,7 +274,7 @@ const ImageOptimiser: React.FC = () => {
         </Grid>
       )}
 
-      {processedImage && (
+      {result && (
         <Card>
           <CardHeader>
             <Alert status={reductionStatus}>
@@ -326,7 +296,7 @@ const ImageOptimiser: React.FC = () => {
                   <Heading level={4} size="md">
                     Processed image
                   </Heading>
-                  <img src={processedImage} alt="Processed" width="100%" />
+                  <img src={result.url} alt="Processed" width="100%" />
                   <Grid max={2} gap="3">
                     <Card className="bg-surface-subtle">
                       <CardBody>
@@ -369,10 +339,6 @@ const ImageOptimiser: React.FC = () => {
           </CardBody>
         </Card>
       )}
-
-      <Box className="hidden">
-        <canvas ref={canvasRef} />
-      </Box>
     </Stack>
   );
 };
