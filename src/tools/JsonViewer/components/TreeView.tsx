@@ -9,7 +9,7 @@ import {
   Inline,
   Stack,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import DataNode from './DataNode';
 
 interface TreeViewProps {

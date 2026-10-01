@@ -25,7 +25,7 @@ import {
   Spinner,
   Stack,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { ToolProps } from '../../types/ToolTypes';
 import {
   PDFFile,

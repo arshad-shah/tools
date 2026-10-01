@@ -44,7 +44,7 @@ import {
   Stack,
   Text,
   Tooltip,
-} from '@/components/ui';
+} from '@/shared/ui';
 import TreeView from './TreeView';
 import DataFlow from './treeview/DataFlow';
 

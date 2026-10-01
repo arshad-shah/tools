@@ -44,7 +44,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import * as DataUtils from './utils';
 import {
   FieldSchema,

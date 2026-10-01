@@ -36,7 +36,7 @@ import {
   Stack,
   Text,
   Textarea,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { DiffSegment, DiffViewMode } from '../../types/TextDiffCheckerTypes';
 import useNotification from './hooks/useNotification';
 import useDiffSettings from './hooks/useDiffSettings';

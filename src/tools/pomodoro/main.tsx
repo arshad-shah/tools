@@ -54,7 +54,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { store, persistor } from './store';
 import {
   addTask,

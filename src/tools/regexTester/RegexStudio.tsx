@@ -35,7 +35,7 @@ import {
   Stack,
   Text,
   Textarea,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { ChevronDown } from 'lucide-react';
 import previewStyles from './LivePreview.module.css';
 

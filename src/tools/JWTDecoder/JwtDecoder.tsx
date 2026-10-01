@@ -43,7 +43,7 @@ import {
   TabsTrigger,
   Text,
   Textarea,
-} from '@/components/ui';
+} from '@/shared/ui';
 import { ExpiryInfo, JWTHeader, JWTPayload } from '../../types/JwtTypes';
 import {
   formatTime,

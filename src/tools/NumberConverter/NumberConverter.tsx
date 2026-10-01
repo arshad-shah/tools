@@ -22,7 +22,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from '@/components/ui';
+} from '@/shared/ui';
 
 type NumberKey = 'binary' | 'decimal' | 'hexadecimal' | 'octal';
 
