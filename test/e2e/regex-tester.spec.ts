@@ -16,6 +16,30 @@ test('regex-tester survives catastrophic backtracking', async ({ page }) => {
   await expect(page.getByText(/Pattern took too long/)).toHaveCount(0);
 });
 
+test('regex-tester copies working JavaScript for a pattern with a slash', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/regex-tester');
+  await page.getByLabel('Test string').fill("it's a/b\nand a/b");
+  await page.getByLabel('Regex pattern').fill('a/b');
+  await expect(page.getByText('2 matches').first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Actions' }).click();
+  await page.getByText('Copy as JavaScript').click();
+  const count = await page.evaluate(async () => {
+    const code = await navigator.clipboard.readText();
+    return (new Function(`${code}\nreturn matches.length;`) as () => number)();
+  });
+  expect(count).toBe(2);
+
+  await page.getByRole('button', { name: 'Copy regex with flags' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    '/a\\/b/g',
+  );
+});
+
 test('regex-tester shows syntax errors without running the pattern', async ({
   page,
 }) => {
