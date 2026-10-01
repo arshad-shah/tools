@@ -1,11 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
+import {
+  decodePDFRawStream,
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFRawStream,
+} from 'pdf-lib';
 import {
   encodeJpeg,
   encodePng,
   noiseImage,
+  withExifOrientation,
 } from '../../../test/fixtures/images';
 import { imagesToPdf, layoutImagePage, PAGE_SIZES } from './images';
+
+/** The page's decoded content stream(s) as text. */
+function pageContent(doc: PDFDocument, index: number): string {
+  const node = doc.getPage(index).node;
+  const contents = node.Contents();
+  const streams =
+    contents instanceof PDFArray
+      ? contents.asArray().map((r) => doc.context.lookup(r))
+      : [contents];
+  return streams
+    .map((s) =>
+      new TextDecoder().decode(decodePDFRawStream(s as PDFRawStream).decode()),
+    )
+    .join('\n');
+}
 
 const opts = {
   pageSize: 'a4' as const,
@@ -91,6 +114,27 @@ describe('imagesToPdf', () => {
     expect(second.dict.lookup(PDFName.of('Filter'))).toEqual(
       PDFName.of('DCTDecode'),
     );
+  });
+  it('shows sideways camera JPEGs upright (EXIF orientation), without re-encoding', async () => {
+    const jpg = withExifOrientation(encodeJpeg(8, 4, noiseImage(8, 4, 4)), 6);
+    const bytes = await imagesToPdf(
+      [{ bytes: jpg, kind: 'jpeg', name: 'cam.jpg' }],
+      {
+        pageSize: 'fit',
+        orientation: 'auto',
+        marginPt: 0,
+      },
+    );
+    const doc = await PDFDocument.load(bytes);
+    // Stored 8×4, displayed 4×8 → 3×6 pt.
+    expect(doc.getPage(0).getSize()).toEqual({ width: 3, height: 6 });
+    expect(pageContent(doc, 0)).toContain('0 -6 3 0 0 6 cm');
+    const xo = doc
+      .getPage(0)
+      .node.Resources()!
+      .lookup(PDFName.of('XObject'), PDFDict);
+    const img = xo.lookup(xo.keys()[0]) as PDFRawStream;
+    expect(img.contents).toEqual(jpg); // embedded as-is
   });
   it('names the file that cannot be embedded', async () => {
     await expect(
