@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {
+  makeBadCountPdf,
   makeEncryptMarkedPdf,
   makeStructuredPdf,
   makeTextPdf,
@@ -266,6 +267,21 @@ describe('applyPageEdits', () => {
     ).toEqual(['first.name']);
     expect(bytes.byteLength).toBeLessThan(src.byteLength);
   });
+  it.each([7, 1, 0])(
+    'tolerates a wrong root /Count (%i) and keeps inherited attributes',
+    async (count) => {
+      const src = await makeBadCountPdf(3, count);
+      const { bytes } = await applyPageEdits(src, [
+        { source: 2, rotate: 0 },
+        { source: 0, rotate: 90 },
+      ]);
+      expect(await pdfPageTexts(bytes)).toEqual(['C 3', 'C 1']);
+      // Page 3 inherited /Rotate 90 from the intermediate node.
+      expect(await rotations(bytes)).toEqual([90, 90]);
+      const out = await PDFDocument.load(bytes);
+      expect(out.catalog.Pages().Count().asNumber()).toBe(2);
+    },
+  );
   it('can repeat a page', async () => {
     const src = await makeTextPdf({ pages: 2, label: 'R' });
     const { bytes } = await applyPageEdits(src, [

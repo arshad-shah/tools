@@ -5,6 +5,7 @@ import {
   PDFDict,
   PDFDocument,
   PDFName,
+  PDFNumber,
   PDFRef,
   PDFStream,
   type PDFObject,
@@ -209,9 +210,17 @@ async function editInPlace(
       ordered.push(original[edit.source]);
     }
   }
-  for (let i = original.length - 1; i >= 0; i--) doc.removePage(i);
+  // Rebuild the page tree as one flat root node rather than with
+  // removePage/insertPage: those trust /Count, which real files get wrong
+  // (viewers walk /Kids, as getPages() does). Intermediate /Pages nodes
+  // become unreachable and are pruned below.
+  const rootRef = pagesRootRef(doc);
+  const root = doc.catalog.Pages();
+  root.set(PDFName.of('Kids'), doc.context.obj(ordered.map((p) => p.ref)));
+  root.set(PDFName.of('Count'), PDFNumber.of(ordered.length));
+  for (const page of [...original, ...ordered])
+    page.node.set(PDFName.Parent, rootRef);
   ordered.forEach((page, i) => {
-    doc.addPage(page);
     const angle =
       (((page.getRotation().angle + edits[i].rotate) % 360) + 360) % 360;
     page.setRotation(degrees(angle));
@@ -253,6 +262,16 @@ async function editInPlace(
     updateFieldAppearances: false,
   });
   return { bytes: out, notes };
+}
+
+/** The catalog's /Pages reference (registering a direct dict if needed). */
+function pagesRootRef(doc: PDFDocument): PDFRef {
+  const key = PDFName.of('Pages');
+  const raw = doc.catalog.get(key);
+  if (raw instanceof PDFRef) return raw;
+  const ref = doc.context.register(doc.catalog.Pages());
+  doc.catalog.set(key, ref);
+  return ref;
 }
 
 /** Removes widgets on deleted pages, and fields left with none. */
