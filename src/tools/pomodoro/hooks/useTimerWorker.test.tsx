@@ -22,12 +22,16 @@ class FakeWorker {
 }
 
 const play = vi.fn<() => Promise<void>>();
+const load = vi.fn();
 const audioCtor = vi.fn();
 class FakeAudio {
+  preload = '';
+  currentTime = 0;
   constructor(src: string) {
     audioCtor(src);
   }
   play = play;
+  load = load;
 }
 
 async function setup() {
@@ -50,6 +54,7 @@ describe('useTimerWorker', () => {
     vi.stubGlobal('Audio', FakeAudio);
     play.mockReset().mockResolvedValue(undefined);
     audioCtor.mockReset();
+    load.mockReset();
   });
 
   it('counts a completed work session once and plays the sound once (B5)', async () => {
@@ -110,9 +115,42 @@ describe('useTimerWorker', () => {
     play.mockRejectedValueOnce(new DOMException('blocked', 'NotAllowedError'));
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
     act(() => hook.result.current.skip());
-    await Promise.resolve();
     expect(play).toHaveBeenCalledTimes(1);
+    // The rejection is handled and reported through logToolError (dev only).
+    await vi.waitFor(() =>
+      expect(err).toHaveBeenCalledWith(
+        expect.stringMatching(/blocked|completion sound/),
+        expect.any(DOMException),
+      ),
+    );
     err.mockRestore();
+  });
+
+  it('prime() preloads one sound on the first Start; every chime reuses it (review M6)', async () => {
+    const { st, hook, worker } = await setup();
+    act(() => hook.result.current.prime());
+    act(() => hook.result.current.prime());
+    expect(audioCtor).toHaveBeenCalledTimes(1);
+    expect(load).toHaveBeenCalledTimes(1);
+    act(() => st().toggle());
+    worker.emit({ type: 'COMPLETE' }); // work → break
+    worker.emit({ type: 'COMPLETE' }); // break → work
+    expect(audioCtor).toHaveBeenCalledTimes(1);
+    expect(play).toHaveBeenCalledTimes(2);
+  });
+
+  it('announces the end of each session for screen readers (review M8)', async () => {
+    const { st, hook, worker } = await setup();
+    expect(hook.result.current.announcement).toBe('');
+    act(() => st().toggle());
+    worker.emit({ type: 'COMPLETE' });
+    expect(hook.result.current.announcement).toBe(
+      'Focus Time finished. Short Break started.',
+    );
+    worker.emit({ type: 'COMPLETE' });
+    expect(hook.result.current.announcement).toBe(
+      'Short Break finished. Focus Time ready to start.',
+    );
   });
 
   it('ticks update the store and the title; unmount terminates and restores the title', async () => {

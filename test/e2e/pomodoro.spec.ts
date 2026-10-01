@@ -50,14 +50,14 @@ async function seedLegacy(page: Page) {
   );
 }
 
-// ToolLayout renders the page h1; the timer is the tool's own h1.
-const timerHeading = (page: Page) =>
-  page.getByRole('heading', { level: 1 }).last();
+// The countdown is a role="timer" element (ToolLayout owns the page h1).
+const timerHeading = (page: Page) => page.getByRole('timer');
 
 test('existing Redux Persist data survives the migration', async ({ page }) => {
   await seedLegacy(page);
   await page.goto('/pomodoro');
   await expect(timerHeading(page)).toHaveText('30:00');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await expect(page.getByText('Write report')).toBeVisible();
   await expect(page.getByText('1/2 pomodoros')).toBeVisible();
   const keys = await page.evaluate(
@@ -107,15 +107,21 @@ test('a running timer keeps going across a reload, with the time really left', a
 test('a finished work session counts once, chimes once and the break auto-starts', async ({
   page,
 }) => {
-  // Count chimes without relying on autoplay in headless Chromium.
+  // Count sound elements and plays without relying on autoplay in headless
+  // Chromium.
   await page.addInitScript(() => {
-    const w = window as unknown as { __chimes: string[] };
-    w.__chimes = [];
+    const w = window as unknown as { __sounds: string[]; __plays: number };
+    w.__sounds = [];
+    w.__plays = 0;
     window.Audio = class {
+      preload = '';
+      currentTime = 0;
       constructor(src: string) {
-        w.__chimes.push(src);
+        w.__sounds.push(src);
       }
+      load() {}
       play() {
+        w.__plays++;
         return Promise.resolve();
       }
     } as unknown as typeof Audio;
@@ -169,6 +175,9 @@ test('a finished work session counts once, chimes once and the break auto-starts
   // The auto-started break really counts down (it used to sit at 05:00).
   await expect(timerHeading(page)).not.toHaveText('05:00', { timeout: 5_000 });
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  await expect(
+    page.getByText('Focus Time finished. Short Break started.'),
+  ).toBeAttached();
   const saved = await page.evaluate(
     (kitKey) => JSON.parse(localStorage.getItem(kitKey) ?? '{}'),
     KIT_KEY,
@@ -176,11 +185,14 @@ test('a finished work session counts once, chimes once and the break auto-starts
   expect(saved.state.stats.dailyPomodoros).toBe(1);
   expect(saved.state.stats.currentStreak).toBe(1);
   expect(saved.state.tasks[0].completedPomodoros).toBe(1);
-  const chimes = await page.evaluate(
-    () => (window as unknown as { __chimes: string[] }).__chimes,
-  );
-  expect(chimes).toHaveLength(1);
-  const sound = await page.request.get(chimes[0]);
+  const { sounds, plays } = await page.evaluate(() => {
+    const w = window as unknown as { __sounds: string[]; __plays: number };
+    return { sounds: w.__sounds, plays: w.__plays };
+  });
+  // One element, preloaded on Start, played exactly once.
+  expect(sounds).toHaveLength(1);
+  expect(plays).toBe(1);
+  const sound = await page.request.get(sounds[0]);
   expect(sound.ok()).toBe(true);
   expect((await sound.body()).subarray(0, 4).toString()).toBe('RIFF');
 });
