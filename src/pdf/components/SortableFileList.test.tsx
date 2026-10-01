@@ -85,4 +85,26 @@ describe('SortableFileList', () => {
     expect(onReorder).not.toHaveBeenCalled();
     expect(onRemove).toHaveBeenCalledExactlyOnceWith('a');
   });
+
+  it.each([
+    [0, 'ArrowUp'],
+    [0, 'ArrowLeft'],
+    [1, 'ArrowDown'],
+    [1, 'ArrowRight'],
+  ])(
+    'prevents the browser default for Alt+arrow on row %i (%s) without moving',
+    (row, key) => {
+      const onReorder = vi.fn();
+      render(
+        <SortableFileList
+          items={items}
+          onReorder={onReorder}
+          onRemove={() => {}}
+        />,
+      );
+      const rows = screen.getAllByRole('listitem');
+      expect(fireEvent.keyDown(rows[row], { key, altKey: true })).toBe(false);
+      expect(onReorder).not.toHaveBeenCalled();
+    },
+  );
 });
