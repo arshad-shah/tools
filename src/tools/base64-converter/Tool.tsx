@@ -27,11 +27,16 @@ import { toToolError } from '@/shared/lib/errors';
 import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
 import {
+  PREVIEW_LENGTH,
   decodeInput,
   encodeBytes,
   encodeText,
   guessFileType,
+  preview,
 } from './lib/convert';
+
+const previewNote = (total: number) =>
+  `Showing the first ${formatBytes(PREVIEW_LENGTH, 0)} of ${total.toLocaleString()} characters. Copy and Download use the full result.`;
 
 type Mode = 'encode' | 'decode';
 
@@ -141,6 +146,10 @@ const Base64Converter: React.FC = () => {
   );
 
   const hasOutput = !!output.text || !!output.binary;
+  // Huge results are not rendered whole: a textarea with tens of MB of text
+  // freezes the page. Copy and Download still use the full value.
+  const resultPreview = preview(output.text);
+  const dataUriPreview = preview(output.dataUri ?? '');
 
   return (
     <Card>
@@ -224,7 +233,7 @@ const Base64Converter: React.FC = () => {
                 placeholder={
                   mode === 'encode'
                     ? 'Enter your text…'
-                    : 'Enter Base64 text or a data URI…'
+                    : 'Enter Base64 text or a data URI'
                 }
                 rows={6}
                 clearable
@@ -277,7 +286,7 @@ const Base64Converter: React.FC = () => {
                 ) : (
                   <Textarea
                     aria-label="Result"
-                    value={output.text}
+                    value={resultPreview.text}
                     readOnly
                     rows={6}
                     placeholder={
@@ -286,6 +295,11 @@ const Base64Converter: React.FC = () => {
                         : 'Decoded text will appear here…'
                     }
                   />
+                )}
+                {resultPreview.truncated && !output.binary && (
+                  <Text size="xs" tone="subtle">
+                    {previewNote(output.text.length)}
+                  </Text>
                 )}
               </Stack>
 
@@ -299,10 +313,15 @@ const Base64Converter: React.FC = () => {
                   </Inline>
                   <Textarea
                     aria-label="Data URI"
-                    value={output.dataUri}
+                    value={dataUriPreview.text}
                     readOnly
                     rows={4}
                   />
+                  {dataUriPreview.truncated && (
+                    <Text size="xs" tone="subtle">
+                      {previewNote(output.dataUri.length)}
+                    </Text>
+                  )}
                 </Stack>
               )}
             </Stack>

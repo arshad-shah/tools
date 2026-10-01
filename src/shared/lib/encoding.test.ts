@@ -102,4 +102,43 @@ describe('data URIs', () => {
     });
     expect(parseDataUri('Zm9v')).toBeNull();
   });
+
+  it('percent-decodes binary bytes that are not UTF-8 (RFC 2397)', () => {
+    expect(
+      parseDataUri('data:application/octet-stream,%FF%00a%e2%82%ac'),
+    ).toEqual({
+      mime: 'application/octet-stream',
+      bytes: new Uint8Array([0xff, 0x00, 0x61, 0xe2, 0x82, 0xac]),
+    });
+    // Unescaped non-ASCII characters are taken as UTF-8.
+    expect(parseDataUri('data:,café')?.bytes).toEqual(utf8Encode('café'));
+  });
+
+  it('rejects a malformed percent escape', () => {
+    expect(() => parseDataUri('data:,%G1')).toThrow(ToolError);
+    expect(() => parseDataUri('data:,%A')).toThrow(ToolError);
+  });
+});
+
+describe('bytesToBase64 with the native encoder', () => {
+  it('uses Uint8Array.prototype.toBase64 when the browser has it', () => {
+    const proto = Uint8Array.prototype as unknown as {
+      toBase64?: (o?: { alphabet?: string; omitPadding?: boolean }) => string;
+    };
+    const original = proto.toBase64;
+    const calls: unknown[] = [];
+    proto.toBase64 = function (o) {
+      calls.push(o);
+      return 'NATIVE';
+    };
+    try {
+      expect(bytesToBase64(new Uint8Array([1]), { urlSafe: true })).toBe(
+        'NATIVE',
+      );
+      expect(calls).toEqual([{ alphabet: 'base64url', omitPadding: true }]);
+    } finally {
+      if (original) proto.toBase64 = original;
+      else delete proto.toBase64;
+    }
+  });
 });

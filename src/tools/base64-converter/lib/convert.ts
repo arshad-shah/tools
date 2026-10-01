@@ -2,7 +2,6 @@ import {
   base64ToBytes,
   bytesToBase64,
   parseDataUri,
-  toDataUri,
   utf8Decode,
   utf8Encode,
 } from '@/shared/lib/encoding';
@@ -21,10 +20,33 @@ export function encodeBytes(
   mime: string,
   { urlSafe }: EncodeOptions,
 ): { base64: string; dataUri: string } {
-  // A data URI always uses the standard alphabet (RFC 2397).
+  // Encode once. A data URI always uses the standard alphabet (RFC 2397).
+  const standard = bytesToBase64(bytes);
   return {
-    base64: bytesToBase64(bytes, { urlSafe }),
-    dataUri: toDataUri(bytes, mime),
+    base64: urlSafe
+      ? standard.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      : standard,
+    dataUri: `data:${mime};base64,${standard}`,
+  };
+}
+
+/** Above this many characters a textarea gets only a preview. */
+export const PREVIEW_THRESHOLD = 1_000_000;
+/** How much of a long result the preview shows. */
+export const PREVIEW_LENGTH = 64 * 1024;
+
+/**
+ * What to put in a textarea: the whole text, or its start when it is too
+ * long to render. Copy and Download always use the full text.
+ */
+export function preview(
+  text: string,
+  threshold = PREVIEW_THRESHOLD,
+): { text: string; truncated: boolean } {
+  if (text.length <= threshold) return { text, truncated: false };
+  return {
+    text: text.slice(0, Math.min(PREVIEW_LENGTH, threshold)),
+    truncated: true,
   };
 }
 
