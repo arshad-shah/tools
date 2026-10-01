@@ -41,9 +41,9 @@ import {
 import { DiffSegment, DiffViewMode } from '../../types/TextDiffCheckerTypes';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
-import { loadTextFile } from '@/shared/lib/files';
+import { loadDiffFile, TEXT_ACCEPT } from './textFile';
+import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
-import { useJob } from '@/shared/state/useJob';
 import useDiffSettings from './hooks/useDiffSettings';
 import useIntelligentDiff from './hooks/useIntelligentDiff';
 
@@ -52,25 +52,6 @@ const VIEW_MODES: DiffViewMode[] = [
   { id: 'unified', name: 'Unified', icon: <MoveRight size={14} aria-hidden /> },
   { id: 'inline', name: 'Inline', icon: <CodeIcon size={14} aria-hidden /> },
 ];
-
-// Same list as the old extension check, plus csv (it was allowed by MIME).
-const TEXT_EXTS = [
-  'txt',
-  'md',
-  'json',
-  'html',
-  'css',
-  'js',
-  'ts',
-  'jsx',
-  'tsx',
-  'xml',
-  'yaml',
-  'yml',
-  'log',
-  'csv',
-];
-const TEXT_ACCEPT = TEXT_EXTS.map((e) => `.${e}`).join(',');
 
 interface DiffTextAreaProps {
   value: string;
@@ -193,18 +174,17 @@ const TextDiffChecker: React.FC = () => {
     [copy],
   );
 
-  const loadJob = useJob((_ctx, file: File) =>
-    loadTextFile(file, { maxBytes: 10 * 1024 * 1024, extensions: TEXT_EXTS }),
-  );
+  // Each pane loads independently: picking the right file while the left
+  // one is still being read must not drop the left one.
   const loadSide = async (side: 'left' | 'right', file: File) => {
-    const r = await loadJob.run(file);
-    if (!r) return; // the error is toasted by the effect below
-    (side === 'left' ? setLeftText : setRightText)(r.text);
-    notify.success(`${r.name} loaded successfully`);
+    try {
+      const r = await loadDiffFile(file);
+      (side === 'left' ? setLeftText : setRightText)(r.text);
+      notify.success(`${r.name} loaded successfully`);
+    } catch (e) {
+      notify.error(toToolError(e));
+    }
   };
-  useEffect(() => {
-    if (loadJob.error) notify.error(loadJob.error);
-  }, [loadJob.error]);
 
   const swapTexts = useCallback(() => {
     setLeftText(rightText);

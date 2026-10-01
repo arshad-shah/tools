@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { DiffSettings } from "../../../types/TextDiffCheckerTypes";
+import { useCallback, useState } from 'react';
+import { DiffSettings } from '../../../types/TextDiffCheckerTypes';
 
 const useDiffSettings = () => {
   const [diffSettings, setDiffSettings] = useState<DiffSettings>({
@@ -12,12 +12,15 @@ const useDiffSettings = () => {
     highlightIntralineChanges: true,
     syntaxHighlighting: false,
     ignoreEmptyLines: false,
-    trimNewlines: false
+    trimNewlines: false,
   });
 
-  const updateDiffSetting = useCallback((key: keyof DiffSettings, value: boolean | number) => {
-    setDiffSettings(prev => ({ ...prev, [key]: value }));
-  }, []);
+  const updateDiffSetting = useCallback(
+    (key: keyof DiffSettings, value: boolean | number) => {
+      setDiffSettings((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const resetSettings = useCallback(() => {
     setDiffSettings({
@@ -30,7 +33,7 @@ const useDiffSettings = () => {
       highlightIntralineChanges: true,
       syntaxHighlighting: false,
       ignoreEmptyLines: false,
-      trimNewlines: false
+      trimNewlines: false,
     });
   }, []);
 

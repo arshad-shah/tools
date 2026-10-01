@@ -200,3 +200,21 @@ test('api-request toasts invalid input instead of window.alert', async ({
     page.locator('[data-sonner-toast]').getByText('Please enter a URL'),
   ).toBeVisible();
 });
+
+test('text-diff-checker accepts a text/plain file of any extension', async ({
+  page,
+}) => {
+  await page.goto('/text-diff-checker');
+  await page
+    .locator('input[type=file]')
+    .last()
+    .setInputFiles({
+      name: 'script.py',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('print("right")'),
+    });
+  await expect(page.getByText('script.py loaded successfully')).toBeVisible();
+  await expect(
+    page.getByRole('textbox', { name: 'Modified text' }),
+  ).toHaveValue('print("right")');
+});
