@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -28,6 +28,7 @@ import {
   CardHeader,
   CardTitle,
   Center,
+  FilePicker,
   Grid,
   Heading,
   IconButton,
@@ -40,7 +41,9 @@ import {
 import { DiffSegment, DiffViewMode } from '../../types/TextDiffCheckerTypes';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
-import useNotification from './hooks/useNotification';
+import { loadTextFile } from '@/shared/lib/files';
+import { notify } from '@/shared/lib/notify';
+import { useJob } from '@/shared/state/useJob';
 import useDiffSettings from './hooks/useDiffSettings';
 import useIntelligentDiff from './hooks/useIntelligentDiff';
 
@@ -49,6 +52,25 @@ const VIEW_MODES: DiffViewMode[] = [
   { id: 'unified', name: 'Unified', icon: <MoveRight size={14} aria-hidden /> },
   { id: 'inline', name: 'Inline', icon: <CodeIcon size={14} aria-hidden /> },
 ];
+
+// Same list as the old extension check, plus csv (it was allowed by MIME).
+const TEXT_EXTS = [
+  'txt',
+  'md',
+  'json',
+  'html',
+  'css',
+  'js',
+  'ts',
+  'jsx',
+  'tsx',
+  'xml',
+  'yaml',
+  'yml',
+  'log',
+  'csv',
+];
+const TEXT_ACCEPT = TEXT_EXTS.map((e) => `.${e}`).join(',');
 
 interface DiffTextAreaProps {
   value: string;
@@ -138,7 +160,6 @@ const TextDiffChecker: React.FC = () => {
     'character' | 'word' | 'line'
   >('word');
 
-  const { notification, showNotification } = useNotification();
   const { diffSettings, updateDiffSetting, resetSettings } = useDiffSettings();
   const {
     diffSegments,
@@ -149,9 +170,6 @@ const TextDiffChecker: React.FC = () => {
     debouncedCalculateDiff,
     clearDiff,
   } = useIntelligentDiff();
-
-  const leftFileInputRef = useRef<HTMLInputElement>(null);
-  const rightFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (autoRefresh && (leftText || rightText)) {
@@ -170,68 +188,42 @@ const TextDiffChecker: React.FC = () => {
   const copyToClipboard = useCallback(
     async (text: string) => {
       // useClipboard reports failures itself.
-      if (await copy(text)) showNotification('Copied to clipboard!', 'success');
+      if (await copy(text)) notify.success('Copied to clipboard!');
     },
-    [copy, showNotification],
+    [copy],
   );
 
-  const handleFileUpload = useCallback(
-    (side: 'left' | 'right', e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        showNotification('File too large. Maximum size is 10MB.', 'error');
-        return;
-      }
-      const allowedTypes = [
-        'text/plain',
-        'text/csv',
-        'application/json',
-        'text/html',
-        'text/css',
-        'text/javascript',
-      ];
-      const isTextFile =
-        allowedTypes.includes(file.type) ||
-        file.name.match(
-          /\.(txt|md|json|html|css|js|ts|jsx|tsx|xml|yaml|yml|log)$/i,
-        );
-      if (!isTextFile) {
-        showNotification('Please select a text file', 'error');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const content = event.target?.result as string;
-        if (side === 'left') setLeftText(content);
-        else setRightText(content);
-        showNotification(`${file.name} loaded successfully`, 'success');
-      };
-      reader.onerror = () => showNotification('Failed to read file', 'error');
-      reader.readAsText(file);
-      e.target.value = '';
-    },
-    [showNotification],
+  const loadJob = useJob((_ctx, file: File) =>
+    loadTextFile(file, { maxBytes: 10 * 1024 * 1024, extensions: TEXT_EXTS }),
   );
+  const loadSide = async (side: 'left' | 'right', file: File) => {
+    const r = await loadJob.run(file);
+    if (!r) return; // the error is toasted by the effect below
+    (side === 'left' ? setLeftText : setRightText)(r.text);
+    notify.success(`${r.name} loaded successfully`);
+  };
+  useEffect(() => {
+    if (loadJob.error) notify.error(loadJob.error);
+  }, [loadJob.error]);
 
   const swapTexts = useCallback(() => {
     setLeftText(rightText);
     setRightText(leftText);
-    showNotification('Texts swapped', 'info');
-  }, [leftText, rightText, showNotification]);
+    notify.info('Texts swapped');
+  }, [leftText, rightText]);
 
   const clearAll = useCallback(() => {
     if (leftText || rightText) {
       setLeftText('');
       setRightText('');
       clearDiff();
-      showNotification('All cleared', 'info');
+      notify.info('All cleared');
     }
-  }, [leftText, rightText, clearDiff, showNotification]);
+  }, [leftText, rightText, clearDiff]);
 
   const exportResults = useCallback(() => {
     if (!diffSegments.length) {
-      showNotification('No diff results to export', 'error');
+      notify.error('No diff results to export');
       return;
     }
     const exportData = {
@@ -251,16 +243,16 @@ const TextDiffChecker: React.FC = () => {
       }),
       `diff-results-${Date.now()}.json`,
     );
-    showNotification('Results exported successfully', 'success');
-  }, [diffSegments, diffStats, diffSettings, showNotification]);
+    notify.success('Results exported successfully');
+  }, [diffSegments, diffStats, diffSettings]);
 
   const manualRefresh = useCallback(() => {
     if (!autoRefresh) {
       try {
         calculateDiff(leftText, rightText, diffSettings, highlightMode);
-        showNotification('Diff recalculated', 'info');
+        notify.info('Diff recalculated');
       } catch {
-        showNotification('Error calculating differences', 'error');
+        notify.error('Error calculating differences');
       }
     }
   }, [
@@ -270,7 +262,6 @@ const TextDiffChecker: React.FC = () => {
     rightText,
     diffSettings,
     highlightMode,
-    showNotification,
   ]);
 
   const renderInlineDifferences = useCallback(
@@ -515,21 +506,6 @@ const TextDiffChecker: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <input
-        type="file"
-        ref={leftFileInputRef}
-        onChange={(e) => handleFileUpload('left', e)}
-        accept=".txt,.md,.json,.html,.css,.js,.ts,.jsx,.tsx,.xml,.yaml,.yml,.log"
-        hidden
-      />
-      <input
-        type="file"
-        ref={rightFileInputRef}
-        onChange={(e) => handleFileUpload('right', e)}
-        accept=".txt,.md,.json,.html,.css,.js,.ts,.jsx,.tsx,.xml,.yaml,.yml,.log"
-        hidden
-      />
-
       <Card>
         <CardBody>
           <Stack gap="4">
@@ -783,26 +759,40 @@ const TextDiffChecker: React.FC = () => {
       )}
 
       <Grid max={2} gap="4">
-        <DiffTextArea
-          value={leftText}
-          onChange={setLeftText}
-          placeholder="Paste your original text here…"
-          label="Original text"
-          disabled={isDiffing}
-          onFileUpload={() => leftFileInputRef.current?.click()}
-          onCopy={() => copyToClipboard(leftText)}
-          onClear={() => setLeftText('')}
-        />
-        <DiffTextArea
-          value={rightText}
-          onChange={setRightText}
-          placeholder="Paste your modified text here…"
-          label="Modified text"
-          disabled={isDiffing}
-          onFileUpload={() => rightFileInputRef.current?.click()}
-          onCopy={() => copyToClipboard(rightText)}
-          onClear={() => setRightText('')}
-        />
+        <FilePicker
+          accept={TEXT_ACCEPT}
+          onFiles={(files) => void loadSide('left', files[0])}
+        >
+          {(open) => (
+            <DiffTextArea
+              value={leftText}
+              onChange={setLeftText}
+              placeholder="Paste your original text here…"
+              label="Original text"
+              disabled={isDiffing}
+              onFileUpload={open}
+              onCopy={() => void copyToClipboard(leftText)}
+              onClear={() => setLeftText('')}
+            />
+          )}
+        </FilePicker>
+        <FilePicker
+          accept={TEXT_ACCEPT}
+          onFiles={(files) => void loadSide('right', files[0])}
+        >
+          {(open) => (
+            <DiffTextArea
+              value={rightText}
+              onChange={setRightText}
+              placeholder="Paste your modified text here…"
+              label="Modified text"
+              disabled={isDiffing}
+              onFileUpload={open}
+              onCopy={() => void copyToClipboard(rightText)}
+              onClear={() => setRightText('')}
+            />
+          )}
+        </FilePicker>
       </Grid>
 
       <Card>
@@ -824,20 +814,6 @@ const TextDiffChecker: React.FC = () => {
           <Box className="overflow-auto">{renderDiffContent()}</Box>
         </CardBody>
       </Card>
-
-      {notification && (
-        <Alert
-          status={
-            notification.type === 'error'
-              ? 'danger'
-              : notification.type === 'success'
-                ? 'success'
-                : 'info'
-          }
-        >
-          <AlertDescription>{notification.message}</AlertDescription>
-        </Alert>
-      )}
     </Stack>
   );
 };

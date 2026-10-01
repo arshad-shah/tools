@@ -58,7 +58,12 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
-import { Toaster, toast } from 'sonner';
+import { toToolError } from '@/shared/lib/errors';
+import { readBytes } from '@/shared/lib/files';
+import { formatBytes } from '@/shared/lib/format';
+import { notify } from '@/shared/lib/notify';
+import { useJob } from '@/shared/state/useJob';
+import { assertRiveFile } from './riveFile';
 
 enum PlayerState {
   Idle,
@@ -127,12 +132,6 @@ const alignmentIcon: Record<string, React.ReactNode> = {
   BottomLeft: <ArrowDownLeft size={14} aria-hidden />,
   BottomCenter: <ArrowDown size={14} aria-hidden />,
   BottomRight: <ArrowDownRight size={14} aria-hidden />,
-};
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} bytes`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1048576).toFixed(1)} MB`;
 };
 
 export default function RiveAnimationPlayer() {
@@ -327,7 +326,7 @@ export default function RiveAnimationPlayer() {
   useEffect(() => {
     if (status.current === PlayerState.Error && status.error !== null) {
       reset();
-      toast.error('Your file has no animations.');
+      notify.error('Your file has no animations.');
     } else if (status.current === PlayerState.Active) {
       if (!animationList) getAnimationList();
       if (!stateMachineList) getStateMachineList();
@@ -406,24 +405,33 @@ export default function RiveAnimationPlayer() {
     }
   };
 
-  const load = (file: File) => {
-    setFilename(file.name);
-    const sz = formatFileSize(file.size);
-    setFileSize(sz);
+  const loadJob = useJob(async (_ctx, file: File) => {
+    try {
+      const bytes = await readBytes(file);
+      assertRiveFile(file.name, bytes);
+      return bytes;
+    } catch (e) {
+      const error = toToolError(e, `Couldn't read ${file.name}`);
+      notify.error(error);
+      addDebugLog(error.message, 'error');
+      throw error;
+    }
+  });
+  const load = async (file: File) => {
+    const sz = formatBytes(file.size);
     addDebugLog(`File selected: ${file.name} (${sz})`, 'info');
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAnimationWithBuffer(reader.result);
-      if (reader.result) {
-        setRiveInfo({
-          version: 'Unknown',
-          fileSize: file.size,
-          fps: 'Unknown',
-          artboardCount: 0,
-        });
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    const bytes = await loadJob.run(file);
+    if (!bytes) return; // already reported by the job
+    setFilename(file.name);
+    setFileSize(sz);
+    // readBytes returns a view over a whole, fresh ArrayBuffer.
+    setAnimationWithBuffer(bytes.buffer as ArrayBuffer);
+    setRiveInfo({
+      version: 'Unknown',
+      fileSize: file.size,
+      fps: 'Unknown',
+      artboardCount: 0,
+    });
   };
 
   const handleInputChange = (
@@ -459,7 +467,7 @@ export default function RiveAnimationPlayer() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       addDebugLog(`Error setting input ${input.name}: ${msg}`, 'error');
-      toast.error(`Failed to update input: ${msg}`);
+      notify.error(`Failed to update input: ${msg}`);
     }
   };
 
@@ -481,7 +489,7 @@ export default function RiveAnimationPlayer() {
   };
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     setStatus({ ...status, hovering: false });
-    if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files[0]) void load(e.dataTransfer.files[0]);
     e.preventDefault();
     e.stopPropagation();
   };
@@ -808,7 +816,6 @@ export default function RiveAnimationPlayer() {
 
   return (
     <Container size="full">
-      <Toaster richColors visibleToasts={10} theme="dark" />
       <Grid max={3} gap="4">
         <Box className="lg:col-span-2">
           <Card>
@@ -917,7 +924,7 @@ export default function RiveAnimationPlayer() {
                           >
                             <FileUpload
                               onFiles={(files) => {
-                                if (files[0]) load(files[0]);
+                                if (files[0]) void load(files[0]);
                               }}
                               accept=".riv"
                               label="Drag and drop a Rive file, or click to browse"
