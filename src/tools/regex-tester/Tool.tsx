@@ -40,6 +40,7 @@ import { useClipboard } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { ChevronDown } from 'lucide-react';
 import { compile, type Match } from './lib/match';
+import { toJsSnippet, toRegexLiteral } from './lib/code';
 import { createRegexRunner, type RegexRunner } from './lib/runner';
 
 const MATCH_DEBOUNCE_MS = 150;
@@ -383,7 +384,7 @@ const RegexStudio: React.FC = () => {
   );
 
   const copyPattern = useCallback(() => {
-    copyToClipboard(`/${pattern}/${flagsStr}`);
+    copyToClipboard(toRegexLiteral(pattern, flagsStr));
   }, [pattern, flagsStr, copyToClipboard]);
 
   const handleTemplateSelect = (value: string) => {
@@ -476,7 +477,7 @@ const RegexStudio: React.FC = () => {
   };
 
   const handleCopyAsJs = () => {
-    const code = `const regex = /${pattern}/${flagsStr};\nconst matches = '${testString.replace(/'/g, "\\'")}'.match(regex);`;
+    const code = toJsSnippet(pattern, flagsStr, testString);
     copyToClipboard(code);
   };
 
