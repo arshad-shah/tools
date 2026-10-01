@@ -1,7 +1,7 @@
 // hooks/useQRCode.ts
 import { useState, useEffect, useRef } from 'react';
-import { 
-  QRCodeState, 
+import {
+  QRCodeState,
   QRCodeType,
   ErrorCorrectionLevel,
   RenderAs,
@@ -9,14 +9,17 @@ import {
   EncryptionConfig,
   ContactData,
   WifiData,
-  CryptoData
+  CryptoData,
 } from '../../../types/qrTypes';
-import { 
-  generateQRContent, 
-  encryptContent, 
-  generateRandomString, 
-  downloadQRCode 
+import {
+  generateQRContent,
+  encryptContent,
+  generateRandomString,
 } from '../utils/qrUtils';
+import { qrFilename, qrToBlob } from '../utils/qrExport';
+import { saveBlob } from '@/shared/lib/download';
+import { toToolError } from '@/shared/lib/errors';
+import { notify } from '@/shared/lib/notify';
 
 const initialState: QRCodeState = {
   text: 'https://example.com',
@@ -67,199 +70,207 @@ export const useQRCode = () => {
   // State
   const [state, setState] = useState<QRCodeState>(initialState);
   const qrRef = useRef<HTMLDivElement>(null!);
-  
+
   // Update the final data based on the selected type and encryption
   useEffect(() => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      isProcessing: true
+      isProcessing: true,
     }));
-    
+
     // Generate content based on QR type
     const content = generateQRContent(
       state.qrType,
       state.text,
       state.contactData,
       state.wifiData,
-      state.cryptoData
+      state.cryptoData,
     );
-    
+
     // Apply encryption if enabled
     const finalData = encryptContent(content, state.encryptionConfig);
-    
-    setState(prevState => ({
+
+    setState((prevState) => ({
       ...prevState,
       finalData,
-      isProcessing: false
+      isProcessing: false,
     }));
   }, [
-    state.text, 
-    state.qrType, 
-    state.contactData, 
-    state.wifiData, 
-    state.cryptoData, 
-    state.encryptionConfig
+    state.text,
+    state.qrType,
+    state.contactData,
+    state.wifiData,
+    state.cryptoData,
+    state.encryptionConfig,
   ]);
-  
+
   // Function to update text
   const setText = (text: string) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      text
+      text,
     }));
   };
-  
+
   // Function to update size
   const setSize = (size: number) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      size
+      size,
     }));
   };
-  
+
   // Function to update QR type
   const setQrType = (qrType: QRCodeType) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      qrType
+      qrType,
     }));
   };
-  
+
   // Function to update background color
   const setBackgroundColor = (backgroundColor: string) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      backgroundColor
+      backgroundColor,
     }));
   };
-  
+
   // Function to update foreground color
   const setForegroundColor = (foregroundColor: string) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      foregroundColor
+      foregroundColor,
     }));
   };
-  
+
   // Function to update error correction level
-  const setErrorCorrectionLevel = (errorCorrectionLevel: ErrorCorrectionLevel) => {
-    setState(prevState => ({
+  const setErrorCorrectionLevel = (
+    errorCorrectionLevel: ErrorCorrectionLevel,
+  ) => {
+    setState((prevState) => ({
       ...prevState,
-      errorCorrectionLevel
+      errorCorrectionLevel,
     }));
   };
-  
+
   // Function to update include margin
   const setIncludeMargin = (includeMargin: boolean) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      includeMargin
+      includeMargin,
     }));
   };
-  
+
   // Function to update render as
   const setRenderAs = (renderAs: RenderAs) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      renderAs
+      renderAs,
     }));
   };
-  
+
   // Function to update use image
   const setUseImage = (useImage: boolean) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      useImage
+      useImage,
     }));
   };
-  
+
   // Function to update image settings
   const setImageSettings = (imageSettings: ImageSettings) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      imageSettings
+      imageSettings,
     }));
   };
-  
+
   // Function to update contact data
   const setContactData = (contactData: Partial<ContactData>) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
       contactData: {
         ...prevState.contactData,
-        ...contactData
-      }
+        ...contactData,
+      },
     }));
   };
-  
+
   // Function to update wifi data
   const setWifiData = (wifiData: Partial<WifiData>) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
       wifiData: {
         ...prevState.wifiData,
-        ...wifiData
-      }
+        ...wifiData,
+      },
     }));
   };
-  
+
   // Function to update crypto data
   const setCryptoData = (cryptoData: Partial<CryptoData>) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
       cryptoData: {
         ...prevState.cryptoData,
-        ...cryptoData
-      }
+        ...cryptoData,
+      },
     }));
   };
-  
+
   // Function to update encryption config
   const setEncryptionConfig = (encryptionConfig: Partial<EncryptionConfig>) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
       encryptionConfig: {
         ...prevState.encryptionConfig,
-        ...encryptionConfig
-      }
+        ...encryptionConfig,
+      },
     }));
   };
-  
+
   // Function to update mask pattern
   const setMaskPattern = (maskPattern: number) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      maskPattern
+      maskPattern,
     }));
   };
-  
+
   // Function to update version
   const setVersion = (version: number) => {
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      version
+      version,
     }));
   };
-  
+
   // Function to generate random IV
   const generateRandomIV = () => {
     setEncryptionConfig({
-      iv: generateRandomString(16)
+      iv: generateRandomString(16),
     });
   };
-  
+
   // Function to generate random salt
   const generateRandomSalt = () => {
     setEncryptionConfig({
-      salt: generateRandomString(8)
+      salt: generateRandomString(8),
     });
   };
-  
+
   // Function to download QR code
-  const handleDownloadQRCode = () => {
-    downloadQRCode(qrRef, state.qrType, state.renderAs);
+  const handleDownloadQRCode = async () => {
+    if (!qrRef.current) return;
+    try {
+      const blob = await qrToBlob(qrRef.current, state.renderAs);
+      saveBlob(blob, qrFilename(state.qrType, state.renderAs));
+    } catch (e) {
+      notify.error(toToolError(e, 'Could not export the QR code'));
+    }
   };
-  
+
   return {
     state,
     qrRef,

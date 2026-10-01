@@ -4,58 +4,58 @@ import {
   LogEntry,
   LogType,
   LogLevel,
-} from "../../../types/LogParserTypes";
+} from '../../../types/LogParserTypes';
 
 // Detect log type based on content patterns
 export const detectLogType = (text: string): LogType => {
   if (
     text.match(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*?\[(INFO|WARN|ERROR|DEBUG)\]/m
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*?\[(INFO|WARN|ERROR|DEBUG)\]/m,
     )
   ) {
-    return "spring";
+    return 'spring';
   } else if (
     text.match(/^\[\d{4}-\d{2}-\d{2}.*?\] (INFO|WARNING|ERROR|DEBUG)/m)
   ) {
-    return "django";
+    return 'django';
   } else if (text.match(/^.*?\d+:\d+:\d+ (info|warn|error|debug)/im)) {
-    return "node";
+    return 'node';
   } else if (text.match(/(INFO|WARN|ERROR|DEBUG) -- /m)) {
-    return "log4j";
+    return 'log4j';
   } else if (
-    text.includes("Executing SQL") ||
-    text.includes("SELECT") ||
-    text.includes("INSERT")
+    text.includes('Executing SQL') ||
+    text.includes('SELECT') ||
+    text.includes('INSERT')
   ) {
-    return "sql";
+    return 'sql';
   } else if (
-    text.includes("webpack") ||
-    text.includes("compiled") ||
-    text.includes("chunk")
+    text.includes('webpack') ||
+    text.includes('compiled') ||
+    text.includes('chunk')
   ) {
-    return "webpack";
+    return 'webpack';
   } else {
-    return "generic";
+    return 'generic';
   }
 };
 
 // Main parse function that delegates to specific parsers
 export const parseLogsByType = (text: string, type: LogType): LogEntry[] => {
-  const actualType = type === "auto" ? detectLogType(text) : type;
-  const lines = text.split("\n").filter((line) => line.trim());
+  const actualType = type === 'auto' ? detectLogType(text) : type;
+  const lines = text.split('\n').filter((line) => line.trim());
 
   switch (actualType) {
-    case "spring":
+    case 'spring':
       return parseSpringLogs(lines);
-    case "django":
+    case 'django':
       return parseDjangoLogs(lines);
-    case "node":
+    case 'node':
       return parseNodeLogs(lines);
-    case "log4j":
+    case 'log4j':
       return parseLog4jLogs(lines);
-    case "sql":
+    case 'sql':
       return parseSqlLogs(lines);
-    case "webpack":
+    case 'webpack':
       return parseWebpackLogs(lines);
     default:
       return parseGenericLogs(lines);
@@ -66,7 +66,7 @@ export const parseLogsByType = (text: string, type: LogType): LogEntry[] => {
 const parseSpringLogs = (lines: string[]): LogEntry[] => {
   return lines.map((line, index) => {
     const match = line.match(
-      /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+).*?\[(.*?)\]\s+\[(.*?)\]\s+(.*?)(\s+-\s+(.*))?$/
+      /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+).*?\[(.*?)\]\s+\[(.*?)\]\s+(.*?)(\s+-\s+(.*))?$/,
     );
     if (match) {
       const [, timestamp, level, component, message, , details] = match;
@@ -76,11 +76,11 @@ const parseSpringLogs = (lines: string[]): LogEntry[] => {
         level: level.toLowerCase() as LogLevel,
         component,
         message,
-        details: details || "",
+        details: details || '',
         raw: line,
       };
     }
-    return { id: index, level: "info", message: line, raw: line };
+    return { id: index, level: 'info', message: line, raw: line };
   });
 };
 
@@ -88,20 +88,20 @@ const parseSpringLogs = (lines: string[]): LogEntry[] => {
 const parseDjangoLogs = (lines: string[]): LogEntry[] => {
   return lines.map((line, index) => {
     const match = line.match(
-      /^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\]\s+(INFO|WARNING|ERROR|DEBUG)\s+(.*?):\s+(.*)$/i
+      /^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\]\s+(INFO|WARNING|ERROR|DEBUG)\s+(.*?):\s+(.*)$/i,
     );
     if (match) {
       const [, timestamp, level, component, message] = match;
       return {
         id: index,
         timestamp,
-        level: level.toLowerCase().replace("warning", "warn") as LogLevel,
+        level: level.toLowerCase().replace('warning', 'warn') as LogLevel,
         component,
         message,
         raw: line,
       };
     }
-    return { id: index, level: "info", message: line, raw: line };
+    return { id: index, level: 'info', message: line, raw: line };
   });
 };
 
@@ -109,7 +109,7 @@ const parseDjangoLogs = (lines: string[]): LogEntry[] => {
 const parseNodeLogs = (lines: string[]): LogEntry[] => {
   return lines.map((line, index) => {
     const match = line.match(
-      /^(.*?\d{2}:\d{2}:\d{2})\s+(info|warn|error|debug):\s+(.*)$/i
+      /^(.*?\d{2}:\d{2}:\d{2})\s+(info|warn|error|debug):\s+(.*)$/i,
     );
     if (match) {
       const [, timestamp, level, message] = match;
@@ -121,7 +121,7 @@ const parseNodeLogs = (lines: string[]): LogEntry[] => {
         raw: line,
       };
     }
-    return { id: index, level: "info", message: line, raw: line };
+    return { id: index, level: 'info', message: line, raw: line };
   });
 };
 
@@ -129,7 +129,7 @@ const parseNodeLogs = (lines: string[]): LogEntry[] => {
 const parseLog4jLogs = (lines: string[]): LogEntry[] => {
   return lines.map((line, index) => {
     const match = line.match(
-      /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(INFO|WARN|ERROR|DEBUG)\s+\[(.*?)\]\s+(.*)$/i
+      /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(INFO|WARN|ERROR|DEBUG)\s+\[(.*?)\]\s+(.*)$/i,
     );
     if (match) {
       const [, timestamp, level, component, message] = match;
@@ -142,7 +142,7 @@ const parseLog4jLogs = (lines: string[]): LogEntry[] => {
         raw: line,
       };
     }
-    return { id: index, level: "info", message: line, raw: line };
+    return { id: index, level: 'info', message: line, raw: line };
   });
 };
 
@@ -150,16 +150,16 @@ const parseLog4jLogs = (lines: string[]): LogEntry[] => {
 const parseSqlLogs = (lines: string[]): LogEntry[] => {
   return lines.map((line, index) => {
     const timeMatch = line.match(/Executed in (\d+) ms/);
-    const executionTime = timeMatch ? timeMatch[1] + "ms" : undefined;
+    const executionTime = timeMatch ? timeMatch[1] + 'ms' : undefined;
 
-    let level: LogLevel = "info";
+    let level: LogLevel = 'info';
     if (
-      line.toLowerCase().includes("error") ||
-      line.toLowerCase().includes("exception")
+      line.toLowerCase().includes('error') ||
+      line.toLowerCase().includes('exception')
     ) {
-      level = "error";
-    } else if (line.toLowerCase().includes("warn")) {
-      level = "warn";
+      level = 'error';
+    } else if (line.toLowerCase().includes('warn')) {
+      level = 'warn';
     }
 
     return {
@@ -175,17 +175,17 @@ const parseSqlLogs = (lines: string[]): LogEntry[] => {
 // Parser for Webpack logs
 const parseWebpackLogs = (lines: string[]): LogEntry[] => {
   return lines.map((line, index) => {
-    let level: LogLevel = "info";
-    if (line.includes("ERROR")) {
-      level = "error";
-    } else if (line.includes("WARNING")) {
-      level = "warn";
-    } else if (line.includes("success")) {
-      level = "success";
+    let level: LogLevel = 'info';
+    if (line.includes('ERROR')) {
+      level = 'error';
+    } else if (line.includes('WARNING')) {
+      level = 'warn';
+    } else if (line.includes('success')) {
+      level = 'success';
     }
 
     const match = line.match(/in (\d+) ms/);
-    const buildTime = match ? match[1] + "ms" : undefined;
+    const buildTime = match ? match[1] + 'ms' : undefined;
 
     return {
       id: index,
@@ -200,26 +200,26 @@ const parseWebpackLogs = (lines: string[]): LogEntry[] => {
 // Parser for Generic logs with best-effort detection
 const parseGenericLogs = (lines: string[]): LogEntry[] => {
   return lines.map((line, index) => {
-    let level: LogLevel = "info";
+    let level: LogLevel = 'info';
     if (
-      line.toLowerCase().includes("error") ||
-      line.toLowerCase().includes("exception") ||
-      line.toLowerCase().includes("fail")
+      line.toLowerCase().includes('error') ||
+      line.toLowerCase().includes('exception') ||
+      line.toLowerCase().includes('fail')
     ) {
-      level = "error";
-    } else if (line.toLowerCase().includes("warn")) {
-      level = "warn";
-    } else if (line.toLowerCase().includes("debug")) {
-      level = "debug";
+      level = 'error';
+    } else if (line.toLowerCase().includes('warn')) {
+      level = 'warn';
+    } else if (line.toLowerCase().includes('debug')) {
+      level = 'debug';
     } else if (
-      line.toLowerCase().includes("success") ||
-      line.toLowerCase().includes("completed successfully")
+      line.toLowerCase().includes('success') ||
+      line.toLowerCase().includes('completed successfully')
     ) {
-      level = "success";
+      level = 'success';
     }
 
     const timestampMatch = line.match(
-      /\d{4}[-/]\d{2}[-/]\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?/
+      /\d{4}[-/]\d{2}[-/]\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?/,
     );
     const timestamp = timestampMatch ? timestampMatch[0] : undefined;
 
@@ -236,7 +236,7 @@ const parseGenericLogs = (lines: string[]): LogEntry[] => {
 // Filter logs based on criteria
 export const filterLogs = (
   logs: LogEntry[],
-  criteria: FilterCriteria
+  criteria: FilterCriteria,
 ): LogEntry[] => {
   return logs.filter((log) => {
     // Filter by log level
@@ -264,7 +264,7 @@ export const filterLogs = (
     // Filter by time range
     if (criteria.timeRange.start && log.timestamp) {
       try {
-        const logTime = new Date(log.timestamp.replace(",", "."));
+        const logTime = new Date(log.timestamp.replace(',', '.'));
         const startTime = new Date(criteria.timeRange.start);
         if (logTime < startTime) {
           return false;
@@ -276,7 +276,7 @@ export const filterLogs = (
 
     if (criteria.timeRange.end && log.timestamp) {
       try {
-        const logTime = new Date(log.timestamp.replace(",", "."));
+        const logTime = new Date(log.timestamp.replace(',', '.'));
         const endTime = new Date(criteria.timeRange.end);
         if (logTime > endTime) {
           return false;
@@ -293,31 +293,12 @@ export const filterLogs = (
 // Count logs by level
 export const countLogsByLevel = (logs: LogEntry[]): LogCounts => {
   return {
-    error: logs.filter((log) => log.level === "error").length,
-    warn: logs.filter((log) => log.level === "warn").length,
-    info: logs.filter((log) => log.level === "info").length,
-    debug: logs.filter((log) => log.level === "debug").length,
-    success: logs.filter((log) => log.level === "success").length,
+    error: logs.filter((log) => log.level === 'error').length,
+    warn: logs.filter((log) => log.level === 'warn').length,
+    info: logs.filter((log) => log.level === 'info').length,
+    debug: logs.filter((log) => log.level === 'debug').length,
+    success: logs.filter((log) => log.level === 'success').length,
   };
-};
-
-// Export logs as JSON
-export const exportLogsAsJson = (logs: LogEntry[]): void => {
-  const dataStr = JSON.stringify(logs, null, 2);
-  const dataUri =
-    "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-
-  const exportFileDefaultName = "parsed_logs.json";
-
-  const linkElement = document.createElement("a");
-  linkElement.setAttribute("href", dataUri);
-  linkElement.setAttribute("download", exportFileDefaultName);
-  linkElement.click();
-};
-
-// Copy logs to clipboard
-export const copyLogsToClipboard = (logs: LogEntry[]): Promise<void> => {
-  return navigator.clipboard.writeText(JSON.stringify(logs, null, 2));
 };
 
 // Sample log creator for testing
@@ -338,54 +319,54 @@ export const createSampleLogs = (): string => {
 export const getLogLevelConfig = (level: LogLevel) => {
   const configs = {
     error: {
-      color: "text-red-500",
-      darkColor: "text-red-400",
-      bgColor: "bg-red-50",
-      darkBgColor: "bg-red-500/10",
-      borderColor: "border-red-200",
-      darkBorderColor: "border-red-500/30",
-      textColor: "text-red-700",
-      darkTextColor: "text-red-300",
+      color: 'text-red-500',
+      darkColor: 'text-red-400',
+      bgColor: 'bg-red-50',
+      darkBgColor: 'bg-red-500/10',
+      borderColor: 'border-red-200',
+      darkBorderColor: 'border-red-500/30',
+      textColor: 'text-red-700',
+      darkTextColor: 'text-red-300',
     },
     warn: {
-      color: "text-amber-500",
-      darkColor: "text-amber-400",
-      bgColor: "bg-amber-50",
-      darkBgColor: "bg-amber-500/10",
-      borderColor: "border-amber-200",
-      darkBorderColor: "border-amber-500/30",
-      textColor: "text-amber-700",
-      darkTextColor: "text-amber-300",
+      color: 'text-amber-500',
+      darkColor: 'text-amber-400',
+      bgColor: 'bg-amber-50',
+      darkBgColor: 'bg-amber-500/10',
+      borderColor: 'border-amber-200',
+      darkBorderColor: 'border-amber-500/30',
+      textColor: 'text-amber-700',
+      darkTextColor: 'text-amber-300',
     },
     info: {
-      color: "text-blue-500",
-      darkColor: "text-blue-400",
-      bgColor: "bg-blue-50",
-      darkBgColor: "bg-blue-500/10",
-      borderColor: "border-blue-200",
-      darkBorderColor: "border-blue-500/30",
-      textColor: "text-blue-700",
-      darkTextColor: "text-blue-300",
+      color: 'text-blue-500',
+      darkColor: 'text-blue-400',
+      bgColor: 'bg-blue-50',
+      darkBgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-200',
+      darkBorderColor: 'border-blue-500/30',
+      textColor: 'text-blue-700',
+      darkTextColor: 'text-blue-300',
     },
     debug: {
-      color: "text-purple-500",
-      darkColor: "text-purple-400",
-      bgColor: "bg-purple-50",
-      darkBgColor: "bg-purple-500/10",
-      borderColor: "border-purple-200",
-      darkBorderColor: "border-purple-500/30",
-      textColor: "text-purple-700",
-      darkTextColor: "text-purple-300",
+      color: 'text-purple-500',
+      darkColor: 'text-purple-400',
+      bgColor: 'bg-purple-50',
+      darkBgColor: 'bg-purple-500/10',
+      borderColor: 'border-purple-200',
+      darkBorderColor: 'border-purple-500/30',
+      textColor: 'text-purple-700',
+      darkTextColor: 'text-purple-300',
     },
     success: {
-      color: "text-emerald-500",
-      darkColor: "text-emerald-400",
-      bgColor: "bg-emerald-50",
-      darkBgColor: "bg-emerald-500/10",
-      borderColor: "border-emerald-200",
-      darkBorderColor: "border-emerald-500/30",
-      textColor: "text-emerald-700",
-      darkTextColor: "text-emerald-300",
+      color: 'text-emerald-500',
+      darkColor: 'text-emerald-400',
+      bgColor: 'bg-emerald-50',
+      darkBgColor: 'bg-emerald-500/10',
+      borderColor: 'border-emerald-200',
+      darkBorderColor: 'border-emerald-500/30',
+      textColor: 'text-emerald-700',
+      darkTextColor: 'text-emerald-300',
     },
   };
 

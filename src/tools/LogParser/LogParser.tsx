@@ -52,6 +52,7 @@ import {
   Text,
   Textarea,
 } from '@/shared/ui';
+import { saveBlob } from '@/shared/lib/download';
 import { useCopyToClipboard, useLogParser } from './hooks/useLogParser';
 import { LogEntry, LogLevel, LogType } from '../../types/LogParserTypes';
 
@@ -213,17 +214,12 @@ const LogParserTool: React.FC = () => {
   const { copied, copyToClipboard } = useCopyToClipboard();
 
   const downloadFiltered = () => {
-    const blob = new Blob([filteredLogs.map((l) => l.raw).join('\n')], {
-      type: 'text/plain',
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `logs_filtered_${Date.now()}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    saveBlob(
+      new Blob([filteredLogs.map((l) => l.raw).join('\n')], {
+        type: 'text/plain',
+      }),
+      `logs_filtered_${Date.now()}.txt`,
+    );
   };
 
   const inputPanel = (

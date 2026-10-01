@@ -47,6 +47,7 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import {
   ColumnStatistics,
   ParsedData,
@@ -345,19 +346,12 @@ const CSVTSVViewer: React.FC = () => {
       });
       return newRow;
     });
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute(
-      'download',
-      `exported_${dataState.fileName.replace(/\.[^/.]+$/, '')}.csv`,
+    saveBlob(
+      new Blob([Papa.unparse(dataToExport)], {
+        type: 'text/csv;charset=utf-8',
+      }),
+      deriveFilename(dataState.fileName, 'exported', 'csv'),
     );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const chartData = useMemo(() => {
