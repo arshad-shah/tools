@@ -54,3 +54,69 @@ describe('orientationMatrix', () => {
     expect(topRight(2)).toEqual([10, 60]);
   });
 });
+
+describe('orientation table (all 8, from the EXIF definitions)', () => {
+  const box = { x: 10, y: 20, width: 30, height: 40 };
+  // Displayed position (dx, dy; 0–1, y down) of the stored top-left,
+  // top-right and bottom-left pixels.
+  const shown: Record<number, [number, number][]> = {
+    1: [
+      [0, 0],
+      [1, 0],
+      [0, 1],
+    ],
+    2: [
+      [1, 0],
+      [0, 0],
+      [1, 1],
+    ], // mirror horizontally
+    3: [
+      [1, 1],
+      [0, 1],
+      [1, 0],
+    ], // rotate 180°
+    4: [
+      [0, 1],
+      [1, 1],
+      [0, 0],
+    ], // mirror vertically
+    5: [
+      [0, 0],
+      [0, 1],
+      [1, 0],
+    ], // transpose
+    6: [
+      [1, 0],
+      [1, 1],
+      [0, 0],
+    ], // rotate 90° clockwise
+    7: [
+      [1, 1],
+      [1, 0],
+      [0, 1],
+    ], // transverse
+    8: [
+      [0, 1],
+      [0, 0],
+      [1, 1],
+    ], // rotate 90° counter-clockwise
+  };
+  // PDF image space (v up) of the same stored corners.
+  const stored: [number, number][] = [
+    [0, 1],
+    [1, 1],
+    [0, 0],
+  ];
+
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])('orientation %i', (o) => {
+    const m = orientationMatrix(o, box);
+    stored.forEach(([u, v], i) => {
+      const [dx, dy] = shown[o][i];
+      expect([m[0] * u + m[2] * v + m[4], m[1] * u + m[3] * v + m[5]]).toEqual([
+        box.x + box.width * dx,
+        box.y + box.height * (1 - dy),
+      ]);
+    });
+    expect(jpegOrientation(withExifOrientation(jpg, o))).toBe(o);
+  });
+});
