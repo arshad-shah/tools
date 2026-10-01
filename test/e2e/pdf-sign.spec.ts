@@ -121,6 +121,11 @@ test('drags and corner-resizes the placement box with the pointer', async ({
   await expect.poll(async () => (await parse())[0]).toBeLessThan(x0 - 50);
   const [, y1] = await parse();
   expect(y1).toBeLessThan(y0 - 50);
+  // The box keeps focus after the gesture, so the arrow keys work straight away.
+  await expect(placement).toBeFocused();
+  const [xDragged] = await parse();
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect.poll(async () => (await parse())[0]).toBe(xDragged + 10);
 
   // Shrink from the bottom-right corner handle (aspect ratio is kept).
   const handle = placement.locator('[data-handle="se"]');
