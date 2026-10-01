@@ -196,7 +196,9 @@ const DateCalculator: React.FC = () => {
               {diffResult && (
                 <Alert status={diffResult.status}>
                   <AlertDescription>
-                    <Text weight="medium">{diffResult.message}</Text>
+                    <Text as="span" weight="medium">
+                      {diffResult.message}
+                    </Text>
                   </AlertDescription>
                 </Alert>
               )}
@@ -252,7 +254,9 @@ const DateCalculator: React.FC = () => {
               {modifyResult && (
                 <Alert status={modifyResult.status}>
                   <AlertDescription>
-                    <Text weight="medium">{modifyResult.message}</Text>
+                    <Text as="span" weight="medium">
+                      {modifyResult.message}
+                    </Text>
                   </AlertDescription>
                 </Alert>
               )}
