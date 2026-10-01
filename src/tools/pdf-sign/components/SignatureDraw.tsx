@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Eraser, Undo2 } from 'lucide-react';
-import { Button, Inline, Label, Select, Stack } from '@/shared/ui';
+import { Button, Inline, Label, Select, Stack, Text } from '@/shared/ui';
 import {
   addPoint,
   strokePath,
@@ -119,7 +119,9 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
     <Stack gap="3">
       <canvas
         ref={canvasRef}
+        role="img"
         aria-label="Draw your signature"
+        aria-describedby="sig-draw-hint"
         className="h-44 w-full touch-none rounded-md border border-line bg-white"
         onPointerDown={(e) => {
           if (disabled || (e.pointerType === 'mouse' && e.button !== 0)) return;
@@ -135,6 +137,9 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
         onPointerUp={finish}
         onPointerCancel={finish}
       />
+      <Text id="sig-draw-hint" size="sm" tone="muted">
+        Draw with a mouse, pen or finger. Using a keyboard? Use the Type tab.
+      </Text>
       <Inline gap="3" align="end" wrap>
         <Stack gap="2">
           <Label htmlFor="sig-ink">Ink colour</Label>
