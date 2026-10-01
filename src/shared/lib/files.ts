@@ -26,6 +26,17 @@ const startsWith = (b: Uint8Array, sig: number[], offset = 0) =>
 
 /** Sniff the real type from magic numbers; file extensions are not trusted. */
 export function detectKind(b: Uint8Array): FileKind | null {
+  // Check strict image signatures first (at offset 0) to avoid false positives
+  // when image metadata contains "%PDF-"
+  if (startsWith(b, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    return 'png';
+  if (startsWith(b, [0xff, 0xd8, 0xff])) return 'jpeg';
+  if (
+    startsWith(b, [0x52, 0x49, 0x46, 0x46]) &&
+    startsWith(b, [0x57, 0x45, 0x42, 0x50], 8)
+  )
+    return 'webp';
+  if (startsWith(b, [0x47, 0x49, 0x46, 0x38])) return 'gif';
   // PDF readers accept the header anywhere in the first 1024 bytes.
   const limit = Math.min(b.length, 1024) - 5;
   for (let i = 0; i <= limit; i++) {
@@ -39,15 +50,6 @@ export function detectKind(b: Uint8Array): FileKind | null {
       return 'pdf';
     }
   }
-  if (startsWith(b, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
-    return 'png';
-  if (startsWith(b, [0xff, 0xd8, 0xff])) return 'jpeg';
-  if (
-    startsWith(b, [0x52, 0x49, 0x46, 0x46]) &&
-    startsWith(b, [0x57, 0x45, 0x42, 0x50], 8)
-  )
-    return 'webp';
-  if (startsWith(b, [0x47, 0x49, 0x46, 0x38])) return 'gif';
   return null;
 }
 
@@ -75,7 +77,14 @@ export async function loadFile(
 ): Promise<LoadedFile> {
   if (file.size === 0)
     throw new ToolError('INVALID_FILE', `${file.name} is empty`);
-  const bytes = await readBytes(file);
+  let bytes: Uint8Array;
+  try {
+    bytes = await readBytes(file);
+  } catch (cause) {
+    throw new ToolError('INVALID_FILE', `Couldn't read ${file.name}`, {
+      cause: cause instanceof Error ? cause : new Error(String(cause)),
+    });
+  }
   const kind = detectKind(bytes);
   if (!kind || !accept.includes(kind)) {
     throw new ToolError(

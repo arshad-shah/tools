@@ -27,6 +27,20 @@ describe('detectKind', () => {
     expect(detectKind(ascii('RIFF\0\0\0\0WEBPVP8 '))).toBe('webp');
     expect(detectKind(ascii('GIF89a'))).toBe('gif');
   });
+  it('prefers image signatures over PDF, even with embedded PDF magic', () => {
+    const pngWithPdfMagic = new Uint8Array([
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0x0d,
+      0x0a,
+      0x1a,
+      0x0a,
+      ...ascii('%PDF-1.7'),
+    ]);
+    expect(detectKind(pngWithPdfMagic)).toBe('png');
+  });
   it('returns null for unknown or empty data', () => {
     expect(detectKind(ascii('hello world'))).toBeNull();
     expect(detectKind(new Uint8Array())).toBeNull();
@@ -57,6 +71,16 @@ describe('loadFile', () => {
     await expect(loadFile(file, ['pdf'])).rejects.toBeInstanceOf(ToolError);
     await expect(loadFile(file, ['pdf'])).rejects.toMatchObject({
       message: 'empty.pdf is empty',
+    });
+  });
+  it('converts file read errors to ToolError', async () => {
+    const file = Object.assign(new File([new Uint8Array([1])], 'locked.pdf'), {
+      arrayBuffer: () =>
+        Promise.reject(new DOMException('x', 'NotReadableError')),
+    });
+    await expect(loadFile(file, ['pdf'])).rejects.toMatchObject({
+      code: 'INVALID_FILE',
+      message: "Couldn't read locked.pdf",
     });
   });
 });
