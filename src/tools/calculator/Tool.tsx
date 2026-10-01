@@ -294,7 +294,7 @@ const Calculator: React.FC = () => {
       {showGraph && (
         <Card>
           <CardBody>
-            <PlotlyGraphDisplay expression={display} />
+            <PlotlyGraphDisplay expression={display} angleUnit={angleUnit} />
           </CardBody>
         </Card>
       )}

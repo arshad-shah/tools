@@ -3,12 +3,13 @@
 // Example custom hook to keep all the logic in one place
 // Reusable across Standard, Scientific, or Expression modes
 // -----------------------
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as math from 'mathjs';
 import { Mode, AngleUnit, PendingOperator } from '../types';
 import { useCalculatorStore } from '../store';
-import { evaluateWithAngle } from '../lib/evaluate';
-import { shouldHandleCalculatorKey } from '../lib/keyboard';
+import { evaluateExpression as evaluateLib } from '../lib/evaluate';
+import { keyToAction, type CalcKeyAction } from '../lib/keys';
+import { toToolError } from '@/shared/lib/errors';
 
 export function useCalculator() {
   // Core State
@@ -41,33 +42,22 @@ export function useCalculator() {
   // Graphing (only used in Expression mode)
   const [showGraph, setShowGraph] = useState<boolean>(false);
 
-  // Keyboard handling
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (!shouldHandleCalculatorKey(event)) return;
-      const { key } = event;
-      // Add your logic for mapping keys -> actions
-      // For brevity, only a few examples:
-      if (key >= '0' && key <= '9') {
-        event.preventDefault();
-        inputDigit(Number(key));
-      }
-      if (key === 'Escape') {
-        event.preventDefault();
-        clear();
-      }
-      // ...and so on.
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [display, waitingForOperand, calculationValue, pendingOperator],
-  );
-
+  // Keyboard handling: one stable listener; the latest actions are read
+  // through a ref so it never acts on stale state.
+  const dispatchRef = useRef<(a: CalcKeyAction) => void>(() => {});
+  const modeRef = useRef<Mode>(mode);
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+    const onKey = (event: KeyboardEvent) => {
+      // Expression mode is typed in its own text box.
+      if (modeRef.current === 'expression') return;
+      const action = keyToAction(event);
+      if (!action) return;
+      event.preventDefault();
+      dispatchRef.current(action);
     };
-  }, [handleKeyDown]);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   // Helpers
   const animateButton = () => {
@@ -469,20 +459,41 @@ export function useCalculator() {
   const evaluateExpression = () => {
     animateButton();
     try {
-      const result = evaluateWithAngle(display, angleUnit);
-      if (typeof result === 'number') {
-        setDisplay(String(result));
-        const expr = `${display} = ${result}`;
-        setPreviousCalculation(expr);
-        setCalculationHistory([...calculationHistory, expr]);
-        setWaitingForOperand(true);
-      } else {
-        setDisplayError('Expression yielded non-scalar');
-      }
-    } catch {
-      setDisplayError('Bad expression');
+      const { text } = evaluateLib(display, angleUnit);
+      setDisplay(text);
+      const expr = `${display} = ${text}`;
+      setPreviousCalculation(expr);
+      setCalculationHistory([...calculationHistory, expr]);
+      setWaitingForOperand(true);
+    } catch (e) {
+      setDisplayError(toToolError(e, 'Bad expression').message);
     }
   };
+
+  // Latest state for the keyboard listener (assigned after every render).
+  useEffect(() => {
+    modeRef.current = mode;
+    dispatchRef.current = (a: CalcKeyAction) => {
+      switch (a.type) {
+        case 'digit':
+          return inputDigit(a.digit);
+        case 'decimal':
+          return inputDecimal();
+        case 'operator':
+          return performOperation(a.op);
+        case 'equals':
+          return calculate();
+        case 'backspace':
+          return backspace();
+        case 'clear-entry':
+          return clearEntry();
+        case 'clear':
+          return clear();
+        case 'percent':
+          return percentage();
+      }
+    };
+  });
 
   // Saving calculations
   const saveCalculation = () => {
