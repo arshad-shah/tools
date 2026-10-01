@@ -48,6 +48,21 @@ test('handles a 300-page document without rendering every page up front', async 
   const drawn = page.locator('canvas[data-rendered="true"]');
   await expect.poll(() => drawn.count()).toBeGreaterThanOrEqual(1);
   expect(await drawn.count()).toBeLessThan(100);
+
+  // Scroll to the bottom: tiles far above release their pixels, so the
+  // number of drawn canvases stays bounded instead of growing to 300.
+  const firstCanvas = page.getByRole('img', { name: /^Page 1(,|$)/ });
+  const lastCanvas = page.getByRole('img', { name: /^Page 300(,|$)/ });
+  await lastCanvas.scrollIntoViewIfNeeded();
+  await expect(lastCanvas).toHaveAttribute('data-rendered', 'true');
+  await expect(firstCanvas).not.toHaveAttribute('data-rendered', 'true');
+  expect(await drawn.count()).toBeLessThan(100);
+
+  // And back: the released first page is drawn again.
+  await firstCanvas.scrollIntoViewIfNeeded();
+  await expect(firstCanvas).toHaveAttribute('data-rendered', 'true');
+  await expect(lastCanvas).not.toHaveAttribute('data-rendered', 'true');
+  expect(await drawn.count()).toBeLessThan(100);
 });
 
 test('guards keep one page, range-selects and resets', async ({ page }) => {

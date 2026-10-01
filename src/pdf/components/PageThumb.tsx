@@ -24,7 +24,17 @@ interface PageThumbProps {
   label: string;
 }
 
-/** Renders only once scrolled near the viewport; keeps pixels after the cache evicts. */
+/** Start rendering when this close to the viewport. */
+const NEAR_MARGIN = '400px';
+/** Release canvas pixels when further than this from the viewport. */
+const FAR_MARGIN = '1500px';
+
+/**
+ * Renders only once scrolled near the viewport, and keeps its pixels if the
+ * bitmap cache evicts them while on screen. Far off-screen it releases its
+ * canvas backing store (re-requested on return; a cache hit is free), so a
+ * long grid holds pixels only for tiles around the viewport.
+ */
 export const PageThumb: React.FC<PageThumbProps> = ({
   docId,
   pageIndex,
@@ -37,7 +47,8 @@ export const PageThumb: React.FC<PageThumbProps> = ({
   const canvas = useRef<HTMLCanvasElement>(null);
   const [visible, setVisible] = useState(false);
   // Which page/width the canvas currently shows. Kept when the hook later
-  // returns null (cache eviction) so the drawn pixels stay on screen.
+  // returns null (cache eviction) so the drawn pixels stay on screen; cleared
+  // when the tile is released far off-screen.
   const [drawnKey, setDrawnKey] = useState<string | null>(null);
   const pixelWidth = Math.round(width * (window.devicePixelRatio || 1));
   const { bitmap, error } = usePageBitmap(
@@ -47,37 +58,56 @@ export const PageThumb: React.FC<PageThumbProps> = ({
     visible,
   );
   const key = `${docId}:${pageIndex}:${pixelWidth}`;
-  const drawable = bitmap !== null && bitmap.width > 0;
+  const drawable = visible && bitmap !== null && bitmap.width > 0;
   // Adjust state during render; the effect below draws this bitmap on commit.
   if (drawable && drawnKey !== key) setDrawnKey(key);
-  const hasDrawn = drawable || drawnKey === key;
+  if (!visible && drawnKey !== null) setDrawnKey(null);
+  const hasDrawn = drawable || (visible && drawnKey === key);
   const { outerHeight, innerWidth } = thumbBoxSize(page, width, rotation);
 
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    // One-shot: once near the viewport it stays rendered, so stop observing.
-    const io = new IntersectionObserver(
+    // Two thresholds (hysteresis): render when near, release only when far,
+    // so tiles at the edge of the viewport don't flap.
+    const near = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
-        setVisible(true);
-        io.disconnect();
+        if (entry.isIntersecting) setVisible(true);
       },
-      { rootMargin: '400px' },
+      { rootMargin: NEAR_MARGIN },
     );
-    io.observe(el);
-    return () => io.disconnect();
+    const far = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) setVisible(false);
+      },
+      { rootMargin: FAR_MARGIN },
+    );
+    near.observe(el);
+    far.observe(el);
+    return () => {
+      near.disconnect();
+      far.disconnect();
+    };
   }, []);
 
   useEffect(() => {
     const c = canvas.current;
-    if (!c || !bitmap || bitmap.width === 0) return;
+    if (!c) return;
+    if (!visible) {
+      // Free the backing store (~0.45 MB per tile at DPR 2).
+      c.width = 0;
+      c.height = 0;
+      delete c.dataset.rendered;
+      return;
+    }
+    if (!bitmap || bitmap.width === 0) return;
     c.width = bitmap.width;
     c.height = bitmap.height;
     c.getContext('2d')?.drawImage(bitmap, 0, 0);
-    // Marker for tests/tools: pixels were drawn (kept after cache eviction).
+    // Marker for tests/tools: pixels are drawn (kept after cache eviction,
+    // removed when released off-screen).
     c.dataset.rendered = 'true';
-  }, [bitmap]);
+  }, [bitmap, visible]);
 
   return (
     <div
