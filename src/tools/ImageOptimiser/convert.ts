@@ -23,42 +23,63 @@ export function assertImageFile(file: File): void {
     throw new ToolError('INVALID_FILE', `${file.name} is not an image`);
 }
 
+/**
+ * Decodes with an <img> over an object URL. Unlike createImageBitmap, this
+ * also handles SVG. The URL is revoked once decoded; the element stays
+ * drawable.
+ */
+export async function decodeImage(
+  file: Blob,
+): Promise<{ image: HTMLImageElement; width: number; height: number }> {
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+  image.src = url;
+  try {
+    await image.decode();
+  } catch (cause) {
+    throw new ToolError('INVALID_FILE', 'This image could not be decoded', {
+      cause,
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+  const { naturalWidth: width, naturalHeight: height } = image;
+  if (!width || !height)
+    throw new ToolError('INVALID_FILE', 'This image has no intrinsic size');
+  return { image, width, height };
+}
+
 /** Re-encodes an image in the browser through a canvas. */
 export async function convertImage(
   file: Blob,
   opts: { format: OutputFormat; quality: number },
   signal?: AbortSignal,
-): Promise<{ blob: Blob; width: number; height: number }> {
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch (cause) {
-    throw new ToolError('INVALID_FILE', 'This image could not be decoded', {
-      cause,
-    });
-  }
-  try {
-    if (signal?.aborted) throw new ToolError('CANCELLED', 'Cancelled');
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new ToolError('UNKNOWN', 'Unable to get canvas context');
-    ctx.drawImage(bitmap, 0, 0);
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(
-        resolve,
-        mimeFor(opts.format),
-        opts.format === 'png' ? undefined : opts.quality,
-      ),
+): Promise<{ bytes: Uint8Array; mime: string; width: number; height: number }> {
+  const { image, width, height } = await decodeImage(file);
+  if (signal?.aborted) throw new ToolError('CANCELLED', 'Cancelled');
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new ToolError('UNKNOWN', 'Unable to get canvas context');
+  ctx.drawImage(image, 0, 0, width, height);
+  const mime = mimeFor(opts.format);
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(
+      resolve,
+      mime,
+      opts.format === 'png' ? undefined : opts.quality,
+    ),
+  );
+  if (!blob)
+    throw new ToolError(
+      'UNSUPPORTED_FEATURE',
+      `This browser cannot encode ${opts.format.toUpperCase()}`,
     );
-    if (!blob)
-      throw new ToolError(
-        'UNSUPPORTED_FEATURE',
-        `This browser cannot encode ${opts.format.toUpperCase()}`,
-      );
-    return { blob, width: bitmap.width, height: bitmap.height };
-  } finally {
-    bitmap.close();
-  }
+  return {
+    bytes: new Uint8Array(await blob.arrayBuffer()),
+    mime: blob.type || mime,
+    width,
+    height,
+  };
 }

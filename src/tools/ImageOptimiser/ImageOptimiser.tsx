@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Save, Settings } from 'lucide-react';
 import {
   Alert,
@@ -22,93 +22,83 @@ import {
   Text,
 } from '@/shared/ui';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
-import { ToolError, toToolError } from '@/shared/lib/errors';
+import { ToolError } from '@/shared/lib/errors';
+import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
+import { useObjectUrl } from '@/shared/lib/object-url';
 import { useJob } from '@/shared/state/useJob';
 import {
   aspectRatio,
   assertImageFile,
   convertImage,
+  decodeImage,
   reductionLabel,
   type OutputFormat,
 } from './convert';
 
-interface ImageMetadata {
-  filename: string;
-  fileType: string;
-  lastModified: string;
-  aspectRatio: string;
+interface LoadedImage {
+  file: File;
+  bytes: Uint8Array;
+  width: number;
+  height: number;
 }
 
 const ImageOptimiser: React.FC = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<LoadedImage | null>(null);
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('jpeg');
   const [compressionLevel, setCompressionLevel] = useState<number>(80);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [errorMessage, setErrorMessage] = useState('');
-  const [metadata, setMetadata] = useState<ImageMetadata | null>(null);
 
-  const job = useJob(
-    async (ctx, file: File, format: OutputFormat, quality: number) => {
-      const out = await convertImage(file, { format, quality }, ctx.signal);
-      const url = URL.createObjectURL(out.blob);
-      if (ctx.signal.aborted) {
-        // Superseded: nobody will show (or revoke) this URL.
-        URL.revokeObjectURL(url);
-        throw new ToolError('CANCELLED', 'Cancelled');
-      }
-      return { ...out, url };
-    },
+  // A newer pick supersedes an older one still decoding, so the last file
+  // picked always wins.
+  const loadJob = useJob(async (_ctx, file: File): Promise<LoadedImage> => {
+    assertImageFile(file);
+    const bytes = await readBytes(file);
+    try {
+      const { width, height } = await decodeImage(
+        new Blob([bytes as Uint8Array<ArrayBuffer>], { type: file.type }),
+      );
+      return { file, bytes, width, height };
+    } catch (cause) {
+      throw new ToolError('INVALID_FILE', 'Failed to load the image', {
+        cause,
+      });
+    }
+  });
+
+  const job = useJob((ctx, file: File, format: OutputFormat, quality: number) =>
+    convertImage(file, { format, quality }, ctx.signal),
   );
   const { reset: resetJob } = job;
   const result = job.result;
   const isProcessing = job.status === 'running';
 
-  // Object URLs are revoked when replaced and on unmount.
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview);
-    },
-    [preview],
+  const selectedFile = loaded?.file ?? null;
+  const preview = useObjectUrl(
+    loaded?.bytes ?? null,
+    loaded?.file.type ?? 'application/octet-stream',
   );
-  useEffect(
-    () => () => {
-      if (result) URL.revokeObjectURL(result.url);
-    },
-    [result],
+  const processedUrl = useObjectUrl(
+    result?.bytes ?? null,
+    result?.mime ?? 'application/octet-stream',
   );
+  const dimensions = {
+    width: loaded?.width ?? 0,
+    height: loaded?.height ?? 0,
+  };
+  const metadata = loaded && {
+    filename: loaded.file.name,
+    fileType: loaded.file.type,
+    lastModified: new Date(loaded.file.lastModified).toLocaleString(),
+    aspectRatio: aspectRatio(loaded.width, loaded.height),
+  };
 
   const handleFiles = async (files: File[]) => {
     const file = files[0];
     if (!file) return;
-    try {
-      assertImageFile(file);
-    } catch (e) {
-      setErrorMessage(toToolError(e).message);
-      return;
-    }
-    let width: number;
-    let height: number;
-    try {
-      const bitmap = await createImageBitmap(file);
-      ({ width, height } = bitmap);
-      bitmap.close();
-    } catch {
-      setErrorMessage('Failed to load the image');
-      return;
-    }
-    setErrorMessage('');
+    const next = await loadJob.run(file);
+    if (!next) return; // the error is shown inline
     resetJob();
-    setSelectedFile(file);
-    setDimensions({ width, height });
-    setPreview(URL.createObjectURL(file));
-    setMetadata({
-      filename: file.name,
-      fileType: file.type,
-      lastModified: new Date(file.lastModified).toLocaleString(),
-      aspectRatio: aspectRatio(width, height),
-    });
+    setLoaded(next);
   };
 
   const processImage = () => {
@@ -119,13 +109,14 @@ const ImageOptimiser: React.FC = () => {
   const downloadImage = () => {
     if (!result || !selectedFile) return;
     saveBlob(
-      result.blob,
+      result.bytes,
       deriveFilename(selectedFile.name, 'optimized', outputFormat),
+      result.mime,
     );
   };
 
   const originalSize = selectedFile ? formatBytes(selectedFile.size) : null;
-  const newSize = result ? formatBytes(result.blob.size) : null;
+  const newSize = result ? formatBytes(result.bytes.length) : null;
 
   const qualityHint =
     compressionLevel < 40
@@ -136,11 +127,11 @@ const ImageOptimiser: React.FC = () => {
 
   const reduction =
     selectedFile && result
-      ? reductionLabel(selectedFile.size, result.blob.size)
+      ? reductionLabel(selectedFile.size, result.bytes.length)
       : 'N/A';
   const reductionStatus: 'success' | 'warning' =
     reduction === 'No reduction' ? 'warning' : 'success';
-  const shownError = errorMessage || job.error?.message;
+  const shownError = loadJob.error?.message ?? job.error?.message;
 
   return (
     <Stack gap="6">
@@ -296,7 +287,9 @@ const ImageOptimiser: React.FC = () => {
                   <Heading level={4} size="md">
                     Processed image
                   </Heading>
-                  <img src={result.url} alt="Processed" width="100%" />
+                  {processedUrl && (
+                    <img src={processedUrl} alt="Processed" width="100%" />
+                  )}
                   <Grid max={2} gap="3">
                     <Card className="bg-surface-subtle">
                       <CardBody>
