@@ -88,3 +88,18 @@ test('renders a large page at 300 DPI within the canvas limit and says so', asyn
   expect(width * height).toBeGreaterThan(16_000_000);
   expect(width / height).toBeCloseTo(1191 / 1684, 2);
 });
+
+test('warns before a very large export, and not for a small one', async ({
+  page,
+}) => {
+  await page.goto('/pdf-to-images');
+  await page
+    .locator('input[type=file]')
+    .setInputFiles('test/fixtures/generated/text-300.pdf');
+  await expect(page.getByText('300 pages', { exact: true })).toBeVisible();
+  const warning = page.getByText('This export needs roughly', { exact: false });
+  await page.getByLabel('Resolution (DPI)', { exact: true }).fill('300');
+  await expect(warning).toBeVisible();
+  await page.getByLabel('Pages', { exact: true }).fill('1-3');
+  await expect(warning).toBeHidden();
+});
