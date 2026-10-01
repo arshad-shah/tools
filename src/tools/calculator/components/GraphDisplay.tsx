@@ -1,86 +1,71 @@
-import { FC, useState } from 'react';
-import * as math from 'mathjs';
+import { FC, useMemo, useState } from 'react';
 import PlotModule from 'react-plotly.js';
-import { Box, Inline, Label, NumberInput, Stack, Text } from '@/shared/ui';
+import {
+  Alert,
+  AlertDescription,
+  Box,
+  Inline,
+  Label,
+  NumberInput,
+  Stack,
+  Text,
+} from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
+import { toToolError } from '@/shared/lib/errors';
 import { unwrapDefault } from '@/shared/lib/interop';
+import { compileFunction, sampleFunction } from '../lib/evaluate';
+import type { AngleUnit } from '../types';
 
 // react-plotly.js is CommonJS (`exports.default = Plot`); Vite may hand the
 // default import back as the module object.
 const Plot = unwrapDefault(PlotModule);
 
+const SAMPLES = 400;
+
 interface GraphDisplayProps {
-  /**
-   * The expression to evaluate, e.g. "x^2 + 2*x - 5".
-   * Use 'x' as the variable.
-   */
+  /** The expression to plot, e.g. "x^2 + 2*x - 5", with x as the variable. */
   expression: string;
-  /**
-   * The default minimum x-value (domain start).
-   */
+  /** Trig functions follow the same DEG/RAD switch as Evaluate. */
+  angleUnit: AngleUnit;
   defaultMinX?: number;
-  /**
-   * The default maximum x-value (domain end).
-   */
   defaultMaxX?: number;
-  /**
-   * The default step used to sample points
-   * (lower step => smoother curve, but more points => heavier compute).
-   */
-  defaultStep?: number;
-  /**
-   * Optional className for the container.
-   */
   className?: string;
 }
 
 /**
- * A React component for plotting a mathematical expression
- * using react-plotly.js for performance and convenience.
+ * Plots `expression` over [minX, maxX]. The expression is compiled once
+ * (no text substitution of x, so exp or max keep working) and sampled at
+ * 400 even points; undefined points leave gaps.
  */
 const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
   expression,
+  angleUnit,
   defaultMinX = -10,
   defaultMaxX = 10,
-  defaultStep = 1,
   className,
 }) => {
   const [minX, setMinX] = useState<number>(defaultMinX);
   const [maxX, setMaxX] = useState<number>(defaultMaxX);
-  const [step, setStep] = useState<number>(defaultStep);
 
-  // Generate data points
-  const generateData = () => {
-    if (maxX <= minX || step <= 0) return { xVals: [], yVals: [] };
-
-    const xVals: number[] = [];
-    const yVals: number[] = [];
-
-    // Sample the expression from minX to maxX in increments of 'step'
-    for (let x = minX; x <= maxX + 1e-14; x += step) {
-      let yVal = NaN;
-      try {
-        // Replace 'x' in the expression with the numeric x
-        const replacedExpr = expression.replace(/x/g, `(${x})`);
-        const result = math.evaluate(replacedExpr);
-        if (typeof result === 'number') {
-          yVal = result;
-        }
-      } catch {
-        // If there's any error (domain, syntax), yVal remains NaN
-      }
-      xVals.push(x);
-      yVals.push(yVal);
+  const compiled = useMemo(() => {
+    try {
+      return { fn: compileFunction(expression, angleUnit) };
+    } catch (e) {
+      return { error: toToolError(e).message };
     }
-    return { xVals, yVals };
-  };
+  }, [expression, angleUnit]);
 
-  const { xVals, yVals } = generateData();
+  const { xs, ys } = useMemo(
+    () =>
+      compiled.fn && maxX > minX
+        ? sampleFunction(compiled.fn, minX, maxX, SAMPLES)
+        : { xs: [], ys: [] },
+    [compiled, minX, maxX],
+  );
 
   return (
     <Box className={cn('mx-auto max-w-md', className)}>
       <Stack gap="4">
-        {/* Controls for domain & step */}
         <Inline gap="3" wrap align="end">
           <Stack gap="2" className="flex-1">
             <Label htmlFor="graph-min-x">Min X</Label>
@@ -102,56 +87,41 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
               aria-label="Maximum X value"
             />
           </Stack>
-          <Stack gap="2" className="flex-1">
-            <Label htmlFor="graph-step">Step</Label>
-            <NumberInput
-              id="graph-step"
-              value={step}
-              min={0.1}
-              step={0.1}
-              onValueChange={(val) => setStep(val > 0 ? val : 0.1)}
-              aria-label="Sampling step"
-            />
-          </Stack>
         </Inline>
 
-        {/* Expression & Basic Info */}
-        <Stack gap="1">
-          <Text size="sm">
-            <Text as="span" weight="semibold">
-              Expression:
-            </Text>{' '}
-            {expression}
-          </Text>
-          <Text size="sm">
-            <Text as="span" weight="semibold">
-              Points:
-            </Text>{' '}
-            {xVals.length}
-          </Text>
-        </Stack>
+        <Text size="sm">
+          <Text as="span" weight="semibold">
+            Expression:
+          </Text>{' '}
+          {expression} ({angleUnit === 'deg' ? 'degrees' : 'radians'})
+        </Text>
 
-        {/* Plotly React Component */}
-        <Plot
-          className="h-[400px] w-full"
-          config={{ responsive: true }}
-          data={[
-            {
-              x: xVals,
-              y: yVals,
-              type: 'scatter',
-              mode: 'lines',
-              line: { shape: 'spline', smoothing: 1.3 }, // smooth curve
-            },
-          ]}
-          layout={{
-            autosize: true,
-            title: { text: `f(x) = ${expression}` },
-            xaxis: { title: { text: 'x' } },
-            yaxis: { title: { text: 'f(x)' } },
-            margin: { l: 60, r: 20, t: 40, b: 40 },
-          }}
-        />
+        {compiled.error ? (
+          <Alert status="danger">
+            <AlertDescription>Cannot plot: {compiled.error}</AlertDescription>
+          </Alert>
+        ) : (
+          <Plot
+            className="h-[400px] w-full"
+            config={{ responsive: true }}
+            data={[
+              {
+                x: xs,
+                y: ys,
+                type: 'scatter',
+                mode: 'lines',
+                connectgaps: false,
+              },
+            ]}
+            layout={{
+              autosize: true,
+              title: { text: `f(x) = ${expression}` },
+              xaxis: { title: { text: 'x' } },
+              yaxis: { title: { text: 'f(x)' } },
+              margin: { l: 60, r: 20, t: 40, b: 40 },
+            }}
+          />
+        )}
       </Stack>
     </Box>
   );
