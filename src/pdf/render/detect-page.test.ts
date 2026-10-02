@@ -38,9 +38,23 @@ describe('detectFromPage (render worker)', () => {
     expect(d.fields.some((f) => f.label === 'Surname')).toBe(true);
   });
 
+  it('lists the places to sign with the page detection', async () => {
+    const { bytes } = await makeFlatFormWord();
+    const d = await detect(bytes, 2);
+    expect(d.signTargets.map((t) => [t.kind, t.label])).toEqual([
+      ['signature', 'Signature'],
+      ['date', 'Date'],
+    ]);
+  });
+
   it('skips a page over the path budget', async () => {
     const d = await detect(await makeComplexPagePdf());
-    expect(d).toMatchObject({ skipped: 'too-complex', fields: [], cells: [] });
+    expect(d).toMatchObject({
+      skipped: 'too-complex',
+      fields: [],
+      cells: [],
+      signTargets: [],
+    });
   });
 
   it('summarises sampled pages, extrapolated', async () => {

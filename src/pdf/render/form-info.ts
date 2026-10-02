@@ -7,6 +7,8 @@ export interface WidgetInfo {
     | 'radio'
     | 'dropdown'
     | 'optionlist'
+    /** A /Sig field (pdf.js does not say whether it is signed). */
+    | 'signature'
     | 'unsupported';
   pageIndex: number;
   rect: { x: number; y: number; width: number; height: number };
@@ -53,6 +55,7 @@ function kindOf(a: Annotation): WidgetInfo['kind'] {
   if (a.fieldType === 'Btn' && a.checkBox) return 'checkbox';
   if (a.fieldType === 'Btn' && a.radioButton) return 'radio';
   if (a.fieldType === 'Ch') return a.combo ? 'dropdown' : 'optionlist';
+  if (a.fieldType === 'Sig') return 'signature';
   return 'unsupported';
 }
 

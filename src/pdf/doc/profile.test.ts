@@ -81,6 +81,7 @@ describe('autofillPlan', () => {
         pageIndex: 0,
         rect: { x: 0, y: 0, width: 10, height: 10 },
         readOnly: false,
+        signed: false,
       },
     ];
     const plan = autofillPlan(

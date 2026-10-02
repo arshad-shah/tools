@@ -84,3 +84,23 @@ describe('NumberInput size', () => {
     expect(dec.parentElement!.className).toContain('h-11');
   });
 });
+
+describe('Slider value text', () => {
+  it('announces a readable value and takes a visible label', () => {
+    render(
+      <>
+        <span id="slant-label">Slant</span>
+        <Slider
+          value={5}
+          min={-20}
+          max={20}
+          onValueChange={() => {}}
+          aria-labelledby="slant-label"
+          aria-valuetext="5 degrees"
+        />
+      </>,
+    );
+    const s = screen.getByRole('slider', { name: 'Slant' });
+    expect(s.getAttribute('aria-valuetext')).toBe('5 degrees');
+  });
+});

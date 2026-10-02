@@ -6,6 +6,19 @@ import { IconFileText } from './icons';
 import { EmptyState, ErrorState, LoadingState } from './states';
 
 describe('ErrorState', () => {
+  it('titles the signing codes', () => {
+    for (const [code, title] of [
+      ['CERTIFICATE_INVALID', 'Certificate problem'],
+      ['SIGNATURE_INVALID', 'Signature check failed'],
+    ] as const) {
+      const { unmount } = render(
+        <ErrorState error={new ToolError(code, 'Details.')} />,
+      );
+      expect(screen.getByRole('heading').textContent).toBe(title);
+      unmount();
+    }
+  });
+
   it('is an alert titled by code with the error message', () => {
     render(
       <ErrorState error={new ToolError('ENCRYPTED', 'This PDF is locked.')} />,

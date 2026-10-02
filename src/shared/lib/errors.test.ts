@@ -47,3 +47,13 @@ describe('workspace codes', () => {
       expect(new ToolError(code, 'x').code).toBe(code);
   });
 });
+
+describe('signing codes', () => {
+  it('accepts CERTIFICATE_INVALID and SIGNATURE_INVALID and passes them through', () => {
+    for (const code of ['CERTIFICATE_INVALID', 'SIGNATURE_INVALID'] as const) {
+      const e = new ToolError(code, 'x');
+      expect(e.code).toBe(code);
+      expect(toToolError(e)).toBe(e);
+    }
+  });
+});

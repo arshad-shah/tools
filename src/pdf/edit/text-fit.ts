@@ -74,18 +74,38 @@ export function layoutInk(font: InkFont, text: string): InkLayout {
 }
 
 /**
+ * The inked area after shearing x by tan(`deg`) about the baseline
+ * (positive leans right), as a slanted signature is drawn.
+ */
+export function slantInk(ink: InkBox, deg: number): InkBox {
+  if (!deg) return ink;
+  const t = Math.tan((deg * Math.PI) / 180);
+  const xs = [ink.minX, ink.maxX].flatMap((x) =>
+    [ink.minY, ink.maxY].map((y) => x + t * y),
+  );
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: ink.minY,
+    maxY: ink.maxY,
+  };
+}
+
+/**
  * Font size and text origin (relative to the box's bottom-left, y up) that
- * fit the ink inside `box` as large as possible, centred.
+ * fit the ink inside `box` as large as possible (at most `maxSize`),
+ * centred.
  */
 export function fitInk(
   box: Size,
   ink: InkBox,
+  maxSize = Infinity,
 ): { size: number; x: number; y: number } {
   const w = ink.maxX - ink.minX;
   const h = ink.maxY - ink.minY;
   if (!(w > 0 && h > 0))
     throw new ToolError('INVALID_INPUT', 'The signature has nothing to draw');
-  const size = Math.min(box.width / w, box.height / h);
+  const size = Math.min(box.width / w, box.height / h, maxSize);
   return {
     size,
     x: (box.width - w * size) / 2 - ink.minX * size,

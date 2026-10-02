@@ -11,9 +11,12 @@ import {
   IconMakeFillable,
   IconMyDetails,
   IconNextField,
+  IconNextSignTarget,
 } from '@/shared/ui/icons';
 import { StatusDot, Text, type ToolGroup } from '@/shared/ui';
+import { useContext, useEffect } from 'react';
 import { ModeToolbar } from '../../ModeToolbar';
+import { WorkspaceContext } from '../../workspace-context';
 import type { ModeProps } from '../types';
 import {
   addFieldAtCentre,
@@ -27,6 +30,7 @@ import { useDetection, useFormInfo, useViewFields } from './data';
 import { MyDetailsDialog } from './MyDetailsDialog';
 import { SignatureDialog } from './SignatureDialog';
 import { autofillOp, openMyDetails } from './my-details-flow';
+import { nextPlaceToSign } from './sign-places';
 import { fillSign, useFillSign } from './store';
 
 /** Fill & Sign tools (plan C-12): fields, fill, sign, form. */
@@ -43,6 +47,11 @@ export function FillSignToolbar(ctx: ModeProps) {
     (f) => f.origin === 'detected' && f.status === 'field',
   ).length;
   const hasWidgets = fields.some((f) => f.origin === 'widget');
+  // "Next place to sign" (also a command) scrolls through the workspace.
+  const goToPage = useContext(WorkspaceContext)?.goToPage ?? null;
+  useEffect(() => {
+    fillSign.set({ goToPage });
+  }, [goToPage]);
 
   const toggleTool = (id: string) => tool.set(tool.id === id ? null : id);
   const sign = (role: 'signature' | 'initials') =>
@@ -149,6 +158,13 @@ export function FillSignToolbar(ctx: ModeProps) {
           icon: IconInitials,
           kind: 'button',
           onSelect: () => sign('initials'),
+        },
+        {
+          id: 'next-sign-target',
+          label: 'Next place to sign',
+          icon: IconNextSignTarget,
+          kind: 'button',
+          onSelect: () => void nextPlaceToSign(ctx),
         },
       ],
     },

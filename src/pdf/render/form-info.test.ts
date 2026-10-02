@@ -5,6 +5,11 @@ import {
   makeTextPdf,
   makeXfaPdf,
 } from '../../../test/fixtures/builders';
+import {
+  makeSigFieldPdf,
+  SIG_FIELD_NAME,
+  SIG_FIELD_RECT,
+} from '../../../test/fixtures/sig-field';
 import { readFormInfo } from './form-info';
 
 async function info(bytes: Uint8Array) {
@@ -46,6 +51,18 @@ describe('readFormInfo', () => {
       options: ['Ireland', 'France', 'Spain'],
     });
     expect(widgets[9]).toMatchObject({ value: 'R-1', readOnly: true });
+  });
+
+  it('lists /Sig widgets as signature fields', async () => {
+    const { widgets } = await info(await makeSigFieldPdf());
+    expect(widgets).toEqual([
+      expect.objectContaining({
+        fieldName: SIG_FIELD_NAME,
+        kind: 'signature',
+        pageIndex: 0,
+        rect: SIG_FIELD_RECT,
+      }),
+    ]);
   });
 
   it('reports no form on a plain PDF and XFA where present', async () => {

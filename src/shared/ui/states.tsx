@@ -22,6 +22,8 @@ const TITLE: Record<string, string> = {
   STORAGE_FULL: 'Storage is full',
   VERIFICATION_FAILED: 'Verification failed',
   NETWORK: 'Download failed',
+  CERTIFICATE_INVALID: 'Certificate problem',
+  SIGNATURE_INVALID: 'Signature check failed',
 };
 
 export interface ErrorStateProps {

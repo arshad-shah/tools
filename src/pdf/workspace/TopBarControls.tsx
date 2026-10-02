@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   IconLayoutFocus,
   IconLayoutStandard,
@@ -48,6 +48,8 @@ export interface TopBarControlsProps {
   onToggleSave(on: boolean): void;
   restricted: boolean;
   onUnlock(): void;
+  /** Document status badges (the "Signed" badge, plan H-14). */
+  badges?: ReactNode;
   onSearch(): void;
   onExport(): void;
 }
@@ -170,6 +172,7 @@ export function TopBarControls(p: TopBarControlsProps) {
       <div className="flex min-w-0 items-center justify-end gap-1">
         <NameField name={p.name} onRename={p.onRename} narrow={phone} />
         {restricted}
+        {p.badges}
         {undoButton}
         {phone ? null : redoButton}
         <IconButton
@@ -225,6 +228,7 @@ export function TopBarControls(p: TopBarControlsProps) {
     <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
       <NameField name={p.name} onRename={p.onRename} />
       {restricted}
+      {p.badges}
       <Button
         variant="secondary"
         size="sm"

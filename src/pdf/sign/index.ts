@@ -1,4 +1,17 @@
 export * from './stroke';
+export {
+  INK_WEIGHTS,
+  pointFromEvent,
+  simulatedPressure,
+  inkOutline,
+  outlineToPath,
+  inkToVector,
+  fitVectorToBox,
+  type InkPoint,
+  type InkStroke,
+  type InkWeight,
+  type InkVector,
+} from './ink';
 export { removeWhiteBackground, opaqueBounds } from './pixels';
 export {
   MIN_SIZE_PT,

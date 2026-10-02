@@ -29,6 +29,14 @@ export { classify, dedupeAgainstWidgets, isFlatForm } from './classify';
 export { readingOrder } from './reading-order';
 export { autofillKey, AUTOFILL_DICTIONARY } from './autofill';
 export { confidence, FIELD_MIN, SUGGEST_MIN } from './confidence';
+export {
+  findSignTargets,
+  sigFieldTargets,
+  SIGN_LABELS,
+  type SigWidgetLike,
+  type SignTarget,
+  type SignTargetKind,
+} from './sign-targets';
 
 const now = (): number =>
   typeof performance !== 'undefined' ? performance.now() : Date.now();

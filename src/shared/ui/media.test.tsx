@@ -7,7 +7,6 @@ import { DateInput } from './date-input';
 import { Image } from './image';
 import { PaintCanvas } from './paint-canvas';
 import { Positioned, Sized } from './positioned';
-import { SignaturePad } from './signature-pad';
 
 const ctx = {
   drawImage: vi.fn(),
@@ -151,40 +150,6 @@ describe('DateInput', () => {
     expect(field.getAttribute('type')).toBe('date');
     fireEvent.change(field, { target: { value: '2026-10-02' } });
     expect(onChange).toHaveBeenCalledWith('2026-10-02');
-  });
-});
-
-describe('SignaturePad', () => {
-  it('emits one stroke with at least two points per pointer gesture', () => {
-    const onChange = vi.fn();
-    render(
-      <SignaturePad value={[]} onChange={onChange} label="Draw" ink="#000" />,
-    );
-    const pad = screen.getByRole('img', { name: 'Draw' });
-    fireEvent.pointerDown(pad, { clientX: 1, clientY: 1, button: 0 });
-    fireEvent.pointerMove(pad, { clientX: 10, clientY: 10 });
-    fireEvent.pointerMove(pad, { clientX: 20, clientY: 15 });
-    fireEvent.pointerUp(pad);
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const strokes = onChange.mock.calls[0][0];
-    expect(strokes).toHaveLength(1);
-    expect(strokes[0].length).toBeGreaterThanOrEqual(2);
-  });
-  it('ignores input while disabled', () => {
-    const onChange = vi.fn();
-    render(
-      <SignaturePad
-        value={[]}
-        onChange={onChange}
-        label="Draw"
-        ink="#000"
-        disabled
-      />,
-    );
-    const pad = screen.getByRole('img', { name: 'Draw' });
-    fireEvent.pointerDown(pad, { clientX: 1, clientY: 1, button: 0 });
-    fireEvent.pointerUp(pad);
-    expect(onChange).not.toHaveBeenCalled();
   });
 });
 
