@@ -27,6 +27,8 @@ interface ToolStoreConfig<S extends object, A extends object> {
     | {
         version?: number;
         migrate?: Record<number, (persisted: unknown) => Partial<S>>;
+        /** Parses the stored string (store-kit's envelope); JSON.parse by default. */
+        deserialize?: (raw: string) => unknown;
       };
   /**
    * One-time import of data a tool stored before it used createToolStore.

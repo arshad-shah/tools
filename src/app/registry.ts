@@ -7,6 +7,7 @@ type ManifestModules = Record<string, { default: ToolManifest }>;
 const REQUIRED_STRINGS = ['name', 'description', 'category', 'slug'] as const;
 const KINDS = new Set(['tool', 'quick-task', 'workspace']);
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const MIME_RE = /^[a-z]+\/[a-z0-9.+-]+$/;
 
 /** Route and search fields (spec §3.1). */
 function validateRouting(path: string, m: ToolManifest) {
@@ -26,9 +27,17 @@ function validateRouting(path: string, m: ToolManifest) {
   for (const c of m.alsoIn ?? [])
     if (!getCategory(c) || c === m.category)
       fail(`alsoIn "${c}" must be another existing category`);
-  for (const rule of m.accepts ?? [])
-    if (!Array.isArray(rule.kinds) || rule.kinds.length === 0)
-      fail('has an accepts rule without kinds');
+  for (const rule of m.accepts ?? []) {
+    const kinds = rule.kinds ?? [];
+    const mimes = rule.mimes ?? [];
+    if (!Array.isArray(kinds) || !Array.isArray(mimes))
+      fail('has an accepts rule whose kinds or mimes is not a list');
+    if (kinds.length === 0 && mimes.length === 0)
+      fail('has an accepts rule without kinds or mimes');
+    for (const mime of mimes)
+      if (typeof mime !== 'string' || !MIME_RE.test(mime))
+        fail(`accepts mime "${String(mime)}" is not a valid mime type`);
+  }
 }
 function validate(path: string, manifest: ToolManifest | undefined) {
   if (!manifest || typeof manifest.id !== 'string' || !manifest.id) {
@@ -89,3 +98,13 @@ export const TOOLS = buildRegistry(
 
 export const getEnabledTools = () => TOOLS.filter((t) => t.enabled);
 export const getTool = (id: string) => TOOLS.find((t) => t.id === id);
+
+/** Enabled tools that take a text hand-off of `mime` (spec §4.3). */
+export function toolsAccepting(
+  mime: string,
+  tools: readonly ToolManifest[] = TOOLS,
+): ToolManifest[] {
+  return tools.filter(
+    (t) => t.enabled && (t.accepts ?? []).some((r) => r.mimes?.includes(mime)),
+  );
+}

@@ -32,7 +32,10 @@ export type AcceptKind =
   | 'any';
 
 export interface AcceptRule {
-  kinds: AcceptKind[];
+  /** File kinds from a hub drop; a rule needs kinds, mimes or both. */
+  kinds?: AcceptKind[];
+  /** Text hand-off mimes (spec §4.3), e.g. 'application/json'. */
+  mimes?: string[];
   /** false (default) means exactly one file. */
   multiple?: boolean;
   min?: number;
@@ -51,7 +54,7 @@ export interface ToolDefinition {
   icon: IconComponent;
   /** Plain words for search and Mod+K. */
   keywords: string[];
-  /** Hub drop routing; absent = the tool takes no dropped files. */
+  /** Hub drop and hand-off routing; absent = the tool takes neither. */
   accepts?: AcceptRule[];
   /** Cross-listed (link only) on these other hubs. */
   alsoIn?: ToolCategory[];

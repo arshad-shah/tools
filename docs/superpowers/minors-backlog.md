@@ -19,3 +19,9 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P5-A2: rule (b) does not see imperative `element.style.*` writes or `setAttribute('style', ...)` -> extend the rule (MemberExpression on `.style` outside src/shared/ui).
 - P5-G: Home category cards list 'Json and Xml Viewer' (title-cased id) instead of the tool's name 'JSON & XML Viewer'; use manifest title everywhere -> check hub/category card source
 - P5-G: footer renders an empty item between separators ('36 tools • • Copyright') when build version/SHA is absent (visual test builds); hide empty items so separators never strand
+- P6-A1: src/shared/lib/colour/ is where the colour engine lives (ruling R30); plan text for A2, G1 and others says `src/shared/lib/color/*` -> import from `@/shared/lib/colour`.
+- P6-A1: src/shared/lib/crypto/checksum.ts XXH64 and XXH3-64 run on BigInt (correct against the reference vectors, but slow on very large files) -> switch to 32-bit limb arithmetic if E's file hashing feels slow.
+- P6-A1: src/shared/lib/handoff.ts useHandoff keeps P5's window.location plus history.replaceState reading (plan said useSearchParams), so react-router's location can show a stale ?handoff until the next navigation -> move to useSearchParams if a consumer reads the router location.
+- P6-A1: src/shared/lib/syntax/languages/markup.ts leaves HTML script and style bodies as plain text -> embed the js and css tokenisers if CodeSurface needs them.
+- P6-A1: src/shared/lib/killable-client.ts is added by A1 (P0 did not land it), so src/tools/regex-tester/lib/runner.ts and src/shared/diagram/layout-client.ts still hand-roll the kill-and-restart pattern -> C-1 and the A3 follow-up move them onto createKillableClient.
+- P6-A1: cloud containers ship Chromium 1194, which lacks Map.prototype.getOrInsertComputed that pdfjs-dist 6 needs, so test/e2e/global-setup.ts warm-up fails there -> controller-side e2e is unaffected; cloud runs need a newer Chromium.

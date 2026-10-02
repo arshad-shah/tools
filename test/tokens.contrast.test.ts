@@ -1,17 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { deltaEOk, parseColor, simulateCvd } from '../src/shared/lib/colour';
 
 const css = readFileSync('src/theme/tokens.css', 'utf8');
 
-/** Colour tokens (#rrggbb or #rrggbbaa) declared in one theme block. */
+/**
+ * Colour tokens (#rrggbb or #rrggbbaa) declared in a theme's blocks (the
+ * base block and blocks appended later, such as the A1 syntax tokens).
+ */
 function block(selector: RegExp): Record<string, string> {
-  const m = selector.exec(css);
-  if (!m) throw new Error(`no block ${selector}`);
-  const body = css.slice(m.index + m[0].length, css.indexOf('}', m.index));
+  const all = [...css.matchAll(new RegExp(selector.source, 'g'))];
+  if (all.length === 0) throw new Error(`no block ${selector}`);
   return Object.fromEntries(
-    [
-      ...body.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-f]{6}(?:[0-9a-f]{2})?);/gi),
-    ].map((x) => [x[1], x[2]]),
+    all.flatMap((m) => {
+      const body = css.slice(m.index + m[0].length, css.indexOf('}', m.index));
+      return [
+        ...body.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-f]{6}(?:[0-9a-f]{2})?);/gi),
+      ].map((x) => [x[1], x[2]]);
+    }),
   );
 }
 
@@ -76,6 +82,26 @@ const PAIRS: [string, string, number][] = [
   ['canvas', 'warning', 4.5],
   ['canvas', 'danger', 4.5],
   ['canvas', 'info', 4.5],
+  // A1: syntax colours sit on code surfaces and input fills.
+  ...[
+    'key',
+    'string',
+    'number',
+    'boolean',
+    'null',
+    'punct',
+    'comment',
+    'keyword',
+    'tag',
+    'attr',
+    'fn',
+    'regex',
+  ].flatMap((k): [string, string, number][] => [
+    [`syntax-${k}`, 'surface', 4.5],
+    [`syntax-${k}`, 'surface-2', 4.5],
+  ]),
+  ['diff-add', 'surface', 4.5],
+  ['diff-del', 'surface', 4.5],
 ];
 
 // WCAG 1.4.11 non-text contrast (>= 3:1): control boundaries, the focus
@@ -88,6 +114,11 @@ const NON_TEXT: [string, string][] = [
       ['accent-indicator', bg],
     ],
   ),
+  ['match', 'surface'],
+  ...Array.from({ length: 8 }, (_, i): [string, string] => [
+    `chart-${i + 1}`,
+    'surface',
+  ]),
 ];
 
 // Status text on its own soft fill (badges, danger buttons): [text, fill].
@@ -99,6 +130,13 @@ const SOFT_PAIRS: [string, string][] = [
   // A2: selected page tiles (bg-accent-soft) keep their fg and fg-muted text.
   ['fg', 'accent-soft'],
   ['fg-muted', 'accent-soft'],
+  // A1: diff lines and regex matches keep their text readable.
+  ['fg', 'diff-add-soft'],
+  ['fg', 'diff-del-soft'],
+  ['fg', 'diff-add-strong'],
+  ['fg', 'diff-del-strong'],
+  ['fg', 'match-soft'],
+  ['fg', 'match-active-soft'],
 ];
 
 describe('token file', () => {
@@ -133,4 +171,15 @@ describe.each(Object.entries(themes))('%s theme non-text', (_name, t) => {
     expect(t[fg], fg).toBeDefined();
     expect(ratio(t[fg], t[bg])).toBeGreaterThanOrEqual(3);
   });
+});
+
+describe.each(Object.entries(themes))('%s theme chart palette', (_name, t) => {
+  it.each(Array.from({ length: 7 }, (_, i) => i + 1))(
+    'chart-%i and its neighbour stay apart under deuteranopia',
+    (i) => {
+      const a = simulateCvd(parseColor(t[`chart-${i}`]), 'deutan');
+      const b = simulateCvd(parseColor(t[`chart-${i + 1}`]), 'deutan');
+      expect(deltaEOk(a, b) * 100).toBeGreaterThanOrEqual(10);
+    },
+  );
 });

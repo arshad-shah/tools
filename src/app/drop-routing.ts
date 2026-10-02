@@ -44,8 +44,10 @@ function ruleMatches(rule: AcceptRule, kinds: (SniffedKind | null)[]): boolean {
   if (!rule.multiple && n !== 1) return false;
   if (rule.min !== undefined && n < rule.min) return false;
   if (rule.max !== undefined && n > rule.max) return false;
-  if (rule.kinds.includes('any')) return true;
-  return kinds.every((k) => k !== null && rule.kinds.includes(k));
+  const accepted = rule.kinds ?? [];
+  if (accepted.length === 0) return false; // a text hand-off rule only
+  if (accepted.includes('any')) return true;
+  return kinds.every((k) => k !== null && accepted.includes(k));
 }
 
 /** Enabled tools listed on a hub: its own plus cross-listed ones. */
@@ -75,7 +77,7 @@ export async function routeDrop(
 ): Promise<DropDecision> {
   const candidates = hubTools(tools, category).filter((t) => t.accepts);
   const accepted = candidates.flatMap((t) =>
-    (t.accepts ?? []).flatMap((r) => r.kinds),
+    (t.accepts ?? []).flatMap((r) => r.kinds ?? []),
   );
   const none = () => ({
     type: 'error' as const,

@@ -243,3 +243,107 @@
     }
   }
 }
+
+/*
+ * Phase 6 (A1): syntax, diff, match and chart colours, appended so other
+ * Parts' edits above merge cleanly. Text roles pass 4.5:1 on surface and
+ * surface-2; match and chart pass 3:1 on surface; adjacent chart colours stay
+ * at least 10 deltaE (OKLab x 100) apart under deuteranopia simulation
+ * (test/tokens.contrast.test.ts).
+ */
+:root,
+:root[data-theme='light'] {
+  --syntax-key: #116329;
+  --syntax-string: #0b4f8f;
+  --syntax-number: #9a4600;
+  --syntax-boolean: #005f6b;
+  --syntax-null: #9b2c6a;
+  --syntax-punct: #4a5363;
+  --syntax-comment: #5e6878;
+  --syntax-keyword: #c4231c;
+  --syntax-tag: #116329;
+  --syntax-attr: #9a4600;
+  --syntax-fn: #6f3fc4;
+  --syntax-regex: #7a5200;
+  --diff-add: #116329;
+  --diff-del: #b42318;
+  --diff-add-soft: #1a7f3724;
+  --diff-del-soft: #cf222e1c;
+  --diff-add-strong: #1a7f3752;
+  --diff-del-strong: #cf222e40;
+  --match: #a86f00;
+  --match-soft: #f2c94c59;
+  --match-active-soft: #f0883e66;
+  --chart-1: #1d5fc4;
+  --chart-2: #c4580f;
+  --chart-3: #b3268a;
+  --chart-4: #8a6d00;
+  --chart-5: #0e7c86;
+  --chart-6: #c42b2b;
+  --chart-7: #6f3fc4;
+  --chart-8: #0b8a5a;
+}
+
+:root[data-theme='dark'] {
+  --syntax-key: #7ee787;
+  --syntax-string: #a5d6ff;
+  --syntax-number: #ffa657;
+  --syntax-boolean: #56d4dd;
+  --syntax-null: #ff9bce;
+  --syntax-punct: #a3abba;
+  --syntax-comment: #8b949e;
+  --syntax-keyword: #ff7b72;
+  --syntax-tag: #7ee787;
+  --syntax-attr: #ffa657;
+  --syntax-fn: #d2a8ff;
+  --syntax-regex: #e3b341;
+  --diff-add: #7ee787;
+  --diff-del: #ff7b72;
+  --diff-add-soft: #2ea04326;
+  --diff-del-soft: #f8514926;
+  --diff-add-strong: #2ea04366;
+  --diff-del-strong: #f8514966;
+  --match: #e3b341;
+  --match-soft: #e3b34133;
+  --match-active-soft: #f0883e59;
+  --chart-1: #60a5fa;
+  --chart-2: #fb923c;
+  --chart-3: #22d3ee;
+  --chart-4: #f87171;
+  --chart-5: #a78bfa;
+  --chart-6: #34d399;
+  --chart-7: #facc15;
+  --chart-8: #f472b6;
+}
+
+@theme inline {
+  --color-syntax-key: var(--syntax-key);
+  --color-syntax-string: var(--syntax-string);
+  --color-syntax-number: var(--syntax-number);
+  --color-syntax-boolean: var(--syntax-boolean);
+  --color-syntax-null: var(--syntax-null);
+  --color-syntax-punct: var(--syntax-punct);
+  --color-syntax-comment: var(--syntax-comment);
+  --color-syntax-keyword: var(--syntax-keyword);
+  --color-syntax-tag: var(--syntax-tag);
+  --color-syntax-attr: var(--syntax-attr);
+  --color-syntax-fn: var(--syntax-fn);
+  --color-syntax-regex: var(--syntax-regex);
+  --color-diff-add: var(--diff-add);
+  --color-diff-del: var(--diff-del);
+  --color-diff-add-soft: var(--diff-add-soft);
+  --color-diff-del-soft: var(--diff-del-soft);
+  --color-diff-add-strong: var(--diff-add-strong);
+  --color-diff-del-strong: var(--diff-del-strong);
+  --color-match: var(--match);
+  --color-match-soft: var(--match-soft);
+  --color-match-active-soft: var(--match-active-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+}
