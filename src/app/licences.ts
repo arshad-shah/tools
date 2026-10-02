@@ -63,4 +63,16 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/arshad-shah/tools',
     note: 'Synthesised in-house for this project (src/tools/pomodoro/assets)',
   },
+  {
+    name: 'micromark',
+    licence: 'MIT',
+    url: 'https://github.com/micromark/micromark',
+    note: 'Markdown Editor rendering',
+  },
+  {
+    name: 'micromark-extension-gfm',
+    licence: 'MIT',
+    url: 'https://github.com/micromark/micromark-extension-gfm',
+    note: 'GitHub Flavored Markdown for the Markdown Editor',
+  },
 ];

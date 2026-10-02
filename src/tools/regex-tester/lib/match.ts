@@ -6,6 +6,8 @@ export interface Match {
   length: number;
   groups: string[] | null;
   namedGroups: Record<string, string> | null;
+  /** Group spans `[start, end)` per capture group (with the `d` flag). */
+  spans?: Array<[number, number] | null>;
 }
 
 /** Builds the RegExp, turning a syntax error into a ToolError. */
@@ -23,13 +25,18 @@ export function compile(pattern: string, flags: string): RegExp {
 
 const toMatch = (m: RegExpExecArray): Match => {
   const groups = m.slice(1);
-  return {
+  const out: Match = {
     text: m[0],
     index: m.index,
     length: m[0].length,
     groups: groups.length > 0 ? groups : null,
     namedGroups: m.groups ? { ...m.groups } : null,
   };
+  if (m.indices)
+    out.spans = m.indices
+      .slice(1)
+      .map((p): [number, number] | null => (p ? [p[0], p[1]] : null));
+  return out;
 };
 
 /**

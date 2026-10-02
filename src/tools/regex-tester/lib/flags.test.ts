@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_FLAGS, FLAG_INFO, flagsString } from './flags';
+import {
+  DEFAULT_FLAGS,
+  FLAG_INFO,
+  flagsString,
+  toggleFlag,
+  withIndices,
+} from './flags';
 
 describe('flagsString', () => {
   it('is "g" for the defaults', () => {
@@ -26,5 +32,21 @@ describe('flagsString', () => {
         ignoreCase: true,
       }),
     ).toBe('id');
+  });
+});
+
+describe('toggleFlag', () => {
+  it('adds and removes a flag in canonical order', () => {
+    expect(toggleFlag('g', 'i')).toBe('gi');
+    expect(toggleFlag('gi', 'g')).toBe('i');
+    expect(toggleFlag('mg', 'd')).toBe('dgm');
+  });
+  it('drops v when u is turned on, and the other way round', () => {
+    expect(toggleFlag('gv', 'u')).toBe('gu');
+    expect(toggleFlag('gu', 'v')).toBe('gv');
+  });
+  it('withIndices adds d once', () => {
+    expect(withIndices('g')).toBe('dg');
+    expect(withIndices('dg')).toBe('dg');
   });
 });

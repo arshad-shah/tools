@@ -18,8 +18,6 @@ const runner = vi.hoisted(() => ({
     }),
   dispose: () => {},
 }));
-vi.mock('./useRegexRunner', () => ({ useRegexRunner: () => runner }));
-
 import { useRegexMatches } from './useRegexMatches';
 
 const match = (text: string, index = 0): Match => ({
@@ -30,10 +28,11 @@ const match = (text: string, index = 0): Match => ({
   namedGroups: null,
 });
 
-type Props = { pattern: string; text: string };
+type Props = { pattern: string; text: string; valid?: boolean };
 const setup = (initial: Props) =>
   renderHook(
-    ({ pattern, text }: Props) => useRegexMatches(pattern, 'g', text),
+    ({ pattern, text, valid }: Props) =>
+      useRegexMatches(runner, pattern, 'g', text, { valid }),
     {
       initialProps: initial,
     },
@@ -60,7 +59,7 @@ describe('useRegexMatches', () => {
     const { result } = setup({ pattern: 'a', text: 'abc' });
     expect(result.current.matching).toBe(true);
     debounce();
-    expect(calls.map((c) => c.args)).toEqual([['a', 'g', 'abc']]);
+    expect(calls.map((c) => c.args)).toEqual([['a', 'dg', 'abc']]);
     await settle(() => calls[0].resolve([match('a')]));
     expect(result.current.matches).toEqual([match('a')]);
     expect(result.current.hasResult).toBe(true);
@@ -97,7 +96,7 @@ describe('useRegexMatches', () => {
     await settle(() =>
       calls[0].reject(new ToolError('CANCELLED', 'Superseded')),
     );
-    expect(result.current.runError).toBe('');
+    expect(result.current.error).toBeNull();
     expect(result.current.hasResult).toBe(false);
   });
 
@@ -108,7 +107,7 @@ describe('useRegexMatches', () => {
     await settle(() =>
       calls[0].reject(new ToolError('TIMEOUT', 'Took too long')),
     );
-    expect(result.current.runError).toBe('');
+    expect(result.current.error).toBeNull();
   });
 
   it('reports any other failure of the current call', async () => {
@@ -117,17 +116,30 @@ describe('useRegexMatches', () => {
     await settle(() =>
       calls[0].reject(new ToolError('TIMEOUT', 'Took too long')),
     );
-    expect(result.current.runError).toBe('Took too long');
+    expect(result.current.error?.message).toBe('Took too long');
     expect(result.current.matches).toEqual([]);
     expect(result.current.hasResult).toBe(true);
   });
 
   it('never calls the runner for an invalid pattern', () => {
-    const { result } = setup({ pattern: '(', text: 'abc' });
+    const { result } = setup({ pattern: '(', text: 'abc', valid: false });
     debounce();
     expect(calls).toHaveLength(0);
-    expect(result.current.isValid).toBe(false);
-    expect(result.current.syntaxError).not.toBe('');
     expect(result.current.matching).toBe(false);
+  });
+
+  it('runs the same input again on retry', async () => {
+    const { result } = setup({ pattern: 'a', text: 'abc' });
+    debounce();
+    await settle(() =>
+      calls[0].reject(new ToolError('TIMEOUT', 'Took too long')),
+    );
+    act(() => result.current.retry());
+    expect(result.current.error).toBeNull();
+    expect(result.current.matching).toBe(true);
+    debounce();
+    expect(calls).toHaveLength(2);
+    await settle(() => calls[1].resolve([match('a')]));
+    expect(result.current.matches).toEqual([match('a')]);
   });
 });

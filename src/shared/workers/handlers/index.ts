@@ -1,5 +1,8 @@
 import json from './json';
+import diff from './diff';
+import log from './log';
 import ping from './ping';
+import regex from './regex';
 
 /**
  * Every text-worker handler (spec §4.4). Append-only: each Part adds one
@@ -10,6 +13,9 @@ import ping from './ping';
 export const textHandlers = {
   ...ping,
   ...json,
+  ...regex,
+  ...diff,
+  ...log,
 };
 
 export type TextHandlers = typeof textHandlers;

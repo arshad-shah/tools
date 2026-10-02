@@ -51,7 +51,13 @@ describe('Hub', () => {
       .getAllByRole('link')
       .map((a) => a.getAttribute('href'))
       .sort();
-    expect(names).toEqual(['/text/diff', '/text/logs', '/text/regex']);
+    expect(names).toEqual([
+      '/text/diff',
+      '/text/logs',
+      '/text/markdown',
+      '/text/regex',
+      '/text/toolkit',
+    ]);
   });
   it('cross-lists Protect and Unlock on the security hub with a pdf tag', () => {
     setup('security');

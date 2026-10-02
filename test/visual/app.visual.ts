@@ -86,5 +86,18 @@ for (const theme of ['light', 'dark'] as const) {
         },
       );
     });
+
+    // Part 6-C flagship text tools at phone width (spec 12.5).
+    for (const tool of TOOLS.filter((t) =>
+      ['regex-tester', 'text-diff-checker', 'markdown-editor'].includes(t.id),
+    ))
+      test(`tool ${tool.id} phone`, async ({ page }) => {
+        await page.setViewportSize(VIEWPORTS.phone);
+        await open(page, tool.path, theme);
+        await expect(page).toHaveScreenshot(
+          `tool-${tool.id}-phone-${theme}.png`,
+          { fullPage: true },
+        );
+      });
   });
 }

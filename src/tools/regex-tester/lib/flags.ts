@@ -66,3 +66,22 @@ export function flagsString(flags: Flags): string {
     .map((f) => f.flag)
     .join('');
 }
+
+/** Canonical flag order, as `RegExp.prototype.flags` reports it. */
+const FLAG_ORDER = 'dgimsuvy';
+
+/** Turns one flag letter on or off; `u` and `v` exclude each other. */
+export function toggleFlag(flags: string, letter: string): string {
+  const set = new Set(flags);
+  if (set.has(letter)) set.delete(letter);
+  else {
+    set.add(letter);
+    if (letter === 'u') set.delete('v');
+    if (letter === 'v') set.delete('u');
+  }
+  return [...FLAG_ORDER].filter((f) => set.has(f)).join('');
+}
+
+/** `flags` plus `d`, so matches carry their group spans. */
+export const withIndices = (flags: string): string =>
+  flags.includes('d') ? flags : toggleFlag(flags, 'd');

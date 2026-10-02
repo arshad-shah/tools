@@ -1,219 +1,357 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { IconAlertTriangle } from '@/shared/ui/icons';
+import React, { useMemo, useRef, useState } from 'react';
+import { IconArrowRightLeft } from '@/shared/ui/icons';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Alert,
+  AlertDescription,
+  Button,
+  Grid,
+  Inline,
+  Kbd,
+  SegmentedControl,
+  ShareButton,
+  Stack,
+  Text,
+  TextInputPanel,
+} from '@/shared/ui';
+import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
+import { useShareableState } from '@/shared/lib/use-shareable-state';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import type { LanguageId } from '@/shared/lib/syntax/tokenize';
+import { ChangeStrip } from './components/ChangeStrip';
+import { DiffOptions } from './components/DiffOptions';
+import { DiffView, type DiffViewHandle } from './components/DiffView';
+import { ExportMenu } from './components/ExportMenu';
+import { MergePanel } from './components/MergePanel';
+import { SemanticView } from './components/SemanticView';
+import { useDiffJob } from './hooks/useDiffJob';
+import { detectLanguage } from './lib/detect';
+import { isIdentical, type DiffOptions as EngineOptions } from './lib/engine';
+import { readDiffHandoff } from './lib/handoff';
+import { normaliseJson } from './lib/semantic';
+import { buildViewModel, stepAnchor } from './lib/view-model';
+import { diffSettings, type DiffMode } from './settings';
+import { DIFF_SHARE_VERSION, parseDiffShare, type DiffShare } from './share';
 
-import { Alert, AlertDescription, FilePicker, Grid, Stack } from '@/shared/ui';
-import type { DiffViewModeId, HighlightMode } from './types';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
-import { loadDiffFile, TEXT_ACCEPT } from './lib/text-file';
-import { buildDiffExport } from './lib/export';
-import { toToolError } from '@/shared/lib/errors';
-import { notify } from '@/shared/lib/notify';
-import useDiffSettings from './hooks/useDiffSettings';
-import useIntelligentDiff from './hooks/useIntelligentDiff';
-import { DiffResults } from './components/DiffResults';
-import { DiffSettingsPanel } from './components/DiffSettingsPanel';
-import { DiffStats } from './components/DiffStats';
-import { DiffTextArea } from './components/DiffTextArea';
-import { DiffToolbar } from './components/DiffToolbar';
-import { useHandoffFiles } from '@/shared/lib/handoff';
+const TEXT_ACCEPT =
+  '.txt,.md,.json,.html,.css,.js,.ts,.jsx,.tsx,.xml,.yaml,.yml,.log,.csv,.patch,.diff,text/plain';
+const MAX_BYTES = 20 * 1024 * 1024;
+const SAMPLE = {
+  left: 'The quick brown fox\njumps over the lazy dog.\nLine three stays.\nA line that goes away.',
+  right:
+    'The quick red fox\njumps over the lazy dog.\nLine three stays.\nA brand new line.\nAnd one more.',
+};
 
-const TextDiffChecker: React.FC = () => {
-  const [leftText, setLeftText] = useState('');
-  const [rightText, setRightText] = useState('');
-  const [diffViewMode, setDiffViewMode] = useState<DiffViewModeId>('split');
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [showStats, setShowStats] = useState(true);
-  const [highlightMode, setHighlightMode] = useState<HighlightMode>('word');
+const isDiffHandoff = (p: HandoffPayload) => readDiffHandoff(p) !== null;
 
-  const { diffSettings, updateDiffSetting, resetSettings } = useDiffSettings();
-  const {
-    diffSegments,
-    diffStats,
-    isDiffing,
-    performanceWarning,
-    calculateDiff,
-    debouncedCalculateDiff,
-    clearDiff,
-  } = useIntelligentDiff();
+const TextDiff: React.FC = () => {
+  const [settings, update] = diffSettings.useSettings();
+  const [left, setLeft] = useState('');
+  const [right, setRight] = useState('');
+  const [names, setNames] = useState({ left: 'original', right: 'changed' });
+  const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
+  const [current, setCurrent] = useState(0);
+  const view = useRef<DiffViewHandle>(null);
 
-  useEffect(() => {
-    if (autoRefresh && (leftText || rightText)) {
-      debouncedCalculateDiff(leftText, rightText, diffSettings, highlightMode);
-    }
-  }, [
-    leftText,
-    rightText,
-    autoRefresh,
-    diffSettings,
-    highlightMode,
-    debouncedCalculateDiff,
-  ]);
-
-  const { copy } = useClipboard();
-  const copyToClipboard = useCallback(
-    async (text: string) => {
-      // useClipboard reports failures itself.
-      if (await copy(text)) notify.success('Copied to clipboard!');
-    },
-    [copy],
-  );
-
-  // Each pane loads independently: picking the right file while the left
-  // one is still being read must not drop the left one.
-  const loadSide = async (side: 'left' | 'right', file: File) => {
-    try {
-      const r = await loadDiffFile(file);
-      (side === 'left' ? setLeftText : setRightText)(r.text);
-      notify.success(`${r.name} loaded successfully`);
-    } catch (e) {
-      notify.error(toToolError(e));
-    }
-  };
-
-  // Two files dropped on a hub become the original and the changed text.
-  useHandoffFiles((files) => {
-    void loadSide('left', files[0]);
-    if (files[1]) void loadSide('right', files[1]);
+  const share = useShareableState<DiffShare>({
+    toolId: 'text-diff-checker',
+    version: DIFF_SHARE_VERSION,
+    parse: parseDiffShare,
+    select: () => ({
+      v: 1,
+      left,
+      right,
+      opts: {
+        granularity: settings.granularity,
+        mode: settings.mode,
+        ignoreWhitespace: settings.ignoreWhitespace,
+        ignoreCase: settings.ignoreCase,
+        ignoreBlankLines: settings.ignoreBlankLines,
+        trimTrailing: settings.trimTrailing,
+        sortKeys: settings.sortKeys,
+      },
+    }),
   });
 
-  const swapTexts = useCallback(() => {
-    setLeftText(rightText);
-    setRightText(leftText);
-    notify.info('Texts swapped');
-  }, [leftText, rightText]);
+  // Hydrate once from a share link or a hand-off (adjusting state while
+  // rendering, so no effect sets state).
+  const handoff = useHandoff(isDiffHandoff);
+  const [applied, setApplied] = useState<object | null>(null);
+  if (share.loaded && applied === null) {
+    setApplied(share.loaded);
+    setLeft(share.loaded.left);
+    setRight(share.loaded.right);
+    update(share.loaded.opts);
+  }
+  if (handoff && applied !== handoff) {
+    setApplied(handoff);
+    const h = readDiffHandoff(handoff)!;
+    if (h.left !== undefined) setLeft(h.left);
+    if (h.right !== undefined) setRight(h.right);
+    setNames((n) => ({
+      left: h.leftName ?? n.left,
+      right: h.rightName ?? n.right,
+    }));
+  }
 
-  const clearAll = useCallback(() => {
-    if (leftText || rightText) {
-      setLeftText('');
-      setRightText('');
-      clearDiff();
-      notify.info('All cleared');
+  // JSON mode compares normalised JSON text, so the views still apply.
+  const jsonTexts = useMemo(() => {
+    if (settings.mode !== 'json') return null;
+    try {
+      return {
+        left: left.trim() ? normaliseJson(left, 'Left', settings.sortKeys) : '',
+        right: right.trim()
+          ? normaliseJson(right, 'Right', settings.sortKeys)
+          : '',
+      };
+    } catch {
+      return null;
     }
-  }, [leftText, rightText, clearDiff]);
+  }, [settings.mode, settings.sortKeys, left, right]);
+  const texts = useMemo(
+    () => jsonTexts ?? { left, right },
+    [jsonTexts, left, right],
+  );
 
-  const exportResults = useCallback(() => {
-    if (!diffSegments.length) {
-      notify.error('No diff results to export');
-      return;
-    }
-    const now = Date.now();
-    saveBlob(
-      new Blob(
-        [
-          JSON.stringify(
-            buildDiffExport(diffSegments, diffStats, diffSettings, now),
-            null,
-            2,
-          ),
-        ],
-        { type: 'application/json' },
-      ),
-      `diff-results-${now}.json`,
-    );
-    notify.success('Results exported successfully');
-  }, [diffSegments, diffStats, diffSettings]);
+  const opts: EngineOptions = {
+    granularity: settings.granularity,
+    ignoreWhitespace: settings.ignoreWhitespace,
+    ignoreCase: settings.ignoreCase,
+    ignoreBlankLines: settings.ignoreBlankLines,
+    trimTrailing: settings.trimTrailing,
+  };
+  const textMode = settings.mode === 'text' || jsonTexts !== null;
+  const job = useDiffJob(texts.left, texts.right, opts, textMode);
+  const vm = useMemo(
+    () =>
+      job.result
+        ? buildViewModel(job.result, texts, {
+            view: settings.view,
+            context: settings.context,
+            expanded,
+            granularity: settings.granularity,
+          })
+        : null,
+    [
+      job.result,
+      texts,
+      settings.view,
+      settings.context,
+      settings.granularity,
+      expanded,
+    ],
+  );
 
-  const manualRefresh = useCallback(() => {
-    if (!autoRefresh) {
-      try {
-        calculateDiff(leftText, rightText, diffSettings, highlightMode);
-        notify.info('Diff recalculated');
-      } catch {
-        notify.error('Error calculating differences');
-      }
-    }
-  }, [
-    autoRefresh,
-    calculateDiff,
-    leftText,
-    rightText,
-    diffSettings,
-    highlightMode,
+  const language: LanguageId = settings.syntaxHighlighting
+    ? jsonTexts
+      ? 'json'
+      : detectLanguage(right || left, names.right)
+    : 'plain';
+  const anchors = vm?.changeAnchors ?? [];
+  const position = anchors.indexOf(current);
+
+  const go = (dir: 'next' | 'prev') => {
+    const next = stepAnchor(anchors, current, dir);
+    if (next === null) return;
+    setCurrent(next);
+    view.current?.scrollToRow(next);
+  };
+  const jump = (row: number) => {
+    setCurrent(row);
+    view.current?.scrollToRow(row);
+  };
+  const swap = () => {
+    setLeft(right);
+    setRight(left);
+    setNames({ left: names.right, right: names.left });
+  };
+  const clear = () => {
+    setLeft('');
+    setRight('');
+    setExpanded(new Set());
+  };
+
+  useToolCommands('text-diff-checker', [
+    {
+      id: 'next',
+      label: 'Next change',
+      shortcut: 'n',
+      run: () => go('next'),
+      enabled: anchors.length > 0,
+    },
+    {
+      id: 'prev',
+      label: 'Previous change',
+      shortcut: 'p',
+      run: () => go('prev'),
+      enabled: anchors.length > 0,
+    },
+    { id: 'swap', label: 'Swap sides', run: swap },
+    {
+      id: 'share',
+      label: 'Share link',
+      shortcut: 'Mod+Shift+S',
+      run: () => void share.share(),
+      enabled: share.canShare,
+    },
+    {
+      id: 'clear',
+      label: 'Clear both sides',
+      shortcut: 'Mod+Shift+X',
+      run: clear,
+    },
+    {
+      id: 'sample',
+      label: 'Load sample',
+      run: () => {
+        setLeft(SAMPLE.left);
+        setRight(SAMPLE.right);
+      },
+    },
   ]);
 
+  const side = (which: 'left' | 'right') => (
+    <TextInputPanel
+      label={which === 'left' ? 'Original text' : 'Changed text'}
+      value={which === 'left' ? left : right}
+      onChange={which === 'left' ? setLeft : setRight}
+      language={
+        settings.syntaxHighlighting
+          ? detectLanguage(which === 'left' ? left : right, names[which])
+          : 'plain'
+      }
+      accept={TEXT_ACCEPT}
+      maxBytes={MAX_BYTES}
+      samples={[{ label: 'Sample', value: SAMPLE[which] }]}
+      onFile={(f) => {
+        setNames((n) => ({ ...n, [which]: f.name }));
+        return false;
+      }}
+      maxHeight={280}
+    />
+  );
+
+  const stats = job.result?.stats;
   return (
     <Stack gap="4">
-      <DiffToolbar
-        showStats={showStats}
-        setShowStats={setShowStats}
-        autoRefresh={autoRefresh}
-        setAutoRefresh={setAutoRefresh}
-        isDiffing={isDiffing}
-        hasResults={diffSegments.length > 0}
-        diffViewMode={diffViewMode}
-        setDiffViewMode={setDiffViewMode}
-        onRefresh={manualRefresh}
-        onSwap={swapTexts}
-        onExport={exportResults}
-        onClear={clearAll}
-      />
-
-      <DiffSettingsPanel
-        diffSettings={diffSettings}
-        updateDiffSetting={updateDiffSetting}
-        resetSettings={resetSettings}
-        highlightMode={highlightMode}
-        setHighlightMode={setHighlightMode}
-      />
-
-      {showStats && diffStats && <DiffStats diffStats={diffStats} />}
-
-      {performanceWarning && (
-        <Alert status="warning" icon={<IconAlertTriangle />}>
-          <AlertDescription>
-            Large text detected. Performance may be affected.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Grid max={2} gap="4">
-        <FilePicker
-          accept={TEXT_ACCEPT}
-          onFiles={(files) => void loadSide('left', files[0])}
-        >
-          {(open) => (
-            <DiffTextArea
-              value={leftText}
-              onChange={setLeftText}
-              placeholder="Paste your original text here…"
-              label="Original text"
-              disabled={isDiffing}
-              onFileUpload={open}
-              onCopy={() => void copyToClipboard(leftText)}
-              onClear={() => setLeftText('')}
-            />
-          )}
-        </FilePicker>
-        <FilePicker
-          accept={TEXT_ACCEPT}
-          onFiles={(files) => void loadSide('right', files[0])}
-        >
-          {(open) => (
-            <DiffTextArea
-              value={rightText}
-              onChange={setRightText}
-              placeholder="Paste your modified text here…"
-              label="Modified text"
-              disabled={isDiffing}
-              onFileUpload={open}
-              onCopy={() => void copyToClipboard(rightText)}
-              onClear={() => setRightText('')}
-            />
-          )}
-        </FilePicker>
+      <Inline gap="3" className="flex-wrap items-center justify-between">
+        <SegmentedControl<DiffMode>
+          label="Comparison"
+          value={settings.mode}
+          onChange={(mode) => update({ mode })}
+          options={[
+            { value: 'text', label: 'Text' },
+            { value: 'json', label: 'JSON' },
+            { value: 'csv', label: 'CSV' },
+            { value: 'ignore-order', label: 'Ignore order' },
+          ]}
+        />
+        <Inline gap="2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={swap}
+            disabled={!left && !right}
+          >
+            <IconArrowRightLeft size="sm" aria-hidden />
+            Swap
+          </Button>
+          <ExportMenu result={job.result} texts={texts} names={names} />
+          <ShareButton share={share} />
+        </Inline>
+      </Inline>
+      <Grid cols={2} gap="3" className="min-w-0">
+        {side('left')}
+        {side('right')}
       </Grid>
-
-      <DiffResults
-        diffSegments={diffSegments}
-        isDiffing={isDiffing}
-        bothFilled={Boolean(leftText && rightText)}
-        diffViewMode={diffViewMode}
-        highlightMode={highlightMode}
-        diffSettings={diffSettings}
-      />
+      {textMode ? (
+        <>
+          <DiffOptions settings={settings} update={update} />
+          {job.error && (
+            <Alert status="danger">
+              <AlertDescription>{job.error.message}</AlertDescription>
+            </Alert>
+          )}
+          {vm && job.result && stats && (
+            <Stack gap="3" aria-busy={job.pending}>
+              <Inline
+                gap="3"
+                className="flex-wrap items-center justify-between"
+              >
+                <Text size="sm" aria-live="polite">
+                  {isIdentical(job.result)
+                    ? 'No differences'
+                    : `${stats.added} added, ${stats.removed} removed, ${stats.changed} changed`}
+                  {job.pending ? ' (updating)' : ''}
+                </Text>
+                <Inline gap="2" className="items-center">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => go('prev')}
+                    disabled={anchors.length === 0}
+                  >
+                    Previous change
+                  </Button>
+                  <Text size="sm" aria-live="polite">
+                    {anchors.length === 0
+                      ? 'No changes'
+                      : `${position + 1 || '-'} of ${anchors.length}`}
+                  </Text>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => go('next')}
+                    disabled={anchors.length === 0}
+                  >
+                    Next change
+                  </Button>
+                </Inline>
+              </Inline>
+              <ChangeStrip
+                anchors={anchors}
+                rows={vm.left.lines.length}
+                onJump={jump}
+              />
+              <DiffView
+                ref={view}
+                vm={vm}
+                language={language}
+                names={names}
+                wrap={false}
+                onUnfold={(i) => setExpanded((prev) => new Set(prev).add(i))}
+              />
+              {!isIdentical(job.result) && (
+                <Accordion>
+                  <AccordionItem value="merge">
+                    <AccordionTrigger>Merge changes</AccordionTrigger>
+                    <AccordionContent>
+                      <MergePanel result={job.result} texts={texts} />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              )}
+            </Stack>
+          )}
+        </>
+      ) : null}
+      {settings.mode !== 'text' && (
+        <SemanticView
+          mode={settings.mode}
+          left={left}
+          right={right}
+          sortKeys={settings.sortKeys}
+          onSortKeys={(sortKeys) => update({ sortKeys })}
+        />
+      )}
+      <Text size="sm" tone="muted">
+        Press <Kbd keys="n" /> and <Kbd keys="p" /> to move between changes.
+      </Text>
     </Stack>
   );
 };
 
-export default TextDiffChecker;
+export default TextDiff;
