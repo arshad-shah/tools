@@ -108,3 +108,9 @@ export {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from './menu';
+export {
+  DiagramCanvas,
+  type DiagramCanvasProps,
+  type DiagramCanvasHandle,
+  type DiagramLayoutInfo,
+} from './diagram-canvas';
