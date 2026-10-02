@@ -136,8 +136,8 @@ export function effectiveStyle(
 
 /**
  * The inline editor's caret metrics on screen (CSS px): the size the
- * overlay draws the text at, and its letter spacing (character boxes
- * place each character themselves, so they get none).
+ * overlay draws the text at, and its letter spacing. Character boxes get
+ * the cell width instead, so the caret steps one box per character.
  */
 export function caretMetrics(
   text: string,
@@ -145,10 +145,10 @@ export function caretMetrics(
   style: FieldStyle,
   scale: number,
   quarter = false,
-): { fontPx: number; spacingPx: number } {
+): { fontPx: number; spacingPx: number; cellPx?: number } {
   const layout = overlayLayout(text || 'M', rect, style, quarter);
-  return {
-    fontPx: layout.size * scale,
-    spacingPx: style.comb ? 0 : style.spacing * scale,
-  };
+  const fontPx = layout.size * scale;
+  if (!style.comb) return { fontPx, spacingPx: style.spacing * scale };
+  const across = quarter ? rect.height : rect.width;
+  return { fontPx, spacingPx: 0, cellPx: (across / style.comb) * scale };
 }

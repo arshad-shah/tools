@@ -28,7 +28,7 @@ export interface FieldEditorProps {
    * over the box at the text's on-screen size, the page showing through
    * (the value is drawn in place by FieldValue).
    */
-  inline?: { fontPx: number; spacingPx: number };
+  inline?: { fontPx: number; spacingPx: number; cellPx?: number };
   /** Esc keeps the text (commits) instead of discarding the edit. */
   escapeKeeps?: boolean;
   /** Esc with escapeKeeps: default onCommit. */
@@ -129,6 +129,7 @@ export function FieldEditor({
           onChange={setValue}
           fontPx={inline.fontPx}
           spacingPx={inline.spacingPx}
+          cellPx={inline.cellPx}
         />
         {warning ? (
           <div className="absolute top-full left-0 mt-1 w-max max-w-[60vw] rounded-md bg-surface shadow-e2">
