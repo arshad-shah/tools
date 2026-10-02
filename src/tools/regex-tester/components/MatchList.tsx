@@ -1,52 +1,74 @@
 import React from 'react';
-import { IconBarChart3 } from '@/shared/ui/icons';
-
+import { IconCopy } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
+  Badge,
+  Code,
+  IconButton,
   Inline,
   Stack,
+  Text,
+  VirtualList,
 } from '@/shared/ui';
 import type { Match } from '../lib/match';
-import { MatchItem } from './MatchItem';
 
-interface MatchListProps {
-  matches: Match[];
-  onCopy: (text: string) => void;
-}
+const show = (s: string | undefined) => (s ? s : 'empty');
 
-/** Up to the first 100 matches, each with copy and group details. */
-export const MatchList: React.FC<MatchListProps> = ({ matches, onCopy }) => (
-  <Card>
-    <CardHeader>
+const MatchRow: React.FC<{
+  match: Match;
+  index: number;
+  onCopy(text: string): void;
+}> = ({ match, index, onCopy }) => (
+  <Stack gap="1" className="border-b border-line px-3 py-2">
+    <Inline gap="2" align="center" justify="between">
       <Inline gap="2" align="center">
-        <IconBarChart3 size="md" />
-        <CardTitle as="h2">Matches ({matches.length})</CardTitle>
+        <Badge variant="soft" tone="accent" size="sm">
+          Match {index + 1}
+        </Badge>
+        <Text as="span" size="xs" tone="subtle">
+          at {match.index} to {match.index + match.length}
+        </Text>
       </Inline>
-    </CardHeader>
-    <CardBody>
-      <Stack gap="2">
-        {matches.slice(0, 100).map((m, i) => (
-          <MatchItem
-            key={i}
-            match={m}
-            index={i}
-            onCopy={() => onCopy(m.text)}
-          />
+      <IconButton
+        variant="ghost"
+        size="sm"
+        label={`Copy match ${index + 1}`}
+        icon={<IconCopy size="sm" />}
+        onClick={() => onCopy(match.text)}
+      />
+    </Inline>
+    <Code className="self-start whitespace-pre-wrap">{show(match.text)}</Code>
+    {match.groups || match.namedGroups ? (
+      <Inline gap="2" wrap>
+        {match.groups?.map((g, i) => (
+          <Text as="span" size="xs" tone="muted" key={`g${i}`}>
+            Group {i + 1} <Code>{show(g)}</Code>
+          </Text>
         ))}
-        {matches.length > 100 && (
-          <Alert status="info">
-            <AlertDescription>
-              Showing first 100 of {matches.length} matches. Consider refining
-              your pattern for better performance.
-            </AlertDescription>
-          </Alert>
-        )}
-      </Stack>
-    </CardBody>
-  </Card>
+        {Object.entries(match.namedGroups ?? {}).map(([name, v]) => (
+          <Text as="span" size="xs" tone="muted" key={`n${name}`}>
+            {name} <Code>{show(v)}</Code>
+          </Text>
+        ))}
+      </Inline>
+    ) : null}
+  </Stack>
+);
+
+const rowHeight = (m: Match) => 64 + (m.groups || m.namedGroups ? 24 : 0);
+
+/** Every match (virtualised), with its position, groups and named groups. */
+export const MatchList: React.FC<{
+  matches: Match[];
+  onCopy(text: string): void;
+}> = ({ matches, onCopy }) => (
+  <VirtualList
+    items={matches}
+    estimateSize={(i) => rowHeight(matches[i])}
+    measure
+    maxHeight={360}
+    ariaLabel="Matches"
+    getKey={(m, i) => `${m.index}:${i}`}
+    className="rounded-md border border-line"
+    renderItem={(m, i) => <MatchRow match={m} index={i} onCopy={onCopy} />}
+  />
 );

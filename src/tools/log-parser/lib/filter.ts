@@ -1,69 +1,108 @@
-import type { FilterCriteria, LogCounts, LogEntry } from '../types';
+import { ToolError } from '@/shared/lib/errors';
+import type { LogEntry } from './model';
 
-// Filter logs based on criteria
-export const filterLogs = (
-  logs: LogEntry[],
-  criteria: FilterCriteria,
-): LogEntry[] => {
-  return logs.filter((log) => {
-    // Filter by log level
-    if (!criteria.levelFilters[log.level]) {
-      return false;
-    }
+export interface FieldFilter {
+  key: string;
+  value: string;
+  mode: 'include' | 'exclude';
+}
 
-    // Filter by text search
-    if (
-      criteria.textSearch &&
-      !log.raw.toLowerCase().includes(criteria.textSearch.toLowerCase())
-    ) {
-      return false;
-    }
+/** The Log Viewer filter (spec §8.1). An empty `levels` set means all. */
+export interface LogFilter {
+  levels: ReadonlySet<string>;
+  text?: { value: string; regex: boolean };
+  exclude: string[];
+  component?: string;
+  /** Inclusive epoch-ms range; entries without a time are left out. */
+  range?: [number, number];
+  fields: FieldFilter[];
+}
 
-    // Filter by component
-    if (
-      criteria.component &&
-      log.component &&
-      !log.component.toLowerCase().includes(criteria.component.toLowerCase())
-    ) {
-      return false;
-    }
+/** Level key for entries without a level, in `levels` and in counts. */
+export const NO_LEVEL = 'none';
 
-    // Filter by time range
-    if (criteria.timeRange.start && log.timestamp) {
-      try {
-        const logTime = new Date(log.timestamp.replace(',', '.'));
-        const startTime = new Date(criteria.timeRange.start);
-        if (logTime < startTime) {
-          return false;
-        }
-      } catch {
-        // Ignore date parsing errors
-      }
-    }
-
-    if (criteria.timeRange.end && log.timestamp) {
-      try {
-        const logTime = new Date(log.timestamp.replace(',', '.'));
-        const endTime = new Date(criteria.timeRange.end);
-        if (logTime > endTime) {
-          return false;
-        }
-      } catch {
-        // Ignore date parsing errors
-      }
-    }
-
-    return true;
-  });
+export const EMPTY_FILTER: LogFilter = {
+  levels: new Set(),
+  exclude: [],
+  fields: [],
 };
 
-// Count logs by level
-export const countLogsByLevel = (logs: LogEntry[]): LogCounts => {
+/** True when the filter keeps every entry. */
+export const isEmptyFilter = (f: LogFilter): boolean =>
+  f.levels.size === 0 &&
+  !f.text?.value &&
+  f.exclude.every((x) => !x) &&
+  !f.component &&
+  !f.range &&
+  f.fields.length === 0;
+
+/** A stable cache key for a filter (Sets sorted). */
+export const filterKey = (f: LogFilter): string =>
+  JSON.stringify([
+    [...f.levels].sort(),
+    f.text?.value ? f.text : null,
+    f.exclude.filter(Boolean),
+    f.component ?? '',
+    f.range ?? null,
+    f.fields,
+  ]);
+
+/**
+ * A compiled predicate. A bad search regex is INVALID_INPUT, for the inline
+ * error. Needs the parsed fields only when a field filter is set.
+ */
+export function compileFilter(f: LogFilter): {
+  test(
+    e: Pick<LogEntry, 'level' | 'raw' | 'component' | 'ts' | 'fields'>,
+  ): boolean;
+  needsFields: boolean;
+} {
+  let search: ((raw: string) => boolean) | null = null;
+  if (f.text?.value) {
+    if (f.text.regex) {
+      let re: RegExp;
+      try {
+        re = new RegExp(f.text.value, 'i');
+      } catch (cause) {
+        throw new ToolError(
+          'INVALID_INPUT',
+          cause instanceof Error ? cause.message : 'Invalid regular expression',
+          { cause },
+        );
+      }
+      search = (raw) => re.test(raw);
+    } else {
+      const needle = f.text.value.toLowerCase();
+      search = (raw) => raw.toLowerCase().includes(needle);
+    }
+  }
+  const excludes = f.exclude.filter(Boolean).map((x) => x.toLowerCase());
+  const component = f.component?.toLowerCase();
   return {
-    error: logs.filter((log) => log.level === 'error').length,
-    warn: logs.filter((log) => log.level === 'warn').length,
-    info: logs.filter((log) => log.level === 'info').length,
-    debug: logs.filter((log) => log.level === 'debug').length,
-    success: logs.filter((log) => log.level === 'success').length,
+    needsFields: f.fields.length > 0,
+    test(e) {
+      if (f.levels.size > 0 && !f.levels.has(e.level ?? NO_LEVEL)) return false;
+      if (component && !e.component?.toLowerCase().includes(component))
+        return false;
+      if (f.range) {
+        if (e.ts === undefined || e.ts < f.range[0] || e.ts > f.range[1])
+          return false;
+      }
+      if (search || excludes.length > 0) {
+        const lower = e.raw.toLowerCase();
+        if (excludes.some((x) => lower.includes(x))) return false;
+        if (search && !search(e.raw)) return false;
+      }
+      for (const ff of f.fields) {
+        const v = e.fields?.[ff.key];
+        if (ff.mode === 'include' ? v !== ff.value : v === ff.value)
+          return false;
+      }
+      return true;
+    },
   };
-};
+}
+
+/** `compileFilter(filter).test(entry)` for one-off checks. */
+export const matchesFilter = (e: LogEntry, f: LogFilter): boolean =>
+  compileFilter(f).test(e);

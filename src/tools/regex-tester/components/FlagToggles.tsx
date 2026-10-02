@@ -1,36 +1,38 @@
 import React from 'react';
-import { IconSettings } from '@/shared/ui/icons';
-
-import { Button, Inline, Label, Stack } from '@/shared/ui';
+import { Button, Inline, Tooltip } from '@/shared/ui';
 import { FLAG_INFO } from '../lib/flags';
-import type { Flags } from '../types';
 
 interface FlagTogglesProps {
-  flags: Flags;
-  onToggle: (key: keyof Flags) => void;
+  flags: string;
+  onToggle: (letter: string) => void;
 }
 
+/** One pressed-state button per flag, with its Alt shortcut in the tooltip. */
 export const FlagToggles: React.FC<FlagTogglesProps> = ({
   flags,
   onToggle,
 }) => (
-  <Stack gap="2">
-    <Inline gap="2" align="center">
-      <IconSettings size="sm" />
-      <Label>Flags</Label>
-    </Inline>
-    <Inline gap="2" wrap>
-      {FLAG_INFO.map((f) => (
-        <Button
-          key={f.key}
-          variant={flags[f.key] ? 'primary' : 'secondary'}
-          size="sm"
-          title={`${f.label}: ${f.description}`}
-          onClick={() => onToggle(f.key)}
+  <Inline gap="1" wrap role="group" aria-label="Flags">
+    {FLAG_INFO.map((f) => {
+      const on = flags.includes(f.flag);
+      return (
+        <Tooltip
+          key={f.flag}
+          content={f.description}
+          shortcut={`Alt+${f.flag.toUpperCase()}`}
         >
-          {f.flag}
-        </Button>
-      ))}
-    </Inline>
-  </Stack>
+          <Button
+            variant={on ? 'primary' : 'secondary'}
+            size="sm"
+            aria-pressed={on}
+            aria-label={`${f.label} (${f.flag})`}
+            className="font-mono"
+            onClick={() => onToggle(f.flag)}
+          >
+            {f.flag}
+          </Button>
+        </Tooltip>
+      );
+    })}
+  </Inline>
 );

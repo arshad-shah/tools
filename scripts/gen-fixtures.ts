@@ -151,3 +151,58 @@ for (const [name, bytes] of Object.entries(files)) {
 console.log(
   `wrote ${Object.keys(files).length} fixtures to test/fixtures/generated`,
 );
+
+// Part 6-C text fixtures: a 200 MB log (written once, streamed) and a
+// large diff pair.
+{
+  const { createWriteStream } = await import('node:fs');
+  const { stat } = await import('node:fs/promises');
+  const LOG_BYTES = 200 * 1024 * 1024;
+  const logUrl = new URL('large.log', out);
+  const have = await stat(logUrl).then(
+    (s) => s.size,
+    () => 0,
+  );
+  if (have < LOG_BYTES) {
+    const levels = ['INFO', 'INFO', 'INFO', 'DEBUG', 'WARN', 'ERROR'];
+    const stream = createWriteStream(logUrl);
+    let written = 0;
+    let i = 0;
+    const t0 = Date.UTC(2024, 0, 1);
+    while (written < LOG_BYTES) {
+      const lines: string[] = [];
+      for (let k = 0; k < 5000; k++, i++) {
+        const ts = new Date(t0 + i * 250).toISOString();
+        const level = levels[i % levels.length];
+        lines.push(
+          `${ts} ${level} [worker-${i % 8}] request ${i} handled in ${(i * 7) % 900} ms`,
+        );
+        if (i % 1000 === 999)
+          lines.push(
+            'java.lang.IllegalStateException: synthetic failure',
+            '\tat com.example.Worker.run(Worker.java:42)',
+            '\tat java.base/java.lang.Thread.run(Thread.java:833)',
+          );
+      }
+      const chunk = `${lines.join('\n')}\n`;
+      written += Buffer.byteLength(chunk);
+      if (!stream.write(chunk))
+        await new Promise((r) => stream.once('drain', r));
+    }
+    await new Promise<void>((r) => stream.end(r));
+  }
+  const left: string[] = [];
+  const right: string[] = [];
+  for (let n = 0; n < 20_000; n++) {
+    left.push(`line ${n}: the quick brown fox ${n % 97}`);
+    if (n % 400 === 7) right.push(`line ${n}: the quick red fox ${n % 97}`);
+    else if (n % 900 === 3) right.push(left[n], `inserted after ${n}`);
+    else if (n % 1100 !== 5) right.push(left[n]);
+  }
+  await writeFile(new URL('large-diff-left.txt', out), `${left.join('\n')}\n`);
+  await writeFile(
+    new URL('large-diff-right.txt', out),
+    `${right.join('\n')}\n`,
+  );
+  console.log('wrote the large.log and large-diff text fixtures');
+}

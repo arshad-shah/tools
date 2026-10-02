@@ -133,22 +133,6 @@ test('csv-viewer still parses a dropped .txt as CSV', async ({ page }) => {
   await expect(page.getByRole('cell', { name: 'Oslo' })).toBeVisible();
 });
 
-test('text-diff-checker loads a file into the left pane', async ({ page }) => {
-  await page.goto(pathOf('text-diff-checker'));
-  await page
-    .locator('input[type=file]')
-    .first()
-    .setInputFiles({
-      name: 'left.txt',
-      mimeType: 'text/plain',
-      buffer: Buffer.from('hello left'),
-    });
-  await expect(page.getByText('left.txt loaded successfully')).toBeVisible();
-  await expect(
-    page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue('hello left');
-});
-
 test('rive-animation-player rejects a non-Rive file with a toast', async ({
   page,
 }) => {
@@ -163,24 +147,6 @@ test('rive-animation-player rejects a non-Rive file with a toast', async ({
       .locator('[data-sonner-toast]')
       .getByText('fake.riv is not a Rive (.riv) file'),
   ).toBeVisible();
-});
-
-test('text-diff-checker accepts a text/plain file of any extension', async ({
-  page,
-}) => {
-  await page.goto(pathOf('text-diff-checker'));
-  await page
-    .locator('input[type=file]')
-    .last()
-    .setInputFiles({
-      name: 'script.py',
-      mimeType: 'text/plain',
-      buffer: Buffer.from('print("right")'),
-    });
-  await expect(page.getByText('script.py loaded successfully')).toBeVisible();
-  await expect(
-    page.getByRole('textbox', { name: 'Modified text' }),
-  ).toHaveValue('print("right")');
 });
 
 test('calculator plots an expression without crashing', async ({ page }) => {

@@ -1,104 +1,175 @@
-import React from 'react';
-import { IconClock, IconCpu, IconFilter } from '@/shared/ui/icons';
-
+import { useId } from 'react';
 import {
+  Badge,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Grid,
-  Inline,
+  IconButton,
   Input,
-  Label,
   SearchInput,
-  Stack,
+  StatusDot,
+  Switch,
 } from '@/shared/ui';
-import type { FilterCriteria } from '../types';
+import { IconX } from '@/shared/ui/icons';
+import { cn } from '@/shared/lib/cn';
+import type { FieldFilter, LogFilter } from '../lib/filter';
+import { levelLabel, levelTone, orderLevels } from '../lib/level-style';
+import { rowTime } from '../lib/progress';
 
-interface FilterBarProps {
-  hasActiveFilters: boolean;
-  resetFilters: () => void;
-  filter: string;
-  setFilter: (value: string) => void;
-  searchComponent: string;
-  setSearchComponent: (value: string) => void;
-  timeRange: FilterCriteria['timeRange'];
-  setTimeRange: (range: FilterCriteria['timeRange']) => void;
+export interface FilterBarProps {
+  filter: LogFilter;
+  onChange(next: LogFilter): void;
+  /** Whole-log counts per level (the chips). */
+  levels: Record<string, number>;
+  searchError: string | null;
 }
 
-export const FilterBar: React.FC<FilterBarProps> = ({
-  hasActiveFilters,
-  resetFilters,
+const fieldLabel = (f: FieldFilter) =>
+  `${f.mode === 'include' ? '' : 'not '}${f.key}=${f.value}`;
+
+/** Level chips, search, exclude and component filters, active chips. */
+export function FilterBar({
   filter,
-  setFilter,
-  searchComponent,
-  setSearchComponent,
-  timeRange,
-  setTimeRange,
-}) => (
-  <Card>
-    <CardHeader>
-      <Inline justify="between" align="center" wrap>
-        <Inline align="center" gap="2">
-          <IconFilter size="md" />
-          <CardTitle as="h3">Filters</CardTitle>
-        </Inline>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={!hasActiveFilters}
-          onClick={resetFilters}
-        >
-          Reset
-        </Button>
-      </Inline>
-    </CardHeader>
-    <CardBody>
-      <Grid max={2} gap="3">
-        <Stack gap="2">
-          <Label htmlFor="filter-search">Message search</Label>
-          <SearchInput
-            value={filter}
-            onChange={setFilter}
-            placeholder="Search in messages…"
-          />
-        </Stack>
-        <Stack gap="2">
-          <Label htmlFor="filter-component">Component</Label>
-          <Input
-            id="filter-component"
-            value={searchComponent}
-            onChange={setSearchComponent}
-            placeholder="Filter by component…"
-            leadingSlot={<IconCpu size="sm" />}
-          />
-        </Stack>
-        <Stack gap="2">
-          <Label htmlFor="filter-from">Time range start</Label>
-          <Input
-            id="filter-from"
-            value={timeRange.start ?? ''}
-            onChange={(v) =>
-              setTimeRange({ ...timeRange, start: v || undefined })
+  onChange,
+  levels,
+  searchError,
+}: FilterBarProps) {
+  const errorId = useId();
+  const set = (patch: Partial<LogFilter>) => onChange({ ...filter, ...patch });
+  const toggleLevel = (l: string) => {
+    const next = new Set(filter.levels);
+    if (next.has(l)) next.delete(l);
+    else next.add(l);
+    set({ levels: next });
+  };
+  const text = filter.text ?? { value: '', regex: false };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div role="group" aria-label="Levels" className="flex flex-wrap gap-2">
+        {orderLevels(levels).map((l) => {
+          const on = filter.levels.has(l);
+          return (
+            <Button
+              key={l}
+              size="sm"
+              variant={on ? 'primary' : 'secondary'}
+              aria-pressed={on}
+              onClick={() => toggleLevel(l)}
+            >
+              <StatusDot tone={levelTone(l)} decorative />
+              {levelLabel(l)}
+              <span className="font-mono tabular-nums">
+                {(levels[l] ?? 0).toLocaleString('en-US')}
+              </span>
+            </Button>
+          );
+        })}
+      </div>
+      <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <SearchInput
+              className="flex-1"
+              prompt="/"
+              aria-label="Search entries"
+              aria-invalid={searchError ? true : undefined}
+              aria-describedby={searchError ? errorId : undefined}
+              placeholder={text.regex ? 'Regular expression' : 'Search text'}
+              value={text.value}
+              onChange={(value) => set({ text: { ...text, value } })}
+            />
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
+              <Switch
+                aria-label="Regex"
+                checked={text.regex}
+                onCheckedChange={(regex) => set({ text: { ...text, regex } })}
+              />
+              Regex
+            </label>
+          </div>
+          {searchError ? (
+            <span id={errorId} role="alert" className="text-sm text-danger">
+              Invalid regex: {searchError}
+            </span>
+          ) : null}
+        </div>
+        <Input
+          aria-label="Exclude terms"
+          placeholder="Exclude terms, comma separated"
+          clearable
+          value={filter.exclude.join(',')}
+          onChange={(v) => set({ exclude: v.split(',') })}
+        />
+        <Input
+          aria-label="Component"
+          placeholder="Component"
+          clearable
+          value={filter.component ?? ''}
+          onChange={(v) => set({ component: v || undefined })}
+        />
+      </div>
+      <ActiveChips filter={filter} onChange={onChange} />
+    </div>
+  );
+}
+
+function Chip({
+  label,
+  onRemove,
+  className,
+}: {
+  label: string;
+  onRemove(): void;
+  className?: string;
+}) {
+  return (
+    <Badge
+      variant="soft"
+      tone="neutral"
+      size="sm"
+      className={cn('gap-1 pr-0.5', className)}
+    >
+      <span>{label}</span>
+      <IconButton
+        size="sm"
+        variant="ghost"
+        className="size-5"
+        label={`Remove filter ${label}`}
+        icon={IconX}
+        onClick={onRemove}
+      />
+    </Badge>
+  );
+}
+
+/** The field and time filters in effect, each removable. */
+function ActiveChips({
+  filter,
+  onChange,
+}: Pick<FilterBarProps, 'filter' | 'onChange'>) {
+  if (filter.fields.length === 0 && !filter.range) return null;
+  return (
+    <ul aria-label="Active filters" className="flex flex-wrap gap-2">
+      {filter.fields.map((f, i) => (
+        <li key={`${f.mode}:${f.key}=${f.value}`}>
+          <Chip
+            label={fieldLabel(f)}
+            onRemove={() =>
+              onChange({
+                ...filter,
+                fields: filter.fields.filter((_, j) => j !== i),
+              })
             }
-            placeholder="e.g. 12:00:00"
-            leadingSlot={<IconClock size="sm" />}
           />
-        </Stack>
-        <Stack gap="2">
-          <Label htmlFor="filter-to">Time range end</Label>
-          <Input
-            id="filter-to"
-            value={timeRange.end ?? ''}
-            onChange={(v) =>
-              setTimeRange({ ...timeRange, end: v || undefined })
-            }
-            placeholder="e.g. 13:00:00"
-            leadingSlot={<IconClock size="sm" />}
+        </li>
+      ))}
+      {filter.range ? (
+        <li>
+          <Chip
+            label={`time ${rowTime(filter.range[0])} to ${rowTime(filter.range[1])}`}
+            onRemove={() => onChange({ ...filter, range: undefined })}
           />
-        </Stack>
-      </Grid>
-    </CardBody>
-  </Card>
-);
+        </li>
+      ) : null}
+    </ul>
+  );
+}
