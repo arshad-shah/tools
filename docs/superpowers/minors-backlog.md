@@ -17,3 +17,5 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P5-A2: src/tools/image-optimizer/lib/convert.ts now needs OffscreenCanvas (Safari 16.4+); older browsers get UNSUPPORTED_FEATURE -> acceptable, or add a kit-owned canvas fallback.
 - P5-A2: src/tools/hash-generator/Tool.tsx "Text to hash" label points at the textarea, which is hidden while a file is being hashed -> relabel the section ("Message") or point the label at the file row.
 - P5-A2: rule (b) does not see imperative `element.style.*` writes or `setAttribute('style', ...)` -> extend the rule (MemberExpression on `.style` outside src/shared/ui).
+- P5-G: Home category cards list 'Json and Xml Viewer' (title-cased id) instead of the tool's name 'JSON & XML Viewer'; use manifest title everywhere -> check hub/category card source
+- P5-G: footer renders an empty item between separators ('36 tools • • Copyright') when build version/SHA is absent (visual test builds); hide empty items so separators never strand
