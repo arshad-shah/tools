@@ -40,6 +40,7 @@ function fakeEngine(o: FakeOptions = {}) {
     terminated: 0,
     jobs: 0,
     options: [] as Record<string, unknown>[],
+    params: [] as Record<string, string>[],
   };
   let release: () => void = () => undefined;
   const engine: OcrEngine = {
@@ -66,7 +67,13 @@ function fakeEngine(o: FakeOptions = {}) {
       calls.workers += 1;
       calls.options.push(options);
       if (o.failLoad) throw new Error('Network error while fetching eng');
-      return { terminate: async () => undefined };
+      return {
+        terminate: async () => undefined,
+        setParameters: async (p: Record<string, string>) => {
+          calls.params.push(p);
+          return {};
+        },
+      };
     },
   };
   return { engine, calls, release: () => release() };
@@ -101,6 +108,11 @@ describe('createOcrPool', () => {
       gzip: true,
       workerBlobURL: false,
     });
+    // tesseract.js defaults to one uniform block, which garbles forms.
+    expect(calls.params).toEqual([
+      { tessedit_pageseg_mode: '3' },
+      { tessedit_pageseg_mode: '3' },
+    ]);
   });
 
   it('flattens blocks to words with the mean confidence', async () => {

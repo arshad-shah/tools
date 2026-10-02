@@ -32,6 +32,7 @@ const SECTIONS = [
   'page-overlays',
   'panels',
   'document',
+  'annotate',
 ];
 
 /** Phase-6 sections whose layout changes at phone width. */

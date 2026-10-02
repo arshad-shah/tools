@@ -16,7 +16,28 @@ export default defineConfig({
   // CI uploads playwright-report on failure, so it needs the html reporter.
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL, trace: 'retain-on-failure' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /signing\.spec\.ts/,
+    },
+    // Signing+ (plan H-15): a fake camera that needs no permission prompt.
+    {
+      name: 'chromium-camera',
+      testMatch: /signing\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        permissions: ['camera'],
+        launchOptions: {
+          args: [
+            '--use-fake-ui-for-media-stream',
+            '--use-fake-device-for-media-stream',
+          ],
+        },
+      },
+    },
+  ],
   webServer: {
     command: `pnpm dev --port ${port} --strictPort`,
     url: baseURL,

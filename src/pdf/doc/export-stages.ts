@@ -1,9 +1,11 @@
 import type { JobProgress } from '@/shared/state/useJob';
+import type { BlobSource } from './blob-store';
 import type { DocumentModel } from './model';
 import type { Services } from './services';
 import type { DocView, PageId } from './types';
 import { encryptStage } from './export-stages/encrypt';
 import { linearizeStage } from './export-stages/linearize';
+import { signStage } from './export-stages/sign';
 
 /** Export choices; Parts add keys (flatten, linearize, password, signature). */
 export interface ExportOptions {
@@ -23,6 +25,8 @@ export interface ExportContext {
   progress(p: JobProgress): void;
   /** Stages report anything the user must know here (plain words). */
   warnings: string[];
+  /** Document bytes by id (the sign stage reads the original and assets). */
+  blobs?: BlobSource;
 }
 
 /** A step after materialise, run in `order` when it `applies`. */
@@ -69,4 +73,5 @@ export const EXPORT_STAGES: ExportStage[] = [
   },
   encryptStage,
   linearizeStage,
+  signStage,
 ];

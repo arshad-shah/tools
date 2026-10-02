@@ -9,6 +9,7 @@ import {
 import type { DocumentModel } from './model';
 import { planFor } from './plan';
 import { assertUnrestricted } from './restricted';
+import { excludedOverlays } from './export-stages/sign';
 import { materializeIn, type Services } from './services';
 
 /**
@@ -30,6 +31,7 @@ export async function exportDocument(
   const cancelled = () => new ToolError('CANCELLED', 'Cancelled');
   const plan = await planFor(model, blobs, {
     onlyPages: options.onlyPages ?? undefined,
+    excludeOverlays: excludedOverlays(options),
   });
   if (plan.pages.length === 0)
     throw new ToolError('INVALID_INPUT', 'There are no pages to export');
@@ -45,6 +47,7 @@ export async function exportDocument(
     signal: env.signal,
     progress: env.progress,
     warnings: [],
+    blobs,
   };
   let bytes = result.bytes;
   const stages = [...EXPORT_STAGES]

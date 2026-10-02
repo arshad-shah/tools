@@ -123,7 +123,6 @@ export const FileHashes: React.FC<FileHashesProps> = ({
         id: 'size',
         header: 'Size',
         accessor: (r) => formatBytes(r.size),
-        width: 100,
       },
       ...selected.map((d) => ({
         id: d,
@@ -136,7 +135,6 @@ export const FileHashes: React.FC<FileHashesProps> = ({
               : r.status === 'cancelled'
                 ? 'Cancelled'
                 : (r.error ?? ''),
-        width: Math.max(140, Math.min(560, digestInfo(d).hexLength * 8 + 24)),
       })),
     ],
     [selected, output],
@@ -194,7 +192,6 @@ export const FileHashes: React.FC<FileHashesProps> = ({
             columns={columns}
             rowKey={(r) => r.id}
             ariaLabel="File hashes"
-            height={Math.min(400, 48 + rows.length * 36)}
           />
           <Inline gap="2" align="center" wrap>
             <div className="w-48">

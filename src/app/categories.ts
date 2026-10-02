@@ -49,12 +49,6 @@ export const CATEGORIES = [
           'pdf-unlock',
         ],
       },
-      // Interim (G19): each is deleted when its workspace mode ships.
-      {
-        id: 'more',
-        label: 'More PDF tools',
-        toolIds: ['pdf-watermark', 'pdf-page-numbers'],
-      },
     ],
   },
   {

@@ -1,9 +1,12 @@
+import { annotateManifest } from './annotate';
+import { editManifest } from './edit';
 import { organizeManifest } from './organize';
 import { redactManifest } from './redact';
 import { convertManifest } from './convert';
 import { protectManifest } from './protect';
 import { optimizeManifest } from './optimize';
 import { fillSignManifest } from './fill-sign';
+import { ocrManifest } from './ocr';
 import type { ModeManifest } from './types';
 
 export { MODE_ORDER, shortcutFor } from './registry-order';
@@ -14,11 +17,14 @@ export { MODE_ORDER, shortcutFor } from './registry-order';
  */
 export const MODES: readonly ModeManifest[] = [
   organizeManifest,
+  editManifest,
+  annotateManifest,
   fillSignManifest,
   redactManifest,
   convertManifest,
   protectManifest,
   optimizeManifest,
+  ocrManifest,
 ];
 
 export function getMode(id: string): ModeManifest | undefined {

@@ -28,6 +28,8 @@ export function autofillInputs(fields: readonly ViewField[]) {
       pageIndex: f.widget!.pageIndex,
       rect: f.rect,
       readOnly: f.widget!.readOnly,
+      // Signature widgets are never view fields, so nothing here is signed.
+      signed: false,
     }));
   const filled = new Set(
     fields

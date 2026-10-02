@@ -104,3 +104,21 @@ test('a PDF tool renders pages under the policy (pdf.js worker and wasm)', async
   ).toBeAttached();
   expect(await violations()).toEqual([]);
 });
+
+test('OCR downloads, recognises and writes its text layer under the policy', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  const violations = await watchPolicy(page);
+  await page.goto('/pdf/edit/ocr');
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles('test/fixtures/generated/scan-form.pdf');
+  await page.getByRole('button', { name: 'Download and run' }).click();
+  await expect(page.getByLabel('OCR report')).toContainText(
+    'Text layer added to 1 page',
+    { timeout: 150_000 },
+  );
+  expect(await violations()).toEqual([]);
+});

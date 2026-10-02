@@ -1,25 +1,15 @@
 import { ToolError } from '@/shared/lib/errors';
 import type { CandidateSource, DetectedField, FieldType } from '@/pdf/detect';
 import type { FormValue } from '@/pdf/edit/forms';
-import type { SignatureFontId } from '@/pdf/sign/fonts';
-import type { AssetId, Box, PageId } from '../types';
+import type { Box, PageId } from '../types';
 import { asRecord, box, str } from './validate';
+
+export * from './sign-params';
 
 /*
  * Parameter shapes and validators of the Fill & Sign ops (plan C-10).
  * Validators run on dispatch and on autosave restore.
  */
-
-export type SignatureContent =
-  | { kind: 'image'; assetId: AssetId; mime: 'image/png' | 'image/jpeg' }
-  | {
-      kind: 'text';
-      text: string;
-      fontId: SignatureFontId;
-      /** The font file, stored as an asset so the writer never fetches. */
-      fontAsset: AssetId;
-      color: string;
-    };
 
 export type FlatFillKind = 'text' | 'tick' | 'cross' | 'date';
 
@@ -50,15 +40,6 @@ export interface FlatFillParams {
   comb?: number;
   /** Only the text settings changed (the undo label says so). */
   restyle?: true;
-}
-
-export interface SignPlaceParams {
-  id: string;
-  pageId: PageId;
-  rect: Box;
-  rotate: number;
-  content: SignatureContent;
-  role: 'signature' | 'initials';
 }
 
 export type CorrectionAction =
@@ -226,48 +207,6 @@ export function flatFillParams(p: unknown): FlatFillParams {
     ...(o.spacing !== undefined ? { spacing: o.spacing as number } : {}),
     ...(o.comb !== undefined ? { comb: o.comb as number } : {}),
     ...(o.restyle === true ? { restyle: true as const } : {}),
-  };
-}
-
-function signatureContent(v: unknown): SignatureContent {
-  const what = 'Signature';
-  const o = asRecord(v, what);
-  if (o.kind === 'image')
-    return {
-      kind: 'image',
-      assetId: str(o.assetId, what),
-      mime: oneOf(o.mime, ['image/png', 'image/jpeg'] as const, what),
-    };
-  if (o.kind === 'text') {
-    const text = typeof o.text === 'string' ? o.text.trim() : '';
-    if (!text) throw bad('Type your name');
-    if (typeof o.color !== 'string' || !HEX.test(o.color))
-      throw bad(`${what}: bad ink colour`);
-    return {
-      kind: 'text',
-      text,
-      fontId: oneOf(
-        o.fontId,
-        ['dancing-script', 'great-vibes', 'caveat'] as const,
-        what,
-      ),
-      fontAsset: str(o.fontAsset, what),
-      color: o.color,
-    };
-  }
-  throw bad(`${what}: unknown kind`);
-}
-
-export function signPlaceParams(p: unknown): SignPlaceParams {
-  const what = 'Place signature';
-  const o = asRecord(p, what);
-  return {
-    id: str(o.id, what),
-    pageId: str(o.pageId, what),
-    rect: box(o.rect, what),
-    rotate: num(o.rotate ?? 0, what),
-    content: signatureContent(o.content),
-    role: oneOf(o.role, ['signature', 'initials'] as const, what),
   };
 }
 

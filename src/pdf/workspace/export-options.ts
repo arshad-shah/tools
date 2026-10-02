@@ -4,6 +4,7 @@ import type { DocumentApi } from './modes/types';
 import { MetadataOption, PagesOption } from './ExportOptionFields';
 import { PROTECT_EXPORT_SECTION } from './modes/protect/export-section';
 import { LinearizeOption } from './modes/optimize/LinearizeOption';
+import { DIGITAL_SIGNATURE_SECTION } from './modes/fill-sign/export-section';
 
 export interface ExportOptionSection {
   id: string;
@@ -17,6 +18,10 @@ export interface ExportOptionSection {
   }>;
   /** Option keys cleared once an export succeeds (passwords, G25). */
   secret?: string[];
+  /** Replaces the Export button's label while it returns text. */
+  exportLabel?(options: ExportOptions): string | null;
+  /** Why the export can't run with these choices (shown, Export disabled). */
+  blocker?(options: ExportOptions, doc: DocumentApi): string | null;
 }
 
 /**
@@ -46,4 +51,5 @@ export const EXPORT_OPTION_SECTIONS: ExportOptionSection[] = [
     visible: () => true,
     Component: LinearizeOption,
   },
+  DIGITAL_SIGNATURE_SECTION,
 ];

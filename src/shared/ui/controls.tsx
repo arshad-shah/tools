@@ -113,6 +113,10 @@ interface SliderProps {
   id?: string;
   className?: string;
   'aria-label'?: string;
+  /** A visible label's id, instead of aria-label. */
+  'aria-labelledby'?: string;
+  /** The value as words, e.g. "5 degrees" or "Auto". */
+  'aria-valuetext'?: string;
 }
 export const Slider: React.FC<SliderProps> = ({
   value,

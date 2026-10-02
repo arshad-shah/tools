@@ -10,9 +10,12 @@ import {
   PaintCanvas,
   Positioned,
   Select,
+  SegmentedControl,
   SignaturePad,
   Sized,
-  type Stroke,
+  VectorSample,
+  type InkStroke,
+  type InkWeight,
 } from '@/shared/ui';
 import { Row, Section } from '../Section';
 
@@ -42,14 +45,17 @@ export function MediaSection() {
   const [color, setColor] = useState('#1d5fc4');
   const [fruit, setFruit] = useState('');
   const [date, setDate] = useState('2026-10-01');
-  const [strokes, setStrokes] = useState<Stroke[]>([
-    [
-      { x: 20, y: 60 },
-      { x: 60, y: 20 },
-      { x: 100, y: 60 },
-      { x: 140, y: 30 },
-    ],
+  const [strokes, setStrokes] = useState<InkStroke[]>([
+    [20, 40, 60, 80, 100, 120, 140].map((x, i) => ({
+      x,
+      y: 40 + 20 * Math.sin(i),
+      pressure: 0.5,
+      tiltX: 0,
+      tiltY: 0,
+      t: i * 16,
+    })),
   ]);
+  const [weight, setWeight] = useState<InkWeight>('medium');
   const paint = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = '#3ddc97';
     ctx.fillRect(8, 8, 40, 24);
@@ -77,13 +83,33 @@ export function MediaSection() {
           <DateInput label="Date" value={date} onChange={setDate} />
         </div>
       </Row>
-      <Row label="SignaturePad, Sized and Positioned">
+      <Row label="SignaturePad, VectorSample, Sized and Positioned">
         <SignaturePad
           value={strokes}
           onChange={setStrokes}
           label="Draw a signature"
-          ink="#0f1419"
+          ink="#111827"
+          weight={weight}
           className="h-24 w-64 rounded-md border border-line bg-white"
+        />
+        <SegmentedControl<InkWeight>
+          label="Weight"
+          size="sm"
+          value={weight}
+          onChange={setWeight}
+          options={[
+            { value: 'thin', label: 'Thin' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'bold', label: 'Bold' },
+          ]}
+        />
+        <VectorSample
+          label="Vector signature"
+          d="M2 20C10 2 18 2 22 12C26 22 34 22 42 6C44 2 46 2 46 6C40 22 30 26 22 16C18 10 12 10 4 22Z"
+          width={48}
+          height={26}
+          color="#1d4ed8"
+          className="h-16 w-32 rounded-md border border-line bg-white"
         />
         <Sized
           width={160}

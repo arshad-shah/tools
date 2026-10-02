@@ -170,13 +170,18 @@ function describe(field: PDFField): FormField {
   };
 }
 
-/** One widget of a form field, in page space (radios have one per option). */
+/**
+ * One widget of a form field, in page space (radios have one per option).
+ * Signature (/Sig) fields have their own kind; `signed` says whether the
+ * field holds a signature value (/V), false for every other kind.
+ */
 export interface FormWidget {
   fieldName: string;
-  kind: FormField['kind'];
+  kind: FormField['kind'] | 'signature';
   pageIndex: number;
   rect: Box;
   readOnly: boolean;
+  signed: boolean;
   /** A checkbox's or radio option's on-state value. */
   onValue?: string;
 }
@@ -203,7 +208,10 @@ export async function listFormWidgets(
   });
   const out: FormWidget[] = [];
   for (const field of form.getFields()) {
-    const kind = describe(field).kind;
+    const isSig = field instanceof PDFSignature;
+    const kind: FormWidget['kind'] = isSig ? 'signature' : describe(field).kind;
+    const signed =
+      isSig && field.acroField.dict.lookup(PDFName.of('V')) instanceof PDFDict;
     const readOnly = field.isReadOnly();
     // Radio on-states may be indices into /Opt; getOptions maps them back.
     const options = field instanceof PDFRadioGroup ? field.getOptions() : null;
@@ -222,6 +230,7 @@ export async function listFormWidgets(
         pageIndex,
         rect: { x: r.x, y: r.y, width: r.width, height: r.height },
         readOnly,
+        signed,
         ...(on !== undefined && (kind === 'checkbox' || kind === 'radio')
           ? { onValue: on }
           : {}),

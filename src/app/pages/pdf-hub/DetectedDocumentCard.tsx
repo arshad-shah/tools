@@ -3,6 +3,7 @@ import {
   IconArrowRight,
   IconFileText,
   IconModeFillSign,
+  IconOcrScan,
   IconX,
 } from '@/shared/ui/icons';
 import {
@@ -134,6 +135,7 @@ export function DetectedDocumentCard({
       ]
     : [];
   const suggestFill = !!s && (s.flatForm || s.hasAcroForm);
+  const suggestOcr = !!s && !s.hasTextLayer;
 
   return (
     <Card aria-label={`Dropped file ${file.name}`}>
@@ -183,6 +185,15 @@ export function DetectedDocumentCard({
               onClick={() => open('fill-sign')}
             >
               Fill & Sign
+            </Button>
+          ) : null}
+          {suggestOcr ? (
+            <Button
+              variant="secondary"
+              leftIcon={<IconOcrScan size="sm" />}
+              onClick={() => open('ocr')}
+            >
+              Run OCR
             </Button>
           ) : null}
           <Button

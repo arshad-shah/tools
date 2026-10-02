@@ -6,11 +6,16 @@ import {
   flatFillParams,
   formSetValueParams,
   makeFillableParams,
+  signatureAssets,
+  signBlockParams,
+  signInitialPagesParams,
   signPlaceParams,
   type DetectCorrectParams,
   type FlatFillParams,
   type FormSetValueParams,
   type MakeFillableField,
+  type SignBlockParams,
+  type SignInitialPagesParams,
   type SignPlaceParams,
 } from './fill-sign-params';
 import { asRecord, plural } from './validate';
@@ -116,14 +121,59 @@ export const signPlace = defineOperation<SignPlaceParams>({
       .filter(Boolean)
       .join(' and ');
   },
-  assets: (p) =>
-    p.content.kind === 'image' ? [p.content.assetId] : [p.content.fontAsset],
+  assets: (p) => signatureAssets(p.content),
   applyToView(view, p, op) {
     requireAll(view, [p.pageId]);
     return withOverlay(view, {
       opId: op.id,
       type: op.type,
       pageId: p.pageId,
+      params: p,
+    });
+  },
+});
+
+/** A signature with printed name, title and date under it (plan H-7). */
+export const signBlock = defineOperation<SignBlockParams>({
+  type: 'sign.block',
+  v: 1,
+  kind: 'overlay',
+  mode: 'fill-sign',
+  validate: signBlockParams,
+  label: (p, ctx) => `Place signature block on ${onPage(p.pageId, ctx)}`,
+  summarize: (ops) => `${ops.length} ${plural(ops.length, 'signature block')}`,
+  assets: (p) => signatureAssets(p.content.signature),
+  applyToView(view, p, op) {
+    requireAll(view, [p.pageId]);
+    return withOverlay(view, {
+      opId: op.id,
+      type: op.type,
+      pageId: p.pageId,
+      params: p,
+    });
+  },
+});
+
+/** Initials at the same spot on several pages (plan H-7). */
+export const signInitialPages = defineOperation<SignInitialPagesParams>({
+  type: 'sign.initialPages',
+  v: 1,
+  kind: 'overlay',
+  mode: 'fill-sign',
+  validate: signInitialPagesParams,
+  label: (p) =>
+    `Initial ${p.pageIds.length} ${plural(p.pageIds.length, 'page')}`,
+  summarize(ops) {
+    const n = new Set(ops.flatMap((o) => o.pageIds)).size;
+    return `Initials on ${n} ${plural(n, 'page')}`;
+  },
+  assets: (p) => signatureAssets(p.content),
+  applyToView(view, p, op) {
+    requireAll(view, p.pageIds);
+    return withOverlay(view, {
+      opId: op.id,
+      type: op.type,
+      pageId: null,
       params: p,
     });
   },
@@ -182,6 +232,8 @@ export const FILL_SIGN_OPS = [
   formSetValue,
   flatFill,
   signPlace,
+  signBlock,
+  signInitialPages,
   detectCorrect,
   formFlatten,
   makeFillable,

@@ -140,7 +140,7 @@ async function setup() {
   return { model, blobs };
 }
 
-async function run(pages: 'auto' | 'force' | string[]) {
+async function run(pages: 'auto' | 'force' | string[], first?: string[]) {
   const { model, blobs } = await setup();
   const s = services();
   const progress: JobProgress[] = [];
@@ -149,7 +149,7 @@ async function run(pages: 'auto' | 'force' | string[]) {
     blobs,
     services: s.services,
     type: 'ocr.textLayer',
-    params: { langs: ['eng'], pages },
+    params: { langs: ['eng'], pages, ...(first ? { first } : {}) },
     signal: new AbortController().signal,
     progress: (p) => progress.push(p),
     inspect: async () => [GEOM, GEOM, GEOM],
@@ -180,6 +180,48 @@ describe('ocr.textLayer checkpoint', () => {
         'Recognising text, page 2 of 2',
       ]),
     );
+  });
+
+  it('keeps per-page results for the rail badges', async () => {
+    const { report } = await run('auto');
+    expect(report.details).toEqual({
+      kind: 'ocr',
+      pages: [
+        expect.objectContaining({ page: 1, words: 3, low: false }),
+        expect.objectContaining({ page: 2, words: 2, low: true }),
+      ],
+    });
+  });
+
+  it('recognises the visible pages first, reporting in page order', async () => {
+    const order: number[] = [];
+    const { model, blobs } = await setup();
+    const s = services();
+    const recognize = fakePool.recognize;
+    const pool: OcrPool = {
+      ...fakePool,
+      async recognize(image, signal) {
+        order.push(new Uint8Array(await image.arrayBuffer())[0]);
+        return recognize(image, signal);
+      },
+    };
+    const report = await runCheckpoint({
+      model,
+      blobs,
+      services: {
+        ...s.services,
+        ocr: { ...s.services.ocr, pool: async () => pool },
+      },
+      type: 'ocr.textLayer',
+      params: { langs: ['eng'], pages: 'force', first: ['ckpt0:2', 'ckpt0:1'] },
+      signal: new AbortController().signal,
+      progress: () => {},
+      inspect: async () => [GEOM, GEOM, GEOM],
+    });
+    // Two lanes: the first two picks are the visible pages.
+    expect(order.slice(0, 2).sort()).toEqual([1, 2]);
+    expect(order[2]).toBe(0);
+    expect(report.lines[0]).toMatch(/^Page 1:/);
   });
 
   it('runs on every page when forced', async () => {

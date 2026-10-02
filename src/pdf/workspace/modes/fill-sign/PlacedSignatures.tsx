@@ -1,21 +1,26 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
+  FontPreview,
   FontSample,
   HitArea,
   Image,
   PageBox,
   SelectionFrame,
   Text,
+  VectorSample,
   type OverlayTransform,
 } from '@/shared/ui';
 import type { SignPlaceParams } from '@/pdf/doc/ops/fill-sign';
 import type { Box, OpId, PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { FocusOnMount } from './FocusOnMount';
-import { fillSign, useFillSign, type SignaturePreview } from './store';
-
-const assetOf = (p: SignPlaceParams) =>
-  p.content.kind === 'image' ? p.content.assetId : p.content.fontAsset;
+import { snapNear, useSignTargets } from './sign-places';
+import {
+  fillSign,
+  previewOf,
+  useFillSign,
+  type SignaturePreview,
+} from './store';
 
 /** What a placed or ghosted signature looks like on the page. */
 export function SignatureLook({
@@ -33,6 +38,29 @@ export function SignatureLook({
         decorative
         fit="contain"
         className="size-full"
+      />
+    );
+  if (preview?.kind === 'ink')
+    return (
+      <VectorSample
+        decorative
+        d={preview.vector.d}
+        width={preview.vector.width}
+        height={preview.vector.height}
+        color={preview.color}
+        evenOdd={preview.evenOdd}
+        className="size-full"
+      />
+    );
+  if (preview?.kind === 'text' && preview.slant)
+    return (
+      <FontPreview
+        family={preview.family}
+        text={preview.text}
+        slant={preview.slant}
+        color={preview.color}
+        label={preview.text}
+        className="size-full text-2xl"
       />
     );
   if (preview?.kind === 'text')
@@ -58,7 +86,10 @@ export function SignatureLook({
 
 /**
  * Signatures placed on this page: a button each to select it, and the
- * selection frame (move, resize keeping the aspect) for the selected one.
+ * selection frame for the selected one: move, resize keeping the aspect
+ * and rotate, by pointer or keyboard (arrows 1pt, Shift 10pt, Alt+arrows
+ * resize, [ and ] rotate 15 degrees). A pointer drag that ends near a
+ * place to sign snaps to it.
  */
 export function PlacedSignatures({
   ctx,
@@ -73,7 +104,14 @@ export function PlacedSignatures({
 }) {
   const previews = useFillSign((s) => s.previews);
   const justPlaced = useFillSign((s) => s.justPlaced);
-  const [preview, setPreview] = useState<{ id: OpId; box: Box } | null>(null);
+  const [preview, setPreview] = useState<{
+    id: OpId;
+    box: Box;
+    rotate: number;
+  } | null>(null);
+  const targets = useSignTargets(page);
+  // Snapping follows pointer drags only: keyboard nudges stay exact.
+  const dragging = useRef(false);
   const items = (ctx.doc.view.overlays.get(page.id) ?? []).filter(
     (o) => o.type === 'sign.place' && !ctx.doc.view.hidden.has(o.opId),
   );
@@ -82,7 +120,9 @@ export function PlacedSignatures({
       {items.map((o) => {
         const p = o.params as SignPlaceParams;
         const selected = ctx.selection.objects.has(o.opId);
-        const box = preview?.id === o.opId ? preview.box : p.rect;
+        const live = preview?.id === o.opId ? preview : null;
+        const box = live?.box ?? p.rect;
+        const rotate = live?.rotate ?? p.rotate;
         const name = `${p.role === 'initials' ? 'Initials' : 'Signature'} on page ${pageNumber}`;
         return (
           <FocusOnMount
@@ -90,25 +130,52 @@ export function PlacedSignatures({
             active={justPlaced === o.opId}
             onFocused={() => fillSign.set({ justPlaced: null })}
           >
-            <PageBox transform={transform} box={box}>
-              <SignatureLook preview={previews[assetOf(p)]} role={p.role} />
+            <PageBox
+              transform={transform}
+              box={box}
+              rotate={rotate || undefined}
+            >
+              <SignatureLook
+                preview={previewOf(p.content, previews)}
+                role={p.role}
+              />
             </PageBox>
             {selected ? (
-              <SelectionFrame
-                transform={transform}
-                box={box}
-                resizable
-                keepAspect
-                label={name}
-                onChange={(b) => setPreview({ id: o.opId, box: b })}
-                onCommit={(b) => {
-                  setPreview(null);
-                  ctx.doc.dispatch({
-                    type: 'object.move',
-                    params: { targetId: o.opId, rect: b },
-                  });
+              <div
+                className="contents"
+                onPointerDownCapture={() => {
+                  dragging.current = true;
                 }}
-              />
+              >
+                <SelectionFrame
+                  transform={transform}
+                  box={box}
+                  rotate={rotate}
+                  resizable
+                  rotatable
+                  keepAspect
+                  label={name}
+                  onChange={(b, r) =>
+                    setPreview({ id: o.opId, box: b, rotate: r })
+                  }
+                  onCommit={(b, r) => {
+                    const dragged = dragging.current;
+                    dragging.current = false;
+                    const snap = dragged ? snapNear(targets, page, b) : null;
+                    setPreview(null);
+                    const moved = ctx.doc.dispatch({
+                      type: 'object.move',
+                      params: {
+                        targetId: o.opId,
+                        rect: snap?.box ?? b,
+                        rotate: r,
+                      },
+                    });
+                    if (moved.length && snap?.target)
+                      ctx.doc.announce(`Snapped to ${snap.target.label}`);
+                  }}
+                />
+              </div>
             ) : (
               <HitArea
                 transform={transform}

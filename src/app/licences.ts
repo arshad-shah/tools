@@ -265,4 +265,22 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/fontsource/font-files',
     note: 'Caveat, Dancing Script, Great Vibes and Noto Sans fonts',
   },
+  {
+    name: 'perfect-freehand',
+    licence: 'MIT',
+    url: 'https://github.com/steveruizok/perfect-freehand',
+    note: 'Pressure-sensitive ink outlines for drawn signatures',
+  },
+  {
+    name: 'PKI.js and ASN1.js',
+    licence: 'BSD-3-Clause',
+    url: 'https://github.com/PeculiarVentures/PKI.js',
+    note: 'PKCS#12, X.509 and CMS for digital signatures',
+  },
+  {
+    name: 'Signature fonts (Sacramento, Allura, Alex Brush, Parisienne, Pinyon Script, Mr Dafoe, Kristi)',
+    licence: 'OFL-1.1',
+    url: 'https://fontsource.org',
+    note: 'Typed signatures; embedded as subsets in signed PDFs',
+  },
 ];

@@ -263,3 +263,22 @@ export * from './switch-field';
 export * from './pane-tabs';
 export * from './use-pane-tab';
 export * from './nav-list';
+export {
+  OverlayText,
+  type OverlayTextProps,
+  type OverlayFontFamily,
+  type OverlayTextMetrics,
+} from './overlay-text';
+export {
+  ColorSwatchPicker,
+  type ColorSwatchPickerProps,
+  type ColorSwatchOption,
+} from './color-swatch-picker';
+export { type InkPoint, type InkStroke, type InkWeight } from './signature-pad';
+export { VectorSample, type VectorSampleProps } from './vector-sample';
+export {
+  ChoiceGrid,
+  type ChoiceGridProps,
+  type ChoiceOption,
+} from './choice-grid';
+export { FontPreview, type FontPreviewProps } from './font-preview';

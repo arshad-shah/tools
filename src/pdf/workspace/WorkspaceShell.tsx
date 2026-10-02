@@ -37,11 +37,13 @@ import {
   type WorkspaceShortcutApi,
 } from './shortcuts';
 import { TopBarControls } from './TopBarControls';
+import { SignedBadge } from './SignedBadge';
 import { useAutosave } from './use-autosave';
 import { useDocumentModel } from './useDocument';
 import { useSelection } from './useSelection';
 import { useConfirm, useWorkspaceJob } from './use-workspace-job';
 import { nextZoom } from './zoom';
+import { useWorkspaceTestHook } from './test-hook';
 
 export interface WorkspaceShellProps {
   session: WorkspaceSession;
@@ -213,6 +215,7 @@ export function WorkspaceShell({
     () => ({ doc, selection, tool, layout, navigateMode: changeMode }),
     [doc, selection, tool, layout, changeMode],
   );
+  useWorkspaceTestHook(doc);
 
   const goTo = (i: number) => {
     const id = pageIds[Math.max(0, Math.min(pageIds.length - 1, i))];
@@ -352,12 +355,15 @@ export function WorkspaceShell({
             onToggleSave={saving.setEnabled}
             restricted={state.restricted}
             onUnlock={onUnlock}
+            badges={<SignedBadge session={session} compact={compact} />}
             onSearch={onSearch}
             onExport={() => setExportOpen(true)}
           />
         );
         return (
-          <WorkspaceContext.Provider value={actions}>
+          <WorkspaceContext.Provider
+            value={{ ...actions, goToMode: (id) => request(id) }}
+          >
             <ModeToolbarContext.Provider
               value={{
                 layout,

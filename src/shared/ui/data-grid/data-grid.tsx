@@ -7,8 +7,11 @@ import { Drawer } from '../drawer';
 import { VirtualList, type VirtualListHandle } from '../virtual-list';
 import { RowCells } from './cells';
 import {
+  clampTo,
   columnLayout,
   columnWindow,
+  MAX_WIDTH,
+  MIN_WIDTH,
   moveColumn,
   scrollLeftFor,
   updateColumn,
@@ -19,13 +22,27 @@ import {
 import { cellText, type GridFilters } from './filters';
 import { handleGridKey } from './grid-keys';
 import {
+  useAutoWidths,
   useColumnsState,
   useControllable,
   useGridViewport,
+  useMeasure,
   useSortOrder,
 } from './grid-state';
 import { HeaderRow, type HeaderActions } from './header';
 import { clampPos, rangeOf, rangeToTsv, type CellPos } from './selection';
+import {
+  autoWidth,
+  contentWidth,
+  fitWidths,
+  gridHeight,
+  HEADER_HEIGHT,
+  headerMinWidth,
+  MAX_ROWS,
+  NARROW_WIDTH,
+  OVERLAY_SCROLLBAR,
+  type Measure,
+} from './sizing';
 import { nextSort } from './sort';
 
 export interface DataGridProps<R> {
@@ -59,12 +76,34 @@ export interface DataGridProps<R> {
   onCellEdit?(rowIndex: number, columnId: string, value: unknown): void;
   /** Shown when there are no rows. */
   emptyLabel?: string;
+  /**
+   * A fixed height. By default the grid sizes to its rows, up to `maxRows`,
+   * then scrolls inside; it never gets shorter than the header plus one row.
+   */
   height?: number | string;
+  /** Rows shown before the auto height stops growing. Default 12. */
+  maxRows?: number;
   className?: string;
 }
 
 const OVERSCAN = 6;
 const NO_FILTERS: GridFilters = {};
+/** Share of a phone-width body the pinned first column may take. */
+const PINNED_SHARE = 0.45;
+
+/** The narrowest a column may be: its own minimum or the header's fit. */
+const minOf = <R,>(c: GridColumn<R>, measure: Measure) =>
+  Math.max(c.minWidth ?? MIN_WIDTH, headerMinWidth(c, measure));
+
+/**
+ * Shown columns. On a phone-width body the first one is pinned (sticky)
+ * when nothing else is, so rows keep their label while scrolling sideways.
+ */
+function shownColumns<R>(cols: readonly GridColumn<R>[], narrow: boolean) {
+  const v = visibleColumns(cols);
+  if (!narrow || v.length < 2 || v.some((c) => c.pinned === 'start')) return v;
+  return [{ ...v[0], pinned: 'start' as const }, ...v.slice(1)];
+}
 
 /**
  * Virtualised data grid (spec §5): rows through `VirtualList`, columns
@@ -92,7 +131,8 @@ export function DataGrid<R>({
   editable,
   onCellEdit,
   emptyLabel = 'No rows',
-  height = 400,
+  height,
+  maxRows = MAX_ROWS,
   className,
 }: DataGridProps<R>) {
   const baseId = useId().replace(/[^\w-]/g, '');
@@ -103,6 +143,8 @@ export function DataGrid<R>({
   );
   const listRef = useRef<VirtualListHandle>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const measure = useMeasure(rootRef);
 
   const [cols, setCols] = useColumnsState(columns, onColumnsChange);
   const [sort, setSort] = useControllable(sortProp, [], onSortChange);
@@ -111,9 +153,27 @@ export function DataGrid<R>({
     NO_FILTERS,
     onFiltersChange,
   );
-  const visible = useMemo(() => visibleColumns(cols), [cols]);
+  const [contentTotal, setContentTotal] = useState(0);
+  const view = useGridViewport(listRef, headerRef, contentTotal);
+  const narrow = view.width > 0 && view.width < NARROW_WIDTH;
+  const visible = useMemo(() => shownColumns(cols, narrow), [cols, narrow]);
   const hiddenCols = useMemo(() => cols.filter((c) => c.hidden), [cols]);
-  const layout = useMemo(() => columnLayout(visible), [visible]);
+  const auto = useAutoWidths(columns, visible, rows, measure);
+  const layout = useMemo(() => {
+    const pinCap = narrow ? Math.floor(view.width * PINNED_SHARE) : Infinity;
+    const sizes = visible.map((c) => {
+      const min = minOf(c, measure);
+      const fixed = c.width !== undefined;
+      let width = c.width ?? autoWidth(auto.get(c.id) ?? 0, min);
+      if (c.pinned === 'start') width = Math.min(width, Math.max(min, pinCap));
+      return { width, min, flex: !fixed && c.pinned !== 'start' };
+    });
+    return columnLayout(visible, {
+      widths: fitWidths(sizes, view.width),
+      mins: sizes.map((s) => s.min),
+    });
+  }, [visible, measure, auto, narrow, view.width]);
+  if (layout.total !== contentTotal) setContentTotal(layout.total);
 
   const order = useSortOrder(rows, manualSort ? [] : sort, cols);
   const viewRows = useMemo(
@@ -122,8 +182,6 @@ export function DataGrid<R>({
   );
   const source = (view: number) => (order ? order[view] : view);
   const n = viewRows.length;
-
-  const view = useGridViewport(listRef, headerRef);
   const [range, setRowRange] = useState({ start: 0, end: 0 });
   const [activeState, setActive] = useState<CellPos>({ row: 0, col: 0 });
   const [anchor, setAnchor] = useState<CellPos | null>(null);
@@ -209,6 +267,15 @@ export function DataGrid<R>({
       setSort(dir ? [{ id, dir }] : sort.filter((s) => s.id !== id)),
     resize: (id, width, commit) =>
       setCols(updateColumn(cols, id, { width }), commit),
+    autofit: (id) => {
+      const c = cols.find((x) => x.id === id);
+      if (!c) return;
+      const width = clampTo(
+        Math.min(MAX_WIDTH, contentWidth(c, rows, measure)),
+        minOf(c, measure),
+      );
+      setCols(updateColumn(cols, id, { width }));
+    },
     move,
     hide: (id) => {
       setCols(updateColumn(cols, id, { hidden: true }));
@@ -280,13 +347,23 @@ export function DataGrid<R>({
     active.row < range.end + OVERSCAN &&
     win.includes(active.col);
 
+  // The horizontal bar sits below the rows: its height is added, never taken
+  // from them. Overlay scrollbars report 0, so keep a strip for them.
+  const overflowX = view.width > 0 && layout.total > view.width;
+  const bar = overflowX ? Math.max(view.scrollbar, OVERLAY_SCROLLBAR) : 0;
+  const minHeight = gridHeight(1, rowHeight, 1, bar);
+
   return (
     <div
+      ref={rootRef}
       className={cn(
-        'relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface',
+        'relative flex shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-surface',
         className,
       )}
-      style={{ height }}
+      style={{
+        height: height ?? gridHeight(n, rowHeight, maxRows, bar),
+        minHeight,
+      }}
       onKeyDown={onKeyDown}
       onFocus={(e) => e.target === gridEl() && setFocused(true)}
       onBlur={(e) => e.target === gridEl() && setFocused(false)}
@@ -351,7 +428,10 @@ export function DataGrid<R>({
         )}
       />
       {n === 0 && (
-        <p className="pointer-events-none absolute inset-x-0 top-16 text-center text-sm text-fg-muted">
+        <p
+          className="pointer-events-none absolute inset-x-0 flex items-center justify-center text-sm text-fg-muted"
+          style={{ top: HEADER_HEIGHT, height: rowHeight }}
+        >
           {emptyLabel}
         </p>
       )}

@@ -1,6 +1,18 @@
-import { useCallback, useLayoutEffect, useState, type RefObject } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import type { VirtualListHandle } from '../virtual-list';
 import type { GridColumn, SortKey } from './columns';
+import {
+  contentWidth,
+  createMeasure,
+  estimateMeasure,
+  type Measure,
+} from './sizing';
 import { sortIndices } from './sort';
 
 /** A prop that is controlled when given, otherwise held here. */
@@ -91,6 +103,8 @@ export interface GridViewport {
   height: number;
   /** Width of the body's vertical scrollbar (the header pads by it). */
   gutter: number;
+  /** Height of the body's horizontal scrollbar (0 when none or overlay). */
+  scrollbar: number;
 }
 
 /**
@@ -100,13 +114,17 @@ export interface GridViewport {
 export function useGridViewport(
   listRef: RefObject<VirtualListHandle | null>,
   headerRef: RefObject<HTMLDivElement | null>,
+  /** Re-read when this changes (the content width, which can add a bar). */
+  contentWidth: number,
 ): GridViewport {
   const [view, setView] = useState<GridViewport>({
     left: 0,
     width: 0,
     height: 0,
     gutter: 0,
+    scrollbar: 0,
   });
+  const readRef = useRef<(() => void) | null>(null);
   useLayoutEffect(() => {
     const el = listRef.current?.getScrollElement();
     if (!el) return;
@@ -121,17 +139,22 @@ export function useGridViewport(
         gutter: el.clientWidth
           ? Math.max(0, el.offsetWidth - el.clientWidth)
           : 0,
+        scrollbar: el.clientHeight
+          ? Math.max(0, el.offsetHeight - el.clientHeight)
+          : 0,
       };
       if (headerRef.current) headerRef.current.scrollLeft = el.scrollLeft;
       setView((v) =>
         v.left === next.left &&
         v.width === next.width &&
         v.height === next.height &&
-        v.gutter === next.gutter
+        v.gutter === next.gutter &&
+        v.scrollbar === next.scrollbar
           ? v
           : next,
       );
     };
+    readRef.current = read;
     read();
     el.addEventListener('scroll', read, { passive: true });
     const ro =
@@ -140,7 +163,83 @@ export function useGridViewport(
     return () => {
       el.removeEventListener('scroll', read);
       ro?.disconnect();
+      readRef.current = null;
     };
   }, [listRef, headerRef]);
+  // A wider row can add a horizontal scrollbar without resizing the body.
+  useLayoutEffect(() => readRef.current?.(), [contentWidth]);
   return view;
+}
+
+/**
+ * Text measurement in the grid's fonts, rebuilt once web fonts finish
+ * loading (a fallback font measures differently).
+ */
+export function useMeasure(rootRef: RefObject<HTMLElement | null>): Measure {
+  const [measure, setMeasure] = useState<Measure>(() => estimateMeasure);
+  useLayoutEffect(() => {
+    let live = true;
+    const update = () => {
+      if (live) setMeasure(() => createMeasure(rootRef.current));
+    };
+    update();
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+    if (!fonts) return () => void (live = false);
+    void fonts.ready.then(update);
+    fonts.addEventListener('loadingdone', update);
+    return () => {
+      live = false;
+      fonts.removeEventListener('loadingdone', update);
+    };
+  }, [rootRef]);
+  return measure;
+}
+
+interface AutoWidths<R> {
+  columns: readonly GridColumn<R>[];
+  measure: Measure;
+  rows: readonly R[];
+  sig: string;
+  widths: ReadonlyMap<string, number>;
+}
+
+/**
+ * Content-sampled widths of the auto-sized (no `width`) columns, by id.
+ * They only grow while the `columns` prop and the fonts stay the same, so
+ * live row updates (a status that changes) never make columns jump narrower.
+ */
+export function useAutoWidths<R>(
+  columns: readonly GridColumn<R>[],
+  visible: readonly GridColumn<R>[],
+  rows: readonly R[],
+  measure: Measure,
+): ReadonlyMap<string, number> {
+  const auto = visible.filter((c) => c.width === undefined);
+  const sig = auto.map((c) => c.id).join('|');
+  const compute = (prev: ReadonlyMap<string, number>) => {
+    const widths = new Map(prev);
+    for (const c of auto) {
+      const w = contentWidth(c, rows, measure);
+      widths.set(c.id, Math.max(widths.get(c.id) ?? 0, w));
+    }
+    return widths;
+  };
+  const [memo, setMemo] = useState<AutoWidths<R>>(() => ({
+    columns,
+    measure,
+    rows,
+    sig,
+    widths: compute(new Map()),
+  }));
+  if (
+    memo.columns === columns &&
+    memo.measure === measure &&
+    memo.rows === rows &&
+    memo.sig === sig
+  )
+    return memo.widths;
+  const reset = memo.columns !== columns || memo.measure !== measure;
+  const widths = compute(reset ? new Map() : memo.widths);
+  setMemo({ columns, measure, rows, sig, widths });
+  return widths;
 }

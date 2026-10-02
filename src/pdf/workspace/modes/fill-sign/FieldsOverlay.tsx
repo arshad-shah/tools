@@ -33,7 +33,10 @@ import type { ViewField } from './fields';
 import { FormNotice } from './FormNotice';
 import { NoFieldsHint } from './NoFieldsHint';
 import { OverlayTextBar } from './OverlayTextBar';
+import { PlacedBlocks } from './PlacedBlocks';
 import { PlacedSignatures, SignatureLook } from './PlacedSignatures';
+import { snapNear, useSignTargets } from './sign-places';
+import { SignTargetsOverlay } from './SignTargetsOverlay';
 import { markBox, snapToCell } from './snap';
 import { fillSign, useFillSign } from './store';
 import { tabOrder } from './tab-order';
@@ -89,7 +92,9 @@ export function FieldsOverlay(props: PageOverlayProps) {
   useCells(
     doc,
     pageKey,
-    clickTool || resizing ? (doc.sources[page.source]?.docId ?? null) : null,
+    clickTool || resizing || placing
+      ? (doc.sources[page.source]?.docId ?? null)
+      : null,
     page.index,
   );
   // The overlay's element, for anchoring popovers to page-space boxes.
@@ -99,6 +104,10 @@ export function FieldsOverlay(props: PageOverlayProps) {
   const [a, b, c, d, e, f] = viewport.transform;
   const transform: OverlayTransform = { a, b, c, d, e, f };
   const quarter = quarterTurned(ctx, page.id);
+  const targets = useSignTargets(page);
+  /** A signature box at the point, snapped to a place to sign nearby. */
+  const placedBox = (p: PagePoint, role: 'signature' | 'initials') =>
+    snapNear(targets, page, signatureBoxAt(p, ready[role]!, role, quarter));
   const fields = pageOrder(all, page.id).filter(
     (x) => showDetected || x.origin !== 'detected',
   );
@@ -162,14 +171,11 @@ export function FieldsOverlay(props: PageOverlayProps) {
   const onPoint = (p: PagePoint) => {
     if (placing) {
       const sig = ready[placing];
-      if (sig)
-        placeSignature(
-          ctx,
-          page.id,
-          signatureBoxAt(p, sig, placing, quarter),
-          sig,
-          placing,
-        );
+      if (sig) {
+        const at = placedBox(p, placing);
+        if (placeSignature(ctx, page.id, at.box, sig, placing) && at.target)
+          doc.announce(`Snapped to ${at.target.label}`);
+      }
       fillSign.set({ placing: null });
       return;
     }
@@ -279,10 +285,23 @@ export function FieldsOverlay(props: PageOverlayProps) {
         pageNumber={pageNumber}
         transform={transform}
       />
+      <PlacedBlocks
+        ctx={ctx}
+        page={page}
+        pageNumber={pageNumber}
+        transform={transform}
+      />
+      <SignTargetsOverlay
+        ctx={ctx}
+        page={page}
+        transform={transform}
+        width={width}
+        height={height}
+      />
       {placing && hover && ready[placing] ? (
         <PageBox
           transform={transform}
-          box={signatureBoxAt(hover, ready[placing]!, placing, quarter)}
+          box={placedBox(hover, placing).box}
           className="pointer-events-none opacity-60"
         >
           <SignatureLook preview={ready[placing]!.preview} role={placing} />

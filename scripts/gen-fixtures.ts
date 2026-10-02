@@ -13,6 +13,7 @@ import {
   makeXfaPdf,
 } from '../test/fixtures/builders';
 import { largeCsv, windows1252Csv } from '../test/fixtures/csv';
+import { makeAnnotatedPdf } from '../test/fixtures/annotated';
 import {
   makeRedactAdversarial,
   makeType3FontPdf,
@@ -37,6 +38,8 @@ import {
   pngWithMetadata,
   webpWithMetadata,
 } from '../test/fixtures/exif';
+
+import { syntheticPhoto } from '../src/pdf/sign/photo/test-images';
 
 const out = new URL('../test/fixtures/generated/', import.meta.url);
 await mkdir(out, { recursive: true });
@@ -104,6 +107,7 @@ const files: Record<string, Uint8Array> = {
   'exif-text.png': pngWithMetadata(),
   'exif-xmp.webp': webpWithMetadata(),
   'text-3.pdf': await makeTextPdf({ pages: 3, label: 'Alpha' }),
+  'annotated.pdf': await makeAnnotatedPdf(),
   'text-12.pdf': await makeTextPdf({ pages: 12, label: 'Beta' }),
   'text-300.pdf': await makeTextPdf({ pages: 300, label: 'Big' }),
   'large-300.pdf': await makeLargePdf(300),
@@ -138,6 +142,12 @@ const files: Record<string, Uint8Array> = {
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
   'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),
+  // A phone photo of a signature at 6 degrees on light paper (plan H-15).
+  'signature-photo.png': encodePng(
+    640,
+    320,
+    new Uint8Array(syntheticPhoto(640, 320, 6, 5).buffer),
+  ),
   // Stored 300x100, shown 100x300: a phone photo taken sideways (EXIF 6).
   'signature-exif6.jpg': withExifOrientation(
     encodeJpeg(300, 100, signatureRgba(300, 100), 92),

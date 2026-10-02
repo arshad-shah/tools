@@ -107,6 +107,11 @@ function ExportDialogBody({
   const sections = EXPORT_OPTION_SECTIONS.filter((s) => s.visible(doc)).sort(
     (a, b) => a.order - b.order,
   );
+  const exportLabel =
+    sections.map((s) => s.exportLabel?.(options)).find(Boolean) ?? 'Export';
+  const blockers = sections
+    .map((s) => s.blocker?.(options, doc))
+    .filter((b): b is string => !!b);
   const set = (patch: Partial<ExportOptions>) =>
     setOptions((o) => ({ ...o, ...patch }) as ExportOptions);
 
@@ -252,6 +257,12 @@ function ExportDialogBody({
             </div>
           ) : null}
 
+          {blockers.length ? (
+            <p id={`${nameId}-blockers`} className="text-sm text-fg-muted">
+              {blockers.join(' ')}
+            </p>
+          ) : null}
+
           {error ? <ErrorState error={error} headingLevel={3} /> : null}
         </DialogBody>
         <DialogFooter>
@@ -263,9 +274,12 @@ function ExportDialogBody({
               variant="primary"
               onClick={() => void start()}
               loading={running}
-              disabled={state.restricted}
+              disabled={state.restricted || blockers.length > 0}
+              aria-describedby={
+                blockers.length ? `${nameId}-blockers` : undefined
+              }
             >
-              Export
+              {exportLabel}
             </Button>
           )}
         </DialogFooter>
