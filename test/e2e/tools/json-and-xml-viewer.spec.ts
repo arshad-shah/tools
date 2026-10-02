@@ -254,5 +254,3 @@ test('the Map lays out 5,000 cards in the worker without blocking', async ({
     description: JSON.stringify(long),
   });
 });
-
-test.skip('a hand-off from the CSV Viewer fills the editor (covered by Part D)', () => {});

@@ -167,11 +167,6 @@ test('Send CSV to lists Text Diff and hands the shown rows over', async ({
   await expect(page.getByText('item0,5').first()).toBeAttached();
 });
 
-test.skip('Open as JSON shows the tree in the JSON Viewer', () => {
-  // Waits for Part 6-B (JSON Viewer accepts application/json); H-1 removes
-  // this skip.
-});
-
 test('scrolling large.csv has no long task over 100 ms', async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto(pathOf('csv-viewer'));

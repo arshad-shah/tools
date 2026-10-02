@@ -83,13 +83,6 @@ test('log viewer exports CSV', async ({ page }) => {
   expect(csv).toContain('DatabaseService.java:42');
 });
 
-test('log viewer uses a format handed off from the Regex Tester', async () => {
-  test.skip(
-    true,
-    'The Regex Tester "Use as log format" UI is being rebuilt; the hand-off is covered by the Log Viewer component test',
-  );
-});
-
 test('log viewer streams a large file with progress', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto(pathOf('log-parser'));

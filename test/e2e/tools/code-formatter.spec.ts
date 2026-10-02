@@ -55,8 +55,3 @@ test('formats SQL with the keyboard shortcut', async ({ page }) => {
     'SELECT\n  a,\n  b\nFROM\n  t\nWHERE\n  x = 1\n',
   );
 });
-
-test.skip('Show changes opens Text Diff with both sides', () => {
-  // Waits for Part 6-C (Text Diff accepts the diff-pair hand-off); H-1
-  // removes this skip.
-});
