@@ -62,15 +62,41 @@ function AuthorField({ ctx }: { ctx: ModeProps }) {
   );
 }
 
-function StyleSection() {
+/** The one selected pending annotation, if any. */
+function selectedPending(ctx: ModeProps) {
+  if (ctx.selection.objects.size !== 1) return null;
+  const [id] = ctx.selection.objects;
+  for (const [pageId, list] of ctx.doc.view.overlays) {
+    const o = list.find((x) => x.opId === id && x.type.startsWith('annot.'));
+    if (o) return { pageId, item: o };
+  }
+  return null;
+}
+
+function StyleSection({ ctx }: { ctx: ModeProps }) {
   const ui = useAnnotateUi();
+  const picked = selectedPending(ctx);
+  const pickedColor = (picked?.item.params as { color?: string } | undefined)
+    ?.color;
   return (
     <InspectorSection title="Style">
       <Stack gap="3">
         <ColorSwatchPicker
-          label="Colour"
-          value={ui.color}
-          onChange={(color) => setAnnotateUi({ color })}
+          label={pickedColor ? 'Colour of the selected annotation' : 'Colour'}
+          value={pickedColor ?? ui.color}
+          onChange={(color) => {
+            setAnnotateUi({ color });
+            // The selected annotation takes the colour too (one undo step).
+            if (picked && pickedColor)
+              ctx.doc.dispatch({
+                type: 'annot.update',
+                params: {
+                  pageId: picked.pageId,
+                  target: { kind: 'pending', id: picked.item.opId },
+                  patch: { color },
+                },
+              });
+          }}
           options={INKS}
           allowCustom
         />
@@ -297,7 +323,7 @@ export function CommentsPanel(ctx: ModeProps) {
           )}
         </Stack>
       </InspectorSection>
-      <StyleSection />
+      <StyleSection ctx={ctx} />
     </div>
   );
 }

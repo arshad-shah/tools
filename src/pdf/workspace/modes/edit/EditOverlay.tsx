@@ -1,9 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ObjectChange } from '@/shared/ui';
 import { toScreen } from '@/pdf/doc/geometry';
 import type { ImageParams } from '@/pdf/doc/ops/edit';
+import type { Box } from '@/pdf/doc/types';
 import type { PageOverlayProps } from '../types';
 import { ensureOverlayFonts } from '../../overlay-fonts';
-import { ObjectsOverlay } from '../../objects/ObjectsOverlay';
+import { ModeObjectLayer } from '../../objects/ModeObjectLayer';
+import {
+  focusProperties,
+  itemRotation,
+  previewItem,
+} from '../../objects/object-ops';
 import { objectsOn } from '../../objects/useObjectSelection';
 import { ContentPreview } from './ContentPreview';
 import { objectLabel } from './labels';
@@ -24,7 +31,13 @@ export function EditOverlay(props: PageOverlayProps) {
   const [a, b, c, d, e, f] = viewport.transform;
   const t = { a, b, c, d, e, f };
   const scale = Math.hypot(a, b);
-  const items = objectsOn(doc, page.id);
+  const [preview, setPreview] = useState<ReadonlyMap<
+    string,
+    ObjectChange
+  > | null>(null);
+  const placed = objectsOn(doc, page.id);
+  // Content follows a drag live; the op lands on release.
+  const items = placed.map((o) => previewItem(o, preview?.get(o.opId), true));
   const index = doc.view.pages.findIndex((p) => p.id === page.id);
 
   useEffect(() => {
@@ -61,18 +74,34 @@ export function EditOverlay(props: PageOverlayProps) {
         height={height}
       />
       {tool === 'select' ? (
-        <ObjectsOverlay
+        <ModeObjectLayer
           doc={doc}
           selection={selection}
-          page={page}
           pageNumber={pageNumber}
           viewport={viewport}
           width={width}
           height={height}
-          labelOf={objectLabel}
-          keepAspect={(o) =>
-            o.type === 'content.image' && (o.params as ImageParams).keepAspect
-          }
+          marquee
+          onPreview={setPreview}
+          objects={placed.map((o) => ({
+            id: o.opId,
+            box: (o.params as { rect: Box }).rect,
+            rotate: itemRotation(o),
+            label: objectLabel(o),
+            rotatable: true,
+            keepAspect:
+              o.type === 'content.image' &&
+              (o.params as ImageParams).keepAspect,
+            editable: o.type === 'content.text' || o.type === 'content.cover',
+          }))}
+          onEdit={(id) => {
+            selection.selectObjects([id]);
+            focusProperties('#edit-text');
+          }}
+          onProperties={(id) => {
+            selection.selectObjects([id]);
+            focusProperties();
+          }}
         />
       ) : null}
       {PLACING.has(tool) ? (

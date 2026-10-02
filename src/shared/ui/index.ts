@@ -177,6 +177,20 @@ export {
 } from './shape-layer';
 export { SelectionFrame, type SelectionFrameProps } from './selection-frame';
 export { HitArea, type HitAreaProps } from './hit-area';
+export {
+  ObjectLayer,
+  type LayerObject,
+  type ObjectChange,
+  type ChangeSource,
+  type ObjectLayerProps,
+  type ObjectOrder,
+  type SelectMode,
+} from './object-layer';
+export {
+  ContextMenu,
+  type ContextMenuEntry,
+  type ContextMenuProps,
+} from './context-menu';
 export { DrawRectLayer, type DrawRectLayerProps } from './draw-rect-layer';
 export { Highlight, type HighlightProps } from './highlight';
 export { FieldBox, type FieldBoxProps, type FieldBoxState } from './field-box';

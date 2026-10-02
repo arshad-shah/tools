@@ -117,7 +117,10 @@ test('fills a flat form from My details, by hand and with a signature, then expo
   await sign.getByLabel('Your name').fill('Jane Doe');
   await sign.getByRole('button', { name: 'Place at page centre' }).click();
   await expect(sign).toHaveCount(0);
-  const frame = page.getByRole('group', { name: 'Signature on page 3' });
+  // Placed objects are buttons on the page's object layer.
+  const frame = page
+    .getByTestId('objects-page-3')
+    .getByRole('button', { name: 'Signature on page 3' });
   await expect(frame).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
@@ -422,7 +425,7 @@ test('a click-anywhere text box with 8 character boxes exports evenly spaced dig
   await input.fill('20261002');
   await input.press('Enter');
   await expect(
-    page.getByRole('group', { name: 'Text field: Text, filled' }),
+    page.getByRole('button', { name: 'Text field: Text, filled' }),
   ).toBeFocused();
 
   const bytes = await exportPdf(page);
@@ -455,7 +458,7 @@ test('a text box moves with the arrows, is deleted, and comes back with undo', a
   await expect(input).toBeFocused();
   await input.fill('Hello');
   await input.press('Enter');
-  const frame = page.getByRole('group', { name: 'Text field: Text, filled' });
+  const frame = page.getByRole('button', { name: 'Text field: Text, filled' });
   await expect(frame).toBeFocused();
   const before = (await frame.boundingBox())!;
   await page.keyboard.press('ArrowRight');

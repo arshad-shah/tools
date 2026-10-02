@@ -91,7 +91,9 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   await sign.getByRole('button', { name: 'Next place to sign' }).click();
   await expect(sign).toHaveCount(0);
   await expect(
-    page.getByRole('group', { name: 'Signature on page 3' }),
+    page
+      .getByTestId('objects-page-3')
+      .getByRole('button', { name: 'Signature on page 3' }),
   ).toBeVisible({ timeout: 15_000 });
 
   // 2. Type: Jane Doe in the 4th style, slant 10, as initials on every page.

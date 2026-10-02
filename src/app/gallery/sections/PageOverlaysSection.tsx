@@ -3,12 +3,14 @@ import {
   DrawRectLayer,
   Highlight,
   HitArea,
+  ObjectLayer,
   OverlayLayer,
   PageBox,
   SelectionFrame,
   ShapeLayer,
   Sized,
   Text,
+  type LayerObject,
   type OverlayTransform,
   type PageSpaceBox,
   type Shape,
@@ -88,6 +90,27 @@ const SHAPES: Shape[] = [
   },
 ];
 
+const PLACED: LayerObject[] = [
+  {
+    id: 'text',
+    box: { x: 80, y: 600, width: 220, height: 60 },
+    label: 'Text box: Hello',
+    editable: true,
+    rotatable: true,
+  },
+  {
+    id: 'stamp',
+    box: { x: 340, y: 400, width: 160, height: 80 },
+    label: 'Stamp: Approved',
+    keepAspect: true,
+  },
+  {
+    id: 'mark',
+    box: { x: 100, y: 200, width: 300, height: 30 },
+    label: 'Redaction mark',
+  },
+];
+
 const FIELD: PageSpaceBox = { x: 380, y: 120, width: 170, height: 60 };
 
 /**
@@ -104,6 +127,10 @@ export function PageOverlaysSection() {
   const [rotate, setRotate] = useState(0);
   const [pressed, setPressed] = useState(false);
   const [drawn, setDrawn] = useState<PageSpaceBox[]>([]);
+  const [placed, setPlaced] = useState(PLACED);
+  const [picked, setPicked] = useState<ReadonlySet<string>>(
+    () => new Set(['text']),
+  );
   return (
     <Section name="page-overlays" title="Page overlays">
       <Row label="ShapeLayer, HitArea, SelectionFrame">
@@ -154,6 +181,62 @@ export function PageOverlaysSection() {
         <Text size="sm" tone="muted" className="max-w-xs">
           Focus the frame: arrows move it, Alt with arrows resizes it, the
           bracket keys rotate it, Enter commits and Esc cancels.
+        </Text>
+      </Row>
+      <Row label="ObjectLayer, ContextMenu">
+        <Sized
+          width={PAGE.width}
+          height={PAGE.height}
+          className="relative rounded-sm bg-surface shadow-page"
+        >
+          <ShapeLayer
+            width={PAGE.width}
+            height={PAGE.height}
+            transform={T}
+            shapes={placed.map((o) => ({
+              kind: 'rect' as const,
+              box: o.box,
+              stroke: { token: 'fg-muted' as const },
+              dash: 'dashed' as const,
+            }))}
+          />
+          <ObjectLayer
+            transform={T}
+            width={PAGE.width}
+            height={PAGE.height}
+            label="Objects on page 1"
+            objects={placed}
+            selected={picked}
+            marquee
+            onSelect={(ids, mode) =>
+              setPicked((prev) => {
+                if (mode === 'replace') return new Set(ids);
+                const next = new Set(prev);
+                for (const id of ids)
+                  if (mode === 'add' || !next.has(id)) next.add(id);
+                  else next.delete(id);
+                return next;
+              })
+            }
+            onCommit={(changes) =>
+              setPlaced((list) =>
+                list.map((o) => {
+                  const c = changes.find((x) => x.id === o.id);
+                  return c ? { ...o, box: c.box, rotate: c.rotate } : o;
+                }),
+              )
+            }
+            onDelete={(ids) =>
+              setPlaced((list) => list.filter((o) => !ids.includes(o.id)))
+            }
+            onDuplicate={() => {}}
+            onOrder={() => {}}
+          />
+        </Sized>
+        <Text size="sm" tone="muted" className="max-w-xs">
+          Click or drag a placed object, Shift-click or drag on the page to pick
+          several, drag a handle to resize, right-click or long-press for the
+          object menu.
         </Text>
       </Row>
       <Row label="DrawRectLayer (drag on the page), Highlight">

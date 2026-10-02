@@ -73,4 +73,31 @@ describe('object clipboard', () => {
       rect: b(10, -10, 10, 10),
     });
   });
+  it('gives a pasted free Fill & Sign box its own field id', () => {
+    let n = 0;
+    const clip = createObjectClipboard(() => `new${n++}`);
+    clip.copy([
+      op('flat.fill', {
+        id: 'a',
+        pageId: 'p1',
+        rect: b(10, 100, 20, 10),
+        kind: 'text',
+        value: 'Hi',
+        fieldId: 'free:a',
+      }),
+      op('flat.fill', {
+        id: 'b',
+        pageId: 'p1',
+        rect: b(10, 100, 20, 10),
+        kind: 'text',
+        value: 'Hi',
+        fieldId: 'detected:x',
+      }),
+    ]);
+    const [free, detected] = clip.paste('p1');
+    const fieldId = (o: { params: unknown }) =>
+      (o.params as { fieldId: string }).fieldId;
+    expect(fieldId(free)).toMatch(/^free:new/);
+    expect(fieldId(detected)).toBe('detected:x');
+  });
 });
