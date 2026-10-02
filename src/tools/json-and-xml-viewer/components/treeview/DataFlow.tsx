@@ -13,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import CustomNode from './CustomNode';
+import { CustomNode } from './CustomNode';
 import { AppNode, DataFlowProps } from './types';
 import { useDataProcessor } from './useDataProcessor';
 
@@ -40,7 +40,7 @@ const nodeTypes = {
   custom: CustomNode,
 } satisfies NodeTypes;
 
-const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
+export const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -91,5 +91,3 @@ const DataFlow: React.FC<DataFlowProps> = ({ initialData }) => {
     </div>
   );
 };
-
-export default DataFlow;

@@ -3,9 +3,11 @@ import {
   DiffSegment,
   DiffSettings,
   DiffStatistics,
+  HighlightMode,
   UseIntelligentDiffReturn,
 } from '../types';
 import * as Diff from 'diff';
+import { notify } from '@/shared/lib/notify';
 
 const TEXT_SIZE_THRESHOLD = 100000; // Characters threshold for performance warning
 
@@ -155,7 +157,7 @@ export const useIntelligentDiff = (): UseIntelligentDiffReturn => {
       leftText: string,
       rightText: string,
       settings: DiffSettings,
-      highlightMode: 'character' | 'word' | 'line' = 'word',
+      highlightMode: HighlightMode = 'word',
     ) => {
       if (!leftText && !rightText) {
         setDiffSegments([]);
@@ -283,7 +285,9 @@ export const useIntelligentDiff = (): UseIntelligentDiffReturn => {
         calculateDiffStatistics(diffResult);
       } catch (error) {
         console.error('Diff calculation error:', error);
-        throw new Error('Error calculating differences. Please try again.');
+        throw new Error('Error calculating differences. Please try again.', {
+          cause: error,
+        });
       } finally {
         setIsDiffing(false);
       }
@@ -297,7 +301,7 @@ export const useIntelligentDiff = (): UseIntelligentDiffReturn => {
       leftText: string,
       rightText: string,
       settings: DiffSettings,
-      highlightMode: 'character' | 'word' | 'line' = 'word',
+      highlightMode: HighlightMode = 'word',
     ) => {
       if (diffTimeoutRef.current) {
         clearTimeout(diffTimeoutRef.current);
@@ -308,7 +312,12 @@ export const useIntelligentDiff = (): UseIntelligentDiffReturn => {
       setPerformanceWarning(totalLength > TEXT_SIZE_THRESHOLD);
 
       diffTimeoutRef.current = setTimeout(() => {
-        calculateDiff(leftText, rightText, settings, highlightMode);
+        // A throw here would escape as an uncaught timer error: report it.
+        try {
+          calculateDiff(leftText, rightText, settings, highlightMode);
+        } catch {
+          notify.error('Error calculating differences');
+        }
       }, 300);
     },
     [calculateDiff],

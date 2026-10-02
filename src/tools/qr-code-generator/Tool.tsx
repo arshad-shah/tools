@@ -1,341 +1,24 @@
 import React, { useState } from 'react';
-import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
+import { IconLayers, IconPalette, IconShield } from '@/shared/ui/icons';
+
 import {
-  IconAlertTriangle,
-  IconBitcoin,
-  IconBuilding2,
-  IconCoins,
-  IconDownload,
-  IconFileImage,
-  IconFileText,
-  IconHash,
-  IconInfo,
-  IconKey,
-  IconKeyRound,
-  IconLayers,
-  IconLink,
-  IconMail,
-  IconPalette,
-  IconPhone,
-  IconRefreshCw,
-  IconSettings,
-  IconShield,
-  IconShieldOff,
-  IconUser,
-  IconWallet,
-  IconWifi,
-} from '@/shared/ui/icons';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Badge,
   Box,
-  Button,
-  ButtonGroup,
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
-  Center,
-  Checkbox,
-  Code,
-  Grid,
   Inline,
-  Input,
-  Label,
-  List,
-  ListItem,
-  NumberInput,
-  Select,
-  Slider,
-  Spinner,
   Stack,
-  Switch,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  Text,
-  Textarea,
 } from '@/shared/ui';
+import { AdvancedSettings } from './components/AdvancedSettings';
+import { ContentTab } from './components/ContentTab';
+import { EncryptionTab } from './components/EncryptionTab';
+import { LogoPanel } from './components/LogoPanel';
+import { QrPreview } from './components/QrPreview';
+import { StylePanel } from './components/StylePanel';
 import { useQRCode } from './hooks/useQrCode';
-import {
-  ContactData,
-  CryptoData,
-  CryptoType,
-  EncryptionType,
-  ErrorCorrectionLevel,
-  QRCodeType,
-  WifiData,
-} from './types';
-
-const QR_TYPE_OPTIONS: Array<{
-  value: QRCodeType;
-  label: string;
-  icon: React.ReactNode;
-}> = [
-  { value: 'url', label: 'URL', icon: <IconLink size="sm" /> },
-  { value: 'text', label: 'Text', icon: <IconFileText size="sm" /> },
-  { value: 'contact', label: 'Contact', icon: <IconUser size="sm" /> },
-  { value: 'wifi', label: 'WiFi', icon: <IconWifi size="sm" /> },
-  { value: 'crypto', label: 'Crypto', icon: <IconCoins size="sm" /> },
-  {
-    value: 'custom',
-    label: 'Custom',
-    icon: <IconSettings size="sm" />,
-  },
-];
-
-const ENCRYPTION_OPTIONS: Array<{ value: EncryptionType; label: string }> = [
-  { value: 'none', label: 'None' },
-  { value: 'aes', label: 'AES-256' },
-  { value: 'tripledes', label: 'Triple DES' },
-  { value: 'rc4', label: 'RC4' },
-  { value: 'rabbit', label: 'Rabbit Stream Cipher' },
-];
-
-const CRYPTO_OPTIONS = [
-  { value: 'BTC', label: 'Bitcoin (BTC)' },
-  { value: 'ETH', label: 'Ethereum (ETH)' },
-  { value: 'LTC', label: 'Litecoin (LTC)' },
-  { value: 'XRP', label: 'Ripple (XRP)' },
-  { value: 'DOGE', label: 'Dogecoin (DOGE)' },
-  { value: 'ADA', label: 'Cardano (ADA)' },
-  { value: 'DOT', label: 'Polkadot (DOT)' },
-];
-
-const WIFI_ENCRYPTION_OPTIONS = [
-  { value: 'WPA', label: 'WPA/WPA2/WPA3' },
-  { value: 'WEP', label: 'WEP (Legacy)' },
-  { value: 'nopass', label: 'None (Open Network)' },
-];
-
-const ERROR_LEVELS: ErrorCorrectionLevel[] = ['L', 'M', 'Q', 'H'];
-const ERROR_LEVEL_PCT: Record<ErrorCorrectionLevel, string> = {
-  L: '7%',
-  M: '15%',
-  Q: '25%',
-  H: '30%',
-};
-
-const TextUrlForm: React.FC<{
-  text: string;
-  setText: (text: string) => void;
-  isUrl: boolean;
-}> = ({ text, setText, isUrl }) => {
-  const isValidUrl = () => {
-    if (!isUrl || !text) return true;
-    try {
-      new URL(text);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-  const invalid = isUrl && text.length > 0 && !isValidUrl();
-  return (
-    <Stack gap="3">
-      <Stack gap="2">
-        <Label htmlFor="qr-text-input">
-          {isUrl ? 'URL address' : 'Text content'}
-        </Label>
-        <Textarea
-          id="qr-text-input"
-          value={text}
-          onChange={setText}
-          rows={5}
-          invalid={invalid}
-          placeholder={isUrl ? 'https://example.com' : 'Enter text here…'}
-          aria-label={isUrl ? 'URL' : 'Text content'}
-        />
-        {!isUrl && text.length > 0 && (
-          <Inline gap="2" wrap>
-            <Badge variant="soft" tone="accent" size="xs">
-              {text.length} characters
-            </Badge>
-            <Badge variant="soft" tone="accent" size="xs">
-              {text.split(/\s+/).filter((w) => w.length > 0).length} words
-            </Badge>
-          </Inline>
-        )}
-      </Stack>
-      {invalid && (
-        <Alert status="danger">
-          <AlertDescription>
-            Please enter a valid URL (e.g. https://example.com).
-          </AlertDescription>
-        </Alert>
-      )}
-      {isUrl && text && text.startsWith('http://') && (
-        <Alert status="warning">
-          <AlertDescription>
-            Consider using HTTPS for better security.
-          </AlertDescription>
-        </Alert>
-      )}
-    </Stack>
-  );
-};
-
-const ContactForm: React.FC<{
-  contactData: ContactData;
-  setContactData: (data: Partial<ContactData>) => void;
-}> = ({ contactData, setContactData }) => (
-  <Stack gap="3">
-    <Stack gap="2">
-      <Label htmlFor="contact-name">Full name</Label>
-      <Input
-        id="contact-name"
-        value={contactData.name}
-        onChange={(v) => setContactData({ name: v })}
-        placeholder="Enter full name"
-        leadingSlot={<IconUser size="sm" />}
-      />
-    </Stack>
-    <Stack gap="2">
-      <Label htmlFor="contact-phone">Phone number</Label>
-      <Input
-        id="contact-phone"
-        type="tel"
-        value={contactData.phone}
-        onChange={(v) => setContactData({ phone: v })}
-        placeholder="+1 (123) 456-7890"
-        leadingSlot={<IconPhone size="sm" />}
-      />
-    </Stack>
-    <Stack gap="2">
-      <Label htmlFor="contact-email">Email address</Label>
-      <Input
-        id="contact-email"
-        type="email"
-        value={contactData.email}
-        onChange={(v) => setContactData({ email: v })}
-        placeholder="name@example.com"
-        leadingSlot={<IconMail size="sm" />}
-      />
-    </Stack>
-    <Stack gap="2">
-      <Label htmlFor="contact-company">Company</Label>
-      <Input
-        id="contact-company"
-        value={contactData.company}
-        onChange={(v) => setContactData({ company: v })}
-        placeholder="Company or organisation (optional)"
-        leadingSlot={<IconBuilding2 size="sm" />}
-      />
-    </Stack>
-  </Stack>
-);
-
-const WifiFormPanel: React.FC<{
-  wifiData: WifiData;
-  setWifiData: (data: Partial<WifiData>) => void;
-}> = ({ wifiData, setWifiData }) => {
-  return (
-    <Stack gap="3">
-      <Stack gap="2">
-        <Label htmlFor="wifi-ssid">Network name (SSID)</Label>
-        <Input
-          id="wifi-ssid"
-          value={wifiData.ssid}
-          onChange={(v) => setWifiData({ ssid: v })}
-          placeholder="Enter network name"
-          leadingSlot={<IconWifi size="sm" />}
-        />
-      </Stack>
-      <Stack gap="2">
-        <Label htmlFor="wifi-password">Password</Label>
-        <Input
-          id="wifi-password"
-          type="password"
-          value={wifiData.password}
-          onChange={(v) => setWifiData({ password: v })}
-          placeholder="Enter network password"
-          leadingSlot={<IconKeyRound size="sm" />}
-        />
-      </Stack>
-      <Stack gap="2">
-        <Label htmlFor="wifi-encryption">Encryption</Label>
-        <Select
-          id="wifi-encryption"
-          value={wifiData.encryption}
-          onValueChange={(v) => setWifiData({ encryption: v })}
-          items={WIFI_ENCRYPTION_OPTIONS}
-          aria-label="Encryption type"
-        />
-        {wifiData.encryption === 'WEP' && (
-          <Alert status="warning">
-            <AlertDescription>
-              WEP is considered insecure and deprecated. Use WPA2/WPA3 if
-              possible.
-            </AlertDescription>
-          </Alert>
-        )}
-      </Stack>
-      <Inline align="center" gap="2">
-        <Checkbox
-          checked={wifiData.isHidden}
-          onCheckedChange={(c) => setWifiData({ isHidden: Boolean(c) })}
-          aria-label="Hidden network"
-        />
-        <Label>Hidden network</Label>
-      </Inline>
-    </Stack>
-  );
-};
-
-const CryptoFormPanel: React.FC<{
-  cryptoData: CryptoData;
-  setCryptoData: (data: Partial<CryptoData>) => void;
-}> = ({ cryptoData, setCryptoData }) => (
-  <Stack gap="3">
-    <Stack gap="2">
-      <Label htmlFor="crypto-currency">Cryptocurrency</Label>
-      <Select
-        id="crypto-currency"
-        value={cryptoData.currency}
-        onValueChange={(v) => setCryptoData({ currency: v as CryptoType })}
-        items={CRYPTO_OPTIONS}
-        aria-label="Cryptocurrency"
-      />
-    </Stack>
-    <Stack gap="2">
-      <Label htmlFor="crypto-key">Wallet address</Label>
-      <Input
-        id="crypto-key"
-        value={cryptoData.publicKey}
-        onChange={(v) => setCryptoData({ publicKey: v })}
-        placeholder={`Enter your ${cryptoData.currency} wallet address`}
-        leadingSlot={<IconWallet size="sm" />}
-      />
-    </Stack>
-    <Stack gap="2">
-      <Label htmlFor="crypto-amount">Amount (optional)</Label>
-      <Input
-        id="crypto-amount"
-        value={cryptoData.amount}
-        onChange={(v) => setCryptoData({ amount: v })}
-        placeholder="0.00"
-        leadingSlot={<IconBitcoin size="sm" />}
-      />
-    </Stack>
-    {cryptoData.publicKey && <Code block>{cryptoData.publicKey}</Code>}
-  </Stack>
-);
-
-const COLOR_PRESETS = [
-  { bg: '#FFFFFF', fg: '#000000', name: 'Classic' },
-  { bg: '#0F172A', fg: '#FFFFFF', name: 'Dark' },
-  { bg: '#FFFFFF', fg: '#10B981', name: 'Emerald' },
-  { bg: '#F0FDF4', fg: '#047857', name: 'Green' },
-  { bg: '#ECFDF5', fg: '#0D9488', name: 'Teal' },
-  { bg: '#FFFFFF', fg: '#0369A1', name: 'Blue' },
-];
 
 const QRCodeGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
@@ -344,6 +27,8 @@ const QRCodeGenerator: React.FC = () => {
 
   const {
     state,
+    finalData,
+    encryptionError,
     qrRef,
     setText,
     setSize,
@@ -365,42 +50,6 @@ const QRCodeGenerator: React.FC = () => {
     generateRandomSalt,
     handleDownloadQRCode,
   } = useQRCode();
-
-  const renderContentForm = () => {
-    switch (state.qrType) {
-      case 'url':
-      case 'text':
-        return (
-          <TextUrlForm
-            text={state.text}
-            setText={setText}
-            isUrl={state.qrType === 'url'}
-          />
-        );
-      case 'contact':
-        return (
-          <ContactForm
-            contactData={state.contactData}
-            setContactData={setContactData}
-          />
-        );
-      case 'wifi':
-        return (
-          <WifiFormPanel wifiData={state.wifiData} setWifiData={setWifiData} />
-        );
-      case 'crypto':
-        return (
-          <CryptoFormPanel
-            cryptoData={state.cryptoData}
-            setCryptoData={setCryptoData}
-          />
-        );
-      default:
-        return (
-          <TextUrlForm text={state.text} setText={setText} isUrl={false} />
-        );
-    }
-  };
 
   return (
     <Box className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -436,457 +85,51 @@ const QRCodeGenerator: React.FC = () => {
 
               <TabsContent value="content">
                 <Box className="pt-4">
-                  <Stack gap="4">
-                    <Stack gap="2">
-                      <Label>QR code type</Label>
-                      <Grid cols={{ base: 2, sm: 3 }} gap="2">
-                        {QR_TYPE_OPTIONS.map((t) => (
-                          <Button
-                            key={t.value}
-                            variant={
-                              state.qrType === t.value ? 'solid' : 'soft'
-                            }
-                            size="sm"
-                            leftIcon={t.icon}
-                            onClick={() => setQrType(t.value)}
-                            fullWidth
-                          >
-                            {t.label}
-                          </Button>
-                        ))}
-                      </Grid>
-                    </Stack>
-                    <Card>
-                      <CardBody>{renderContentForm()}</CardBody>
-                    </Card>
-                  </Stack>
+                  <ContentTab
+                    state={state}
+                    setText={setText}
+                    setQrType={setQrType}
+                    setContactData={setContactData}
+                    setWifiData={setWifiData}
+                    setCryptoData={setCryptoData}
+                  />
                 </Box>
               </TabsContent>
 
               <TabsContent value="appearance">
                 <Box className="pt-4">
                   <Stack gap="4">
-                    <Card>
-                      <CardBody>
-                        <Stack gap="3">
-                          <Inline justify="between" align="center">
-                            <Label>QR code size</Label>
-                            <Badge variant="soft" tone="accent" size="sm">
-                              {state.size}px
-                            </Badge>
-                          </Inline>
-                          <Slider
-                            value={state.size}
-                            onValueChange={(v) => setSize(v as number)}
-                            min={100}
-                            max={500}
-                            step={20}
-                            aria-label="QR size"
-                          />
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    <Card>
-                      <CardBody>
-                        <Stack gap="3">
-                          <Label>Colour presets</Label>
-                          <Grid cols={{ base: 3, sm: 6 }} gap="2">
-                            {COLOR_PRESETS.map((p) => (
-                              <Button
-                                key={p.name}
-                                variant={
-                                  p.bg === state.backgroundColor &&
-                                  p.fg === state.foregroundColor
-                                    ? 'solid'
-                                    : 'soft'
-                                }
-                                size="sm"
-                                onClick={() => {
-                                  setBackgroundColor(p.bg);
-                                  setForegroundColor(p.fg);
-                                }}
-                              >
-                                {p.name}
-                              </Button>
-                            ))}
-                          </Grid>
-                          <Grid cols={{ base: 1, md: 2 }} gap="3">
-                            <Stack gap="2">
-                              <Label htmlFor="bg-color">Background</Label>
-                              <Input
-                                id="bg-color"
-                                value={state.backgroundColor}
-                                onChange={setBackgroundColor}
-                                placeholder="#FFFFFF"
-                              />
-                            </Stack>
-                            <Stack gap="2">
-                              <Label htmlFor="fg-color">Foreground</Label>
-                              <Input
-                                id="fg-color"
-                                value={state.foregroundColor}
-                                onChange={setForegroundColor}
-                                placeholder="#000000"
-                              />
-                            </Stack>
-                          </Grid>
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    <Card>
-                      <CardBody>
-                        <Stack gap="3">
-                          <Label>Error correction</Label>
-                          <ButtonGroup>
-                            {ERROR_LEVELS.map((level) => (
-                              <Button
-                                key={level}
-                                variant={
-                                  state.errorCorrectionLevel === level
-                                    ? 'solid'
-                                    : 'soft'
-                                }
-                                size="sm"
-                                onClick={() => setErrorCorrectionLevel(level)}
-                              >
-                                {level} ({ERROR_LEVEL_PCT[level]})
-                              </Button>
-                            ))}
-                          </ButtonGroup>
-                          <Text size="xs" tone="subtle">
-                            Higher levels make the QR more resistant to damage
-                            but denser.
-                          </Text>
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    <Card>
-                      <CardBody>
-                        <Stack gap="3">
-                          <Label>Output format</Label>
-                          <ButtonGroup>
-                            <Button
-                              variant={
-                                state.renderAs === 'canvas' ? 'solid' : 'soft'
-                              }
-                              size="sm"
-                              onClick={() => setRenderAs('canvas')}
-                            >
-                              PNG
-                            </Button>
-                            <Button
-                              variant={
-                                state.renderAs === 'svg' ? 'solid' : 'soft'
-                              }
-                              size="sm"
-                              onClick={() => setRenderAs('svg')}
-                            >
-                              SVG
-                            </Button>
-                          </ButtonGroup>
-                          <Inline justify="between" align="center" wrap>
-                            <Stack gap="0">
-                              <Label htmlFor="include-margin">
-                                Include margin
-                              </Label>
-                              <Text size="xs" tone="subtle">
-                                Adds white space around the QR
-                              </Text>
-                            </Stack>
-                            <Switch
-                              id="include-margin"
-                              checked={state.includeMargin}
-                              onCheckedChange={setIncludeMargin}
-                            />
-                          </Inline>
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    <Card>
-                      <CardBody>
-                        <Stack gap="3">
-                          <Inline justify="between" align="center">
-                            <Inline align="center" gap="2">
-                              <IconFileImage size="sm" />
-                              <Label htmlFor="use-image">Logo / image</Label>
-                            </Inline>
-                            <Switch
-                              id="use-image"
-                              checked={state.useImage}
-                              onCheckedChange={setUseImage}
-                            />
-                          </Inline>
-                          {state.useImage && (
-                            <Stack gap="3">
-                              <Stack gap="2">
-                                <Label htmlFor="logo-url">Logo URL</Label>
-                                <Input
-                                  id="logo-url"
-                                  value={state.imageSettings.src}
-                                  onChange={(v) =>
-                                    setImageSettings({
-                                      ...state.imageSettings,
-                                      src: v,
-                                    })
-                                  }
-                                  placeholder="https://example.com/logo.png"
-                                />
-                              </Stack>
-                              <Grid cols={2} gap="3">
-                                <Stack gap="2">
-                                  <Label htmlFor="logo-width">Width (px)</Label>
-                                  <NumberInput
-                                    id="logo-width"
-                                    value={state.imageSettings.width}
-                                    onValueChange={(v) =>
-                                      setImageSettings({
-                                        ...state.imageSettings,
-                                        width: v ?? 10,
-                                      })
-                                    }
-                                    min={10}
-                                    max={state.size / 2}
-                                    aria-label="Logo width"
-                                  />
-                                </Stack>
-                                <Stack gap="2">
-                                  <Label htmlFor="logo-height">
-                                    Height (px)
-                                  </Label>
-                                  <NumberInput
-                                    id="logo-height"
-                                    value={state.imageSettings.height}
-                                    onValueChange={(v) =>
-                                      setImageSettings({
-                                        ...state.imageSettings,
-                                        height: v ?? 10,
-                                      })
-                                    }
-                                    min={10}
-                                    max={state.size / 2}
-                                    aria-label="Logo height"
-                                  />
-                                </Stack>
-                              </Grid>
-                              <Inline align="center" gap="2">
-                                <Checkbox
-                                  checked={state.imageSettings.excavate}
-                                  onCheckedChange={(c) =>
-                                    setImageSettings({
-                                      ...state.imageSettings,
-                                      excavate: Boolean(c),
-                                    })
-                                  }
-                                  aria-label="Excavate"
-                                />
-                                <Label>Excavate (clear QR behind logo)</Label>
-                              </Inline>
-                            </Stack>
-                          )}
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    <Accordion type="single">
-                      <AccordionItem value="advanced">
-                        <AccordionTrigger>
-                          <Inline align="center" gap="2">
-                            <IconSettings size="sm" />
-                            <Text weight="medium">
-                              Advanced technical settings
-                            </Text>
-                          </Inline>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <Stack gap="3">
-                            <Stack gap="2">
-                              <Label htmlFor="qr-version">
-                                QR version (0 for auto)
-                              </Label>
-                              <NumberInput
-                                id="qr-version"
-                                value={state.version}
-                                onValueChange={(v) => setVersion(v ?? 0)}
-                                min={0}
-                                max={40}
-                                aria-label="QR version"
-                              />
-                            </Stack>
-                            <Stack gap="2">
-                              <Label htmlFor="mask-pattern">
-                                Mask pattern (-1 for auto)
-                              </Label>
-                              <NumberInput
-                                id="mask-pattern"
-                                value={state.maskPattern}
-                                onValueChange={(v) => setMaskPattern(v ?? -1)}
-                                min={-1}
-                                max={7}
-                                aria-label="Mask pattern"
-                              />
-                            </Stack>
-                          </Stack>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                    <StylePanel
+                      state={state}
+                      setSize={setSize}
+                      setBackgroundColor={setBackgroundColor}
+                      setForegroundColor={setForegroundColor}
+                      setErrorCorrectionLevel={setErrorCorrectionLevel}
+                      setRenderAs={setRenderAs}
+                      setIncludeMargin={setIncludeMargin}
+                    />
+                    <LogoPanel
+                      state={state}
+                      setUseImage={setUseImage}
+                      setImageSettings={setImageSettings}
+                    />
+                    <AdvancedSettings
+                      state={state}
+                      setVersion={setVersion}
+                      setMaskPattern={setMaskPattern}
+                    />
                   </Stack>
                 </Box>
               </TabsContent>
 
               <TabsContent value="encryption">
                 <Box className="pt-4">
-                  <Stack gap="4">
-                    <Card>
-                      <CardBody>
-                        <Stack gap="3">
-                          <Inline align="center" gap="2">
-                            <IconShield size="md" />
-                            <Label>Encryption method</Label>
-                          </Inline>
-                          <Select
-                            value={state.encryptionConfig.type}
-                            onValueChange={(v) =>
-                              setEncryptionConfig({ type: v as EncryptionType })
-                            }
-                            items={ENCRYPTION_OPTIONS}
-                            aria-label="Encryption method"
-                          />
-                        </Stack>
-                      </CardBody>
-                    </Card>
-
-                    {state.encryptionConfig.type === 'none' ? (
-                      <Alert status="info" icon={<IconShieldOff />}>
-                        <AlertDescription>
-                          Your QR code data will not be encrypted. Anyone who
-                          scans it will be able to read its contents.
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <>
-                        <Card>
-                          <CardBody>
-                            <Stack gap="3">
-                              <Inline align="center" gap="2">
-                                <IconKey size="md" />
-                                <Label htmlFor="enc-key">Encryption key</Label>
-                              </Inline>
-                              <Input
-                                id="enc-key"
-                                value={state.encryptionConfig.key}
-                                onChange={(v) =>
-                                  setEncryptionConfig({ key: v })
-                                }
-                                placeholder="Enter a secret key"
-                              />
-                              <Text size="xs" tone="subtle">
-                                This key will be needed to decrypt the QR code.
-                              </Text>
-                              {(state.encryptionConfig.type === 'aes' ||
-                                state.encryptionConfig.type ===
-                                  'tripledes') && (
-                                <>
-                                  <Stack gap="2">
-                                    <Label htmlFor="enc-iv">
-                                      Initialization vector (IV)
-                                    </Label>
-                                    <Inline gap="2">
-                                      <Box className="min-w-0 flex-1">
-                                        <Input
-                                          id="enc-iv"
-                                          value={
-                                            state.encryptionConfig.iv ?? ''
-                                          }
-                                          onChange={(v) =>
-                                            setEncryptionConfig({ iv: v })
-                                          }
-                                          placeholder="16 characters"
-                                        />
-                                      </Box>
-                                      <Button
-                                        variant="soft"
-                                        leftIcon={<IconRefreshCw size="sm" />}
-                                        onClick={generateRandomIV}
-                                      >
-                                        Generate
-                                      </Button>
-                                    </Inline>
-                                  </Stack>
-                                  {state.encryptionConfig.type === 'aes' && (
-                                    <Stack gap="2">
-                                      <Inline align="center" gap="2">
-                                        <IconHash size="sm" />
-                                        <Label htmlFor="enc-salt">
-                                          Salt (optional)
-                                        </Label>
-                                      </Inline>
-                                      <Inline gap="2">
-                                        <Box className="min-w-0 flex-1">
-                                          <Input
-                                            id="enc-salt"
-                                            value={
-                                              state.encryptionConfig.salt ?? ''
-                                            }
-                                            onChange={(v) =>
-                                              setEncryptionConfig({ salt: v })
-                                            }
-                                            placeholder="8+ characters"
-                                          />
-                                        </Box>
-                                        <Button
-                                          variant="soft"
-                                          leftIcon={<IconRefreshCw size="sm" />}
-                                          onClick={generateRandomSalt}
-                                        >
-                                          Generate
-                                        </Button>
-                                      </Inline>
-                                    </Stack>
-                                  )}
-                                </>
-                              )}
-                            </Stack>
-                          </CardBody>
-                        </Card>
-
-                        <Alert status="warning" icon={<IconAlertTriangle />}>
-                          <AlertTitle>Important</AlertTitle>
-                          <AlertDescription>
-                            The recipient needs the same encryption method and
-                            key to decode this QR code. Keep your key secure and
-                            share it through a separate channel.
-                          </AlertDescription>
-                        </Alert>
-
-                        <Alert status="info" icon={<IconShield />}>
-                          {/* Not AlertDescription: a <p> can't hold block content. */}
-                          <Stack gap="1" className="mt-1 text-fg-muted">
-                            <Text size="sm" weight="semibold">
-                              Encryption details
-                            </Text>
-                            <List className="gap-1">
-                              <ListItem className="text-xs">
-                                AES-256 offers strongest security
-                              </ListItem>
-                              <ListItem className="text-xs">
-                                Triple DES is widely supported but slower
-                              </ListItem>
-                              <ListItem className="text-xs">
-                                RC4 is fast but has known vulnerabilities
-                              </ListItem>
-                              <ListItem className="text-xs">
-                                Rabbit balances speed and security
-                              </ListItem>
-                            </List>
-                          </Stack>
-                        </Alert>
-                      </>
-                    )}
-                  </Stack>
+                  <EncryptionTab
+                    encryptionConfig={state.encryptionConfig}
+                    setEncryptionConfig={setEncryptionConfig}
+                    generateRandomIV={generateRandomIV}
+                    generateRandomSalt={generateRandomSalt}
+                  />
                 </Box>
               </TabsContent>
             </Tabs>
@@ -895,115 +138,13 @@ const QRCodeGenerator: React.FC = () => {
       </Box>
 
       <Box className="min-w-0">
-        <Card>
-          <CardHeader>
-            <CardTitle as="h3">QR code preview</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <Stack gap="4" align="center">
-              <Card>
-                <CardBody>
-                  <Center>
-                    {state.isProcessing ? (
-                      <Stack gap="3" align="center">
-                        <Spinner size="lg" />
-                        <Text size="sm" tone="subtle">
-                          Processing…
-                        </Text>
-                      </Stack>
-                    ) : (
-                      <div ref={qrRef}>
-                        {state.renderAs === 'svg' ? (
-                          <QRCodeSVG
-                            value={state.finalData || ' '}
-                            size={state.size}
-                            bgColor={state.backgroundColor}
-                            fgColor={state.foregroundColor}
-                            level={state.errorCorrectionLevel}
-                            includeMargin={state.includeMargin}
-                            imageSettings={
-                              state.useImage && state.imageSettings.src
-                                ? state.imageSettings
-                                : undefined
-                            }
-                            minVersion={state.version > 0 ? state.version : 1}
-                          />
-                        ) : (
-                          <QRCodeCanvas
-                            value={state.finalData || ' '}
-                            size={state.size}
-                            bgColor={state.backgroundColor}
-                            fgColor={state.foregroundColor}
-                            level={state.errorCorrectionLevel}
-                            includeMargin={state.includeMargin}
-                            imageSettings={
-                              state.useImage && state.imageSettings.src
-                                ? state.imageSettings
-                                : undefined
-                            }
-                            minVersion={state.version > 0 ? state.version : 1}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </Center>
-                </CardBody>
-              </Card>
-              <Badge variant="soft" tone="neutral" size="sm">
-                {state.renderAs === 'svg' ? 'SVG format' : 'PNG format'}
-              </Badge>
-              <Button
-                onClick={handleDownloadQRCode}
-                variant="solid"
-                size="md"
-                fullWidth
-                leftIcon={<IconDownload size="md" />}
-              >
-                Download QR code
-              </Button>
-              <Alert status="info" icon={<IconInfo />}>
-                {/* Not AlertDescription: a <p> can't hold block content. */}
-                <Stack gap="1" className="mt-1 text-fg-muted">
-                  <Text size="sm">
-                    <Text as="span" weight="semibold">
-                      Error correction:
-                    </Text>{' '}
-                    {state.errorCorrectionLevel} (
-                    {ERROR_LEVEL_PCT[state.errorCorrectionLevel]})
-                  </Text>
-                  {state.encryptionConfig.type !== 'none' && (
-                    <Text size="sm">
-                      <Text as="span" weight="semibold">
-                        Encryption:
-                      </Text>{' '}
-                      {state.encryptionConfig.type.toUpperCase()}
-                    </Text>
-                  )}
-                </Stack>
-              </Alert>
-              <Card>
-                <CardHeader>
-                  <CardTitle as="h4">Tips</CardTitle>
-                </CardHeader>
-                <CardBody>
-                  <Stack gap="1">
-                    <List className="gap-1">
-                      <ListItem className="text-xs">
-                        Higher error correction improves scan reliability
-                      </ListItem>
-                      <ListItem className="text-xs">
-                        Ensure good contrast between foreground and background
-                      </ListItem>
-                      <ListItem className="text-xs">
-                        Test your QR code on multiple devices
-                      </ListItem>
-                    </List>
-                  </Stack>
-                </CardBody>
-              </Card>
-            </Stack>
-          </CardBody>
-        </Card>
+        <QrPreview
+          state={state}
+          finalData={finalData}
+          encryptionError={encryptionError}
+          qrRef={qrRef}
+          onDownload={handleDownloadQRCode}
+        />
       </Box>
     </Box>
   );

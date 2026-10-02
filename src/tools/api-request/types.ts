@@ -52,3 +52,6 @@ export interface FolderItemType {
 }
 
 export type CollectionType = FolderItemType;
+
+export type RequestTab = 'params' | 'headers' | 'body';
+export type ResponseTab = 'body' | 'headers';

@@ -4,7 +4,7 @@ import {
   utf8Encode,
 } from '@/shared/lib/encoding';
 import { ToolError } from '@/shared/lib/errors';
-import type { DecodedJWT } from '../types';
+import type { DecodedJWT, KeyInput } from '../types';
 
 type Family = 'HS' | 'RS' | 'PS' | 'ES' | 'Ed';
 
@@ -28,20 +28,6 @@ export const SUPPORTED_ALGS = [
   ),
   'EdDSA',
 ];
-
-export type SecretEncoding = 'text' | 'base64' | 'base64url';
-
-/**
- * What the user says they pasted. The kind is chosen explicitly, never
- * guessed from the text, so a public key can never be used as an HMAC
- * secret (algorithm confusion, CVE-2015-9235).
- */
-export type KeyInput =
-  | { kind: 'secret'; value: string; encoding: SecretEncoding }
-  | { kind: 'pem'; value: string }
-  | { kind: 'jwk'; value: string };
-
-export type KeyKind = KeyInput['kind'];
 
 export type VerifyResult = 'verified' | 'invalid' | 'unsigned';
 

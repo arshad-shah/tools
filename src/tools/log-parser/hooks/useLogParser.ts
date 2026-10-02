@@ -1,22 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  LogEntry,
-  LogType,
-  FilterCriteria,
-  LogCounts,
-  ViewMode,
-} from '../types';
-import {
-  parseLogsByType,
-  filterLogs,
-  countLogsByLevel,
-  createSampleLogs,
-} from '../lib/parse';
+import { useState, useCallback, useMemo } from 'react';
+import type { LogType, FilterCriteria, LogCounts, ViewMode } from '../types';
+import { parseLogsByType } from '../lib/parse';
+import { filterLogs, countLogsByLevel } from '../lib/filter';
+import { createSampleLogs } from '../lib/levels';
 
 export const useLogParser = () => {
   // Core state
   const [logText, setLogText] = useState<string>('');
-  const [parsedLogs, setParsedLogs] = useState<LogEntry[]>([]);
   const [logType, setLogType] = useState<LogType>('auto');
 
   // UI state
@@ -43,15 +33,11 @@ export const useLogParser = () => {
     end: undefined,
   });
 
-  // Parse logs whenever input text or log type changes
-  useEffect(() => {
-    if (logText.trim()) {
-      const logs = parseLogsByType(logText, logType);
-      setParsedLogs(logs);
-    } else {
-      setParsedLogs([]);
-    }
-  }, [logText, logType]);
+  // Parsed logs are derived from the input text and log type
+  const parsedLogs = useMemo(
+    () => (logText.trim() ? parseLogsByType(logText, logType) : []),
+    [logText, logType],
+  );
 
   // Apply filters to get filtered logs
   const filteredLogs = filterLogs(parsedLogs, {
@@ -78,7 +64,6 @@ export const useLogParser = () => {
   // Clear all logs
   const clearLogs = useCallback(() => {
     setLogText('');
-    setParsedLogs([]);
     setExpandedLogs({});
   }, []);
 
@@ -154,62 +139,5 @@ export const useLogParser = () => {
     resetFilters,
     loadSampleLogs,
     toggleLogExpanded,
-  };
-};
-
-// Hook for managing animations
-export const useAnimations = () => {
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.3, ease: 'easeOut' },
-    },
-  };
-
-  const fadeIn = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { duration: 0.2 },
-    },
-  };
-
-  const slideInLeft = {
-    hidden: { opacity: 0, x: -20 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: { duration: 0.3, ease: 'easeOut' },
-    },
-  };
-
-  const scaleIn = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.2, ease: 'easeOut' },
-    },
-  };
-
-  const staggerChildren = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1,
-      },
-    },
-  };
-
-  return {
-    fadeInUp,
-    fadeIn,
-    slideInLeft,
-    scaleIn,
-    staggerChildren,
   };
 };

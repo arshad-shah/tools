@@ -1,5 +1,5 @@
 import { base64UrlToBytes, utf8Decode } from '@/shared/lib/encoding';
-import { ToolError } from '@/shared/lib/errors';
+import { ToolError, toToolError } from '@/shared/lib/errors';
 import type { DecodedJWT, JWTHeader, JWTPayload } from '../types';
 
 /** Removes what usually surrounds a pasted token: `Bearer `, quotes, spaces. */
@@ -116,4 +116,25 @@ export function timeClaimsStatus(
   if (iat !== undefined && iat > nowSec + skewSec)
     return { state: 'issued-in-future', ...claims };
   return { state: 'current', ...claims };
+}
+
+export interface DecodeResult {
+  decoded: DecodedJWT | null;
+  error: string;
+}
+
+/**
+ * `decodeJwt` for render-time use: an empty input is no result and no error;
+ * a failure becomes its message instead of a throw.
+ */
+export function tryDecodeJwt(input: string): DecodeResult {
+  if (!input?.trim()) return { decoded: null, error: '' };
+  try {
+    return { decoded: decodeJwt(input), error: '' };
+  } catch (e) {
+    return {
+      decoded: null,
+      error: toToolError(e, 'Failed to decode the JWT').message,
+    };
+  }
 }

@@ -1,260 +1,36 @@
 import React, { useState } from 'react';
+import { IconPlusCircle, IconRefreshCw } from '@/shared/ui/icons';
+
 import {
-  IconArrowDown,
-  IconArrowUp,
-  IconChevronDown,
-  IconChevronRight,
-  IconCode,
-  IconDownload,
-  IconPlus,
-  IconPlusCircle,
-  IconRefreshCw,
-  IconTrash2,
-} from '@/shared/ui/icons';
-import {
-  Alert,
-  AlertDescription,
-  Badge,
-  Box,
   Button,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
-  Center,
-  Checkbox,
-  Code,
   Container,
   Grid,
-  IconButton,
-  Inline,
-  Input,
   Label,
   NumberInput,
-  Select,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Text,
 } from '@/shared/ui';
-import * as DataUtils from './lib/schema';
-import { FieldSchema, GeneratedDataItem } from './types';
-
-interface FieldEditorProps {
-  field: FieldSchema;
-  path: string;
-  index: number;
-  parentPath: string;
-  level: number;
-  expandedFields: { [key: string]: boolean };
-  totalFields: number;
-  onRemoveField: (path: string) => void;
-  onUpdateField: (path: string, updatedField: Partial<FieldSchema>) => void;
-  onMoveField: (path: string, direction: 'up' | 'down') => void;
-  onToggleExpanded: (path: string) => void;
-  onAddField: (parentPath?: string) => void;
-}
-
-const FieldEditor: React.FC<FieldEditorProps> = ({
-  field,
-  path,
-  index,
-  parentPath,
-  level,
-  expandedFields,
-  totalFields,
-  onRemoveField,
-  onUpdateField,
-  onMoveField,
-  onToggleExpanded,
-  onAddField,
-}) => {
-  const isObject = field.type === 'object';
-  const isArray = field.type === 'array';
-  const isNested = isObject || isArray;
-  const fullPath = parentPath ? `${parentPath}.${index}` : `${index}`;
-  const isExpanded = expandedFields[path] || false;
-
-  return (
-    <Card>
-      <CardBody>
-        <Stack gap="3">
-          <Inline justify="between" align="center" gap="2" wrap>
-            <Inline align="center" gap="2" wrap>
-              {isNested && (
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  label={isExpanded ? 'Collapse field' : 'Expand field'}
-                  icon={
-                    isExpanded ? (
-                      <IconChevronDown size="sm" />
-                    ) : (
-                      <IconChevronRight size="sm" />
-                    )
-                  }
-                  onClick={() => onToggleExpanded(path)}
-                />
-              )}
-              <Badge variant="soft" tone="accent" size="sm">
-                #{index + 1}
-              </Badge>
-              <Box className="min-w-0">
-                <Input
-                  value={field.name}
-                  onChange={(value) => onUpdateField(fullPath, { name: value })}
-                  placeholder="Field name"
-                  aria-label="Field name"
-                />
-              </Box>
-            </Inline>
-            <Inline gap="1">
-              {level === 0 && (
-                <>
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    label="Move up"
-                    icon={<IconArrowUp size="sm" />}
-                    disabled={index === 0}
-                    onClick={() => onMoveField(`${index}`, 'up')}
-                  />
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    label="Move down"
-                    icon={<IconArrowDown size="sm" />}
-                    disabled={index === totalFields - 1}
-                    onClick={() => onMoveField(`${index}`, 'down')}
-                  />
-                </>
-              )}
-              <IconButton
-                variant="danger"
-                size="sm"
-                label="Remove field"
-                icon={<IconTrash2 size="sm" />}
-                onClick={() => onRemoveField(fullPath)}
-              />
-            </Inline>
-          </Inline>
-
-          <Grid max={2} gap="3">
-            <Stack gap="2">
-              <Label>Data type</Label>
-              <Select
-                value={field.type}
-                onValueChange={(v) => onUpdateField(fullPath, { type: v })}
-                items={DataUtils.fieldTypes.map((t) => ({
-                  value: t.value,
-                  label: t.label,
-                }))}
-                aria-label="Data type"
-              />
-            </Stack>
-
-            {field.type === 'number' && (
-              <Inline gap="2">
-                <Stack gap="2" className="flex-1">
-                  <Label>Min</Label>
-                  <NumberInput
-                    value={field.min ?? 0}
-                    onValueChange={(v) =>
-                      onUpdateField(fullPath, { min: v ?? 0 })
-                    }
-                    aria-label="Minimum value"
-                  />
-                </Stack>
-                <Stack gap="2" className="flex-1">
-                  <Label>Max</Label>
-                  <NumberInput
-                    value={field.max ?? 100}
-                    onValueChange={(v) =>
-                      onUpdateField(fullPath, { max: v ?? 100 })
-                    }
-                    aria-label="Maximum value"
-                  />
-                </Stack>
-              </Inline>
-            )}
-
-            {field.type === 'array' && (
-              <Stack gap="2">
-                <Label>Array size</Label>
-                <NumberInput
-                  value={field.arraySize ?? 3}
-                  onValueChange={(v) =>
-                    onUpdateField(fullPath, { arraySize: v ?? 3 })
-                  }
-                  min={1}
-                  max={20}
-                  aria-label="Array size"
-                />
-              </Stack>
-            )}
-
-            <Inline align="center" gap="2">
-              <Checkbox
-                checked={field.required || false}
-                onCheckedChange={(c) =>
-                  onUpdateField(fullPath, { required: Boolean(c) })
-                }
-                aria-label="Required field"
-              />
-              <Label>Required field</Label>
-            </Inline>
-          </Grid>
-
-          <Text size="xs" tone="subtle" className="italic">
-            {DataUtils.fieldDescriptions[field.type] ||
-              'Field type description not available'}
-          </Text>
-
-          {isNested && isExpanded && (
-            <Stack gap="3" className="pl-4">
-              {field.fields?.map((nestedField, nestedIndex) => (
-                <FieldEditor
-                  key={`${path}.${nestedField.name}-${nestedIndex}`}
-                  field={nestedField}
-                  path={`${path}.${nestedField.name}`}
-                  index={nestedIndex}
-                  parentPath={`${fullPath}.fields`}
-                  level={level + 1}
-                  expandedFields={expandedFields}
-                  totalFields={field.fields?.length ?? 0}
-                  onRemoveField={onRemoveField}
-                  onUpdateField={onUpdateField}
-                  onMoveField={onMoveField}
-                  onToggleExpanded={onToggleExpanded}
-                  onAddField={onAddField}
-                />
-              ))}
-              <Button
-                variant="soft"
-                leftIcon={<IconPlus size="sm" />}
-                onClick={() => onAddField(path)}
-                fullWidth
-              >
-                Add field to {field.name}
-              </Button>
-            </Stack>
-          )}
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+import { saveBlob } from '@/shared/lib/download';
+import { DataPreview } from './components/DataPreview';
+import { FieldEditor } from './components/FieldEditor';
+import { defaultSchema } from './lib/field-types';
+import { dataToJsonBlob, generateData } from './lib/generate';
+import {
+  addField,
+  moveField,
+  removeField,
+  updateField,
+  withIds,
+} from './lib/schema';
+import type { FieldSchema, GeneratedDataItem } from './types';
 
 const RandomDataGenerator: React.FC = () => {
-  const [schema, setSchema] = useState<FieldSchema[]>(DataUtils.defaultSchema);
+  const [schema, setSchema] = useState<FieldSchema[]>(() =>
+    withIds(defaultSchema),
+  );
   const [count, setCount] = useState<number>(5);
   const [generatedData, setGeneratedData] = useState<
     GeneratedDataItem[] | null
@@ -262,35 +38,34 @@ const RandomDataGenerator: React.FC = () => {
   const [view, setView] = useState<'table' | 'json'>('table');
   const [expandedFields, setExpandedFields] = useState<{
     [key: string]: boolean;
-  }>({ address: true });
+  }>(() => {
+    // Keyed by field id; the default "address" object starts expanded.
+    const address = schema.find((f) => f.name === 'address');
+    return address?.id ? { [address.id]: true } : {};
+  });
 
   const toggleExpanded = (path: string) =>
     setExpandedFields((prev) => ({ ...prev, [path]: !prev[path] }));
 
   const handleAddField = (parentPath: string = '') =>
-    setSchema(DataUtils.addField(schema, parentPath));
+    setSchema(addField(schema, parentPath));
   const handleRemoveField = (path: string) =>
-    setSchema(DataUtils.removeField(schema, path));
+    setSchema(removeField(schema, path));
   const handleUpdateField = (
     path: string,
     updatedField: Partial<FieldSchema>,
-  ) => setSchema(DataUtils.updateField(schema, path, updatedField));
+  ) => setSchema(updateField(schema, path, updatedField));
   const handleMoveField = (path: string, direction: 'up' | 'down') =>
-    setSchema(DataUtils.moveField(schema, path, direction));
+    setSchema(moveField(schema, path, direction));
 
   const handleGenerate = () => {
-    setGeneratedData(DataUtils.generateData(schema, count));
+    setGeneratedData(generateData(schema, count));
   };
 
   const handleDownload = () => {
     if (!generatedData) return;
-    DataUtils.downloadJson(generatedData);
+    saveBlob(dataToJsonBlob(generatedData), 'generated-data.json');
   };
-
-  const flattenedData = generatedData
-    ? DataUtils.flattenData(generatedData)
-    : [];
-  const headers = generatedData ? DataUtils.getAllHeaders(flattenedData) : [];
 
   return (
     <Container size="full">
@@ -304,9 +79,8 @@ const RandomDataGenerator: React.FC = () => {
               <Stack gap="3">
                 {schema.map((field, index) => (
                   <FieldEditor
-                    key={`${field.name}-${index}`}
+                    key={field.id ?? index}
                     field={field}
-                    path={field.name}
                     index={index}
                     parentPath=""
                     level={0}
@@ -359,99 +133,12 @@ const RandomDataGenerator: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <Inline justify="between" align="center" wrap gap="2">
-              <CardTitle as="h3">Generated data</CardTitle>
-              <Inline gap="2">
-                <IconButton
-                  variant={view === 'json' ? 'solid' : 'soft'}
-                  size="sm"
-                  label="Toggle JSON view"
-                  icon={<IconCode size="sm" />}
-                  onClick={() => setView(view === 'json' ? 'table' : 'json')}
-                />
-                <IconButton
-                  variant="soft"
-                  size="sm"
-                  label="Download JSON"
-                  icon={<IconDownload size="sm" />}
-                  disabled={!generatedData}
-                  onClick={handleDownload}
-                />
-              </Inline>
-            </Inline>
-          </CardHeader>
-          <CardBody>
-            {!generatedData ? (
-              <Center className="py-10">
-                <Stack gap="2" align="center">
-                  <IconDownload size="2xl" />
-                  <Text size="sm" tone="subtle" className="text-center">
-                    No data generated yet. Define your schema and click
-                    Generate.
-                  </Text>
-                </Stack>
-              </Center>
-            ) : (
-              <Tabs
-                value={view}
-                onValueChange={(v) => setView(v as 'table' | 'json')}
-                variant="line"
-              >
-                <TabsList aria-label="View">
-                  <TabsTrigger value="table">Table</TabsTrigger>
-                  <TabsTrigger value="json">JSON</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="table">
-                  <Box className="pt-3">
-                    <Stack gap="2">
-                      <Alert status="info">
-                        <AlertDescription>
-                          Complex nested objects are shown as simplified strings
-                          in table view. Switch to JSON for full structure.
-                        </AlertDescription>
-                      </Alert>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            {headers.map((h) => (
-                              <TableHead key={h}>{h}</TableHead>
-                            ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {flattenedData.map((item, idx) => (
-                            <TableRow key={idx}>
-                              {headers.map((h) => (
-                                <TableCell key={h}>
-                                  {item[h] !== undefined
-                                    ? typeof item[h] === 'boolean'
-                                      ? item[h]
-                                        ? 'true'
-                                        : 'false'
-                                      : String(item[h])
-                                    : ''}
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </Stack>
-                  </Box>
-                </TabsContent>
-
-                <TabsContent value="json">
-                  <Box className="pt-3">
-                    <Code block>{JSON.stringify(generatedData, null, 2)}</Code>
-                  </Box>
-                </TabsContent>
-              </Tabs>
-            )}
-          </CardBody>
-        </Card>
+        <DataPreview
+          generatedData={generatedData}
+          view={view}
+          setView={setView}
+          onDownload={handleDownload}
+        />
       </Grid>
     </Container>
   );

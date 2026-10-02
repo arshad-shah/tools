@@ -53,7 +53,7 @@ const classifyValue = (raw: string): string => {
   return styles.string;
 };
 
-const CustomNode: React.FC<NodeProps<MainNode>> = ({ data }) => {
+export const CustomNode: React.FC<NodeProps<MainNode>> = ({ data }) => {
   const isPrimitive = data.type === 'primitive';
   const isArray = data.type === 'array';
   const Icon = isArray ? IconBrackets : isPrimitive ? IconHash : IconBraces;
@@ -103,5 +103,3 @@ const CustomNode: React.FC<NodeProps<MainNode>> = ({ data }) => {
     </div>
   );
 };
-
-export default CustomNode;

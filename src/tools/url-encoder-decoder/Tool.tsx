@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { IconCheck, IconCopy } from '@/shared/ui/icons';
+
 import {
   Alert,
   AlertDescription,
@@ -23,34 +24,16 @@ import {
   Textarea,
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
-
-type Mode = 'encode' | 'decode';
+import { codec, type Mode } from './lib/codec';
 
 const URLEncoderDecoder: React.FC = () => {
   const [inputText, setInputText] = useState('');
-  const [outputText, setOutputText] = useState('');
   const [mode, setMode] = useState<Mode>('encode');
-  const [error, setError] = useState('');
+  const { output: outputText, error } = useMemo(
+    () => codec(inputText, mode),
+    [inputText, mode],
+  );
   const { copied, copy } = useClipboard();
-
-  useEffect(() => {
-    if (!inputText) {
-      setOutputText('');
-      setError('');
-      return;
-    }
-    try {
-      setOutputText(
-        mode === 'encode'
-          ? encodeURIComponent(inputText)
-          : decodeURIComponent(inputText),
-      );
-      setError('');
-    } catch (err) {
-      setError((err as Error).message);
-      setOutputText('');
-    }
-  }, [inputText, mode]);
 
   const handleCopy = () => {
     if (outputText) void copy(outputText);
@@ -93,15 +76,7 @@ const URLEncoderDecoder: React.FC = () => {
             </Stack>
 
             <Inline gap="2" justify="end" wrap>
-              <Button
-                variant="soft"
-                size="sm"
-                onClick={() => {
-                  setInputText('');
-                  setOutputText('');
-                  setError('');
-                }}
-              >
+              <Button variant="soft" size="sm" onClick={() => setInputText('')}>
                 Clear
               </Button>
               <Button

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   IconAward,
   IconCheck,
@@ -6,6 +6,7 @@ import {
   IconHash,
   IconInfo,
 } from '@/shared/ui/icons';
+
 import {
   Alert,
   AlertDescription,
@@ -30,104 +31,23 @@ import {
   Text,
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
-
-type NumberKey = 'binary' | 'decimal' | 'hexadecimal' | 'octal';
-
-interface NumberType {
-  value: NumberKey;
-  label: string;
-  base: number;
-  regex: RegExp;
-  description: string;
-  uses: string[];
-}
-
-const NUMBER_TYPES: NumberType[] = [
-  {
-    value: 'binary',
-    label: 'Binary',
-    base: 2,
-    regex: /^[01]+$/,
-    description: 'Uses only 0 and 1. The foundation of all computing systems.',
-    uses: ['Computer circuits', 'Digital logic'],
-  },
-  {
-    value: 'decimal',
-    label: 'Decimal',
-    base: 10,
-    regex: /^[0-9]+$/,
-    description: 'Our standard numbering system, using digits 0–9.',
-    uses: ['Daily use', 'Mathematics'],
-  },
-  {
-    value: 'hexadecimal',
-    label: 'Hex',
-    base: 16,
-    regex: /^[0-9A-Fa-f]+$/,
-    description:
-      'Uses digits 0–9 and letters A–F. Common in programming and colour codes.',
-    uses: ['Memory addresses', 'Colour codes'],
-  },
-  {
-    value: 'octal',
-    label: 'Octal',
-    base: 8,
-    regex: /^[0-7]+$/,
-    description:
-      'Uses digits 0–7. Historically used in computing for file permissions.',
-    uses: ['UNIX permissions', 'Legacy systems'],
-  },
-];
-
-const SAMPLE_NUMBERS = [0, 1, 2, 5, 10, 15, 16, 31, 64, 128, 255];
+import { convertNumber, NUMBER_TYPES, SAMPLE_NUMBERS } from './lib/convert';
+import type { NumberKey } from './types';
 
 const NumberConverter: React.FC = () => {
   const [activeTab, setActiveTab] = useState('converter');
   const [inputValue, setInputValue] = useState('');
   const [inputType, setInputType] = useState<NumberKey>('decimal');
-  const [results, setResults] = useState<Record<NumberKey, string>>({
-    binary: '',
-    decimal: '',
-    hexadecimal: '',
-    octal: '',
-  });
-  const [error, setError] = useState('');
+  const currentType = NUMBER_TYPES.find((t) => t.value === inputType)!;
+  const { results, error } = useMemo(
+    () => convertNumber(inputValue, currentType),
+    [inputValue, currentType],
+  );
   const { copiedKey, copy } = useClipboard();
-
-  useEffect(() => {
-    if (!inputValue) {
-      setResults({ binary: '', decimal: '', hexadecimal: '', octal: '' });
-      setError('');
-      return;
-    }
-    const type = NUMBER_TYPES.find((t) => t.value === inputType)!;
-    if (!type.regex.test(inputValue)) {
-      setError(`Invalid ${type.label} format`);
-      return;
-    }
-    try {
-      const decimal = parseInt(inputValue, type.base);
-      if (Number.isNaN(decimal)) {
-        setError('Invalid number');
-        return;
-      }
-      setResults({
-        binary: decimal.toString(2),
-        decimal: decimal.toString(10),
-        hexadecimal: decimal.toString(16).toUpperCase(),
-        octal: decimal.toString(8),
-      });
-      setError('');
-    } catch {
-      setError('Conversion error');
-    }
-  }, [inputValue, inputType]);
 
   const handleCopy = (value: string, key: NumberKey) => {
     if (value) void copy(value, key);
   };
-
-  const currentType = NUMBER_TYPES.find((t) => t.value === inputType)!;
 
   return (
     <Card>

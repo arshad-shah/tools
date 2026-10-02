@@ -16,7 +16,7 @@ export interface DiffSegment {
 }
 
 export interface DiffViewMode {
-  id: string;
+  id: DiffViewModeId;
   name: string;
   icon: React.ReactNode;
 }
@@ -52,13 +52,16 @@ export interface UseIntelligentDiffReturn {
     leftText: string,
     rightText: string,
     settings: DiffSettings,
-    highlightMode?: 'character' | 'word' | 'line',
+    highlightMode?: HighlightMode,
   ) => void;
   debouncedCalculateDiff: (
     leftText: string,
     rightText: string,
     settings: DiffSettings,
-    highlightMode?: 'character' | 'word' | 'line',
+    highlightMode?: HighlightMode,
   ) => void;
   clearDiff: () => void;
 }
+
+export type DiffViewModeId = 'split' | 'unified' | 'inline';
+export type HighlightMode = 'character' | 'word' | 'line';

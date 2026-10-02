@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   IconActivity,
-  IconAlertCircle,
-  IconAlertTriangle,
-  IconCheckCircle,
-  IconChevronRight,
-  IconClock,
-  IconCopy,
-  IconCpu,
   IconDownload,
   IconFileText,
   IconFilter,
@@ -17,8 +10,8 @@ import {
   IconPanelRight,
   IconRefreshCw,
   IconSearch,
-  IconTrash2,
 } from '@/shared/ui/icons';
+
 import {
   Alert,
   AlertDescription,
@@ -30,7 +23,6 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  Code,
   Container,
   EmptyState,
   EmptyStateActions,
@@ -39,150 +31,22 @@ import {
   EmptyStateTitle,
   Grid,
   Heading,
-  IconButton,
   Inline,
-  Input,
-  Label,
-  SearchInput,
-  Select,
   Stack,
-  StatusDot,
   Tabs,
   TabsList,
   TabsTrigger,
   Text,
-  Textarea,
+  StatusDot,
 } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
+import { FilterBar } from './components/FilterBar';
+import { InputPanel } from './components/InputPanel';
+import { LogRow } from './components/LogRow';
 import { useLogParser } from './hooks/useLogParser';
-import { LogEntry, LogLevel, LogType } from './types';
-
-const LOG_TYPE_OPTIONS = [
-  { value: 'auto', label: 'Auto-detect' },
-  { value: 'spring', label: 'Spring Boot' },
-  { value: 'django', label: 'Django' },
-  { value: 'node', label: 'Node.js' },
-  { value: 'log4j', label: 'Log4j' },
-  { value: 'sql', label: 'SQL' },
-  { value: 'webpack', label: 'Webpack' },
-  { value: 'generic', label: 'Generic' },
-];
-
-const LEVEL_INFO: Record<
-  LogLevel,
-  {
-    label: string;
-    tone: 'danger' | 'warning' | 'accent' | 'neutral' | 'success';
-    icon: React.ReactNode;
-  }
-> = {
-  error: {
-    label: 'Error',
-    tone: 'danger',
-    icon: <IconAlertCircle size="sm" />,
-  },
-  warn: {
-    label: 'Warn',
-    tone: 'warning',
-    icon: <IconAlertTriangle size="sm" />,
-  },
-  info: {
-    label: 'Info',
-    tone: 'accent',
-    icon: <IconInfo size="sm" />,
-  },
-  debug: {
-    label: 'Debug',
-    tone: 'neutral',
-    icon: <IconCpu size="sm" />,
-  },
-  success: {
-    label: 'Success',
-    tone: 'success',
-    icon: <IconCheckCircle size="sm" />,
-  },
-};
-
-interface LogRowProps {
-  log: LogEntry;
-  copied: boolean;
-  onCopy: (text: string) => void;
-}
-
-const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
-  const [expanded, setExpanded] = useState(false);
-  const info = LEVEL_INFO[log.level];
-  return (
-    <Card>
-      <CardBody>
-        <Stack gap="2">
-          <Inline justify="between" align="center" gap="2" wrap>
-            <Inline align="center" gap="2" wrap>
-              <Badge variant="soft" tone={info.tone} size="sm" icon={info.icon}>
-                {info.label}
-              </Badge>
-              {log.timestamp && (
-                <Badge variant="soft" tone="neutral" size="xs">
-                  {log.timestamp}
-                </Badge>
-              )}
-              {log.component && (
-                <Badge variant="outline" tone="accent" size="xs">
-                  {log.component}
-                </Badge>
-              )}
-              {log.executionTime && (
-                <Badge variant="soft" tone="warning" size="xs">
-                  {log.executionTime}
-                </Badge>
-              )}
-            </Inline>
-            <Inline gap="1">
-              <IconButton
-                variant="ghost"
-                size="sm"
-                label="Copy raw line"
-                icon={<IconCopy size="sm" />}
-                onClick={() => onCopy(log.raw)}
-              />
-              {(log.details || log.raw !== log.message) && (
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  label={expanded ? 'Collapse' : 'Expand'}
-                  icon={
-                    <IconChevronRight
-                      size="sm"
-                      className={cn(
-                        'transition-transform duration-150',
-                        expanded && 'rotate-90',
-                      )}
-                    />
-                  }
-                  onClick={() => setExpanded((e) => !e)}
-                />
-              )}
-            </Inline>
-          </Inline>
-          <Text size="sm">{log.message}</Text>
-          {copied && (
-            <Text size="xs" tone="subtle">
-              Copied
-            </Text>
-          )}
-          {expanded && (
-            <Stack gap="2">
-              {log.details && <Code block>{log.details}</Code>}
-              <Code block>{log.raw}</Code>
-            </Stack>
-          )}
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+import { LEVEL_INFO } from './lib/level-info';
+import type { LogLevel } from './types';
 
 const LogParserTool: React.FC = () => {
   const {
@@ -227,55 +91,14 @@ const LogParserTool: React.FC = () => {
   };
 
   const inputPanel = (
-    <Card>
-      <CardHeader>
-        <Inline justify="between" align="center" wrap gap="2">
-          <Inline align="center" gap="2">
-            <IconFileText size="md" />
-            <CardTitle as="h3">Log input</CardTitle>
-          </Inline>
-          <Inline gap="2" wrap>
-            <Button
-              variant="soft"
-              size="sm"
-              leftIcon={<IconRefreshCw size="sm" />}
-              onClick={loadSampleLogs}
-            >
-              Load sample
-            </Button>
-            <Button
-              variant="soft"
-              size="sm"
-              leftIcon={<IconTrash2 size="sm" />}
-              disabled={!logText}
-              onClick={clearLogs}
-            >
-              Clear
-            </Button>
-          </Inline>
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <Stack gap="2">
-            <Label>Log type</Label>
-            <Select
-              value={logType}
-              onValueChange={(v) => setLogType(v as LogType)}
-              items={LOG_TYPE_OPTIONS}
-              aria-label="Log type"
-            />
-          </Stack>
-          <Textarea
-            value={logText}
-            onChange={setLogText}
-            placeholder="Paste log lines here…"
-            rows={12}
-            aria-label="Log text"
-          />
-        </Stack>
-      </CardBody>
-    </Card>
+    <InputPanel
+      logText={logText}
+      setLogText={setLogText}
+      logType={logType}
+      setLogType={setLogType}
+      loadSampleLogs={loadSampleLogs}
+      clearLogs={clearLogs}
+    />
   );
 
   const outputPanel = (
@@ -406,6 +229,7 @@ const LogParserTool: React.FC = () => {
           <Grid cols={{ base: 2, sm: 3, md: 5 }} gap="2">
             {(Object.keys(LEVEL_INFO) as LogLevel[]).map((level) => {
               const info = LEVEL_INFO[level];
+              const LevelIcon = info.icon;
               const isActive = activeFilters[level];
               const count = logCounts[level];
               return (
@@ -420,7 +244,7 @@ const LogParserTool: React.FC = () => {
                   <CardBody>
                     <Inline justify="between" align="center">
                       <Inline gap="2" align="center">
-                        {info.icon}
+                        <LevelIcon size="sm" />
                         <Text size="sm" weight="medium">
                           {info.label}
                         </Text>
@@ -437,70 +261,16 @@ const LogParserTool: React.FC = () => {
         )}
 
         {showFilters && (
-          <Card>
-            <CardHeader>
-              <Inline justify="between" align="center" wrap>
-                <Inline align="center" gap="2">
-                  <IconFilter size="md" />
-                  <CardTitle as="h3">Filters</CardTitle>
-                </Inline>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={!hasActiveFilters}
-                  onClick={resetFilters}
-                >
-                  Reset
-                </Button>
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              <Grid max={2} gap="3">
-                <Stack gap="2">
-                  <Label htmlFor="filter-search">Message search</Label>
-                  <SearchInput
-                    value={filter}
-                    onChange={setFilter}
-                    placeholder="Search in messages…"
-                  />
-                </Stack>
-                <Stack gap="2">
-                  <Label htmlFor="filter-component">Component</Label>
-                  <Input
-                    id="filter-component"
-                    value={searchComponent}
-                    onChange={setSearchComponent}
-                    placeholder="Filter by component…"
-                    leadingSlot={<IconCpu size="sm" />}
-                  />
-                </Stack>
-                <Stack gap="2">
-                  <Label htmlFor="filter-from">Time range start</Label>
-                  <Input
-                    id="filter-from"
-                    value={timeRange.start ?? ''}
-                    onChange={(v) =>
-                      setTimeRange({ ...timeRange, start: v || undefined })
-                    }
-                    placeholder="e.g. 12:00:00"
-                    leadingSlot={<IconClock size="sm" />}
-                  />
-                </Stack>
-                <Stack gap="2">
-                  <Label htmlFor="filter-to">Time range end</Label>
-                  <Input
-                    id="filter-to"
-                    value={timeRange.end ?? ''}
-                    onChange={(v) =>
-                      setTimeRange({ ...timeRange, end: v || undefined })
-                    }
-                    placeholder="e.g. 13:00:00"
-                    leadingSlot={<IconClock size="sm" />}
-                  />
-                </Stack>
-              </Grid>
-            </CardBody>
-          </Card>
+          <FilterBar
+            hasActiveFilters={hasActiveFilters}
+            resetFilters={resetFilters}
+            filter={filter}
+            setFilter={setFilter}
+            searchComponent={searchComponent}
+            setSearchComponent={setSearchComponent}
+            timeRange={timeRange}
+            setTimeRange={setTimeRange}
+          />
         )}
 
         {viewMode === 'split' ? (

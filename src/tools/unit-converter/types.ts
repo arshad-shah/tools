@@ -14,7 +14,7 @@ interface Category {
 }
 
 interface Conversion {
-  id: number;
+  id: string;
   category: string;
   categoryIcon: React.ReactNode;
   from: string;

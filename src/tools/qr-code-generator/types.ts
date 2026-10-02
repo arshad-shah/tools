@@ -1,5 +1,3 @@
-// types/qrTypes.ts
-
 export type QRCodeType =
   | 'url'
   | 'text'
@@ -63,6 +61,4 @@ export interface QRCodeState {
   encryptionConfig: EncryptionConfig;
   maskPattern: number;
   version: number;
-  finalData: string;
-  isProcessing: boolean;
 }

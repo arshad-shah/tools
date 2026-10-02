@@ -32,7 +32,7 @@ const validateCrypto = (): void => {
  * Generates a cryptographically secure random number between 0 and max (exclusive)
  * Using the method recommended by NIST SP 800-90A
  */
-export const getSecureRandomInRange = (max: number): number => {
+const getSecureRandomInRange = (max: number): number => {
   validateCrypto();
 
   if (!Number.isFinite(max) || max <= 0) {
@@ -114,65 +114,3 @@ export const secureShuffle = <T>(array: readonly T[]): T[] => {
 
   return shuffled;
 };
-
-/**
- * Generates a cryptographically secure random integer between min and max (inclusive)
- */
-export const getSecureRandomInt = (min: number, max: number): number => {
-  if (!Number.isInteger(min) || !Number.isInteger(max)) {
-    throw new Error('Min and max must be integers');
-  }
-
-  if (min > max) {
-    throw new Error('Min must be less than or equal to max');
-  }
-
-  const range = max - min + 1;
-  return min + getSecureRandomInRange(range);
-};
-
-/**
- * Generates an array of cryptographically secure random bytes
- */
-export const getSecureRandomBytes = (length: number): Uint8Array => {
-  validateCrypto();
-
-  if (!Number.isInteger(length) || length <= 0) {
-    throw new Error('Length must be a positive integer');
-  }
-
-  const bytes = new Uint8Array(length);
-  window.crypto.getRandomValues(bytes);
-  return bytes;
-};
-
-/**
- * Checks if a password contains a character from a specific set
- *
- * @param password The password to check
- * @param charset The character set to check against
- * @returns True if the password contains at least one character from the set
- */
-export function containsFromCharset(
-  password: string,
-  charset: string,
-): boolean {
-  return [...password].some((char) => charset.includes(char));
-}
-
-/**
- * Analyzes password composition
- *
- * @param password The password to analyze
- * @returns An object with the character composition
- */
-export function analyzePasswordComposition(
-  password: string,
-): Record<string, boolean> {
-  return {
-    hasUppercase: containsFromCharset(password, charSets.uppercase),
-    hasLowercase: containsFromCharset(password, charSets.lowercase),
-    hasNumbers: containsFromCharset(password, charSets.numbers),
-    hasSpecial: containsFromCharset(password, charSets.special),
-  };
-}

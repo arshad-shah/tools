@@ -1,19 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import {
-  IconChevronDown,
-  IconChevronRight,
   IconFilePlus,
-  IconFolder,
   IconFolderPlus,
   IconGlobe,
-  IconPlus,
   IconSave,
-  IconSend,
-  IconTrash2,
 } from '@/shared/ui/icons';
+
 import {
-  Badge,
   Box,
   Button,
   ButtonGroup,
@@ -21,13 +14,6 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  Center,
-  Code,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   EmptyState,
   EmptyStateActions,
   EmptyStateDescription,
@@ -35,25 +21,12 @@ import {
   EmptyStateTitle,
   IconButton,
   Inline,
-  Input,
-  Label,
-  Select,
-  Spinner,
   Stack,
-  Switch,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Text,
-  Textarea,
 } from '@/shared/ui';
 import {
-  BodyType,
-  FolderItemType,
-  HeaderType,
-  ParamType,
   RequestItemType,
+  RequestTab,
+  ResponseTab,
   ResponseType,
 } from './types';
 import { toToolError } from '@/shared/lib/errors';
@@ -63,173 +36,18 @@ import { useJob } from '@/shared/state/useJob';
 import { addCollection, addRequest, deleteNode } from './lib/collections';
 import { sendRequest, type RequestInput } from './lib/request';
 import { useApiCollections } from './store';
-
-const METHOD_OPTIONS = [
-  { value: 'GET', label: 'GET' },
-  { value: 'POST', label: 'POST' },
-  { value: 'PUT', label: 'PUT' },
-  { value: 'PATCH', label: 'PATCH' },
-  { value: 'DELETE', label: 'DELETE' },
-  { value: 'HEAD', label: 'HEAD' },
-  { value: 'OPTIONS', label: 'OPTIONS' },
-];
-
-const BODY_TYPE_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'json', label: 'JSON' },
-  { value: 'x-www-form-urlencoded', label: 'Form urlencoded' },
-  { value: 'form-data', label: 'Form data' },
-];
-
-const methodColor = (
-  method: string,
-): 'success' | 'warning' | 'accent' | 'danger' | 'neutral' => {
-  switch (method.toUpperCase()) {
-    case 'GET':
-      return 'success';
-    case 'POST':
-      return 'accent';
-    case 'PUT':
-      return 'warning';
-    case 'PATCH':
-      return 'warning';
-    case 'DELETE':
-      return 'danger';
-    default:
-      return 'neutral';
-  }
-};
-
-const statusColor = (
-  status: number,
-): 'success' | 'warning' | 'danger' | 'neutral' => {
-  if (status === 0) return 'danger';
-  if (status >= 500) return 'danger';
-  if (status >= 400) return 'warning';
-  if (status >= 200 && status < 300) return 'success';
-  return 'neutral';
-};
-
-interface CollectionItemProps {
-  item: RequestItemType | FolderItemType;
-  depth: number;
-  selectedRequest: string | null;
-  onSelectRequest: (req: RequestItemType) => void;
-  onDelete: (id: string, type: 'folder' | 'request') => void;
-}
-
-const CollectionItem: React.FC<CollectionItemProps> = ({
-  item,
-  depth,
-  selectedRequest,
-  onSelectRequest,
-  onDelete,
-}) => {
-  const [open, setOpen] = useState(true);
-  if (item.type === 'folder') {
-    return (
-      <Stack gap="1">
-        <Inline
-          align="center"
-          gap="2"
-          // data-driven: tree depth
-          style={{ paddingLeft: depth * 12 }}
-        >
-          <IconButton
-            variant="ghost"
-            size="sm"
-            label={open ? 'Collapse' : 'Expand'}
-            icon={
-              open ? (
-                <IconChevronDown size="sm" />
-              ) : (
-                <IconChevronRight size="sm" />
-              )
-            }
-            onClick={() => setOpen(!open)}
-          />
-          <IconFolder size="sm" />
-          <Text size="sm" weight="medium">
-            {item.name}
-          </Text>
-          <Box className="flex-1" />
-          <IconButton
-            variant="ghost"
-            size="sm"
-            label="Delete folder"
-            icon={<IconTrash2 size="xs" />}
-            onClick={() => onDelete(item.id, 'folder')}
-          />
-        </Inline>
-        {open && (
-          <Stack gap="1">
-            {item.children.map((child) => (
-              <CollectionItem
-                key={child.id}
-                item={child}
-                depth={depth + 1}
-                selectedRequest={selectedRequest}
-                onSelectRequest={onSelectRequest}
-                onDelete={onDelete}
-              />
-            ))}
-          </Stack>
-        )}
-      </Stack>
-    );
-  }
-
-  const req = item as RequestItemType;
-  const isSelected = selectedRequest === req.id;
-  return (
-    <Card
-      interactive
-      onClick={() => onSelectRequest(req)}
-      className={isSelected ? 'border-accent' : undefined}
-      // data-driven: tree depth
-      style={{ marginLeft: depth * 12 }}
-    >
-      <CardBody>
-        <Inline justify="between" align="center" gap="2" wrap>
-          <Inline align="center" gap="2">
-            <Badge variant="solid" tone={methodColor(req.method)} size="xs">
-              {req.method}
-            </Badge>
-            <Text size="sm" weight="medium" className="truncate">
-              {req.name}
-            </Text>
-          </Inline>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            label="Delete request"
-            icon={<IconTrash2 size="xs" />}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(req.id, 'request');
-            }}
-          />
-        </Inline>
-      </CardBody>
-    </Card>
-  );
-};
+import { useRequestDraft } from './hooks/useRequestDraft';
+import { CollectionTree } from './components/CollectionTree';
+import { NewCollectionDialog } from './components/NewCollectionDialog';
+import { RequestForm } from './components/RequestForm';
+import { ResponsePanel } from './components/ResponsePanel';
+import { SaveRequestDialog } from './components/SaveRequestDialog';
 
 const ApiTester: React.FC = () => {
   // Request state
-  const [requestType, setRequestType] = useState<'rest' | 'graphql'>('rest');
-  const [method, setMethod] = useState<string>('GET');
-  const [url, setUrl] = useState<string>('');
-  const [headers, setHeaders] = useState<HeaderType[]>([
-    { key: '', value: '' },
-  ]);
-  const [params, setParams] = useState<ParamType[]>([
-    { key: '', value: '', enabled: true },
-  ]);
-  const [bodyType, setBodyType] = useState<BodyType>('none');
-  const [body, setBody] = useState<string>('');
-  const [graphqlQuery, setGraphqlQuery] = useState<string>('');
-  const [graphqlVariables, setGraphqlVariables] = useState<string>('');
+  const editor = useRequestDraft();
+  const { draft } = editor;
+  const { requestType } = draft;
 
   // Response state
   const job = useJob((ctx, input: RequestInput) =>
@@ -254,78 +72,22 @@ const ApiTester: React.FC = () => {
     useState<boolean>(false);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
-  const [activeRequestTab, setActiveRequestTab] = useState<
-    'params' | 'headers' | 'body'
-  >('params');
-  const [activeResponseTab, setActiveResponseTab] = useState<
-    'body' | 'headers'
-  >('body');
+  const [activeRequestTab, setActiveRequestTab] =
+    useState<RequestTab>('params');
+  const [activeResponseTab, setActiveResponseTab] =
+    useState<ResponseTab>('body');
 
   const collections = useApiCollections((s) => s.collections);
   const { setCollections } = useApiCollections.getState();
 
-  // Header helpers
-  const addHeader = () => setHeaders([...headers, { key: '', value: '' }]);
-  const removeHeader = (i: number) => {
-    const next = [...headers];
-    next.splice(i, 1);
-    setHeaders(next);
-  };
-  const updateHeader = (i: number, field: 'key' | 'value', value: string) => {
-    const next = [...headers];
-    next[i] = { ...next[i], [field]: value };
-    setHeaders(next);
-  };
-
-  // Param helpers
-  const addParam = () =>
-    setParams([...params, { key: '', value: '', enabled: true }]);
-  const removeParam = (i: number) => {
-    const next = [...params];
-    next.splice(i, 1);
-    setParams(next);
-  };
-  const updateParam = (i: number, field: keyof ParamType, value: any) => {
-    const next = [...params];
-    next[i] = { ...next[i], [field]: value };
-    setParams(next);
-  };
-
   const handleSend = async () => {
-    const result = await job.run({
-      requestType,
-      method,
-      url,
-      params,
-      headers,
-      bodyType,
-      body,
-      graphqlQuery,
-      graphqlVariables,
-    });
+    const result = await job.run(draft);
     if (result) setResponse(result);
   };
 
   const handleSelectRequest = (req: RequestItemType) => {
     setSelectedRequest(req.id);
-    if (req.requestType) setRequestType(req.requestType as 'rest' | 'graphql');
-    setMethod(req.method);
-    setUrl(req.url);
-    setHeaders(
-      req.headers && Array.isArray(req.headers) && req.headers.length > 0
-        ? [...req.headers]
-        : [{ key: '', value: '' }],
-    );
-    setParams(
-      req.params && Array.isArray(req.params) && req.params.length > 0
-        ? [...req.params]
-        : [{ key: '', value: '', enabled: true }],
-    );
-    if (req.bodyType) setBodyType(req.bodyType as BodyType);
-    if (req.body !== undefined) setBody(req.body);
-    if (req.graphqlQuery !== undefined) setGraphqlQuery(req.graphqlQuery);
-    if (req.graphqlVariables !== undefined)
-      setGraphqlVariables(req.graphqlVariables);
+    editor.load(req);
   };
 
   const handleSaveRequest = () => {
@@ -338,15 +100,15 @@ const ApiTester: React.FC = () => {
       id: newId(),
       type: 'request',
       name: saveName,
-      method,
-      url,
+      method: draft.method,
+      url: draft.url,
       requestType,
-      headers: [...headers],
-      params: [...params],
-      bodyType,
-      body,
-      graphqlQuery,
-      graphqlVariables,
+      headers: [...draft.headers],
+      params: [...draft.params],
+      bodyType: draft.bodyType,
+      body: draft.body,
+      graphqlQuery: draft.graphqlQuery,
+      graphqlVariables: draft.graphqlVariables,
       createdAt: now,
       updatedAt: now,
     };
@@ -384,14 +146,7 @@ const ApiTester: React.FC = () => {
       requestType: 'rest',
     };
     setCollections(addRequest(collections, collections[0].id, newReq));
-    setMethod('GET');
-    setUrl('');
-    setHeaders([{ key: '', value: '' }]);
-    setParams([{ key: '', value: '', enabled: true }]);
-    setBodyType('none');
-    setBody('');
-    setGraphqlQuery('');
-    setGraphqlVariables('');
+    editor.reset();
     setSelectedRequest(newReq.id);
   };
 
@@ -400,289 +155,6 @@ const ApiTester: React.FC = () => {
     setCollections(deleteNode(collections, id));
     if (selectedRequest === id) setSelectedRequest(null);
   };
-
-  const renderResponse = () => {
-    if (isLoading) {
-      return (
-        <Center className="py-10">
-          <Stack gap="3" align="center">
-            <Spinner size="lg" />
-            <Text size="sm" tone="subtle">
-              Sending request…
-            </Text>
-          </Stack>
-        </Center>
-      );
-    }
-    if (!response) {
-      return (
-        <EmptyState>
-          <EmptyStateIcon>
-            <IconSend size="2xl" />
-          </EmptyStateIcon>
-          <EmptyStateTitle>No response yet</EmptyStateTitle>
-          <EmptyStateDescription>
-            Send a request to see the response here.
-          </EmptyStateDescription>
-        </EmptyState>
-      );
-    }
-    return (
-      <Stack gap="3">
-        <Inline justify="between" align="center" wrap gap="2">
-          <Inline gap="2" align="center">
-            <Badge
-              variant="solid"
-              tone={statusColor(response.status)}
-              size="md"
-            >
-              {response.status} {response.statusText}
-            </Badge>
-            <Badge variant="soft" tone="neutral" size="sm">
-              {response.time}ms
-            </Badge>
-          </Inline>
-        </Inline>
-        <Tabs
-          value={activeResponseTab}
-          onValueChange={(v) => setActiveResponseTab(v as 'body' | 'headers')}
-          variant="line"
-        >
-          <TabsList aria-label="Response">
-            <TabsTrigger value="body">Body</TabsTrigger>
-            <TabsTrigger value="headers">
-              <Inline gap="2" align="center">
-                <span>Headers</span>
-                <Badge variant="soft" tone="neutral" size="xs">
-                  {Object.keys(response.headers).length}
-                </Badge>
-              </Inline>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="body">
-            <Box className="pt-3">
-              <Code block>
-                {typeof response.data === 'string'
-                  ? response.data
-                  : JSON.stringify(response.data, null, 2)}
-              </Code>
-            </Box>
-          </TabsContent>
-          <TabsContent value="headers">
-            <Box className="pt-3">
-              <Stack gap="1">
-                {Object.entries(response.headers).map(([k, v]) => (
-                  <Inline key={k} justify="between" align="start" gap="2" wrap>
-                    <Text size="sm" weight="medium">
-                      {k}
-                    </Text>
-                    <Code>{v}</Code>
-                  </Inline>
-                ))}
-              </Stack>
-            </Box>
-          </TabsContent>
-        </Tabs>
-      </Stack>
-    );
-  };
-
-  const requestForm = (
-    <Stack gap="4">
-      <Inline gap="2" align="center" wrap>
-        <Box className="min-w-32">
-          <Select
-            value={method}
-            onValueChange={setMethod}
-            items={METHOD_OPTIONS}
-            aria-label="HTTP method"
-          />
-        </Box>
-        <Box className="min-w-0 flex-1">
-          <Input
-            value={url}
-            onChange={setUrl}
-            placeholder="https://api.example.com/endpoint"
-            leadingSlot={<IconGlobe size="sm" />}
-            aria-label="Request URL"
-          />
-        </Box>
-        <Button
-          variant="solid"
-          loading={isLoading}
-          leftIcon={<IconSend size="sm" />}
-          onClick={() => void handleSend()}
-        >
-          Send
-        </Button>
-        {isLoading && (
-          <Button variant="soft" onClick={job.cancel}>
-            Cancel
-          </Button>
-        )}
-      </Inline>
-
-      <Tabs
-        value={activeRequestTab}
-        onValueChange={(v) =>
-          setActiveRequestTab(v as 'params' | 'headers' | 'body')
-        }
-        variant="line"
-      >
-        <TabsList aria-label="Request sections">
-          <TabsTrigger value="params">Params</TabsTrigger>
-          <TabsTrigger value="headers">Headers</TabsTrigger>
-          <TabsTrigger value="body">
-            {requestType === 'graphql' ? 'GraphQL' : 'Body'}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="params">
-          <Box className="pt-3">
-            <Stack gap="2">
-              {params.map((p, idx) => (
-                <Inline key={idx} gap="2" align="center" wrap>
-                  <Switch
-                    checked={p.enabled}
-                    onCheckedChange={(c) => updateParam(idx, 'enabled', c)}
-                    aria-label="Enabled"
-                  />
-                  <Box className="min-w-0 flex-1">
-                    <Input
-                      value={p.key}
-                      onChange={(v) => updateParam(idx, 'key', v)}
-                      placeholder="Key"
-                    />
-                  </Box>
-                  <Box className="min-w-0 flex-1">
-                    <Input
-                      value={p.value}
-                      onChange={(v) => updateParam(idx, 'value', v)}
-                      placeholder="Value"
-                    />
-                  </Box>
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    label="Remove parameter"
-                    icon={<IconTrash2 size="sm" />}
-                    onClick={() => removeParam(idx)}
-                  />
-                </Inline>
-              ))}
-              <Button
-                variant="soft"
-                size="sm"
-                leftIcon={<IconPlus size="sm" />}
-                onClick={addParam}
-              >
-                Add parameter
-              </Button>
-            </Stack>
-          </Box>
-        </TabsContent>
-
-        <TabsContent value="headers">
-          <Box className="pt-3">
-            <Stack gap="2">
-              {headers.map((h, idx) => (
-                <Inline key={idx} gap="2" align="center" wrap>
-                  <Box className="min-w-0 flex-1">
-                    <Input
-                      value={h.key}
-                      onChange={(v) => updateHeader(idx, 'key', v)}
-                      placeholder="Header"
-                    />
-                  </Box>
-                  <Box className="min-w-0 flex-1">
-                    <Input
-                      value={h.value}
-                      onChange={(v) => updateHeader(idx, 'value', v)}
-                      placeholder="Value"
-                    />
-                  </Box>
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    label="Remove header"
-                    icon={<IconTrash2 size="sm" />}
-                    onClick={() => removeHeader(idx)}
-                  />
-                </Inline>
-              ))}
-              <Button
-                variant="soft"
-                size="sm"
-                leftIcon={<IconPlus size="sm" />}
-                onClick={addHeader}
-              >
-                Add header
-              </Button>
-            </Stack>
-          </Box>
-        </TabsContent>
-
-        <TabsContent value="body">
-          <Box className="pt-3">
-            {requestType === 'graphql' ? (
-              <Stack gap="3">
-                <Stack gap="2">
-                  <Label>Query</Label>
-                  <Textarea
-                    value={graphqlQuery}
-                    onChange={setGraphqlQuery}
-                    placeholder={'query {\n  users { id name }\n}'}
-                    rows={8}
-                    aria-label="GraphQL query"
-                  />
-                </Stack>
-                <Stack gap="2">
-                  <Label>Variables (JSON)</Label>
-                  <Textarea
-                    value={graphqlVariables}
-                    onChange={setGraphqlVariables}
-                    placeholder='{ "id": 1 }'
-                    rows={4}
-                    aria-label="GraphQL variables"
-                  />
-                </Stack>
-              </Stack>
-            ) : (
-              <Stack gap="3">
-                <Stack gap="2">
-                  <Label>Body type</Label>
-                  <Select
-                    value={bodyType}
-                    onValueChange={(v) => setBodyType(v as BodyType)}
-                    items={BODY_TYPE_OPTIONS}
-                    aria-label="Body type"
-                  />
-                </Stack>
-                {bodyType !== 'none' && (
-                  <Stack gap="2">
-                    <Label>Body</Label>
-                    <Textarea
-                      value={body}
-                      onChange={setBody}
-                      placeholder={
-                        bodyType === 'json'
-                          ? '{\n  "key": "value"\n}'
-                          : bodyType === 'x-www-form-urlencoded'
-                            ? 'key=value&another=value'
-                            : 'Body content…'
-                      }
-                      rows={8}
-                      aria-label="Request body"
-                    />
-                  </Stack>
-                )}
-              </Stack>
-            )}
-          </Box>
-        </TabsContent>
-      </Tabs>
-    </Stack>
-  );
 
   return (
     <Box className="w-full">
@@ -716,24 +188,12 @@ const ApiTester: React.FC = () => {
                 </Inline>
               </CardHeader>
               <CardBody>
-                <Stack gap="2">
-                  {collections.length === 0 ? (
-                    <Text size="sm" tone="subtle" className="text-center">
-                      No collections yet. Click + to create one.
-                    </Text>
-                  ) : (
-                    collections.map((c) => (
-                      <CollectionItem
-                        key={c.id}
-                        item={c}
-                        depth={0}
-                        selectedRequest={selectedRequest}
-                        onSelectRequest={handleSelectRequest}
-                        onDelete={handleDelete}
-                      />
-                    ))
-                  )}
-                </Stack>
+                <CollectionTree
+                  collections={collections}
+                  selectedRequest={selectedRequest}
+                  onSelectRequest={handleSelectRequest}
+                  onDelete={handleDelete}
+                />
               </CardBody>
             </Card>
           </Box>
@@ -746,14 +206,14 @@ const ApiTester: React.FC = () => {
                 <Button
                   variant={requestType === 'rest' ? 'solid' : 'soft'}
                   size="sm"
-                  onClick={() => setRequestType('rest')}
+                  onClick={() => editor.setField('requestType', 'rest')}
                 >
                   REST
                 </Button>
                 <Button
                   variant={requestType === 'graphql' ? 'solid' : 'soft'}
                   size="sm"
-                  onClick={() => setRequestType('graphql')}
+                  onClick={() => editor.setField('requestType', 'graphql')}
                 >
                   GraphQL
                 </Button>
@@ -783,13 +243,29 @@ const ApiTester: React.FC = () => {
                   <CardHeader>
                     <CardTitle as="h3">Request</CardTitle>
                   </CardHeader>
-                  <CardBody>{requestForm}</CardBody>
+                  <CardBody>
+                    <RequestForm
+                      editor={editor}
+                      isLoading={isLoading}
+                      onSend={() => void handleSend()}
+                      onCancel={job.cancel}
+                      activeRequestTab={activeRequestTab}
+                      setActiveRequestTab={setActiveRequestTab}
+                    />
+                  </CardBody>
                 </Card>
                 <Card>
                   <CardHeader>
                     <CardTitle as="h3">Response</CardTitle>
                   </CardHeader>
-                  <CardBody>{renderResponse()}</CardBody>
+                  <CardBody>
+                    <ResponsePanel
+                      isLoading={isLoading}
+                      response={response}
+                      activeResponseTab={activeResponseTab}
+                      setActiveResponseTab={setActiveResponseTab}
+                    />
+                  </CardBody>
                 </Card>
               </Stack>
             ) : (
@@ -821,80 +297,24 @@ const ApiTester: React.FC = () => {
         </Box>
       </Box>
 
-      <Dialog
+      <SaveRequestDialog
         open={saveModalOpen}
-        onOpenChange={(open) => setSaveModalOpen(open)}
-      >
-        <DialogHeader>
-          <DialogTitle>Save request</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <Stack gap="3">
-            <Stack gap="2">
-              <Label htmlFor="save-name">Name</Label>
-              <Input
-                id="save-name"
-                value={saveName}
-                onChange={setSaveName}
-                placeholder="My request"
-              />
-            </Stack>
-            <Stack gap="2">
-              <Label>Collection</Label>
-              <Select
-                value={selectedCollectionId}
-                onValueChange={setSelectedCollectionId}
-                items={[
-                  { value: '', label: 'Select a collection' },
-                  ...collections.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                aria-label="Collection"
-              />
-            </Stack>
-          </Stack>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="soft" onClick={() => setSaveModalOpen(false)}>
-            Cancel
-          </Button>
-          <Button variant="solid" onClick={handleSaveRequest}>
-            Save
-          </Button>
-        </DialogFooter>
-      </Dialog>
+        onOpenChange={setSaveModalOpen}
+        saveName={saveName}
+        setSaveName={setSaveName}
+        selectedCollectionId={selectedCollectionId}
+        setSelectedCollectionId={setSelectedCollectionId}
+        collections={collections}
+        onSave={handleSaveRequest}
+      />
 
-      <Dialog
+      <NewCollectionDialog
         open={newCollectionModalOpen}
-        onOpenChange={(open) => setNewCollectionModalOpen(open)}
-      >
-        <DialogHeader>
-          <DialogTitle>New collection</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <Stack gap="3">
-            <Stack gap="2">
-              <Label htmlFor="coll-name">Name</Label>
-              <Input
-                id="coll-name"
-                value={newCollectionName}
-                onChange={setNewCollectionName}
-                placeholder="My collection"
-              />
-            </Stack>
-          </Stack>
-        </DialogBody>
-        <DialogFooter>
-          <Button
-            variant="soft"
-            onClick={() => setNewCollectionModalOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button variant="solid" onClick={handleCreateCollection}>
-            Create
-          </Button>
-        </DialogFooter>
-      </Dialog>
+        onOpenChange={setNewCollectionModalOpen}
+        newCollectionName={newCollectionName}
+        setNewCollectionName={setNewCollectionName}
+        onCreate={handleCreateCollection}
+      />
     </Box>
   );
 };

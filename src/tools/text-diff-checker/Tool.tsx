@@ -1,145 +1,29 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  IconAlertTriangle,
-  IconArrowRightLeft,
-  IconBarChart2,
-  IconCheck,
-  IconCode,
-  IconCopy,
-  IconDownload,
-  IconFileUp,
-  IconMoveRight,
-  IconPlay,
-  IconRotateCcw,
-  IconSparkles,
-  IconSplit,
-  IconTrash,
-} from '@/shared/ui/icons';
-import * as Diff from 'diff';
-import {
-  Alert,
-  AlertDescription,
-  Badge,
-  Box,
-  Button,
-  ButtonGroup,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Center,
-  FilePicker,
-  Grid,
-  Heading,
-  IconButton,
-  Inline,
-  Spinner,
-  Stack,
-  Text,
-  Textarea,
-} from '@/shared/ui';
-import { DiffSegment, DiffViewMode } from './types';
+import { IconAlertTriangle } from '@/shared/ui/icons';
+
+import { Alert, AlertDescription, FilePicker, Grid, Stack } from '@/shared/ui';
+import type { DiffViewModeId, HighlightMode } from './types';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
-import { loadDiffFile, TEXT_ACCEPT } from './textFile';
+import { loadDiffFile, TEXT_ACCEPT } from './lib/text-file';
+import { buildDiffExport } from './lib/export';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
 import useDiffSettings from './hooks/useDiffSettings';
 import useIntelligentDiff from './hooks/useIntelligentDiff';
-
-const VIEW_MODES: DiffViewMode[] = [
-  { id: 'split', name: 'Split', icon: <IconSplit size="sm" /> },
-  { id: 'unified', name: 'Unified', icon: <IconMoveRight size="sm" /> },
-  { id: 'inline', name: 'Inline', icon: <IconCode size="sm" /> },
-];
-
-interface DiffTextAreaProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  label: string;
-  disabled?: boolean;
-  onFileUpload?: () => void;
-  onCopy?: () => void;
-  onClear?: () => void;
-}
-
-const DiffTextArea: React.FC<DiffTextAreaProps> = ({
-  value,
-  onChange,
-  placeholder,
-  label,
-  disabled,
-  onFileUpload,
-  onCopy,
-  onClear,
-}) => (
-  <Card>
-    <CardHeader>
-      <Inline justify="between" align="center" wrap gap="2">
-        <Inline align="center" gap="2">
-          <IconSparkles size="sm" />
-          <CardTitle as="h3">{label}</CardTitle>
-        </Inline>
-        <Inline gap="1">
-          {onFileUpload && (
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Upload file"
-              disabled={disabled}
-              icon={<IconFileUp size="sm" />}
-              onClick={onFileUpload}
-            />
-          )}
-          {onCopy && (
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Copy"
-              disabled={!value || disabled}
-              icon={<IconCopy size="sm" />}
-              onClick={onCopy}
-            />
-          )}
-          {onClear && (
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Clear"
-              disabled={!value || disabled}
-              icon={<IconRotateCcw size="sm" />}
-              onClick={onClear}
-            />
-          )}
-        </Inline>
-      </Inline>
-    </CardHeader>
-    <CardBody>
-      <Textarea
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={12}
-        spellCheck={false}
-        aria-label={label}
-      />
-    </CardBody>
-  </Card>
-);
+import { DiffResults } from './components/DiffResults';
+import { DiffSettingsPanel } from './components/DiffSettingsPanel';
+import { DiffStats } from './components/DiffStats';
+import { DiffTextArea } from './components/DiffTextArea';
+import { DiffToolbar } from './components/DiffToolbar';
 
 const TextDiffChecker: React.FC = () => {
   const [leftText, setLeftText] = useState('');
   const [rightText, setRightText] = useState('');
-  const [diffViewMode, setDiffViewMode] = useState<
-    'split' | 'unified' | 'inline'
-  >('split');
+  const [diffViewMode, setDiffViewMode] = useState<DiffViewModeId>('split');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showStats, setShowStats] = useState(true);
-  const [highlightMode, setHighlightMode] = useState<
-    'character' | 'word' | 'line'
-  >('word');
+  const [highlightMode, setHighlightMode] = useState<HighlightMode>('word');
 
   const { diffSettings, updateDiffSetting, resetSettings } = useDiffSettings();
   const {
@@ -206,22 +90,19 @@ const TextDiffChecker: React.FC = () => {
       notify.error('No diff results to export');
       return;
     }
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      statistics: diffStats,
-      settings: diffSettings,
-      results: diffSegments.map((s) => ({
-        text: s.text,
-        type:
-          s.type || (s.added ? 'added' : s.removed ? 'removed' : 'unchanged'),
-        lineNumber: s.lineNumber,
-      })),
-    };
+    const now = Date.now();
     saveBlob(
-      new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json',
-      }),
-      `diff-results-${Date.now()}.json`,
+      new Blob(
+        [
+          JSON.stringify(
+            buildDiffExport(diffSegments, diffStats, diffSettings, now),
+            null,
+            2,
+          ),
+        ],
+        { type: 'application/json' },
+      ),
+      `diff-results-${now}.json`,
     );
     notify.success('Results exported successfully');
   }, [diffSegments, diffStats, diffSettings]);
@@ -244,491 +125,32 @@ const TextDiffChecker: React.FC = () => {
     highlightMode,
   ]);
 
-  const renderInlineDifferences = useCallback(
-    (text1: string, text2: string, isLeftSide = true) => {
-      if (!text1 && !text2)
-        return (
-          <Text as="span" size="sm" tone="subtle" className="italic">
-            (empty line)
-          </Text>
-        );
-      if (text1 === text2)
-        return (
-          <Text as="span" size="sm">
-            {text1}
-          </Text>
-        );
-      const diffResult =
-        highlightMode === 'character'
-          ? Diff.diffChars(text1, text2)
-          : Diff.diffWordsWithSpace(text1, text2);
-      return (
-        <>
-          {diffResult.map((part, idx) => {
-            if (isLeftSide) {
-              if (part.added) return null;
-              return part.removed ? (
-                <Badge key={idx} variant="soft" tone="danger" size="xs">
-                  {part.value}
-                </Badge>
-              ) : (
-                <Text key={idx} as="span" size="sm">
-                  {part.value}
-                </Text>
-              );
-            }
-            if (part.removed) return null;
-            return part.added ? (
-              <Badge key={idx} variant="soft" tone="success" size="xs">
-                {part.value}
-              </Badge>
-            ) : (
-              <Text key={idx} as="span" size="sm">
-                {part.value}
-              </Text>
-            );
-          })}
-        </>
-      );
-    },
-    [highlightMode],
-  );
-
-  const renderDiffSegment = useCallback(
-    (segment: DiffSegment, isLeftSide = true, comparisonText?: string) => {
-      if (segment.isIntraline) {
-        if (segment.added) {
-          return (
-            <Badge variant="soft" tone="success" size="xs">
-              {segment.text}
-            </Badge>
-          );
-        }
-        if (segment.removed) {
-          return (
-            <Badge variant="soft" tone="danger" size="xs">
-              {segment.text}
-            </Badge>
-          );
-        }
-        return (
-          <Text as="span" size="sm">
-            {segment.text}
-          </Text>
-        );
-      }
-      if (
-        diffSettings.highlightIntralineChanges &&
-        comparisonText &&
-        segment.text !== comparisonText
-      ) {
-        return renderInlineDifferences(
-          isLeftSide ? segment.text : comparisonText,
-          isLeftSide ? comparisonText : segment.text,
-          isLeftSide,
-        );
-      }
-      return (
-        <Text as="span" size="sm">
-          {segment.text || (
-            <Text as="span" size="sm" tone="subtle" className="italic">
-              (empty line)
-            </Text>
-          )}
-        </Text>
-      );
-    },
-    [diffSettings.highlightIntralineChanges, renderInlineDifferences],
-  );
-
-  const lineMarkerColor = (
-    segment: DiffSegment,
-  ): 'success' | 'danger' | 'neutral' => {
-    if (segment.added) return 'success';
-    if (segment.removed) return 'danger';
-    return 'neutral';
-  };
-
-  const lineMarker = (segment: DiffSegment): string => {
-    if (segment.added) return '+';
-    if (segment.removed) return '-';
-    return ' ';
-  };
-
-  const renderSegmentRow = (
-    segment: DiffSegment,
-    isLeftSide: boolean,
-    comparisonText: string | undefined,
-    keyPrefix: string,
-  ) => (
-    <Inline key={keyPrefix} gap="2" align="center" wrap={false}>
-      {diffSettings.showLineNumbers && (
-        <Text size="xs" tone="subtle">
-          {(isLeftSide
-            ? segment.originalLineNumber
-            : segment.modifiedLineNumber) || segment.lineNumber}
-        </Text>
-      )}
-      <Badge variant="soft" tone={lineMarkerColor(segment)} size="xs">
-        {lineMarker(segment)}
-      </Badge>
-      {renderDiffSegment(segment, isLeftSide, comparisonText)}
-    </Inline>
-  );
-
-  const renderDiffContent = () => {
-    if (isDiffing) {
-      return (
-        <Center className="py-8">
-          <Inline align="center" gap="3">
-            <Spinner size="md" />
-            <Text size="sm" tone="subtle">
-              Calculating differences…
-            </Text>
-          </Inline>
-        </Center>
-      );
-    }
-    if (!diffSegments.length) {
-      if (leftText && rightText) {
-        return (
-          <Center className="py-8">
-            <Stack gap="2" align="center">
-              <IconCheck size="2xl" />
-              <Text size="md" weight="semibold">
-                No differences found
-              </Text>
-              <Text size="sm" tone="subtle">
-                The texts are identical.
-              </Text>
-            </Stack>
-          </Center>
-        );
-      }
-      return (
-        <Center className="py-8">
-          <Stack gap="2" align="center">
-            <IconSparkles size="2xl" />
-            <Text size="md" weight="semibold">
-              Ready to compare
-            </Text>
-            <Text size="sm" tone="subtle">
-              Enter text in both panels to see differences.
-            </Text>
-          </Stack>
-        </Center>
-      );
-    }
-
-    if (diffViewMode === 'split') {
-      const leftSegments = diffSegments.filter((s) => !s.added);
-      const rightSegments = diffSegments.filter((s) => !s.removed);
-      return (
-        <Grid max={2} gap="3">
-          <Stack gap="1">
-            <Text
-              size="xs"
-              weight="semibold"
-              tone="subtle"
-              className="uppercase tracking-wider"
-            >
-              Original
-            </Text>
-            {leftSegments.map((segment, idx) => {
-              const correspondingRight = rightSegments.find(
-                (rs) =>
-                  rs.lineNumber === segment.lineNumber ||
-                  rs.originalLineNumber === segment.originalLineNumber,
-              );
-              return renderSegmentRow(
-                segment,
-                true,
-                correspondingRight?.text,
-                `left-${idx}`,
-              );
-            })}
-          </Stack>
-          <Stack gap="1">
-            <Text
-              size="xs"
-              weight="semibold"
-              tone="subtle"
-              className="uppercase tracking-wider"
-            >
-              Modified
-            </Text>
-            {rightSegments.map((segment, idx) => {
-              const correspondingLeft = leftSegments.find(
-                (ls) =>
-                  ls.lineNumber === segment.lineNumber ||
-                  ls.modifiedLineNumber === segment.modifiedLineNumber,
-              );
-              return renderSegmentRow(
-                segment,
-                false,
-                correspondingLeft?.text,
-                `right-${idx}`,
-              );
-            })}
-          </Stack>
-        </Grid>
-      );
-    }
-
-    return (
-      <Stack gap="1">
-        {diffSegments.map((segment, idx) =>
-          renderSegmentRow(segment, true, undefined, `uni-${idx}`),
-        )}
-      </Stack>
-    );
-  };
-
   return (
     <Stack gap="4">
-      <Card>
-        <CardBody>
-          <Stack gap="4">
-            <Inline justify="between" align="center" wrap gap="3">
-              <Inline align="center" gap="2">
-                <IconSplit size="lg" />
-                <Heading level={2} size="lg">
-                  Text Diff Checker
-                </Heading>
-              </Inline>
-              <Inline gap="2" wrap>
-                <Button
-                  variant={showStats ? 'solid' : 'soft'}
-                  size="sm"
-                  leftIcon={<IconBarChart2 size="sm" />}
-                  onClick={() => setShowStats(!showStats)}
-                >
-                  Stats
-                </Button>
-                <Button
-                  variant={autoRefresh ? 'solid' : 'soft'}
-                  size="sm"
-                  leftIcon={<IconPlay size="sm" />}
-                  onClick={() => setAutoRefresh(!autoRefresh)}
-                >
-                  {autoRefresh ? 'Auto' : 'Manual'}
-                </Button>
-                {!autoRefresh && (
-                  <Button
-                    variant="soft"
-                    size="sm"
-                    leftIcon={<IconRotateCcw size="sm" />}
-                    disabled={isDiffing}
-                    onClick={manualRefresh}
-                  >
-                    Refresh
-                  </Button>
-                )}
-                <Button
-                  variant="soft"
-                  size="sm"
-                  leftIcon={<IconArrowRightLeft size="sm" />}
-                  disabled={isDiffing}
-                  onClick={swapTexts}
-                >
-                  Swap
-                </Button>
-                <Button
-                  variant="soft"
-                  size="sm"
-                  leftIcon={<IconDownload size="sm" />}
-                  disabled={!diffSegments.length}
-                  onClick={exportResults}
-                >
-                  Export
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  leftIcon={<IconTrash size="sm" />}
-                  disabled={isDiffing}
-                  onClick={clearAll}
-                >
-                  Clear
-                </Button>
-              </Inline>
-            </Inline>
+      <DiffToolbar
+        showStats={showStats}
+        setShowStats={setShowStats}
+        autoRefresh={autoRefresh}
+        setAutoRefresh={setAutoRefresh}
+        isDiffing={isDiffing}
+        hasResults={diffSegments.length > 0}
+        diffViewMode={diffViewMode}
+        setDiffViewMode={setDiffViewMode}
+        onRefresh={manualRefresh}
+        onSwap={swapTexts}
+        onExport={exportResults}
+        onClear={clearAll}
+      />
 
-            <ButtonGroup>
-              {VIEW_MODES.map((mode) => (
-                <Button
-                  key={mode.id}
-                  variant={diffViewMode === mode.id ? 'solid' : 'soft'}
-                  size="sm"
-                  leftIcon={mode.icon}
-                  onClick={() =>
-                    setDiffViewMode(mode.id as typeof diffViewMode)
-                  }
-                >
-                  {mode.name}
-                </Button>
-              ))}
-            </ButtonGroup>
-          </Stack>
-        </CardBody>
-      </Card>
+      <DiffSettingsPanel
+        diffSettings={diffSettings}
+        updateDiffSetting={updateDiffSetting}
+        resetSettings={resetSettings}
+        highlightMode={highlightMode}
+        setHighlightMode={setHighlightMode}
+      />
 
-      <Card>
-        <CardBody>
-          <Stack gap="3">
-            <Inline gap="2" wrap>
-              <Button
-                variant={diffSettings.ignoreWhitespace ? 'solid' : 'soft'}
-                size="sm"
-                onClick={() =>
-                  updateDiffSetting(
-                    'ignoreWhitespace',
-                    !diffSettings.ignoreWhitespace,
-                  )
-                }
-              >
-                Ignore whitespace
-              </Button>
-              <Button
-                variant={diffSettings.ignoreCase ? 'solid' : 'soft'}
-                size="sm"
-                onClick={() =>
-                  updateDiffSetting('ignoreCase', !diffSettings.ignoreCase)
-                }
-              >
-                Ignore case
-              </Button>
-              <Button
-                variant={
-                  diffSettings.highlightIntralineChanges ? 'solid' : 'soft'
-                }
-                size="sm"
-                onClick={() =>
-                  updateDiffSetting(
-                    'highlightIntralineChanges',
-                    !diffSettings.highlightIntralineChanges,
-                  )
-                }
-              >
-                Intraline changes
-              </Button>
-              <Button
-                variant={diffSettings.showLineNumbers ? 'solid' : 'soft'}
-                size="sm"
-                onClick={() =>
-                  updateDiffSetting(
-                    'showLineNumbers',
-                    !diffSettings.showLineNumbers,
-                  )
-                }
-              >
-                Line numbers
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<IconRotateCcw size="sm" />}
-                onClick={resetSettings}
-              >
-                Reset
-              </Button>
-            </Inline>
-
-            <Inline gap="2" wrap align="center">
-              <Text size="sm" tone="subtle">
-                Highlight level:
-              </Text>
-              <ButtonGroup>
-                {(['character', 'word', 'line'] as const).map((mode) => (
-                  <Button
-                    key={mode}
-                    variant={highlightMode === mode ? 'solid' : 'soft'}
-                    size="sm"
-                    onClick={() => setHighlightMode(mode)}
-                  >
-                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                  </Button>
-                ))}
-              </ButtonGroup>
-            </Inline>
-          </Stack>
-        </CardBody>
-      </Card>
-
-      {showStats && diffStats && (
-        <Grid cols={{ base: 2, md: 5 }} gap="3">
-          <Card>
-            <CardBody>
-              <Stack gap="1">
-                <Text size="xs" tone="subtle">
-                  Additions
-                </Text>
-                <Inline gap="2" align="center">
-                  <Badge variant="soft" tone="success" size="md">
-                    {diffStats.additions}
-                  </Badge>
-                </Inline>
-              </Stack>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stack gap="1">
-                <Text size="xs" tone="subtle">
-                  Deletions
-                </Text>
-                <Inline gap="2" align="center">
-                  <Badge variant="soft" tone="danger" size="md">
-                    {diffStats.deletions}
-                  </Badge>
-                </Inline>
-              </Stack>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stack gap="1">
-                <Text size="xs" tone="subtle">
-                  Changes
-                </Text>
-                <Inline gap="2" align="center">
-                  <Badge variant="soft" tone="warning" size="md">
-                    {diffStats.changes}
-                  </Badge>
-                </Inline>
-              </Stack>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stack gap="1">
-                <Text size="xs" tone="subtle">
-                  Unchanged
-                </Text>
-                <Inline gap="2" align="center">
-                  <Badge variant="soft" tone="accent" size="md">
-                    {diffStats.unchanged}
-                  </Badge>
-                </Inline>
-              </Stack>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Stack gap="1">
-                <Text size="xs" tone="subtle">
-                  Change rate
-                </Text>
-                <Inline gap="2" align="center">
-                  <Badge variant="soft" tone="accent" size="md">
-                    {diffStats.changePercentage}%
-                  </Badge>
-                </Inline>
-              </Stack>
-            </CardBody>
-          </Card>
-        </Grid>
-      )}
+      {showStats && diffStats && <DiffStats diffStats={diffStats} />}
 
       {performanceWarning && (
         <Alert status="warning" icon={<IconAlertTriangle />}>
@@ -775,25 +197,14 @@ const TextDiffChecker: React.FC = () => {
         </FilePicker>
       </Grid>
 
-      <Card>
-        <CardHeader>
-          <Inline justify="between" align="center" wrap gap="2">
-            <Inline align="center" gap="2">
-              <IconBarChart2 size="md" />
-              <CardTitle as="h3">Diff results</CardTitle>
-            </Inline>
-            {diffSegments.length > 0 && (
-              <Badge variant="soft" tone="accent" size="sm">
-                {diffSegments.length}{' '}
-                {diffSettings.highlightIntralineChanges ? 'changes' : 'lines'}
-              </Badge>
-            )}
-          </Inline>
-        </CardHeader>
-        <CardBody>
-          <Box className="overflow-auto">{renderDiffContent()}</Box>
-        </CardBody>
-      </Card>
+      <DiffResults
+        diffSegments={diffSegments}
+        isDiffing={isDiffing}
+        bothFilled={Boolean(leftText && rightText)}
+        diffViewMode={diffViewMode}
+        highlightMode={highlightMode}
+        diffSettings={diffSettings}
+      />
     </Stack>
   );
 };

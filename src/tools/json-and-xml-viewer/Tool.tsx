@@ -1,14 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from 'react';
-import CodeEditor from '@uiw/react-textarea-code-editor';
-import rehypePrism from 'rehype-prism-plus';
-import rehypeRewrite from 'rehype-rewrite';
+import { useCallback, useMemo, useState } from 'react';
 import {
   IconChevronDown,
   IconCodeXml,
   IconColumns,
   IconDownload,
-  IconFileJson,
   IconList,
   IconMonitor,
   IconMoreHorizontal,
@@ -17,18 +12,16 @@ import {
   IconPanelRight,
   IconWand2,
 } from '@/shared/ui/icons';
+
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Badge,
   Box,
   Button,
   ButtonGroup,
   Card,
   CardBody,
-  CardHeader,
-  Center,
   Container,
   DropdownMenu,
   DropdownMenuContent,
@@ -36,103 +29,41 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Grid,
-  Heading,
   IconButton,
   Inline,
   SearchInput,
   Select,
   Stack,
-  Text,
   Tooltip,
 } from '@/shared/ui';
 import { saveBlob } from '@/shared/lib/download';
-import TreeView from './components/TreeView';
+import { EditorPane } from './components/EditorPane';
+import { ViewerPane } from './components/ViewerPane';
 import { parseJson, parseXml } from './lib/parse';
-import DataFlow from './components/treeview/DataFlow';
-
-type FormatType = 'json' | 'xml';
-type ViewMode = 'tree' | 'network';
-type LayoutType = 'split' | 'single';
-type PaneType = 'editor' | 'view';
-
-interface XMLNode {
-  nodeName: string;
-  nodeType: number;
-  childNodes: NodeListOf<ChildNode>;
-  attributes: NamedNodeMap;
-  nodeValue: string | null;
-}
+import { matchingLines } from './lib/search';
+import { formatXML, xmlToJson, type XMLNode } from './lib/xml';
+import type {
+  FormatType,
+  LayoutType,
+  PaneType,
+  ParsedData,
+  ViewMode,
+} from './types';
 
 const DataViewer = () => {
   const [inputText, setInputText] = useState('');
-  const [parsedData, setParsedData] = useState<{ [key: string]: any } | null>(
-    null,
-  );
+  const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [error, setError] = useState('');
   const [format, setFormat] = useState<FormatType>('json');
   const [searchTerm, setSearchTerm] = useState('');
-  const [highlightedLines, setHighlightedLines] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
   const [layout, setLayout] = useState<LayoutType>('split');
   const [activePane, setActivePane] = useState<PaneType>('editor');
 
-  useEffect(() => {
-    if (!searchTerm) {
-      setHighlightedLines([]);
-      return;
-    }
-    const lines = inputText.split('\n');
-    const matched = lines.reduce((acc: number[], line, idx) => {
-      if (line.toLowerCase().includes(searchTerm.toLowerCase())) {
-        acc.push(idx + 1);
-      }
-      return acc;
-    }, []);
-    setHighlightedLines(matched);
-  }, [searchTerm, inputText]);
-
-  const xmlToJson = (node: XMLNode) => {
-    const obj: { [key: string]: any } = {};
-    if (node.nodeType === 1) {
-      if (node.attributes?.length > 0) {
-        obj['@attributes'] = {};
-        for (let i = 0; i < node.attributes.length; i++) {
-          const attr = node.attributes[i];
-          obj['@attributes'][attr.nodeName] = attr.nodeValue;
-        }
-      }
-      for (let i = 0; i < node.childNodes.length; i++) {
-        const child = node.childNodes[i];
-        if (child.nodeType === 1) {
-          const childData = xmlToJson(child as unknown as XMLNode);
-          if (obj[child.nodeName]) {
-            if (!Array.isArray(obj[child.nodeName])) {
-              obj[child.nodeName] = [obj[child.nodeName]];
-            }
-            obj[child.nodeName].push(childData);
-          } else {
-            obj[child.nodeName] = childData;
-          }
-        } else if (child.nodeType === 3 && child.nodeValue?.trim()) {
-          obj['#text'] = child.nodeValue.trim();
-        }
-      }
-    }
-    return obj;
-  };
-
-  const formatXML = (xml: string) => {
-    let formatted = '';
-    let indent = '';
-    const tab = '  ';
-    xml.split(/>\s*</).forEach((node) => {
-      if (node.match(/^\/\w/)) indent = indent.substring(tab.length);
-      formatted += indent + '<' + node + '>\n';
-      // eslint-disable-next-line no-useless-escape
-      if (node.match(/^<?\w[^>]*[^\/]$/)) indent += tab;
-    });
-    return formatted.substring(1, formatted.length - 2);
-  };
+  const highlightedLines = useMemo(
+    () => matchingLines(inputText, searchTerm),
+    [inputText, searchTerm],
+  );
 
   const formatCode = useCallback(() => {
     try {
@@ -158,7 +89,7 @@ const DataViewer = () => {
   const handleParse = useCallback(() => {
     try {
       if (format === 'json') {
-        setParsedData(parseJson(inputText) as { [key: string]: any });
+        setParsedData(parseJson(inputText) as ParsedData);
         setError('');
       } else {
         const xmlDoc = parseXml(inputText);
@@ -182,120 +113,22 @@ const DataViewer = () => {
     );
   }, [format, inputText]);
 
-  const rehypePlugins = [
-    [rehypePrism as any, { ignoreMissing: true }],
-    [
-      rehypeRewrite as any,
-      {
-        rewrite: (node: any, index: number) => {
-          if (node.properties?.className?.includes('code-line')) {
-            const lineNumber = index + 1;
-            if (highlightedLines.includes(lineNumber)) {
-              // A class, not a style object: hast stringified the old object
-              // to style="[object Object]", so matches were never highlighted.
-              node.properties.className.push('highlighted-line', 'bg-info/20');
-            }
-          }
-        },
-      },
-    ],
-  ] as any;
-
-  const renderEditor = () => (
-    <CodeEditor
-      value={inputText}
-      language={format}
-      placeholder={`Enter ${format.toUpperCase()} here…`}
-      onChange={(evn) => setInputText(evn.target.value)}
-      padding={15}
-      // "!": the editor's unlayered CSS sets font-size/family and its inline
-      // container style sets padding: 0, both of which beat plain utilities.
-      className="min-h-96 rounded-lg pb-8! font-mono! text-[0.875rem]!"
-      data-color-mode="dark"
-      rehypePlugins={rehypePlugins}
+  const editorPanel = (
+    <EditorPane
+      inputText={inputText}
+      setInputText={setInputText}
+      format={format}
+      highlightedLines={highlightedLines}
     />
   );
 
-  const renderViewerBody = () => {
-    if (!parsedData) {
-      return (
-        <Center className="py-10">
-          <Stack gap="2" align="center">
-            <Heading level={3} size="md">
-              No data to display
-            </Heading>
-            <Text size="sm" tone="subtle">
-              Enter some {format.toUpperCase()} above and click Parse to
-              visualise.
-            </Text>
-          </Stack>
-        </Center>
-      );
-    }
-    return viewMode === 'tree' ? (
-      <TreeView data={parsedData} searchTerm={searchTerm} />
-    ) : (
-      <DataFlow initialData={parsedData} />
-    );
-  };
-
-  const editorPanel = (
-    <Card>
-      <CardHeader>
-        <Inline justify="between" align="center" wrap gap="2">
-          <Inline align="center" gap="2">
-            {format === 'json' ? (
-              <IconFileJson size="sm" />
-            ) : (
-              <IconCodeXml size="sm" />
-            )}
-            <Heading level={3} size="md">
-              {format.toUpperCase()} editor
-            </Heading>
-          </Inline>
-          {highlightedLines.length > 0 && (
-            <Badge variant="soft" tone="accent" size="sm">
-              {highlightedLines.length} match
-              {highlightedLines.length !== 1 ? 'es' : ''}
-            </Badge>
-          )}
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        <Box className="overflow-auto">{renderEditor()}</Box>
-      </CardBody>
-    </Card>
-  );
-
   const viewerPanel = (
-    <Card>
-      <CardHeader>
-        <Inline justify="between" align="center" wrap gap="2">
-          <Inline align="center" gap="2">
-            {viewMode === 'tree' ? (
-              <IconList size="sm" />
-            ) : (
-              <IconNetwork size="sm" />
-            )}
-            <Heading level={3} size="md">
-              {viewMode === 'tree' ? 'Tree view' : 'Network view'}
-            </Heading>
-          </Inline>
-          {searchTerm && (
-            <Badge variant="soft" tone="accent" size="sm">
-              Filtering: {searchTerm}
-            </Badge>
-          )}
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        {viewMode === 'network' ? (
-          <Box className="h-[40rem] overflow-hidden">{renderViewerBody()}</Box>
-        ) : (
-          <Box className="h-[40rem] overflow-auto">{renderViewerBody()}</Box>
-        )}
-      </CardBody>
-    </Card>
+    <ViewerPane
+      parsedData={parsedData}
+      format={format}
+      viewMode={viewMode}
+      searchTerm={searchTerm}
+    />
   );
 
   return (

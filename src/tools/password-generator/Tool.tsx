@@ -1,303 +1,66 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  IconCheckCircle,
-  IconCopy,
-  IconEye,
-  IconEyeOff,
   IconLock,
   IconRefreshCw,
   IconRuler,
   IconShield,
 } from '@/shared/ui/icons';
+
 import {
   Alert,
   AlertDescription,
   Badge,
-  Box,
   Button,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
-  IconButton,
   Inline,
   Slider,
   Stack,
-  Switch,
   Text,
 } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
 import { useClipboard } from '@/shared/lib/clipboard';
-import { charSets, getSecureRandom, secureShuffle } from './lib/secure-random';
-
-type CharType = 'uppercase' | 'lowercase' | 'number' | 'special';
-
-const classifyChar = (ch: string): CharType => {
-  if (/[A-Z]/.test(ch)) return 'uppercase';
-  if (/[a-z]/.test(ch)) return 'lowercase';
-  if (/[0-9]/.test(ch)) return 'number';
-  return 'special';
-};
-
-const CHAR_CLASS: Record<CharType, string> = {
-  uppercase: 'text-warning',
-  lowercase: 'text-fg',
-  number: 'text-success',
-  special: 'text-info',
-};
-
-interface HighlightedPasswordProps {
-  password: string;
-  hidden: boolean;
-}
-
-const HighlightedPassword: React.FC<HighlightedPasswordProps> = ({
-  password,
-  hidden,
-}) => (
-  <Box className="min-w-0 overflow-hidden rounded-md border border-line bg-surface p-4 font-mono text-base leading-[1.6] break-all whitespace-pre-wrap [overflow-wrap:anywhere]">
-    {hidden ? (
-      <>
-        <span aria-hidden="true">{'*'.repeat(password.length)}</span>
-        <span className="sr-only">Password hidden</span>
-      </>
-    ) : (
-      Array.from(password).map((ch, i) => {
-        const type = classifyChar(ch);
-        return (
-          <span key={i} className={cn('font-bold', CHAR_CLASS[type])}>
-            {ch}
-          </span>
-        );
-      })
-    )}
-  </Box>
-);
-
-const CharLegend: React.FC = () => (
-  <Inline gap="3" wrap>
-    {(
-      [
-        ['uppercase', 'Aa', 'Upper'],
-        ['lowercase', 'ab', 'Lower'],
-        ['number', '09', 'Number'],
-        ['special', '!@', 'Special'],
-      ] as Array<[CharType, string, string]>
-    ).map(([type, sample, label]) => (
-      <Inline key={type} gap="1" align="center">
-        <span className={cn('font-mono text-sm font-bold', CHAR_CLASS[type])}>
-          {sample}
-        </span>
-        <Text as="span" size="xs" tone="subtle">
-          {label}
-        </Text>
-      </Inline>
-    ))}
-  </Inline>
-);
-
-interface CharacterTypeOptionProps {
-  label: string;
-  sublabel: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  recommended?: boolean;
-}
-
-const CharacterTypeOption: React.FC<CharacterTypeOptionProps> = ({
-  label,
-  sublabel,
-  checked,
-  onChange,
-  recommended = false,
-}) => (
-  <Card className={checked ? 'border-accent' : undefined}>
-    <CardBody>
-      <Inline justify="between" align="center" gap="3" wrap>
-        <Stack gap="1">
-          <Inline align="center" gap="2">
-            <Text size="sm" weight="semibold">
-              {label}
-            </Text>
-            {recommended && (
-              <Badge variant="soft" tone="warning" size="xs">
-                Recommended
-              </Badge>
-            )}
-          </Inline>
-          <Text size="xs" tone="subtle">
-            {sublabel}
-          </Text>
-        </Stack>
-        <Switch
-          checked={checked}
-          onCheckedChange={onChange}
-          aria-label={`Toggle ${label}`}
-        />
-      </Inline>
-    </CardBody>
-  </Card>
-);
-
-interface PasswordDisplayProps {
-  password: string;
-  onCopy: () => void;
-  copied: boolean;
-}
-
-const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
-  password,
-  onCopy,
-  copied,
-}) => {
-  const [hidden, setHidden] = useState(false);
-  const counts = {
-    uppercase: password.match(/[A-Z]/g)?.length || 0,
-    lowercase: password.match(/[a-z]/g)?.length || 0,
-    numbers: password.match(/[0-9]/g)?.length || 0,
-    special: password.match(/[^A-Za-z0-9]/g)?.length || 0,
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <Inline justify="between" align="center">
-          <CardTitle as="h3">Generated password</CardTitle>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            label={hidden ? 'Show password' : 'Hide password'}
-            icon={hidden ? <IconEye size="sm" /> : <IconEyeOff size="sm" />}
-            onClick={() => setHidden(!hidden)}
-          />
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="4">
-          <Stack gap="2">
-            <HighlightedPassword password={password} hidden={hidden} />
-            <Inline justify="between" align="center" gap="3" wrap>
-              <CharLegend />
-              <Button
-                variant={copied ? 'solid' : 'soft'}
-                size="md"
-                leftIcon={
-                  copied ? (
-                    <IconCheckCircle size="md" />
-                  ) : (
-                    <IconCopy size="md" />
-                  )
-                }
-                onClick={onCopy}
-              >
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
-            </Inline>
-          </Stack>
-          <Inline gap="2" wrap>
-            {counts.uppercase > 0 && (
-              <Badge variant="soft" tone="warning" size="sm">
-                {counts.uppercase} uppercase
-              </Badge>
-            )}
-            {counts.lowercase > 0 && (
-              <Badge variant="soft" tone="neutral" size="sm">
-                {counts.lowercase} lowercase
-              </Badge>
-            )}
-            {counts.numbers > 0 && (
-              <Badge variant="soft" tone="success" size="sm">
-                {counts.numbers} numbers
-              </Badge>
-            )}
-            {counts.special > 0 && (
-              <Badge variant="soft" tone="info" size="sm">
-                {counts.special} special
-              </Badge>
-            )}
-          </Inline>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
-
-const getSecurityLevel = (length: number) => {
-  if (length < 12) return { label: 'Weak', colorScheme: 'danger' as const };
-  if (length < 16) return { label: 'Basic', colorScheme: 'warning' as const };
-  if (length < 24) return { label: 'Strong', colorScheme: 'accent' as const };
-  if (length < 32)
-    return { label: 'Very strong', colorScheme: 'success' as const };
-  return { label: 'Maximum', colorScheme: 'success' as const };
-};
+import { CharacterTypeOption } from './components/CharacterTypeOption';
+import { PasswordDisplay } from './components/PasswordDisplay';
+import {
+  DEFAULT_OPTIONS,
+  generatePassword,
+  getSecurityLevel,
+  hasCharType,
+} from './lib/strength';
 
 const SecurePasswordGenerator: React.FC = () => {
-  const [password, setPassword] = useState('');
-  const [length, setLength] = useState<number>(16);
-  const [includeUppercase, setIncludeUppercase] = useState(true);
-  const [includeLowercase, setIncludeLowercase] = useState(true);
-  const [includeNumbers, setIncludeNumbers] = useState(true);
-  const [includeSpecial, setIncludeSpecial] = useState(true);
+  const [password, setPassword] = useState(() =>
+    generatePassword(DEFAULT_OPTIONS),
+  );
+  const [length, setLength] = useState<number>(DEFAULT_OPTIONS.length);
+  const [includeUppercase, setIncludeUppercase] = useState(
+    DEFAULT_OPTIONS.uppercase,
+  );
+  const [includeLowercase, setIncludeLowercase] = useState(
+    DEFAULT_OPTIONS.lowercase,
+  );
+  const [includeNumbers, setIncludeNumbers] = useState(DEFAULT_OPTIONS.numbers);
+  const [includeSpecial, setIncludeSpecial] = useState(DEFAULT_OPTIONS.special);
   const { copiedKey, copy } = useClipboard();
   // Keyed by the password itself so regenerating clears the "Copied" state.
   const copied = copiedKey !== null && copiedKey === password;
   const [missingTypes, setMissingTypes] = useState(false);
 
-  const generatePassword = () => {
-    let charset = '';
-    const mandatoryChars: string[] = [];
-    if (includeUppercase) {
-      charset += charSets.uppercase;
-      mandatoryChars.push(
-        charSets.uppercase[
-          Math.floor(getSecureRandom() * charSets.uppercase.length)
-        ],
-      );
-    }
-    if (includeLowercase) {
-      charset += charSets.lowercase;
-      mandatoryChars.push(
-        charSets.lowercase[
-          Math.floor(getSecureRandom() * charSets.lowercase.length)
-        ],
-      );
-    }
-    if (includeNumbers) {
-      charset += charSets.numbers;
-      mandatoryChars.push(
-        charSets.numbers[
-          Math.floor(getSecureRandom() * charSets.numbers.length)
-        ],
-      );
-    }
-    if (includeSpecial) {
-      charset += charSets.special;
-      mandatoryChars.push(
-        charSets.special[
-          Math.floor(getSecureRandom() * charSets.special.length)
-        ],
-      );
-    }
-    if (!charset) {
-      setPassword('');
-      setMissingTypes(true);
-      return;
-    }
-    setMissingTypes(false);
-    const remaining = length - mandatoryChars.length;
-    const randomChars = Array.from(
-      { length: remaining },
-      () => charset[Math.floor(getSecureRandom() * charset.length)],
-    );
-    setPassword(secureShuffle([...mandatoryChars, ...randomChars]).join(''));
+  const handleGenerate = () => {
+    const options = {
+      length,
+      uppercase: includeUppercase,
+      lowercase: includeLowercase,
+      numbers: includeNumbers,
+      special: includeSpecial,
+    };
+    setMissingTypes(!hasCharType(options));
+    setPassword(generatePassword(options));
   };
 
   const copyToClipboard = () => void copy(password, password);
-
-  useEffect(() => {
-    generatePassword();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const security = getSecurityLevel(length);
 
@@ -370,7 +133,7 @@ const SecurePasswordGenerator: React.FC = () => {
       </Card>
 
       <Button
-        onClick={generatePassword}
+        onClick={handleGenerate}
         leftIcon={<IconRefreshCw size="lg" />}
         size="lg"
         variant="solid"
