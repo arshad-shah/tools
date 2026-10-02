@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
+import { useScrollRow } from './use-scroll-row';
 
 type TabsVariant = 'soft' | 'line';
 
@@ -44,7 +45,7 @@ export const TabsList: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => {
   const { variant, fullWidth } = useTabs();
-  const ref = React.useRef<HTMLDivElement>(null);
+  const ref = useScrollRow<HTMLDivElement>('x');
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
@@ -68,10 +69,13 @@ export const TabsList: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
       role="tablist"
       onKeyDown={onKeyDown}
       className={cn(
-        'flex',
+        // One row that scrolls sideways on narrow screens (edge fade); the
+        // line variant draws its rule as an inset shadow so the scroller
+        // does not clip the selected tab's indicator.
+        'flex max-w-full overflow-x-auto overscroll-x-contain scrollbar-none scroll-fade-x',
         variant === 'soft'
           ? 'gap-1 rounded-lg bg-surface-2 p-1'
-          : 'gap-1 border-b border-line',
+          : 'gap-1 shadow-[inset_0_-1px_0_var(--line)]',
         fullWidth && 'w-full',
         className,
       )}
@@ -101,7 +105,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
       tabIndex={selected ? 0 : -1}
       onClick={() => setValue(value)}
       className={cn(
-        'text-sm font-medium transition-[color,background-color,border-color] duration-base ease-out-soft',
+        'shrink-0 whitespace-nowrap text-sm font-medium transition-[color,background-color,border-color] duration-base ease-out-soft pointer-coarse:min-h-11 pointer-coarse:min-w-11',
         fullWidth && 'flex-1',
         variant === 'soft'
           ? cn(
@@ -111,7 +115,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
                 : 'text-fg-muted hover:text-fg',
             )
           : cn(
-              '-mb-px border-b-2 px-3 py-2',
+              'border-b-2 px-3 py-2',
               selected
                 ? 'border-accent-indicator text-fg'
                 : 'border-transparent text-fg-muted hover:text-fg',

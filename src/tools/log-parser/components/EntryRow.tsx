@@ -6,6 +6,7 @@ import type { FieldFilter } from '../lib/filter';
 import { levelLabel, levelTone } from '../lib/level-style';
 import type { LogEntry } from '../lib/model';
 import { rowTime } from '../lib/progress';
+import type { LogColumn } from '../settings';
 import { searchRanges, type SearchSpec } from '../lib/search-ranges';
 import { FieldTable } from './FieldTable';
 
@@ -20,6 +21,8 @@ export interface EntryRowProps {
   onFieldFilter(f: FieldFilter): void;
   wrap: boolean;
   search?: SearchSpec;
+  /** Summary columns shown (settings.columns). */
+  columns: readonly LogColumn[];
 }
 
 /** One log entry in the list: summary line, expandable to its details. */
@@ -33,7 +36,9 @@ export const EntryRow = memo(function EntryRow({
   onFieldFilter,
   wrap,
   search,
+  columns,
 }: EntryRowProps) {
+  const show = (c: LogColumn) => columns.includes(c);
   const nl = entry ? entry.message.indexOf('\n') : -1;
   const first = entry
     ? nl < 0
@@ -78,20 +83,36 @@ export const EntryRow = memo(function EntryRow({
           icon={expanded ? IconChevronDown : IconChevronRight}
           onClick={() => onToggle(entry.index)}
         />
-        <span className="w-12 shrink-0 text-right font-mono text-fg-subtle tabular-nums">
-          {entry.line}
-        </span>
-        <span className="flex w-20 shrink-0 items-center gap-1.5">
-          <StatusDot tone={levelTone(entry.level)} decorative />
-          <span className="text-fg-muted">{levelLabel(entry.level)}</span>
-        </span>
-        {entry.ts !== undefined ? (
-          <span className="hidden shrink-0 font-mono text-fg-muted tabular-nums md:inline">
+        {show('line') ? (
+          <span
+            data-column="line"
+            className="w-12 shrink-0 text-right font-mono text-fg-subtle tabular-nums"
+          >
+            {entry.line}
+          </span>
+        ) : null}
+        {show('level') ? (
+          <span
+            data-column="level"
+            className="flex w-20 shrink-0 items-center gap-1.5"
+          >
+            <StatusDot tone={levelTone(entry.level)} decorative />
+            <span className="text-fg-muted">{levelLabel(entry.level)}</span>
+          </span>
+        ) : null}
+        {show('time') && entry.ts !== undefined ? (
+          <span
+            data-column="time"
+            className="hidden shrink-0 font-mono text-fg-muted tabular-nums md:inline"
+          >
             {rowTime(entry.ts)}
           </span>
         ) : null}
-        {entry.component ? (
-          <span className="hidden max-w-48 shrink-0 truncate font-mono text-info sm:inline">
+        {show('component') && entry.component ? (
+          <span
+            data-column="component"
+            className="hidden max-w-48 shrink-0 truncate font-mono text-info sm:inline"
+          >
             {entry.component}
           </span>
         ) : null}

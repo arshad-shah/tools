@@ -2,13 +2,14 @@ import React from 'react';
 import { cn } from '@/shared/lib/cn';
 import type { ModeTabItem } from './mode-tabs';
 import { rovingIndex } from './roving';
+import { useScrollRow } from './use-scroll-row';
 
 export interface FloatingDockProps {
   label: string;
   items: ModeTabItem[];
   value: string;
   onChange(id: string): void;
-  /** lg: 56px targets for phones. Default md. */
+  /** lg: 49px targets with labels for phones. Default md (44px). */
   size?: 'md' | 'lg';
 }
 
@@ -24,6 +25,7 @@ export function FloatingDock({
   size = 'md',
 }: FloatingDockProps) {
   const tabs = React.useRef(new Map<string, HTMLButtonElement>());
+  const scroller = useScrollRow<HTMLDivElement>('x');
   const onKeyDown = (e: React.KeyboardEvent, index: number) => {
     const to = rovingIndex(e, index, items.length);
     if (to === null) return;
@@ -34,9 +36,10 @@ export function FloatingDock({
   };
   return (
     <div
+      ref={scroller}
       role="tablist"
       aria-label={label}
-      className="fixed bottom-4 left-1/2 z-dock flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-xl bg-surface p-1.5 shadow-e3"
+      className="fixed bottom-4 left-1/2 z-dock flex max-w-[calc(100vw-2rem)] -translate-x-1/2 snap-x snap-proximity flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain rounded-xl bg-surface p-1.5 shadow-e3 scrollbar-none scroll-fade-x"
     >
       {items.map((it, i) => {
         const selected = it.id === value;
@@ -58,7 +61,7 @@ export function FloatingDock({
             onClick={() => onChange(it.id)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={cn(
-              'flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg outline-none transition-colors duration-fast',
+              'flex shrink-0 snap-start flex-col items-center justify-center gap-0.5 rounded-lg outline-none transition-colors duration-fast',
               'focus-visible:ring-2 focus-visible:ring-focus',
               size === 'lg' ? 'size-14' : 'size-11',
               selected

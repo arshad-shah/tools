@@ -19,11 +19,46 @@ export interface ToolSettingsOptions<S> {
 export interface ToolSettings<S> {
   /** `[settings, update(patch), reset()]` */
   useSettings(): [S, (patch: Partial<S>) => void, () => void];
+  /** Only `keys`: a change to any other setting does not re-render. */
+  useSettings<K extends keyof S>(
+    keys: readonly K[],
+  ): [Pick<S, K>, (patch: Partial<S>) => void, () => void];
   getSettings(): S;
 }
 
 const kindOf = (v: unknown) =>
   v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v;
+
+/**
+ * Whether a stored value has the shape of its default. Kinds must match;
+ * array elements must each match some element of a non-empty default (an
+ * empty default only requires one kind throughout); an object must give
+ * every key of its default a matching value (`whole`), or, as an array
+ * element, match the keys it has. Extra keys are allowed, so a default of
+ * `{}` is a free-form map; a nested null default accepts any value.
+ */
+function matches(value: unknown, def: unknown, whole = true): boolean {
+  const kind = kindOf(value);
+  if (kind !== kindOf(def)) return false;
+  if (kind === 'array') {
+    const items = value as unknown[];
+    const templates = def as unknown[];
+    if (templates.length === 0)
+      return items.every((v) => kindOf(v) === kindOf(items[0]));
+    return items.every((v) => templates.some((t) => fits(v, t, false)));
+  }
+  if (kind === 'object') {
+    const obj = value as Record<string, unknown>;
+    return Object.entries(def as Record<string, unknown>).every(([k, d]) =>
+      Object.hasOwn(obj, k) ? fits(obj[k], d, whole) : !whole,
+    );
+  }
+  return true;
+}
+
+/** Inside a default, null marks a nullable value of any kind. */
+const fits = (value: unknown, def: unknown, whole: boolean) =>
+  def === null || matches(value, def, whole);
 
 /** Throws unless `value` survives a JSON round trip unchanged in shape. */
 function assertJson(value: unknown, path: string): void {
@@ -58,14 +93,13 @@ export function createToolSettings<S extends { [K in keyof S]: Json }>(
 ): ToolSettings<S> {
   const keys = Object.keys(defaults) as (keyof S & string)[];
 
-  // Stored values are only trusted when they have the default's JSON kind.
+  // Stored values are only trusted when they have the default's shape.
   const sanitize = (state: unknown): Partial<S> => {
     if (kindOf(state) !== 'object') return {};
     const out: Partial<S> = {};
     for (const k of keys) {
       const v = (state as Record<string, unknown>)[k];
-      if (v !== undefined && kindOf(v) === kindOf(defaults[k]))
-        out[k] = v as S[typeof k];
+      if (v !== undefined && matches(v, defaults[k])) out[k] = v as S[typeof k];
     }
     return out;
   };
@@ -96,19 +130,19 @@ export function createToolSettings<S extends { [K in keyof S]: Json }>(
     },
   });
 
-  const pick = (s: S): S => {
+  const pick = (s: S, only: readonly (keyof S)[] = keys): S => {
     const out = {} as S;
-    for (const k of keys) out[k] = s[k];
+    for (const k of only) out[k] = s[k];
     return out;
   };
   const reset = () => store.reset();
 
   return {
-    useSettings() {
-      const settings = store(useShallow(pick));
+    useSettings: ((only?: readonly (keyof S)[]) => {
+      const settings = store(useShallow((s: S) => pick(s, only)));
       const update = store((s) => s.update);
       return [settings, update, reset];
-    },
+    }) as ToolSettings<S>['useSettings'],
     getSettings: () => pick(store.getState()),
   };
 }

@@ -21,6 +21,25 @@ describe('createToolSettings', () => {
     act(() => result.current[2]());
     expect(s.getSettings()).toEqual({ indent: 2, wrap: false });
   });
+  it('re-renders a keyed subscriber only when its keys change', () => {
+    const s = createToolSettings(
+      'demo-keys',
+      { indent: 2, wrap: false as boolean, cap: 10 },
+      { version: 1 },
+    );
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders++;
+      return s.useSettings(['indent', 'wrap']);
+    });
+    expect(result.current[0]).toEqual({ indent: 2, wrap: false });
+    const before = renders;
+    act(() => result.current[1]({ cap: 20 }));
+    expect(renders).toBe(before);
+    act(() => result.current[1]({ wrap: true }));
+    expect(result.current[0]).toEqual({ indent: 2, wrap: true });
+  });
+
   it('migrates stored state from an older version', () => {
     localStorage.setItem(
       'kit:store:tool:old',
@@ -88,6 +107,46 @@ describe('createToolSettings', () => {
       },
     );
     expect(b.getSettings()).toEqual({ indent: 2 });
+  });
+  it('checks array elements and nested objects against the defaults', () => {
+    const defaults = {
+      zones: ['UTC'],
+      history: [] as string[],
+      fields: [{ name: 'id', unique: true }],
+      resize: { w: 0, h: 0 },
+      memories: [{ label: 'M1', value: null as number | null }],
+      byLang: {} as { [k: string]: number },
+    };
+    const load = (id: string, state: Record<string, unknown>) => {
+      localStorage.setItem(
+        `kit:store:tool:${id}`,
+        JSON.stringify({ state, version: 1 }),
+      );
+      return createToolSettings(id, defaults, { version: 1 }).getSettings();
+    };
+    // Mismatched element kinds, nested kinds or missing nested keys fall back.
+    expect(
+      load('deep-bad', {
+        zones: ['Europe/Dublin', { evil: 1 }],
+        history: ['a', { evil: 1 }],
+        fields: [{ name: 'x', unique: 'yes' }],
+        resize: { w: 5 },
+      }),
+    ).toEqual(defaults);
+    expect(load('deep-kind', { resize: { w: 'wide', h: 1 } }).resize).toEqual(
+      defaults.resize,
+    );
+    // Matching shapes are kept; extra keys and free-form maps are allowed.
+    const good = {
+      zones: ['Europe/Dublin', 'Asia/Tokyo'],
+      history: ['a', 'b'],
+      fields: [{ name: 'x' }, { name: 'y', unique: false, extra: [1] }],
+      resize: { w: 5, h: 6 },
+      // A nested null default is nullable: any value is kept.
+      memories: [{ label: 'M1', value: 5 }],
+      byLang: { js: 2 },
+    };
+    expect(load('deep-good', good)).toEqual(good);
   });
   it('refuses values that are not JSON', () => {
     const s = createToolSettings('json', { when: 0 }, { version: 1 });

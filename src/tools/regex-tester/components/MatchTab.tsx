@@ -1,13 +1,11 @@
 import React, { useMemo } from 'react';
 import type { ToolError } from '@/shared/lib/errors';
 import {
-  Alert,
-  AlertDescription,
   Badge,
   CodeSurface,
+  EmptyState,
   Inline,
   Stack,
-  Text,
   type CodeRange,
 } from '@/shared/ui';
 import { matchCoverage } from '../lib/coverage';
@@ -25,7 +23,6 @@ interface MatchTabProps {
   onRetry(): void;
   /** Capture group picked in Explain: its spans are highlighted. */
   group: number | null;
-  onCopy(text: string): void;
 }
 
 /** Highlighted test text, counts, coverage and the match list. */
@@ -37,7 +34,6 @@ export const MatchTab: React.FC<MatchTabProps> = ({
   hasResult,
   onRetry,
   group,
-  onCopy,
 }) => {
   const ranges = useMemo<CodeRange[]>(() => {
     const out: CodeRange[] = [];
@@ -54,9 +50,11 @@ export const MatchTab: React.FC<MatchTabProps> = ({
 
   if (!text)
     return (
-      <Text size="sm" tone="subtle">
-        Enter a test string to see matches.
-      </Text>
+      <EmptyState
+        size="sm"
+        title="No test text"
+        description="Enter a test string to see matches."
+      />
     );
 
   return (
@@ -87,13 +85,13 @@ export const MatchTab: React.FC<MatchTabProps> = ({
         maxHeight={320}
       />
       {hasResult && !error && matches.length === 0 && (
-        <Alert status="warning">
-          <AlertDescription>
-            No matches. Try adjusting the pattern, the flags or the test string.
-          </AlertDescription>
-        </Alert>
+        <EmptyState
+          size="sm"
+          title="No matches"
+          description="Try adjusting the pattern, the flags or the test string."
+        />
       )}
-      {matches.length > 0 && <MatchList matches={matches} onCopy={onCopy} />}
+      {matches.length > 0 && <MatchList matches={matches} />}
     </Stack>
   );
 };

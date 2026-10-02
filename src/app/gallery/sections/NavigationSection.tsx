@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  NavList,
   Breadcrumb,
   IconButton,
   MetaList,
@@ -34,6 +35,31 @@ export function NavigationSection() {
           }
         />
       </div>
+      <Row label="NavList: sections, nested tools, current page">
+        <div className="w-60">
+          <NavList
+            label="Example navigation"
+            sections={[
+              { id: 'home', items: [{ href: '#home', label: 'Home' }] },
+              {
+                id: 'cats',
+                title: 'Categories',
+                items: [
+                  {
+                    href: '#math',
+                    label: 'Math',
+                    children: [
+                      { href: '#calc', label: 'Calculator', current: true },
+                      { href: '#units', label: 'Unit Converter' },
+                    ],
+                  },
+                  { href: '#time', label: 'Time' },
+                ],
+              },
+            ]}
+          />
+        </div>
+      </Row>
       <Row label="Breadcrumb">
         <Breadcrumb
           segments={[

@@ -4,6 +4,9 @@ import { pathOf } from '../tool-routes';
 
 const editor = (page: Page) =>
   page.getByRole('textbox', { name: 'Markdown', exact: true });
+/** R41: Edit and Preview are tabs. */
+const showPreview = (page: Page) =>
+  page.getByRole('tab', { name: /^Preview/ }).click();
 
 // A 1x1 transparent PNG.
 const PNG = Buffer.from(
@@ -14,6 +17,7 @@ const PNG = Buffer.from(
 test('markdown-editor previews a heading and a table', async ({ page }) => {
   await page.goto(pathOf('markdown-editor'));
   await editor(page).fill('# Hello\n\n| a | b |\n| - | - |\n| 1 | 2 |\n');
+  await showPreview(page);
   const frame = page.frameLocator('iframe[title="Preview"]');
   await expect(frame.locator('h1')).toHaveText('Hello');
   await expect(frame.locator('table')).toBeVisible();
@@ -32,6 +36,7 @@ test('markdown-editor blocks remote images until the opt-in', async ({
   await page.goto(pathOf('markdown-editor'));
   await editor(page).fill('![a](https://example.com/a.png)');
   await expect(page.getByText('1 remote image blocked')).toBeVisible();
+  await showPreview(page);
   const frame = page.frameLocator('iframe[title="Preview"]');
   await expect(frame.locator('img')).toHaveCount(1);
   await page.waitForTimeout(500);
@@ -54,6 +59,7 @@ test('markdown-editor never runs scripts from the document', async ({
   await editor(page).fill(
     '<script>alert(1)</script>\n\n<img src=x onerror="alert(2)">\n\ndone',
   );
+  await showPreview(page);
   const frame = page.frameLocator('iframe[title="Preview"]');
   await expect(frame.getByText('done')).toBeVisible();
   await page.waitForTimeout(500);
@@ -72,4 +78,20 @@ test('markdown-editor downloads a standalone HTML file', async ({ page }) => {
   const html = await readFile((await download.path())!, 'utf8');
   expect(html.startsWith('<!doctype html>')).toBe(true);
   expect(html).toContain('<h1 id="report"');
+});
+
+test('markdown-editor outline scrolls the preview to the heading', async ({
+  page,
+}) => {
+  const filler = Array.from({ length: 80 }, (_, i) => `Paragraph ${i}.`).join(
+    '\n\n',
+  );
+  await page.goto(pathOf('markdown-editor'));
+  await editor(page).fill(`# One\n\n${filler}\n\n## Two\n\n${filler}`);
+  await showPreview(page);
+  const frame = page.frameLocator('iframe[title="Preview"]');
+  await expect(frame.locator('#two')).not.toBeInViewport();
+  await page.getByRole('button', { name: 'Outline' }).click();
+  await page.getByRole('button', { name: 'Two', exact: true }).click();
+  await expect(frame.locator('#two')).toBeInViewport();
 });

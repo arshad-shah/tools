@@ -6,6 +6,7 @@ import {
   DialogBody,
   DialogHeader,
   DialogTitle,
+  EmptyState,
   SearchInput,
   Stack,
   Text,
@@ -48,9 +49,7 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({
             prompt=""
           />
           {groups.length === 0 && (
-            <Text size="sm" tone="subtle">
-              No templates match this search.
-            </Text>
+            <EmptyState size="sm" title="No templates match this search" />
           )}
           {groups.map(({ cat, list }) => (
             <Stack gap="1" key={cat}>

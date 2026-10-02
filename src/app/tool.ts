@@ -29,6 +29,7 @@ export type AcceptKind =
   | 'xml'
   | 'log'
   | 'riv'
+  | 'svg'
   | 'any';
 
 export interface AcceptRule {

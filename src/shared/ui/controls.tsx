@@ -11,6 +11,7 @@ interface SwitchProps {
   disabled?: boolean;
   id?: string;
   'aria-label'?: string;
+  'aria-describedby'?: string;
 }
 export const Switch: React.FC<SwitchProps> = ({
   checked,
@@ -27,7 +28,9 @@ export const Switch: React.FC<SwitchProps> = ({
     disabled={disabled}
     onClick={() => onCheckedChange(!checked)}
     className={cn(
-      'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-fast',
+      'relative inline-flex h-6 w-[2.75rem] shrink-0 items-center rounded-full border transition-colors duration-fast',
+      // Touch: an invisible 44px hit area around the track.
+      'pointer-coarse:before:absolute pointer-coarse:before:top-1/2 pointer-coarse:before:left-1/2 pointer-coarse:before:h-11 pointer-coarse:before:w-14 pointer-coarse:before:-translate-1/2',
       'disabled:cursor-not-allowed disabled:opacity-50',
       checked
         ? 'border-accent-indicator bg-accent'
@@ -81,6 +84,8 @@ export const Checkbox: React.FC<CheckboxProps> = ({
     className={cn(
       'inline-flex shrink-0 items-center justify-center rounded-sm border transition-colors duration-fast',
       size === 'sm' ? 'size-4' : 'size-5',
+      // Touch: an invisible 44px hit area centred on the box.
+      'relative pointer-coarse:before:absolute pointer-coarse:before:top-1/2 pointer-coarse:before:left-1/2 pointer-coarse:before:size-11 pointer-coarse:before:-translate-1/2',
       'disabled:cursor-not-allowed disabled:opacity-50',
       checked
         ? 'border-accent-indicator bg-accent text-accent-ink'
@@ -178,7 +183,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
     <div
       className={cn(
         'flex items-center rounded-md border border-line-strong bg-surface-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
-        lg ? 'h-11' : 'h-9',
+        lg ? 'h-11' : 'h-9 pointer-coarse:h-11',
         disabled && 'opacity-50',
         className,
       )}
@@ -190,7 +195,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         onClick={() => onValueChange(clamp(value - step))}
         className={cn(
           'flex h-full items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed',
-          lg ? 'w-11' : 'w-9',
+          lg ? 'w-11' : 'w-9 pointer-coarse:w-11',
         )}
       >
         <IconMinus size="sm" />
@@ -204,7 +209,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         step={step}
         disabled={disabled}
         onChange={(e) => onValueChange(clamp(Number(e.target.value)))}
-        className="min-w-0 flex-1 bg-transparent text-center font-mono text-sm text-fg focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="min-w-0 flex-1 self-stretch bg-transparent text-center font-mono text-sm text-fg focus:outline-none pointer-coarse:text-md [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         {...aria}
       />
       <button
@@ -214,7 +219,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         onClick={() => onValueChange(clamp(value + step))}
         className={cn(
           'flex h-full items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed',
-          lg ? 'w-11' : 'w-9',
+          lg ? 'w-11' : 'w-9 pointer-coarse:w-11',
         )}
       >
         <IconPlus size="sm" />

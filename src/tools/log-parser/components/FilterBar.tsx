@@ -1,12 +1,16 @@
 import { useId } from 'react';
 import {
+  Alert,
   Badge,
   Button,
+  Grid,
   IconButton,
+  Inline,
   Input,
   SearchInput,
+  Stack,
   StatusDot,
-  Switch,
+  SwitchField,
 } from '@/shared/ui';
 import { IconX } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
@@ -43,15 +47,15 @@ export function FilterBar({
   const text = filter.text ?? { value: '', regex: false };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div role="group" aria-label="Levels" className="flex flex-wrap gap-2">
+    <Stack gap="3">
+      <Inline gap="2" wrap role="group" aria-label="Levels">
         {orderLevels(levels).map((l) => {
           const on = filter.levels.has(l);
           return (
             <Button
               key={l}
               size="sm"
-              variant={on ? 'primary' : 'secondary'}
+              variant={on ? 'secondary' : 'ghost'}
               aria-pressed={on}
               onClick={() => toggleLevel(l)}
             >
@@ -63,10 +67,10 @@ export function FilterBar({
             </Button>
           );
         })}
-      </div>
-      <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr]">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
+      </Inline>
+      <Grid cols={{ base: 1, md: 3 }} gap="3">
+        <Stack gap="1">
+          <Inline gap="2" wrap={false}>
             <SearchInput
               className="flex-1"
               prompt="/"
@@ -77,21 +81,18 @@ export function FilterBar({
               value={text.value}
               onChange={(value) => set({ text: { ...text, value } })}
             />
-            <label className="flex items-center gap-2 text-sm text-fg-muted">
-              <Switch
-                aria-label="Regex"
-                checked={text.regex}
-                onCheckedChange={(regex) => set({ text: { ...text, regex } })}
-              />
-              Regex
-            </label>
-          </div>
+            <SwitchField
+              label="Regex"
+              checked={text.regex}
+              onCheckedChange={(regex) => set({ text: { ...text, regex } })}
+            />
+          </Inline>
           {searchError ? (
-            <span id={errorId} role="alert" className="text-sm text-danger">
+            <Alert status="danger" size="sm" id={errorId}>
               Invalid regex: {searchError}
-            </span>
+            </Alert>
           ) : null}
-        </div>
+        </Stack>
         <Input
           aria-label="Exclude terms"
           placeholder="Exclude terms, comma separated"
@@ -106,9 +107,9 @@ export function FilterBar({
           value={filter.component ?? ''}
           onChange={(v) => set({ component: v || undefined })}
         />
-      </div>
+      </Grid>
       <ActiveChips filter={filter} onChange={onChange} />
-    </div>
+    </Stack>
   );
 }
 

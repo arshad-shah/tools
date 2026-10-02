@@ -81,8 +81,6 @@ export function createUuidV7(): (now?: () => number) => string {
   };
 }
 
-export const uuidV7 = createUuidV7();
-
 /** A name-based (version 5, SHA-1) UUID in a standard or custom namespace. */
 export async function uuidV5(
   namespace: NamespaceName | string,

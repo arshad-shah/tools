@@ -33,6 +33,24 @@ describe('toXlsx', () => {
   it('refuses an invalid sheet name', () => {
     expect(() => toXlsx([], ['a'], 'a/b')).toThrow(/Sheet names/);
   });
+  it('drops lone surrogates and U+FFFE/U+FFFF but keeps astral characters', () => {
+    const astral = String.fromCodePoint(0x1f600);
+    const bytes = toXlsx(
+      [{ a: `x\ud800y\udc00z\ufffe\uffff${astral}w` }],
+      ['a'],
+    );
+    const sheet = strFromU8(unzipSync(bytes)['xl/worksheets/sheet1.xml']);
+    expect(sheet).toContain(`>xyz${astral}w</t>`);
+    expect(sheet).not.toMatch(/[\ufffe\uffff]/);
+    expect(sheet).not.toMatch(/[\ud800-\udbff](?![\udc00-\udfff])/);
+  });
+  it('refuses more than 16,384 columns', () => {
+    const cols = (n: number) => Array.from({ length: n }, (_, i) => `c${i}`);
+    expect(() => toXlsx([], cols(16_385))).toThrow(
+      expect.objectContaining({ code: 'INVALID_INPUT' }),
+    );
+    expect(() => toXlsx([], cols(16_384))).not.toThrow();
+  });
   it('names columns like a spreadsheet', () => {
     expect([0, 25, 26, 701, 702].map(columnName)).toEqual([
       'A',

@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { ToolError } from '@/shared/lib/errors';
 import { useHandoffFiles } from '@/shared/lib/handoff';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
-  Alert,
-  AlertDescription,
   Box,
   Button,
   Container,
   DropZone,
+  ErrorState,
   Grid,
   Inline,
   Label,
@@ -18,11 +17,11 @@ import {
   Text,
 } from '@/shared/ui';
 import { IconImage, IconTrash } from '@/shared/ui/icons';
-import type { StripOptions } from './lib/strip';
 import { MetaTables } from './components/MetaTables';
 import { RiskSummary } from './components/RiskSummary';
 import { StripPanel } from './components/StripPanel';
 import { useExifFiles } from './components/useExifFiles';
+import { exifSettings } from './settings';
 
 const ACCEPT =
   'image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/tiff,.jpg,.jpeg,.png,.webp,.heic,.heif,.avif,.tif,.tiff';
@@ -30,10 +29,8 @@ const ACCEPT =
 export default function ExifTool() {
   const files = useExifFiles();
   const { entries, selected } = files;
-  const [options, setOptions] = useState<Required<StripOptions>>({
-    keepIcc: true,
-    keepOrientation: false,
-  });
+  // Keep ICC and Keep orientation are settings: remembered across visits.
+  const [options, setOptions] = exifSettings.useSettings();
   useHandoffFiles(files.addFiles);
 
   useToolCommands('exif-tool', [
@@ -102,9 +99,10 @@ export default function ExifTool() {
             <Grid max={3} gap="4">
               <Box className="lg:col-span-2">
                 {selected.readError ? (
-                  <Alert status="danger">
-                    <AlertDescription>{selected.readError}</AlertDescription>
-                  </Alert>
+                  <ErrorState
+                    title="Could not read the metadata"
+                    error={new ToolError('INVALID_FILE', selected.readError)}
+                  />
                 ) : selected.meta ? (
                   <MetaTables meta={selected.meta} />
                 ) : (

@@ -9,13 +9,14 @@ import {
   CardTitle,
   Code,
   ColorField,
+  CopyButton,
   Inline,
   Input,
   Label,
   Stack,
   Text,
 } from '@/shared/ui';
-import { IconCheck, IconCopy, IconDownload } from '@/shared/ui/icons';
+import { IconDownload } from '@/shared/ui/icons';
 
 export interface ExportPanelProps {
   name: string;
@@ -31,8 +32,6 @@ export interface ExportPanelProps {
   /** Why the last download failed. */
   error: string | null;
   onDownload(): void;
-  copied: boolean;
-  onCopy(): void;
 }
 
 /** Web manifest fields, the ZIP download and the link tags. */
@@ -42,7 +41,7 @@ export function ExportPanel(p: ExportPanelProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle as="h3">Manifest and export</CardTitle>
+        <CardTitle as="h2">Manifest and export</CardTitle>
       </CardHeader>
       <CardBody>
         <Stack gap="3">
@@ -90,14 +89,12 @@ export function ExportPanel(p: ExportPanelProps) {
             >
               Download ZIP
             </Button>
-            <Button
-              leftIcon={
-                p.copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />
-              }
-              onClick={p.onCopy}
-            >
-              {p.copied ? 'Copied' : 'Copy snippet'}
-            </Button>
+            <CopyButton
+              variant="text"
+              size="md"
+              label="snippet"
+              value={p.snippet}
+            />
           </Inline>
           {p.error ? (
             <Alert status="danger">

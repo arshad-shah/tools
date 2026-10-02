@@ -9,8 +9,8 @@ import {
   Select,
   SendToMenu,
   Stack,
-  Switch,
   TextInputPanel,
+  SwitchField,
 } from '@/shared/ui';
 import { convert, escapeJsonString, unescapeJsonString } from '../lib/convert';
 import { inferJsonSchema, inferTypeScript } from '../lib/infer';
@@ -139,14 +139,12 @@ export function ConvertTab(props: ConvertTabProps) {
             />
           </Inline>
         ) : null}
-        <Inline gap="2">
-          <Switch
-            id="json-xml-sort"
-            checked={sortKeys}
-            onCheckedChange={setSortKeys}
-          />
-          <Label htmlFor="json-xml-sort">Sort keys</Label>
-        </Inline>
+        <SwitchField
+          label="Sort keys"
+          id="json-xml-sort"
+          checked={sortKeys}
+          onCheckedChange={setSortKeys}
+        />
         <SendToMenu
           size="sm"
           sourceTool={props.sourceTool}
@@ -164,7 +162,7 @@ export function ConvertTab(props: ConvertTabProps) {
         />
       </Inline>
       {out.error ? (
-        <Alert status="danger" className="p-3 text-sm">
+        <Alert status="danger" size="sm">
           {out.error}
         </Alert>
       ) : null}

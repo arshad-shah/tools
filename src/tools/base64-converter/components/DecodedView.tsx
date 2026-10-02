@@ -12,7 +12,7 @@ import {
   Text,
   TextInputPanel,
 } from '@/shared/ui';
-import { saveBlob } from '@/shared/lib/download';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import { formatBytes } from '@/shared/lib/format';
 import type { BytesInsight } from '../lib/insight';
@@ -64,7 +64,7 @@ export const DecodedView: React.FC<DecodedViewProps> = ({
         files: [
           new File(
             [file.bytes as Uint8Array<ArrayBuffer>],
-            `decoded.${file.ext}`,
+            deriveFilename('decoded', '', file.ext),
             {
               type: file.mime,
             },
@@ -104,7 +104,11 @@ export const DecodedView: React.FC<DecodedViewProps> = ({
             size="sm"
             leftIcon={<IconDownload size="sm" />}
             onClick={() =>
-              saveBlob(file.bytes, `decoded.${file.ext}`, file.mime)
+              saveBlob(
+                file.bytes,
+                deriveFilename('decoded', '', file.ext),
+                file.mime,
+              )
             }
           >
             Download file
@@ -129,7 +133,7 @@ export const DecodedView: React.FC<DecodedViewProps> = ({
           onChange={() => {}}
           language={insight.kind === 'json' ? 'json' : 'plain'}
           readOnly
-          downloadName="decoded.txt"
+          downloadName={deriveFilename('decoded', '', 'txt')}
           wrap
           maxHeight={420}
         />

@@ -25,7 +25,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         readOnly={readOnly}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className={cn(
-          'w-full resize-y rounded-md border bg-surface-2 px-3 py-2 font-mono text-sm text-fg',
+          'w-full resize-y rounded-md border bg-surface-2 px-3 py-2 font-mono text-sm text-fg pointer-coarse:text-md',
           'placeholder:text-fg-subtle',
           'transition-colors duration-fast focus-visible:outline-2 focus-visible:outline-offset-2',
           invalid

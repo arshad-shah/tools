@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useEffectEvent,
-  useId,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { useClipboard, readClipboardText } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
@@ -50,7 +44,7 @@ export interface TextInputPanelProps {
   value: string;
   onChange(value: string): void;
   language: LanguageId | 'plain';
-  /** Visible label; also names the group and the editor. */
+  /** Visible label; names the editor (the group is "<label> panel"). */
   label: string;
   /** File input accept attribute for Open file. */
   accept?: string;
@@ -122,7 +116,6 @@ export function TextInputPanel({
   editorRef,
   onSelectionChange,
 }: TextInputPanelProps) {
-  const labelId = useId();
   const [error, setError] = useState<ToolError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -252,15 +245,13 @@ export function TextInputPanel({
   return (
     <div
       role="group"
-      aria-labelledby={labelId}
+      aria-label={`${label} panel`}
       className={cn('flex flex-col gap-2', className)}
       onKeyDown={onKeyDown}
       {...dropHandlers}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span id={labelId} className="text-sm font-medium text-fg">
-          {label}
-        </span>
+        <span className="text-sm font-medium text-fg">{label}</span>
         <TextInputToolbar
           readOnly={readOnly}
           hasValue={value.length > 0}

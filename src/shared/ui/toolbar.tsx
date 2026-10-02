@@ -10,6 +10,7 @@ import {
 } from './menu';
 import { rovingIndex } from './roving';
 import { Tooltip } from './tooltip';
+import { useScrollRow } from './use-scroll-row';
 
 export interface ToolItem {
   id: string;
@@ -42,6 +43,12 @@ export interface ToolbarProps {
    * targets for the Focus and phone layouts (spec §13.2).
    */
   size?: ToolbarSize;
+  /**
+   * Horizontal bars: each tool's label shows beside its icon on desktop
+   * (fine pointer, 1024 px and up); icon only with a tooltip below that,
+   * where the row scrolls (6-H).
+   */
+  labelled?: boolean;
 }
 
 export type ToolbarSize = 'md' | 'lg';
@@ -68,6 +75,7 @@ export function Toolbar({
   orientation = 'horizontal',
   trailing,
   size = 'md',
+  labelled = false,
 }: ToolbarProps) {
   const flat = groups.flatMap((g) => g.items);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -77,6 +85,7 @@ export function Toolbar({
   const nodes = React.useRef(new Map<string, HTMLButtonElement>());
   const menus = React.useRef(new Map<string, HTMLButtonElement>());
   const vertical = orientation === 'vertical';
+  const scroller = useScrollRow<HTMLDivElement>(vertical ? 'y' : 'x');
 
   const focusItem = (id: string) => {
     setActiveId(id);
@@ -86,12 +95,8 @@ export function Toolbar({
   const openMenu = (id: string) => {
     const trigger = menus.current.get(id);
     if (!trigger) return;
+    // A programmatic click counts as keyboard: the menu focuses its first item.
     trigger.click();
-    requestAnimationFrame(() =>
-      trigger.parentElement
-        ?.querySelector<HTMLElement>('[role="menuitem"]')
-        ?.focus(),
-    );
   };
 
   const onKeyDown = (e: React.KeyboardEvent, item: ToolItem) => {
@@ -124,6 +129,7 @@ export function Toolbar({
         icon={item.icon}
         variant="ghost"
         size={BUTTON_SIZE[size]}
+        showLabel={labelled && !vertical ? 'desktop' : undefined}
         tabIndex={item.id === active ? 0 : -1}
         aria-pressed={
           item.kind === 'toggle' ? Boolean(item.pressed) : undefined
@@ -189,12 +195,17 @@ export function Toolbar({
 
   return (
     <div
+      ref={scroller}
       role="toolbar"
       aria-label={label}
       aria-orientation={orientation}
       className={cn(
-        'flex items-center gap-1',
-        vertical ? 'flex-col' : 'flex-row flex-wrap',
+        // One row (or column) that scrolls instead of wrapping: edge fades
+        // show there is more, the focused or active tool scrolls into view.
+        'flex min-h-0 min-w-0 max-w-full items-center gap-1 p-0.5 scrollbar-none',
+        vertical
+          ? 'max-h-full scroll-py-0.5 flex-col overflow-y-auto overscroll-y-contain scroll-fade-y snap-y snap-proximity'
+          : 'scroll-px-0.5 flex-row flex-nowrap overflow-x-auto overscroll-x-contain scroll-fade-x snap-x snap-proximity',
       )}
     >
       {groups.map((g, gi) => (
@@ -204,7 +215,7 @@ export function Toolbar({
               role="separator"
               aria-orientation={vertical ? 'horizontal' : 'vertical'}
               className={cn(
-                'bg-line',
+                'shrink-0 bg-line',
                 vertical ? 'my-1 h-px w-6' : 'mx-1 h-5 w-px',
               )}
             />
@@ -212,7 +223,10 @@ export function Toolbar({
           <div
             role="group"
             aria-label={g.label}
-            className={cn('flex items-center gap-0.5', vertical && 'flex-col')}
+            className={cn(
+              'flex shrink-0 snap-start items-center gap-0.5',
+              vertical && 'flex-col',
+            )}
           >
             {g.items.map(renderItem)}
           </div>
@@ -221,7 +235,7 @@ export function Toolbar({
       {trailing ? (
         <div
           className={cn(
-            'flex items-center gap-1',
+            'flex shrink-0 items-center gap-1',
             vertical ? 'mt-1' : 'ml-auto',
           )}
         >

@@ -94,3 +94,17 @@ describe('share codec', () => {
     expect(() => decodeShare('s=9.abc')).toThrow(/newer version/);
   });
 });
+
+describe('share codec defence in depth (6-A1 M2)', () => {
+  it('drops __proto__, constructor and prototype keys while decoding', () => {
+    const json =
+      '{"v":1,"s":{"a":1,"__proto__":{"x":1},"n":{"constructor":2,"prototype":3,"b":4}}}';
+    const raw = bytesToBase64(deflateSync(utf8Encode(json)), {
+      urlSafe: true,
+      padding: false,
+    });
+    const { state } = decodeShare(`s=1.${raw}`);
+    expect(state).toEqual({ a: 1, n: { b: 4 } });
+    expect(Object.hasOwn(state as object, '__proto__')).toBe(false);
+  });
+});

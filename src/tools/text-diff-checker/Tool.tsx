@@ -5,17 +5,17 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Alert,
-  AlertDescription,
   Button,
-  Grid,
+  ErrorState,
   Inline,
   Kbd,
+  PaneTabs,
   SegmentedControl,
   ShareButton,
   Stack,
   Text,
   TextInputPanel,
+  usePaneTab,
 } from '@/shared/ui';
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
@@ -55,6 +55,8 @@ const TextDiff: React.FC = () => {
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
   const [current, setCurrent] = useState(0);
   const view = useRef<DiffViewHandle>(null);
+  // R41: the inputs are tabs; the diff result below is not.
+  const tab = usePaneTab('text-diff-checker', 'left');
 
   const share = useShareableState<DiffShare>({
     toolId: 'text-diff-checker',
@@ -237,7 +239,7 @@ const TextDiff: React.FC = () => {
   const stats = job.result?.stats;
   return (
     <Stack gap="4">
-      <Inline gap="3" className="flex-wrap items-center justify-between">
+      <Inline gap="3" wrap justify="between">
         <SegmentedControl<DiffMode>
           label="Comparison"
           value={settings.mode}
@@ -263,31 +265,42 @@ const TextDiff: React.FC = () => {
           <ShareButton share={share} />
         </Inline>
       </Inline>
-      <Grid cols={2} gap="3" className="min-w-0">
-        {side('left')}
-        {side('right')}
-      </Grid>
+      <PaneTabs
+        id="text-diff-checker"
+        label="Texts to compare"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          {
+            id: 'left',
+            label: 'Original',
+            content: side('left'),
+            changeKey: left,
+          },
+          {
+            id: 'right',
+            label: 'Changed',
+            content: side('right'),
+            changeKey: right,
+          },
+        ]}
+      />
       {textMode ? (
         <>
           <DiffOptions settings={settings} update={update} />
           {job.error && (
-            <Alert status="danger">
-              <AlertDescription>{job.error.message}</AlertDescription>
-            </Alert>
+            <ErrorState error={job.error} title="Could not compare" />
           )}
           {vm && job.result && stats && (
             <Stack gap="3" aria-busy={job.pending}>
-              <Inline
-                gap="3"
-                className="flex-wrap items-center justify-between"
-              >
+              <Inline gap="3" wrap justify="between">
                 <Text size="sm" aria-live="polite">
                   {isIdentical(job.result)
                     ? 'No differences'
                     : `${stats.added} added, ${stats.removed} removed, ${stats.changed} changed`}
                   {job.pending ? ' (updating)' : ''}
                 </Text>
-                <Inline gap="2" className="items-center">
+                <Inline gap="2">
                   <Button
                     size="sm"
                     variant="secondary"

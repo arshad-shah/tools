@@ -95,7 +95,7 @@ const HashGenerator: React.FC = () => {
         onValueChange={(v) => setTab(v as 'text' | 'files')}
         variant="soft"
       >
-        <TabsList aria-label="Input">
+        <TabsList aria-label="Hash source">
           <TabsTrigger value="text">Text</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>

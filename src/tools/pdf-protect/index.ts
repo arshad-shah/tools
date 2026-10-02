@@ -10,7 +10,8 @@ export default defineTool({
   slug: 'protect',
   kind: 'quick-task',
   keywords: ['password', 'encrypt', 'lock', 'permissions'],
-  accepts: [{ kinds: ['pdf'] }],
+  // A PDF from a hub drop; a password from the Password Generator.
+  accepts: [{ kinds: ['pdf'] }, { mimes: ['application/vnd.tools.secret'] }],
   alsoIn: ['security'],
   version: '1.0.0',
   isNew: true,

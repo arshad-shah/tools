@@ -1,13 +1,10 @@
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
 import {
-  Button,
-  CodeSurface,
   Inline,
   SegmentedControl,
   Stack,
   Text,
+  TextInputPanel,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
 
 export type SnippetRuntime = 'react' | 'web';
 
@@ -21,7 +18,6 @@ export function EmbedSnippet({
   runtime: SnippetRuntime;
   onRuntimeChange: (r: SnippetRuntime) => void;
 }) {
-  const { copied, copy } = useClipboard();
   return (
     <Stack gap="2">
       <Inline justify="between" align="center" gap="2" wrap>
@@ -35,21 +31,17 @@ export function EmbedSnippet({
             { value: 'web', label: 'Web' },
           ]}
         />
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />}
-          onClick={() => void copy(code)}
-        >
-          {copied ? 'Copied' : 'Copy snippet'}
-        </Button>
       </Inline>
-      <CodeSurface
+      {/* Read-only output: Copy and Download come with the panel. */}
+      <TextInputPanel
+        readOnly
         label="Embed snippet"
         value={code}
+        onChange={() => {}}
         language={runtime === 'react' ? 'ts' : 'html'}
-        readOnly
+        downloadName={runtime === 'react' ? 'RiveEmbed.tsx' : 'rive-embed.html'}
         wrap
+        minHeight={120}
         maxHeight={280}
       />
       <Text size="xs" tone="subtle">

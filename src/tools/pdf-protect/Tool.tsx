@@ -63,6 +63,32 @@ const ProtectTool: React.FC<ToolProps> = () => {
   const [file, setFile] = useState<PdfInputFile | null>(null);
   // Passwords live in component state only, never in the store.
   const [passwords, setPasswords] = useState<PasswordInput>(EMPTY);
+  // A password handed over from the Password Generator (spec 10) fills both
+  // fields, and survives picking the file it is meant for.
+  const secret = useHandoff(
+    (p) => p.kind === 'text' && p.mime === 'application/vnd.tools.secret',
+  );
+  const [takenSecret, setTakenSecret] = useState<typeof secret>(null);
+  const [handedPassword, setHandedPassword] = useState('');
+  if (secret !== takenSecret) {
+    setTakenSecret(secret);
+    if (secret?.kind === 'text') {
+      setHandedPassword(secret.text);
+      setPasswords({
+        ...EMPTY,
+        userPassword: secret.text,
+        confirmPassword: secret.text,
+      });
+    }
+  }
+  const fresh = (): PasswordInput =>
+    handedPassword
+      ? {
+          ...EMPTY,
+          userPassword: handedPassword,
+          confirmPassword: handedPassword,
+        }
+      : EMPTY;
   const settings = usePermissionSettings();
   const choices: PermissionChoices = {
     printing: settings.printing,
@@ -98,16 +124,20 @@ const ProtectTool: React.FC<ToolProps> = () => {
   // successful protect.
   const pick = (picked: PdfInputFile) => {
     job.reset();
-    setPasswords(EMPTY);
+    setPasswords(fresh());
     setFile(picked);
   };
   const clearFile = () => {
     job.reset();
     setPasswords(EMPTY);
+    setHandedPassword('');
     setFile(null);
   };
   const protect = async (source: PdfInputFile) => {
-    if (await job.run(source, passwords, choices)) setPasswords(EMPTY);
+    if (await job.run(source, passwords, choices)) {
+      setPasswords(EMPTY);
+      setHandedPassword('');
+    }
   };
   const setPassword = (key: keyof PasswordInput, value: string) => {
     job.reset();

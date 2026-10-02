@@ -68,8 +68,6 @@ export const HMAC_ALGORITHMS: HashAlgorithm[] = [
   { id: 'hmac-sha3-256', name: 'HMAC-SHA3-256', fn: sha3_256 },
 ];
 
-export const isHmac = (id: string) => id.startsWith('hmac-');
-
 export type KeyFormat = 'text' | 'hex' | 'base64';
 
 const find = (list: HashAlgorithm[], id: string): HashAlgorithm => {
@@ -138,9 +136,6 @@ export function bytesFrom(
 export function parseKey(key: string, format: KeyFormat): Uint8Array {
   return bytesFrom(key, format, 'The HMAC key');
 }
-
-/** `parseKey` under its phase-6 name. */
-export const decodeKey = parseKey;
 
 export type HashId =
   | 'md5'
@@ -256,6 +251,10 @@ const CHECKSUMS: Partial<Record<DigestId, () => Checksum>> = {
   xxhash3: createXxh3,
 };
 
+/** Own-property lookup, so ids such as `toString` find nothing. */
+const own = <T>(table: Partial<Record<DigestId, T>>, id: string) =>
+  Object.hasOwn(table, id) ? table[id as DigestId] : undefined;
+
 const unknown = (id: string) =>
   new ToolError('INVALID_INPUT', `Unknown algorithm ${id}`);
 
@@ -265,7 +264,7 @@ export interface IncrementalDigest {
 }
 
 function startDigest(id: DigestId): IncrementalDigest {
-  const fn = CRYPTO[id];
+  const fn = own(CRYPTO, id);
   if (fn) {
     const h = fn.create();
     return {
@@ -273,7 +272,7 @@ function startDigest(id: DigestId): IncrementalDigest {
       digestHex: () => bytesToHex(h.digest()),
     };
   }
-  const checksum = CHECKSUMS[id];
+  const checksum = own(CHECKSUMS, id);
   if (checksum) return checksum();
   throw unknown(id);
 }
@@ -296,7 +295,7 @@ export async function hmac(
   key: Uint8Array,
   bytes: Uint8Array,
 ): Promise<string> {
-  const fn = CRYPTO[id];
+  const fn = own(CRYPTO, id);
   if (!fn) throw unknown(`HMAC-${id}`);
   return bytesToHex(nobleHmac(fn, key, bytes));
 }

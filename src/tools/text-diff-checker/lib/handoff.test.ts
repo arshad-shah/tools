@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { diffPairPayload, readDiffHandoff } from './handoff';
+import { toolsAccepting } from '@/app/registry';
+import { DIFF_PAIR_MIME, diffPairPayload, readDiffHandoff } from './handoff';
 
 describe('readDiffHandoff', () => {
   it('fills both sides from a pair payload', () => {
@@ -39,5 +40,28 @@ describe('readDiffHandoff', () => {
       }),
     ).toBeNull();
     expect(readDiffHandoff({ kind: 'files', files: [] })).toBeNull();
+  });
+
+  it('Text Diff accepts the pair mime (registry)', () => {
+    expect(toolsAccepting(DIFF_PAIR_MIME).map((t) => t.id)).toContain(
+      'text-diff-checker',
+    );
+  });
+
+  it("fills both sides from HTTP Client's Compare with previous response", () => {
+    // The payload api-request/components/ResponsePanel.tsx sends.
+    const p = {
+      kind: 'text',
+      mime: 'application/vnd.tools.diff-pair+json',
+      sourceTool: 'api-request',
+      text: JSON.stringify({ left: '{"v":1}', right: '{"v":2}' }),
+      meta: { pair: true },
+    } as const;
+    expect(readDiffHandoff(p)).toEqual({
+      left: '{"v":1}',
+      right: '{"v":2}',
+      leftName: undefined,
+      rightName: undefined,
+    });
   });
 });

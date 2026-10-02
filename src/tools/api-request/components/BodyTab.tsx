@@ -6,7 +6,6 @@ import {
 import { formatBytes } from '@/shared/lib/format';
 import {
   Button,
-  CodeSurface,
   FilePicker,
   Inline,
   Input,
@@ -15,6 +14,7 @@ import {
   SegmentedControl,
   Stack,
   Text,
+  TextInputPanel,
   type CodeMarker,
 } from '@/shared/ui';
 import { IconFileUp } from '@/shared/ui/icons';
@@ -66,7 +66,7 @@ export function BodyTab({
   if (request.mode === 'graphql')
     return (
       <Stack gap="3">
-        <CodeSurface
+        <TextInputPanel
           label="GraphQL query"
           language="plain"
           value={request.graphql.query}
@@ -76,7 +76,7 @@ export function BodyTab({
           minHeight={160}
           placeholder="query { items { id } }"
         />
-        <CodeSurface
+        <TextInputPanel
           label="GraphQL variables (JSON)"
           language="json"
           value={request.graphql.variables}
@@ -105,7 +105,7 @@ export function BodyTab({
         </Text>
       )}
       {b.kind === 'json' && (
-        <CodeSurface
+        <TextInputPanel
           label="JSON body"
           language="json"
           value={b.text}
@@ -125,7 +125,7 @@ export function BodyTab({
               placeholder="text/plain"
             />
           </Stack>
-          <CodeSurface
+          <TextInputPanel
             label="Raw body"
             language="plain"
             value={b.text}

@@ -25,7 +25,7 @@ export function Preview({
       title="Preview"
       baseCss={baseCss}
       allowRemoteImages={allowRemoteImages}
-      className="h-full"
+      className="h-screen max-h-180 min-h-96"
     />
   );
 }

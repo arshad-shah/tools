@@ -7,7 +7,10 @@ interface FlagTogglesProps {
   onToggle: (letter: string) => void;
 }
 
-/** One pressed-state button per flag, with its Alt shortcut in the tooltip. */
+/**
+ * One pressed-state toggle per flag (aria-pressed; selection is never drawn
+ * as primary), with its Alt shortcut in the tooltip.
+ */
 export const FlagToggles: React.FC<FlagTogglesProps> = ({
   flags,
   onToggle,
@@ -22,7 +25,7 @@ export const FlagToggles: React.FC<FlagTogglesProps> = ({
           shortcut={`Alt+${f.flag.toUpperCase()}`}
         >
           <Button
-            variant={on ? 'primary' : 'secondary'}
+            variant={on ? 'secondary' : 'ghost'}
             size="sm"
             aria-pressed={on}
             aria-label={`${f.label} (${f.flag})`}

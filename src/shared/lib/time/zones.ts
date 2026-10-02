@@ -57,6 +57,16 @@ export function wallClockAt(epochMs: number, zone: string): WallClock {
   };
 }
 
+/**
+ * `Date.UTC(y, month0, d)` for any year: Date.UTC maps years 0 to 99 to
+ * 1900-1999. Out-of-range months and days roll over as they do there.
+ */
+export function utcDate(y: number, month0: number, d: number): number {
+  const t = new Date(0);
+  t.setUTCFullYear(y, month0, d);
+  return t.getTime();
+}
+
 const utcOf = (w: WallClock) => {
   const t = new Date(0);
   t.setUTCFullYear(w.y, w.m - 1, w.d);
@@ -64,10 +74,15 @@ const utcOf = (w: WallClock) => {
   return t.getTime();
 };
 
+/** Milliseconds east of UTC, exact to the second (LMT offsets have them). */
+function zoneOffsetMs(zone: string, epochMs: number): number {
+  const whole = Math.floor(epochMs / 1000) * 1000;
+  return utcOf(wallClockAt(whole, zone)) - whole;
+}
+
 /** Minutes east of UTC in `zone` at an instant (Europe/Dublin summer: 60). */
 export function zoneOffsetMinutes(zone: string, epochMs: number): number {
-  const whole = Math.floor(epochMs / 1000) * 1000;
-  return Math.round((utcOf(wallClockAt(whole, zone)) - whole) / 60_000);
+  return Math.round(zoneOffsetMs(zone, epochMs) / 60_000);
 }
 
 const MONTHS_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -104,16 +119,16 @@ export function wallClockToEpoch(
   const fraction = w.ss - Math.floor(w.ss);
   const t = utcOf({ ...w, ss: Math.floor(w.ss) });
   const day = 86_400_000;
-  const before = zoneOffsetMinutes(zone, t - day);
-  const after = zoneOffsetMinutes(zone, t + day);
-  const candidates = [...new Set([before, zoneOffsetMinutes(zone, t), after])];
+  const before = zoneOffsetMs(zone, t - day);
+  const after = zoneOffsetMs(zone, t + day);
+  const candidates = [...new Set([before, zoneOffsetMs(zone, t), after])];
   const valid = candidates
-    .map((o) => t - o * 60_000)
+    .map((o) => t - o)
     .filter((e) => utcOf(wallClockAt(e, zone)) === t)
     .sort((a, b) => a - b);
   const ms = Math.round(fraction * 1000);
   if (valid.length === 0)
-    return { epochMs: t - before * 60_000 + ms, status: 'skipped' };
+    return { epochMs: t - before + ms, status: 'skipped' };
   return {
     epochMs: valid[0] + ms,
     status: [...new Set(valid)].length > 1 ? 'ambiguous' : 'ok',

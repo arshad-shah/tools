@@ -79,12 +79,26 @@ export function ContrastPair({
         className,
       )}
     >
+      {/*
+        The preview shows the pair as it is, failing contrast included, so
+        its text is generated content: decorative (aria-hidden), and the
+        ratio and levels below are the accessible result. axe would
+        otherwise flag the very failure the preview demonstrates.
+      */}
       <div
+        aria-hidden="true"
+        data-contrast-preview=""
         className="rounded-md border border-line-control px-4 py-3"
         style={{ color: result.fgCss, backgroundColor: result.bgCss }}
       >
-        <p className="text-base">{sample}</p>
-        <p className="text-xl font-bold">{sample}</p>
+        <span
+          data-sample={sample}
+          className="block text-base before:content-[attr(data-sample)]"
+        />
+        <span
+          data-sample={sample}
+          className="block text-xl font-bold before:content-[attr(data-sample)]"
+        />
       </div>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <dt className="text-fg-muted">WCAG ratio</dt>

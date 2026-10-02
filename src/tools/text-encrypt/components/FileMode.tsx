@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { IconDownload, IconLock, IconUnlock, IconX } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
   DropZone,
+  ErrorState,
   Inline,
   LoadingState,
   Stack,
@@ -12,7 +11,7 @@ import {
 } from '@/shared/ui';
 import { ENVELOPE_MAGIC } from '@/shared/lib/crypto/aead';
 import { saveBlob } from '@/shared/lib/download';
-import { toToolError } from '@/shared/lib/errors';
+import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import type { useCryptoJob } from '../hooks/useCryptoJob';
 import {
@@ -60,7 +59,7 @@ export const FileMode: React.FC<FileModeProps> = ({
   );
   const [confirm, setConfirm] = useState('');
   const [done, setDone] = useState<Done | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<ToolError | null>(null);
   const decrypting = sealed?.file === file && sealed.yes;
   useEffect(() => {
     if (!file) return;
@@ -76,7 +75,7 @@ export const FileMode: React.FC<FileModeProps> = ({
   const run = async () => {
     if (!file) return;
     setDone(null);
-    setError('');
+    setError(null);
     try {
       checkFileSize(file.size);
       if (decrypting) {
@@ -99,12 +98,12 @@ export const FileMode: React.FC<FileModeProps> = ({
           });
       }
     } catch (e) {
-      setError(toToolError(e).message);
+      setError(toToolError(e));
     }
   };
 
   const shownError =
-    error || (job.status === 'error' ? (job.error?.message ?? '') : '');
+    error ?? (job.status === 'error' ? (job.error ?? null) : null);
 
   return (
     <Stack gap="4">
@@ -121,7 +120,7 @@ export const FileMode: React.FC<FileModeProps> = ({
             onClick={() => {
               onFile(null);
               setDone(null);
-              setError('');
+              setError(null);
               job.reset();
             }}
           >
@@ -173,9 +172,14 @@ export const FileMode: React.FC<FileModeProps> = ({
         </>
       )}
       {shownError && (
-        <Alert status="danger">
-          <AlertDescription>{shownError}</AlertDescription>
-        </Alert>
+        <ErrorState
+          title={
+            decrypting
+              ? 'Could not decrypt the file'
+              : 'Could not encrypt the file'
+          }
+          error={shownError}
+        />
       )}
       {done && (
         <Inline gap="2" align="center" wrap>

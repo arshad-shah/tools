@@ -5,10 +5,9 @@ import {
   Card,
   CardBody,
   Inline,
-  Label,
   Stack,
-  Switch,
   Text,
+  SwitchField,
 } from '@/shared/ui';
 import type { HistoryItem } from '../lib/history';
 import { statusTone } from '../lib/response-view';
@@ -38,14 +37,12 @@ export function HistoryPanel({
 }: Props) {
   return (
     <Stack gap="2">
-      <Inline gap="2" align="center">
-        <Switch
-          id="history-persist"
-          checked={persist}
-          onCheckedChange={onPersistChange}
-        />
-        <Label htmlFor="history-persist">Remember history (no bodies)</Label>
-      </Inline>
+      <SwitchField
+        label="Remember history (no bodies)"
+        id="history-persist"
+        checked={persist}
+        onCheckedChange={onPersistChange}
+      />
       {items.length === 0 ? (
         <Text size="sm" tone="subtle">
           Sent requests appear here.

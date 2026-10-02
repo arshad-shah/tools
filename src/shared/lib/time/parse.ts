@@ -3,6 +3,7 @@ import {
   checkWallClock,
   daysInMonth,
   localZone,
+  utcDate,
   wallClockAt,
   wallClockToEpoch,
   zoneOffsetMinutes,
@@ -71,12 +72,14 @@ function parseIso(t: string, zone: string): number | null {
   checkWallClock(w);
   const tz = m[8];
   if (!tz) return wallClockToEpoch(w, zone).epochMs;
-  const offset =
-    tz === 'Z' || tz === 'z'
-      ? 0
-      : (tz[0] === '-' ? -1 : 1) *
-        (Number(tz.slice(1, 3)) * 60 +
-          Number(tz.replace(':', '').slice(3, 5) || 0));
+  let offset = 0;
+  if (tz !== 'Z' && tz !== 'z') {
+    const hours = Number(tz.slice(1, 3));
+    const minutes = Number(tz.replace(':', '').slice(3, 5) || 0);
+    if (hours > 23 || minutes > 59)
+      throw invalid(`The UTC offset ${tz} is out of range`);
+    offset = (tz[0] === '-' ? -1 : 1) * (hours * 60 + minutes);
+  }
   return wallClockToEpoch(w, 'UTC').epochMs - offset * 60_000;
 }
 
@@ -181,7 +184,7 @@ function parseRelative(t: string, now: number, zone: string): number | null {
     fixedMs = 0;
     const shift = base === 'tomorrow' ? 1 : base === 'yesterday' ? -1 : 0;
     if (shift) {
-      const day = new Date(Date.UTC(w.y, w.m - 1, w.d + shift));
+      const day = new Date(utcDate(w.y, w.m - 1, w.d + shift));
       w = {
         ...w,
         y: day.getUTCFullYear(),
@@ -213,7 +216,7 @@ function parseRelative(t: string, now: number, zone: string): number | null {
   // Calendar units move the wall clock (DST-safe); h, min and s are exact.
   w = addMonths(w, calendarMonths);
   if (calendarDays) {
-    const day = new Date(Date.UTC(w.y, w.m - 1, w.d + calendarDays));
+    const day = new Date(utcDate(w.y, w.m - 1, w.d + calendarDays));
     w = {
       ...w,
       y: day.getUTCFullYear(),

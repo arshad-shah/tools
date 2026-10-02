@@ -46,3 +46,14 @@ export function alignWrappedRows(root: HTMLElement): void {
         el.style.height = `${at.height}px`;
     });
 }
+
+/** Gutter width in characters: the longest label or line number. */
+export function gutterDigits(
+  lineCount: number,
+  labels: readonly (number | string | null)[] | undefined,
+): number {
+  if (!labels) return String(lineCount).length;
+  let n = 1;
+  for (const l of labels) n = Math.max(n, String(l ?? '').length);
+  return n;
+}

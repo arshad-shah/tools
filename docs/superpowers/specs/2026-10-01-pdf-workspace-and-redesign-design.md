@@ -27,7 +27,7 @@
 3. Redaction output passes automated verification (no glyphs, image pixels or annotations inside redacted areas; search terms absent) or the export is refused.
 4. A 300-page document scrolls at ≥ 50 fps on a mid-range laptop; first page visible ≤ 1.5 s after drop (20 MB fixture).
 5. Refreshing the tab mid-edit restores the document, the full undo history and the current mode.
-6. All 30 non-PDF tools run under the new shell, hub and tokens with unchanged behaviour.
+6. All 32 non-PDF tools run under the new shell, hub and tokens with unchanged behaviour (30 at the time of writing; phase 6 spec section 1 criterion 1 corrects the count to 32).
 7. Both themes pass axe (0 serious/critical) and the Playwright visual suite; lint, typecheck, unit, e2e and build pass in CI.
 8. The design-system rules in §1A hold with **zero violations** in CI: every icon comes from `src/shared/ui/icons` (no `lucide-react` import elsewhere), every visual element comes from `src/shared/ui`, and no emoji, pictographic, dingbat, arrow or box-drawing glyph appears in source strings, JSX text or built assets.
 

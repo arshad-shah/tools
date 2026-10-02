@@ -14,6 +14,7 @@ import {
 import { IconExternalLink } from '@/shared/ui/icons';
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import {
   formatInBase,
   fromTwos,
@@ -88,6 +89,18 @@ export const Programmer: React.FC<ProgrammerProps> = ({
 
   const show = (base: Base, group: number) =>
     base === 10 ? current.toString() : formatInBase(pattern, base, { group });
+
+  const openInConverter = () =>
+    sendTo(navigate, 'number-converter', {
+      kind: 'text',
+      mime: 'text/plain',
+      text: current.toString(),
+      sourceTool: 'calculator',
+    });
+
+  useSendCommands('calculator', [
+    { target: 'number-converter', run: openInConverter },
+  ]);
 
   const evaluate = () => {
     try {
@@ -206,6 +219,7 @@ export const Programmer: React.FC<ProgrammerProps> = ({
               invalid={draft?.base === f.base && fieldError !== null}
               className="font-mono"
               spellCheck={false}
+              inputMode={f.base === 2 || f.base === 8 ? 'numeric' : 'text'}
             />
             {draft?.base === f.base && fieldError && (
               <Text size="xs" className="text-danger" role="alert">
@@ -228,14 +242,7 @@ export const Programmer: React.FC<ProgrammerProps> = ({
           type="button"
           variant="secondary"
           leftIcon={<IconExternalLink size="sm" />}
-          onClick={() =>
-            sendTo(navigate, 'number-converter', {
-              kind: 'text',
-              mime: 'text/plain',
-              text: current.toString(),
-              sourceTool: 'calculator',
-            })
-          }
+          onClick={openInConverter}
         >
           Open in Number Base Converter
         </Button>

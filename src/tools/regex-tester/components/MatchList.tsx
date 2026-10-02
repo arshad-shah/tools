@@ -1,9 +1,8 @@
 import React from 'react';
-import { IconCopy } from '@/shared/ui/icons';
 import {
   Badge,
   Code,
-  IconButton,
+  CopyButton,
   Inline,
   Stack,
   Text,
@@ -16,8 +15,7 @@ const show = (s: string | undefined) => (s ? s : 'empty');
 const MatchRow: React.FC<{
   match: Match;
   index: number;
-  onCopy(text: string): void;
-}> = ({ match, index, onCopy }) => (
+}> = ({ match, index }) => (
   <Stack gap="1" className="border-b border-line px-3 py-2">
     <Inline gap="2" align="center" justify="between">
       <Inline gap="2" align="center">
@@ -28,12 +26,10 @@ const MatchRow: React.FC<{
           at {match.index} to {match.index + match.length}
         </Text>
       </Inline>
-      <IconButton
-        variant="ghost"
-        size="sm"
-        label={`Copy match ${index + 1}`}
-        icon={<IconCopy size="sm" />}
-        onClick={() => onCopy(match.text)}
+      <CopyButton
+        label={`match ${index + 1}`}
+        value={match.text}
+        disabled={match.text === ''}
       />
     </Inline>
     <Code className="self-start whitespace-pre-wrap">{show(match.text)}</Code>
@@ -59,8 +55,7 @@ const rowHeight = (m: Match) => 64 + (m.groups || m.namedGroups ? 24 : 0);
 /** Every match (virtualised), with its position, groups and named groups. */
 export const MatchList: React.FC<{
   matches: Match[];
-  onCopy(text: string): void;
-}> = ({ matches, onCopy }) => (
+}> = ({ matches }) => (
   <VirtualList
     items={matches}
     estimateSize={(i) => rowHeight(matches[i])}
@@ -69,6 +64,6 @@ export const MatchList: React.FC<{
     ariaLabel="Matches"
     getKey={(m, i) => `${m.index}:${i}`}
     className="rounded-md border border-line"
-    renderItem={(m, i) => <MatchRow match={m} index={i} onCopy={onCopy} />}
+    renderItem={(m, i) => <MatchRow match={m} index={i} />}
   />
 );

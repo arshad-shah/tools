@@ -27,6 +27,32 @@ describe('useToolCommands', () => {
     fireEvent.keyDown(document.body, { key: 'n' });
     expect(single).toHaveBeenCalledTimes(1);
   });
+  it('does not fire Ctrl+Alt shortcuts in fields while AltGraph is held', () => {
+    const run = vi.fn();
+    function H() {
+      useToolCommands('altgr', [
+        { id: 'q', label: 'Q', shortcut: 'Mod+Alt+Q', run },
+      ]);
+      return <textarea aria-label="field" />;
+    }
+    const { getByLabelText } = render(<H />);
+    const field = getByLabelText('field');
+    // Windows reports AltGr+Q (an "@" on a German layout) as Ctrl+Alt.
+    const altGr = {
+      key: '@',
+      code: 'KeyQ',
+      ctrlKey: true,
+      altKey: true,
+      modifierAltGraph: true,
+    };
+    fireEvent.keyDown(field, altGr);
+    expect(run).not.toHaveBeenCalled();
+    // A real Ctrl+Alt+Q in the field, and AltGr outside fields, still fire.
+    fireEvent.keyDown(field, { key: 'q', ctrlKey: true, altKey: true });
+    expect(run).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(document.body, altGr);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
   it('skips disabled commands', () => {
     const run = vi.fn();
     function H() {

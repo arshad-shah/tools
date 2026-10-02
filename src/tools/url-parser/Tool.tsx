@@ -4,6 +4,7 @@ import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { sendTo, useHandoff } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
@@ -15,6 +16,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  CopyButton,
   Inline,
   Input,
   Label,
@@ -26,9 +28,7 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 import {
-  IconCheck,
   IconClipboard,
-  IconCopy,
   IconQrCode,
   IconSend,
   IconType,
@@ -72,7 +72,7 @@ export default function UrlInspector() {
   const [settings, update] = urlSettings.useSettings();
   const [text, setText] = useState(SAMPLE);
   const [parsed, setParsed] = useState<Parsed>(() => parse(SAMPLE, '', null));
-  const { copiedKey, copy } = useClipboard();
+  const { copy } = useClipboard();
   const [tab, setTab] = useState('parts');
 
   const share = useShareableState({
@@ -116,12 +116,30 @@ export default function UrlInspector() {
     }
   };
 
+  const canSendHttp = !!model && /^https?:$/.test(model.protocol);
+  const sendHttp = () =>
+    model && sendTo(navigate, 'api-request', toHttpClient(model));
+  const makeQr = () => sendTo(navigate, 'qr-code-generator', asUriList(text));
+  const openEncoder = () =>
+    sendTo(navigate, 'url-encoder-decoder', {
+      kind: 'text',
+      mime: 'text/plain',
+      sourceTool: 'url-parser',
+      text,
+    });
+
+  useSendCommands('url-parser', [
+    { target: 'api-request', run: sendHttp, enabled: canSendHttp },
+    { target: 'qr-code-generator', run: makeQr, enabled: !!model },
+    { target: 'url-encoder-decoder', run: openEncoder, enabled: !!text },
+  ]);
+
   useToolCommands('url-parser', [
     {
       id: 'copy',
       label: 'Copy URL',
       shortcut: 'Mod+Shift+C',
-      run: () => void copy(text, 'url'),
+      run: () => void copy(text),
     },
     {
       id: 'clear',
@@ -147,6 +165,9 @@ export default function UrlInspector() {
             <Label htmlFor="url-input">URL</Label>
             <Input
               id="url-input"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
               value={text}
               onChange={(v) => fromText(v)}
               invalid={!!parsed.error}
@@ -156,7 +177,7 @@ export default function UrlInspector() {
               aria-describedby={parsed.error ? 'url-error' : undefined}
             />
             {parsed.error && (
-              <Alert status="danger" id="url-error">
+              <Alert status="danger" size="sm" id="url-error">
                 <AlertDescription>{parsed.error.message}</AlertDescription>
               </Alert>
             )}
@@ -166,6 +187,9 @@ export default function UrlInspector() {
               </Label>
               <Input
                 id="url-base"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
                 value={settings.base}
                 onChange={(v) => {
                   update({ base: v });
@@ -184,29 +208,13 @@ export default function UrlInspector() {
               >
                 Paste
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={
-                  copiedKey === 'url' ? (
-                    <IconCheck size="sm" />
-                  ) : (
-                    <IconCopy size="sm" />
-                  )
-                }
-                onClick={() => void copy(text, 'url')}
-                disabled={!text}
-              >
-                Copy URL
-              </Button>
+              <CopyButton variant="text" label="URL" value={text} />
               <Button
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconSend size="sm" />}
-                disabled={!model || !/^https?:$/.test(model.protocol)}
-                onClick={() =>
-                  model && sendTo(navigate, 'api-request', toHttpClient(model))
-                }
+                disabled={!canSendHttp}
+                onClick={sendHttp}
               >
                 Send to HTTP Client
               </Button>
@@ -215,9 +223,7 @@ export default function UrlInspector() {
                 variant="secondary"
                 leftIcon={<IconQrCode size="sm" />}
                 disabled={!model}
-                onClick={() =>
-                  sendTo(navigate, 'qr-code-generator', asUriList(text))
-                }
+                onClick={makeQr}
               >
                 Make QR
               </Button>
@@ -226,18 +232,11 @@ export default function UrlInspector() {
                 variant="secondary"
                 leftIcon={<IconType size="sm" />}
                 disabled={!text}
-                onClick={() =>
-                  sendTo(navigate, 'url-encoder-decoder', {
-                    kind: 'text',
-                    mime: 'text/plain',
-                    sourceTool: 'url-parser',
-                    text,
-                  })
-                }
+                onClick={openEncoder}
               >
                 Open in Text Encoder
               </Button>
-              <ShareButton share={share} label="Share link" size="sm" />
+              <ShareButton share={share} />
             </Inline>
             {secrets.length > 0 && (
               <Alert status="warning">

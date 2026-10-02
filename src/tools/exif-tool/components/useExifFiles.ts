@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { saveBlob, saveZip } from '@/shared/lib/download';
+import { deriveFilename, saveBlob, saveZip } from '@/shared/lib/download';
 import { ToolError, type ToolErrorCode } from '@/shared/lib/errors';
 import { readBytes } from '@/shared/lib/files';
 import { newId } from '@/shared/lib/id';
@@ -153,7 +153,13 @@ export function useExifFiles() {
 
   const downloadOne = useCallback((entry: ExifEntry) => {
     if (entry.status !== 'done' || !entry.output) return;
-    saveBlob(entry.output, entry.file.name, mimeOf(entry));
+    const ext =
+      /\.([^./\\]+)$/.exec(entry.file.name)?.[1] ?? entry.meta?.format ?? 'bin';
+    saveBlob(
+      entry.output,
+      deriveFilename(entry.file.name, 'clean', ext),
+      mimeOf(entry),
+    );
   }, []);
 
   const resetJob = job.reset;

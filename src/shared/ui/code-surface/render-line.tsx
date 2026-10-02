@@ -1,6 +1,5 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
-import type { Token } from '@/shared/lib/syntax/tokenize';
 import {
   markerSpan,
   RANGE_CLASS,
@@ -9,7 +8,8 @@ import {
   TOKEN_CLASS,
   UNDERLINE,
 } from './decor';
-import type { CodeMarker, CodeRange } from './types';
+import { sameLine, type LineProps } from './same-line';
+import type { CodeRange } from './types';
 
 function topAt<T>(
   items: readonly T[],
@@ -30,17 +30,7 @@ function topAt<T>(
  * (one per contiguous range, spanning token boundaries) and marker
  * underlines. `ranges` and `markers` are relative to the line.
  */
-export function LineContent({
-  text,
-  tokens,
-  ranges,
-  markers,
-}: {
-  text: string;
-  tokens: readonly Token[];
-  ranges: readonly CodeRange[];
-  markers: readonly CodeMarker[];
-}) {
+function LineContentImpl({ text, tokens, ranges, markers }: LineProps) {
   if (!text) return null;
   if (!tokens.length && !ranges.length && !markers.length) return <>{text}</>;
   const underlines = markers.map((m) => markerSpan(text, m));
@@ -103,3 +93,10 @@ export function LineContent({
     </>
   );
 }
+
+/**
+ * Memoised: a parent re-render (a settings change elsewhere in the tool)
+ * leaves unchanged lines alone, which matters in wrap mode where every line
+ * is mounted.
+ */
+export const LineContent = React.memo(LineContentImpl, sameLine);

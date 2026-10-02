@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Inline, Label, NumberInput, Select, Switch } from '@/shared/ui';
+import { Inline, Label, NumberInput, Select, SwitchField } from '@/shared/ui';
 import {
   SQL_DIALECT_LABEL,
   SQL_DIALECTS,
@@ -20,24 +20,6 @@ interface OptionsPanelProps {
   onChange(patch: Partial<FormatOptions>): void;
   mangle: boolean;
   onMangleChange(mangle: boolean): void;
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange(v: boolean): void;
-}) {
-  const id = useId();
-  return (
-    <Inline gap="2" align="center" wrap={false}>
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-      <Label htmlFor={id}>{label}</Label>
-    </Inline>
-  );
 }
 
 /** Options for the chosen language (Prettier subset, SQL, minifier). */
@@ -87,15 +69,15 @@ export function OptionsPanel({
       )}
       {js && (
         <>
-          <Toggle
+          <SwitchField
             label="Single quotes"
             checked={options.singleQuote}
-            onChange={(v) => onChange({ singleQuote: v })}
+            onCheckedChange={(v) => onChange({ singleQuote: v })}
           />
-          <Toggle
+          <SwitchField
             label="Semicolons"
             checked={options.semi}
-            onChange={(v) => onChange({ semi: v })}
+            onCheckedChange={(v) => onChange({ semi: v })}
           />
           <Inline gap="2" align="center" wrap={false}>
             <Label htmlFor={commaId}>Trailing commas</Label>
@@ -115,10 +97,10 @@ export function OptionsPanel({
         </>
       )}
       {prettier && (
-        <Toggle
+        <SwitchField
           label="Bracket spacing"
           checked={options.bracketSpacing}
-          onChange={(v) => onChange({ bracketSpacing: v })}
+          onCheckedChange={(v) => onChange({ bracketSpacing: v })}
         />
       )}
       {sql && (
@@ -155,10 +137,10 @@ export function OptionsPanel({
         </>
       )}
       {language === 'javascript' && (
-        <Toggle
+        <SwitchField
           label="Mangle names"
           checked={mangle}
-          onChange={onMangleChange}
+          onCheckedChange={onMangleChange}
         />
       )}
     </Inline>

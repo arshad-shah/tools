@@ -8,15 +8,19 @@ import React, {
 import { useNavigate } from 'react-router-dom';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { sendTo } from '@/shared/lib/handoff';
+import { notify } from '@/shared/lib/notify';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
   Grid,
+  PaneTabs,
   Stack,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
   TextInputPanel,
+  usePaneTab,
   type CodeTreeHandle,
 } from '@/shared/ui';
 import { CheatSheet } from './components/CheatSheet';
@@ -66,7 +70,9 @@ const RegexTester: React.FC = () => {
   const [selection, setSelection] = useState({ pattern: '', id: '' });
   const runner = useRegexRunner();
   const navigate = useNavigate();
-  const { copied, copy } = useClipboard();
+  const { copy } = useClipboard();
+  // R41: the test text and the results are tabs, one at a time.
+  const pane = usePaneTab('regex-tester', 'text');
   const treeRef = useRef<CodeTreeHandle>(null);
 
   const cases = useMemo(
@@ -117,18 +123,27 @@ const RegexTester: React.FC = () => {
     enabled: mode === 'match',
   });
 
-  const copyText = useCallback((value: string) => void copy(value), [copy]);
+  // Menu and palette copies (buttons use CopyButton): failures toast in
+  // useClipboard, success says what was copied.
+  const copyText = useCallback(
+    (value: string, what: string) =>
+      void copy(value).then((ok) => ok && notify.success(`Copied ${what}`)),
+    [copy],
+  );
   const setFlagsTo = (next: string) => updateSettings({ flags: next });
   const onToggleFlag = (letter: string) =>
     setFlagsTo(toggleFlag(flags, letter));
   const setMode = (m: RegexMode) => updateSettings({ mode: m });
   const logPayload = valid ? logFormatPayload(pattern, flags) : null;
+  const sendLogFormat = () =>
+    logPayload && sendTo(navigate, 'log-parser', logPayload);
 
   const pickTemplate = (t: RegexTemplate) => {
     setPattern(t.pattern);
     setFlagsTo(t.flags);
     setText(t.samples.join('\n'));
     setTemplate(t.name);
+    pane.show('results');
   };
   const loadSample = () => setText(sampleTextFor(template));
   const clearAll = () => {
@@ -139,7 +154,7 @@ const RegexTester: React.FC = () => {
   };
   const copyCode = () => {
     if (valid && pattern)
-      copyText(toSnippet(snippetLang, pattern, flags, text).code);
+      copyText(toSnippet(snippetLang, pattern, flags, text).code, 'code');
   };
 
   useRegexCommands({
@@ -153,6 +168,65 @@ const RegexTester: React.FC = () => {
     loadSample,
     focusExplain: () => treeRef.current?.focusId('r'),
   });
+  useSendCommands('regex-tester', [
+    { target: 'log-parser', run: sendLogFormat, enabled: logPayload !== null },
+  ]);
+
+  const results = (
+    <Tabs value={mode} onValueChange={(v) => isMode(v) && setMode(v)}>
+      <TabsList aria-label="Mode">
+        {REGEX_MODES.map((m) => (
+          <TabsTrigger key={m} value={m}>
+            {MODE_LABEL[m]}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      <TabsContent value="match" className="pt-4">
+        <MatchTab
+          text={text}
+          matches={matchJob.matches}
+          error={matchJob.error}
+          pending={matchJob.matching}
+          hasResult={matchJob.hasResult}
+          onRetry={matchJob.retry}
+          group={selected?.groupIndex ?? null}
+        />
+      </TabsContent>
+      <TabsContent value="replace" className="pt-4">
+        <ReplaceTab
+          runner={runner}
+          pattern={pattern}
+          flags={flags}
+          text={text}
+          valid={valid}
+          replacement={replacement}
+          onReplacementChange={setReplacement}
+        />
+      </TabsContent>
+      <TabsContent value="split" className="pt-4">
+        <SplitTab
+          runner={runner}
+          pattern={pattern}
+          flags={flags}
+          text={text}
+          valid={valid}
+        />
+      </TabsContent>
+      <TabsContent value="tests" className="pt-4">
+        <TestsTab
+          runner={runner}
+          pattern={pattern}
+          flags={flags}
+          valid={valid}
+          shouldMatch={shouldMatch}
+          shouldNotMatch={shouldNotMatch}
+          onShouldMatchChange={setShouldMatch}
+          onShouldNotMatchChange={setShouldNotMatch}
+          cases={cases}
+        />
+      </TabsContent>
+    </Tabs>
+  );
 
   return (
     <Stack gap="4">
@@ -164,12 +238,12 @@ const RegexTester: React.FC = () => {
           updateSettings({ cheatSheetOpen: !cheatSheetOpen })
         }
         canCopyJs={valid && !!pattern}
-        onCopyAsJs={() => copyText(toJsSnippet(pattern, flags, text))}
+        onCopyAsJs={() =>
+          copyText(toJsSnippet(pattern, flags, text), 'JavaScript')
+        }
         onLoadSample={loadSample}
         canUseAsLogFormat={logPayload !== null}
-        onUseAsLogFormat={() =>
-          logPayload && sendTo(navigate, 'log-parser', logPayload)
-        }
+        onUseAsLogFormat={sendLogFormat}
         onClearAll={clearAll}
       />
       <PatternBar
@@ -179,72 +253,37 @@ const RegexTester: React.FC = () => {
         onToggleFlag={onToggleFlag}
         syntax={syntax}
         highlight={selected}
-        copied={copied}
-        onCopyLiteral={() => copyText(toRegexLiteral(pattern, flags))}
+        literal={toRegexLiteral(pattern, flags)}
       />
-      <TextInputPanel
-        value={text}
-        onChange={setText}
-        language="plain"
-        label="Test string"
-        placeholder="Enter text to test the pattern against"
-        minHeight={120}
-        maxHeight={320}
+      <PaneTabs
+        id="regex-tester"
+        label="Regex panes"
+        value={pane.value}
+        onValueChange={pane.show}
+        panes={[
+          {
+            id: 'text',
+            label: 'Test text',
+            content: (
+              <TextInputPanel
+                value={text}
+                onChange={setText}
+                language="plain"
+                label="Test string"
+                placeholder="Enter text to test the pattern against"
+                minHeight={120}
+                maxHeight={320}
+              />
+            ),
+          },
+          {
+            id: 'results',
+            label: 'Results',
+            changeKey: `${matchJob.matches.length}:${pattern}:${flags}:${text}`,
+            content: results,
+          },
+        ]}
       />
-      <Tabs value={mode} onValueChange={(v) => isMode(v) && setMode(v)}>
-        <TabsList aria-label="Mode">
-          {REGEX_MODES.map((m) => (
-            <TabsTrigger key={m} value={m}>
-              {MODE_LABEL[m]}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="match" className="pt-4">
-          <MatchTab
-            text={text}
-            matches={matchJob.matches}
-            error={matchJob.error}
-            pending={matchJob.matching}
-            hasResult={matchJob.hasResult}
-            onRetry={matchJob.retry}
-            group={selected?.groupIndex ?? null}
-            onCopy={copyText}
-          />
-        </TabsContent>
-        <TabsContent value="replace" className="pt-4">
-          <ReplaceTab
-            runner={runner}
-            pattern={pattern}
-            flags={flags}
-            text={text}
-            valid={valid}
-            replacement={replacement}
-            onReplacementChange={setReplacement}
-          />
-        </TabsContent>
-        <TabsContent value="split" className="pt-4">
-          <SplitTab
-            runner={runner}
-            pattern={pattern}
-            flags={flags}
-            text={text}
-            valid={valid}
-          />
-        </TabsContent>
-        <TabsContent value="tests" className="pt-4">
-          <TestsTab
-            runner={runner}
-            pattern={pattern}
-            flags={flags}
-            valid={valid}
-            shouldMatch={shouldMatch}
-            shouldNotMatch={shouldNotMatch}
-            onShouldMatchChange={setShouldMatch}
-            onShouldNotMatchChange={setShouldNotMatch}
-            cases={cases}
-          />
-        </TabsContent>
-      </Tabs>
       <Grid max={2} gap="4">
         <ExplainPanel
           tree={tree}
@@ -259,7 +298,6 @@ const RegexTester: React.FC = () => {
           valid={valid}
           language={snippetLang}
           onLanguageChange={setSnippetLang}
-          onCopy={copyText}
         />
       </Grid>
       <TemplateDialog

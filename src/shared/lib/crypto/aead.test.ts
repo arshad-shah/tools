@@ -54,6 +54,17 @@ describe('aead envelope', () => {
     );
   });
 
+  it('opens a frozen envelope sealed under an NFC passphrase given as NFD', async () => {
+    // node:crypto, PBKDF2-SHA-256 600,000, salt 10..1f, IV b0..bb, passphrase
+    // "caf\u00e9 cr\u00e8me" (NFC). Typed decomposed, it must still open.
+    const kat = hex(
+      '54454e430101000927c0101112131415161718191a1b1c1d1e1fb0b1b2b3b4b5b6b7b8b9babb38a7c057d3b18cc1e138fb42b2197fbc6b9dfdbe4eb51d2227c3cb4e90526c55',
+    );
+    const nfd = 'cafe\u0301 cre\u0300me';
+    expect(nfd).not.toBe(nfd.normalize('NFC'));
+    expect(utf8Decode(await open(kat, nfd))).toBe('nfc known answer');
+  });
+
   it('round-trips with PBKDF2', async () => {
     expect(utf8Decode(sealed.subarray(0, 4))).toBe('TENC');
     expect([sealed[4], sealed[5]]).toEqual([1, 1]);
@@ -119,7 +130,9 @@ describe('aead envelope', () => {
     await expect(open(body, 'pw')).rejects.toMatchObject({
       code: 'WRONG_PASSWORD',
     });
-    // Byte 12 is inside the salt: part of the authenticated header.
+    // Byte 12 is inside the salt. Flipping it changes the derived key, so
+    // this shows tampering is caught, not the AAD binding as such: every
+    // header byte past magic, version and KDF id feeds the KDF too.
     const header = sealed.slice();
     header[12] ^= 1;
     await expect(open(header, 'pw')).rejects.toMatchObject({

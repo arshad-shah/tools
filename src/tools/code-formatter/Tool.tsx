@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { LanguageId } from '@/shared/lib/syntax/tokenize';
-import { copyText } from '@/shared/lib/clipboard';
+import { useClipboard } from '@/shared/lib/clipboard';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
-  Alert,
-  AlertDescription,
   Badge,
   Button,
+  ErrorState,
   Inline,
   Label,
+  PaneTabs,
   Select,
-  SplitPane,
   Stack,
   TextInputPanel,
+  usePaneTab,
   type CodeMarker,
 } from '@/shared/ui';
 import { IconMinimize2, IconSendTo, IconWand2 } from '@/shared/ui/icons';
@@ -92,6 +93,8 @@ export default function CodeFormatter() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<ToolError | null>(null);
   const [busy, setBusy] = useState(false);
+  const tab = usePaneTab(TOOL_ID, 'input');
+  const { copy } = useClipboard();
   const formatter = useRef<ReturnType<typeof createFormatter> | null>(null);
   useEffect(
     () => () => {
@@ -132,15 +135,20 @@ export default function CodeFormatter() {
           before: bytes(input),
           after: bytes(code),
         });
+        tab.show('output');
       } else if (isMinifyLanguage(language)) {
         const r = await formatter.current.minify(input, language, {
           mangle: settings.mangle,
         });
         setResult({ ...r, action, language });
+        tab.show('output');
       }
     } catch (e) {
       setResult(null);
-      setError(toToolError(e));
+      const err = toToolError(e);
+      setError(err);
+      // A syntax error is marked in the input: show it.
+      if (err instanceof CodeError) tab.show('input');
     } finally {
       setBusy(false);
     }
@@ -169,6 +177,10 @@ export default function CodeFormatter() {
     });
   };
 
+  useSendCommands(TOOL_ID, [
+    { target: 'text-diff-checker', run: showChanges, enabled: !!result },
+  ]);
+
   useToolCommands(TOOL_ID, [
     {
       id: 'format',
@@ -188,7 +200,7 @@ export default function CodeFormatter() {
       id: 'copy',
       label: 'Copy result',
       shortcut: 'Mod+Shift+C',
-      run: () => result && void copyText(result.code),
+      run: () => result && void copy(result.code),
       enabled: result !== null,
     },
     {
@@ -205,6 +217,55 @@ export default function CodeFormatter() {
   ]);
 
   const outputName = `${result?.action === 'minify' ? 'minified' : 'formatted'}.${LANGUAGE_EXTENSION[language]}`;
+
+  const inputPane = (
+    <TextInputPanel
+      label="Input"
+      value={input}
+      onChange={changeInput}
+      language={SURFACE[language]}
+      samples={SAMPLES}
+      maxBytes={MAX_BYTES}
+      markers={markers}
+      onFile={(file) => {
+        setFileName(file.name);
+      }}
+      handoff={(p) => p.kind === 'text'}
+      minHeight={320}
+      extraMeta={
+        error instanceof CodeError
+          ? [
+              <span key="err" role="alert">
+                {error.line !== undefined
+                  ? `Line ${error.line}${error.column !== undefined ? `:${error.column}` : ''}: `
+                  : ''}
+                {error.message}
+              </span>,
+            ]
+          : undefined
+      }
+    />
+  );
+  const outputPane = (
+    <TextInputPanel
+      label="Output"
+      value={result?.code ?? ''}
+      onChange={() => {}}
+      language={SURFACE[result?.language ?? language]}
+      readOnly
+      downloadName={outputName}
+      minHeight={320}
+      extraMeta={
+        result
+          ? [
+              <Badge key="sizes" variant="soft" tone="accent" size="sm">
+                {`Before ${formatBytes(result.before)}, after ${formatBytes(result.after)} (${formatSizeChange(result.before, result.after)})`}
+              </Badge>,
+            ]
+          : undefined
+      }
+    />
+  );
 
   return (
     <Stack gap="4">
@@ -230,6 +291,7 @@ export default function CodeFormatter() {
         </Inline>
         <Button
           size="sm"
+          variant="primary"
           leftIcon={<IconWand2 size="sm" />}
           onClick={() => void run('format')}
           disabled={!input.trim()}
@@ -272,61 +334,24 @@ export default function CodeFormatter() {
       />
 
       {error && !(error instanceof CodeError) && (
-        <Alert status="danger">
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
+        <ErrorState title="Could not format the code" error={error} />
       )}
 
-      <SplitPane
-        direction="horizontal"
-        persistKey="code-formatter"
-        separatorLabel="Resize input and output"
-      >
-        <TextInputPanel
-          label="Input"
-          value={input}
-          onChange={changeInput}
-          language={SURFACE[language]}
-          samples={SAMPLES}
-          maxBytes={MAX_BYTES}
-          markers={markers}
-          onFile={(file) => {
-            setFileName(file.name);
-          }}
-          handoff={(p) => p.kind === 'text'}
-          minHeight={320}
-          extraMeta={
-            error instanceof CodeError
-              ? [
-                  <span key="err" role="alert">
-                    {error.line !== undefined
-                      ? `Line ${error.line}${error.column !== undefined ? `:${error.column}` : ''}: `
-                      : ''}
-                    {error.message}
-                  </span>,
-                ]
-              : undefined
-          }
-        />
-        <TextInputPanel
-          label="Output"
-          value={result?.code ?? ''}
-          onChange={() => {}}
-          language={SURFACE[result?.language ?? language]}
-          readOnly
-          downloadName={outputName}
-          minHeight={320}
-          extraMeta={
-            result
-              ? [
-                  <Badge key="sizes" variant="soft" tone="accent" size="sm">
-                    {`Before ${formatBytes(result.before)}, after ${formatBytes(result.after)} (${formatSizeChange(result.before, result.after)})`}
-                  </Badge>,
-                ]
-              : undefined
-          }
-        />
-      </SplitPane>
+      <PaneTabs
+        id={TOOL_ID}
+        label="Code panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          { id: 'input', label: 'Input', content: inputPane },
+          {
+            id: 'output',
+            label: 'Output',
+            changeKey: result?.code,
+            content: outputPane,
+          },
+        ]}
+      />
     </Stack>
   );
 }

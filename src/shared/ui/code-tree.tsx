@@ -265,7 +265,14 @@ export function CodeTree({
     const selected = i === selIndex;
     const match = search?.ids.has(id) ?? false;
     const activeMatch = match && searchActive === id;
+    // A row with no label (a document root) still needs a name: "root",
+    // plus its value or summary when it has one.
+    const unnamed = row.node.label === '';
+    const tail = row.node.value?.text ?? row.node.summary;
     return {
+      'aria-label': unnamed
+        ? [row.depth === 0 ? 'root' : 'item', tail].filter(Boolean).join(', ')
+        : undefined,
       'aria-level': row.depth + 1,
       'aria-setsize': row.setSize,
       'aria-posinset': row.posInSet,

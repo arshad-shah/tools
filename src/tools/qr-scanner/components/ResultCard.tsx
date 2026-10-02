@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { sendTo } from '@/shared/lib/handoff';
 import { FORMAT_LABELS, type DecodedBarcode } from '@/shared/lib/qr-decode';
@@ -12,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
   Code,
+  CopyButton,
   Dialog,
   DialogBody,
   DialogDescription,
@@ -28,14 +28,13 @@ import {
 } from '@/shared/ui';
 import {
   IconCalendar,
-  IconCheck,
-  IconCopy,
   IconExternalLink,
   IconLink,
   IconQrCode,
   IconType,
   IconUser,
 } from '@/shared/ui/icons';
+import { resultHandoffs, type ResultTarget } from '../lib/handoffs';
 import { icsFor, interpret, KIND_LABELS, vcfFor } from '../lib/interpret';
 
 /** One decoded code: what it is, its fields and the actions that fit. */
@@ -48,18 +47,15 @@ export function ResultCard({
 }) {
   const navigate = useNavigate();
   const info = interpret(result.text);
-  const { copiedKey, copy } = useClipboard();
   const [revealed, setRevealed] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const link =
     info.fields.find(([l]) => l === 'URL')?.[1] ?? result.text.trim();
-  const uriList = (target: string) =>
-    sendTo(navigate, target, {
-      kind: 'text',
-      mime: 'text/uri-list',
-      sourceTool: 'qr-scanner',
-      text: link,
-    });
+  const handoffs = resultHandoffs(result);
+  const send = (target: ResultTarget) => {
+    const payload = handoffs[target];
+    if (payload) sendTo(navigate, target, payload);
+  };
 
   return (
     <Card>
@@ -108,20 +104,7 @@ export function ResultCard({
               </Code>
             )}
           <Inline gap="2" wrap>
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={
-                copiedKey === 'text' ? (
-                  <IconCheck size="sm" />
-                ) : (
-                  <IconCopy size="sm" />
-                )
-              }
-              onClick={() => void copy(result.text, 'text')}
-            >
-              Copy
-            </Button>
+            <CopyButton variant="text" label="text" value={result.text} />
             {info.actions.includes('open') && (
               <Button
                 size="sm"
@@ -132,39 +115,32 @@ export function ResultCard({
                 Open link
               </Button>
             )}
-            {info.actions.includes('url-inspector') && (
+            {handoffs['url-parser'] && (
               <Button
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconLink size="sm" />}
-                onClick={() => uriList('url-parser')}
+                onClick={() => send('url-parser')}
               >
                 Open in URL Inspector
               </Button>
             )}
-            {info.kind === 'url' && (
+            {handoffs['qr-code-generator'] && (
               <Button
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconQrCode size="sm" />}
-                onClick={() => uriList('qr-code-generator')}
+                onClick={() => send('qr-code-generator')}
               >
                 Make QR
               </Button>
             )}
-            {info.actions.includes('text-encoder') && (
+            {handoffs['url-encoder-decoder'] && (
               <Button
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconType size="sm" />}
-                onClick={() =>
-                  sendTo(navigate, 'url-encoder-decoder', {
-                    kind: 'text',
-                    mime: 'text/plain',
-                    sourceTool: 'qr-scanner',
-                    text: result.text,
-                  })
-                }
+                onClick={() => send('url-encoder-decoder')}
               >
                 Send to Text Encoder
               </Button>

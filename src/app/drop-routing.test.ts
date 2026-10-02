@@ -33,6 +33,18 @@ describe('routeDrop', () => {
       '/media/image-optimizer',
     ]);
   });
+  it('sends an SVG on the media hub to the favicon generator', async () => {
+    const svg = f('<svg xmlns="http://www.w3.org/2000/svg"/>', 'logo.svg');
+    expect(await routeDrop([svg], TOOLS, 'media')).toMatchObject({
+      type: 'navigate',
+      path: '/media/favicon',
+    });
+  });
+  it('still lets an XML tool take an SVG on the data hub', async () => {
+    const svg = f('<svg xmlns="http://www.w3.org/2000/svg"/>', 'logo.svg');
+    const d = await routeDrop([svg], TOOLS, 'data');
+    expect(d.type).toBe('navigate');
+  });
   it('offers a choice for a PDF on the security hub', async () => {
     const d = await routeDrop([pdf()], TOOLS, 'security');
     expect(d.type).toBe('choose');

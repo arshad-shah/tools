@@ -223,7 +223,15 @@ describe('FloatingPalette', () => {
       'size-11',
     );
     const grip = screen.getByRole('button', { name: /Move tools/ });
-    expect(grip.className).toContain('h-11');
-    expect(grip.className).toContain('w-11');
+    expect(grip.className).toContain('size-11');
+  });
+});
+
+describe('Toolbar labelled (6-H)', () => {
+  it('gives horizontal items a desktop text label', () => {
+    render(<Toolbar label="Tools" groups={groups()} labelled />);
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    expect(undo.textContent).toContain('Undo');
+    expect(undo.className).toContain('desk:w-auto');
   });
 });

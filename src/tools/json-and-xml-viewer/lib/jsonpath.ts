@@ -43,8 +43,6 @@ export interface Query {
   segments: Segment[];
 }
 
-export type JsonPathError = ToolError & { column: number };
-
 function fail(message: string, at: number): never {
   const column = at + 1;
   throw Object.assign(

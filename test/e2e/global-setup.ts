@@ -75,7 +75,10 @@ async function warmUp(baseURL: string) {
         .getByText(`Loading ${tool.name}`, { exact: true })
         .waitFor({ state: 'detached', timeout: COLD_TIMEOUT });
     }
-    for (const entry of TOOL_ROUTES) {
+    // Non-PDF runs can skip the pdf.js warm-up (it times out in cloud
+    // sandbox containers): E2E_SKIP_PDF_WARMUP=1.
+    const pdfRoutes = process.env.E2E_SKIP_PDF_WARMUP ? [] : TOOL_ROUTES;
+    for (const entry of pdfRoutes) {
       const { route, fixture, ready } =
         typeof entry === 'string' ? pdfRoute(entry) : entry;
       try {

@@ -233,6 +233,39 @@ group('parity with new RegExp', () => {
     expect((err as RegexSyntaxError).message).toMatch(/column \d+/);
   });
 
+  // Duplicate named groups (ES2025) depend on the V8 version (Node 22
+  // has none, Node 24 allows them in different alternatives): derive the
+  // expectation from the running engine.
+  const ENGINE_DUPLICATES = accepts('(?<a>x)|(?<a>y)', '');
+
+  it('follows the running engine on a name repeated across alternatives', () => {
+    const parse = () => parseRegex('(?<a>x)|(?<a>y)', '');
+    if (ENGINE_DUPLICATES) expect(parse).not.toThrow();
+    else expect(parse).toThrow(RegexSyntaxError);
+    // The same alternative never repeats a name, in any engine.
+    expect(accepts('(?<a>x)(?<a>y)', '')).toBe(false);
+    expect(() => parseRegex('(?<a>x)(?<a>y)', '')).toThrow(RegexSyntaxError);
+  });
+
+  it('with duplicate named groups only separate alternatives repeat a name', () => {
+    const dup = { duplicateNames: true };
+    expect(() => parseRegex('(?<a>x)|(?<a>y)', '', dup)).not.toThrow();
+    expect(() =>
+      parseRegex('(?<a>x)|((?<a>y)|(?<a>z))', '', dup),
+    ).not.toThrow();
+    expect(() => parseRegex('(?<a>x)(?<a>y)', '', dup)).toThrow(
+      RegexSyntaxError,
+    );
+    expect(() => parseRegex('(?:(?<a>x)|(?<a>y))(?<a>z)', '', dup)).toThrow(
+      RegexSyntaxError,
+    );
+    expect(parseRegex('(?<a>x)|(?<a>y)', '', dup).groupNames).toEqual(['a']);
+    const none = { duplicateNames: false };
+    expect(() => parseRegex('(?<a>x)|(?<a>y)', '', none)).toThrow(
+      RegexSyntaxError,
+    );
+  });
+
   it('rejects bad flags', () => {
     expect(() => parseRegex('a', 'uv')).toThrow();
     expect(() => parseRegex('a', 'gg')).toThrow();

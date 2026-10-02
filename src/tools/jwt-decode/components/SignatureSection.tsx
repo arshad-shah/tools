@@ -1,7 +1,5 @@
 import React from 'react';
 import {
-  IconCheckCircle,
-  IconCopy,
   IconInfo,
   IconKey,
   IconLock,
@@ -20,7 +18,6 @@ import {
   Button,
   Card,
   CardBody,
-  Code,
   Inline,
   Label,
   SegmentedControl,
@@ -28,6 +25,7 @@ import {
   Stack,
   Text,
   Textarea,
+  TextInputPanel,
 } from '@/shared/ui';
 import type { KeyKind, SecretEncoding, SignatureStatus } from '../types';
 import { listJwksKeys } from '../lib/jwks';
@@ -57,8 +55,6 @@ interface SignatureSectionProps {
   pickNeeded: boolean;
   jwksIndex: number | null;
   setJwksIndex: (i: number | null) => void;
-  copiedKey: string | null;
-  copy: (text: string, key?: string) => Promise<boolean>;
 }
 
 export const SignatureSection: React.FC<SignatureSectionProps> = ({
@@ -78,8 +74,6 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
   pickNeeded,
   jwksIndex,
   setJwksIndex,
-  copiedKey,
-  copy,
 }) => (
   <Stack gap="4">
     <Alert status="info" icon={<IconInfo />}>
@@ -195,8 +189,8 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
               </Button>
             </Inline>
             {sigStatus.state === 'error' && (
-              <Alert status="danger">
-                <AlertDescription>{sigStatus.message}</AlertDescription>
+              <Alert status="danger" size="sm">
+                {sigStatus.message}
               </Alert>
             )}
             {jwt === SAMPLE_JWT && (
@@ -219,28 +213,16 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
           </span>
         </AccordionTrigger>
         <AccordionContent>
-          <Stack gap="2">
-            <Inline justify="between" align="center">
-              <Text size="sm" weight="medium">
-                Base64-encoded signature
-              </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={
-                  copiedKey === 'signature' ? (
-                    <IconCheckCircle size="sm" />
-                  ) : (
-                    <IconCopy size="sm" />
-                  )
-                }
-                onClick={() => void copy(signature, 'signature')}
-              >
-                {copiedKey === 'signature' ? 'Copied' : 'Copy'}
-              </Button>
-            </Inline>
-            <Code block>{signature}</Code>
-          </Stack>
+          <TextInputPanel
+            label="Base64-encoded signature"
+            value={signature}
+            onChange={() => {}}
+            language="plain"
+            readOnly
+            wrap
+            minHeight={80}
+            maxHeight={320}
+          />
         </AccordionContent>
       </AccordionItem>
     </Accordion>

@@ -1,14 +1,12 @@
 import React, { useId } from 'react';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
 import {
   Alert,
-  AlertDescription,
   Badge,
   Box,
   Card,
   CardBody,
   CodeSurface,
-  IconButton,
+  CopyButton,
   Inline,
   Stack,
   Text,
@@ -26,8 +24,8 @@ interface PatternBarProps {
   syntax: SyntaxCheck;
   /** Span picked in Explain, highlighted in the pattern. */
   highlight: { start: number; end: number } | null;
-  copied: boolean;
-  onCopyLiteral(): void;
+  /** `/pattern/flags`, for its copy button. */
+  literal: string;
 }
 
 /** The pattern editor, its flags, validity and an inline syntax error. */
@@ -38,8 +36,7 @@ export const PatternBar: React.FC<PatternBarProps> = ({
   onToggleFlag,
   syntax,
   highlight,
-  copied,
-  onCopyLiteral,
+  literal,
 }) => {
   const errorId = useId();
   const markers: CodeMarker[] =
@@ -83,12 +80,11 @@ export const PatternBar: React.FC<PatternBarProps> = ({
             <Text as="span" mono weight="semibold" aria-hidden>
               /{flags}
             </Text>
-            <IconButton
-              variant="secondary"
-              label="Copy regex with flags"
+            <CopyButton
+              label="regex with flags"
+              value={literal}
+              size="md"
               disabled={!pattern || !syntax.ok}
-              icon={copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />}
-              onClick={onCopyLiteral}
             />
           </Inline>
           <Inline gap="3" align="center" justify="between" wrap>
@@ -104,8 +100,8 @@ export const PatternBar: React.FC<PatternBarProps> = ({
             ) : null}
           </Inline>
           {!syntax.ok && (
-            <Alert status="danger" id={errorId}>
-              <AlertDescription>{syntax.message}</AlertDescription>
+            <Alert status="danger" size="sm" id={errorId}>
+              {syntax.message}
             </Alert>
           )}
         </Stack>

@@ -21,7 +21,8 @@ export interface DrawerProps {
 const PANEL: Record<DrawerSide, string> = {
   right: 'right-0 top-0 h-full w-full max-w-md border-l',
   left: 'left-0 top-0 h-full w-full max-w-md border-l-0 border-r',
-  bottom: 'bottom-0 left-0 max-h-[85vh] w-full rounded-t-xl border-t',
+  bottom:
+    'bottom-0 left-0 max-h-[85dvh] w-full rounded-t-xl border-t pb-[env(safe-area-inset-bottom)]',
 };
 const HIDDEN: Record<DrawerSide, string> = {
   right: 'motion-safe:translate-x-full',
@@ -109,7 +110,7 @@ export const Drawer: React.FC<DrawerProps> = ({
             type="button"
             aria-label="Close"
             onClick={close}
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors duration-fast hover:bg-surface-2 hover:text-fg"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors duration-fast hover:bg-surface-2 hover:text-fg pointer-coarse:size-11"
           >
             <IconX size="md" />
           </button>

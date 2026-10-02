@@ -13,6 +13,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  EmptyState,
   Inline,
   Stack,
   Text,
@@ -54,7 +55,7 @@ export function DebugLog({
     <Card>
       <CardHeader>
         <Inline justify="between" align="center">
-          <CardTitle as="h4">Debug logs</CardTitle>
+          <CardTitle as="h3">Debug logs</CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -68,9 +69,11 @@ export function DebugLog({
       <CardBody>
         <Box className="max-h-64 overflow-auto">
           {debugLogs.length === 0 ? (
-            <Text size="sm" tone="subtle">
-              No logs yet. Upload a file to see debug information.
-            </Text>
+            <EmptyState
+              size="sm"
+              title="No logs yet"
+              description="Upload a file to see debug information."
+            />
           ) : (
             <Stack gap="1">
               {debugLogs.map((log) => (

@@ -43,7 +43,7 @@ function Panel({
   );
 }
 
-const group = () => screen.getByRole('group', { name: 'Input' });
+const group = () => screen.getByRole('group', { name: 'Input panel' });
 const editor = () =>
   screen.getByRole('textbox', { name: 'Input' }) as HTMLTextAreaElement;
 const drop = (file: File) =>
@@ -82,6 +82,9 @@ describe('TextInputPanel', () => {
   it('is a labelled group whose toolbar buttons have names and tooltips', () => {
     render(<Panel downloadName="input.json" />);
     expect(group()).toBeTruthy();
+    // The group and the editor have distinct names (getByLabel is unambiguous).
+    expect(screen.queryByRole('group', { name: 'Input' })).toBeNull();
+    expect(screen.getAllByLabelText('Input', { exact: true })).toHaveLength(1);
     const open = screen.getByRole('button', { name: 'Open file' });
     const tip = document.getElementById(open.getAttribute('aria-describedby')!);
     expect(tip?.textContent).toContain('Open file');

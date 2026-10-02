@@ -65,6 +65,19 @@ describe('Text Toolkit', () => {
     fake.timeout = false;
   });
 
+  it('panels use kit headings, switches and an empty state', () => {
+    setup();
+    for (const name of ['Operations', 'Find and replace', 'Statistics'])
+      expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'No words yet' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('switch', { name: 'Hide common words' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Match case' })).toBeTruthy();
+  });
+
   it('shows live statistics', () => {
     setup();
     type('Hello brave world.');

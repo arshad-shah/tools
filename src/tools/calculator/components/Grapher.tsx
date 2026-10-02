@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import {
   Box,
   Button,
+  EmptyState,
   Grid,
   IconButton,
   Inline,
@@ -250,9 +251,11 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
       <Stack gap="2">
         <Text weight="semibold">Roots and intersections</Text>
         {points.length === 0 ? (
-          <Text size="sm" tone="muted">
-            None in this range
-          </Text>
+          <EmptyState
+            size="sm"
+            title="None in this range"
+            description="Pan or zoom the graph to look elsewhere."
+          />
         ) : (
           <Inline gap="2" wrap aria-label="Roots and intersections" role="list">
             {points.map((p) => (

@@ -9,9 +9,9 @@ import {
   SearchInput,
   Select,
   Stack,
-  Switch,
   Text,
   type CodeTreeHandle,
+  SwitchField,
 } from '@/shared/ui';
 import type { DocNode } from '../lib/doc-model';
 import type { SearchResult } from '../lib/search';
@@ -159,16 +159,14 @@ export function TreeTab({
           disabled={!matches.length}
           onClick={() => step(1)}
         />
-        <Inline gap="2">
-          <Switch
-            id="json-xml-regex"
-            checked={search.regex}
-            onCheckedChange={(regex) =>
-              onSearchChange({ ...search, regex, active: 0 })
-            }
-          />
-          <Label htmlFor="json-xml-regex">Regex</Label>
-        </Inline>
+        <SwitchField
+          label="Regex"
+          id="json-xml-regex"
+          checked={search.regex}
+          onCheckedChange={(regex) =>
+            onSearchChange({ ...search, regex, active: 0 })
+          }
+        />
         <Text
           size="sm"
           tone={result.error ? 'default' : 'muted'}

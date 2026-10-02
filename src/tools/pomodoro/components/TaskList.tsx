@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { IconListTodo, IconPlus } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Badge,
   Box,
   Button,
+  EmptyState,
   Heading,
   Inline,
   Input,
@@ -64,11 +63,12 @@ export const TaskList: React.FC = () => {
 
       <Stack gap="2">
         {tasks.length === 0 ? (
-          <Alert status="info">
-            <AlertDescription>
-              No tasks yet. Add one using the form above.
-            </AlertDescription>
-          </Alert>
+          <EmptyState
+            size="sm"
+            icon={IconListTodo}
+            title="No tasks yet"
+            description="Add one using the form above."
+          />
         ) : (
           tasks.map((task) => (
             <TaskRow

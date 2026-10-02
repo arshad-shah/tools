@@ -96,7 +96,7 @@ export function ColorRamp({
             aria-pressed={selected}
             title={name}
             onClick={() => onSelect(formatColor(color, format), color, step)}
-            className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            className="inline-flex items-center justify-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus pointer-coarse:min-h-11 pointer-coarse:min-w-11"
           >
             <span aria-hidden className="flex">
               <Swatch

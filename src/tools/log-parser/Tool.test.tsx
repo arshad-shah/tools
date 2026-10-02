@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -88,8 +89,14 @@ const count = () =>
     .getAllByRole('status')
     .find((s) => / of \d+ entr/.test(s.textContent ?? ''))?.textContent;
 
+/** R41: Input and Output are tabs. */
+const tab = (name: string) =>
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
+
 async function loadSample() {
+  tab('Input');
   fireEvent.click(screen.getByRole('button', { name: 'Load sample' }));
+  tab('Output');
   // 15 lines, the stack trace grouped into its ERROR entry.
   await screen.findByText(/10 of 10 entries/, undefined, { timeout: 3000 });
 }
@@ -132,6 +139,31 @@ describe('Log Viewer', () => {
       }),
     );
     await screen.findByText(/10 of 10 entries/, undefined, { timeout: 3000 });
+  });
+
+  it('the column menu hides and shows summary columns (persisted)', async () => {
+    renderTool();
+    await loadSample();
+    const log = screen.getByRole('log', { name: 'Log entries' });
+    const cells = (c: string) => log.querySelectorAll(`[data-column="${c}"]`);
+    await waitFor(() => expect(cells('line').length).toBeGreaterThan(0));
+    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Line number' }));
+    expect(cells('line')).toHaveLength(0);
+    expect(cells('level').length).toBeGreaterThan(0);
+    expect(logSettings.getSettings().columns).toEqual([
+      'time',
+      'level',
+      'component',
+    ]);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Line number' }));
+    expect(cells('line').length).toBeGreaterThan(0);
+    expect(logSettings.getSettings().columns).toEqual([
+      'line',
+      'time',
+      'level',
+      'component',
+    ]);
   });
 
   it('shows an invalid regex inline', async () => {

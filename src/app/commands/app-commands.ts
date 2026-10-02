@@ -1,6 +1,14 @@
 import type { CommandSource } from '@/shared/lib/commands';
+import { ToolError } from '@/shared/lib/errors';
+import { sendTo } from '@/shared/lib/handoff';
 import type { ThemePreference } from '@/shared/lib/theme';
-import { IconHome, IconMonitor, IconMoon, IconSun } from '@/shared/ui/icons';
+import {
+  IconClipboard,
+  IconHome,
+  IconMonitor,
+  IconMoon,
+  IconSun,
+} from '@/shared/ui/icons';
 import { CATEGORIES } from '../categories';
 import { categoryPath, toolPath } from '../routes';
 import type { ToolManifest } from '../tool';
@@ -105,4 +113,41 @@ export function themeCommands(
     keywords: ['theme', 'appearance', 'colour', 'mode'],
   }));
   return { id: 'app-theme', commands: () => commands };
+}
+
+/**
+ * "Import cURL into HTTP Client" from anywhere (spec 10): the clipboard's
+ * cURL command goes to the HTTP Client as an application/x-curl hand-off.
+ */
+export function curlCommand(
+  navigate: Navigate,
+  readClipboard: () => Promise<string>,
+  onError: (e: unknown) => void,
+): CommandSource {
+  const commands = [
+    {
+      id: 'app:import-curl',
+      label: 'Import cURL into HTTP Client',
+      group: 'Actions',
+      keywords: ['curl', 'http', 'request', 'clipboard', 'paste', 'import'],
+      icon: IconClipboard,
+      run: () =>
+        readClipboard()
+          .then((text) => {
+            if (!/^\s*curl\s/i.test(text))
+              throw new ToolError(
+                'INVALID_INPUT',
+                'The clipboard does not hold a cURL command',
+              );
+            sendTo(navigate, 'api-request', {
+              kind: 'text',
+              mime: 'application/x-curl',
+              text: text.trim(),
+              sourceTool: 'app',
+            });
+          })
+          .catch(onError),
+    },
+  ];
+  return { id: 'app-curl', commands: () => commands };
 }

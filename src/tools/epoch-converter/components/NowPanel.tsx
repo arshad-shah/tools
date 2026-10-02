@@ -7,16 +7,15 @@ import {
   CardHeader,
   CardTitle,
   Code,
+  CopyButton,
   Inline,
   Table,
   TableBody,
   TableCell,
   TableRow,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
 import { localZone } from '@/shared/lib/time';
 import { nowRows } from '../lib/now';
-import { CopyValue } from './CopyValue';
 
 /** The current time, ticking each second (pausable), each unit copyable. */
 export const NowPanel: React.FC<{
@@ -26,7 +25,6 @@ export const NowPanel: React.FC<{
   const [frozenAt, setFrozenAt] = useState<number | null>(null);
   const paused = frozenAt !== null;
   const now = frozenAt ?? live;
-  const { copiedKey, copy } = useClipboard();
   const zone = localZone();
 
   return (
@@ -62,12 +60,7 @@ export const NowPanel: React.FC<{
                     <Code>{r.value}</Code>
                   </TableCell>
                   <TableCell>
-                    <CopyValue
-                      label={r.label}
-                      value={r.value}
-                      copied={copiedKey === `now:${r.label}`}
-                      onCopy={() => void copy(r.value, `now:${r.label}`)}
-                    />
+                    <CopyButton label={r.label} value={r.value} />
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useClipboard } from '@/shared/lib/clipboard';
 import {
   Button,
-  CodeSurface,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -12,9 +10,9 @@ import {
   Label,
   Select,
   Stack,
-  Switch,
+  SwitchField,
+  TextInputPanel,
 } from '@/shared/ui';
-import { IconCopy } from '@/shared/ui/icons';
 import type { HttpRequest } from '../lib/model';
 import { SNIPPET_LANGS, toSnippet, type SnippetLang } from '../lib/snippets';
 
@@ -29,7 +27,6 @@ interface Props {
 export function SnippetDialog({ open, onOpenChange, request, vars }: Props) {
   const [lang, setLang] = useState<SnippetLang>('curl');
   const [withValues, setWithValues] = useState(false);
-  const { copiedKey, copy } = useClipboard();
   const code = useMemo(
     () => (open ? toSnippet(request, lang, withValues ? { vars } : {}) : ''),
     [open, request, lang, withValues, vars],
@@ -54,19 +51,17 @@ export function SnippetDialog({ open, onOpenChange, request, vars }: Props) {
                 }))}
               />
             </Stack>
-            <Inline gap="2" align="center">
-              <Switch
-                id="snippet-values"
-                checked={withValues}
-                onCheckedChange={setWithValues}
-              />
-              <Label htmlFor="snippet-values">Include variable values</Label>
-            </Inline>
+            <SwitchField
+              label="Include variable values"
+              checked={withValues}
+              onCheckedChange={setWithValues}
+            />
           </Inline>
-          <CodeSurface
+          <TextInputPanel
             label="Snippet"
             language="plain"
             value={code}
+            onChange={() => {}}
             readOnly
             wrap
             maxHeight={360}
@@ -74,13 +69,6 @@ export function SnippetDialog({ open, onOpenChange, request, vars }: Props) {
         </Stack>
       </DialogBody>
       <DialogFooter>
-        <Button
-          variant="secondary"
-          leftIcon={<IconCopy size="sm" />}
-          onClick={() => void copy(code, 'code')}
-        >
-          {copiedKey === 'code' ? 'Copied' : 'Copy'}
-        </Button>
         <Button variant="primary" onClick={() => onOpenChange(false)}>
           Done
         </Button>

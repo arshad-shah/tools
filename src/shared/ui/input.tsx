@@ -32,7 +32,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div
         className={cn(
-          'flex h-9 w-full items-center gap-2 rounded-md border bg-surface-2 px-3 transition-colors duration-fast',
+          // min-w-0: shrinks inside flex rows; touch: 44px tall, 16px text (no
+          // focus zoom on iOS).
+          'flex h-9 w-full min-w-0 items-center gap-2 rounded-md border bg-surface-2 px-3 transition-colors duration-fast pointer-coarse:h-11',
           invalid
             ? 'border-danger focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-danger'
             : 'border-line-strong focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
@@ -48,7 +50,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           value={value}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           className={cn(
-            'min-w-0 flex-1 bg-transparent text-sm text-fg',
+            'min-w-0 flex-1 self-stretch bg-transparent text-sm text-fg pointer-coarse:text-md',
             'placeholder:text-fg-subtle focus:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-50',
             className,
@@ -60,7 +62,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type="button"
             aria-label="Clear"
             onClick={() => onChange('')}
-            className="shrink-0 text-fg-subtle transition-colors hover:text-fg"
+            className="-mr-2 inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:text-fg pointer-coarse:size-11"
           >
             <IconX size="sm" />
           </button>

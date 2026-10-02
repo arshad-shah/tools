@@ -54,6 +54,15 @@ const damaged = (cause?: unknown) =>
     { cause },
   );
 
+/**
+ * JSON.parse reviver: keys that could reach an object's prototype through a
+ * later Object.assign or merge in a tool's `parse` never survive decoding.
+ */
+const dropPrototypeKeys = (key: string, value: unknown) =>
+  key === '__proto__' || key === 'constructor' || key === 'prototype'
+    ? undefined
+    : value;
+
 /** Inflates raw DEFLATE, aborting as soon as the output passes `max`. */
 function inflateCapped(data: Uint8Array, max: number): Uint8Array {
   const chunks: Uint8Array[] = [];
@@ -95,7 +104,10 @@ export function decodeShare(fragment: string): {
       base64UrlToBytes(f.slice(PREFIX.length)),
       SHARE_DECODE_JSON_MAX,
     );
-    const env = JSON.parse(utf8Decode(bytes)) as { v?: unknown; s?: unknown };
+    const env = JSON.parse(utf8Decode(bytes), dropPrototypeKeys) as {
+      v?: unknown;
+      s?: unknown;
+    };
     if (
       typeof env !== 'object' ||
       env === null ||

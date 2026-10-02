@@ -1,5 +1,15 @@
 import { useDeferredValue, useId, useMemo } from 'react';
-import { Label, MetaList, Select, Statistic, Switch } from '@/shared/ui';
+import {
+  EmptyState,
+  Heading,
+  Inline,
+  Label,
+  MetaList,
+  Select,
+  Stack,
+  Statistic,
+  SwitchField,
+} from '@/shared/ui';
 import { textStats } from '../lib/stats';
 
 const LOCALES = [
@@ -47,7 +57,6 @@ export function StatsPanel({
     [deferred, locale, stopWords],
   );
   const localeId = useId();
-  const stopId = useId();
   const headingId = useId();
 
   const tiles: [string, number][] = [
@@ -62,9 +71,9 @@ export function StatsPanel({
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-md font-semibold text-fg">
+      <Heading level={2} size="md" id={headingId}>
         Statistics
-      </h2>
+      </Heading>
       <div aria-live="polite">
         <MetaList
           items={[
@@ -84,8 +93,8 @@ export function StatsPanel({
           />
         ))}
       </div>
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="flex min-w-40 flex-col gap-1">
+      <Inline gap="4" wrap align="end">
+        <Stack gap="1" className="min-w-40">
           <Label htmlFor={localeId}>Language</Label>
           <Select
             id={localeId}
@@ -93,20 +102,19 @@ export function StatsPanel({
             onValueChange={onLocale}
             items={LOCALES}
           />
-        </div>
-        <div className="flex items-center gap-2">
-          <Switch
-            id={stopId}
-            checked={stopWords}
-            onCheckedChange={onStopWords}
-          />
-          <Label htmlFor={stopId}>Hide common words</Label>
-        </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-medium text-fg">Top words</h3>
+        </Stack>
+        <SwitchField
+          label="Hide common words"
+          checked={stopWords}
+          onCheckedChange={onStopWords}
+        />
+      </Inline>
+      <Stack gap="1">
+        <Heading level={3} size="sm">
+          Top words
+        </Heading>
         {s.topWords.length === 0 ? (
-          <p className="text-sm text-fg-muted">No words yet</p>
+          <EmptyState size="sm" title="No words yet" />
         ) : (
           <ol aria-label="Top words" className="flex flex-col gap-1 text-sm">
             {s.topWords.map(([word, n]) => (
@@ -120,7 +128,7 @@ export function StatsPanel({
             ))}
           </ol>
         )}
-      </div>
+      </Stack>
     </section>
   );
 }

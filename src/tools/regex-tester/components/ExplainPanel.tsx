@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
   CodeTree,
-  Text,
+  EmptyState,
   expandAll,
   type CodeTreeHandle,
 } from '@/shared/ui';
@@ -58,9 +58,11 @@ export const ExplainPanel: React.FC<ExplainPanelProps> = ({
             height={280}
           />
         ) : (
-          <Text size="sm" tone="subtle">
-            Enter a valid pattern to see what each part does.
-          </Text>
+          <EmptyState
+            size="sm"
+            title="Nothing to explain"
+            description="Enter a valid pattern to see what each part does."
+          />
         )}
       </CardBody>
     </Card>

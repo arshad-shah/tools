@@ -1,17 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Layout, Rive, StateMachineInput } from '@rive-app/react-canvas';
-import { toToolError } from '@/shared/lib/errors';
-import { readBytes } from '@/shared/lib/files';
-import { formatBytes } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
-import { useJob } from '@/shared/state/useJob';
 import {
   DEFAULT_ALIGN_FIT,
   getAlignmentValue,
   getFitValue,
 } from '../lib/layout';
 import { disposeRive } from '../lib/dispose';
-import { assertRiveFile } from '../lib/rive-file';
 import { configureSameOriginRuntime } from '../lib/runtime';
 import {
   PlayerError,
@@ -28,6 +23,7 @@ import { useCanvasSize } from './useCanvasSize';
 import { useDebugLog } from './useDebugLog';
 import { useDropZone } from './useDropZone';
 import { useInputValues } from './useInputValues';
+import { useRiveLoad } from './useRiveLoad';
 
 configureSameOriginRuntime();
 
@@ -252,61 +248,6 @@ export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
     markLoaded(rive);
   };
 
-  /** False when the canvas is gone (the player unmounted during a read). */
-  const createInstance = (buffer: ArrayBuffer) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return false;
-    const { dimensions, alignFitIndex } = latestRef.current;
-    // Handlers are bound before the runtime can fire anything, and ignore an
-    // instance the player has since dropped (reset).
-    const live = (fn: () => void) => () => {
-      if (riveRef.current === instance) fn();
-    };
-    const instance: Rive = new Rive({
-      buffer,
-      canvas,
-      autoplay: true,
-      layout: new Layout({
-        fit: getFitValue(alignFitIndex),
-        alignment: getAlignmentValue(alignFitIndex),
-      }),
-      onLoad: live(handleLoad),
-      onLoadError: live(handleLoadError),
-      onPlay: live(() => setIsPlaying(true)),
-      onPause: live(() => setIsPlaying(false)),
-      onStop: live(() => setIsPlaying(false)),
-    });
-    riveRef.current = instance;
-    canvas.width = dimensions.width;
-    canvas.height = dimensions.height;
-    instance.resizeToCanvas();
-    return true;
-  };
-
-  const setAnimationWithBuffer = (buffer: string | ArrayBuffer | null) => {
-    if (!buffer) return;
-    setStatus({ current: PlayerState.Loading });
-    addDebugLog('Loading animation from buffer...', 'info');
-    if (riveRef.current) {
-      riveRef.current.load({ buffer: buffer as ArrayBuffer, autoplay: true });
-      return;
-    }
-    try {
-      if (!createInstance(buffer as ArrayBuffer)) return;
-      setStatus({ current: PlayerState.Active });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
-      addDebugLog(`Error creating Rive instance: ${msg}`, 'error');
-      failLoad();
-      return;
-    }
-    // Read the lists as soon as the instance exists, as before; they are
-    // empty until the Load event refills them.
-    getAnimationList();
-    getStateMachineList();
-    getArtboardList();
-  };
-
   useEffect(() => {
     const rive = riveRef.current;
     if (rive) {
@@ -331,31 +272,29 @@ export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
     }
   };
 
-  const loadJob = useJob(async (_ctx, file: File) => {
-    try {
-      const bytes = await readBytes(file);
-      assertRiveFile(file.name, bytes);
-      return bytes;
-    } catch (e) {
-      const error = toToolError(e, `Couldn't read ${file.name}`);
-      notify.error(error);
-      addDebugLog(error.message, 'error');
-      throw error;
-    }
+  const { load } = useRiveLoad({
+    canvasRef,
+    riveRef,
+    latestRef,
+    setStatus,
+    addDebugLog,
+    onFile: (file, size) => {
+      setFilename(file.name);
+      setFileSize(size);
+      // Queued before the buffer is handed over so the artboard update made
+      // when a new instance is created applies on top of it.
+      setRiveInfo({ fileSize: file.size, artboardCount: 0 });
+    },
+    onLoad: handleLoad,
+    onLoadError: handleLoadError,
+    onPlaying: setIsPlaying,
+    failLoad: () => failLoad(),
+    readLists: () => {
+      getAnimationList();
+      getStateMachineList();
+      getArtboardList();
+    },
   });
-  const load = async (file: File) => {
-    const sz = formatBytes(file.size);
-    addDebugLog(`File selected: ${file.name} (${sz})`, 'info');
-    const bytes = await loadJob.run(file);
-    if (!bytes) return; // already reported by the job
-    setFilename(file.name);
-    setFileSize(sz);
-    // Queued before the buffer is handed over so the artboard update made
-    // when a new instance is created applies on top of it.
-    setRiveInfo({ fileSize: file.size, artboardCount: 0 });
-    // readBytes returns a view over a whole, fresh ArrayBuffer.
-    setAnimationWithBuffer(bytes.buffer as ArrayBuffer);
-  };
 
   const dropZone = useDropZone(status, setStatus, load);
 

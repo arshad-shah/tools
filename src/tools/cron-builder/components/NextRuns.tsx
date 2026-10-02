@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
+import React, { useMemo, useState } from 'react';
 import {
-  Button,
+  CopyButton,
+  EmptyState,
   Inline,
   Label,
   List,
@@ -11,8 +11,8 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
 import { formatIso, listZones, localZone } from '@/shared/lib/time';
+import { useNow } from '@/shared/lib/use-now';
 import { nextRuns } from '../lib/next';
 import type { CronAst } from '../lib/parse';
 
@@ -23,23 +23,25 @@ interface NextRunsProps {
   onZone(zone: string): void;
   count: number;
   onCount(count: number): void;
-  /** Runs are listed strictly after this instant. */
-  from: number;
 }
 
 const COUNTS = ['10', '20', '50'] as const;
 
-/** The next run times in a chosen zone, as ISO 8601 with the offset. */
+/**
+ * The next run times in a chosen zone, as ISO 8601 with the offset, listed
+ * strictly after now and refreshed as each minute turns.
+ */
 export const NextRuns: React.FC<NextRunsProps> = ({
   ast,
   zone,
   onZone,
   count,
   onCount,
-  from,
 }) => {
-  const { copied, copy } = useClipboard();
-  const zones = useMemo(() => listZones(from), [from]);
+  // Cron runs fall on whole minutes: the list moves on as its first run passes.
+  const from = useNow(60_000, { align: true });
+  // Zone labels (with offsets) once per visit, not on every minute tick.
+  const [zones] = useState(() => listZones(Date.now()));
   const effective = zone || localZone();
   const runs = useMemo(() => {
     if (!ast) return [];
@@ -54,8 +56,8 @@ export const NextRuns: React.FC<NextRunsProps> = ({
 
   return (
     <Stack gap="3">
-      <Inline gap="4" align="end">
-        <Stack gap="1" className="min-w-64">
+      <Inline gap="4" align="end" wrap>
+        <Stack gap="1" className="w-full sm:w-auto sm:min-w-64">
           <Label htmlFor="cron-zone">Time zone</Label>
           <Select
             id="cron-zone"
@@ -73,16 +75,7 @@ export const NextRuns: React.FC<NextRunsProps> = ({
           onChange={(v) => onCount(Number(v))}
           options={COUNTS.map((c) => ({ value: c, label: c }))}
         />
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          disabled={!runs.length}
-          leftIcon={copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />}
-          onClick={() => void copy(runs.join('\n'), 'runs')}
-        >
-          {copied ? 'Copied runs' : 'Copy runs'}
-        </Button>
+        <CopyButton variant="text" label="runs" value={runs.join('\n')} />
       </Inline>
       {ast?.reboot ? (
         <Text size="sm" tone="muted">
@@ -97,9 +90,11 @@ export const NextRuns: React.FC<NextRunsProps> = ({
           ))}
         </List>
       ) : (
-        <Text size="sm" tone="muted">
-          None
-        </Text>
+        <EmptyState
+          size="sm"
+          title="No runs"
+          description="Fix the expression to see when it runs next."
+        />
       )}
     </Stack>
   );

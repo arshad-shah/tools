@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
+import {
+  expectAxeClean,
+  keepTouch,
+  setTheme,
+  stabilise,
+  VIEWPORTS,
+} from './helpers';
 
 const SECTIONS = [
   'icons',
@@ -23,6 +29,10 @@ const SECTIONS = [
   'panes',
   'widgets',
   'form-fields',
+  'workspace-bars',
+  'page-overlays',
+  'panels',
+  'document',
   'annotate',
 ];
 
@@ -173,5 +183,21 @@ for (const theme of ['light', 'dark'] as const) {
         await expect(el).toHaveScreenshot(`${section}-phone-${theme}.png`);
       });
     }
+  });
+
+  // 6-H: bars of tools stay one row that scrolls on a 360 px touch screen.
+  test.describe(`kit gallery 360 touch ${theme}`, () => {
+    test.use({ viewport: { width: 360, height: 780 }, hasTouch: true });
+    test('workspace bars', async ({ page }) => {
+      await page.goto('/__kit');
+      await expect(
+        page.getByRole('heading', { name: 'Kit gallery' }),
+      ).toBeVisible();
+      await setTheme(page, theme);
+      await stabilise(page);
+      await keepTouch(page);
+      const el = page.getByTestId('kit-section-workspace-bars');
+      await expect(el).toHaveScreenshot(`workspace-bars-360-${theme}.png`);
+    });
   });
 }

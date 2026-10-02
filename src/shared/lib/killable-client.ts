@@ -18,6 +18,11 @@ type Result<F> = F extends (...a: never[]) => infer R
 export interface KillableCallOptions extends CallOptions {
   timeoutMs?: number;
   timeoutMessage?: string;
+  /**
+   * Overrides the client's `kill` for this call: false cancels only the call
+   * on timeout or abort, for a stateful worker whose state must survive.
+   */
+  kill?: boolean;
 }
 
 export interface KillableClient<H extends RpcHandlers> {
@@ -46,7 +51,6 @@ export function createKillableClient<H extends RpcHandlers>(
     kill?: boolean;
   } = {},
 ): KillableClient<H> {
-  const kill = defaults.kill ?? true;
   let client: RpcClient<H> = createRpcClient<H>(connect);
   const replace = (owner: RpcClient<H>) => {
     if (client !== owner) return;
@@ -55,7 +59,7 @@ export function createKillableClient<H extends RpcHandlers>(
   };
 
   return {
-    call(method, args, opts = {}) {
+    call(method, args, { kill = defaults.kill ?? true, ...opts } = {}) {
       const owner = client;
       const timeoutMs = opts.timeoutMs ?? defaults.timeoutMs;
       let settled = false;

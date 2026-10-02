@@ -38,8 +38,7 @@ describe('FontPreview', () => {
     const sample = screen.getByRole('img', { name: 'Kristi' })
       .firstElementChild as HTMLElement;
     expect(sample.textContent).toBe('Your name');
-    expect(sample.className).toContain('text-fg-subtle');
-    expect(sample.style.color).toBe('');
+    expect(sample.style.color).toBe('rgb(29, 78, 216)');
   });
 
   it('rejects an unvalidated colour or family', () => {

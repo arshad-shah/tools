@@ -101,6 +101,7 @@ export function EditToolbar({
           size="sm"
           variant="ghost"
           label="Undo"
+          showLabel="desktop"
           aria-keyshortcuts="Control+Z"
           icon={IconUndo}
           disabled={!canUndo}
@@ -112,6 +113,7 @@ export function EditToolbar({
           size="sm"
           variant="ghost"
           label="Redo"
+          showLabel="desktop"
           aria-keyshortcuts="Control+Shift+Z"
           icon={IconRedo}
           disabled={!canRedo}
