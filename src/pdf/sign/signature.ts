@@ -11,7 +11,9 @@ export type SignatureSource =
     }
   | { kind: 'text'; text: string; fontId: SignatureFontId; color: string }
   /** Pen strokes as one filled vector path (pad px, y down). */
-  | { kind: 'ink'; vector: InkVector; color: string };
+  | { kind: 'ink'; vector: InkVector; color: string }
+  /** A photo traced to outlines (mask px, y down), filled even-odd. */
+  | { kind: 'trace'; vector: InkVector; color: string };
 
 export const INK_COLORS: readonly { value: string; label: string }[] = [
   { value: '#111827', label: 'Black' },
@@ -19,7 +21,7 @@ export const INK_COLORS: readonly { value: string; label: string }[] = [
   { value: '#1e3a8a', label: 'Dark blue' },
 ];
 
-/** Props shared by the draw, upload and type sources. */
+/** Props shared by the draw, upload, type and photo sources. */
 export interface SignatureSourceProps {
   onChange: (source: SignatureSource | null) => void;
   disabled?: boolean;
