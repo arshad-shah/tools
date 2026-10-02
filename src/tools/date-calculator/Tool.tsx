@@ -13,7 +13,7 @@ import { localZone } from '@/shared/lib/time';
 import { ArithmeticTab } from './components/ArithmeticTab';
 import { BusinessTab } from './components/BusinessTab';
 import { DifferenceTab } from './components/DifferenceTab';
-import { useNow } from './hooks/useNow';
+import { useNow } from '@/shared/lib/use-now';
 import type { DateOp } from './lib/arith';
 import type { DateValueInput } from './lib/read';
 import { dateSettings } from './settings';
@@ -27,7 +27,7 @@ import { parseOps, serializeOps } from './lib/ops';
 
 const DateCalculator: React.FC = () => {
   const [settings, update] = dateSettings.useSettings();
-  const now = useNow();
+  const now = useNow(30_000);
   const [tab, setTab] = useState<DateTab>('difference');
   const field = (text: string): DateValueInput => ({
     text,

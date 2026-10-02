@@ -12,7 +12,7 @@ import {
   Text,
 } from '@/shared/ui';
 import { formatIso, listZones, localZone } from '@/shared/lib/time';
-import { useNow } from '../hooks/useNow';
+import { useNow } from '@/shared/lib/use-now';
 import { nextRuns } from '../lib/next';
 import type { CronAst } from '../lib/parse';
 
@@ -38,7 +38,8 @@ export const NextRuns: React.FC<NextRunsProps> = ({
   count,
   onCount,
 }) => {
-  const from = useNow();
+  // Cron runs fall on whole minutes: the list moves on as its first run passes.
+  const from = useNow(60_000, { align: true });
   // Zone labels (with offsets) once per visit, not on every minute tick.
   const [zones] = useState(() => listZones(Date.now()));
   const effective = zone || localZone();
