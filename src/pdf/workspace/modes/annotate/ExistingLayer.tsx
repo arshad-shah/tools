@@ -3,6 +3,7 @@ import {
   HitArea,
   PageBox,
   ShapeLayer,
+  type ObjectChange,
   type OverlayTransform,
   type Shape,
 } from '@/shared/ui';
@@ -11,6 +12,7 @@ import type { Box, PageRef } from '@/pdf/doc/types';
 import { boxToScreen, type Viewport } from '@/pdf/doc/geometry';
 import type { DocumentApi } from '../types';
 import { useCleanPatch } from './existing';
+import { existingId, movedAnnotation } from './existing-objects';
 import { existingChanges, existingLabel, type AnnotateTool } from './tools';
 import { setAnnotateUi, useAnnotateUi } from './ui-store';
 
@@ -113,11 +115,17 @@ export interface ExistingLayerProps {
   viewport: Viewport;
   width: number;
   height: number;
-  /** Hit areas take pointer events (Select and Eraser). */
+  /** Hit areas take pointer events (the Eraser; Select uses the object layer). */
   interactive: boolean;
+  /** Moves and resizes in progress on the object layer, by object id. */
+  preview?: ReadonlyMap<string, ObjectChange> | null;
 }
 
-/** Existing annotations: preview patches for hidden, deleted and edited ones, and their hit areas. */
+/**
+ * Existing annotations: preview patches for hidden, deleted, recoloured
+ * and moved ones (a moved one drawn approximately at its new place until
+ * export), and their hit areas.
+ */
 export function ExistingLayer({
   doc,
   page,
@@ -127,21 +135,32 @@ export function ExistingLayer({
   width,
   height,
   interactive,
+  preview,
 }: ExistingLayerProps) {
   const ui = useAnnotateUi();
   const { deleted, updated } = existingChanges(doc, page.id);
   const [a, b, c, d, e, f] = viewport.transform;
   const t = { a, b, c, d, e, f };
   const scale = Math.hypot(a, b);
+  const rectOf = (x: ExistingAnnotation) =>
+    preview?.get(existingId(x.ref))?.box ?? updated.get(x.ref)?.rect;
   const patched = list.filter(
-    (x) => ui.hideExisting || deleted.has(x.ref) || updated.get(x.ref)?.color,
+    (x) =>
+      ui.hideExisting ||
+      deleted.has(x.ref) ||
+      updated.get(x.ref)?.color ||
+      rectOf(x),
   );
   const shown = list.filter((x) => !ui.hideExisting && !deleted.has(x.ref));
   const edits: Shape[] = list.flatMap((x) => {
     const color = updated.get(x.ref)?.color;
-    return color && !deleted.has(x.ref) && !ui.hideExisting
-      ? editedShapes(x, color, scale)
-      : [];
+    const rect = rectOf(x);
+    if ((!color && !rect) || deleted.has(x.ref) || ui.hideExisting) return [];
+    return editedShapes(
+      rect ? movedAnnotation(x, rect) : x,
+      color ?? x.color ?? '#000000',
+      scale,
+    );
   });
   return (
     <>
@@ -168,7 +187,7 @@ export function ExistingLayer({
             <HitArea
               key={x.ref}
               transform={t}
-              box={x.rect}
+              box={rectOf(x) ?? x.rect}
               label={existingLabel({ ...x, ...updated.get(x.ref) })}
               pressed={ui.selectedExisting?.ref === x.ref}
               onActivate={() => {

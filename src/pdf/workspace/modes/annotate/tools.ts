@@ -1,7 +1,7 @@
 import { newId } from '@/shared/lib/id';
 import { currentAuthor } from '@/pdf/doc/ops';
 import type { MarkupSubtype } from '@/pdf/doc/ops/annotate-params';
-import type { NewOperation, OverlayItem, PageId } from '@/pdf/doc/types';
+import type { Box, NewOperation, OverlayItem, PageId } from '@/pdf/doc/types';
 import type { ExistingAnnotation } from '@/pdf/render/annotations';
 import type { DocumentApi } from '../types';
 import { getAnnotateUi } from './ui-store';
@@ -80,13 +80,18 @@ export function existingChanges(doc: DocumentApi, pageId: PageId) {
   const deleted = new Set<string>();
   const updated = new Map<
     string,
-    { color?: string; contents?: string; opacity?: number }
+    { color?: string; contents?: string; opacity?: number; rect?: Box }
   >();
   for (const o of doc.view.overlays.get(pageId) ?? []) {
     if (doc.view.hidden.has(o.opId)) continue;
     const p = o.params as {
       target: { kind: string; ref?: string };
-      patch?: { color?: string; contents?: string; opacity?: number };
+      patch?: {
+        color?: string;
+        contents?: string;
+        opacity?: number;
+        rect?: Box;
+      };
     };
     if (p.target?.kind !== 'existing' || !p.target.ref) continue;
     if (o.type === 'annot.delete') deleted.add(p.target.ref);

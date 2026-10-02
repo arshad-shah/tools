@@ -22,6 +22,11 @@ import { useGoToMode } from '../../workspace-context';
 import { DrawLayer } from './DrawLayer';
 import { ExistingLayer } from './ExistingLayer';
 import { useExistingAnnotations, usePageText } from './existing';
+import {
+  existingObject,
+  existingUpdate,
+  refOfExisting,
+} from './existing-objects';
 import { NoteEditor } from './NoteEditor';
 import { boundsOf, kindName, shapesOf, textOf } from './pending-shapes';
 import { FreeTextPreview, StampPreview } from './PendingText';
@@ -30,6 +35,8 @@ import {
   activeTool,
   addAnnotation,
   DRAW_TOOLS,
+  existingChanges,
+  existingLabel,
   MARKUP_TOOLS,
   pendingAnnots,
 } from './tools';
@@ -83,7 +90,31 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
   const t = { a, b, c, d, e, f };
   const scale = Math.hypot(a, b);
   const markup = MARKUP_TOOLS[tool];
-  const picking = tool === 'select' || tool === 'eraser';
+  // Existing annotations not deleted or hidden, on the object layer too.
+  const changes = existingChanges(doc, page.id);
+  const movable = ui.hideExisting
+    ? []
+    : existing.filter((x) => !changes.deleted.has(x.ref));
+  const existingOf = (id: string) => {
+    const ref = refOfExisting(id);
+    return ref ? (movable.find((x) => x.ref === ref) ?? null) : null;
+  };
+  // The inspector and Delete act on a selected existing annotation.
+  const picked = [...selection.objects].map(existingOf).filter((x) => !!x);
+  const pickedRef = picked.length === 1 ? picked[0]!.ref : null;
+  useEffect(() => {
+    const cur = getAnnotateUi().selectedExisting;
+    if (pickedRef) {
+      const x = existing.find((e) => e.ref === pickedRef)!;
+      if (cur?.ref !== pickedRef || cur.pageId !== page.id)
+        setAnnotateUi({
+          selectedExisting: { pageId: page.id, ref: x.ref, index: x.index },
+        });
+    } else if (cur?.pageId === page.id)
+      setAnnotateUi({ selectedExisting: null });
+    // `existing` follows the page; the ref names the annotation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedRef, page.id]);
 
   useEffect(() => {
     void ensureOverlayFonts().catch(() => {});
@@ -137,7 +168,8 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
         viewport={viewport}
         width={width}
         height={height}
-        interactive={picking}
+        interactive={tool === 'eraser'}
+        preview={preview}
       />
       <ShapeLayer
         width={width}
@@ -187,13 +219,40 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
           height={height}
           marquee
           onPreview={setPreview}
-          objects={placed.map(asObject).filter((o): o is LayerObject => !!o)}
+          objects={[
+            ...movable.map((x) => {
+              const u = changes.updated.get(x.ref);
+              return existingObject(
+                x,
+                existingLabel({ ...x, ...u }),
+                u?.rect ?? x.rect,
+              );
+            }),
+            ...placed.map(asObject).filter((o): o is LayerObject => !!o),
+          ]}
+          ownOp={(c) => {
+            const x = existingOf(c.id);
+            return x ? existingUpdate(page.id, x, c.box) : null;
+          }}
           onDelete={(ids) => {
             doc.dispatch(
-              ids.map((id) => ({
-                type: 'annot.delete',
-                params: { pageId: page.id, target: { kind: 'pending', id } },
-              })),
+              ids.map((id) => {
+                const x = existingOf(id);
+                return {
+                  type: 'annot.delete',
+                  params: {
+                    pageId: page.id,
+                    target: x
+                      ? {
+                          kind: 'existing',
+                          ref: x.ref,
+                          nm: null,
+                          index: x.index,
+                        }
+                      : { kind: 'pending', id },
+                  },
+                };
+              }),
               ids.length > 1 ? `Delete ${ids.length} annotations` : undefined,
             );
             selection.selectObjects([]);
