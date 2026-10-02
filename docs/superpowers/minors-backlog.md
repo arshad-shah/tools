@@ -33,3 +33,8 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P5-B: src/shared/ui/selection-frame.tsx resizing a rotated frame uses the unrotated frame's axes -> rotate the drag delta into the frame's space.
 - P5-B: src/app/gallery redaction ShapeLayer example uses the same fill and stroke, so its hatch is invisible -> use a contrasting stroke.
 - P5-B: visual baselines needed on the controller (win32) and in the pinned container (linux): new test/visual/workspace.visual.ts (12 shots), kit-gallery drawer/dialog (restyled, Dialog gained size lg and a scrolling body) plus the new page-overlays, panels, workspace-bars and document sections, and app hub-pdf (Workspace group).
+- P5-F: src/pdf/ocr/pool.ts a tesseract worker that dies after loading (Worker error event) leaves its job unsettled; aborts and job rejections are handled, a silent crash is not -> add a per-job watchdog or hook the worker's error event if tesseract.js exposes it.
+- P5-F: src/pdf/doc/checkpoints/ocr.ts recognises pages in document order; spec 11 wants visible pages first -> F-7 passes the visible page ids so the runner orders its queue.
+- P5-F: src/pdf/doc/types.ts CheckpointReport holds text lines only; F-7's rail badges ("Text added", "Low confidence") need per-page results -> add structured per-page OCR data to the report in F-7.
+- P5-F: test/e2e-csp/csp.spec.ts visits the Rive player without a real .riv, so the Rive runtime's wasm fetch is not exercised under the policy -> add a small .riv fixture and load it.
+- P5-F: scripts/copy-ocr-assets.mjs keys public/ocr/<v> by the tesseract.js version only; a tesseract.js-core bump alone reuses the path -> include the core version in the folder name once immutable cache headers are added.

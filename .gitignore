@@ -38,3 +38,4 @@ playwright-report
 test-results
 test/fixtures/generated
 public/pdfjs
+public/ocr

@@ -7,6 +7,7 @@ import { cloudflare } from '@cloudflare/vite-plugin';
 import { buildDefines } from './build-info';
 import { glyphReport } from './scripts/vite-glyph-report';
 import { escapeVendorGlyphs } from './scripts/vite-vendor-glyphs';
+import { SECURITY_HEADERS, cspHeaders } from './scripts/csp';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,6 +17,7 @@ export default defineConfig({
     cloudflare(),
     escapeVendorGlyphs(),
     glyphReport(),
+    cspHeaders(),
   ],
   define: buildDefines(),
   // Module workers everywhere: qpdf-wasm's loader uses dynamic import(),
@@ -31,6 +33,8 @@ export default defineConfig({
   server: {
     // Static pdf.js assets, (re)written by scripts/copy-pdfjs-assets.mjs.
     // Watching them lets a parallel copy crash this server with EBUSY on Windows.
-    watch: { ignored: ['**/public/pdfjs/**'] },
+    watch: { ignored: ['**/public/pdfjs/**', '**/public/ocr/**'] },
   },
+  // The deployed headers (public _headers), so the CSP e2e runs on preview.
+  preview: { headers: { ...SECURITY_HEADERS } },
 });

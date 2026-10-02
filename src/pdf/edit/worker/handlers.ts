@@ -5,6 +5,7 @@ import {
   type MaterializePlan,
   type MaterializeResult,
 } from '@/pdf/doc/materialize/materialize';
+import { ocrHandlers } from './ocr';
 
 const materializeHandlers = {
   async materialize(
@@ -34,6 +35,7 @@ const metadataHandlers = {
 export const editHandlers = {
   ...materializeHandlers,
   ...metadataHandlers,
+  ...ocrHandlers,
 };
 
 export type EditHandlers = typeof editHandlers;
