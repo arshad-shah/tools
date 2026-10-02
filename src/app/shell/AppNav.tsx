@@ -45,7 +45,7 @@ export function AppNav({ className }: { className?: string }) {
     { id: 'recent', title: 'Recent', items: pick(recentIds) },
     {
       id: 'categories',
-      title: 'Browse',
+      title: 'Hubs',
       items: [...CATEGORIES]
         .sort((a, b) => a.order - b.order)
         .map((c) => ({
