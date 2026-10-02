@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useId, useRef, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { Button, IconButton } from '../button';
@@ -18,6 +19,13 @@ export interface FilterPopoverProps {
   onChange(filter: ColumnFilter | undefined): void;
   /** Distinct cell texts offered by the value-set filter (read on open). */
   distinct(): string[];
+  /**
+   * Controlled: opened from the column menu and anchored to its button,
+   * with no trigger of its own (6-H: one header control per column).
+   */
+  open?: boolean;
+  onOpenChange?(open: boolean): void;
+  anchor?: React.RefObject<HTMLElement | null>;
 }
 
 const BLANK: Record<Kind, ColumnFilter> = {
@@ -64,26 +72,39 @@ export function FilterPopover({
   filter,
   onChange,
   distinct,
+  open: openProp,
+  onOpenChange,
+  anchor: anchorProp,
 }: FilterPopoverProps) {
-  const [open, setOpen] = useState(false);
-  const anchor = useRef<HTMLButtonElement>(null);
+  const [openState, setOpenState] = useState(false);
+  const own = useRef<HTMLButtonElement>(null);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : openState;
+  const setOpen = (v: boolean | ((o: boolean) => boolean)) => {
+    const next = typeof v === 'function' ? v(open) : v;
+    if (controlled) onOpenChange?.(next);
+    else setOpenState(next);
+  };
+  const anchor = anchorProp ?? own;
   const kinds = kindsFor(type);
   const kind = filter?.kind ?? kinds[0].value;
   const active = isFilterActive(filter);
   return (
     <>
-      <IconButton
-        ref={anchor}
-        label={`Filter ${header}`}
-        icon={IconFilter}
-        variant="ghost"
-        size="sm"
-        tone={active ? 'accent' : undefined}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className={cn('size-7 shrink-0', active && 'bg-accent-soft')}
-      />
+      {controlled ? null : (
+        <IconButton
+          ref={own}
+          label={`Filter ${header}`}
+          icon={IconFilter}
+          variant="ghost"
+          size="sm"
+          tone={active ? 'accent' : undefined}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className={cn('size-7 shrink-0', active && 'bg-accent-soft')}
+        />
+      )}
       <Popover
         open={open}
         onOpenChange={setOpen}

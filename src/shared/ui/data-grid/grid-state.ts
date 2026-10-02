@@ -91,6 +91,8 @@ export interface GridViewport {
   height: number;
   /** Width of the body's vertical scrollbar (the header pads by it). */
   gutter: number;
+  /** Height of the body's horizontal scrollbar (0 when none or overlay). */
+  hbar: number;
 }
 
 /**
@@ -106,6 +108,7 @@ export function useGridViewport(
     width: 0,
     height: 0,
     gutter: 0,
+    hbar: 0,
   });
   useLayoutEffect(() => {
     const el = listRef.current?.getScrollElement();
@@ -121,13 +124,17 @@ export function useGridViewport(
         gutter: el.clientWidth
           ? Math.max(0, el.offsetWidth - el.clientWidth)
           : 0,
+        hbar: el.clientHeight
+          ? Math.max(0, el.offsetHeight - el.clientHeight)
+          : 0,
       };
       if (headerRef.current) headerRef.current.scrollLeft = el.scrollLeft;
       setView((v) =>
         v.left === next.left &&
         v.width === next.width &&
         v.height === next.height &&
-        v.gutter === next.gutter
+        v.gutter === next.gutter &&
+        v.hbar === next.hbar
           ? v
           : next,
       );
@@ -143,4 +150,44 @@ export function useGridViewport(
     };
   }, [listRef, headerRef]);
   return view;
+}
+
+const HEADER_H = 40;
+const EMPTY_H = 160;
+/** A horizontal scrollbar's height before it can be measured. */
+const HBAR_GUESS = 12;
+
+/**
+ * The grid's height (6-H): the header plus the rows (up to `maxRows`, 12
+ * by default, unlimited when the caller caps the height) plus a horizontal
+ * scrollbar when the columns really overflow, so it sits below the last row
+ * instead of over it. Never less than the header, one row and that bar.
+ */
+export function gridBox(p: {
+  rows: number;
+  rowHeight: number;
+  maxRows?: number;
+  capped: boolean;
+  overflowX: boolean;
+  hbar: number;
+}): { height: number; minHeight: number } {
+  const bar = p.overflowX ? p.hbar || HBAR_GUESS : 0;
+  const limit = p.maxRows ?? (p.capped ? Number.POSITIVE_INFINITY : 12);
+  const body =
+    p.rows === 0 ? EMPTY_H : Math.min(Math.max(p.rows, 1), limit) * p.rowHeight;
+  const first = p.rows === 0 ? EMPTY_H : p.rowHeight;
+  return {
+    height: HEADER_H + body + bar + 2,
+    minHeight: HEADER_H + first + bar + 2,
+  };
+}
+
+/** On a phone-width grid the first column sticks (unless one is pinned). */
+export function pinFirstWhenNarrow<R>(
+  cols: GridColumn<R>[],
+  narrow: boolean,
+): GridColumn<R>[] {
+  if (!narrow || cols.length < 2 || cols.some((c) => c.pinned === 'start'))
+    return cols;
+  return [{ ...cols[0], pinned: 'start' }, ...cols.slice(1)];
 }

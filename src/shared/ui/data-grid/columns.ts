@@ -53,14 +53,18 @@ export interface ColumnLayout {
   total: number;
 }
 
-export function columnLayout<R>(cols: readonly GridColumn<R>[]): ColumnLayout {
+/** `sizes`: precomputed widths (auto sizing); otherwise each column's own. */
+export function columnLayout<R>(
+  cols: readonly GridColumn<R>[],
+  sizes?: readonly number[],
+): ColumnLayout {
   const offsets: number[] = [];
   const widths: number[] = [];
   let x = 0;
   let pinned = 0;
-  for (const c of cols) {
+  for (const [i, c] of cols.entries()) {
     offsets.push(x);
-    const w = widthOf(c as GridColumn<unknown>);
+    const w = sizes?.[i] ?? widthOf(c as GridColumn<unknown>);
     widths.push(w);
     x += w;
     if (c.pinned === 'start') pinned++;

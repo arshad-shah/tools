@@ -95,8 +95,11 @@ export function useShareableState<S>({
   }));
   let current = memo;
   if (!shallowEqual(memo.state, selected)) {
-    current = { state: selected, json: JSON.stringify(selected) ?? 'null' };
-    setMemo(current);
+    const json = JSON.stringify(selected) ?? 'null';
+    current = { state: selected, json };
+    // Only a real change is stored: a select() that builds fresh nested
+    // arrays every render must not loop on a render-phase update.
+    if (json !== memo.json) setMemo(current);
   }
   const json = current.json;
   const encoded = useMemo(
