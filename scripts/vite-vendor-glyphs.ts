@@ -15,7 +15,7 @@ import {
  * dependency, never by an exemption list. Some dependencies carry such
  * characters in string literals that are not product text (a decoder probe
  * in fontkit, the HTML entity decode table, a developer hint in
- * react-router's default error screen, a plotly marker map), often as
+ * react-router's default error screen), often as
  * escapes that the minifier prints back as raw characters.
  *
  * This build-only transform brings every vendor module to the rule the app

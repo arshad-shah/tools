@@ -136,8 +136,8 @@ export {
   type SizedProps,
 } from './positioned';
 // Adapters for heavy third-party libraries are imported from their own
-// files (e.g. '@/shared/ui/adapters/Chart') so a page that does not use
-// Plotly, React Flow, Rive, QR or the code editor never loads them.
+// files (e.g. '@/shared/ui/adapters/RivePlayer') so a page that does not use
+// React Flow, Rive, QR or the code editor never loads them.
 export {
   tokenColor,
   useTokenColors,
@@ -196,3 +196,55 @@ export {
   type DocumentViewportProps,
   type ZoomSetting,
 } from './document-viewport';
+export {
+  VirtualList,
+  type VirtualListHandle,
+  type VirtualListProps,
+  type VirtualListRole,
+  type VirtualRowProps,
+  type VirtualRowState,
+  type VirtualStickyHeader,
+  type EstimateSize,
+  type ScrollAlign,
+} from './virtual-list';
+export * from './split-pane';
+export * from './bit-grid';
+export * from './meter';
+export * from './secret-text';
+export * from './focus-overlay';
+export * from './device-frame';
+export * from './send-to-menu';
+export * from './share-button';
+export * from './privacy-note';
+export { colourPaint } from './swatch-paint';
+export { ColorPicker, type ColorPickerProps } from './color-picker';
+export type { PickerFormat, PickerMode } from './color-picker-model';
+export { ColorField, type ColorFieldProps } from './color-field';
+export { ColorRamp, type ColorRampProps } from './color-ramp';
+export { ContrastPair, type ContrastPairProps } from './contrast-pair';
+export {
+  CompareSlider,
+  type CompareSliderProps,
+  type CompareImageSource,
+} from './compare-slider';
+export {
+  SandboxedHtml,
+  type SandboxedHtmlProps,
+  type SandboxedHtmlHandle,
+} from './sandboxed-html';
+export {
+  countRemoteImages,
+  buildSrcdoc,
+  sandboxCsp,
+} from './sandboxed-html-doc';
+export { CameraCapture, type CameraCaptureProps } from './camera-capture';
+export { cameraError, CAMERA_BLOCKED, NO_CAMERA } from './camera-errors';
+export * from './code-tree';
+export * from './code-tree-model';
+export * from './chart';
+export * from './data-grid';
+export * from './code-surface';
+export * from './text-input-panel';
+export * from './bytes-view';
+export * from './key-value-editor';
+export * from './key-value-bulk';

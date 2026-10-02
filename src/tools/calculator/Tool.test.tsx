@@ -1,11 +1,8 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import Calculator from './Tool';
 import { useCalculatorStore } from './store';
-
-// Plotly needs a real browser; the graph is covered by e2e.
-vi.mock('react-plotly.js', () => ({ default: () => null }));
 
 // Text/label queries, not role queries: role matching walks the whole
 // calculator tree and is slow enough to time out in a loaded full run.

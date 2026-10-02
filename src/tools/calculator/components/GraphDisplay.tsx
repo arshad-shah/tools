@@ -11,11 +11,9 @@ import {
 } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { toToolError } from '@/shared/lib/errors';
-import { Chart } from '@/shared/ui/adapters/Chart';
-import { compileFunction, sampleFunction } from '../lib/evaluate';
+import { Chart, type ChartFunction } from '@/shared/ui/chart';
+import { compileFunction } from '../lib/evaluate';
 import type { AngleUnit } from '../types';
-
-const SAMPLES = 400;
 
 interface GraphDisplayProps {
   /** The expression to plot, e.g. "x^2 + 2*x - 5", with x as the variable. */
@@ -29,10 +27,10 @@ interface GraphDisplayProps {
 
 /**
  * Plots `expression` over [minX, maxX]. The expression is compiled once
- * (no text substitution of x, so exp or max keep working) and sampled at
- * 400 even points; undefined points leave gaps.
+ * (no text substitution of x, so exp or max keep working) and the kit chart
+ * samples it adaptively; undefined points and poles leave gaps.
  */
-export const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
+export const GraphDisplay: FC<GraphDisplayProps> = ({
   expression,
   angleUnit,
   defaultMinX = -10,
@@ -50,12 +48,12 @@ export const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
     }
   }, [expression, angleUnit]);
 
-  const { xs, ys } = useMemo(
+  const fns = useMemo<ChartFunction[]>(
     () =>
-      compiled.fn && maxX > minX
-        ? sampleFunction(compiled.fn, minX, maxX, SAMPLES)
-        : { xs: [], ys: [] },
-    [compiled, minX, maxX],
+      compiled.fn
+        ? [{ id: 'f', label: `f(x) = ${expression}`, fn: compiled.fn }]
+        : [],
+    [compiled, expression],
   );
 
   return (
@@ -97,24 +95,15 @@ export const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
           </Alert>
         ) : (
           <Chart
-            label={`Graph of f(x) = ${expression}`}
-            className="h-[400px] w-full"
-            data={[
-              {
-                x: xs,
-                y: ys,
-                type: 'scatter',
-                mode: 'lines',
-                connectgaps: false,
-              },
-            ]}
-            layout={{
-              autosize: true,
-              title: { text: `f(x) = ${expression}` },
-              xaxis: { title: { text: 'x' } },
-              yaxis: { title: { text: 'f(x)' } },
-              margin: { l: 60, r: 20, t: 40, b: 40 },
-            }}
+            kind="function"
+            fns={fns}
+            xDomain={maxX > minX ? [minX, maxX] : [maxX, minX]}
+            height={400}
+            xLabel="x"
+            yLabel="f(x)"
+            zoomable
+            ariaLabel={`Graph of f(x) = ${expression}`}
+            ariaSummary={`f(x) = ${expression} for x from ${Math.min(minX, maxX)} to ${Math.max(minX, maxX)}`}
           />
         )}
       </Stack>

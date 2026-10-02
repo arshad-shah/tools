@@ -4,7 +4,6 @@ import {
   evaluateExpression,
   evaluateWithAngle,
   formatResult,
-  sampleFunction,
 } from './evaluate';
 
 describe('evaluateWithAngle', () => {
@@ -104,21 +103,14 @@ describe('grapher', () => {
     expect(compileFunction('sin(x)', 'rad')(30)).toBeCloseTo(Math.sin(30), 12);
   });
 
+  it('returns NaN where the function is undefined', () => {
+    expect(compileFunction('1 / x', 'rad')(0)).toBeNaN();
+    expect(compileFunction('sqrt(x)', 'rad')(-1)).toBeNaN();
+  });
+
   it('throws INVALID_INPUT for an expression that cannot compile', () => {
     expect(() => compileFunction('2 +', 'rad')).toThrow(
       expect.objectContaining({ code: 'INVALID_INPUT' }),
     );
-  });
-
-  it('samples evenly with gaps where the function is undefined', () => {
-    const { xs, ys } = sampleFunction(
-      compileFunction('1 / x', 'rad'),
-      -1,
-      1,
-      401,
-    );
-    expect(xs).toHaveLength(401);
-    expect(ys[200]).toBeNull();
-    expect(ys[0]).toBeCloseTo(-1);
   });
 });

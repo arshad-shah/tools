@@ -266,7 +266,9 @@ test('calculator plots an expression without crashing', async ({ page }) => {
   await page.getByRole('tab', { name: 'Expression' }).click();
   await page.getByRole('textbox', { name: 'Expression' }).fill('sin(x)');
   await page.getByRole('button', { name: 'Plot expression' }).click();
-  await expect(page.locator('.js-plotly-plot')).toBeVisible();
+  await expect(
+    page.getByRole('img', { name: 'Graph of f(x) = sin(x)' }),
+  ).toBeVisible();
   await expect(page.getByText('Calculator encountered an error')).toHaveCount(
     0,
   );

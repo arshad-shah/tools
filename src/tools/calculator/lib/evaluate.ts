@@ -132,21 +132,3 @@ export function compileFunction(
     }
   };
 }
-
-/** `n` evenly spaced samples; null marks a gap (an undefined point). */
-export function sampleFunction(
-  fn: (x: number) => number,
-  minX: number,
-  maxX: number,
-  n = 400,
-): { xs: number[]; ys: (number | null)[] } {
-  const xs: number[] = [];
-  const ys: (number | null)[] = [];
-  for (let i = 0; i < n; i++) {
-    const x = minX + ((maxX - minX) * i) / (n - 1);
-    const y = fn(x);
-    xs.push(x);
-    ys.push(Number.isNaN(y) ? null : y);
-  }
-  return { xs, ys };
-}
