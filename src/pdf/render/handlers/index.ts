@@ -6,6 +6,7 @@ import { sampleHandlers } from './sample';
 import { textHandlers } from './text';
 import { geometryHandlers } from './geometry';
 import { formHandlers } from './forms';
+import { rasterGeometryHandlers } from './raster-geometry';
 
 /**
  * Every render-worker handler. Append-only registry: later Parts add one
@@ -20,6 +21,7 @@ export const renderHandlers = {
   ...formHandlers,
   ...annotationHandlers,
   ...sampleHandlers,
+  ...rasterGeometryHandlers,
 };
 
 export type RenderHandlers = typeof renderHandlers;

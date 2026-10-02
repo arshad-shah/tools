@@ -10,9 +10,12 @@ import {
 } from '../detect-page';
 import { readFormInfo } from '../form-info';
 import { textFromItems } from '../text';
+import type { ImageOpsTable } from '@/pdf/detect/raster';
+import { rasterGeometry } from './raster-geometry';
 import { getDoc } from './state';
 
 const OPS = pdfjs.OPS as unknown as OpsTable;
+const IMAGE_OPS = pdfjs.OPS as unknown as ImageOpsTable;
 
 const page = async (docId: string, pageIndex: number) =>
   (await getDoc(docId).getPage(pageIndex + 1)) as unknown as DetectPageLike & {
@@ -20,13 +23,19 @@ const page = async (docId: string, pageIndex: number) =>
   };
 
 export const geometryHandlers = {
-  /** Flat-form detection of one page (spec §8.2-8.4). */
+  /**
+   * Flat-form detection of one page (spec §8.2-8.4). Scanned pages (no
+   * vector rules, one image over half the page) get raster rulings.
+   */
   async detect(
-    _ctx: RpcContext,
+    ctx: RpcContext,
     docId: string,
     pageIndex: number,
   ): Promise<PageDetectionResult> {
-    return detectFromPage(await page(docId, pageIndex), pageIndex, OPS);
+    return detectFromPage(await page(docId, pageIndex), pageIndex, OPS, {
+      ops: IMAGE_OPS,
+      segments: () => rasterGeometry(ctx, docId, pageIndex),
+    });
   },
 
   /** The PDF hub probe (spec §5.3): a few pages, extrapolated. */
