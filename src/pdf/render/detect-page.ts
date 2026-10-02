@@ -109,8 +109,9 @@ export async function detectFromPage(
   const result = detectPage(geom, pageIndex);
   if (geom.skipped) return { ...result, cells: [], signTargets: [] };
   const lines = normaliseLines(geom.segments, geom.rects);
-  const built = buildCells(lines).cells;
-  const cells = built.map((c) => ({
+  const { cells: built, combs } = buildCells(lines);
+  // A run of character boxes snaps as one cell, like its comb field.
+  const cells = [...built, ...combs.map((k) => k.cell)].map((c) => ({
     x: c.x,
     y: c.y,
     width: c.w,

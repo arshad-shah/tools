@@ -13,8 +13,8 @@ import type {
 
 function detect(geom: PageGeometry): DetectedField[] {
   const lines = normaliseLines(geom.segments, geom.rects);
-  const { cells, squares } = buildCells(lines);
-  return classify(geom, lines, cells, squares, 3);
+  const { cells, squares, combs } = buildCells(lines);
+  return classify(geom, lines, cells, squares, 3, combs);
 }
 const fields = (geom: PageGeometry) =>
   detect(geom).filter((f) => f.status === 'field');
@@ -303,5 +303,143 @@ describe('isFlatForm', () => {
     expect(isFlatForm([page(0, 3), page(1, 3)], false)).toBe(true);
     expect(isFlatForm([page(0, 5)], true)).toBe(false);
     expect(isFlatForm([page(0, 9, 0.6)], false)).toBe(false);
+  });
+});
+
+/** A label cell 50..190 and `n` 14 x 18 boxes from 190 (each its own grid). */
+function boxRowSegs(lefts: number[], y = 600): Seg[] {
+  return [
+    ...gridSegs([50, 190], [y, y + 18]),
+    ...lefts.flatMap((x) => gridSegs([x, x + 14], [y, y + 18])),
+  ];
+}
+const lefts = (from: number, n: number) =>
+  Array.from({ length: n }, (_, i) => from + i * 14);
+const fill = (
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  colour: string,
+): RectShape => ({
+  x,
+  y,
+  w,
+  h,
+  filled: true,
+  stroked: false,
+  fill: colour,
+  alpha: 1,
+});
+
+describe('classify: character boxes', () => {
+  it('makes one labelled comb text field of a run of boxes', () => {
+    const found = detect(
+      geometry({
+        segments: boxRowSegs(lefts(190, 20)),
+        runs: [run('Surname', 54, rowBaseline(600, 18))],
+      }),
+    );
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({
+      source: 'comb',
+      type: 'text',
+      label: 'Surname',
+      autofill: 'surname',
+      cellCount: 20,
+      status: 'field',
+      rect: { x: 190, width: 280 },
+    });
+  });
+
+  it('makes dd/mm/yyyy box groups one date field of 10 cells', () => {
+    const boxes = [...lefts(190, 2), ...lefts(232, 2), ...lefts(274, 4)];
+    const found = detect(
+      geometry({
+        segments: boxRowSegs(boxes),
+        runs: [
+          run('Date of birth', 54, rowBaseline(600, 18)),
+          run('/', 220, rowBaseline(600, 18)),
+          run('/', 262, rowBaseline(600, 18)),
+        ],
+      }),
+    );
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({
+      type: 'date',
+      cellCount: 10,
+      label: 'Date of birth',
+    });
+  });
+
+  it('types eight plain boxes as text even under a date label', () => {
+    const found = detect(
+      geometry({
+        segments: boxRowSegs(lefts(190, 8)),
+        runs: [run('Date', 54, rowBaseline(600, 18))],
+      }),
+    );
+    expect(found[0]).toMatchObject({ type: 'text', cellCount: 8 });
+  });
+
+  it('ignores boxes with text printed in them', () => {
+    const found = detect(
+      geometry({
+        segments: boxRowSegs(lefts(190, 4)),
+        runs: [
+          run('Office code', 54, rowBaseline(600, 18)),
+          run('A', 193, rowBaseline(600, 18)),
+        ],
+      }),
+    );
+    expect(found).toEqual([]);
+  });
+});
+
+describe('classify: decoration', () => {
+  it('ignores an empty cell under a shaded band, and the rule beneath it', () => {
+    const found = detect(
+      geometry({
+        segments: [...gridSegs([50, 550], [700, 712]), rule(50, 550, 696)],
+        rects: [fill(50, 700, 500, 12, '#0d5466')],
+      }),
+    );
+    expect(found).toEqual([]);
+  });
+
+  it('keeps an empty cell with near-white shading', () => {
+    const found = detect(
+      geometry({
+        segments: gridSegs([50, 210, 550], [600, 622]),
+        rects: [fill(210, 600, 340, 22, '#f2f2f2')],
+        runs: [run('Surname', 54, rowBaseline(600, 22))],
+      }),
+    );
+    expect(found).toHaveLength(1);
+  });
+
+  it('offers no write-in after a heading in a header rectangle', () => {
+    const found = detect(
+      geometry({
+        segments: gridSegs([50, 550], [700, 740]),
+        runs: [
+          run('Part A: About you', 54, 715, 14),
+          ...['one', 'two', 'three'].map((w, i) =>
+            run(w, 54, 600 - i * 14, 10),
+          ),
+        ],
+      }),
+    );
+    expect(found.filter((f) => f.source === 'trailing')).toEqual([]);
+  });
+
+  it('offers no write-in after a checkbox label', () => {
+    const found = detect(
+      geometry({
+        segments: gridSegs([50, 62, 400], [600, 612]),
+        runs: [run('No', 66, 602, 10)],
+      }),
+    );
+    expect(found.map((f) => f.type)).toEqual(['tick']);
   });
 });

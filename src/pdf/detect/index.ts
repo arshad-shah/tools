@@ -18,7 +18,7 @@ export type {
   TextRun,
 } from './types';
 export type { HLine, Lines, VLine } from './segments';
-export type { Cell } from './cells';
+export type { Cell, Comb } from './cells';
 export type { Candidate, CandidateSource } from './candidates';
 export type { ConfidenceInput } from './confidence';
 export { extractGeometry, MAX_PATH_OPS } from './geometry';
@@ -54,7 +54,7 @@ export function detectPage(
   if (geom.skipped)
     return { pageIndex, fields: [], skipped: geom.skipped, ms: now() - start };
   const lines = normaliseLines(geom.segments, geom.rects);
-  const { cells, squares } = buildCells(lines);
-  const fields = classify(geom, lines, cells, squares, pageIndex);
+  const { cells, squares, combs } = buildCells(lines);
+  const fields = classify(geom, lines, cells, squares, pageIndex, combs);
   return { pageIndex, fields, skipped: null, ms: now() - start };
 }

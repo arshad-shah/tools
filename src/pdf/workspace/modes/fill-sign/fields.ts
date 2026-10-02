@@ -280,7 +280,12 @@ export function viewFields(
       value,
       filled: value !== '',
       fillOpId: fill?.opId ?? null,
-      ...(fill ? { style: fill.style } : {}),
+      // Character boxes start as comb text; once filled, the fill's settings rule.
+      ...(fill
+        ? { style: fill.style }
+        : f.cellCount
+          ? { style: { comb: f.cellCount } }
+          : {}),
     });
   }
   return out.sort((a, b) => a.pageNumber - b.pageNumber);

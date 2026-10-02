@@ -37,6 +37,8 @@ export interface DetectedField {
   status: 'field' | 'suggested';
   source: CandidateSource;
   prechecked?: boolean;
+  /** Comb text: one character per cell across the rect (character boxes). */
+  cellCount?: number;
   table?: number;
   row?: number;
   col?: number;
