@@ -1,5 +1,5 @@
 import type { Box } from '@/pdf/doc/types';
-import type { Cell } from './cells';
+import type { Cell, Comb } from './cells';
 import { checkboxGlyph } from './glyph-codes';
 import type { Lines } from './segments';
 import {
@@ -17,7 +17,8 @@ export type CandidateSource =
   | 'ruled'
   | 'checkbox-vector'
   | 'checkbox-glyph'
-  | 'date';
+  | 'date'
+  | 'comb';
 
 export interface Candidate {
   source: CandidateSource;
@@ -26,6 +27,12 @@ export interface Candidate {
   prechecked?: boolean;
   cell?: Cell;
   anchorText?: string;
+  /** Largest upright glyph of the anchor text (trailing candidates). */
+  anchorSize?: number;
+  /** Comb fields: character cells across the rect. */
+  cells?: number;
+  /** Comb fields laid out as dd/mm/yyyy boxes. */
+  date?: boolean;
 }
 
 const CELL_INSET = 1.5;
@@ -110,6 +117,7 @@ export function cellCandidates(
         exact: false,
         cell: c,
         anchorText: upright.map((g) => g.ch).join(''),
+        anchorSize: Math.max(...upright.map((g) => g.size)),
       });
     }
   }
@@ -253,4 +261,80 @@ export function medianLineHeight(runs: TextRun[]): number {
   if (hs.length === 0) return 12;
   const mid = hs.length >> 1;
   return hs.length % 2 ? hs[mid] : (hs[mid - 1] + hs[mid]) / 2;
+}
+
+/** dd / mm / yyyy: two, two and four boxes between separators. */
+const DATE_GROUPS = [2, 2, 4];
+/** A date comb's cells: dd/mm/yyyy with its separators. */
+const DATE_CELLS = 10;
+
+/**
+ * One comb text field per run of empty character boxes, spanning the run
+ * (inset vertically). Runs with text printed in any box are not fields.
+ */
+export function combCandidates(combs: Comb[], glyphs: GlyphBox[]): Candidate[] {
+  const out: Candidate[] = [];
+  for (const c of combs) {
+    const printed = c.boxes.some((b) =>
+      glyphs.some((g) => intersects(inset(b, BOX_INSET), g)),
+    );
+    if (printed) continue;
+    const date =
+      c.groups.length === DATE_GROUPS.length &&
+      c.groups.every((n, i) => n === DATE_GROUPS[i]);
+    out.push({
+      source: 'comb',
+      rect: {
+        x: c.x,
+        y: c.y + CELL_INSET,
+        width: c.w,
+        height: c.h - 2 * CELL_INSET,
+      },
+      exact: true,
+      cell: c.cell,
+      cells: date ? DATE_CELLS : c.count,
+      ...(date ? { date } : {}),
+    });
+  }
+  return out;
+}
+
+/** Fills darker than this luminance (0..1) are bands, not paper. */
+const BAND_LUMINANCE = 0.9;
+/** Larger fills are page backgrounds. */
+const BAND_MAX_AREA = 200_000;
+
+function luminance(hex: string): number | null {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return null;
+  const [r, g, b] = [m[1], m[2], m[3]].map((h) => parseInt(h, 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Non-white filled areas thicker than a border (title bands, coloured bars,
+ * shaded header cells): nothing is written on them.
+ */
+export function shadedBands(rects: RectShape[]): Box[] {
+  return rects
+    .filter((r) => {
+      if (!r.filled || !r.fill || r.alpha < 0.1) return false;
+      if (Math.min(r.w, r.h) <= 2 || r.w * r.h > BAND_MAX_AREA) return false;
+      const l = luminance(r.fill);
+      return l !== null && l < BAND_LUMINANCE;
+    })
+    .map((r) => ({ x: r.x, y: r.y, width: r.w, height: r.h }));
+}
+
+/** Share of `b` covered by `bands` (overlaps between bands counted once each). */
+export function bandCover(b: Box, bands: Box[]): number {
+  const a = area(b);
+  if (a <= 0) return 0;
+  let covered = 0;
+  for (const o of bands) {
+    const x = Math.min(b.x + b.width, o.x + o.width) - Math.max(b.x, o.x);
+    const y = Math.min(b.y + b.height, o.y + o.height) - Math.max(b.y, o.y);
+    if (x > 0 && y > 0) covered += x * y;
+  }
+  return Math.min(1, covered / a);
 }

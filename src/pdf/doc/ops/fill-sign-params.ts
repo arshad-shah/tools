@@ -90,6 +90,7 @@ const SOURCES: readonly CandidateSource[] = [
   'checkbox-vector',
   'checkbox-glyph',
   'date',
+  'comb',
 ];
 const ACTIONS: readonly CorrectionAction[] = [
   'dismiss',
@@ -146,6 +147,11 @@ export function detectedField(v: unknown, what: string): DetectedField {
     source: oneOf(o.source, SOURCES, what),
     ...(o.prechecked !== undefined
       ? { prechecked: o.prechecked === true }
+      : {}),
+    ...(Number.isInteger(o.cellCount) &&
+    (o.cellCount as number) >= 1 &&
+    (o.cellCount as number) <= 100
+      ? { cellCount: o.cellCount as number }
       : {}),
     ...(typeof o.table === 'number' ? { table: o.table } : {}),
     ...(typeof o.row === 'number' ? { row: o.row } : {}),

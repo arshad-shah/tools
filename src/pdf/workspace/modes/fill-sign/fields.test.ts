@@ -153,4 +153,37 @@ describe('signature fields', () => {
     });
     expect(get()[0]).toMatchObject({ filled: true });
   });
+
+  it('lays out a detected character-box field as comb text until restyled', () => {
+    const { model, get } = setup([detected('Surname', 700, { cellCount: 12 })]);
+    const [f] = get();
+    expect(f.style).toEqual({ comb: 12 });
+    model.dispatch({
+      type: 'flat.fill',
+      params: {
+        id: 'x',
+        pageId: 'ckpt0:0',
+        rect: f.rect,
+        kind: 'text',
+        value: 'DOE',
+        fieldId: f.key,
+        comb: 12,
+      },
+    });
+    expect(get()[0].style).toEqual({ comb: 12 });
+    // Character boxes turned off: the fill's own settings win.
+    model.dispatch({
+      type: 'flat.fill',
+      params: {
+        id: 'y',
+        pageId: 'ckpt0:0',
+        rect: f.rect,
+        kind: 'text',
+        value: 'DOE',
+        fieldId: f.key,
+        restyle: true,
+      },
+    });
+    expect(get()[0].style).toEqual({});
+  });
 });

@@ -1,18 +1,21 @@
 import type { Box } from '@/pdf/doc/types';
 import { autofillKey } from './autofill';
 import {
+  bandCover,
   cellCandidates,
+  combCandidates,
   datePatterns,
   glyphCheckboxes,
   iou,
   medianLineHeight,
   ruledLines,
+  shadedBands,
   underscoreRuns,
   vectorCheckboxes,
   type Candidate,
   type CandidateSource,
 } from './candidates';
-import type { Cell } from './cells';
+import type { Cell, Comb } from './cells';
 import { confidence, FIELD_MIN, SUGGEST_MIN } from './confidence';
 import { labelContext, labelFor } from './labels';
 import { readingOrder } from './reading-order';
@@ -52,6 +55,10 @@ const PEER_TOL = 2;
 const DUPLICATE_IOU = 0.6;
 const WIDGET_IOU = 0.3;
 const TOUCH = 1;
+/** Candidates this much covered by a shaded band are decoration, not fields. */
+const BAND_COVER = 0.25;
+/** Text this much larger than the page's median is a heading, never a prompt. */
+const HEADING = 1.2;
 /** Tie-break when two candidates cover the same place: the more structural source wins. */
 const SOURCE_RANK: Record<CandidateSource, number> = {
   cell: 0,
@@ -61,6 +68,7 @@ const SOURCE_RANK: Record<CandidateSource, number> = {
   underscore: 4,
   ruled: 5,
   trailing: 6,
+  comb: 0,
 };
 
 /**
@@ -91,6 +99,8 @@ function fieldType(
 ): FieldType {
   if (c.source === 'checkbox-vector' || c.source === 'checkbox-glyph')
     return 'tick';
+  // Character boxes: a date only when laid out as dd/mm/yyyy (the cells fit it).
+  if (c.source === 'comb') return c.date ? 'date' : 'text';
   if (c.source === 'date' || (label && DATE_LABEL.test(label))) return 'date';
   if (label && SIGN_LABEL.test(label)) return 'signature';
   if (c.rect.height >= MULTILINE * lineSpacing) return 'multiline';
@@ -117,8 +127,20 @@ function trailingIsField(
   t: Candidate,
   cells: Cell[],
   empty: Candidate[],
+  squares: Box[],
 ): boolean {
   if (empty.some((e) => rightNeighbour(t.cell, e.cell))) return false;
+  // A checkbox's label ("Yes", "No") is not followed by a write-in.
+  const c = t.cell;
+  if (
+    c &&
+    squares.some(
+      (s) =>
+        Math.abs(s.x + s.width - c.x) <= TOUCH &&
+        Math.min(s.y + s.height, c.y + c.h) - Math.max(s.y, c.y) > 0,
+    )
+  )
+    return false;
   if (/:\s*$/.test(t.anchorText ?? '')) return true;
   return !cells.some((c) => rightNeighbour(t.cell, c));
 }
@@ -153,25 +175,48 @@ export function classify(
   cells: Cell[],
   squares: Box[],
   pageIndex: number,
+  combs: Comb[] = [],
 ): DetectedField[] {
   const mlh = medianLineHeight(geom.runs);
-  const lineSpacing = LINE_SPACING * medianSize(geom.runs);
+  const size = medianSize(geom.runs);
+  const lineSpacing = LINE_SPACING * size;
+  // Comb runs are cells of their tables for labels, neighbours and edges.
+  const allCells = [...cells, ...combs.map((c) => c.cell)];
   const { empty, labels, trailing } = cellCandidates(cells, geom.glyphs);
+  const combed = combCandidates(combs, geom.glyphs);
   const dates = datePatterns(geom.runs);
+  const bands = shadedBands(geom.rects);
+  const inComb = (c: Candidate) => {
+    const x = c.rect.x + c.rect.width / 2;
+    const y = c.rect.y + c.rect.height / 2;
+    return combs.some(
+      (k) => x >= k.x && x <= k.x + k.w && y >= k.y && y <= k.y + k.h,
+    );
+  };
   const candidates: Candidate[] = [
-    ...empty.filter((e) => !squareCell(e.cell)),
-    ...trailing.filter((t) => trailingIsField(t, cells, empty)),
-    ...underscoreRuns(geom.runs).filter(
-      (u) => !dates.some((d) => overlaps(d.rect, u.rect)),
-    ),
-    ...dates,
-    ...ruledLines(lines, cells, geom.glyphs, mlh),
-    ...vectorCheckboxes(squares, geom.rects, geom.glyphs),
+    ...combed,
+    ...[
+      ...empty.filter((e) => !squareCell(e.cell)),
+      ...trailing.filter(
+        (t) =>
+          (t.anchorSize ?? 0) < HEADING * size &&
+          trailingIsField(t, allCells, [...empty, ...combed], squares),
+      ),
+      ...underscoreRuns(geom.runs).filter(
+        (u) => !dates.some((d) => overlaps(d.rect, u.rect)),
+      ),
+      ...dates,
+      ...ruledLines(lines, allCells, geom.glyphs, mlh),
+      ...vectorCheckboxes(squares, geom.rects, geom.glyphs),
+    ].filter((c) => !inComb(c)),
     ...glyphCheckboxes(geom.glyphs),
-  ];
+  ].filter(
+    (c) =>
+      c.source === 'checkbox-glyph' || bandCover(c.rect, bands) < BAND_COVER,
+  );
   const ctx = labelContext(
     geom.runs.filter((r) => !isRotated(r.font)),
-    cells,
+    allCells,
     labels,
     mlh,
   );
@@ -212,6 +257,7 @@ export function classify(
       source: c.source,
     };
     if (c.prechecked) f.prechecked = true;
+    if (c.cells) f.cellCount = c.cells;
     if (c.cell) {
       f.table = c.cell.table;
       f.row = c.cell.row;

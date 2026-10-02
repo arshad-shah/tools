@@ -151,19 +151,30 @@ export const retypeField = (ctx: ModeProps, f: ViewField, type: FieldType) =>
 export const resizeField = (ctx: ModeProps, f: ViewField, rect: Box) =>
   correction(ctx, { action: 'resize', fieldIds: [f.key], rect });
 
+/** A character-box field's cell count for a new width, at the same cell pitch. */
+export function combCells(d: DetectedField, rect: Box): Partial<DetectedField> {
+  if (!d.cellCount) return {};
+  const pitch = d.rect.width / d.cellCount;
+  return { cellCount: Math.max(1, Math.round(rect.width / pitch)) };
+}
+
 /** Two equal halves along the long axis (spec §8.5). */
 export function splitField(ctx: ModeProps, f: ViewField): boolean {
   const d = f.detected!;
   const r = f.rect;
   const wide = r.width >= r.height;
-  const parts: DetectedField[] = [0, 1].map((i) => ({
-    ...d,
-    id: `${d.id}:split:${i}`,
-    status: 'field',
-    rect: wide
+  const parts: DetectedField[] = [0, 1].map((i) => {
+    const rect = wide
       ? { ...r, x: r.x + (i * r.width) / 2, width: r.width / 2 }
-      : { ...r, y: r.y + ((1 - i) * r.height) / 2, height: r.height / 2 },
-  }));
+      : { ...r, y: r.y + ((1 - i) * r.height) / 2, height: r.height / 2 };
+    return {
+      ...d,
+      id: `${d.id}:split:${i}`,
+      status: 'field',
+      rect,
+      ...combCells(d, rect),
+    };
+  });
   return correction(ctx, { action: 'split', fieldIds: [f.key], parts });
 }
 
@@ -202,6 +213,7 @@ export function mergeFields(ctx: ModeProps, a: ViewField, b: ViewField) {
     id: `${a.detected!.id}:merged`,
     status: 'field',
     rect,
+    ...combCells(a.detected!, rect),
   };
   return correction(ctx, {
     action: 'merge',

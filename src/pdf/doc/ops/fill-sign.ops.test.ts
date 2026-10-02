@@ -147,6 +147,22 @@ describe('fill-sign ops', () => {
     expect(summarizeChanges(m.getState(), m.getView())).toEqual([]);
   });
 
+  it('detect.correct keeps a comb field and its cell count', () => {
+    const m = makeModel();
+    const [op] = m.dispatch({
+      type: 'detect.correct',
+      params: {
+        action: 'add',
+        fieldIds: [],
+        field: { ...FIELD, source: 'comb', cellCount: 24 },
+        pageId: 'ckpt0:2',
+      },
+    });
+    expect(op.params).toMatchObject({
+      field: { source: 'comb', cellCount: 24 },
+    });
+  });
+
   it('refuses incomplete corrections and bad signatures', () => {
     const m = makeModel();
     expect(() =>

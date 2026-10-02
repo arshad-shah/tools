@@ -26,6 +26,7 @@ import {
   makeScanForm,
 } from '../test/fixtures/flat-form';
 import { makeWordTableForm } from '../test/fixtures/word-table-form';
+import { makeCharBoxForm } from '../test/fixtures/char-box-form';
 import {
   encodeGif,
   encodeJpeg,
@@ -98,6 +99,7 @@ function map5000Json(): Uint8Array {
   return new TextEncoder().encode(JSON.stringify({ items }));
 }
 const wordTableForm = await makeWordTableForm();
+const charBoxForm = await makeCharBoxForm();
 const flatFormWord = await makeFlatFormWord();
 
 const files: Record<string, Uint8Array> = {
@@ -138,6 +140,10 @@ const files: Record<string, Uint8Array> = {
   'word-table-form.pdf': wordTableForm.bytes,
   'word-table-form.truth.json': new TextEncoder().encode(
     JSON.stringify(wordTableForm.truth, null, 2),
+  ),
+  'char-box-form.pdf': charBoxForm.bytes,
+  'char-box-form.truth.json': new TextEncoder().encode(
+    JSON.stringify(charBoxForm.truth, null, 2),
   ),
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
