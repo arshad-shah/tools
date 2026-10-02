@@ -55,6 +55,11 @@ const parseSettings = (v: unknown, base: Settings): Settings | null =>
         autoStartBreaks: bool,
         autoStartPomodoros: bool,
         soundEnabled: bool,
+        longBreakEvery: num,
+        notifications: bool,
+        sound: (x) => x === 'chime' || x === 'bell' || x === 'wood',
+        volume: num,
+        faviconRing: bool,
       })
     : null;
 
@@ -131,5 +136,6 @@ export function parseLegacyPomodoro(
     settings: mergedSettings,
     tasks: tasks ?? base.tasks,
     stats: stats ?? base.stats,
+    history: [],
   };
 }

@@ -1,89 +1,89 @@
 import React from 'react';
-import {
-  Button,
-  ButtonGroup,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Inline,
-  Stack,
-  Text,
-} from '@/shared/ui';
-import type { CalculatorState } from '../hooks/useCalculator';
+import { Button, ButtonGroup, Inline, Stack, Text } from '@/shared/ui';
+import { adjustRegister, clearRegister, clearRegisters } from '../lib/memory';
+import type { MemoryRegister } from '../settings';
 
-type MemoryPanelProps = Pick<
-  CalculatorState,
-  | 'memories'
-  | 'memoryClearAll'
-  | 'memoryRecall'
-  | 'memoryAdd'
-  | 'memorySubtract'
-  | 'memoryClear'
->;
+interface MemoryPanelProps {
+  memories: MemoryRegister[];
+  onChange(memories: MemoryRegister[]): void;
+  /** The active line's numeric result, or null when it has none. */
+  current: number | null;
+  /** Insert a register's value into the active line. */
+  onRecall(text: string): void;
+}
 
-/** The M1-M3 registers. */
+/** The M1 to M3 registers: recall, add or subtract the active result, clear. */
 export const MemoryPanel: React.FC<MemoryPanelProps> = ({
   memories,
-  memoryClearAll,
-  memoryRecall,
-  memoryAdd,
-  memorySubtract,
-  memoryClear,
+  onChange,
+  current,
+  onRecall,
 }) => (
-  <Card>
-    <CardHeader>
-      <Inline justify="between" align="center">
-        <CardTitle as="h3">Memory registers</CardTitle>
-        <Button variant="danger" size="sm" onClick={memoryClearAll}>
-          Clear all
-        </Button>
+  <Stack gap="2">
+    {memories.map((m, i) => (
+      <Inline
+        key={m.label}
+        justify="between"
+        align="center"
+        gap="2"
+        wrap
+        className="rounded-md border border-line px-3 py-2"
+      >
+        <Text size="sm" mono>
+          {m.label}: {m.value === null ? 'Empty' : String(m.value)}
+        </Text>
+        <ButtonGroup>
+          <Button
+            size="sm"
+            variant="secondary"
+            aria-label={`Recall ${m.label}`}
+            disabled={m.value === null}
+            onClick={() => m.value !== null && onRecall(String(m.value))}
+          >
+            MR
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            aria-label={`Add the result to ${m.label}`}
+            disabled={current === null}
+            onClick={() =>
+              current !== null && onChange(adjustRegister(memories, i, current))
+            }
+          >
+            M+
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            aria-label={`Subtract the result from ${m.label}`}
+            disabled={current === null}
+            onClick={() =>
+              current !== null &&
+              onChange(adjustRegister(memories, i, -current))
+            }
+          >
+            M-
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            aria-label={`Clear ${m.label}`}
+            onClick={() => onChange(clearRegister(memories, i))}
+          >
+            MC
+          </Button>
+        </ButtonGroup>
       </Inline>
-    </CardHeader>
-    <CardBody>
-      <Stack gap="2">
-        {memories.map((mem, i) => (
-          <Card key={mem.label}>
-            <CardBody>
-              <Inline justify="between" align="center" gap="2" wrap>
-                <Text size="sm" weight="medium">
-                  {mem.label}: {mem.value === null ? '—' : String(mem.value)}
-                </Text>
-                <ButtonGroup>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => memoryRecall(i)}
-                  >
-                    MR
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => memoryAdd(i)}
-                  >
-                    M+
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => memorySubtract(i)}
-                  >
-                    M-
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => memoryClear(i)}
-                  >
-                    MC
-                  </Button>
-                </ButtonGroup>
-              </Inline>
-            </CardBody>
-          </Card>
-        ))}
-      </Stack>
-    </CardBody>
-  </Card>
+    ))}
+    <Inline>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => onChange(clearRegisters(memories))}
+      >
+        Clear all registers
+      </Button>
+    </Inline>
+  </Stack>
 );

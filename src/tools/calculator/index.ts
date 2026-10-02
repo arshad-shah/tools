@@ -3,14 +3,25 @@ import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'calculator',
-  name: 'Calculator',
-  description: 'A simple calculator',
+  name: 'Calculator & Grapher',
+  description:
+    'Expression sheet with variables, units and exact decimals, plus programmer mode and a function grapher',
   icon: IconCalculator,
   category: 'math',
   slug: 'calculator',
   kind: 'tool',
-  keywords: ['math', 'calculate', 'arithmetic', 'graph'],
-  version: '1.0.0',
+  keywords: [
+    'math',
+    'calculate',
+    'arithmetic',
+    'graph',
+    'plot',
+    'scientific',
+    'programmer',
+    'units',
+    'bitwise',
+  ],
+  version: '2.0.0',
   enabled: true,
   load: () => import('./Tool'),
 });

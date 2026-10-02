@@ -57,4 +57,10 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/remusao/tldts',
     note: 'Registrable domain split; embeds the Public Suffix List (MPL-2.0, unmodified, https://publicsuffix.org)',
   },
+  {
+    name: 'Pomodoro sounds (bell, wood block)',
+    licence: 'MIT',
+    url: 'https://github.com/arshad-shah/tools',
+    note: 'Synthesised in-house for this project (src/tools/pomodoro/assets)',
+  },
 ];

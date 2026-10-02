@@ -250,3 +250,4 @@ export * from './text-input-panel';
 export * from './bytes-view';
 export * from './key-value-editor';
 export * from './key-value-bulk';
+export { renderFaviconImage, useFavicon } from './use-favicon';

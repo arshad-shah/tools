@@ -101,10 +101,12 @@ describe('pomodoro store', () => {
     warn.mockRestore();
   });
 
-  it('toggle refuses to start work without a task, then starts once a task is current', async () => {
+  it('toggle starts work with no task ("Just focus") and with a current one', async () => {
     const { usePomodoroStore } = await import('./store');
     const s = usePomodoroStore.getState();
     s.toggle();
+    expect(usePomodoroStore.getState().timer.isActive).toBe(true);
+    usePomodoroStore.getState().toggle();
     expect(usePomodoroStore.getState().timer.isActive).toBe(false);
     s.addTask('T');
     s.setCurrentTask(usePomodoroStore.getState().tasks[0].id);
@@ -154,5 +156,51 @@ describe('pomodoro store', () => {
     st().tick(5);
     st().resetTimer();
     expect(st().timer.timeLeft).toBe(420);
+  });
+});
+
+describe('pomodoro store v2 migration', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+  it('adds the long-break setting and cycle count to a version 1 store', async () => {
+    localStorage.setItem(
+      'kit:store:tool:pomodoro',
+      JSON.stringify({
+        version: 1,
+        state: {
+          timer: {
+            mode: 'work',
+            timeLeft: 100,
+            isActive: false,
+            currentTask: null,
+          },
+          settings: {
+            workDuration: 50,
+            shortBreakDuration: 10,
+            longBreakDuration: 20,
+            autoStartBreaks: false,
+            autoStartPomodoros: false,
+            soundEnabled: true,
+          },
+          tasks: [],
+          stats: {
+            dailyPomodoros: 2,
+            weeklyPomodoros: 2,
+            totalFocusTime: 100,
+            currentStreak: 1,
+            lastUpdate: Date.now(),
+          },
+        },
+      }),
+    );
+    const { usePomodoroStore } = await import('./store');
+    const s = usePomodoroStore.getState();
+    expect(s.settings.workDuration).toBe(50);
+    expect(s.settings.longBreakEvery).toBe(4);
+    expect(s.timer.completedWork).toBe(0);
+    expect(s.timer.timeLeft).toBe(100);
+    expect(s.stats.dailyPomodoros).toBe(2);
   });
 });

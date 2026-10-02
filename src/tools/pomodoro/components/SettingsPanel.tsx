@@ -21,6 +21,7 @@ import {
 } from '@/shared/ui';
 import { usePomodoroStore } from '../store';
 import type { Settings } from '../types';
+import { AlertSettings } from './AlertSettings';
 
 export const SettingsPanel: React.FC = () => {
   const settings = usePomodoroStore((s) => s.settings);
@@ -115,6 +116,30 @@ export const SettingsPanel: React.FC = () => {
             </Stack>
           </CardBody>
         </Card>
+
+        <Card>
+          <CardBody>
+            <Stack gap="3">
+              <Inline justify="between" align="center" wrap>
+                <Inline align="center" gap="2">
+                  <IconBattery size="sm" />
+                  <Label>Long break after</Label>
+                </Inline>
+                <Badge variant="soft" tone="success" size="sm">
+                  {settings.longBreakEvery} sessions
+                </Badge>
+              </Inline>
+              <Slider
+                value={settings.longBreakEvery}
+                onValueChange={(v) => update({ longBreakEvery: v })}
+                min={2}
+                max={8}
+                step={1}
+                aria-label="Long break after"
+              />
+            </Stack>
+          </CardBody>
+        </Card>
       </Stack>
 
       <Stack gap="4">
@@ -178,6 +203,13 @@ export const SettingsPanel: React.FC = () => {
             </Inline>
           </CardBody>
         </Card>
+      </Stack>
+
+      <Stack gap="4">
+        <Heading level={4} size="sm">
+          Alerts
+        </Heading>
+        <AlertSettings />
       </Stack>
     </Stack>
   );

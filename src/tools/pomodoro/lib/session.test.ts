@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   addTask,
   applySettings,
-  canStart,
   completeSession,
   defaultState,
   deleteTask,
+  cyclePosition,
   durationFor,
   nextIncompleteTaskId,
+  nextSession,
   resetTimer,
   resumeTimer,
   rolloverDay,
@@ -42,12 +43,6 @@ describe('durations and guards', () => {
     expect(durationFor('shortBreak', s.settings)).toBe(5 * 60);
     expect(durationFor('longBreak', s.settings)).toBe(15 * 60);
   });
-  it('needs a current task to start work, not a break', () => {
-    const s = state();
-    expect(canStart(s.timer)).toBe(false);
-    expect(canStart({ ...s.timer, currentTask: 't' })).toBe(true);
-    expect(canStart({ ...s.timer, mode: 'shortBreak' })).toBe(true);
-  });
   it('finds the next incomplete task', () => {
     expect(nextIncompleteTaskId([])).toBeNull();
     expect(
@@ -80,6 +75,7 @@ describe('completeSession', () => {
       isActive: true, // autoStartBreaks default true
       currentTask: 'a',
       endsAt: DAY1_LATER + 300_000,
+      completedWork: 1,
     });
   });
   it('builds a streak of one per productive day (B5: the old listener never incremented)', () => {
@@ -216,9 +212,10 @@ describe('running timer: start, pause and resume after a reload (review M2)', ()
     expect(paused.isActive).toBe(false);
     expect(paused.endsAt).toBeUndefined();
   });
-  it('starting work without a task changes nothing', () => {
+  it('starting work without a task runs ("Just focus")', () => {
     const s = state();
-    expect(toggleTimer(s, T).timer).toBe(s.timer);
+    expect(s.timer.currentTask).toBeNull();
+    expect(toggleTimer(s, T).timer).toMatchObject({ isActive: true });
   });
   it('mode select and reset clear the end time', () => {
     const s = running(100, T + 100_000);
@@ -437,5 +434,77 @@ describe('tasks', () => {
       },
     });
     expect(deleteTask(s, 'b').timer.currentTask).toBe('a');
+  });
+});
+
+describe('long-break cycle and skips', () => {
+  const complete = (s: PomodoroState, opts?: { skipped?: boolean }) => {
+    const r = completeSession(s, DAY1, opts);
+    return { ...s, ...r };
+  };
+  it('takes a long break after every fourth completed work session', () => {
+    let s = state();
+    const modes: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      s = complete(s);
+      modes.push(s.timer.mode);
+      s = complete(s);
+    }
+    expect(modes).toEqual([
+      'shortBreak',
+      'shortBreak',
+      'shortBreak',
+      'longBreak',
+      'shortBreak',
+      'shortBreak',
+      'shortBreak',
+      'longBreak',
+    ]);
+    expect(s.timer.completedWork).toBe(8);
+    expect(s.timer.timeLeft).toBe(25 * 60);
+  });
+  it('follows the longBreakEvery setting', () => {
+    let s = state({ settings: { ...state().settings, longBreakEvery: 2 } });
+    s = complete(complete(s));
+    expect(s.timer.mode).toBe('work');
+    expect(nextSession(s)).toBe('short');
+    s = complete(s);
+    expect(s.timer.mode).toBe('longBreak');
+    expect(s.timer.timeLeft).toBe(15 * 60);
+  });
+  it('tells where the cycle is and what comes next', () => {
+    const s = state({ timer: { ...state().timer, completedWork: 4 } });
+    expect(nextSession(s)).toBe('long');
+    expect(cyclePosition(4, s.settings)).toBe(0);
+    expect(cyclePosition(6, s.settings)).toBe(2);
+    expect(nextSession(state())).toBe('short');
+  });
+  it('a skipped work session counts nothing', () => {
+    const s = state({
+      tasks: [task('a')],
+      timer: { ...state().timer, currentTask: 'a', completedWork: 3 },
+    });
+    const r = complete(s, { skipped: true });
+    expect(r.timer.mode).toBe('shortBreak');
+    expect(r.timer.completedWork).toBe(3);
+    expect(r.stats.dailyPomodoros).toBe(0);
+    expect(r.stats.totalFocusTime).toBe(0);
+    expect(r.tasks[0].completedPomodoros).toBe(0);
+  });
+  it('a skipped break goes back to work', () => {
+    const s = state({ timer: { ...state().timer, mode: 'shortBreak' } });
+    expect(complete(s, { skipped: true }).timer.mode).toBe('work');
+  });
+});
+
+describe('session log', () => {
+  it('logs counted sessions per day and never skipped ones', () => {
+    let s = state();
+    s = { ...s, ...completeSession(s, DAY1) };
+    s = { ...s, ...completeSession(s, DAY1) };
+    s = { ...s, ...completeSession(s, DAY1, { skipped: true }) };
+    expect(s.history).toEqual([
+      { date: '2026-10-01', workSessions: 1, workMinutes: 25, breaks: 1 },
+    ]);
   });
 });

@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { IconBarChart2, IconListTodo, IconSettings2 } from '@/shared/ui/icons';
+import {
+  IconBarChart2,
+  IconHistory,
+  IconListTodo,
+  IconSettings2,
+} from '@/shared/ui/icons';
 import {
   Box,
   Drawer,
@@ -9,6 +14,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/shared/ui';
+import { HistoryPanel } from './HistoryPanel';
 import { SettingsPanel } from './SettingsPanel';
 import { StatsPanel } from './StatsPanel';
 import { TaskList } from './TaskList';
@@ -17,7 +23,9 @@ export const MenuDrawer: React.FC<{ open: boolean; onClose: () => void }> = ({
   open,
   onClose,
 }) => {
-  const [tab, setTab] = useState<'tasks' | 'stats' | 'settings'>('tasks');
+  const [tab, setTab] = useState<'tasks' | 'stats' | 'history' | 'settings'>(
+    'tasks',
+  );
   return (
     <Drawer
       open={open}
@@ -44,6 +52,12 @@ export const MenuDrawer: React.FC<{ open: boolean; onClose: () => void }> = ({
               <span>Stats</span>
             </Inline>
           </TabsTrigger>
+          <TabsTrigger value="history">
+            <Inline gap="2" align="center" wrap={false}>
+              <IconHistory size="sm" />
+              <span>History</span>
+            </Inline>
+          </TabsTrigger>
           <TabsTrigger value="settings">
             <Inline gap="2" align="center" wrap={false}>
               <IconSettings2 size="sm" />
@@ -59,6 +73,11 @@ export const MenuDrawer: React.FC<{ open: boolean; onClose: () => void }> = ({
         <TabsContent value="stats">
           <Box className="pt-4">
             <StatsPanel />
+          </Box>
+        </TabsContent>
+        <TabsContent value="history">
+          <Box className="pt-4">
+            <HistoryPanel />
           </Box>
         </TabsContent>
         <TabsContent value="settings">

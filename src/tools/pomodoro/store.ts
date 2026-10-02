@@ -7,9 +7,11 @@ import { LEGACY_KEY, parseLegacyPomodoro } from './lib/legacy';
 export interface PomodoroActions {
   /** A worker tick: the new remaining time, plus the day rollover check. */
   tick(timeLeft: number, now?: number): void;
-  /** The session ended (timer reached zero or Skip). */
+  /** The timer reached zero: the session counts. */
   complete(now?: number): void;
-  /** Start/pause; starting work without a current task is a no-op. */
+  /** Skip: move on without counting the session. */
+  skip(now?: number): void;
+  /** Start/pause; a current task is optional ("Just focus"). */
   toggle(now?: number): void;
   /** On mount: correct a running timer from its wall-clock end. */
   resume(now?: number): void;
@@ -21,6 +23,32 @@ export interface PomodoroActions {
   deleteTask(id: string): void;
   setCurrentTask(id: string | null): void;
   rollover(now?: number): void;
+}
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Store version 1 to 2: defaults for the new settings (long-break cycle,
+ * notifications, sound, favicon ring), `completedWork` and the day log.
+ */
+export function migrateToV2(old: unknown): Partial<PomodoroState> {
+  const state = isObject(old) ? old : {};
+  const base = session.defaultState(Date.now());
+  const out: Partial<PomodoroState> = {
+    ...(state as Partial<PomodoroState>),
+  };
+  out.settings = {
+    ...base.settings,
+    ...(isObject(state.settings) ? (state.settings as Partial<Settings>) : {}),
+  };
+  if (!Array.isArray(state.history)) out.history = [];
+  if (isObject(state.timer))
+    out.timer = {
+      completedWork: 0,
+      ...(state.timer as unknown as PomodoroState['timer']),
+    };
+  return out;
 }
 
 /**
@@ -39,6 +67,8 @@ export const usePomodoroStore = createToolStore<PomodoroState, PomodoroActions>(
           stats: session.rolloverDay(s.stats, now),
         })),
       complete: (now = Date.now()) => set(session.completeSession(get(), now)),
+      skip: (now = Date.now()) =>
+        set(session.completeSession(get(), now, { skipped: true })),
       toggle: (now = Date.now()) => set(session.toggleTimer(get(), now)),
       resume: (now = Date.now()) => set(session.resumeTimer(get(), now)),
       selectMode: (mode) => set(session.selectMode(get(), mode)),
@@ -52,7 +82,11 @@ export const usePomodoroStore = createToolStore<PomodoroState, PomodoroActions>(
       rollover: (now = Date.now()) =>
         set((s) => ({ stats: session.rolloverDay(s.stats, now) })),
     }),
-    persist: { version: 1 },
+    persist: {
+      version: 2,
+      // v2 adds the long-break cycle, alerts and the per-day log.
+      migrate: { 2: migrateToV2 },
+    },
     legacy: {
       keys: [LEGACY_KEY],
       read: (raw) => parseLegacyPomodoro(raw[LEGACY_KEY], Date.now()),

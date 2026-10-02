@@ -49,7 +49,7 @@ describe('app command sources', () => {
     setup(['pomodoro', 'removed-tool']);
     const groups = queryCommands('');
     expect(groups[0].group).toBe('Favourites');
-    expect(groups[0].commands.map((c) => c.label)).toEqual(['Pomodoro']);
+    expect(groups[0].commands.map((c) => c.label)).toEqual(['Pomodoro Timer']);
   });
   it('has no favourites group without favourites', () => {
     setup();

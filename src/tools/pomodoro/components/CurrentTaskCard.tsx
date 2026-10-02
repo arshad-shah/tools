@@ -24,7 +24,8 @@ export const CurrentTaskCard: React.FC = () => {
       return (
         <Alert status="info" icon={<IconListTodo />}>
           <AlertDescription>
-            No active task. Add tasks from the menu to get started.
+            Just focus: a task is optional. Add tasks from the menu to track
+            them.
           </AlertDescription>
         </Alert>
       );

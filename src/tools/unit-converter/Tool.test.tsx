@@ -1,77 +1,91 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import UnitConverter from './Tool';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fromUnit = () =>
-  screen.getByRole('combobox', { name: 'From unit' }) as HTMLSelectElement;
-const toUnit = () =>
-  screen.getByRole('combobox', { name: 'To unit' }) as HTMLSelectElement;
-const fromValue = () =>
-  screen.getByRole('textbox', { name: 'From value' }) as HTMLInputElement;
-const category = (name: string) => fireEvent.click(screen.getByText(name));
-const tab = (name: string) =>
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(name) }));
+const row = (name: string) =>
+  screen.getByRole('textbox', { name }) as HTMLInputElement;
 
-describe('UnitConverter', () => {
-  it('resets the units to the first two of a newly chosen category', () => {
-    render(<UnitConverter />);
-    expect(fromUnit().value).toBe('Kilometers');
-    expect(toUnit().value).toBe('Meters');
+async function setup() {
+  const { default: UnitConverter } = await import('./Tool');
+  const { unitSettings } = await import('./settings');
+  render(<UnitConverter />);
+  return unitSettings;
+}
 
-    category('Temperature');
-    // Temperature lists Kelvin, Celsius, Fahrenheit: units[0] -> units[1].
-    expect(fromUnit().value).toBe('Kelvin');
-    expect(toUnit().value).toBe('Celsius');
+// Each test re-imports the tool (fresh store); the first import is slow
+// under a full parallel run, so the budget is wider than the default.
+describe('UnitConverter', { timeout: 20_000 }, () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+    vi.stubGlobal('navigator', { ...navigator, language: 'en-US' });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
-  it('keeps the chosen units when the selected category is clicked again', () => {
-    render(<UnitConverter />);
-    category('Temperature');
-    fireEvent.change(fromUnit(), { target: { value: 'Celsius' } });
-    fireEvent.change(toUnit(), { target: { value: 'Fahrenheit' } });
-
-    category('Temperature');
-    expect(fromUnit().value).toBe('Celsius');
-    expect(toUnit().value).toBe('Fahrenheit');
+  it('converts from whichever row is typed in', async () => {
+    await setup();
+    fireEvent.change(row('Kilometres'), { target: { value: '5' } });
+    expect(row('Miles').value).toBe('3.106855961');
+    expect(row('Metres').value).toBe('5000');
+    fireEvent.change(row('Miles'), { target: { value: '1' } });
+    expect(row('Metres').value).toBe('1609.344');
+    expect(row('Miles').value).toBe('1');
   });
 
-  it('reusing a history entry from another category keeps its units (B11)', () => {
-    render(<UnitConverter />);
-    fireEvent.change(fromUnit(), { target: { value: 'Miles' } });
-    fireEvent.change(toUnit(), { target: { value: 'Feet' } });
-    fireEvent.change(fromValue(), { target: { value: '2' } });
-    fireEvent.blur(fromValue());
-
-    category('Weight');
-    expect(fromUnit().value).toBe('Tonnes');
-
-    tab('History');
-    fireEvent.click(screen.getByRole('button', { name: 'Reuse conversion' }));
-
-    expect(fromUnit().value).toBe('Miles');
-    expect(toUnit().value).toBe('Feet');
-    expect(fromValue().value).toBe('2');
+  it('adds to history after 800 ms of no typing, not on blur', async () => {
+    vi.useFakeTimers();
+    const settings = await setup();
+    fireEvent.change(row('Kilometres'), { target: { value: '2' } });
+    fireEvent.blur(row('Kilometres'));
+    act(() => vi.advanceTimersByTime(500));
+    expect(settings.getSettings().history).toHaveLength(0);
+    fireEvent.change(row('Kilometres'), { target: { value: '3' } });
+    act(() => vi.advanceTimersByTime(799));
+    expect(settings.getSettings().history).toHaveLength(0);
+    act(() => vi.advanceTimersByTime(1));
+    expect(settings.getSettings().history).toMatchObject([
+      { category: 'length', from: 'km', amount: 3 },
+    ]);
   });
 
-  it('removes only the chosen entry when two are saved in the same millisecond', () => {
-    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
-    render(<UnitConverter />);
-    fireEvent.change(fromValue(), { target: { value: '3' } });
-    fireEvent.blur(fromValue());
-    fireEvent.change(fromValue(), { target: { value: '4' } });
-    fireEvent.blur(fromValue());
-
-    tab('History');
-    const removes = screen.getAllByRole('button', {
-      name: 'Remove conversion',
+  it('jumps to the category a free-text quantity names', async () => {
+    await setup();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Convert' }), {
+      target: { value: '72F' },
     });
-    expect(removes).toHaveLength(2);
-    fireEvent.click(removes[0]);
+    expect(row('Fahrenheit').value).toBe('72');
+    expect(row('Celsius').value).toBe('22.22222222');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Convert' }), {
+      target: { value: '5 ft 3 in to cm' },
+    });
+    expect(screen.getByText('160.02 cm')).toBeTruthy();
+  });
 
-    expect(
-      screen.getAllByRole('button', { name: 'Remove conversion' }),
-    ).toHaveLength(1);
-    expect(screen.getByText('3 km')).toBeTruthy();
+  it('shows tiny values with an exponent', async () => {
+    await setup();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Category' }), {
+      target: { value: 'energy' },
+    });
+    fireEvent.change(row('Electronvolts'), { target: { value: '1' } });
+    expect(row('Joules').value).toBe('1.602176634e-19');
+  });
+
+  it('pins a unit to the top and persists it', async () => {
+    const settings = await setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Pin Miles' }));
+    const inputs = screen.getAllByRole('textbox');
+    // The free-text box comes first, then the pinned row.
+    expect(inputs[1]).toBe(row('Miles'));
+    expect(settings.getSettings().favourites).toEqual(['length:mi']);
+  });
+
+  it('marks text that is not a number as invalid', async () => {
+    await setup();
+    fireEvent.change(row('Metres'), { target: { value: 'abc' } });
+    expect(row('Metres').getAttribute('aria-invalid')).toBe('true');
+    expect(row('Miles').value).toBe('');
   });
 });
