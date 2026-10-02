@@ -32,7 +32,8 @@ export interface ModeObjectLayerProps {
   onProperties?(id: OpId): void;
   /** Off for objects without a stacking order of their own. Default true. */
   orderable?: boolean;
-  marquee?: boolean;
+  /** See ObjectLayer: true, or 'shift' for while Shift is held. */
+  marquee?: boolean | 'shift';
 }
 
 /**

@@ -400,6 +400,9 @@ export function FieldsOverlay(props: PageOverlayProps) {
           width={width}
           height={height}
           objects={objects}
+          // The empty page belongs to the fields and the click tools; a
+          // Shift-drag draws a selection band over placed boxes.
+          marquee={clickTool || placing ? undefined : 'shift'}
           onPreview={setPreview}
           adjust={(c, via) => {
             // A signature dropped by pointer near a place to sign snaps to
