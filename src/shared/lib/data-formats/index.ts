@@ -26,6 +26,7 @@ export {
 } from './csv-write';
 export {
   quoteIdent,
+  quoteTable,
   sqlLiteral,
   toSqlInsert,
   type SqlDialect,
