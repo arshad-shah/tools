@@ -130,3 +130,29 @@ export function bandGrid(cells: HeatmapCell[]): HeatGrid {
     ...range(valid.map((c) => c.value)),
   };
 }
+
+/**
+ * Month labels that would overlap at the current width are dropped: a
+ * partial first month gives way to the next label, any other collision
+ * skips the later label. `x` is a label's left edge, `measure` its width.
+ */
+export function spaceColLabels<T extends { at: number; label: string }>(
+  labels: readonly T[],
+  x: (at: number) => number,
+  measure: (text: string) => number,
+  gap = 6,
+): T[] {
+  const kept: T[] = [];
+  let right = -Infinity;
+  for (const l of labels) {
+    const left = x(l.at);
+    if (left >= right + gap) {
+      kept.push(l);
+      right = left + measure(l.label);
+    } else if (kept.length === 1 && kept[0] === labels[0]) {
+      kept[0] = l;
+      right = left + measure(l.label);
+    }
+  }
+  return kept;
+}

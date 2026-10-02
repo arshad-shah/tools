@@ -3,6 +3,7 @@
  * scales, ticks and formatters. Pure (a text measurer is passed in), so the
  * painter, the SVG export and hit testing all read the same numbers.
  */
+import { spaceColLabels } from './heatmap';
 import { lttb } from './lttb';
 import {
   buildDraft,
@@ -199,10 +200,11 @@ export function buildModel(
   let xTicks: Tick[];
   if (heat) {
     formatX = (v) => String(v);
-    xTicks = (draft.grid?.colLabels ?? []).map((c) => ({
-      v: c.at,
-      label: c.label,
-    }));
+    xTicks = spaceColLabels(
+      draft.grid?.colLabels ?? [],
+      (at) => xs.map(at - 0.45),
+      measure,
+    ).map((c) => ({ v: c.at, label: c.label }));
   } else if (draft.xType === 'band') {
     const cat = (v: number) => draft.categories[Math.round(v)] ?? '';
     formatX = input.formatX ? (v) => input.formatX!(cat(v)) : cat;
