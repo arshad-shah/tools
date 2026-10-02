@@ -20,3 +20,6 @@ export {
   layoutInWorker,
   type LayoutClient,
 } from './layout-client';
+export * from './navigation';
+export * from './minimap';
+export { DiagramController, type ControllerEvents } from './controller';
