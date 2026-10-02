@@ -5,7 +5,7 @@ import {
   type ObjectChange,
 } from '@/shared/ui';
 import type { Viewport } from '@/pdf/doc/geometry';
-import type { OpId } from '@/pdf/doc/types';
+import type { NewOperation, OpId } from '@/pdf/doc/types';
 import type { DocumentApi, SelectionApi } from '../modes/types';
 import { commitChanges, duplicateObjects, orderObjects } from './object-ops';
 
@@ -21,6 +21,11 @@ export interface ModeObjectLayerProps {
   onPreview?(changes: ReadonlyMap<string, ObjectChange> | null): void;
   /** A finished change before it is dispatched (e.g. snap a dropped signature). */
   adjust?(change: ObjectChange, via: ChangeSource): ObjectChange;
+  /**
+   * The op for a change to an object that is not a placed op (e.g. an
+   * annotation already in the file); null: an object.move.
+   */
+  ownOp?(change: ObjectChange): NewOperation | null;
   /** Default: one object.remove per object. */
   onDelete?(ids: OpId[]): void;
   onEdit?(id: OpId): void;
@@ -45,6 +50,7 @@ export function ModeObjectLayer({
   objects,
   onPreview,
   adjust,
+  ownOp,
   onDelete,
   onEdit,
   onProperties,
@@ -82,6 +88,7 @@ export function ModeObjectLayer({
           doc,
           adjust ? changes.map((c) => adjust(c, via)) : changes,
           (id) => rotatable.has(id),
+          ownOp,
         )
       }
       onDelete={remove}

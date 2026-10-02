@@ -2,7 +2,7 @@ import { newId } from '@/shared/lib/id';
 import type { ObjectChange, ObjectOrder } from '@/shared/ui';
 import { fitGeometry } from '@/pdf/doc/object-geometry';
 import { findOverlay } from '@/pdf/doc/page-map';
-import type { OpId, OverlayItem, PageId } from '@/pdf/doc/types';
+import type { NewOperation, OpId, OverlayItem, PageId } from '@/pdf/doc/types';
 import type { DocumentApi, SelectionApi } from '../modes/types';
 import { createObjectClipboard } from './clipboard';
 import { frameRotation, opRotation } from './useObjectSelection';
@@ -22,23 +22,28 @@ function liveItems(doc: DocumentApi, ids: readonly OpId[]): OverlayItem[] {
 /**
  * Finished moves, resizes and rotations as object.move ops (one undo
  * step). `rotatable` objects carry their rotation (counter-clockwise op
- * degrees from the frame's clockwise ones).
+ * degrees from the frame's clockwise ones). `own` gives the op for an
+ * object that is not a placed op (an annotation already in the file).
  */
 export function commitChanges(
   doc: DocumentApi,
   changes: readonly ObjectChange[],
   rotatable: (id: OpId) => boolean,
+  own?: (change: ObjectChange) => NewOperation | null,
 ): boolean {
   if (!changes.length) return false;
   const done = doc.dispatch(
-    changes.map((c) => ({
-      type: 'object.move',
-      params: {
-        targetId: c.id,
-        rect: c.box,
-        ...(rotatable(c.id) ? { rotate: opRotation(c.rotate) } : {}),
-      },
-    })),
+    changes.map(
+      (c): NewOperation =>
+        own?.(c) ?? {
+          type: 'object.move',
+          params: {
+            targetId: c.id,
+            rect: c.box,
+            ...(rotatable(c.id) ? { rotate: opRotation(c.rotate) } : {}),
+          },
+        },
+    ),
     changes.length > 1 ? `Move ${changes.length} objects` : undefined,
   );
   return done.length > 0;
