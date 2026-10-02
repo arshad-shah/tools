@@ -11,6 +11,7 @@ export {
   extract,
   split,
   applyPageEdits,
+  rebuildingSave,
   type PageEdit,
   type PageEditResult,
   type Rotation,
@@ -94,3 +95,27 @@ export {
   type PdfMetadata,
 } from './metadata';
 export { ENCRYPTED_MESSAGE } from './messages';
+export { fmt } from './fmt';
+export { FontCache, loadNotoSans, type FontSpec } from './font-cache';
+export {
+  fitText,
+  drawText,
+  drawBox,
+  drawEllipse,
+  drawLine,
+  drawPath,
+  drawImage,
+  drawTick,
+  drawCross,
+  type Box,
+  type DrawCtx,
+  type TextStyle,
+  type FittedText,
+} from './draw';
+export {
+  arrangePages,
+  setPageLabels,
+  type ArrangeEntry,
+  type ArrangeResult,
+  type PageLabelRange,
+} from './pages';

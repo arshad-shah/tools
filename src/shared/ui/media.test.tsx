@@ -64,6 +64,29 @@ describe('BitmapCanvas', () => {
     expect(canvas.width).toBe(10);
     expect(canvas.dataset.rendered).toBe('true');
   });
+  it('draws only the cropped part of the bitmap', () => {
+    render(
+      <BitmapCanvas
+        bitmap={bitmap(100, 200)}
+        width={50}
+        label="c"
+        crop={{ x: 0.1, y: 0.25, width: 0.5, height: 0.5 }}
+      />,
+    );
+    const canvas = screen.getByRole('img', { name: 'c' }) as HTMLCanvasElement;
+    expect(ctx.drawImage).toHaveBeenCalledWith(
+      expect.anything(),
+      10,
+      50,
+      50,
+      100,
+      0,
+      0,
+      50,
+      100,
+    );
+    expect([canvas.width, canvas.height]).toEqual([50, 100]);
+  });
   it('frees its backing store on release', () => {
     const { rerender } = render(
       <BitmapCanvas bitmap={bitmap()} width={50} label="p" />,

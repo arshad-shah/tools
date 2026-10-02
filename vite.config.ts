@@ -20,7 +20,9 @@ export default defineConfig({
   define: buildDefines(),
   // Module workers everywhere: qpdf-wasm's loader uses dynamic import(),
   // which the default IIFE worker format cannot code-split.
-  worker: { format: 'es' },
+  // Worker bundles have their own plugin list: third-party glyph literals
+  // (fontkit in the edit worker) are escaped there too.
+  worker: { format: 'es', plugins: () => [escapeVendorGlyphs()] },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

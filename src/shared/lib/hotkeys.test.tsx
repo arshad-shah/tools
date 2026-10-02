@@ -270,3 +270,90 @@ describe('registry policy (review M17)', () => {
     expect(a).not.toHaveBeenCalled();
   });
 });
+
+describe('modal scope (review I7)', () => {
+  let dispose: (() => void)[] = [];
+  afterEach(() => {
+    dispose.forEach((d) => d());
+    dispose = [];
+    document.body.innerHTML = '';
+  });
+  const modal = () => {
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const button = document.createElement('button');
+    dialog.append(button);
+    document.body.append(dialog);
+    return { dialog, button };
+  };
+
+  it('page shortcuts do not fire while a modal dialog is open', () => {
+    const rotate = vi.fn();
+    const remove = vi.fn();
+    dispose.push(
+      registerShortcuts([
+        { id: 'r', combo: 'r', description: 'Rotate', group: 'G', run: rotate },
+        {
+          id: 'del',
+          combo: 'Delete',
+          description: 'Delete',
+          group: 'G',
+          run: remove,
+        },
+      ]),
+    );
+    const { button } = modal();
+    // Inside the modal.
+    button.dispatchEvent(key({ key: 'r', bubbles: true, cancelable: true }));
+    button.dispatchEvent(
+      key({ key: 'Delete', bubbles: true, cancelable: true }),
+    );
+    // On the page behind it, while it is open.
+    document.body.dispatchEvent(
+      key({ key: 'r', bubbles: true, cancelable: true }),
+    );
+    expect(rotate).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('Escape and allowInModal shortcuts still fire', () => {
+    const esc = vi.fn();
+    const own = vi.fn();
+    dispose.push(
+      registerShortcuts([
+        { id: 'esc', combo: 'Escape', description: 'E', group: 'G', run: esc },
+        {
+          id: 'own',
+          combo: 'Enter',
+          description: 'Confirm',
+          group: 'G',
+          allowInModal: true,
+          run: own,
+        },
+      ]),
+    );
+    const { button } = modal();
+    button.dispatchEvent(
+      key({ key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    button.dispatchEvent(
+      key({ key: 'Enter', bubbles: true, cancelable: true }),
+    );
+    expect(esc).toHaveBeenCalledTimes(1);
+    expect(own).toHaveBeenCalledTimes(1);
+  });
+
+  it('shortcuts fire again once the modal closes', () => {
+    const rotate = vi.fn();
+    dispose.push(
+      registerShortcuts([
+        { id: 'r', combo: 'r', description: 'Rotate', group: 'G', run: rotate },
+      ]),
+    );
+    const { dialog } = modal();
+    dialog.remove();
+    document.body.dispatchEvent(key({ key: 'r', bubbles: true }));
+    expect(rotate).toHaveBeenCalledTimes(1);
+  });
+});

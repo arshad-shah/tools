@@ -18,9 +18,14 @@ const pdfRoute = (route: string): WarmRoute => ({
 });
 /** A plain route warms up by rendering FIXTURE with pdf.js. */
 const TOOL_ROUTES: (string | WarmRoute)[] = [
+  // The workspace: compiles the shell, the Organize mode and the edit path.
+  {
+    route: '/pdf/edit',
+    fixture: FIXTURE,
+    ready: '[data-testid="page-slot-1"] canvas[data-rendered="true"]',
+  },
   '/pdf/merge',
   '/pdf/split',
-  '/pdf/organize',
   '/pdf/to-images',
   '/pdf/to-text',
   '/pdf/watermark',

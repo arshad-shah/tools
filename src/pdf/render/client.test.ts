@@ -8,20 +8,50 @@ import {
   type RpcEndpoint,
 } from '@/shared/lib/worker-rpc';
 import { createPdfRender } from './client';
-import type { RenderHandlers } from './render.worker';
+import type { RenderHandlers } from './handlers';
+
+/** Holds fake renders until resolved; records the widths the worker saw. */
+const renderGate: { wait: Promise<void> | null; widths: number[] } = {
+  wait: null,
+  widths: [],
+};
 
 /** Mimics the render worker: a per-worker docs map that a crash wipes. */
 function fakeWorkerHandlers() {
   const docs = new Set<string>();
+  const assertOpen = (docId: string) => {
+    if (!docs.has(docId))
+      throw new ToolError('CANCELLED', 'Document is no longer open');
+  };
   return {
     open: (_ctx: RpcContext, docId: string) => {
       docs.add(docId);
       return { docId, pageCount: 1, pages: [{ width: 10, height: 10 }] };
     },
-    renderPage: (_ctx: RpcContext, docId: string) => {
-      if (!docs.has(docId))
-        throw new ToolError('CANCELLED', 'Document is no longer open');
+    renderPage: async (
+      _ctx: RpcContext,
+      docId: string,
+      _pageIndex: number,
+      widthPx: number,
+    ) => {
+      assertOpen(docId);
+      renderGate.widths.push(widthPx);
+      if (renderGate.wait) await renderGate.wait;
       return 'bitmap';
+    },
+    renderTile: (
+      _ctx: RpcContext,
+      docId: string,
+      pageIndex: number,
+      scale: number,
+      tile: { x: number; y: number; width: number; height: number },
+    ) => {
+      assertOpen(docId);
+      return `tile:${pageIndex}@${scale}:${tile.x},${tile.y},${tile.width}x${tile.height}`;
+    },
+    textItems: (_ctx: RpcContext, docId: string) => {
+      assertOpen(docId);
+      return { items: [], styles: {} };
     },
     renderPageImage: (
       _ctx: RpcContext,
@@ -46,6 +76,8 @@ function fakeWorkerHandlers() {
 
 const channels: MessageChannel[] = [];
 afterEach(() => {
+  renderGate.wait = null;
+  renderGate.widths = [];
   for (const c of channels.splice(0)) {
     c.port1.close();
     c.port2.close();
@@ -234,5 +266,63 @@ describe('pdfRender after a worker restart', () => {
     await expect(render.renderPage(doc.docId, 0, 100)).rejects.toMatchObject({
       code: 'CANCELLED',
     });
+  });
+});
+
+describe('pdfRender tiles, text items and priorities', () => {
+  it('renders a tile with its scale and rectangle, failing fast after a crash', async () => {
+    const { render, crash } = setup();
+    const doc = await render.open(new Uint8Array([1]));
+    const tile = { x: 512, y: 1024, width: 512, height: 256 };
+    await expect(render.renderTile(doc.docId, 3, 2.5, tile)).resolves.toBe(
+      'tile:3@2.5:512,1024,512x256',
+    );
+    crash();
+    await expect(
+      render.renderTile(doc.docId, 0, 1, tile),
+    ).rejects.toMatchObject({ code: 'WORKER_CRASHED' });
+  });
+
+  it('returns positioned text items, failing fast after a crash', async () => {
+    const { render, crash } = setup();
+    const doc = await render.open(new Uint8Array([1]));
+    await expect(render.textItems(doc.docId, 0)).resolves.toEqual({
+      items: [],
+      styles: {},
+    });
+    crash();
+    await expect(render.textItems(doc.docId, 0)).rejects.toMatchObject({
+      code: 'WORKER_CRASHED',
+    });
+  });
+
+  it('starts queued renders by priority once the four slots free up', async () => {
+    const { render } = setup();
+    const doc = await render.open(new Uint8Array([1]));
+    let open!: () => void;
+    renderGate.wait = new Promise<void>((r) => (open = r));
+    const busy = [1, 2, 3, 4].map((w) =>
+      render.renderPage(doc.docId, 0, w, undefined, 2),
+    );
+    for (let i = 0; i < 50 && renderGate.widths.length < 4; i++)
+      await new Promise((r) => setTimeout(r, 0));
+    const queued = [
+      render.renderPage(doc.docId, 0, 10, undefined, 2),
+      render.renderTile(
+        doc.docId,
+        0,
+        1,
+        { x: 0, y: 0, width: 8, height: 8 },
+        undefined,
+        1,
+      ),
+      render.renderPage(doc.docId, 0, 30),
+      render.renderPage(doc.docId, 0, 20, undefined, 1),
+    ];
+    renderGate.wait = null;
+    open();
+    await Promise.all([...busy, ...queued]);
+    // The tile (priority 1, queued before width 20) is not a renderPage call.
+    expect(renderGate.widths).toEqual([1, 2, 3, 4, 30, 20, 10]);
   });
 });

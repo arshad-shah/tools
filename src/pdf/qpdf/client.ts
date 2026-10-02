@@ -66,6 +66,10 @@ export function createQpdf(connect: () => RpcEndpoint) {
       const { copy, transfer } = send(bytes);
       return call('decrypt', [copy, password], transfer, signal);
     },
+    passwordRole(bytes: Uint8Array, password: string, signal?: AbortSignal) {
+      const { copy, transfer } = send(bytes);
+      return call('passwordRole', [copy, password], transfer, signal);
+    },
   };
 }
 

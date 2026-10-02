@@ -16,7 +16,7 @@ vi.mock('@/pdf/render', () => ({
 const docA: DocInfo = {
   docId: 'a',
   pageCount: 1,
-  pages: [{ width: 600, height: 800 }],
+  pages: [{ width: 600, height: 800, view: [0, 0, 600, 800], rotate: 0 }],
 };
 const drawn = { width: 200, height: 266 } as ImageBitmap;
 

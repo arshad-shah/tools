@@ -1,7 +1,14 @@
-export { pdfRender } from './client';
-export { usePdfDocument, usePageBitmap } from './hooks';
+export { pdfRender, type PdfRender } from './client';
+export {
+  bitmapCache,
+  purgeDocBitmaps,
+  usePdfDocument,
+  usePageBitmap,
+} from './hooks';
 export { textFromItems } from './text';
 export type { PageBitmap } from './bitmap-state';
+export type { PageTextItems, TextItemGeom } from './handlers/text';
+export type { Priority } from './priority';
 export type {
   DocInfo,
   ImageFormat,

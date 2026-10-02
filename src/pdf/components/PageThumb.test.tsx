@@ -8,10 +8,18 @@ import { PageThumb } from './PageThumb';
 const hook = vi.hoisted(() => ({
   result: { bitmap: null, error: null } as PageBitmap,
   calls: [] as boolean[],
+  priorities: [] as (number | undefined)[],
 }));
 vi.mock('@/pdf/render', () => ({
-  usePageBitmap: (_d: string, _p: number, _w: number, enabled: boolean) => {
+  usePageBitmap: (
+    _d: string,
+    _p: number,
+    _w: number,
+    enabled: boolean,
+    priority?: number,
+  ) => {
     hook.calls.push(enabled);
+    hook.priorities.push(priority);
     return hook.result;
   },
 }));
@@ -35,7 +43,12 @@ class FakeObserver {
 }
 
 const fakeBitmap = { width: 20, height: 28 } as ImageBitmap;
-const page = { width: 600, height: 800 };
+const page = {
+  width: 600,
+  height: 800,
+  view: [0, 0, 600, 800] as [number, number, number, number],
+  rotate: 0 as const,
+};
 
 const thumb = () =>
   render(
@@ -55,6 +68,7 @@ describe('PageThumb', () => {
   beforeEach(() => {
     observers.clear();
     hook.calls = [];
+    hook.priorities = [];
     hook.result = { bitmap: null, error: null };
     vi.stubGlobal('IntersectionObserver', FakeObserver);
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
@@ -71,6 +85,12 @@ describe('PageThumb', () => {
     expect(hook.calls.at(-1)).toBe(true);
     expect(canvas().dataset.rendered).toBe('true');
     expect((canvas() as HTMLCanvasElement).width).toBe(20);
+  });
+
+  it('renders at rail priority so the canvas goes first', () => {
+    thumb();
+    crossing('400px', true);
+    expect(new Set(hook.priorities)).toEqual(new Set([1]));
   });
 
   it('releases canvas pixels far off-screen and redraws on return', () => {

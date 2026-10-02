@@ -37,6 +37,34 @@ export function renderScale(
   return scale;
 }
 
+/**
+ * Validates a tile request: a positive scale and a whole-pixel tile (in
+ * viewport px at that scale) no larger than MAX_CANVAS_PIXELS.
+ */
+export function checkTile(
+  scale: number,
+  tile: { x: number; y: number; width: number; height: number },
+): void {
+  if (!Number.isFinite(scale) || scale <= 0) {
+    throw new ToolError('INVALID_INPUT', 'Zoom must be a positive number');
+  }
+  const { x, y, width, height } = tile;
+  if (
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    !Number.isInteger(width) ||
+    !Number.isInteger(height) ||
+    width <= 0 ||
+    height <= 0 ||
+    width * height > MAX_CANVAS_PIXELS
+  ) {
+    throw new ToolError(
+      'INVALID_INPUT',
+      'Tile size must be a positive whole number of pixels within the canvas limit',
+    );
+  }
+}
+
 export const MIN_EXPORT_DPI = 72;
 export const MAX_EXPORT_DPI = 300;
 

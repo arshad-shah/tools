@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import {
   makeAesEncryptedPdf,
+  makeLargePdf,
   makeFormPdf,
   makeExifPhotoPdf,
   makeImageHeavyPdf,
@@ -44,6 +45,7 @@ const files: Record<string, Uint8Array> = {
   'text-3.pdf': await makeTextPdf({ pages: 3, label: 'Alpha' }),
   'text-12.pdf': await makeTextPdf({ pages: 12, label: 'Beta' }),
   'text-300.pdf': await makeTextPdf({ pages: 300, label: 'Big' }),
+  'large-300.pdf': await makeLargePdf(300),
   'shapes-2.pdf': await makeShapesOnlyPdf(2),
   'a2-1.pdf': await makeTextPdf({
     pages: 1,

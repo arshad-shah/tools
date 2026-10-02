@@ -3,6 +3,7 @@ import {
   encrypt,
   inspect,
   optimize,
+  run,
   type EncryptOptions,
   type OptimizeOptions,
 } from '@arshad-shah/qpdf-wasm';
@@ -63,6 +64,26 @@ export const qpdfHandlers = {
     guard(async () => out(await encrypt(bytes, options))),
   decrypt: (_ctx: RpcContext, bytes: Uint8Array, password: string) =>
     guard(async () => out(await decrypt(bytes, password))),
+  /**
+   * Which password of an encrypted file `password` is: the owner password
+   * lifts its restrictions (spec §12), the user password only opens it.
+   */
+  passwordRole: (
+    _ctx: RpcContext,
+    bytes: Uint8Array,
+    password: string,
+  ): Promise<PasswordRole> =>
+    guard(async () => {
+      const r = await run(
+        ['--show-encryption', `--password=${password}`, 'in.pdf'],
+        { 'in.pdf': bytes },
+      );
+      if (/Supplied password is owner password/.test(r.stdout)) return 'owner';
+      if (/Supplied password is user password/.test(r.stdout)) return 'user';
+      return 'none';
+    }),
 };
+
+export type PasswordRole = 'owner' | 'user' | 'none';
 
 export type QpdfHandlers = typeof qpdfHandlers;

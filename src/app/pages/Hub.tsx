@@ -1,3 +1,4 @@
+import type React from 'react';
 import { HubLayout, ToolCard } from '@/shared/ui';
 import type { CategoryDef } from '../categories';
 import { hubTools } from '../drop-routing';
@@ -7,7 +8,7 @@ import { toolPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import { routerLink } from '../shell/router-link';
 import type { ToolManifest } from '../tool';
-import { HubDropZone } from './hub/HubDropZone';
+import { HubDropZone, type HubDropZoneProps } from './hub/HubDropZone';
 
 /** Tools grouped as the category table says; the rest in a trailing group. */
 function groupTools(category: CategoryDef, tools: ToolManifest[]) {
@@ -30,8 +31,16 @@ function groupTools(category: CategoryDef, tools: ToolManifest[]) {
   return groups.filter((g) => g.tools.length);
 }
 
+export interface HubProps {
+  category: CategoryDef;
+  /** Hub-specific drop routing (the PDF hub). */
+  route?: HubDropZoneProps['route'];
+  /** Extra card groups after the tool groups (the PDF hub's workspace modes). */
+  extraGroups?: { id: string; label: string; children: React.ReactNode[] }[];
+}
+
 /** One layout for every category hub (spec §5.3). */
-export function Hub({ category }: { category: CategoryDef }) {
+export function Hub({ category, route, extraGroups = [] }: HubProps) {
   const { isFavorite, toggle } = useFavorites();
   useBreadcrumb([{ label: category.label }]);
   const groups = groupTools(category, hubTools(TOOLS, category.id));
@@ -41,28 +50,33 @@ export function Hub({ category }: { category: CategoryDef }) {
       title={category.label}
       blurb={category.blurb}
       dropZone={
-        category.fileBased ? <HubDropZone category={category} /> : undefined
+        category.fileBased ? (
+          <HubDropZone category={category} route={route} />
+        ) : undefined
       }
-      groups={groups.map((g) => ({
-        id: g.id,
-        label: g.label || undefined,
-        children: g.tools.map((t) => (
-          <ToolCard
-            key={t.id}
-            href={toolPath(t)}
-            renderLink={routerLink}
-            icon={t.icon}
-            title={t.name}
-            description={t.description}
-            tag={t.category === category.id ? undefined : t.category}
-            isNew={t.isNew}
-            favourite={{
-              active: isFavorite(t.id),
-              onToggle: () => toggle(t.id),
-            }}
-          />
-        )),
-      }))}
+      groups={[
+        ...groups.map((g) => ({
+          id: g.id,
+          label: g.label || undefined,
+          children: g.tools.map((t) => (
+            <ToolCard
+              key={t.id}
+              href={toolPath(t)}
+              renderLink={routerLink}
+              icon={t.icon}
+              title={t.name}
+              description={t.description}
+              tag={t.category === category.id ? undefined : t.category}
+              isNew={t.isNew}
+              favourite={{
+                active: isFavorite(t.id),
+                onToggle: () => toggle(t.id),
+              }}
+            />
+          )),
+        })),
+        ...extraGroups,
+      ]}
     />
   );
 }

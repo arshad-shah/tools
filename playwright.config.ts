@@ -8,6 +8,10 @@ export default defineConfig({
   testDir: 'test/e2e',
   globalSetup: './test/e2e/global-setup.ts',
   fullyParallel: true,
+  // Perf measurements (spec §14) run only on demand: pnpm test:e2e --grep @perf.
+  grepInvert: process.argv.some((a) => a.includes('@perf'))
+    ? undefined
+    : /@perf/,
   retries: process.env.CI ? 1 : 0,
   // CI uploads playwright-report on failure, so it needs the html reporter.
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',

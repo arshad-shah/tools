@@ -38,7 +38,7 @@ export const LARGE_EXPORT_BYTES = 500 * 1024 * 1024;
  * downloaded, and a ZIP briefly needs as much again.
  */
 export function estimateExportBytes(
-  pages: PageInfo[],
+  pages: Pick<PageInfo, 'width' | 'height'>[],
   indices: number[],
   dpi: number,
 ): number {

@@ -112,6 +112,35 @@ describe('worker-rpc', () => {
     client.terminate();
   });
 
+  it('calls onSettled once the worker is done, even after an abort', async () => {
+    const client = createRpcClient<typeof handlers>(connectPair);
+    const settled = vi.fn();
+    await client.call('add', [1, 2], { onSettled: settled });
+    expect(settled).toHaveBeenCalledTimes(1);
+
+    const ctrl = new AbortController();
+    let done!: () => void;
+    const workerDone = new Promise<void>((r) => (done = r));
+    const p = client.call('slow', [], {
+      signal: ctrl.signal,
+      onSettled: done,
+      onProgress: () => ctrl.abort(),
+    });
+    await expect(p).rejects.toMatchObject({ code: 'CANCELLED' });
+    await workerDone; // the worker's own CANCELLED reply
+
+    const gone = vi.fn();
+    const q = client.call('slow', [], { onSettled: gone });
+    client.terminate();
+    await expect(q).rejects.toMatchObject({ code: 'CANCELLED' });
+    expect(gone).toHaveBeenCalledTimes(1);
+    const refused = vi.fn();
+    await expect(
+      client.call('add', [1, 1], { onSettled: refused }),
+    ).rejects.toBeDefined();
+    expect(refused).toHaveBeenCalledTimes(1);
+  });
+
   it('transfers result buffers', async () => {
     const client = createRpcClient<typeof handlers>(connectPair);
     const out = await client.call('bytes', [4]);

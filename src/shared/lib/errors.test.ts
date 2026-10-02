@@ -36,3 +36,14 @@ describe('toToolError', () => {
     expect(toToolError('nope', 'Fallback').message).toBe('Fallback');
   });
 });
+
+describe('workspace codes', () => {
+  it('accepts STORAGE_FULL, VERIFICATION_FAILED and NETWORK', () => {
+    for (const code of [
+      'STORAGE_FULL',
+      'VERIFICATION_FAILED',
+      'NETWORK',
+    ] as const)
+      expect(new ToolError(code, 'x').code).toBe(code);
+  });
+});

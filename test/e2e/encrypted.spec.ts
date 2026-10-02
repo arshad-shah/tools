@@ -7,7 +7,6 @@ const OWNER_ONLY = 'test/fixtures/generated/encrypted-owner-only.pdf';
 const TOOLS = [
   'pdf-merger',
   'pdf-splitter',
-  'pdf-organize',
   'pdf-to-images',
   'pdf-to-text',
   'pdf-watermark',

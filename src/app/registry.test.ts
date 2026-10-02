@@ -128,6 +128,15 @@ describe('buildRegistry: routes and search fields', () => {
       build(['../tools/a/index.ts', fake('a', 'A', { slug: 'edit' })]),
     ).toThrow(/reserved/);
   });
+
+  it('lets only the workspace take a reserved slug', () => {
+    expect(() =>
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', { slug: 'edit', kind: 'workspace' }),
+      ]),
+    ).not.toThrow();
+  });
   it('rejects an unknown category', () => {
     expect(() =>
       build([
@@ -230,10 +239,10 @@ describe('TOOLS', () => {
         'number-converter',
         'password-generator',
         'pdf-compressor',
+        'pdf-edit',
         'pdf-fill-form',
         'pdf-merger',
         'pdf-metadata',
-        'pdf-organize',
         'pdf-page-numbers',
         'pdf-protect',
         'pdf-sign',

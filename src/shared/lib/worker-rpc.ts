@@ -152,6 +152,12 @@ export interface CallOptions {
   signal?: AbortSignal;
   transfer?: Transferable[];
   onProgress?: (p: JobProgress) => void;
+  /**
+   * Called once when the worker is done with the call: its reply, a crash,
+   * terminate(), or a call that never reached it. An abort rejects the
+   * caller at once; this still waits for the worker's own reply.
+   */
+  onSettled?: () => void;
 }
 
 export interface RpcClient<H extends RpcHandlers> {
@@ -176,6 +182,7 @@ interface Pending {
   reject(e: unknown): void;
   onProgress?: (p: JobProgress) => void;
   cleanup(): void;
+  settle(): void;
 }
 
 /**
@@ -200,20 +207,31 @@ export function createRpcClient<H extends RpcHandlers>(
   let generation = 0;
   const restartListeners = new Set<() => void>();
   const pending = new Map<number, Pending>();
+  /** Aborted calls the worker has not replied to yet: their onSettled. */
+  const aborted = new Map<number, () => void>();
 
   const failAll = (err: ToolError) => {
     for (const p of pending.values()) {
       p.cleanup();
       p.reject(err);
+      p.settle();
     }
     pending.clear();
+    for (const settle of aborted.values()) settle();
+    aborted.clear();
   };
 
   const onMessage = (event: MessageEvent) => {
     if (!isTagged(event.data)) return;
     const msg = event.data as Response;
     const p = pending.get(msg.id);
-    if (!p) return;
+    if (!p) {
+      if (msg.type !== 'progress') {
+        aborted.get(msg.id)?.();
+        aborted.delete(msg.id);
+      }
+      return;
+    }
     if (msg.type === 'progress') {
       p.onProgress?.(msg.value);
       return;
@@ -223,6 +241,7 @@ export function createRpcClient<H extends RpcHandlers>(
     // The restart limit applies to CONSECUTIVE crashes: any successful
     // response proves the worker is healthy, so reset the counter.
     crashes = 0;
+    p.settle();
     if (msg.type === 'result') p.resolve(msg.value);
     else {
       const { code, message, cause } = msg.error;
@@ -297,13 +316,21 @@ export function createRpcClient<H extends RpcHandlers>(
       return () => restartListeners.delete(listener);
     },
     call(method, args, opts = {}) {
+      let settled = false;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        opts.onSettled?.();
+      };
       return new Promise((resolve, reject) => {
         if (terminated) {
           reject(new ToolError('CANCELLED', 'Worker terminated'));
+          settle();
           return;
         }
         if (opts.signal?.aborted) {
           reject(new ToolError('CANCELLED', 'Cancelled'));
+          settle();
           return;
         }
         let target: RpcEndpoint;
@@ -311,11 +338,13 @@ export function createRpcClient<H extends RpcHandlers>(
           target = ensure();
         } catch (e) {
           reject(toToolError(e));
+          settle();
           return;
         }
         const id = nextId++;
         const onAbort = () => {
           if (!pending.delete(id)) return;
+          aborted.set(id, settle);
           target.postMessage(
             { rpc: 1, type: 'abort', id } satisfies Request,
             [],
@@ -328,6 +357,7 @@ export function createRpcClient<H extends RpcHandlers>(
           reject,
           onProgress: opts.onProgress,
           cleanup: () => opts.signal?.removeEventListener('abort', onAbort),
+          settle,
         });
         try {
           target.postMessage(
@@ -339,6 +369,7 @@ export function createRpcClient<H extends RpcHandlers>(
           pending.delete(id);
           p?.cleanup();
           reject(toToolError(e));
+          settle();
         }
       });
     },
