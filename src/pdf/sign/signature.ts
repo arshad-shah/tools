@@ -9,7 +9,16 @@ export type SignatureSource =
       width: number;
       height: number;
     }
-  | { kind: 'text'; text: string; fontId: SignatureFontId; color: string }
+  | {
+      kind: 'text';
+      text: string;
+      fontId: SignatureFontId;
+      color: string;
+      /** Degrees, -20..20; positive leans right. */
+      slant?: number;
+      /** Points, or 'fit' (the default): as large as the box allows. */
+      size?: 'fit' | number;
+    }
   /** Pen strokes as one filled vector path (pad px, y down). */
   | { kind: 'ink'; vector: InkVector; color: string }
   /** A photo traced to outlines (mask px, y down), filled even-odd. */

@@ -101,7 +101,12 @@ export function InputsSection() {
           aria-label="Not agreed"
         />
         <div className="w-48">
-          <Slider value={level} onValueChange={setLevel} aria-label="Level" />
+          <Slider
+            value={level}
+            onValueChange={setLevel}
+            aria-label="Level"
+            aria-valuetext={`${level} percent`}
+          />
         </div>
         <NumberInput
           value={count}

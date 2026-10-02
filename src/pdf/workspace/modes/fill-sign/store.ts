@@ -10,7 +10,14 @@ import type { FieldStyle } from './text-style';
 
 export type SignaturePreview =
   | { kind: 'image'; bytes: Uint8Array; mime: 'image/png' | 'image/jpeg' }
-  | { kind: 'text'; text: string; family: string; color: string }
+  | {
+      kind: 'text';
+      text: string;
+      family: string;
+      color: string;
+      /** Degrees; positive leans right. */
+      slant?: number;
+    }
   | { kind: 'ink'; vector: InkVector; color: string; evenOdd?: boolean };
 
 /** What a placed signature looks like: vectors carry their own preview. */
@@ -73,6 +80,8 @@ export interface FillSignState {
   ready: { signature: ReadySignature | null; initials: ReadySignature | null };
   /** What the signature panel makes. */
   panelRole: 'signature' | 'initials';
+  /** The name typed in the panel (initials and the block start from it). */
+  typedName: string;
   /**
    * The signature field or place to sign the panel was opened from: Place
    * fills it (snapped to `target` when it came from smart placement).
@@ -115,6 +124,7 @@ const initial: FillSignState = {
   autofillRows: [],
   ready: { signature: null, initials: null },
   panelRole: 'signature',
+  typedName: '',
   signTarget: null,
   placing: null,
   justPlaced: null,

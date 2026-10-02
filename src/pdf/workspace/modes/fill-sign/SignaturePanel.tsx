@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   IconCamera,
+  IconFieldSignature,
+  IconInitials,
+  IconNextSignTarget,
   IconSignatureDraw,
   IconSignatureType,
   IconSignatureUpload,
@@ -14,114 +17,75 @@ import {
   TabsTrigger,
   Text,
 } from '@/shared/ui';
+import { newId } from '@/shared/lib/id';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
-import {
-  fetchFontBytes,
-  fontById,
-  inkAspect,
-  loadSignatureFont,
-  type SignatureSource,
-} from '@/pdf/sign';
-import { layoutInk } from '@/pdf/edit/text-fit';
+import type { SignatureSource } from '@/pdf/sign';
+import type { BlockContent } from '@/pdf/sign/block';
+import type { PageAnchor } from '@/pdf/doc/ops/fill-sign';
+import type { NewOperation } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { fitAspect, placeSignature } from './actions';
-import { targetBox } from './sign-places';
-import { SignatureDraw } from './SignatureDraw';
+import { InitialPagesDialog } from './InitialPagesDialog';
+import { defaultInitialsAnchor, selectedInitialsAnchor } from './initials-spot';
+import { pageCentre, prepare } from './prepare-signature';
+import { nextPlaceToSign, targetBox } from './sign-places';
+import { SignatureBlockForm } from './SignatureBlockForm';
+import { SignatureInitials } from './SignatureInitials';
+import { SignatureInk } from './SignatureInk';
 import { SignaturePhoto } from './SignaturePhoto';
-import { SignatureType } from './SignatureType';
+import { SignatureTypeGallery } from './SignatureTypeGallery';
 import { SignatureUpload } from './SignatureUpload';
 import { fillSign, useFillSign, type ReadySignature } from './store';
 
-/** Turns the panel's source into a placeable signature (assets stored once). */
-async function prepare(
-  ctx: ModeProps,
-  source: SignatureSource,
-): Promise<ReadySignature> {
-  if (source.kind === 'ink' || source.kind === 'trace') {
-    // The vector travels in the op itself: nothing to store. Traced photos
-    // fill even-odd so the holes in loops stay open.
-    const { kind, vector, color } = source;
-    return {
-      content: { kind, vector, color },
-      aspect: vector.width / vector.height,
-      preview: { kind: 'ink', vector, color, evenOdd: kind === 'trace' },
-    };
-  }
-  if (source.kind === 'image') {
-    const mime: 'image/png' | 'image/jpeg' =
-      source.format === 'png' ? 'image/png' : 'image/jpeg';
-    const assetId = ctx.doc.addAsset(source.bytes, mime);
-    const preview = { kind: 'image' as const, bytes: source.bytes, mime };
-    fillSign.set({
-      previews: { ...fillSign.get().previews, [assetId]: preview },
-    });
-    return {
-      content: { kind: 'image', assetId, mime },
-      aspect: source.width / source.height,
-      preview,
-    };
-  }
-  const [bytes, font] = await Promise.all([
-    fetchFontBytes(source.fontId),
-    loadSignatureFont(source.fontId),
-  ]);
-  const fontAsset = ctx.doc.addAsset(bytes, 'font/woff');
-  const preview = {
-    kind: 'text' as const,
-    text: source.text,
-    family: fontById(source.fontId).family,
-    color: source.color,
-  };
-  fillSign.set({
-    previews: { ...fillSign.get().previews, [fontAsset]: preview },
-  });
-  return {
-    content: {
-      kind: 'text',
-      text: source.text,
-      fontId: source.fontId,
-      fontAsset,
-      color: source.color,
-    },
-    aspect: inkAspect(layoutInk(font, source.text)),
-    preview,
-  };
-}
+type Tab = 'draw' | 'type' | 'photo' | 'initials' | 'block' | 'upload';
+type Role = 'signature' | 'initials';
 
-/** The page centre in page space, as displayed. */
-function pageCentre(ctx: ModeProps) {
-  const page = ctx.doc.view.pages.find((p) => p.id === ctx.doc.currentPage);
-  if (!page) return null;
-  const g = ctx.doc.pageGeom(page);
-  const box = page.crop ?? {
-    x: g.view[0],
-    y: g.view[1],
-    width: g.view[2] - g.view[0],
-    height: g.view[3] - g.view[1],
-  };
-  return { page, x: box.x + box.width / 2, y: box.y + box.height / 2 };
+/** A block's width in points; the signature takes 55% of its height. */
+const BLOCK_WIDTH = 200;
+const BLOCK_SIGNATURE_MAX = 80;
+const BLOCK_SIGNATURE_SHARE = 0.55;
+
+/** Initials ready for "Initial pages", with where they would go. */
+interface InitialPagesRequest {
+  sig: ReadySignature;
+  selected: PageAnchor | null;
+  fallback: PageAnchor;
 }
 
 /**
- * Make a signature or initials (spec §8.1): draw, type or upload, then
- * place it with the pointer or at the page centre. No saved signatures
- * (decision G12); the copy states it is a picture, not a certificate.
+ * Make a signature, initials or a signature block (spec §8.1, plan H-14):
+ * draw, type, photograph or upload it, then place it with the pointer, at
+ * the page centre, in a field, or at the next place to sign. No saved
+ * signatures (decision G12); the copy states it is a picture, not a
+ * certificate signature.
  */
 export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
-  const role = useFillSign((s) => s.panelRole);
+  const panelRole = useFillSign((s) => s.panelRole);
   const target = useFillSign((s) => s.signTarget);
-  const [tab, setTab] = useState('draw');
+  const name = useFillSign((s) => s.typedName);
+  const madeSignature = useFillSign((s) => s.ready.signature);
+  const [tab, setTab] = useState<Tab>(
+    panelRole === 'initials' ? 'initials' : 'draw',
+  );
   const [source, setSource] = useState<SignatureSource | null>(null);
   const [busy, setBusy] = useState(false);
+  const [initialPages, setInitialPages] = useState<InitialPagesRequest | null>(
+    null,
+  );
+  const role: Role = tab === 'initials' ? 'initials' : 'signature';
   const what = role === 'initials' ? 'initials' : 'signature';
+  const setName = useCallback(
+    (typedName: string) => fillSign.set({ typedName }),
+    [],
+  );
 
-  const ready = async () => {
+  const ready = async (as: Role = role) => {
     if (!source) return null;
     setBusy(true);
     try {
       const sig = await prepare(ctx, source);
-      fillSign.set({ ready: { ...fillSign.get().ready, [role]: sig } });
+      fillSign.set({ ready: { ...fillSign.get().ready, [as]: sig } });
       return sig;
     } catch (e) {
       notify.error(toToolError(e));
@@ -131,16 +95,86 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
     }
   };
 
+  const switchTab = async (next: Tab) => {
+    // A signature made but not placed yet is what the block uses.
+    if (next === 'block' && source && role === 'signature') await ready();
+    setTab(next);
+    setSource(null);
+    fillSign.set({ panelRole: next === 'initials' ? 'initials' : 'signature' });
+  };
+
+  const placeAtCentre = async () => {
+    const sig = await ready();
+    const at = pageCentre(ctx);
+    if (!sig || !at) return;
+    fillSign.set({ dialog: null });
+    const w = role === 'initials' ? 60 : 180;
+    const h = w / sig.aspect;
+    placeSignature(
+      ctx,
+      at.page.id,
+      { x: at.x - w / 2, y: at.y - h / 2, width: w, height: h },
+      sig,
+      role,
+    );
+    ctx.doc.announce(
+      `Placed at the page centre. Use the arrow keys to move it.`,
+    );
+  };
+
+  const placeBlock = (content: BlockContent, aspect: number) => {
+    const at = pageCentre(ctx);
+    if (!at) return;
+    const width = BLOCK_WIDTH;
+    const height =
+      Math.min(width / aspect, BLOCK_SIGNATURE_MAX) / BLOCK_SIGNATURE_SHARE;
+    const ops = ctx.doc.dispatch({
+      type: 'sign.block',
+      params: {
+        id: newId(),
+        pageId: at.page.id,
+        rect: { x: at.x - width / 2, y: at.y - height / 2, width, height },
+        rotate: 0,
+        content,
+      },
+    });
+    if (!ops.length) return;
+    fillSign.set({ dialog: null, signTarget: null });
+    ctx.selection.selectObjects([ops[0].id]);
+    ctx.doc.announce(
+      'Signature block placed at the page centre. Use the arrow keys to move it.',
+    );
+  };
+
+  const openInitialPages = async () => {
+    const sig = await ready('initials');
+    if (!sig) return;
+    setInitialPages({
+      sig,
+      selected: selectedInitialsAnchor(ctx),
+      fallback: defaultInitialsAnchor(ctx, sig.aspect),
+    });
+  };
+
+  const dispatchInitialPages = (op: NewOperation) => {
+    const ops = ctx.doc.dispatch(op);
+    if (ops.length) {
+      fillSign.set({ dialog: null, signTarget: null });
+      ctx.doc.announce('Initials placed on the chosen pages');
+    }
+    return ops;
+  };
+
+  const goNext = async () => {
+    if (source && tab !== 'block' && !(await ready())) return;
+    fillSign.set({ dialog: null, signTarget: null });
+    void nextPlaceToSign(ctx);
+  };
+
   return (
-    <Stack gap="3">
-      <Tabs
-        value={tab}
-        onValueChange={(t) => {
-          setTab(t);
-          setSource(null);
-        }}
-      >
-        <TabsList aria-label={`How to make your ${what}`}>
+    <Stack gap="3" className="min-w-0">
+      <Tabs value={tab} onValueChange={(t) => void switchTab(t as Tab)}>
+        <TabsList aria-label="Signature method" className="flex-wrap">
           <TabsTrigger value="draw">
             <IconSignatureDraw size="sm" />
             Draw
@@ -149,33 +183,64 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
             <IconSignatureType size="sm" />
             Type
           </TabsTrigger>
-          <TabsTrigger value="upload">
-            <IconSignatureUpload size="sm" />
-            Upload
-          </TabsTrigger>
           <TabsTrigger value="photo">
             <IconCamera size="sm" />
             Photo
           </TabsTrigger>
+          <TabsTrigger value="initials">
+            <IconInitials size="sm" />
+            Initials
+          </TabsTrigger>
+          <TabsTrigger value="block">
+            <IconFieldSignature size="sm" />
+            Block
+          </TabsTrigger>
+          <TabsTrigger value="upload">
+            <IconSignatureUpload size="sm" />
+            Upload
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="draw">
-          <SignatureDraw onChange={setSource} disabled={busy} />
+          <SignatureInk onChange={setSource} disabled={busy} />
         </TabsContent>
         <TabsContent value="type">
-          <SignatureType onChange={setSource} disabled={busy} />
-        </TabsContent>
-        <TabsContent value="upload">
-          <SignatureUpload onChange={setSource} disabled={busy} />
+          <SignatureTypeGallery
+            name={name}
+            onNameChange={setName}
+            onChange={setSource}
+            disabled={busy}
+          />
         </TabsContent>
         <TabsContent value="photo">
           <SignaturePhoto onChange={setSource} disabled={busy} />
         </TabsContent>
+        <TabsContent value="initials">
+          <SignatureInitials
+            name={name}
+            onChange={setSource}
+            disabled={busy}
+            ready={source !== null}
+            onInitialPages={() => void openInitialPages()}
+          />
+        </TabsContent>
+        <TabsContent value="block">
+          <SignatureBlockForm
+            signature={madeSignature}
+            name={name}
+            disabled={busy}
+            onPlace={placeBlock}
+          />
+        </TabsContent>
+        <TabsContent value="upload">
+          <SignatureUpload onChange={setSource} disabled={busy} />
+        </TabsContent>
       </Tabs>
       <Text size="sm" tone="muted">
-        This is a picture of your signature, not a certificate signature.
+        This is a picture of your signature. For a certificate-backed signature,
+        turn on Digital signature when you export.
       </Text>
       <div className="flex flex-wrap gap-2">
-        {target ? (
+        {tab !== 'block' && target ? (
           <Button
             variant="primary"
             disabled={!source || busy}
@@ -197,42 +262,50 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
             Place in field
           </Button>
         ) : null}
+        {tab !== 'block' ? (
+          <>
+            <Button
+              variant={target ? 'secondary' : 'primary'}
+              disabled={!source || busy}
+              onClick={async () => {
+                if (!(await ready())) return;
+                fillSign.set({ placing: role, dialog: null, signTarget: null });
+                ctx.doc.announce(`Click on a page to place your ${what}`);
+              }}
+            >
+              Place
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={!source || busy}
+              onClick={() => void placeAtCentre()}
+            >
+              Place at page centre
+            </Button>
+          </>
+        ) : null}
         <Button
-          variant={target ? 'secondary' : 'primary'}
-          disabled={!source || busy}
-          onClick={async () => {
-            if (!(await ready())) return;
-            fillSign.set({ placing: role, dialog: null, signTarget: null });
-            ctx.doc.announce(`Click on a page to place your ${what}`);
-          }}
+          variant="ghost"
+          leftIcon={<IconNextSignTarget size="sm" />}
+          disabled={busy}
+          onClick={() => void goNext()}
         >
-          Place
-        </Button>
-        <Button
-          variant="secondary"
-          disabled={!source || busy}
-          onClick={async () => {
-            const sig = await ready();
-            const at = pageCentre(ctx);
-            if (!sig || !at) return;
-            fillSign.set({ dialog: null });
-            const w = role === 'initials' ? 60 : 180;
-            const h = w / sig.aspect;
-            placeSignature(
-              ctx,
-              at.page.id,
-              { x: at.x - w / 2, y: at.y - h / 2, width: w, height: h },
-              sig,
-              role,
-            );
-            ctx.doc.announce(
-              `Placed at the page centre. Use the arrow keys to move it.`,
-            );
-          }}
-        >
-          Place at page centre
+          Next place to sign
         </Button>
       </div>
+      {initialPages ? (
+        <InitialPagesDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setInitialPages(null);
+          }}
+          pageIds={ctx.doc.view.pages.map((p) => p.id)}
+          content={initialPages.sig.content}
+          selectedAnchor={initialPages.selected}
+          defaultAnchor={initialPages.fallback}
+          dispatch={dispatchInitialPages}
+        />
+      ) : null}
     </Stack>
   );
 }

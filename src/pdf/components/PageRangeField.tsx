@@ -19,6 +19,8 @@ interface PageRangeFieldProps {
   onTextChange: (text: string) => void;
   /** From trySelectPages; shown once something has been typed. */
   error: string | null;
+  /** Just the range box: the caller offers "all pages" its own way. */
+  rangesOnly?: boolean;
 }
 
 /** "All pages" / "Some pages" with a live-validated range box. */
@@ -29,19 +31,24 @@ export const PageRangeField: React.FC<PageRangeFieldProps> = ({
   onModeChange,
   onTextChange,
   error,
+  rangesOnly,
 }) => (
   <Stack gap="2">
-    <Label id={`${id}-pages-label`}>Pages</Label>
-    <Tabs
-      value={mode}
-      onValueChange={(v) => onModeChange(v as 'all' | 'ranges')}
-      variant="soft"
-    >
-      <TabsList aria-labelledby={`${id}-pages-label`}>
-        <TabsTrigger value="all">All pages</TabsTrigger>
-        <TabsTrigger value="ranges">Some pages</TabsTrigger>
-      </TabsList>
-    </Tabs>
+    {rangesOnly ? null : (
+      <>
+        <Label id={`${id}-pages-label`}>Pages</Label>
+        <Tabs
+          value={mode}
+          onValueChange={(v) => onModeChange(v as 'all' | 'ranges')}
+          variant="soft"
+        >
+          <TabsList aria-labelledby={`${id}-pages-label`}>
+            <TabsTrigger value="all">All pages</TabsTrigger>
+            <TabsTrigger value="ranges">Some pages</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </>
+    )}
     {mode === 'ranges' && (
       <Input
         aria-label="Page ranges"

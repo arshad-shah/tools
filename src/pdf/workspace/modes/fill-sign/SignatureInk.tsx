@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { IconEraser, IconUndo } from '@/shared/ui/icons';
 import {
   Button,
@@ -8,6 +8,7 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
+import { isTypingTarget, matchesHotkey } from '@/shared/lib/hotkeys';
 import {
   inkToVector,
   INK_COLORS,
@@ -17,8 +18,12 @@ import {
 } from '@/pdf/sign';
 import { InkField } from './InkField';
 
-/** Pad size in CSS px: the frame the strokes are recorded in. */
-const PAD = { width: 448, height: 176 };
+/**
+ * The pad's design size in CSS px. It shrinks to fit its container (phone
+ * width); strokes are recorded in the shown px, and the vector is cropped
+ * to the ink, so the frame only bounds the points.
+ */
+const PAD = { width: 480, height: 180 };
 
 const WEIGHTS: { value: InkWeight; label: string }[] = [
   { value: 'thin', label: 'Thin' },
@@ -26,14 +31,20 @@ const WEIGHTS: { value: InkWeight; label: string }[] = [
   { value: 'bold', label: 'Bold' },
 ];
 
-/** An ink pen: pressure-sensitive strokes, kept as one vector path. */
-export const SignatureDraw: React.FC<SignatureSourceProps> = ({
-  onChange,
-  disabled,
-}) => {
+const UNDO = 'Mod+Z';
+
+/**
+ * An ink pen (plan H-14 "Draw"): pressure-sensitive strokes kept as one
+ * vector path, three weights, ink colours, stroke-level undo (also the
+ * undo shortcut while focus is in the pad's area).
+ */
+export const SignatureInk: React.FC<
+  SignatureSourceProps & { label?: string }
+> = ({ onChange, disabled, label = 'Draw your signature' }) => {
   const [strokes, setStrokes] = useState<InkStroke[]>([]);
   const [ink, setInk] = useState(INK_COLORS[0].value);
   const [weight, setWeight] = useState<InkWeight>('medium');
+  const hintId = useId();
 
   const commit = (next: InkStroke[], color = ink, w = weight) => {
     setStrokes(next);
@@ -49,21 +60,32 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
     }
   };
 
+  const undo = () => {
+    if (!disabled && strokes.length > 0) commit(strokes.slice(0, -1));
+  };
+
   return (
-    <Stack gap="3">
+    <Stack
+      gap="3"
+      onKeyDown={(e) => {
+        if (isTypingTarget(e.target) || !matchesHotkey(e, UNDO)) return;
+        // The pad's own undo, not the document's.
+        e.preventDefault();
+        e.stopPropagation();
+        undo();
+      }}
+    >
       <SignaturePad
         value={strokes}
         onChange={commit}
-        label="Draw your signature"
-        aria-describedby="sig-draw-hint"
+        label={label}
+        aria-describedby={hintId}
         ink={ink}
         weight={weight}
-        width={PAD.width}
-        height={PAD.height}
         disabled={disabled}
-        className="max-w-full rounded-md border border-line bg-white"
+        className="aspect-[8/3] w-full max-w-120 rounded-md border border-line bg-white"
       />
-      <Text id="sig-draw-hint" size="sm" tone="muted">
+      <Text id={hintId} size="sm" tone="muted">
         Draw with a mouse, pen or finger. Using a keyboard? Use the Type tab.
       </Text>
       <Inline gap="3" align="end" wrap>
@@ -90,7 +112,7 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
           variant="secondary"
           leftIcon={<IconUndo size="sm" />}
           disabled={disabled || strokes.length === 0}
-          onClick={() => commit(strokes.slice(0, -1))}
+          onClick={undo}
         >
           Undo stroke
         </Button>

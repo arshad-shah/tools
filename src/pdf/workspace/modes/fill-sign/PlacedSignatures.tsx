@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import {
+  FontPreview,
   FontSample,
   HitArea,
   Image,
@@ -49,6 +50,17 @@ export function SignatureLook({
         color={preview.color}
         evenOdd={preview.evenOdd}
         className="size-full"
+      />
+    );
+  if (preview?.kind === 'text' && preview.slant)
+    return (
+      <FontPreview
+        family={preview.family}
+        text={preview.text}
+        slant={preview.slant}
+        color={preview.color}
+        label={preview.text}
+        className="size-full text-2xl"
       />
     );
   if (preview?.kind === 'text')
