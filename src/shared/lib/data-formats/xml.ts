@@ -199,8 +199,14 @@ export interface XmlJsonOptions {
 
 const NAME_RE = /^[A-Za-z_][\w.-]*(?::[A-Za-z_][\w.-]*)?$/;
 
+/** Namespace declarations and the xml: attributes are the allowed xml names. */
+const XML_RESERVED_OK = /^(xmlns|xmlns:[A-Za-z_][\w.-]*|xml:[A-Za-z_][\w.-]*)$/;
+
 function checkName(name: string): string {
-  if (!NAME_RE.test(name) || /^xml/i.test(name))
+  if (
+    !NAME_RE.test(name) ||
+    (/^xml/i.test(name) && !XML_RESERVED_OK.test(name))
+  )
     throw new ToolError(
       'INVALID_INPUT',
       `"${name}" is not a valid XML element or attribute name`,

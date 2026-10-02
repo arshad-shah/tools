@@ -56,6 +56,29 @@ describe('xml', () => {
     expect(json).toEqual({ r: { '@a': '1', i: ['x', 'y'], '#text': 't' } });
     expect(xmlToJson(parseXml(jsonToXml(json)))).toEqual(json);
   });
+  it('round-trips a namespaced document through JSON', () => {
+    const src =
+      '<a:root xmlns:a="urn:a" xmlns="urn:d" xml:lang="en"><a:item a:id="1">x</a:item><b xml:space="preserve">y</b></a:root>';
+    const json = xmlToJson(parseXml(src));
+    expect(json).toEqual({
+      'a:root': {
+        '@xmlns:a': 'urn:a',
+        '@xmlns': 'urn:d',
+        '@xml:lang': 'en',
+        'a:item': { '@a:id': '1', '#text': 'x' },
+        b: { '@xml:space': 'preserve', '#text': 'y' },
+      },
+    });
+    const back = jsonToXml(json);
+    expect(back).toBe(src);
+    expect(xmlToJson(parseXml(back))).toEqual(json);
+  });
+  it('still refuses other reserved and invalid names', () => {
+    expect(() => jsonToXml({ r: { '@xmlfoo': '1' } })).toThrow(
+      /not a valid XML/,
+    );
+    expect(() => jsonToXml({ r: { '@1x': '1' } })).toThrow(/not a valid XML/);
+  });
   it('writes JSON as XML with a root, nulls and escaping', () => {
     expect(jsonToXml({ a: 1, b: null, c: 'x<y' })).toBe(
       '<root><a>1</a><b/><c>x&lt;y</c></root>',
