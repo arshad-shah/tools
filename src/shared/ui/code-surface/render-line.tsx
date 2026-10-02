@@ -25,22 +25,38 @@ function topAt<T>(
   return best;
 }
 
+interface LineProps {
+  text: string;
+  tokens: readonly Token[];
+  ranges: readonly CodeRange[];
+  markers: readonly CodeMarker[];
+}
+
+/**
+ * Props equality for the line memo: tokens and markers are cached per line
+ * (same array while unchanged); ranges are rebuilt per render, so compare
+ * them by value.
+ */
+export function sameLine(a: LineProps, b: LineProps): boolean {
+  if (
+    a.text !== b.text ||
+    a.tokens !== b.tokens ||
+    a.markers !== b.markers ||
+    a.ranges.length !== b.ranges.length
+  )
+    return false;
+  return a.ranges.every((r, i) => {
+    const s = b.ranges[i];
+    return r.start === s.start && r.end === s.end && r.kind === s.kind;
+  });
+}
+
 /**
  * One line's text as token spans, with ranges wrapped in `mark` elements
  * (one per contiguous range, spanning token boundaries) and marker
  * underlines. `ranges` and `markers` are relative to the line.
  */
-export function LineContent({
-  text,
-  tokens,
-  ranges,
-  markers,
-}: {
-  text: string;
-  tokens: readonly Token[];
-  ranges: readonly CodeRange[];
-  markers: readonly CodeMarker[];
-}) {
+function LineContentImpl({ text, tokens, ranges, markers }: LineProps) {
   if (!text) return null;
   if (!tokens.length && !ranges.length && !markers.length) return <>{text}</>;
   const underlines = markers.map((m) => markerSpan(text, m));
@@ -103,3 +119,10 @@ export function LineContent({
     </>
   );
 }
+
+/**
+ * Memoised: a parent re-render (a settings change elsewhere in the tool)
+ * leaves unchanged lines alone, which matters in wrap mode where every line
+ * is mounted.
+ */
+export const LineContent = React.memo(LineContentImpl, sameLine);
