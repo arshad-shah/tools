@@ -37,6 +37,7 @@ import {
   type WorkspaceShortcutApi,
 } from './shortcuts';
 import { TopBarControls } from './TopBarControls';
+import { SignedBadge } from './SignedBadge';
 import { useAutosave } from './use-autosave';
 import { useDocumentModel } from './useDocument';
 import { useSelection } from './useSelection';
@@ -352,6 +353,13 @@ export function WorkspaceShell({
             onToggleSave={saving.setEnabled}
             restricted={state.restricted}
             onUnlock={onUnlock}
+            badges={
+              <SignedBadge
+                session={session}
+                compact={compact}
+                onOpen={() => changeMode('fill-sign')}
+              />
+            }
             onSearch={onSearch}
             onExport={() => setExportOpen(true)}
           />

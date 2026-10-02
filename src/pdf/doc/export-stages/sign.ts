@@ -1,4 +1,8 @@
+import { sha256 } from '@noble/hashes/sha2.js';
 import { ToolError } from '@/shared/lib/errors';
+import { signWithIdentity } from '@/pdf/sign/pades/sign-flow';
+import { toHex } from '@/pdf/sign/pades/syntax';
+import { requestTimestamp } from '@/pdf/sign/pades/tsa';
 import type { SigningIdentity } from '@/pdf/sign/pades/pkcs12';
 import type {
   ExportContext,
@@ -27,8 +31,11 @@ export interface SignatureExportOption {
   summaryPage: boolean;
 }
 
+/** The signature option, or null (unset, or cleared to '' after an export). */
 export const signatureOption = (o: ExportOptions) =>
-  (o.signature as SignatureExportOption | null | undefined) ?? null;
+  o.signature && typeof o.signature === 'object'
+    ? (o.signature as SignatureExportOption)
+    : null;
 
 /** Overlay ops the signature draws itself (its appearance). */
 export const excludedOverlays = (o: ExportOptions): OpId[] => {
@@ -116,13 +123,7 @@ export const signStage: ExportStage = {
     let input = only ? original : bytes;
     if (only) ctx.warnings.push(SIGN_ONLY_KEPT);
     const m = new Date();
-    const [{ signWithIdentity }, { requestTimestamp }] = await Promise.all([
-      import('@/pdf/sign/pades/sign-flow'),
-      import('@/pdf/sign/pades/tsa'),
-    ]);
     if (s.summaryPage && !only) {
-      const { sha256 } = await import('@noble/hashes/sha2.js');
-      const { toHex } = await import('@/pdf/sign/pades/syntax');
       input = await ctx.services.edit.call(
         'appendSummaryPage',
         [

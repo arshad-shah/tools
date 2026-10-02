@@ -1,11 +1,9 @@
 import { ToolError } from '@/shared/lib/errors';
 import { createCms } from './cms';
 import type { SigningIdentity } from './pkcs12';
-import {
-  finishSignature,
-  type PreparedSignature,
-  type SignPdfRequest,
-} from './sign-pdf';
+import { insertSignature } from './byte-range';
+// Types only: sign-pdf (pdf-lib) runs in the edit worker, never here (G4).
+import type { PreparedSignature, SignPdfRequest } from './sign-pdf';
 import type { SignatureReport } from './verify';
 
 export const NOT_VERIFIED_MESSAGE =
@@ -28,7 +26,7 @@ export async function signWithIdentity(o: {
   const der = await createCms(prepared.content, o.identity, {
     timestamp: o.timestamp,
   });
-  const out = finishSignature(prepared.file, prepared.range, der);
+  const out = insertSignature(prepared.file, prepared.range, der);
   const reports = await o.verify(out);
   const newest = reports[reports.length - 1];
   if (
