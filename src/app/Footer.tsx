@@ -7,6 +7,7 @@ import {
   Logo,
 } from '@/shared/ui/icons';
 import { MetaList, SegmentedControl, StatusDot } from '@/shared/ui';
+import { LicencesButton } from './LicencesDialog';
 import type { ToolDefinition } from './tool';
 import { getEnabledTools } from './registry';
 import { formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
@@ -103,6 +104,7 @@ export default function Footer({ tool }: { tool?: ToolDefinition }) {
               >
                 issues
               </a>,
+              <LicencesButton key="licences" />,
             ]}
           />
         </div>

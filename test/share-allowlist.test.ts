@@ -29,7 +29,7 @@ function files(dir: string): string[] {
 }
 
 describe('share allow-list (spec 4.2)', () => {
-  it('only allow-listed tools import useShareableState', () => {
+  it('exactly the allow-listed tools import useShareableState', () => {
     const users = new Set<string>();
     for (const f of files('src/tools')) {
       if (
@@ -38,6 +38,8 @@ describe('share allow-list (spec 4.2)', () => {
         users.add(f.split(/[\\/]/)[2]);
       }
     }
-    for (const u of users) expect(SHARE_ALLOWLIST).toContain(u);
+    // Equality (plan H-5): no tool outside the list shares, and every tool
+    // on it has a share link.
+    expect([...users].sort()).toEqual(SHARE_ALLOWLIST);
   });
 });
