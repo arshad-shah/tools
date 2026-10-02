@@ -131,7 +131,17 @@ export function FieldItem({
                   )
                 : undefined
             }
-            escapeKeeps={x.origin === 'free'}
+            // Esc keeps typed text everywhere (the bar's Esc does too);
+            // a detected field closes without moving on.
+            escapeKeeps
+            onEscape={
+              x.origin === 'free'
+                ? undefined
+                : (v) => {
+                    fillSign.set({ typing: null, editing: null });
+                    if (v !== x.value) writeValue(ctx, x, v);
+                  }
+            }
             finishNonce={finish}
             onFinish={(v) => {
               // Done: keep the text, close the editor and the bar.
