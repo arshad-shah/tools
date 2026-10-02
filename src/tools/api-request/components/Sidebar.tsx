@@ -49,6 +49,7 @@ export function Sidebar({
                   size="sm"
                   variant="ghost"
                   label="New request"
+                  showLabel="desktop"
                   icon={<IconFilePlus size="sm" />}
                   onClick={onNewRequest}
                 />
@@ -56,6 +57,7 @@ export function Sidebar({
                   size="sm"
                   variant="ghost"
                   label="New collection"
+                  showLabel="desktop"
                   icon={<IconFolderPlus size="sm" />}
                   onClick={onNewCollection}
                 />

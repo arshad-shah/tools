@@ -115,6 +115,7 @@ export default function TextToolkit({ definition }: ToolProps) {
         <Tooltip content="Undo" shortcut={UNDO_SHORTCUT}>
           <IconButton
             label="Undo"
+            showLabel="desktop"
             icon={IconUndo}
             size="sm"
             variant="ghost"
@@ -125,6 +126,7 @@ export default function TextToolkit({ definition }: ToolProps) {
         <Tooltip content="Redo" shortcut={REDO_SHORTCUT}>
           <IconButton
             label="Redo"
+            showLabel="desktop"
             icon={IconRedo}
             size="sm"
             variant="ghost"
