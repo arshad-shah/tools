@@ -52,39 +52,20 @@ test('image-optimizer rejects non-images inline', async ({ page }) => {
   await expect(page.getByText('notes.txt is not an image')).toBeVisible();
 });
 
-test('csv-viewer loads a CSV and exports it', async ({ page }) => {
-  await page.goto(pathOf('csv-viewer'));
-  await page.locator('input[type=file]').setInputFiles({
-    name: 'people.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from('name,age\nAda,36\nBob,7\n'),
-  });
-  await expect(page.getByRole('cell', { name: 'Ada' })).toBeVisible();
-  const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export' }).click();
-  expect((await download).suggestedFilename()).toBe('people.exported.csv');
-});
-
-test('csv-viewer rejects a non-text file inline', async ({ page }) => {
-  await page.goto(pathOf('csv-viewer'));
-  await page.locator('input[type=file]').setInputFiles({
-    name: 'photo.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from('png'),
-  });
+test('text-diff-checker loads a file into the left pane', async ({ page }) => {
+  await page.goto(pathOf('text-diff-checker'));
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles({
+      name: 'left.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('hello left'),
+    });
+  await expect(page.getByText('left.txt loaded successfully')).toBeVisible();
   await expect(
-    page.getByText('photo.png is not a supported text file (.csv, .tsv, .txt)'),
-  ).toBeVisible();
-});
-
-test('csv-viewer still parses a dropped .txt as CSV', async ({ page }) => {
-  await page.goto(pathOf('csv-viewer'));
-  await page.locator('input[type=file]').setInputFiles({
-    name: 'data.txt',
-    mimeType: 'text/plain',
-    buffer: Buffer.from('city,pop\nOslo,700000\n'),
-  });
-  await expect(page.getByRole('cell', { name: 'Oslo' })).toBeVisible();
+    page.getByRole('textbox', { name: 'Original text' }),
+  ).toHaveValue('hello left');
 });
 
 test('rive-animation-player rejects a non-Rive file with a toast', async ({

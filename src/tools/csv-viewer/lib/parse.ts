@@ -80,55 +80,123 @@ export function coerceCell(raw: string): unknown {
   return raw;
 }
 
+export interface ParseOptions {
+  /** First row names the columns (default). Without it: Column 1..n. */
+  header?: boolean;
+  quoteChar?: string;
+  /** Columns whose cells stay exactly as written (no typing). */
+  keepText?: ReadonlySet<string>;
+  /** Called after each chunk with characters read so far and the total. */
+  onProgress?: (done: number, total: number) => void;
+}
+
+const CHUNK_CHARS = 1 << 20;
+
+/** Repeated header names get a suffix (`a`, `a_1`), as Papa does. */
+function uniqueNames(names: readonly string[]): string[] {
+  const seen = new Set<string>();
+  return names.map((n) => {
+    let name = n;
+    for (let i = 1; seen.has(name); i++) name = `${n}_${i}`;
+    seen.add(name);
+    return name;
+  });
+}
+
 /**
- * Header row, with cells typed only when it is safe (see coerceCell). The
- * delimiter is detected (comma, semicolon, tab or pipe) unless one is
- * chosen. Ragged rows are kept (missing cells are empty, extra cells are
- * dropped) and listed as warnings; only a file whose header cannot be read
- * fails.
+ * Cells typed only when it is safe (see coerceCell), except `keepText`
+ * columns. The delimiter is detected (comma, semicolon, tab or pipe)
+ * unless one is chosen. With a header row, ragged rows are kept (missing
+ * cells are empty, extra cells are dropped) and listed as warnings; only a
+ * file whose first row cannot be read fails. Parsing runs in 1 MB chunks
+ * so a worker can report progress.
  */
 export function parseDelimited(
   content: string,
   choice: DelimiterChoice,
+  opts: ParseOptions = {},
 ): ParseResult {
-  const r = Papa.parse<Record<string, string | undefined>>(content, {
+  const header = opts.header ?? true;
+  const keepText = opts.keepText ?? new Set<string>();
+  const rows: string[][] = [];
+  const errors: { code: string; message: string; row: number }[] = [];
+  let delimiterUsed = '';
+  // Papa's types only allow `chunk` for file input; it works on strings.
+  const config = {
     delimiter: choice === 'auto' ? detectDelimiter(content) : choice,
-    header: true,
+    quoteChar: opts.quoteChar ?? '"',
+    header: false,
     dynamicTyping: false,
     skipEmptyLines: true,
-  });
-  const columns = r.meta.fields ?? [];
-  if (r.data.length === 0 && r.errors.length > 0) {
+    chunkSize: CHUNK_CHARS,
+    chunk: (r: Papa.ParseResult<string[]>) => {
+      delimiterUsed = r.meta.delimiter;
+      for (const e of r.errors)
+        if (e.row !== undefined)
+          errors.push({
+            code: e.code,
+            message: e.message,
+            row: rows.length + e.row,
+          });
+      for (const row of r.data) rows.push(row);
+      opts.onProgress?.(
+        Math.min(r.meta.cursor, content.length),
+        content.length,
+      );
+    },
+  };
+  Papa.parse<string[]>(content, config as Papa.ParseConfig<string[]>);
+
+  const skip = header ? 1 : 0;
+  const dataCount = Math.max(0, rows.length - skip);
+  if (dataCount === 0 && errors.length > 0) {
     throw new ToolError(
       'INVALID_INPUT',
-      `Could not read any rows: ${r.errors[0].message}`,
+      `Could not read any rows: ${errors[0].message}`,
     );
   }
+  const width = header
+    ? (rows[0]?.length ?? 0)
+    : rows.reduce((m, r) => Math.max(m, r.length), 0);
+  const columns = header
+    ? uniqueNames(rows[0] ?? [])
+    : Array.from({ length: width }, (_, i) => `Column ${i + 1}`);
 
   const issues = new Map<number, string>();
-  for (const e of r.errors) {
-    // "Undetectable delimiter" just means a single column: not a problem.
-    if (e.code === 'UndetectableDelimiter' || e.row === undefined) continue;
+  for (const e of errors) {
+    if (e.code === 'UndetectableDelimiter') continue;
     if (e.code === 'MissingQuotes') {
-      // Papa reports the row after the last one; the quote opened in the
-      // last row, which swallowed everything after it.
-      const row = Math.min(e.row, r.data.length - 1);
+      // The quote opened in the last row, which swallowed everything after
+      // it (Papa may report the row after it).
+      const row = Math.max(0, Math.min(e.row - skip, dataCount - 1));
       issues.set(
         row,
         `Unterminated quote from row ${row + 1}; the rest of the file was read as one cell`,
       );
-    } else if (!issues.has(e.row)) {
-      issues.set(e.row, e.message);
+    } else if (e.row >= skip && !issues.has(e.row - skip)) {
+      issues.set(e.row - skip, e.message);
     }
   }
-  const data: ParsedData[] = r.data.map((row) => {
+
+  const typed = columns.map((c) => !keepText.has(c));
+  const data: ParsedData[] = new Array(dataCount);
+  for (let i = 0; i < dataCount; i++) {
+    const row = rows[i + skip];
+    if (header && row.length !== width && !issues.has(i))
+      issues.set(
+        i,
+        `Too ${row.length < width ? 'few' : 'many'} fields: expected ${width} fields but parsed ${row.length}`,
+      );
     const out: ParsedData = {};
-    for (const c of columns) out[c] = coerceCell(row[c] ?? '');
-    return out;
-  });
+    for (let c = 0; c < width; c++) {
+      const raw = row[c] ?? '';
+      out[columns[c]] = typed[c] ? coerceCell(raw) : raw;
+    }
+    data[i] = out;
+  }
   const warnings = [...issues.entries()]
     .sort(([a], [b]) => a - b)
     .map(([i, message]) => ({ row: i + 1, message }));
-  const delimiter = isDelimiter(r.meta.delimiter) ? r.meta.delimiter : ',';
+  const delimiter = isDelimiter(delimiterUsed) ? delimiterUsed : ',';
   return { data, columns, delimiter, warnings };
 }

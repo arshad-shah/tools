@@ -2,6 +2,9 @@ import json from './json';
 import diff from './diff';
 import log from './log';
 import hash from './hash';
+import csv from './csv';
+import format from './format';
+import mock from './mock';
 import ping from './ping';
 import regex from './regex';
 
@@ -18,6 +21,9 @@ export const textHandlers = {
   ...diff,
   ...log,
   ...hash,
+  ...csv,
+  ...mock,
+  ...format,
 };
 
 export type TextHandlers = typeof textHandlers;

@@ -15,10 +15,12 @@ test('a CSV on the data hub opens in the CSV viewer', async ({ page }) => {
   });
   await expect(page).toHaveURL(/\/data\/csv$/);
   await expect(
-    page.getByRole('heading', { level: 1, name: 'CSV/TSV Viewer' }),
+    page.getByRole('heading', { level: 1, name: 'CSV Viewer & Converter' }),
   ).toBeVisible();
   for (const name of ['Tea', 'Cake', 'Pie'])
-    await expect(page.getByRole('cell', { name, exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('gridcell', { name, exact: true }),
+    ).toBeVisible();
   // The one-time handoff id is gone from the URL after load.
   expect(new URL(page.url()).search).toBe('');
 });

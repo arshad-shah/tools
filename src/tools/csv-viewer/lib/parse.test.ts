@@ -129,3 +129,44 @@ describe('parseDelimited', () => {
     );
   });
 });
+
+describe('parseDelimited options', () => {
+  it('names columns Column 1..n without a header row', () => {
+    const r = parseDelimited('a,b,c\n1,2,3', ',', { header: false });
+    expect(r.columns).toEqual(['Column 1', 'Column 2', 'Column 3']);
+    expect(r.data).toEqual([
+      { 'Column 1': 'a', 'Column 2': 'b', 'Column 3': 'c' },
+      { 'Column 1': 1, 'Column 2': 2, 'Column 3': 3 },
+    ]);
+  });
+
+  it('pads short rows to the widest row without a header', () => {
+    const r = parseDelimited('1\n2,3', ',', { header: false });
+    expect(r.columns).toEqual(['Column 1', 'Column 2']);
+    expect(r.data[0]).toEqual({ 'Column 1': 1, 'Column 2': null });
+  });
+
+  it('keeps keep-as-text columns exactly as written', () => {
+    const r = parseDelimited('id,amount\n1,42', ',', {
+      keepText: new Set(['amount']),
+    });
+    expect(r.data[0]).toEqual({ id: 1, amount: '42' });
+  });
+
+  it('honours a custom quote character', () => {
+    const r = parseDelimited("a,b\n'x,y',2", ',', { quoteChar: "'" });
+    expect(r.data[0]).toEqual({ a: 'x,y', b: 2 });
+  });
+
+  it('renames repeated header names', () => {
+    const r = parseDelimited('a,a\n1,2', ',');
+    expect(r.columns).toEqual(['a', 'a_1']);
+  });
+
+  it('reports progress up to the full length', () => {
+    const text = 'a,b\n1,2\n3,4';
+    const seen: [number, number][] = [];
+    parseDelimited(text, ',', { onProgress: (d, t) => seen.push([d, t]) });
+    expect(seen.at(-1)).toEqual([text.length, text.length]);
+  });
+});

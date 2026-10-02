@@ -12,6 +12,7 @@ import {
   makeTextPdf,
   makeXfaPdf,
 } from '../test/fixtures/builders';
+import { largeCsv, windows1252Csv } from '../test/fixtures/csv';
 import {
   makeRedactAdversarial,
   makeType3FontPdf,
@@ -134,6 +135,8 @@ const files: Record<string, Uint8Array> = {
     encodeJpeg(300, 100, signatureRgba(300, 100), 92),
     6,
   ),
+  'large.csv': largeCsv(500_000),
+  'windows-1252.csv': windows1252Csv(),
   'tiny.gif': encodeGif(
     40,
     30,

@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import { newId } from '@/shared/lib/id';
 import type { FieldSchema } from '../types';
 
@@ -48,7 +47,7 @@ export const addField = (
   }
 
   // Find the parent field and add a nested field
-  const newSchema = _.cloneDeep(schema);
+  const newSchema = structuredClone(schema);
   const pathParts = parentPath.split('.');
 
   // Function to recursively find and update the target field
@@ -104,7 +103,7 @@ export const removeField = (
   }
 
   // For nested fields, we need to handle the path correctly
-  const newSchema = _.cloneDeep(schema);
+  const newSchema = structuredClone(schema);
   const pathParts = path.split('.');
 
   // Helper function to recursively navigate the schema and remove the field
@@ -191,7 +190,7 @@ export const updateField = (
 
   // Nested case
   const pathParts = path.split('.');
-  const newSchema = _.cloneDeep(schema);
+  const newSchema = structuredClone(schema);
 
   // Function to recursively find and update the target field
   const updateNestedField = (
@@ -252,7 +251,7 @@ export const moveField = (
 
   // For nested fields, clone and update
   const pathParts = path.split('.');
-  const newSchema = _.cloneDeep(schema);
+  const newSchema = structuredClone(schema);
 
   // Function to recursively find and move the target field
   const moveNestedField = (

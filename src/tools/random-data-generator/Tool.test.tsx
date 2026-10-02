@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { mockSettings } from './settings';
 import RandomDataGenerator from './Tool';
 
 const nameInputs = () =>
@@ -15,10 +16,21 @@ function typeInto(input: HTMLInputElement, text: string) {
   }
 }
 
+/** The Users preset is the default; its address object starts collapsed. */
+function renderExpanded() {
+  render(<RandomDataGenerator />);
+  fireEvent.click(screen.getByRole('button', { name: 'Expand field' }));
+}
+
 describe('RandomDataGenerator schema editor', () => {
+  // The schema is persisted settings: start every test from the default.
+  beforeEach(() =>
+    renderHook(() => mockSettings.useSettings()).result.current[2](),
+  );
+
   it('renames a nested field and keeps focus while typing', () => {
-    render(<RandomDataGenerator />);
-    // root: id, name, email, address; address is expanded: street, city, zipCode, country
+    renderExpanded();
+    // root: id, name, email, phone, birthday, address (street, city, postcode, country), avatar, createdAt
     const city = nameInputs().find((el) => el.value === 'city')!;
     city.focus();
     typeInto(city, 'X');
@@ -31,7 +43,7 @@ describe('RandomDataGenerator schema editor', () => {
   });
 
   it('keeps an object expanded and focused while it is renamed', () => {
-    render(<RandomDataGenerator />);
+    renderExpanded();
     const address = nameInputs().find((el) => el.value === 'address')!;
     address.focus();
     typeInto(address, '2');
@@ -46,7 +58,7 @@ describe('RandomDataGenerator schema editor', () => {
   });
 
   it('adds a child to the object whose button was pressed, even if an earlier field shares its name', () => {
-    render(<RandomDataGenerator />);
+    renderExpanded();
     const address = nameInputs().find((el) => el.value === 'address')!;
     // root "name" (a string) now shares its name with the object
     fireEvent.change(address, { target: { value: 'name' } });
@@ -55,28 +67,36 @@ describe('RandomDataGenerator schema editor', () => {
       'id',
       'name',
       'email',
+      'phone',
+      'birthday',
       'name',
       'street',
       'city',
-      'zipCode',
+      'postcode',
       'country',
       'field5',
+      'avatar',
+      'createdAt',
     ]);
   });
 
   it('renames a nested field in place, leaving its siblings alone', () => {
-    render(<RandomDataGenerator />);
+    renderExpanded();
     const city = nameInputs().find((el) => el.value === 'city')!;
     fireEvent.change(city, { target: { value: 'town' } });
     expect(nameInputs().map((el) => el.value)).toEqual([
       'id',
       'name',
       'email',
+      'phone',
+      'birthday',
       'address',
       'street',
       'town',
-      'zipCode',
+      'postcode',
       'country',
+      'avatar',
+      'createdAt',
     ]);
   });
 });
