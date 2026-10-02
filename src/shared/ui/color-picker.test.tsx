@@ -4,7 +4,14 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { formatColor, gamutMap, parseColor } from '@/shared/lib/colour';
 import { ColorPicker, type ColorPickerProps } from './color-picker';
-import { colorToState, hsvToColor, stateToColor } from './color-picker-model';
+import {
+  channelsOf,
+  colorFromChannels,
+  colorToState,
+  hsvToColor,
+  stateToColor,
+  type ChannelFormat,
+} from './color-picker-model';
 
 type Props = Partial<ColorPickerProps> & {
   onChangeSpy?: ColorPickerProps['onChange'];
@@ -121,21 +128,92 @@ describe('ColorPicker', () => {
     );
   });
 
-  it('alpha slider changes show in the RGB output', async () => {
+  it('alpha rail changes show in the RGB output and channels', async () => {
     const spy = vi.fn();
     render(<Harness value="#336699" alpha onChangeSpy={spy} />);
     fireEvent.click(screen.getByRole('radio', { name: 'RGB' }));
     expect(spy).toHaveBeenLastCalledWith('rgb(51 102 153)', expect.any(Object));
-    fireEvent.change(screen.getByRole('slider', { name: 'Alpha' }), {
-      target: { value: '50' },
-    });
+    const a = screen.getByRole('slider', { name: 'Alpha' });
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(a, { key: 'PageDown' });
     expect(spy).toHaveBeenLastCalledWith(
       'rgb(51 102 153 / 0.5)',
       expect.objectContaining({ alpha: 0.5 }),
     );
     expect(
-      (screen.getByLabelText('Colour value') as HTMLInputElement).value,
-    ).toBe('rgb(51 102 153 / 0.5)');
+      (screen.getByRole('spinbutton', { name: 'Alpha' }) as HTMLInputElement)
+        .value,
+    ).toBe('50');
+  });
+
+  it('hue and alpha are dedicated rails, not range inputs', () => {
+    const start = formatColor(hsvToColor(210, 0.5, 0.6), 'hex');
+    const spy = vi.fn();
+    render(<Harness value={start} alpha onChangeSpy={spy} />);
+    const hue = screen.getByRole('slider', { name: 'Hue' });
+    const alpha = screen.getByRole('slider', { name: 'Alpha' });
+    expect(hue.tagName).not.toBe('INPUT');
+    expect(alpha.tagName).not.toBe('INPUT');
+    fireEvent.keyDown(hue, { key: 'ArrowRight' });
+    expect(hue.getAttribute('aria-valuetext')).toBe('Hue 211 degrees');
+    fireEvent.keyDown(hue, { key: 'ArrowLeft', shiftKey: true });
+    expect(hue.getAttribute('aria-valuetext')).toBe('Hue 201 degrees');
+    fireEvent.keyDown(alpha, { key: 'Home' });
+    expect(alpha.getAttribute('aria-valuetext')).toBe('Alpha 0 percent');
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
+
+  it('each format tab shows its own channel inputs; hex keeps one field', () => {
+    render(<Harness value="#336699" alpha />);
+    expect(screen.getByLabelText('Colour value')).toBeTruthy();
+    expect(screen.queryAllByRole('spinbutton')).toHaveLength(0);
+    const names = (fmt: string) => {
+      fireEvent.click(screen.getByRole('radio', { name: fmt }));
+      return screen
+        .getAllByRole('spinbutton')
+        .map((e) => e.getAttribute('aria-label'));
+    };
+    expect(names('RGB')).toEqual(['Red', 'Green', 'Blue', 'Alpha']);
+    expect(screen.queryByLabelText('Colour value')).toBeNull();
+    expect(names('HSL')).toEqual(['Hue', 'Saturation', 'Lightness', 'Alpha']);
+    expect(names('HWB')).toEqual(['Hue', 'Whiteness', 'Blackness', 'Alpha']);
+    expect(names('OKLCH')).toEqual(['Lightness', 'Chroma', 'Hue', 'Alpha']);
+  });
+
+  it('typing a channel value emits the colour in that format', () => {
+    const spy = vi.fn();
+    render(<Harness value="#336699" onChangeSpy={spy} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'RGB' }));
+    const red = screen.getByRole('spinbutton', { name: 'Red' });
+    fireEvent.change(red, { target: { value: '255' } });
+    expect(spy).toHaveBeenLastCalledWith(
+      'rgb(255 102 153)',
+      expect.any(Object),
+    );
+    // Out-of-range or partial text waits; the field keeps what was typed.
+    fireEvent.change(red, { target: { value: '' } });
+    expect((red as HTMLInputElement).value).toBe('');
+    fireEvent.blur(red);
+    expect((red as HTMLInputElement).value).toBe('255');
+    fireEvent.click(screen.getByRole('radio', { name: 'HSL' }));
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Lightness' }), {
+      target: { value: '0' },
+    });
+    expect(spy).toHaveBeenLastCalledWith('hsl(0 0% 0%)', expect.any(Object));
+  });
+
+  it('the preview shows old and new; old restores the starting colour', () => {
+    const spy = vi.fn();
+    render(<Harness value="#336699" onChangeSpy={spy} />);
+    const restore = screen.getByRole('button', {
+      name: 'Restore previous colour #336699',
+    });
+    expect(restore.hasAttribute('disabled')).toBe(true);
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Hue' }), {
+      key: 'End',
+    });
+    expect(restore.hasAttribute('disabled')).toBe(false);
+    fireEvent.click(restore);
+    expect(spy).toHaveBeenLastCalledWith('#336699', expect.any(Object));
   });
 
   it('picks from the tool palette and the given recent colours', async () => {
@@ -186,5 +264,44 @@ describe('picker model', () => {
     const c = parseColor('#336699');
     const back = stateToColor(colorToState(c, 'oklch'), 'oklch');
     expect(formatColor(back, 'hex')).toBe('#336699');
+  });
+});
+
+describe('picker channels', () => {
+  const values = (fmt: ChannelFormat, css: string, hue = 0) =>
+    channelsOf(parseColor(css), fmt, hue).map((c) => c.value);
+
+  it('reads RGB, HSL, HWB and OKLCH channels', () => {
+    expect(values('rgb', '#336699')).toEqual([51, 102, 153]);
+    expect(values('hsl', '#ff0000')).toEqual([0, 100, 50]);
+    expect(values('hwb', '#808080', 210)).toEqual([210, 50, 50]);
+    const [l, c, h] = values('oklch', '#ff0000');
+    expect(l).toBeCloseTo(62.8, 1);
+    expect(c).toBeCloseTo(0.258, 3);
+    expect(h).toBeCloseTo(29.2, 1);
+  });
+
+  it('keeps the given hue for a grey', () => {
+    expect(values('hsl', '#777777', 123)[0]).toBe(123);
+    expect(values('oklch', '#777777', 45)[2]).toBe(45);
+  });
+
+  it('labels each channel with its range', () => {
+    const rgb = channelsOf(parseColor('#000'), 'rgb', 0);
+    expect(rgb.map((c) => c.label)).toEqual(['Red', 'Green', 'Blue']);
+    expect(rgb[0]).toMatchObject({ min: 0, max: 255, step: 1 });
+    const ok = channelsOf(parseColor('#000'), 'oklch', 0);
+    expect(ok.map((c) => c.label)).toEqual(['Lightness', 'Chroma', 'Hue']);
+    expect(ok[1]).toMatchObject({ min: 0, max: 0.4, step: 0.001 });
+  });
+
+  it('builds a colour from channel values', () => {
+    const hex = (fmt: ChannelFormat, v: number[], a = 1) =>
+      formatColor(colorFromChannels(fmt, v, a), 'hex');
+    expect(hex('rgb', [51, 102, 153])).toBe('#336699');
+    expect(hex('hsl', [120, 100, 25])).toBe('#008000');
+    expect(hex('hwb', [0, 0, 0])).toBe('#ff0000');
+    expect(hex('oklch', [62.8, 0.2577, 29.23])).toBe('#ff0000');
+    expect(colorFromChannels('rgb', [0, 0, 0], 0.5).alpha).toBe(0.5);
   });
 });

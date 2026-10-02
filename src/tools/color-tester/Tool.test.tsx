@@ -35,12 +35,41 @@ const renderTool = () =>
     </MemoryRouter>,
   );
 
-const anyField = () => screen.getByRole('textbox', { name: 'Any CSS colour' });
+const anyField = () => screen.getByRole('textbox', { name: 'Colour value' });
 
 const formatText = (container: HTMLElement, fmt: string) =>
   container.querySelector(`[data-format="${fmt}"]`)?.textContent;
 
 describe('Color & Contrast', () => {
+  it('has one entry point for the base colour: the picker', () => {
+    renderTool();
+    const picker = screen.getByRole('group', { name: 'Base colour' });
+    expect(within(picker).getByRole('textbox', { name: 'Colour value' })).toBe(
+      anyField(),
+    );
+    expect(
+      screen.queryByRole('textbox', { name: 'Any CSS colour' }),
+    ).toBeNull();
+    expect(
+      screen.getAllByRole('textbox', { name: 'Colour value' }),
+    ).toHaveLength(1);
+  });
+
+  it('lays out the picker beside formats and contrast on desktop', () => {
+    renderTool();
+    const columns = screen.getByTestId('color-tester-columns');
+    expect(columns.children).toHaveLength(2);
+    const [left, right] = Array.from(columns.children);
+    expect(
+      within(left as HTMLElement).getByRole('group', { name: 'Base colour' }),
+    ).toBeTruthy();
+    expect(
+      within(right as HTMLElement).getByRole('group', {
+        name: 'WCAG 2.2 results',
+      }),
+    ).toBeTruthy();
+  });
+
   it('reads any CSS colour: hsl(120 100% 25%) is #008000, named green', () => {
     const { container } = renderTool();
     fireEvent.change(anyField(), { target: { value: 'hsl(120 100% 25%)' } });

@@ -81,7 +81,7 @@ export function PaletteExport({ scale, palette }: PaletteExportProps) {
       <Heading level={3} size="md">
         Export
       </Heading>
-      <Inline gap="3" align="end">
+      <Inline gap="3" align="end" wrap>
         <Stack gap="1">
           <Label htmlFor={`${id}-name`}>Token name</Label>
           <Input
@@ -117,7 +117,7 @@ export function PaletteExport({ scale, palette }: PaletteExportProps) {
       <Code block aria-label="Export output">
         {text}
       </Code>
-      <Inline gap="2">
+      <Inline gap="2" wrap>
         <Button
           size="sm"
           leftIcon={<IconCopy size="sm" />}
