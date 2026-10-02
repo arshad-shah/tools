@@ -7,12 +7,17 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { RedactMarkParams } from '@/pdf/doc/ops/redact';
 import type { Services } from '@/pdf/doc/services';
 import type { Box, DocView, OverlayItem } from '@/pdf/doc/types';
-import { redactPages, type RedactOptions } from '@/pdf/redact/apply';
+import {
+  drawOverlayText,
+  redactPages,
+  type RedactOptions,
+} from '@/pdf/redact/apply';
 import type { RedactMark } from '@/pdf/redact/fill';
 import {
   burnMarks,
   collectDocTexts,
   coverageOf,
+  REDACT_RENDER,
 } from '@/pdf/redact/raster-core';
 import { replaceWithImage } from '@/pdf/redact/rasterise';
 import { textItemsFrom } from '@/pdf/render/text';
@@ -60,6 +65,7 @@ export function nodeRedactServices(
       canvas: canvas as unknown as HTMLCanvasElement,
       canvasContext: g,
       viewport,
+      ...REDACT_RENDER,
     }).promise;
     page.cleanup();
     return { canvas, g, viewport };
@@ -142,6 +148,8 @@ export function nodeRedactServices(
           glyphEdits: opts.glyphEdits,
         });
       }
+      if (method === 'drawOverlayText')
+        return drawOverlayText(...(args as Parameters<typeof drawOverlayText>));
       if (method === 'replaceWithImage')
         return replaceWithImage(
           ...(args as Parameters<typeof replaceWithImage>),

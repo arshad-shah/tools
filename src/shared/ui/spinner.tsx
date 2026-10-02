@@ -26,7 +26,8 @@ export const Spinner: React.FC<SpinnerProps> = ({
       ? { 'aria-hidden': true }
       : { role: 'status', 'aria-label': label })}
     className={cn(
-      'inline-block animate-spin rounded-full border-line border-t-accent',
+      // Reduced motion: a still ring (no transform animation, spec §4.4).
+      'inline-block motion-safe:animate-spin rounded-full border-line border-t-accent',
       spinnerSize[size],
       className,
     )}

@@ -53,10 +53,11 @@ export function FontPreview({
         className,
       )}
     >
-      {/* Previews sit on paper (white in both themes), so the placeholder
-          keeps the ink: theme text tokens would fail contrast on it. */}
+      {/* The placeholder is drawn in the ink too: the sample sits on paper
+          (white in both themes), where a theme tone can fail contrast. */}
       <span
         className="inline-block whitespace-nowrap"
+        data-placeholder={shown ? undefined : ''}
         style={{
           fontFamily: `"${family}"`,
           color,

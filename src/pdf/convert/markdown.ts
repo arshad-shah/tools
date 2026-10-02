@@ -1,4 +1,7 @@
 import type { PageTextItems, TextItemGeom } from '@/pdf/render';
+import { tablesOf, type CellBox } from './markdown-tables';
+
+export type { CellBox } from './markdown-tables';
 
 /** First line of every conversion: the structure is a guess (spec 7.2). */
 export const MARKDOWN_NOTICE =
@@ -12,13 +15,12 @@ export interface MarkdownOptions {
 }
 
 /**
- * One page's text items. `geometry` is reserved for the flat-form cell
- * detector (P5-C): once it lands, its cells become GFM tables. Until then
- * the field is accepted and ignored, so tables come out as paragraphs.
+ * One page's text items, and the table cells the flat-form cell detector
+ * found on it (they become GFM tables).
  */
 export interface MarkdownPage {
   items: PageTextItems;
-  geometry?: unknown;
+  geometry?: { cells?: readonly CellBox[] };
 }
 
 interface Line {
@@ -28,10 +30,12 @@ interface Line {
   y: number;
 }
 
-type Role = 'heading' | 'list' | 'body';
+type Role = 'heading' | 'list' | 'body' | 'table';
 
 interface Block {
   role: Role;
+  /** Baseline of the first line (tables: their top edge). */
+  y: number;
   /** Heading level or list marker ('- ' or 'n. '). */
   prefix: string;
   text: string;
@@ -173,6 +177,7 @@ function blocksOf(
     else {
       open = {
         role,
+        y: line.y,
         prefix: level ? `${'#'.repeat(level)} ` : (marker?.prefix ?? ''),
         text: marker ? marker.rest : line.text,
       };
@@ -186,7 +191,8 @@ function blocksOf(
 /**
  * PDF text as Markdown (spec 7.2): lines from baseline clusters, blocks from
  * vertical gaps, headings from font-size clusters, lists from leading
- * markers, words hyphenated across lines joined. Best effort by design: the
+ * markers, tables from detected cells, words hyphenated across lines
+ * joined. Best effort by design: the
  * output starts with a notice that says so.
  */
 export function toMarkdown(
@@ -194,11 +200,19 @@ export function toMarkdown(
   o: MarkdownOptions = {},
 ): string {
   const ratio = o.headingRatio ?? 1.25;
-  const chosen = (o.pages ?? pages.map((_, i) => i))
+  const picked = (o.pages ?? pages.map((_, i) => i))
     .filter((i) => i >= 0 && i < pages.length)
-    .map((i) => pages[i].items);
+    .map((i) => pages[i]);
+  const chosen = picked.map((p) => p.items);
   const body = bodySize(chosen);
-  const pageLines = chosen.map(linesOf);
+  const split = picked.map((p) =>
+    p.geometry?.cells?.length
+      ? tablesOf(p.items.items, p.geometry.cells)
+      : { tables: [], rest: p.items.items },
+  );
+  const pageLines = split.map((t, i) =>
+    linesOf({ ...chosen[i], items: t.rest }),
+  );
   const headingSizes = [
     ...new Set(
       pageLines
@@ -212,11 +226,23 @@ export function toMarkdown(
     return bucket(size) === headingSizes[0] ? 1 : 2;
   };
 
-  const blocks = pageLines.flatMap((lines) => blocksOf(lines, headingLevel));
+  // Tables sit among the page's blocks by height (higher first).
+  const blocks = pageLines.flatMap((lines, i) =>
+    [
+      ...blocksOf(lines, headingLevel),
+      ...split[i].tables.map(
+        (t): Block => ({ role: 'table', y: t.y, prefix: '', text: t.markdown }),
+      ),
+    ].sort((a, b) => b.y - a.y),
+  );
   const out: string[] = [];
   blocks.forEach((b, i) => {
     const line =
-      b.role === 'body' ? escapeBody(b.text) : `${b.prefix}${b.text}`;
+      b.role === 'body'
+        ? escapeBody(b.text)
+        : b.role === 'table'
+          ? b.text
+          : `${b.prefix}${b.text}`;
     // Items of one list sit on consecutive lines; everything else is a block.
     const sep =
       b.role === 'list' && blocks[i - 1]?.role === 'list' ? '\n' : '\n\n';

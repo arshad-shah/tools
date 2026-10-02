@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { PDFFont, StandardFonts } from 'pdf-lib';
+import type { TextMeasure } from '@/pdf/edit/font-stack';
 import type { OverlayTextMetrics } from '@/shared/ui';
 import type { Box } from '@/pdf/doc/types';
 
@@ -17,26 +18,41 @@ export type LayoutFont =
   | 'unicode';
 
 let fonts: Promise<Map<LayoutFont, PDFFont>> | null = null;
-let unicode: Promise<PDFFont> | null = null;
+let unicode: Promise<TextMeasure> | null = null;
 
-/** The Unicode font (Noto Sans, the file the export embeds), loaded on first use. */
-function loadUnicode(): Promise<PDFFont> {
+/**
+ * The Unicode font with its per-character fallbacks (Noto Sans, the files
+ * the export embeds), loaded on first use.
+ */
+function loadUnicode(): Promise<TextMeasure> {
   unicode ??= Promise.all([
     import('pdf-lib'),
     import('@pdf-lib/fontkit'),
     import('@/pdf/edit/font-cache'),
-  ]).then(async ([{ PDFDocument }, fontkit, { loadNotoSans }]) => {
-    const doc = await PDFDocument.create();
-    doc.registerFontkit(fontkit.default);
-    return doc.embedFont(await loadNotoSans(), { subset: true });
-  });
+    import('@/pdf/edit/font-stack'),
+  ]).then(
+    async ([
+      { PDFDocument },
+      fontkit,
+      { loadNotoSans, loadNotoFallbacks },
+      { FontStack },
+    ]) => {
+      const doc = await PDFDocument.create();
+      doc.registerFontkit(fontkit.default);
+      const files = [await loadNotoSans(), ...(await loadNotoFallbacks())];
+      const fonts = await Promise.all(
+        files.map((f) => doc.embedFont(f, { subset: true })),
+      );
+      return new FontStack(fonts);
+    },
+  );
   unicode.catch(() => {
     unicode = null;
   });
   return unicode;
 }
 
-function loadFont(name: LayoutFont): Promise<PDFFont> {
+function loadFont(name: LayoutFont): Promise<TextMeasure> {
   return name === 'unicode'
     ? loadUnicode()
     : loadFonts().then((m) => m.get(name)!);
@@ -62,7 +78,7 @@ function loadFonts(): Promise<Map<LayoutFont, PDFFont>> {
 }
 
 export interface TextLayout {
-  font: PDFFont;
+  font: TextMeasure;
   fit: typeof import('@/pdf/edit/draw-fit').fitText;
 }
 
@@ -88,7 +104,7 @@ export function useTextLayout(name: LayoutFont): TextLayout | null {
 }
 
 /** Ascent and glyph height per unit of size, as drawText measures them. */
-export function metricsOf(font: PDFFont): OverlayTextMetrics {
+export function metricsOf(font: TextMeasure): OverlayTextMetrics {
   return {
     ascent: font.heightAtSize(1, { descender: false }),
     height: font.heightAtSize(1),

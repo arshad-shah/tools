@@ -33,6 +33,12 @@ export { EDITABLE_SUBTYPES };
 
 export interface AnnotationPatch {
   rect?: Box;
+  /**
+   * The rect the move started from, as the viewer listed it. pdf.js reports
+   * a recomputed rect for annotations without an appearance, which can
+   * differ from the dict's /Rect; geometry maps from this one when given.
+   */
+  from?: Box;
   color?: string;
   contents?: string;
   opacity?: number;
@@ -148,14 +154,15 @@ export async function updateAnnotation(
   page: PDFPage,
   ref: PDFRef,
   patch: AnnotationPatch,
+  /** /M: when the edit was made (default now). */
+  modified: Date = new Date(),
 ): Promise<boolean> {
   if (annotIndex(page, ref) < 0) return false;
   const dict = doc.context.lookupMaybe(ref, PDFDict);
   if (!dict) return false;
   const subtype = name(dict.lookup(PDFName.of('Subtype'), PDFName));
   const get = (k: string) => dict.lookupMaybe(PDFName.of(k), PDFArray);
-  const oldRect = numbers(get('Rect'));
-  const [x1, y1, x2, y2] = rectArray(boxOf(oldRect));
+  const [x1, y1, x2, y2] = rectArray(patch.from ?? boxOf(numbers(get('Rect'))));
   if (patch.rect) {
     const nr = rectArray(patch.rect);
     const sx = x2 > x1 ? (nr[2] - nr[0]) / (x2 - x1) : 1;
@@ -188,7 +195,7 @@ export async function updateAnnotation(
   }
   if (patch.contents !== undefined)
     dict.set(PDFName.of('Contents'), textString(patch.contents));
-  dict.set(PDFName.of('M'), PDFString.of(pdfDate(new Date())));
+  dict.set(PDFName.of('M'), PDFString.of(pdfDate(modified)));
   if (EDITABLE_SUBTYPES.has(subtype))
     await regenerate(doc, dict, subtype, patch);
   return true;

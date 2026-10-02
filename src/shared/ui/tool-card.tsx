@@ -91,7 +91,7 @@ export function ToolCard({
           onClick={favourite.onToggle}
           className={cn(
             // 44px touch target on phones (spec §13.2), 32px from sm up.
-            'absolute top-1.5 right-1.5 inline-flex size-11 items-center justify-center rounded-md transition-colors duration-fast hover:bg-surface-3 sm:top-3 sm:right-3 sm:size-8',
+            'absolute top-1.5 right-1.5 inline-flex size-touch items-center justify-center rounded-md transition-colors duration-fast hover:bg-surface-3 sm:top-3 sm:right-3 sm:size-8',
             favourite.active
               ? 'text-accent-fg'
               : 'text-fg-subtle hover:text-fg',

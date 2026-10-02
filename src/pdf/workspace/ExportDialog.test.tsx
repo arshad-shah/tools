@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ToolError } from '@/shared/lib/errors';
 import { BlobStore } from '@/pdf/doc/blob-store';
 import { registerCoreOperations } from '@/pdf/doc/ops';
 import { inProcessServices } from '@/pdf/doc/test-services';
@@ -34,11 +35,13 @@ function setup(encryptedInput = false, restricted = false) {
     sourceDocs: new SourceDocs(render as never, async () => new Uint8Array()),
     db: null,
   };
-  const run = vi.fn(async () => ({
-    bytes: new Uint8Array([1]),
-    warnings: [],
-    notes: [],
-  }));
+  const run = vi.fn<
+    (...args: unknown[]) => Promise<{
+      bytes: Uint8Array;
+      warnings: string[];
+      notes: string[];
+    }>
+  >(async () => ({ bytes: new Uint8Array([1]), warnings: [], notes: [] }));
   const save = vi.fn();
   const onOpenChange = vi.fn();
   const ui = () => (
@@ -153,4 +156,93 @@ describe('ExportDialog', () => {
       (screen.getByLabelText('Password to open') as HTMLInputElement).value,
     ).toBe('');
   });
+
+  /** An export that waits for its signal: aborting rejects it. */
+  function hang(run: ReturnType<typeof setup>['run']) {
+    let signal: AbortSignal | undefined;
+    run.mockImplementation(
+      (...args: unknown[]) =>
+        new Promise((_resolve, reject) => {
+          const env = args[3] as { signal?: AbortSignal };
+          signal = env.signal;
+          env.signal?.addEventListener('abort', () =>
+            reject(new ToolError('CANCELLED', 'Cancelled')),
+          );
+        }) as never,
+    );
+    return () => signal;
+  }
+
+  it('Cancel stops the export without saving or an error', async () => {
+    const { run, save, ui } = setup();
+    const signal = hang(run);
+    render(ui());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    });
+    await act(async () => {
+      const overlay = screen.getByRole('dialog', { name: 'Exporting' });
+      fireEvent.click(within(overlay).getByRole('button', { name: 'Cancel' }));
+    });
+    expect(signal()?.aborted).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('aborts a running export when it unmounts', async () => {
+    const { run, save, ui } = setup();
+    const signal = hang(run);
+    const view = render(ui());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    });
+    view.unmount();
+    expect(signal()?.aborted).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('shows a failed export and keeps the dialog open', async () => {
+    const { run, save, onOpenChange, ui } = setup();
+    run.mockRejectedValue(
+      new ToolError('INVALID_FILE', 'The file could not be written'),
+    );
+    render(ui());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    });
+    expect(screen.getByText('The file could not be written')).toBeTruthy();
+    expect(save).not.toHaveBeenCalled();
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['clears', 'INVALID_FILE', ''],
+    ['keeps for a retry', 'NETWORK', 'pw'],
+  ] as const)(
+    '%s the secrets after a %s failure',
+    async (_what, code, expected) => {
+      const { model, run, ui } = setup();
+      model.dispatch({
+        type: 'protect.set',
+        params: { enabled: true, permissions: DEFAULT_PERMISSIONS },
+      });
+      run.mockRejectedValue(new ToolError(code, 'It failed'));
+      const view = render(ui());
+      const pw = ['correct', 'horse'].join(' ');
+      fireEvent.change(screen.getByLabelText('Password to open'), {
+        target: { value: pw },
+      });
+      fireEvent.change(screen.getByLabelText('Confirm password'), {
+        target: { value: pw },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+      });
+      expect(screen.getByText('It failed')).toBeTruthy();
+      view.rerender(ui());
+      expect(
+        (screen.getByLabelText('Password to open') as HTMLInputElement).value,
+      ).toBe(expected === 'pw' ? pw : '');
+    },
+  );
 });

@@ -35,9 +35,6 @@ export function setRedactUi(patch: Partial<RedactUi>): void {
 
 export const getRedactUi = () => state;
 
-/** Back to defaults (tests). */
-export const resetRedactUi = () => setRedactUi(INITIAL);
-
 export function useRedactUi(): RedactUi {
   return useSyncExternalStore(
     (l) => {

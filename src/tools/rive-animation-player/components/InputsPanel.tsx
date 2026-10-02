@@ -2,7 +2,7 @@ import React from 'react';
 import {
   StateMachineInput,
   StateMachineInputType,
-} from '@rive-app/react-canvas';
+} from '@/shared/ui/adapters/rive-runtime';
 import {
   Badge,
   Button,

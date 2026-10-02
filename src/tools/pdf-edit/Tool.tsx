@@ -17,6 +17,7 @@ import { WorkspaceShell } from '@/pdf/workspace/WorkspaceShell';
 import { takeStagedDocument } from '@/pdf/workspace/workspace-store';
 import { useOpenPalette } from '@/app/shell/palette';
 import { routerLink } from '@/app/shell/router-link';
+import { HelpMenu } from '@/app/shell/HelpMenu';
 import { UnlockEditingDialog } from './UnlockEditingDialog';
 
 const FALLBACK: ModeId = 'organize';
@@ -77,7 +78,8 @@ export default function PdfEditTool() {
   useEffect(() => {
     if (!session) return;
     const id = session.model.getState().id;
-    const saved = session.db && !session.model.getState().encryptedInput;
+    const st = session.model.getState();
+    const saved = session.db && (!st.encryptedInput || st.saveOptIn);
     const next = new URLSearchParams(search);
     next.delete('open');
     if (saved) next.set('doc', id);
@@ -154,6 +156,7 @@ export default function PdfEditTool() {
               })
             }
             breadcrumb={breadcrumb}
+            helpMenu={(size) => <HelpMenu size={size} />}
           />
           <UnlockEditingDialog
             open={unlocking}

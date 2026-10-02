@@ -13,6 +13,6 @@
     (pref === 'system' &&
       window.matchMedia('(prefers-color-scheme: dark)').matches);
   var theme = dark ? 'dark' : 'light';
+  // color-scheme follows from tokens.css per data-theme.
   document.documentElement.dataset.theme = theme;
-  document.documentElement.style.colorScheme = theme;
 })();

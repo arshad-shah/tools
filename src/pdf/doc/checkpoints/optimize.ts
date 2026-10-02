@@ -56,7 +56,12 @@ export const optimizeRepairRunner =
       progress({ done: 0, total: 1, label: 'Rewriting the file' });
       const r = await services.qpdf.optimize(
         bytes,
-        { objectStreams: 'preserve' },
+        // A minimal rewrite: no recompression, no resource pruning.
+        {
+          objectStreams: 'preserve',
+          recompressFlate: false,
+          removeUnreferenced: false,
+        },
         signal,
       );
       const n = r.warnings.length;

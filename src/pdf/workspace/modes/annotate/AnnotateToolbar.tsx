@@ -21,6 +21,7 @@ import { ModeToolbar } from '../../ModeToolbar';
 import type { ModeProps } from '../types';
 import { IMAGE_ACCEPT, pickImageStamp } from './image-stamp';
 import { activeTool, TOOLS, type AnnotateTool } from './tools';
+import { StyleControl } from './StyleControl';
 import { setAnnotateUi, useAnnotateUi } from './ui-store';
 
 const ICONS: Record<AnnotateTool, IconComponent> = {
@@ -54,7 +55,7 @@ const GROUPS: { id: string; label: string; tools: AnnotateTool[] }[] = [
   },
 ];
 
-/** Annotate tools (spec §13.1 labels and shortcuts); style lives in the inspector. */
+/** Annotate tools (spec §13.1 labels and shortcuts) and the Style control. */
 export function AnnotateToolbar(ctx: ModeProps) {
   const ui = useAnnotateUi();
   const current = activeTool(ctx.tool.id);
@@ -103,7 +104,12 @@ export function AnnotateToolbar(ctx: ModeProps) {
       accept={IMAGE_ACCEPT}
       onFiles={(files) => files[0] && void pickImageStamp(ctx, files[0])}
     >
-      {(pick) => <ModeToolbar groups={groups(pick)} />}
+      {(pick) => (
+        <ModeToolbar
+          groups={groups(pick)}
+          trailing={<StyleControl ctx={ctx} />}
+        />
+      )}
     </FilePicker>
   );
 }

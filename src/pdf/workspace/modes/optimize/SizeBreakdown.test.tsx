@@ -1,8 +1,16 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SizeBreakdown } from '@/pdf/edit/size-breakdown';
-import { SizeBreakdownView } from './SizeBreakdown';
+import {
+  WorkspaceContext,
+  type WorkspaceActions,
+} from '../../workspace-context';
+import type { DocumentApi } from '../types';
+import { documentBreakdown } from './breakdown';
+import { SizeBreakdownPanel, SizeBreakdownView } from './SizeBreakdown';
+
+vi.mock('./breakdown', () => ({ documentBreakdown: vi.fn() }));
 
 const data: SizeBreakdown = {
   total: 10240,
@@ -45,5 +53,64 @@ describe('SizeBreakdownView', () => {
     expect(screen.getByText('ABCDEF+NotoSans')).toBeTruthy();
     expect(screen.getByText('Not embedded')).toBeTruthy();
     expect(screen.getByText('Subset')).toBeTruthy();
+  });
+});
+
+describe('SizeBreakdownView ids', () => {
+  it('gives each mounted panel its own list labels', () => {
+    const { container } = render(
+      <>
+        <SizeBreakdownView data={data} pageIds={[]} onGoToPage={() => {}} />
+        <SizeBreakdownView data={data} pageIds={[]} onGoToPage={() => {}} />
+      </>,
+    );
+    const ids = [...container.querySelectorAll('[id]')].map((e) => e.id);
+    expect(ids.length).toBe(4);
+    expect(new Set(ids).size).toBe(ids.length);
+    const labelled = screen
+      .getAllByRole('list')
+      .filter((l) => l.hasAttribute('aria-labelledby'));
+    expect(labelled).toHaveLength(4);
+    for (const list of labelled)
+      expect(
+        container.querySelector(
+          `[id="${list.getAttribute('aria-labelledby')}"]`,
+        ),
+      ).toBeTruthy();
+  });
+});
+
+describe('SizeBreakdownPanel', () => {
+  afterEach(() => vi.useRealTimers());
+
+  const docAt = (log: number) =>
+    ({
+      view: { checkpoint: 'c0', pages: [] },
+      state: { cursor: log, log: Array.from({ length: log }) },
+    }) as unknown as DocumentApi;
+
+  it('measures at once, then once after a burst of changes settles', async () => {
+    vi.useFakeTimers();
+    const measure = vi.mocked(documentBreakdown);
+    measure.mockReset();
+    measure.mockResolvedValue(data);
+    const ws = {
+      session: {},
+      goToPage: () => {},
+    } as unknown as WorkspaceActions;
+    const panel = (log: number) => (
+      <WorkspaceContext.Provider value={ws}>
+        <SizeBreakdownPanel doc={docAt(log)} />
+      </WorkspaceContext.Provider>
+    );
+    const { rerender } = render(panel(0));
+    expect(measure).toHaveBeenCalledTimes(1);
+    for (let i = 1; i <= 5; i++) {
+      rerender(panel(i));
+      await act(() => vi.advanceTimersByTimeAsync(100));
+    }
+    expect(measure).toHaveBeenCalledTimes(1);
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(measure).toHaveBeenCalledTimes(2);
   });
 });

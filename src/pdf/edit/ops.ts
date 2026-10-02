@@ -19,7 +19,7 @@ export interface PageEdit {
  * file's structure is broken in ways it only notices while copying or
  * serializing. Users get a plain message; the original stays as the cause.
  */
-async function rebuilding<T>(fn: () => Promise<T>): Promise<T> {
+export async function rebuilding<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (cause) {

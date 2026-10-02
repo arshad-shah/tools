@@ -190,23 +190,45 @@ export const insertBlankPage = defineOperation<{
   },
 });
 
-export const cropPages = defineOperation<{ pageIds: PageId[]; box: Box }>({
+/** `box: null` clears a pending crop (Reset crop). */
+export const cropPages = defineOperation<{
+  pageIds: PageId[];
+  box: Box | null;
+}>({
   type: 'page.crop',
   v: 1,
   kind: 'structure',
   mode: 'organize',
   validate(p) {
     const o = asRecord(p, 'Crop');
-    return { pageIds: ids(o.pageIds, 'Crop'), box: box(o.box, 'Crop') };
+    return {
+      pageIds: ids(o.pageIds, 'Crop'),
+      box: o.box === null ? null : box(o.box, 'Crop'),
+    };
   },
-  label: (p, ctx) => `Crop ${pageList(p.pageIds, ctx)}`,
-  summarize: (ops) => count(distinctPages(ops), 'page', 'cropped'),
+  label: (p, ctx) =>
+    p.box
+      ? `Crop ${pageList(p.pageIds, ctx)}`
+      : `Reset the crop of ${pageList(p.pageIds, ctx)}`,
+  // Pages whose last crop step set a box (a reset is no change).
+  summarize: (ops) => {
+    const last = new Map<PageId, Box | null>();
+    for (const o of ops) for (const id of o.pageIds) last.set(id, o.box);
+    const n = [...last.values()].filter(Boolean).length;
+    return n ? count(n, 'page', 'cropped') : '';
+  },
   applyToView(view, p) {
     requireAll(view, p.pageIds);
     const set = new Set(p.pageIds);
     return withPages(
       view,
-      view.pages.map((pg) => (set.has(pg.id) ? { ...pg, crop: p.box } : pg)),
+      view.pages.map((pg) => {
+        if (!set.has(pg.id)) return pg;
+        if (p.box) return { ...pg, crop: p.box };
+        const cleared = { ...pg };
+        delete cleared.crop;
+        return cleared;
+      }),
     );
   },
 });

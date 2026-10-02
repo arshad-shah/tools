@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 const faces = vi.hoisted(() => new Map<string, () => void>());
@@ -30,7 +30,7 @@ describe('SignatureTypeGallery', () => {
       />,
     );
     const group = screen.getByRole('radiogroup', { name: 'Style' });
-    const cards = screen.getAllByRole('radio');
+    const cards = within(group).getAllByRole('radio');
     expect(cards).toHaveLength(10);
     expect(group.contains(cards[0])).toBe(true);
     expect(screen.getAllByRole('status', { name: /^Loading / })).toHaveLength(
@@ -52,7 +52,9 @@ describe('SignatureTypeGallery', () => {
   it('arrow keys move the selection through the cards', async () => {
     const onChange = vi.fn();
     render(<SignatureTypeGallery name="Ada" onChange={onChange} />);
-    const cards = screen.getAllByRole('radio');
+    const cards = within(
+      screen.getByRole('radiogroup', { name: 'Style' }),
+    ).getAllByRole('radio');
     expect(cards[0].getAttribute('aria-checked')).toBe('true');
     fireEvent.keyDown(cards[0], { key: 'ArrowRight' });
     await act(async () => {});

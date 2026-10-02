@@ -18,9 +18,10 @@ test('a merged result opens in the workspace', async ({ page }) => {
   await page.getByRole('button', { name: 'Open result in workspace' }).click();
 
   await expect(page).toHaveURL(/\/pdf\/edit/);
+  // The rail is virtualised: the first option already names the count.
   const rail = page.getByRole('listbox', { name: 'Pages' });
   await expect(
-    rail.getByRole('option', { name: /^Page 15 of 15/ }),
+    rail.getByRole('option', { name: /^Page 1 of 15/ }),
   ).toBeAttached();
   await expect(
     page.locator('[data-testid="page-slot-1"] canvas[data-rendered="true"]'),

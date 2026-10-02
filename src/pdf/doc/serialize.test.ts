@@ -67,6 +67,17 @@ describe('serialize', () => {
     expect(back.ownerRestricted).toBe(true);
   });
 
+  it('keeps that the user chose to save an encrypted document', () => {
+    const m = makeModel(makeState(2, { encryptedInput: true }));
+    m.setSaveOptIn(true);
+    const { doc, log } = toRecords(m.getState(), ui);
+    expect(log.saveOptIn).toBe(true);
+    const back = fromRecords({ ...doc, thumb: null, updatedAt: 1 }, log);
+    expect(back.saveOptIn).toBe(true);
+    m.setSaveOptIn(false);
+    expect(toRecords(m.getState(), ui).log.saveOptIn).toBeUndefined();
+  });
+
   it('refuses another schema', () => {
     const m = edited();
     const { doc, log } = toRecords(m.getState(), ui);
@@ -91,6 +102,42 @@ describe('serialize', () => {
     expect(() =>
       fromRecords({ ...doc, thumb: null, updatedAt: 0 }, log),
     ).toThrow("This document can't be restored by this version");
+  });
+
+  it('refuses a log that points at missing checkpoints or files', () => {
+    const restore = (log: ReturnType<typeof toRecords>['log']) => {
+      const { doc } = toRecords(edited().getState(), ui);
+      return () => fromRecords({ ...doc, thumb: null, updatedAt: 0 }, log);
+    };
+    const msg = "This document can't be restored by this version";
+    const fresh = () => structuredClone(toRecords(edited().getState(), ui).log);
+
+    const badCkptRef = fresh();
+    const i = badCkptRef.log.findIndex((o) => o.checkpoint);
+    badCkptRef.log[i] = { ...badCkptRef.log[i], checkpoint: 'missing' };
+    expect(restore(badCkptRef)).toThrow(msg);
+
+    const badSource = fresh();
+    badSource.checkpoints[1] = {
+      ...badSource.checkpoints[1],
+      sourceId: 'gone',
+    };
+    expect(restore(badSource)).toThrow(msg);
+
+    const badFirst = fresh();
+    badFirst.checkpoints[0] = { ...badFirst.checkpoints[0], index: 1 };
+    expect(restore(badFirst)).toThrow(msg);
+
+    const badMerge = fresh();
+    badMerge.log.push({
+      id: 'm1',
+      type: 'page.mergeIn',
+      v: 1,
+      params: { sourceId: 'nowhere', at: 0, newIds: ['n1'], pages: [0] },
+      at: 0,
+      label: 'Merge in',
+    });
+    expect(restore(badMerge)).toThrow(msg);
   });
 
   it('builds blob keys under the document id', () => {

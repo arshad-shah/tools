@@ -1,5 +1,5 @@
 import { useEffect, useState, type RefObject } from 'react';
-import type { Rive } from '@rive-app/react-canvas';
+import type { Rive } from '@/shared/ui/adapters/rive-runtime';
 import type { Dimensions } from '../types';
 
 /**

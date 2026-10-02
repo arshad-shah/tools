@@ -70,7 +70,7 @@ const HEX_OR_SPACE = /^[0-9a-fA-F\s]*$/;
 
 export const REVOCATION_NOTE = 'Revocation status is not checked.';
 export const DEVICE_CLOCK_NOTE =
-  "Signing time comes from the signer's device clock and is not verified.";
+  'The signing time is stated by the signer and is not verified.';
 export const TIMESTAMP_UNVERIFIED_NOTE =
   'Timestamp not verified: the timestamp server is not trusted on this device, so the certificate is checked at the current time.';
 export const UNCHECKED_SUMMARY = 'This signature could not be checked.';
@@ -285,7 +285,18 @@ async function verifyOne(
     chain: built.chain.map(describeCertificate),
     problems,
   };
-  return { ...r, ...summaryFor(r, checkedNow) };
+  const out = { ...r, ...summaryFor(r, checkedNow) };
+  const weak = digestNote(hash);
+  if (weak) out.notes.unshift(weak);
+  return out;
+}
+
+export const SHA1_NOTE =
+  'This signature uses SHA-1, which is no longer considered secure.';
+
+/** A note for a digest that is accepted but weak, or null. */
+export function digestNote(hash: string): string | null {
+  return hash === 'SHA-1' ? SHA1_NOTE : null;
 }
 
 export const MORE_NOT_CHECKED = `More signatures were not checked (at most ${MAX_SIGNATURES} are).`;

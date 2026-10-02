@@ -4,7 +4,7 @@ import type { RasterReason } from '@/pdf/edit/content/font-metrics';
 import type { Matrix } from '@/pdf/edit/content/matrix';
 import type { ContentOp, Tok } from '@/pdf/edit/content/tokens';
 import { inflate } from './codec';
-import { paintCovered } from './images';
+import { paintCovered, type Rgb } from './images';
 
 const pick = (d: Map<string, Tok>, ...keys: string[]) => {
   for (const k of keys) if (d.has(k)) return d.get(k);
@@ -64,7 +64,7 @@ export function patchInline(
   op: ContentOp,
   ctm: Matrix,
   marks: readonly Box[],
-  fill: [number, number, number],
+  fill: Rgb | readonly Rgb[],
 ): { op: ContentOp } | { raster: RasterReason } {
   const inline = op.inline;
   if (!inline) return { raster: 'parse-error' };

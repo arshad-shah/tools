@@ -183,7 +183,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
     <div
       className={cn(
         'flex items-center rounded-md border border-line-strong bg-surface-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
-        lg ? 'h-11' : 'h-9 pointer-coarse:h-11',
+        lg ? 'h-touch' : 'h-9 pointer-coarse:h-touch',
         disabled && 'opacity-50',
         className,
       )}
@@ -195,7 +195,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         onClick={() => onValueChange(clamp(value - step))}
         className={cn(
           'flex h-full items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed',
-          lg ? 'w-11' : 'w-9 pointer-coarse:w-11',
+          lg ? 'w-touch' : 'w-9 pointer-coarse:w-touch',
         )}
       >
         <IconMinus size="sm" />
@@ -219,7 +219,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         onClick={() => onValueChange(clamp(value + step))}
         className={cn(
           'flex h-full items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed',
-          lg ? 'w-11' : 'w-9 pointer-coarse:w-11',
+          lg ? 'w-touch' : 'w-9 pointer-coarse:w-touch',
         )}
       >
         <IconPlus size="sm" />

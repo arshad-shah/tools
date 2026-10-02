@@ -43,6 +43,8 @@ function fakeEngine(o: FakeOptions = {}) {
     params: [] as Record<string, string>[],
   };
   let release: () => void = () => undefined;
+  /** The Web Workers behind the engine workers (for crash events). */
+  const threads: EventTarget[] = [];
   const engine: OcrEngine = {
     createScheduler(): OcrEngineScheduler {
       calls.schedulers += 1;
@@ -67,7 +69,10 @@ function fakeEngine(o: FakeOptions = {}) {
       calls.workers += 1;
       calls.options.push(options);
       if (o.failLoad) throw new Error('Network error while fetching eng');
+      const thread = new EventTarget();
+      threads.push(thread);
       return {
+        worker: thread,
         terminate: async () => undefined,
         setParameters: async (p: Record<string, string>) => {
           calls.params.push(p);
@@ -76,7 +81,7 @@ function fakeEngine(o: FakeOptions = {}) {
       };
     },
   };
-  return { engine, calls, release: () => release() };
+  return { engine, calls, threads, release: () => release() };
 }
 
 const make = (engine: OcrEngine, size = 2) =>
@@ -167,6 +172,21 @@ describe('createOcrPool', () => {
       .recognize(image, new AbortController().signal)
       .catch(() => undefined);
     expect(fake.calls.schedulers).toBe(2);
+  });
+
+  it('fails jobs in flight when a loaded worker dies, then restarts', async () => {
+    const fake = fakeEngine({ hold: true });
+    const pool = await make(fake.engine, 1);
+    const job = pool.recognize(image, new AbortController().signal);
+    await vi.waitFor(() => expect(fake.calls.jobs).toBe(1));
+    fake.threads[0].dispatchEvent(new Event('error'));
+    await expect(job).rejects.toMatchObject({ code: 'WORKER_CRASHED' });
+    expect(fake.calls.terminated).toBe(1);
+    const next = pool.recognize(image, new AbortController().signal);
+    await vi.waitFor(() => expect(fake.calls.jobs).toBe(2));
+    expect(fake.calls.schedulers).toBe(2);
+    fake.release();
+    expect((await next).words).toHaveLength(3);
   });
 
   it('refuses an already-aborted signal without starting a job', async () => {

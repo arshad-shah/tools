@@ -56,8 +56,8 @@ const items = (trigger: HTMLElement | null) => {
 
 /**
  * "Send to" menu button (spec §4.3): lists the other enabled tools that take
- * this payload and hands it over with `sendTo`. Arrow keys, Home and End
- * move between items; Esc closes and returns focus to the button.
+ * this payload and hands it over with `sendTo`. Keyboard use (arrows, Home,
+ * End, Esc back to the button) comes from the kit DropdownMenu.
  */
 export const SendToMenu: React.FC<SendToMenuProps> = ({
   payload,
@@ -116,25 +116,6 @@ export const SendToMenu: React.FC<SendToMenuProps> = ({
     }
   };
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      trigger.current?.focus();
-      return;
-    }
-    const list = items(trigger.current);
-    if (list.length === 0) return;
-    const at = list.indexOf(document.activeElement as HTMLElement);
-    const next: Record<string, number> = {
-      ArrowDown: (at + 1) % list.length,
-      ArrowUp: (at - 1 + list.length) % list.length,
-      Home: 0,
-      End: list.length - 1,
-    };
-    if (!(e.key in next)) return;
-    e.preventDefault();
-    list[next[e.key]].focus();
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -156,7 +137,6 @@ export const SendToMenu: React.FC<SendToMenuProps> = ({
       <DropdownMenuContent
         align={align}
         aria-label={label}
-        onKeyDown={onKeyDown}
         className="max-h-80 min-w-56 overflow-y-auto"
       >
         {targets.state === 'loading' ? (

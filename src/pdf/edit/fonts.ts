@@ -2,7 +2,10 @@ import type { PDFFont } from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
 
 /** Characters in `text` that `font` has no glyph/encoding for (unique, in order). */
-export function unsupportedChars(font: PDFFont, text: string): string[] {
+export function unsupportedChars(
+  font: Pick<PDFFont, 'getCharacterSet'>,
+  text: string,
+): string[] {
   const supported = new Set(font.getCharacterSet());
   return [...new Set(Array.from(text))].filter(
     (ch) => !supported.has(ch.codePointAt(0)!),

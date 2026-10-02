@@ -39,9 +39,8 @@ export function resolveTheme(p: ThemePreference, dark: boolean): ResolvedTheme {
 
 export function applyTheme(t: ResolvedTheme): void {
   if (typeof document === 'undefined') return;
-  const root = document.documentElement;
-  root.dataset.theme = t;
-  root.style.colorScheme = t;
+  // color-scheme follows from tokens.css per data-theme (no inline style).
+  document.documentElement.dataset.theme = t;
 }
 
 function notify(): void {

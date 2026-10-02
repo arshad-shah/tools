@@ -791,7 +791,11 @@ export function ObjectLayer({
                       >
                         <span
                           className={cn(
-                            'size-3 rounded-sm border-2 border-accent-indicator bg-surface',
+                            // Decorative: only the handle's own box takes
+                            // presses (an overflowing dot would cover the
+                            // middle of a tiny object, turning a move into
+                            // a resize).
+                            'pointer-events-none size-3 rounded-sm border-2 border-accent-indicator bg-surface',
                             // The dot's centre stays on the corner.
                             tiny && '-m-1.5',
                           )}
@@ -808,7 +812,7 @@ export function ObjectLayer({
                   {...pointer}
                   className="pointer-events-auto absolute -top-8 left-1/2 flex size-6 -translate-x-1/2 cursor-grab touch-none items-center justify-center pointer-coarse:-top-12 pointer-coarse:size-[44px]"
                 >
-                  <span className="size-3 rounded-full border-2 border-accent-indicator bg-surface" />
+                  <span className="pointer-events-none size-3 rounded-full border-2 border-accent-indicator bg-surface" />
                 </span>
               ) : null}
             </Positioned>

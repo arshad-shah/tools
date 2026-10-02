@@ -1,3 +1,4 @@
+import { PDFDocument } from 'pdf-lib';
 import * as pkijs from 'pkijs';
 import { Transferred, type RpcContext } from '@/shared/lib/worker-rpc';
 import {
@@ -9,6 +10,7 @@ import {
   appendSummaryPage,
   type SummaryPageInput,
 } from '@/pdf/sign/pades/summary-page';
+import { readSignatures } from '@/pdf/sign/pades/read-signatures';
 import {
   verifyPdfSignatures,
   type SignatureReport,
@@ -29,6 +31,22 @@ export const signHandlers = {
       out.file.buffer as ArrayBuffer,
       out.content.buffer as ArrayBuffer,
     ]);
+  },
+
+  /**
+   * How many signed /Sig fields `bytes` holds, read through the parser so
+   * signature dictionaries in object streams count and stream text does not.
+   */
+  async countSignatures(_ctx: RpcContext, bytes: Uint8Array): Promise<number> {
+    try {
+      const doc = await PDFDocument.load(bytes, {
+        ignoreEncryption: true,
+        updateMetadata: false,
+      });
+      return readSignatures(doc).length;
+    } catch {
+      return 0;
+    }
   },
 
   /** Every signature in `bytes`; `roots` are imported trusted roots (DER). */

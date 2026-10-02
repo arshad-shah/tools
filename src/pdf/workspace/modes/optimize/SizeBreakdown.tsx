@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import {
@@ -43,6 +43,9 @@ export function SizeBreakdownView({
   pageIds,
   onGoToPage,
 }: SizeBreakdownViewProps) {
+  const id = useId();
+  const imagesId = `${id}-largest-images`;
+  const fontsId = `${id}-fonts`;
   return (
     <Stack gap="4">
       <Text size="sm">Total {formatBytes(data.total)}</Text>
@@ -64,7 +67,7 @@ export function SizeBreakdownView({
         ))}
       </Stack>
       <Stack gap="2">
-        <Text size="sm" weight="semibold" id="opt-largest-images">
+        <Text size="sm" weight="semibold" id={imagesId}>
           Largest images
         </Text>
         {data.largestImages.length === 0 ? (
@@ -72,7 +75,7 @@ export function SizeBreakdownView({
             This document has no images.
           </Text>
         ) : (
-          <List aria-labelledby="opt-largest-images">
+          <List aria-labelledby={imagesId}>
             {data.largestImages.map((img, i) => {
               const id = img.page >= 0 ? pageIds[img.page] : undefined;
               return (
@@ -102,7 +105,7 @@ export function SizeBreakdownView({
         )}
       </Stack>
       <Stack gap="2">
-        <Text size="sm" weight="semibold" id="opt-fonts">
+        <Text size="sm" weight="semibold" id={fontsId}>
           Fonts
         </Text>
         {data.fontList.length === 0 ? (
@@ -110,7 +113,7 @@ export function SizeBreakdownView({
             This document has no fonts.
           </Text>
         ) : (
-          <List aria-labelledby="opt-fonts">
+          <List aria-labelledby={fontsId}>
             {data.fontList.map((f, i) => (
               <ListItem key={i}>
                 <Stack gap="1">
@@ -137,7 +140,13 @@ type Result =
   | { key: string; data: SizeBreakdown; error: null }
   | { key: string; data: null; error: ToolError };
 
-/** Measures the document as it is now; again after every change or on refresh. */
+/** Quiet time after a change before the document is measured again. */
+export const MEASURE_DELAY_MS = 600;
+
+/**
+ * Measures the document as it is now (materialising it), at once on mount
+ * and on refresh, and again once changes have settled for MEASURE_DELAY_MS.
+ */
 export function SizeBreakdownPanel({
   doc,
   refresh = 0,
@@ -145,17 +154,27 @@ export function SizeBreakdownPanel({
   const ws = useWorkspace();
   const key = `${doc.view.checkpoint}:${doc.state.cursor}:${doc.state.log.length}:${refresh}`;
   const [result, setResult] = useState<Result | null>(null);
+  // The first measure and an explicit refresh run at once; edits wait.
+  const lastRefresh = useRef<number | null>(null);
 
   useEffect(() => {
     const c = new AbortController();
-    documentBreakdown(ws.session, c.signal).then(
-      (data) => !c.signal.aborted && setResult({ key, data, error: null }),
-      (e) =>
-        !c.signal.aborted &&
-        setResult({ key, data: null, error: toToolError(e) }),
-    );
-    return () => c.abort();
-  }, [key, ws.session]);
+    const measure = () =>
+      documentBreakdown(ws.session, c.signal).then(
+        (data) => !c.signal.aborted && setResult({ key, data, error: null }),
+        (e) =>
+          !c.signal.aborted &&
+          setResult({ key, data: null, error: toToolError(e) }),
+      );
+    const now = lastRefresh.current !== refresh;
+    lastRefresh.current = refresh;
+    if (now) void measure();
+    const t = now ? undefined : setTimeout(measure, MEASURE_DELAY_MS);
+    return () => {
+      clearTimeout(t);
+      c.abort();
+    };
+  }, [key, refresh, ws.session]);
 
   if (!result || result.key !== key)
     return <LoadingState label="Measuring the document" />;

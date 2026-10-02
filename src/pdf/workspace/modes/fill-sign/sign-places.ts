@@ -29,16 +29,22 @@ const overlaps = (a: Box, b: Box) =>
   a.y < b.y + b.height &&
   b.y < a.y + a.height;
 
-/** Unsigned /Sig fields and detected places on one view page (fields win overlaps). */
+/**
+ * Unsigned /Sig fields and detected places on one view page (fields win
+ * overlaps). pdf.js does not say whether a /Sig field is signed, so
+ * `signed` lists, per source id, the field names the verifier reported.
+ */
 export function pageSignTargets(
   page: PageRef,
   detected: Record<string, SignTarget[]>,
   forms: Record<string, FormInfo | undefined>,
+  signed: Record<string, readonly string[] | undefined> = {},
 ): SignTarget[] {
   if (page.blank) return [];
-  const widgets = (forms[page.source]?.widgets ?? []).filter(
-    (w) => w.pageIndex === page.index,
-  );
+  const done = new Set(signed[page.source] ?? []);
+  const widgets = (forms[page.source]?.widgets ?? [])
+    .filter((w) => w.pageIndex === page.index)
+    .map((w) => (done.has(w.fieldName) ? { ...w, signed: true } : w));
   const fields = sigFieldTargets(widgets);
   const found = (detected[detectionKey(page.source, page.index)] ?? []).filter(
     (t) => !fields.some((f) => overlaps(f.rect, t.rect)),
@@ -49,9 +55,10 @@ export function pageSignTargets(
 export function useSignTargets(page: PageRef): SignTarget[] {
   const detected = useFillSign((s) => s.signTargets);
   const forms = useFillSign((s) => s.forms);
+  const signed = useFillSign((s) => s.signedFields);
   return useMemo(
-    () => pageSignTargets(page, detected, forms),
-    [page, detected, forms],
+    () => pageSignTargets(page, detected, forms, signed),
+    [page, detected, forms, signed],
   );
 }
 
@@ -117,9 +124,9 @@ async function loadAll(ctx: ModeProps): Promise<void> {
 export function orderedTargets(
   ctx: ModeProps,
 ): { page: PageRef; target: SignTarget }[] {
-  const { signTargets, forms } = fillSign.get();
+  const { signTargets, forms, signedFields } = fillSign.get();
   return ctx.doc.view.pages.flatMap((page) =>
-    pageSignTargets(page, signTargets, forms)
+    pageSignTargets(page, signTargets, forms, signedFields)
       .sort(
         (a, b) =>
           b.rect.y + b.rect.height - (a.rect.y + a.rect.height) ||

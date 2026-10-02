@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import { makeTextPdf } from '../../../../../test/fixtures/builders';
 import { signBytes } from '../../../../../test/fixtures/signing';
@@ -53,6 +53,31 @@ describe('SignaturesPanel', () => {
   });
 });
 
+describe('SignaturesPanel keys', () => {
+  it('renders repeated field names and problems without key clashes', async () => {
+    const pdf = await (
+      await PDFDocument.load(await makeTextPdf({ pages: 1 }))
+    ).save({ useObjectStreams: false });
+    const id = await createSelfSigned({
+      name: 'Jane Doe',
+      years: 1,
+      keyType: 'ecdsa-p256',
+    });
+    const [r] = await verifyPdfSignatures(await signBytes(pdf, id));
+    const twin = { ...r, problems: ['Same problem', 'Same problem'] };
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <SignaturesPanel signatures={{ reports: [twin, twin], error: null }} />,
+    );
+    const clash = errors.mock.calls.some((c) =>
+      String(c[0]).includes('same key'),
+    );
+    errors.mockRestore();
+    expect(clash).toBe(false);
+    expect(screen.getAllByText('Same problem')).toHaveLength(4);
+  });
+});
+
 describe('timeSourceText', () => {
   const base = { time: { value: null, source: 'device-clock' as const } };
   it('names the timestamp server only when the timestamp is verified', () => {
@@ -77,6 +102,6 @@ describe('timeSourceText', () => {
         timestampValid: null,
         timestampVerified: null,
       }),
-    ).toBe('Time from the device clock');
+    ).toBe('Time stated by the signer (not verified)');
   });
 });

@@ -33,8 +33,7 @@ export const IconModeAnnotate = defineIcon(
   'IconModeAnnotate',
   <>
     {doc}
-    <path d="M8 13h8M8 16.5h5" />
-    <path d="M8 13h8" strokeWidth={3} strokeOpacity={0.35} />
+    <path d="M8 11.5h8v5h-4l-2 2v-2H8z" />
   </>,
 );
 export const IconModeFillSign = defineIcon(
@@ -49,7 +48,7 @@ export const IconModeRedact = defineIcon(
   'IconModeRedact',
   <>
     {doc}
-    <rect x="8" y="12" width="8" height="2.5" rx=".5" fill="currentColor" />
+    <path d="M8.75 12.5h6.5M8.75 14h6.5" />
     <path d="M8 17h5" />
   </>,
 );

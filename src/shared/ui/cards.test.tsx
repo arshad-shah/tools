@@ -46,7 +46,7 @@ describe('ToolCard', () => {
         .getByRole('button', { name: 'Favourite Merge PDFs' })
         .getAttribute('aria-pressed'),
     ).toBe('true');
-    expect(fav.className).toContain('size-11');
+    expect(fav.className).toContain('size-touch');
   });
 });
 

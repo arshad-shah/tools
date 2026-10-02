@@ -1,4 +1,12 @@
-import { PDFArray, PDFDict, PDFDocument, PDFName, degrees } from 'pdf-lib';
+import {
+  decodePDFRawStream,
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFRawStream,
+  degrees,
+} from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { decodedObjects, pdfPageTexts } from '../../../test/fixtures/builders';
 import { encodePng } from '../../../test/fixtures/images';
@@ -96,6 +104,68 @@ describe('redactPages', () => {
   });
 });
 
+describe('image patches', () => {
+  it('paints each mark into the image in its own fill colour', async () => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([612, 792]);
+    const pixels = new Uint8Array(100 * 100 * 3).fill(200);
+    const im = doc.context.register(
+      doc.context.flateStream(pixels, {
+        Type: 'XObject',
+        Subtype: 'Image',
+        Width: 100,
+        Height: 100,
+        ColorSpace: 'DeviceRGB',
+        BitsPerComponent: 8,
+      }),
+    );
+    page.node.set(
+      PDFName.of('Contents'),
+      doc.context.register(
+        doc.context.stream('q 100 0 0 100 100 100 cm /Im0 Do Q'),
+      ),
+    );
+    page.node.set(
+      PDFName.of('Resources'),
+      doc.context.obj({ XObject: { Im0: im } }),
+    );
+    const r = await redactPages(
+      await doc.save(),
+      [
+        {
+          pageIndex: 0,
+          marks: [
+            {
+              box: { x: 100, y: 100, width: 20, height: 100 },
+              fill: '#ff0000',
+              overlayText: null,
+            },
+            {
+              box: { x: 180, y: 100, width: 20, height: 100 },
+              fill: '#0000ff',
+              overlayText: null,
+            },
+          ],
+        },
+      ],
+      [],
+      { codec: nodeJpegCodec },
+    );
+    const out = await PDFDocument.load(r.bytes);
+    const xo = out
+      .getPage(0)
+      .node.Resources()!
+      .lookup(PDFName.of('XObject'), PDFDict);
+    const s = xo.lookup(PDFName.of('Rd0')) as PDFRawStream;
+    const px = decodePDFRawStream(s).decode();
+    const at = (x: number) => [
+      ...px.subarray((50 * 100 + x) * 3, (50 * 100 + x) * 3 + 3),
+    ];
+    expect(at(5)).toEqual([255, 0, 0]);
+    expect(at(95)).toEqual([0, 0, 255]);
+  });
+});
+
 describe('replaceWithImage', () => {
   it('produces an image-only page of the same size and rotation', async () => {
     const base = await PDFDocument.load(await makeRedactBasic());
@@ -149,5 +219,6 @@ describe('multi-widget fields', () => {
     expect(await decodedObjects(r.bytes)).not.toContain(REDACT_TERM);
     // The surviving widget no longer shows the value either.
     expect((await pdfPageTexts(r.bytes))[1]).not.toContain(REDACT_TERM);
+    expect(r.pages[0].clearedFields).toBe(1);
   });
 });

@@ -77,6 +77,17 @@ function httpsUrl(url: string): URL {
   return u;
 }
 
+/** Longest server status text shown to the user. */
+export const MAX_STATUS_TEXT = 160;
+
+/** Server-supplied text, on one line and cut to MAX_STATUS_TEXT characters. */
+function serverText(text: string | undefined): string {
+  const t = (text ?? '').replace(/\s+/g, ' ').trim();
+  return t.length > MAX_STATUS_TEXT
+    ? `${t.slice(0, MAX_STATUS_TEXT - 3).trimEnd()}...`
+    : t;
+}
+
 const equal = (a: Uint8Array, b: Uint8Array) =>
   a.length === b.length && a.every((x, i) => x === b[i]);
 
@@ -90,7 +101,8 @@ export async function requestTimestamp(
     await crypto.subtle.digest('SHA-256', signatureValue),
   );
   const nonce = crypto.getRandomValues(new Uint8Array(8));
-  nonce[0] &= 0x7f; // a positive INTEGER
+  // Positive (top bit clear) and minimal DER (never a leading 0x00 byte).
+  nonce[0] = (nonce[0] & 0x7f) | 0x40;
   const req = new pkijs.TimeStampReq({
     version: 1,
     messageImprint: new pkijs.MessageImprint({
@@ -140,7 +152,9 @@ export async function requestTimestamp(
   if ((status !== 0 && status !== 1) || !resp.timeStampToken)
     throw new ToolError(
       'NETWORK',
-      resp.status.statusStrings?.map((s) => s.valueBlock.value).join(' ') ||
+      serverText(
+        resp.status.statusStrings?.map((s) => s.valueBlock.value).join(' '),
+      ) ||
         STATUS_TEXT[status] ||
         'The timestamp server did not grant a timestamp',
     );

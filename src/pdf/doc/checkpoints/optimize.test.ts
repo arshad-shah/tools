@@ -144,7 +144,7 @@ describe('optimize.compress params', () => {
 });
 
 describe('optimize.repair checkpoint', () => {
-  it('rewrites the file with qpdf, preserving object streams, and reports warnings', async () => {
+  it('rewrites the file with qpdf, changing as little as it can, and reports warnings', async () => {
     const bytes = await makeTextPdf({ pages: 2 });
     const warned = vi.fn(async (b: Uint8Array) => ({
       bytes: b,
@@ -158,7 +158,11 @@ describe('optimize.repair checkpoint', () => {
     );
     expect(warned).toHaveBeenCalledWith(
       bytes,
-      { objectStreams: 'preserve' },
+      {
+        objectStreams: 'preserve',
+        recompressFlate: false,
+        removeUnreferenced: false,
+      },
       e.signal,
     );
     expect(out.report.title).toBe('Repaired: qpdf fixed 1 problem');

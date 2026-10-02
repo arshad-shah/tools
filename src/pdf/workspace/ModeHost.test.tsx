@@ -1,14 +1,14 @@
 /** @vitest-environment jsdom */
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
-  waitFor,
 } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
-import { queryCommands } from '@/shared/lib/commands';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { queryCommands, resetCommandsForTests } from '@/shared/lib/commands';
 import { IconModeEdit, IconModeOrganize } from '@/shared/ui/icons';
 import type { ModeId } from '@/pdf/doc/types';
 import { ModeHost } from './ModeHost';
@@ -58,25 +58,35 @@ function Harness({ modes }: { modes: Record<string, ModeManifest> }) {
   );
 }
 
+const flushEffects = () => act(async () => {});
+
+// Each test starts from an empty command registry and unmounts its tree.
+afterEach(() => {
+  cleanup();
+  resetCommandsForTests();
+});
+
 describe('ModeHost', () => {
   it('renders the toolbar and registers commands only while active', async () => {
     const a = fakeMode('organize', 'Organize');
     const b = fakeMode('edit', 'Edit');
     render(<Harness modes={{ organize: a.manifest, edit: b.manifest }} />);
     expect(await screen.findByText('Organize toolbar')).toBeTruthy();
+    // The lazily loaded module lands outside act: its commit can reach the
+    // DOM before React runs its passive effects (command registration,
+    // onEnter). An empty act flushes them, so nothing depends on timing.
+    await flushEffects();
     const labels = () =>
       queryCommands('command').flatMap((g) => g.commands.map((c) => c.label));
-    // Commands register in an effect after the toolbar renders, so wait for them.
-    await waitFor(() => expect(labels()).toContain('Organize command'));
+    expect(labels()).toContain('Organize command');
     expect(a.module.onEnter).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('to edit'));
     expect(await screen.findByText('Edit toolbar')).toBeTruthy();
+    await flushEffects();
     expect(a.module.onLeave).toHaveBeenCalledTimes(1);
     expect(b.module.onEnter).toHaveBeenCalledTimes(1);
-    await waitFor(() => {
-      expect(labels()).toContain('Edit command');
-      expect(labels()).not.toContain('Organize command');
-    });
+    expect(labels()).toContain('Edit command');
+    expect(labels()).not.toContain('Organize command');
   });
 
   it('asks before leaving when canExit gives a reason', async () => {

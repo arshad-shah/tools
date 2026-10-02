@@ -101,29 +101,29 @@ Method: I read the redaction core myself. A sub-review covered Protect, Optimize
 
 ### Minor
 
-- **M1. One fill colour per page for image patches** (`src/pdf/redact/apply.ts:63`): `ctx.fill = marks[0].fill`. A second mark with a different fill paints its image pixels in the first mark's colour. Pixel verification still passes because the vector fill is drawn on top, but the image bytes hold the wrong colour. Pass the fill per mark into `paintCovered`/`patchInline`.
-- **M2. Pixel-centre test** (`src/pdf/redact/images.ts:~203`): for very low-resolution images scaled up, a mark smaller than one image pixel changes no pixel, so the original colour of that block stays in the file. Paint any pixel whose footprint intersects the mark (conservative dilation).
-- **M3. Kept terms skip the raw-byte check** (`verify.ts:141-150`): when a term is left unmarked on another page, the raw-byte check is skipped for that term everywhere, so hidden copies on the _marked_ page go unchecked by raw bytes. Geometry and pixel checks still apply. This is documented as a deviation; state it in the report line too.
-- **M4. A multi-widget field keeps its value** (`annots.ts:46-63`): when one widget is redacted and another remains on an unmarked page, the parent field keeps `/V`. That is arguably right, since the value is visible elsewhere, but the report should say so.
-- **M5. Test gaps for priority-1 cases.** No test covers:
+- ~~**M1. One fill colour per page for image patches**~~ (fixed or confirmed in P5-G) (`src/pdf/redact/apply.ts:63`): `ctx.fill = marks[0].fill`. A second mark with a different fill paints its image pixels in the first mark's colour. Pixel verification still passes because the vector fill is drawn on top, but the image bytes hold the wrong colour. Pass the fill per mark into `paintCovered`/`patchInline`.
+- ~~**M2. Pixel-centre test**~~ (fixed or confirmed in P5-G) (`src/pdf/redact/images.ts:~203`): for very low-resolution images scaled up, a mark smaller than one image pixel changes no pixel, so the original colour of that block stays in the file. Paint any pixel whose footprint intersects the mark (conservative dilation).
+- ~~**M3. Kept terms skip the raw-byte check**~~ (fixed or confirmed in P5-G) (`verify.ts:141-150`): when a term is left unmarked on another page, the raw-byte check is skipped for that term everywhere, so hidden copies on the _marked_ page go unchecked by raw bytes. Geometry and pixel checks still apply. This is documented as a deviation; state it in the report line too.
+- ~~**M4. A multi-widget field keeps its value**~~ (fixed or confirmed in P5-G) (`annots.ts:46-63`): when one widget is redacted and another remains on an unmarked page, the parent field keeps `/V`. That is arguably right, since the value is visible elsewhere, but the report should say so.
+- ~~**M5. Test gaps for priority-1 cases.**~~ (fixed or confirmed in P5-G) No test covers:
   - incremental-update leftovers (an older revision's unreferenced object);
   - JavaScript or links (I1);
   - tiling patterns (C1);
   - optional content (I checked this ad hoc: it passes);
   - a pipeline-level assertion that a partly covered image's original pixels are absent from the **final** output, after the sweep. `images.test.ts` asserts only at the `redactStream` level, before the sweep.
-- **M6. Rasterising renders annotations** (`rasterisePage`, `checkpoints/redact.ts:62-82`): the page image comes from the original document. If `renderBurned` paints annotation appearances, annotations outside the marks end up baked into the image and also stay as live annotations, so they appear twice. Render with annotations off.
-- **M7. Insert-images orphan source** (`modes/convert/actions.ts:152-205`): if `addSource` succeeds but the dispatch fails or is cancelled, the source stays in the model and blob store with no op referencing it. Dispatch inside the job, or remove the source when the dispatch returns `[]`.
-- **M8. Pages-to-images memory** (`convert/exports.ts:154-173`): every page image is held in memory and the zip is built in memory, so peak memory is about twice the total image bytes. DPI is clamped and rendering is one canvas at a time, but large documents at 300 DPI can still use gigabytes. Stream into an fflate `Zip`, or warn above a page×DPI budget.
-- **M9. Protect export section** (`ProtectExportSection.tsx:70-74`): the red "Enter a password…" error shows in an `aria-live` region as soon as the dialog opens. Show it only after the first edit or an export attempt.
-- **M10. Duplicate DOM ids** (`SizeBreakdown.tsx:67,105`): fixed ids `opt-largest-images` and `opt-fonts` duplicate if the panel mounts twice. Use `useId()`.
-- **M11. Size breakdown cost** (`SizeBreakdown.tsx:146-158`): it materialises the whole document on every log change. Debounce, or measure only on demand.
-- **M12. Sanitise preview cost** (`protect-ui.ts:57-67`): the preview runs five full pdf-lib loads (one dry run per kind). One dry run that reports per kind would be about five times cheaper.
-- **M13. Repair rewrites more than needed** (`checkpoints/optimize.ts:57`): qpdf-wasm defaults add flate recompression and `--remove-unreferenced-resources=yes`. Pass `recompressFlate: false, removeUnreferenced: false` for a minimal rewrite.
-- **M14. Encrypt test gaps:**
+- ~~**M6. Rasterising renders annotations**~~ (fixed or confirmed in P5-G) (`rasterisePage`, `checkpoints/redact.ts:62-82`): the page image comes from the original document. If `renderBurned` paints annotation appearances, annotations outside the marks end up baked into the image and also stay as live annotations, so they appear twice. Render with annotations off.
+- ~~**M7. Insert-images orphan source**~~ (fixed or confirmed in P5-G) (`modes/convert/actions.ts:152-205`): if `addSource` succeeds but the dispatch fails or is cancelled, the source stays in the model and blob store with no op referencing it. Dispatch inside the job, or remove the source when the dispatch returns `[]`.
+- ~~**M8. Pages-to-images memory**~~ (fixed or confirmed in P5-G) (`convert/exports.ts:154-173`): every page image is held in memory and the zip is built in memory, so peak memory is about twice the total image bytes. DPI is clamped and rendering is one canvas at a time, but large documents at 300 DPI can still use gigabytes. Stream into an fflate `Zip`, or warn above a page×DPI budget.
+- ~~**M9. Protect export section**~~ (fixed or confirmed in P5-G) (`ProtectExportSection.tsx:70-74`): the red "Enter a password…" error shows in an `aria-live` region as soon as the dialog opens. Show it only after the first edit or an export attempt.
+- ~~**M10. Duplicate DOM ids**~~ (fixed or confirmed in P5-G) (`SizeBreakdown.tsx:67,105`): fixed ids `opt-largest-images` and `opt-fonts` duplicate if the panel mounts twice. Use `useId()`.
+- ~~**M11. Size breakdown cost**~~ (fixed or confirmed in P5-G) (`SizeBreakdown.tsx:146-158`): it materialises the whole document on every log change. Debounce, or measure only on demand.
+- ~~**M12. Sanitise preview cost**~~ (fixed or confirmed in P5-G) (`protect-ui.ts:57-67`): the preview runs five full pdf-lib loads (one dry run per kind). One dry run that reports per kind would be about five times cheaper.
+- ~~**M13. Repair rewrites more than needed**~~ (fixed or confirmed in P5-G) (`checkpoints/optimize.ts:57`): qpdf-wasm defaults add flate recompression and `--remove-unreferenced-resources=yes`. Pass `recompressFlate: false, removeUnreferenced: false` for a minimal rewrite.
+- ~~**M14. Encrypt test gaps:**~~ (fixed or confirmed in P5-G)
   - a user-supplied owner password giving `passwordRole === 'owner'`;
   - the random owner password not lifting restrictions;
   - linearize plus encrypt (I2).
-- **M15. E-13 "quick tasks restyle"**: the quick-task `Tool.tsx` diffs are one to four lines each. Either the restyle landed earlier or it is missing; please confirm.
+- ~~**M15. E-13 "quick tasks restyle"**~~ (fixed or confirmed in P5-G): the quick-task `Tool.tsx` diffs are one to four lines each. Either the restyle landed earlier or it is missing; please confirm.
 
 ## Plan coverage
 

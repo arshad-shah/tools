@@ -90,6 +90,8 @@ export interface OverlayItem {
   type: string;
   pageId: PageId | null;
   params: unknown;
+  /** When the op was dispatched (ms); planFor fills it for the writers. */
+  at?: number;
 }
 
 export interface DocView {

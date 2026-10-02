@@ -29,13 +29,20 @@ export interface MaterializeCtx {
   asset(id: AssetId): Uint8Array;
   /** Report line (plain words). */
   note(text: string): void;
+  /** The exported file's name, when exporting (header and footer tokens). */
+  filename?: string;
 }
 
 /** The worker-side writer of one overlay op type (decision G4). */
 export interface Materializer<P = unknown> {
   type: string;
   phase: MaterializePhase;
-  apply(ctx: MaterializeCtx, p: P, op: { id: OpId }): Promise<void> | void;
+  /** `op.at`: when the op was dispatched (ms), e.g. an annotation's date. */
+  apply(
+    ctx: MaterializeCtx,
+    p: P,
+    op: { id: OpId; at?: number },
+  ): Promise<void> | void;
 }
 
 export function defineMaterializer<P>(m: Materializer<P>): Materializer<P> {

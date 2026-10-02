@@ -50,11 +50,13 @@ function pageFor(ctx: MaterializeCtx, id: PageId): PDFPage | null {
   return ctx.page(id);
 }
 
+/** Dates are when the annotation was made (the op's dispatch time). */
 function base(
+  op: { at?: number },
   p: { id: string; author: string; color: string },
   extra: { opacity?: number; contents?: string } = {},
 ): AnnotBase {
-  const now = new Date();
+  const now = op.at !== undefined ? new Date(op.at) : new Date();
   return {
     nm: p.id,
     author: p.author,
@@ -80,11 +82,11 @@ function locate(page: PDFPage, t: Extract<AnnotTarget, { kind: 'existing' }>) {
 const markup = defineMaterializer<MarkupParams>({
   type: 'annot.markup',
   phase: 'annotation',
-  apply(ctx, p) {
+  apply(ctx, p, op) {
     const page = pageFor(ctx, p.pageId);
     if (!page) return;
     writeTextMarkup(ctx.doc, page, {
-      ...base(p, p),
+      ...base(op, p, p),
       subtype: p.subtype,
       quads: p.quads,
     });
@@ -111,7 +113,7 @@ const note = defineMaterializer<NoteParams>({
     const ref = writeNote(
       ctx.doc,
       page,
-      { ...base(p, p), at: p.at, icon: p.icon, open: false, replyTo },
+      { ...base(op, p, p), at: p.at, icon: p.icon, open: false, replyTo },
       (id) => notes.get(id) ?? null,
     );
     notes.set(op.id, ref);
@@ -121,11 +123,11 @@ const note = defineMaterializer<NoteParams>({
 const freetext = defineMaterializer<FreeTextParams>({
   type: 'annot.freetext',
   phase: 'annotation',
-  apply(ctx, p) {
+  apply(ctx, p, op) {
     const page = pageFor(ctx, p.pageId);
     if (!page) return;
     writeFreeText(ctx.doc, page, {
-      ...base(p, { contents: p.text }),
+      ...base(op, p, { contents: p.text }),
       rect: p.rect,
       text: p.text,
       fontSize: p.fontSize,
@@ -138,11 +140,11 @@ const freetext = defineMaterializer<FreeTextParams>({
 const ink = defineMaterializer<InkParams>({
   type: 'annot.ink',
   phase: 'annotation',
-  apply(ctx, p) {
+  apply(ctx, p, op) {
     const page = pageFor(ctx, p.pageId);
     if (!page) return;
     writeInk(ctx.doc, page, {
-      ...base(p, p),
+      ...base(op, p, p),
       strokes: p.strokes,
       width: p.width,
     });
@@ -152,11 +154,11 @@ const ink = defineMaterializer<InkParams>({
 const shape = defineMaterializer<ShapeParams>({
   type: 'annot.shape',
   phase: 'annotation',
-  apply(ctx, p) {
+  apply(ctx, p, op) {
     const page = pageFor(ctx, p.pageId);
     if (!page) return;
     writeShape(ctx.doc, page, {
-      ...base(p),
+      ...base(op, p),
       kind: p.kind,
       rect: p.rect,
       width: p.width,
@@ -168,11 +170,11 @@ const shape = defineMaterializer<ShapeParams>({
 const line = defineMaterializer<LineParams>({
   type: 'annot.line',
   phase: 'annotation',
-  apply(ctx, p) {
+  apply(ctx, p, op) {
     const page = pageFor(ctx, p.pageId);
     if (!page) return;
     writeLine(ctx.doc, page, {
-      ...base(p),
+      ...base(op, p),
       from: p.from,
       to: p.to,
       width: p.width,
@@ -184,11 +186,11 @@ const line = defineMaterializer<LineParams>({
 const stamp = defineMaterializer<StampParams>({
   type: 'annot.stamp',
   phase: 'annotation',
-  async apply(ctx, p) {
+  async apply(ctx, p, op) {
     const page = pageFor(ctx, p.pageId);
     if (!page) return;
     await writeStamp(ctx.doc, page, {
-      ...base(p),
+      ...base(op, p),
       rect: p.rect,
       preset: p.preset,
       label: p.label,
@@ -218,12 +220,13 @@ const remove = defineMaterializer<DeleteParams>({
 const update = defineMaterializer<UpdateParams>({
   type: 'annot.update',
   phase: 'annotation',
-  async apply(ctx, p) {
+  async apply(ctx, p, op) {
     if (p.target.kind !== 'existing') return;
     const page = pageFor(ctx, p.pageId);
     if (!page) return;
     const ref = locate(page, p.target);
-    if (!ref || !(await updateAnnotation(ctx.doc, page, ref, p.patch)))
+    const edited = op.at !== undefined ? new Date(op.at) : new Date();
+    if (!ref || !(await updateAnnotation(ctx.doc, page, ref, p.patch, edited)))
       ctx.note(
         `An annotation to edit was no longer on page ${pageNumber(ctx, page)}`,
       );

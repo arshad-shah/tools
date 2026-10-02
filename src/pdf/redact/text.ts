@@ -1,7 +1,7 @@
 import type { Box } from '@/pdf/doc/types';
 import type { GlyphHit, Interpretation } from '@/pdf/edit/content/interpreter';
 import type { ContentOp, ParsedContent, Tok } from '@/pdf/edit/content/tokens';
-import { applyEdits, type Edits } from './edits';
+import type { Edits } from './edits';
 import { overlapFraction, quadBox } from './geometry';
 
 /** A glyph is removed when at least this share of its box is under a mark. */
@@ -132,13 +132,4 @@ export function markedContentEdits(parsed: ParsedContent): Edits {
     edits.set(i, [{ op: op.op, operands: [op.operands[0], { t: 'dict', v }] }]);
   });
   return edits;
-}
-
-export function removeGlyphs(
-  parsed: ParsedContent,
-  interp: Interpretation,
-  marks: readonly Box[],
-): { parsed: ParsedContent; removed: number } {
-  const { edits, removed } = glyphEdits(parsed, interp, marks);
-  return { parsed: applyEdits(parsed, edits), removed };
 }

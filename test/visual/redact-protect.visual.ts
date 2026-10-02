@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { makeTextPdf } from '../fixtures/builders';
+import { makeImageHeavyPdf, makeTextPdf } from '../fixtures/builders';
 import { makeRedactBasic, REDACT_TERM } from '../fixtures/redact';
 import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
 
@@ -54,6 +54,8 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     test('redact apply confirmation and report', async ({ page }) => {
+      // Apply rasterises and verifies in workers: a budget for slow runners.
+      test.setTimeout(120_000);
       await openIn(page, 'redact', theme);
       await markTerm(page);
       await page.getByRole('button', { name: 'Mark all' }).click();
@@ -102,17 +104,17 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     test('quick task with a result', async ({ page }) => {
+      test.setTimeout(90_000);
       await page.goto('/pdf/compress');
       await setTheme(page, theme);
       await page
         .locator('input[type=file]')
-        .setInputFiles(
-          await pdf('text-3.pdf', makeTextPdf({ pages: 3, label: 'Alpha' })),
-        );
+        // Images that recompress, so the result is smaller and offered.
+        .setInputFiles(await pdf('images-heavy.pdf', makeImageHeavyPdf()));
       await page.getByRole('button', { name: 'Compress PDF' }).click();
       await expect(
         page.getByRole('button', { name: 'Open result in workspace' }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 60_000 });
       await stabilise(page);
       await expect(page).toHaveScreenshot(`quick-task-result-${theme}.png`);
       await expectAxeClean(page);

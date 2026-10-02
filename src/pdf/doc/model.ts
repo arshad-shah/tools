@@ -11,10 +11,8 @@ import type {
   SourceId,
   SourceRef,
 } from './types';
+import { SOURCE_OPS, sourceInUse } from './source-use';
 import { foldView } from './view';
-
-/** Structure ops that bring their own source file (dropped with them). */
-const SOURCE_OPS = new Set(['page.mergeIn', 'page.insertImages']);
 
 export interface DocumentState {
   id: string;
@@ -33,6 +31,8 @@ export interface DocumentState {
   ownerRestricted?: boolean;
   /** DetectionCache from P5-C; not part of undo. */
   detection?: unknown;
+  /** The user chose to keep an encrypted input on this device (spec §6.6). */
+  saveOptIn?: boolean;
 }
 
 export type HistoryEvent =
@@ -208,6 +208,7 @@ export class DocumentModel {
         ...(group ? { group } : {}),
       };
       view = def.applyToView ? def.applyToView(view, params, op) : view;
+      if (SOURCE_OPS.has(def.type)) this.assertSourcePages(params);
       ops.push(op);
     }
     // The group's label lives on its first op.
@@ -227,10 +228,34 @@ export class DocumentModel {
     return ops;
   }
 
+  /** A merged-in file exists and holds every page the op inserts. */
+  private assertSourcePages(params: unknown) {
+    const p = params as { sourceId: SourceId; newIds: readonly string[] };
+    const source = this.state.sources[p.sourceId];
+    if (!source)
+      throw new ToolError('INVALID_INPUT', 'The file to insert is missing');
+    if (p.newIds.length > source.pageCount)
+      throw new ToolError(
+        'INVALID_INPUT',
+        `The file to insert has only ${source.pageCount} pages`,
+      );
+  }
+
   /** A merged-in file, added before dispatching page.mergeIn. */
   addSource(source: SourceRef): void {
     this.set({ sources: { ...this.state.sources, [source.id]: source } });
     this.emit({ kind: 'changed' });
+  }
+
+  /** Drops a source no op or checkpoint uses (an insert refused or cancelled). */
+  removeSource(id: SourceId): boolean {
+    const { sources, log, checkpoints } = this.state;
+    if (!sources[id] || sourceInUse(id, log, checkpoints)) return false;
+    const next = { ...sources };
+    delete next[id];
+    this.set({ sources: next });
+    this.emit({ kind: 'dropped', checkpoints: [], sources: [id] });
+    return true;
   }
 
   commitCheckpoint(
@@ -377,6 +402,15 @@ export class DocumentModel {
   /** Flat-form detection results (P5-C); not an undo step. */
   setDetection(detection: unknown): void {
     this.set({ detection });
+    this.emit({ kind: 'changed' });
+  }
+
+  /** Records whether an encrypted input is kept on this device; not an undo step. */
+  setSaveOptIn(on: boolean): void {
+    if (!!this.state.saveOptIn === on) return;
+    const next: DocumentState = { ...this.state, saveOptIn: true };
+    if (!on) delete next.saveOptIn;
+    this.state = next;
     this.emit({ kind: 'changed' });
   }
 

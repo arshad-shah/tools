@@ -202,6 +202,16 @@ describe('inkToVector', () => {
     expect(v.width).toBeLessThan(200 + 12);
   });
 
+  it('frames a very long drawing without overflowing the call stack', () => {
+    // Far more outline points than a spread call can take as arguments.
+    const many = Array.from({ length: 1000 }, (_, i) =>
+      line(10, 190, 10 + (i % 80), 600),
+    );
+    const v = inkToVector(many, 'thin', { width: 200, height: 100 });
+    expect(v.width).toBeGreaterThan(180);
+    expect(v.height).toBeGreaterThan(79);
+  }, 20_000);
+
   it('refuses an empty drawing', () => {
     expect(() => inkToVector([], 'thin', { width: 10, height: 10 })).toThrow(
       /draw/i,

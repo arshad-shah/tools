@@ -31,10 +31,11 @@ async function mergeBytes(
       newIds: Array.from({ length: count }, () => newId()),
     },
   });
-  if (ops.length)
-    doc.announce(
-      `Inserted ${count} ${count === 1 ? 'page' : 'pages'} from ${name}`,
-    );
+  // A refused insert must not leave the file in the document or on disk.
+  if (!ops.length) return doc.removeSource(sourceId);
+  doc.announce(
+    `Inserted ${count} ${count === 1 ? 'page' : 'pages'} from ${name}`,
+  );
 }
 
 /**

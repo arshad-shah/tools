@@ -61,13 +61,63 @@ function rectsFor(chars: PageChar[]): Box[] {
   return [...byLine.values()].map((boxes) => pad(union(boxes), 0.5));
 }
 
+/** A form field value on the page (its widget rect in page space). */
+export interface SearchField {
+  name: string;
+  value: string;
+  rect: Box;
+}
+
+/**
+ * Matches in a page's form field values. A field value is not page text,
+ * so it never shows up in the text search; a match marks the whole widget,
+ * whose value apply then clears.
+ */
+function fieldMatches(
+  page: { pageId: PageId; pageNumber: number; fields?: SearchField[] },
+  re: RegExp,
+  check?: (s: string) => boolean,
+): SearchMatch[] {
+  const out: SearchMatch[] = [];
+  for (const f of page.fields ?? []) {
+    re.lastIndex = 0;
+    for (let m = re.exec(f.value); m; m = re.exec(f.value)) {
+      if (m[0].length === 0) {
+        re.lastIndex++;
+        continue;
+      }
+      const found = m[0].trim();
+      if (!found || (check && !check(found))) continue;
+      const prefix = `Form field ${f.name}: `;
+      out.push({
+        pageId: page.pageId,
+        pageNumber: page.pageNumber,
+        text: found,
+        rects: [pad(f.rect, 0.5)],
+        context: prefix + f.value.replace(/\n/g, ' '),
+        contextStart:
+          prefix.length + m.index + (m[0].length - m[0].trimStart().length),
+      });
+      // One mark covers the widget: the first match is enough.
+      break;
+    }
+  }
+  return out;
+}
+
 export function searchPages(
-  pages: { pageId: PageId; pageNumber: number; items: PageTextItems }[],
+  pages: {
+    pageId: PageId;
+    pageNumber: number;
+    items: PageTextItems;
+    fields?: SearchField[];
+  }[],
   q: SearchQuery,
 ): SearchMatch[] {
   const { re, check } = queryPattern(q);
   const out: SearchMatch[] = [];
   for (const page of pages) {
+    out.push(...fieldMatches(page, re, check));
     const chars = pageChars(page.items);
     const text = chars.map((c) => c.ch).join('');
     // Char index -> UTF-16 offset in `text` (Array.from split code points).

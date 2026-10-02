@@ -98,6 +98,9 @@ function fieldsOf(
   return out;
 }
 
+export const INLINE_FIELD_MESSAGE = (name: string) =>
+  `The signature field ${name} is stored inside the form list rather than as its own object, so it can't be signed in place. Sign without choosing that field.`;
+
 const unsigned = (d: PDFDict) =>
   d.lookup(N('FT')) === N('Sig') && !d.get(N('V'));
 
@@ -145,6 +148,11 @@ export async function prepareSignature(
       `There is no empty signature field named ${req.placement.fieldName}`,
     );
 
+  // An inline field has no object number to rewrite in the increment;
+  // refuse rather than quietly adding a second, new field.
+  if (reuse && !reuse.ref)
+    throw new ToolError('INVALID_INPUT', INLINE_FIELD_MESSAGE(reuse.name));
+
   const pages = doc.getPages();
   const placement = req.placement;
   const page = placement ? pages[placement.pageIndex] : pages[0];
@@ -158,13 +166,9 @@ export async function prepareSignature(
   const paint: PaintVisual | null = placement?.visual
     ? async (p, area) => {
         const draw = { doc, fonts: new FontCache(doc, loadNotoSans) };
-        // Upright on a rotated page, turned by the placement's own rotation,
-        // exactly as the page-content writer lays it out.
-        const { box, rotate } = uprightFrame(
-          area,
-          page.getRotation().angle,
-          placement.rotate ?? 0,
-        );
+        // buildAppearance already turned `area` upright for the page's
+        // /Rotate; only the placement's own rotation is left to apply.
+        const { box, rotate } = uprightFrame(area, 0, placement.rotate ?? 0);
         await drawSignatureContent(
           {
             doc,
@@ -199,12 +203,13 @@ export async function prepareSignature(
     rect && req.caption
       ? { name: req.name, date: req.captionDate ?? req.m.toLocaleString() }
       : null,
+    page.getRotation().angle,
   );
   const rectArr = rect
     ? [rect.x, rect.y, rect.x + rect.width, rect.y + rect.height]
     : [0, 0, 0, 0];
 
-  if (reuse && reuse.ref) {
+  if (reuse?.ref) {
     // The field, or its first widget kid, gets the value and appearance.
     reuse.dict.set(N('V'), sigRef);
     modified.add(reuse.ref);

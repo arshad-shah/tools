@@ -1,6 +1,7 @@
 import type { Services } from '@/pdf/doc/services';
 import type { PageMarks } from './apply';
 import { glyphBoxes } from './glyphs';
+import { pageStreamBytes } from './page-bytes';
 import { overlapFraction } from './geometry';
 import { termMatcher } from './terms';
 import { OVERLAP } from './text';
@@ -23,6 +24,12 @@ export interface VerifyResult {
   documentLevel: boolean;
   /** A term remains in the decompressed file data (no single place named). */
   rawBytes: boolean;
+  /**
+   * Terms left unmarked on some page: the file-wide raw-byte search skips
+   * them (it would find the kept copies); the marked pages' own streams are
+   * searched instead.
+   */
+  kept: string[];
 }
 
 /** The services verification reads through (render worker and qpdf). */
@@ -93,6 +100,7 @@ export async function verifyRedaction(
   const problems: string[] = [];
   let documentLevel = false;
   let rawBytes = false;
+  let keptTerms: string[] = [];
   const doc = await services.render.open(input.bytes, signal);
   try {
     for (const p of input.pages) {
@@ -158,6 +166,24 @@ export async function verifyRedaction(
           problems.push('A search term remains in the file data');
         }
       }
+      if (kept.size) {
+        const keptOn = [...markedOn]
+          .filter(([, ts]) => [...ts].some((t) => kept.has(t)))
+          .map(([p]) => p);
+        const streams = await pageStreamBytes(input.bytes, keptOn);
+        for (const p of keptOn) {
+          const data = streams.get(p);
+          const hit = [...markedOn.get(p)!].some(
+            (t) => kept.has(t) && !!data && rawContainsTerm(data, t),
+          );
+          if (!hit) continue;
+          failed.add(p);
+          problems.push(
+            `Page ${p + 1}: a search term remains in the page data`,
+          );
+        }
+      }
+      keptTerms = [...kept];
     }
   } finally {
     await services.render.close(doc.docId);
@@ -168,5 +194,6 @@ export async function verifyRedaction(
     problems,
     documentLevel,
     rawBytes,
+    kept: keptTerms,
   };
 }

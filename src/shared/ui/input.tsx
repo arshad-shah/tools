@@ -4,8 +4,10 @@ import { cn } from '@/shared/lib/cn';
 
 interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  'onChange' | 'value'
+  'onChange' | 'value' | 'size'
 > {
+  /** sm: a compact 24px field (inline editors in form rows); lg: a 44px touch target (Focus and phone). */
+  size?: 'sm' | 'md' | 'lg';
   value: string;
   onChange?: (value: string) => void;
   invalid?: boolean;
@@ -24,6 +26,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       clearable,
       leadingSlot,
       trailingSlot,
+      size = 'md',
       ...props
     },
     ref,
@@ -31,10 +34,22 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const showClear = clearable && !!value && !!onChange;
     return (
       <div
+        data-field-box=""
+        // The whole box is the target: a press on its padding focuses the field.
+        onMouseDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          e.preventDefault();
+          e.currentTarget.querySelector('input')?.focus();
+        }}
         className={cn(
           // min-w-0: shrinks inside flex rows; touch: 44px tall, 16px text (no
-          // focus zoom on iOS).
-          'flex h-9 w-full min-w-0 items-center gap-2 rounded-md border bg-surface-2 px-3 transition-colors duration-fast pointer-coarse:h-11',
+          // focus zoom on iOS), except the compact sm size of inline editors.
+          'flex w-full min-w-0 cursor-text items-center rounded-md border bg-surface-2 transition-colors duration-fast',
+          size === 'sm'
+            ? 'h-6 gap-1 px-1.5'
+            : size === 'lg'
+              ? 'h-touch gap-2 px-3'
+              : 'h-9 gap-2 px-3 pointer-coarse:h-touch',
           invalid
             ? 'border-danger focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-danger'
             : 'border-line-strong focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
@@ -50,7 +65,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           value={value}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           className={cn(
-            'min-w-0 flex-1 self-stretch bg-transparent text-sm text-fg pointer-coarse:text-md',
+            'min-w-0 flex-1 self-stretch bg-transparent text-fg',
+            size === 'sm' ? 'text-xs' : 'text-sm pointer-coarse:text-md',
             'placeholder:text-fg-subtle focus:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-50',
             className,

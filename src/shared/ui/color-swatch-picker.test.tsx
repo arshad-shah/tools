@@ -73,4 +73,39 @@ describe('ColorSwatchPicker', () => {
         .getAttribute('aria-checked'),
     ).toBe('true');
   });
+
+  it('can show its label and is named by it', () => {
+    render(
+      <ColorSwatchPicker
+        label="Ink colour"
+        showLabel
+        value="#ffd400"
+        onChange={() => {}}
+        options={OPTIONS}
+      />,
+    );
+    expect(screen.getByText('Ink colour')).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'Ink colour' })).toBeTruthy();
+  });
+
+  it('disabled: no choice can be made', () => {
+    const onChange = vi.fn();
+    render(
+      <ColorSwatchPicker
+        label="Colour"
+        value="#ffd400"
+        onChange={onChange}
+        options={OPTIONS}
+        allowCustom
+        disabled
+      />,
+    );
+    const green = screen.getByRole('radio', { name: 'Green' });
+    expect(green.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(green);
+    fireEvent.keyDown(screen.getByRole('radio', { name: 'Yellow' }), {
+      key: 'ArrowRight',
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

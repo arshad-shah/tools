@@ -103,7 +103,10 @@ test('existing annotations: delete one, recolour one; Link and Widget survive', 
     .filter({ hasText: 'Ring' })
     .getByRole('button', { name: 'Delete' })
     .click();
+  // Colour lives in the toolbar's Style control (P5-G).
+  await page.getByRole('button', { name: /^Style/ }).click();
   await page.getByRole('radio', { name: 'Red' }).click();
+  await page.keyboard.press('Escape');
   await list
     .getByTestId('comment-row')
     .filter({ hasText: /^Alice.*Box/ })

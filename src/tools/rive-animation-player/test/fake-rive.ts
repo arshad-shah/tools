@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { EventType, Layout } from '@rive-app/react-canvas';
+import type { EventType, Layout } from '@/shared/ui/adapters/rive-runtime';
 
 type Callback = () => void;
 type EventCallback = (e: { type: EventType; data?: unknown }) => void;

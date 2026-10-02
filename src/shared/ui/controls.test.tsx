@@ -80,8 +80,8 @@ describe('NumberInput size', () => {
       />,
     );
     const dec = screen.getByRole('button', { name: 'Decrement' });
-    expect(dec.className).toContain('w-11');
-    expect(dec.parentElement!.className).toContain('h-11');
+    expect(dec.className).toContain('w-touch');
+    expect(dec.parentElement!.className).toContain('h-touch');
   });
 });
 

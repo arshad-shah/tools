@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { inspect } from '@arshad-shah/qpdf-wasm';
+import { unzipSync } from 'fflate';
 import { expect, test, type Download, type Page } from '@playwright/test';
+import { makeContentPdf } from '../fixtures/content';
 import { pathOf } from './tool-routes';
 
 /*
@@ -64,7 +66,7 @@ test('protect at export, reopen with the password, unlock with the quick task', 
       buffer: Buffer.from(protectedBytes),
     });
   await page.getByLabel(`Password for ${name}`, { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
   await expect(rendered(page)).toBeAttached();
 
   // The Unlock quick task removes it.
@@ -87,7 +89,26 @@ test('protect at export, reopen with the password, unlock with the quick task', 
 });
 
 test('Convert exports Markdown with a heading', async ({ page }) => {
-  await open(page, 'convert', 'test/fixtures/generated/structured-3.pdf');
+  // A title twice the body size over two body lines.
+  const report = await makeContentPdf([
+    {
+      content: [
+        'BT /F1 24 Tf 72 700 Td (Quarterly report) Tj ET',
+        'BT /F1 12 Tf 72 660 Td (The body text of the report.) Tj ET',
+        'BT /F1 12 Tf 72 645 Td (A second body line follows.) Tj ET',
+      ].join('\n'),
+    },
+  ]);
+  await page.goto('/pdf/edit/convert');
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles({
+      name: 'report.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from(report),
+    });
+  await expect(rendered(page)).toBeAttached();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page
@@ -98,7 +119,24 @@ test('Convert exports Markdown with a heading', async ({ page }) => {
   expect(download.suggestedFilename()).toMatch(/\.md$/);
   const md = new TextDecoder().decode(await bytesOf(download));
   expect(md).toContain('<!-- Converted by tools');
-  expect(md).toMatch(/^# /m);
+  expect(md).toMatch(/^# Quarterly report$/m);
+});
+
+test('Convert saves every page as a PNG in one ZIP', async ({ page }) => {
+  await open(page, 'convert', 'test/fixtures/generated/text-3.pdf');
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'Pages to images' }).first().click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.zip$/);
+  const files = unzipSync(await bytesOf(download));
+  const names = Object.keys(files);
+  expect(names).toHaveLength(3);
+  for (const name of names) {
+    expect(name).toMatch(/\.png$/);
+    // PNG signature: 0x89 then 'PNG'.
+    expect([...files[name].subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+  }
 });
 
 test('Optimize compresses a heavy file with Balanced and exports it', async ({

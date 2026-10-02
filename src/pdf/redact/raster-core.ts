@@ -1,10 +1,17 @@
 import type { Box } from '@/pdf/doc/types';
-import { rgbOf, textColour, type RedactMark } from './mark-style';
+import { rgbOf, type RedactMark } from './mark-style';
 
 /*
  * Pixel and string checks shared by the render worker and the Node test
  * fakes. pdf.js objects are typed structurally so either build fits.
  */
+
+/**
+ * pdf.js render option for redaction renders (pdf.js AnnotationMode.DISABLE):
+ * annotations stay live in the file, so a page image (and the coverage
+ * check) must not paint them too.
+ */
+export const REDACT_RENDER = { annotationMode: 0 } as const;
 
 export interface ViewportLike {
   width: number;
@@ -67,9 +74,9 @@ const near = (data: Uint8ClampedArray | Uint8Array, o: number, c: number[]) =>
 
 /**
  * Per mark, the share of its whole pixels within 8/255 of the fill colour
- * (spec 10.3 step 1). Pixels of the overlay text colour count as covered
- * when the mark carries overlay text. A mark too small to hold a whole
- * pixel counts as covered.
+ * (spec 10.3 step 1). Verification runs before overlay text is drawn, so
+ * every pixel must be the fill. A mark too small to hold a whole pixel
+ * counts as covered.
  */
 export function coverageOf(
   rgba: Uint8ClampedArray | Uint8Array,
@@ -80,14 +87,13 @@ export function coverageOf(
   return marks.map((m) => {
     const { inner } = markPixels(v, m.box);
     const fill = rgbOf(m.fill);
-    const text = m.overlayText ? textColour(m.fill) : null;
     let total = 0;
     let ok = 0;
     for (let y = inner.y0; y < inner.y1; y++)
       for (let x = inner.x0; x < inner.x1; x++) {
         const o = (y * width + x) * 4;
         total++;
-        if (near(rgba, o, fill) || (text && near(rgba, o, text))) ok++;
+        if (near(rgba, o, fill)) ok++;
       }
     return total ? ok / total : 1;
   });
@@ -196,8 +202,16 @@ export async function collectDocTexts(
   for (const list of lists as unknown[][]) {
     for (const f of list as Record<string, unknown>[]) {
       const v = f.value;
+      // A widget's field object names its page: the value is that page's,
+      // so a field left unmarked on another page is the person's to keep.
+      const page =
+        typeof f.page === 'number' && f.page >= 0 && f.page < doc.numPages
+          ? f.page
+          : null;
+      const where =
+        page === null ? 'a form field' : `a form field on page ${page + 1}`;
       for (const s of (Array.isArray(v) ? v : [v]).map(str).filter(Boolean))
-        out.push({ text: s, where: 'a form field', page: null });
+        out.push({ text: s, where, page });
     }
   }
   const att0 = await doc.getAttachments();

@@ -109,12 +109,14 @@ test('the Redact report offers Run OCR for a page turned into an image', async (
 }) => {
   test.setTimeout(120_000);
   await openInWorkspace(page, TYPE3, /Redact/);
-  await page
+  const markArea = page
     .getByRole('toolbar')
-    .getByRole('button', { name: 'Mark area', exact: true })
-    .click();
+    .getByRole('button', { name: 'Mark area', exact: true });
+  await markArea.click();
   const { at } = await slotOf(page);
   await drag(page, at(60, 730), at(400, 690));
+  // Leaving the drawing tool makes the mark a placed object (FIX-OVERLAYS).
+  await markArea.click();
   await expect(page.getByTestId('redact-mark').first()).toBeAttached();
   await page.getByRole('button', { name: 'Apply redactions' }).first().click();
   await page

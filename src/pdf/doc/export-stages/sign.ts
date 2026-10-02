@@ -43,15 +43,15 @@ export const excludedOverlays = (o: ExportOptions): OpId[] => {
   return s?.placementOpId ? [s.placementOpId] : [];
 };
 
-/** A cheap check for existing signatures in raw bytes. */
-export function hasSignatures(bytes: Uint8Array): boolean {
-  const needle = [0x2f, 0x42, 0x79, 0x74, 0x65, 0x52, 0x61, 0x6e, 0x67, 0x65]; // "/ByteRange"
-  outer: for (let i = 0; i <= bytes.length - needle.length; i++) {
-    for (let k = 0; k < needle.length; k++)
-      if (bytes[i + k] !== needle[k]) continue outer;
-    return true;
-  }
-  return false;
+/** Whether the bytes hold signed /Sig fields (parsed in the edit worker). */
+async function hasSignatures(
+  ctx: ExportContext,
+  bytes: Uint8Array,
+): Promise<boolean> {
+  const n = await ctx.services.edit.call('countSignatures', [bytes.slice()], {
+    signal: ctx.signal,
+  });
+  return n > 0;
 }
 
 export const SIGN_ONLY_KEPT =
@@ -62,15 +62,18 @@ export const SIGN_ONLY_KEPT =
  * document and no option rewrites the file: then the original bytes are
  * signed incrementally and earlier signatures stay valid (G17).
  */
-function signOnly(ctx: ExportContext, original: Uint8Array): boolean {
+async function signOnly(
+  ctx: ExportContext,
+  original: Uint8Array,
+): Promise<boolean> {
   const s = signatureOption(ctx.options)!;
   const { log, cursor } = ctx.model.getState();
   return (
-    hasSignatures(original) &&
     log.slice(0, cursor).every((op) => op.id === s.placementOpId) &&
     !ctx.options.stripMetadata &&
     ctx.options.linearize !== true &&
-    ctx.options.onlyPages === null
+    ctx.options.onlyPages === null &&
+    (await hasSignatures(ctx, original))
   );
 }
 
@@ -102,7 +105,7 @@ export const signStage: ExportStage = {
       throw new ToolError('UNKNOWN', 'The document bytes are not available');
     const state = ctx.model.getState();
     const original = await blobs.checkpointBytes(state.checkpoints[0].id);
-    const only = signOnly(ctx, original);
+    const only = await signOnly(ctx, original);
     const place = placementOf(ctx, s.placementOpId);
     const pages = ctx.view.pages.filter(
       (p) => !ctx.options.onlyPages || ctx.options.onlyPages.includes(p.id),

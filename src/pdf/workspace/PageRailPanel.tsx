@@ -1,5 +1,6 @@
 import { PageRail, type RailPage } from '@/shared/ui';
 import type { PageId } from '@/pdf/doc/types';
+import { deletePages } from './modes/organize/actions';
 import type { ModeModule, ModeProps } from './modes/types';
 import { displaySize } from './page-display';
 import { PageImage } from './PageImage';
@@ -55,9 +56,7 @@ export function PageRailPanel({
       onMove={(ids, to) =>
         doc.dispatch({ type: 'page.reorder', params: { pageIds: ids, to } })
       }
-      onDelete={(ids) =>
-        doc.dispatch({ type: 'page.delete', params: { pageIds: ids } })
-      }
+      onDelete={(ids) => deletePages(mode, ids)}
       renderThumb={(rail, thumbWidth) => {
         const entry = byId.get(rail.id);
         if (!entry) return null;
@@ -65,21 +64,26 @@ export function PageRailPanel({
         const handle = page.blank ? null : sourceDocs.get(page.source);
         const size = displaySize(page, state.sources);
         return (
-          <div className="relative">
-            <PageImage
-              page={page}
-              sources={state.sources}
-              docId={handle?.docId ?? null}
-              error={handle?.error?.message ?? null}
-              scale={thumbWidth / size.width}
-              visible
-              priority={1}
-              label={`Page ${i + 1} thumbnail`}
-            />
-            {Badge ? <Badge page={page} doc={doc} /> : null}
-          </div>
+          <PageImage
+            page={page}
+            sources={state.sources}
+            docId={handle?.docId ?? null}
+            error={handle?.error?.message ?? null}
+            scale={thumbWidth / size.width}
+            visible
+            priority={1}
+            label={`Page ${i + 1} thumbnail`}
+          />
         );
       }}
+      renderBadge={
+        Badge
+          ? (rail) => {
+              const entry = byId.get(rail.id);
+              return entry ? <Badge page={entry.page} doc={doc} /> : null;
+            }
+          : undefined
+      }
     />
   );
 }

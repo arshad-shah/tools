@@ -1,13 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Layout, Rive, StateMachineInput } from '@rive-app/react-canvas';
+import {
+  disposeRive,
+  setRiveLayout,
+  type Rive,
+  type StateMachineInput,
+} from '@/shared/ui/adapters/rive-runtime';
 import { notify } from '@/shared/lib/notify';
 import {
   DEFAULT_ALIGN_FIT,
   getAlignmentValue,
   getFitValue,
 } from '../lib/layout';
-import { disposeRive } from '../lib/dispose';
-import { configureSameOriginRuntime } from '../lib/runtime';
 import {
   PlayerError,
   PlayerState,
@@ -24,8 +27,6 @@ import { useDebugLog } from './useDebugLog';
 import { useDropZone } from './useDropZone';
 import { useInputValues } from './useInputValues';
 import { useRiveLoad } from './useRiveLoad';
-
-configureSameOriginRuntime();
 
 export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -251,7 +252,7 @@ export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
   useEffect(() => {
     const rive = riveRef.current;
     if (rive) {
-      rive.layout = new Layout({
+      setRiveLayout(rive, {
         fit: getFitValue(alignFitIndex),
         alignment: getAlignmentValue(alignFitIndex),
       });

@@ -6,7 +6,7 @@ import type { DocumentModel } from '../model';
 import { planFor } from '../plan';
 import { getOperation } from '../registry';
 import { materializeIn, type Services } from '../services';
-import type { CheckpointReport, PageGeom, SourceRef } from '../types';
+import type { CheckpointReport, OpId, PageGeom, SourceRef } from '../types';
 import { getCheckpointRunner, type CheckpointRunner } from './registry';
 
 export interface RunCheckpointArgs<P> {
@@ -21,6 +21,8 @@ export interface RunCheckpointArgs<P> {
   inspect(bytes: Uint8Array, signal: AbortSignal): Promise<PageGeom[]>;
   now?: () => number;
   newId?: () => string;
+  /** Overlay ops the checkpoint replaces: left out of the materialised view. */
+  exclude?: readonly OpId[];
 }
 
 /**
@@ -52,7 +54,7 @@ async function run<P>(
 ): Promise<CheckpointReport> {
   const { model, blobs, services, signal, progress } = a;
   const before = model.getState();
-  const plan = await planFor(model, blobs);
+  const plan = await planFor(model, blobs, { excludeOverlays: a.exclude });
   const view = model.getView();
   const { bytes } = await materializeIn(services, plan, { signal, progress });
   const out = await runner.run(

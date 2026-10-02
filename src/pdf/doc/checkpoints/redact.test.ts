@@ -1,3 +1,4 @@
+import { PDFArray, PDFDocument, PDFName } from 'pdf-lib';
 import { describe, expect, it, vi } from 'vitest';
 import { pdfPageTexts } from '../../../../test/fixtures/builders';
 import {
@@ -79,6 +80,114 @@ describe('runRedaction', () => {
     expect((await pdfPageTexts(bytes))[0]).toBe('');
   });
 
+  it('says when a kept term was searched only in the marked pages', async () => {
+    const services = nodeRedactServices();
+    const { report } = await runRedaction(
+      await makeRedactBasic(),
+      { dpi: 150 },
+      viewWithMarks(2, [{ page: 0, rects: [BASIC_MARK], term: REDACT_TERM }]),
+      env(services),
+      {
+        verify: async () => ({
+          ok: true,
+          failedPages: [],
+          problems: [],
+          documentLevel: false,
+          rawBytes: false,
+          kept: [REDACT_TERM],
+        }),
+        rasterise: async (_s, _o, b: Uint8Array) => b,
+      },
+    );
+    expect(report.lines).toContain(
+      'A search term left unmarked on other pages was searched for in the marked pages only, not in the whole file.',
+    );
+  });
+
+  it('says when a field shown on other pages was emptied everywhere', async () => {
+    const doc = await PDFDocument.create();
+    const p1 = doc.addPage([612, 792]);
+    const p2 = doc.addPage([612, 792]);
+    const field = doc.getForm().createTextField('shared');
+    field.setText('Shown twice');
+    field.addToPage(p1, { x: 72, y: 600, width: 200, height: 20 });
+    field.addToPage(p2, { x: 72, y: 600, width: 200, height: 20 });
+    const { report } = await runRedaction(
+      await doc.save(),
+      { dpi: 150 },
+      viewWithMarks(2, [
+        { page: 0, rects: [{ x: 60, y: 590, width: 230, height: 40 }] },
+      ]),
+      env(nodeRedactServices()),
+    );
+    expect(report.lines).toContain(
+      'Page 1: 1 form field also shown on other pages was emptied everywhere, because it was under a mark.',
+    );
+  });
+
+  it('verifies marks that carry overlay text', async () => {
+    const services = nodeRedactServices();
+    const view = viewWithMarks(2, [
+      { page: 0, rects: [BASIC_MARK], term: REDACT_TERM },
+    ]);
+    for (const item of view.overlays.get('p0') ?? [])
+      (item.params as { overlayText: string | null }).overlayText = 'REDACTED';
+    const { bytes, report } = await runRedaction(
+      await makeRedactBasic(),
+      { dpi: 150 },
+      view,
+      env(services),
+    );
+    expect(report.rasterisedPages).toEqual([]);
+    expect((await pdfPageTexts(bytes))[0]).toContain('REDACTED');
+  });
+
+  it('does not bake annotations into a page turned into an image', async () => {
+    const doc = await PDFDocument.load(await makeType3FontPdf());
+    const c = doc.context;
+    const ap = c.register(
+      c.stream('1 0 0 rg 0 0 50 50 re f', {
+        Type: 'XObject',
+        Subtype: 'Form',
+        BBox: [0, 0, 50, 50],
+      }),
+    );
+    const annot = c.register(
+      c.obj({
+        Type: 'Annot',
+        Subtype: 'Square',
+        Rect: [400, 100, 450, 150],
+        AP: { N: ap },
+      }),
+    );
+    doc.getPage(0).node.set(PDFName.of('Annots'), c.obj([annot]));
+    const services = nodeRedactServices();
+    const { bytes, report } = await runRedaction(
+      await doc.save(),
+      { dpi: 150 },
+      viewWithMarks(1, [
+        { page: 0, rects: [{ x: 60, y: 690, width: 300, height: 40 }] },
+      ]),
+      env(services),
+    );
+    expect(report.rasterisedPages).toEqual([0]);
+    const out = await PDFDocument.load(bytes);
+    // The annotation stays live, and the page image does not hold a copy.
+    expect(
+      out.getPage(0).node.lookup(PDFName.of('Annots'), PDFArray).size(),
+    ).toBe(1);
+    const opened = await services.render.open(bytes);
+    const [white] = await services.render.markCoverage(opened.docId, 0, 72, [
+      {
+        box: { x: 405, y: 105, width: 40, height: 40 },
+        fill: '#ffffff',
+        overlayText: null,
+      },
+    ]);
+    await services.render.close(opened.docId);
+    expect(white).toBe(1);
+  }, 30_000);
+
   it('refuses when nothing is marked', async () => {
     await expect(
       runRedaction(
@@ -107,6 +216,7 @@ describe('document-level leftovers', () => {
           problems: ['A search term remains in the document title'],
           documentLevel: true,
           rawBytes: false,
+          kept: [],
         }),
         rasterise,
       },

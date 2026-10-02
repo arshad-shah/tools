@@ -73,6 +73,15 @@ tester.run('no-raw-ui-outside-kit', rule, {
     { code: `const c = new OffscreenCanvas(1, 1);`, filename: 'src/pdf/a.ts' },
     { code: `const a = document.createElement('a');`, filename: TOOL },
     { code: `const a = <Box styles={s} />;`, filename: TOOL },
+    // Imperative style writes are allowed inside the kit.
+    {
+      code: `panel.style.left = '3px';`,
+      filename: 'src/shared/ui/popover.tsx',
+    },
+    { code: `const s = el.style.left;`, filename: TOOL },
+    { code: `el.setAttribute('aria-label', 'x');`, filename: TOOL },
+    { code: `opts.styles.left = 1;`, filename: TOOL },
+    { code: `Object.assign(target, el.style);`, filename: TOOL },
   ],
   invalid: [
     ...[...RAW, ...SVG_CHILDREN].map((t) => ({
@@ -124,6 +133,42 @@ tester.run('no-raw-ui-outside-kit', rule, {
       code: `const el = document.createElementNS(ns, 'svg');`,
       filename: 'src/pdf/components/x.ts',
       errors: [{ messageId: 'dom', data: { name: 'svg' } }],
+    },
+    ...[
+      `panel.style.left = '3px';`,
+      `panel.style['top'] = '3px';`,
+      `el.current.style.transform += ' scale(2)';`,
+      `el['style'].width = w;`,
+      `el.style.cssText = 'left: 0';`,
+      `el.style.setProperty('--x', '1');`,
+    ].map((code) => ({
+      code,
+      filename: 'src/pdf/components/FileThumb.tsx',
+      errors: [{ messageId: 'imperative', data: { how: 'element.style.*' } }],
+    })),
+    {
+      code: `el.setAttribute('style', 'left: 0');`,
+      filename: 'src/app/a.tsx',
+      errors: [
+        { messageId: 'imperative', data: { how: "setAttribute('style')" } },
+      ],
+    },
+    {
+      code: 'el.setAttribute(`style`, s);',
+      filename: 'src/app/a.tsx',
+      errors: [
+        { messageId: 'imperative', data: { how: "setAttribute('style')" } },
+      ],
+    },
+    {
+      code: `Object.assign(el.style, { left: '0' });`,
+      filename: 'src/app/a.tsx',
+      errors: [
+        {
+          messageId: 'imperative',
+          data: { how: 'Object.assign(element.style)' },
+        },
+      ],
     },
   ],
 });

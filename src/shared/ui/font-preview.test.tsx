@@ -25,7 +25,7 @@ describe('FontPreview', () => {
     expect(sample.style.transform).toBe('skewX(-12deg)');
   });
 
-  it('shows the placeholder in the subtle tone when there is no text', () => {
+  it('shows the placeholder in the ink (it sits on white paper) when there is no text', () => {
     render(
       <FontPreview
         label="Kristi"
@@ -38,6 +38,7 @@ describe('FontPreview', () => {
     const sample = screen.getByRole('img', { name: 'Kristi' })
       .firstElementChild as HTMLElement;
     expect(sample.textContent).toBe('Your name');
+    expect(sample.hasAttribute('data-placeholder')).toBe(true);
     expect(sample.style.color).toBe('rgb(29, 78, 216)');
   });
 

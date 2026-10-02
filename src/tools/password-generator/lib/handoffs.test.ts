@@ -19,6 +19,11 @@ describe('passwordTargets', () => {
     ]);
     expect(out[0].payload).toMatchObject({ mime: SECRET_MIME, text: 'pw' });
   });
+  it('lists PDF Protect and Text Encrypt from the registry (both take secrets)', () => {
+    expect(passwordTargets('pw').map((t) => t.toolId)).toEqual(
+      expect.arrayContaining(['pdf-protect', 'text-encrypt']),
+    );
+  });
   it('uses the registry by default (Hash accepts text)', () => {
     expect(passwordTargets('pw').map((t) => t.toolId)).toContain(
       'hash-generator',

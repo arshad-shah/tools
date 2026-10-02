@@ -69,4 +69,59 @@ describe('SourceDocs', () => {
     expect(docs.get('old')).toBeUndefined();
     await vi.waitFor(() => expect(docs.get('new')?.docId).toBe('d1'));
   });
+
+  /** Opens that wait until `finish()`; each records its abort signal. */
+  function slowRender() {
+    let n = 0;
+    const pending: { signal?: AbortSignal; resolve: () => void }[] = [];
+    const render = {
+      open: vi.fn(
+        (_bytes: Uint8Array, signal?: AbortSignal) =>
+          new Promise<DocInfo>((resolve) => {
+            const docId = `d${n++}`;
+            pending.push({ signal, resolve: () => resolve(info(docId)) });
+          }),
+      ),
+      close: vi.fn(async () => {}),
+      onRestart: () => () => {},
+      generation: () => 0,
+    };
+    const finish = () => pending.splice(0).forEach((p) => p.resolve());
+    return { render, pending, finish };
+  }
+
+  it('release() aborts an open in flight and closes what it opened', async () => {
+    const { render, pending, finish } = slowRender();
+    const docs = new SourceDocs(render, async () => new Uint8Array([1]));
+    docs.ensure(['a']);
+    await vi.waitFor(() => expect(pending).toHaveLength(1));
+    docs.release([]);
+    expect(pending[0].signal?.aborted).toBe(true);
+    finish();
+    await vi.waitFor(() => expect(render.close).toHaveBeenCalledWith('d0'));
+    expect(docs.get('a')).toBeUndefined();
+  });
+
+  it('seed() during an open keeps the seeded document and closes the other', async () => {
+    const { render, pending, finish } = slowRender();
+    const docs = new SourceDocs(render, async () => new Uint8Array([1]));
+    docs.ensure(['a']);
+    await vi.waitFor(() => expect(pending).toHaveLength(1));
+    docs.seed('a', info('seeded'));
+    finish();
+    await vi.waitFor(() => expect(render.close).toHaveBeenCalledWith('d0'));
+    expect(docs.get('a')?.docId).toBe('seeded');
+  });
+
+  it('names each source for the crash budget', async () => {
+    const { render, pending } = slowRender();
+    const docs = new SourceDocs(render, async () => new Uint8Array([1]));
+    docs.ensure(['a']);
+    await vi.waitFor(() => expect(pending).toHaveLength(1));
+    expect(render.open).toHaveBeenCalledWith(
+      expect.any(Uint8Array),
+      expect.any(AbortSignal),
+      'source:a',
+    );
+  });
 });

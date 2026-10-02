@@ -7,7 +7,10 @@ export interface WidgetInfo {
     | 'radio'
     | 'dropdown'
     | 'optionlist'
-    /** A /Sig field (pdf.js does not say whether it is signed). */
+    /**
+     * A /Sig field. pdf.js does not say whether it is signed: Fill & Sign
+     * marks signed ones from the verifier's field names (signed-fields.ts).
+     */
     | 'signature'
     | 'unsupported';
   pageIndex: number;

@@ -40,6 +40,8 @@ export interface RedactPageCtx {
   fonts: FontCache;
   /** Fill colour as 0..255 RGB, painted into patched images. */
   fill: [number, number, number];
+  /** Per-mark fill colours (by mark index), when the marks differ. */
+  fills?: readonly [number, number, number][];
   depth: number;
   counts: RedactCounts;
   /** Dependency injection for tests (a deliberately broken run). */
@@ -110,7 +112,12 @@ async function imageEdits(
       continue;
     }
     if (hit.inline) {
-      const r = patchInline(parsed.ops[hit.op], hit.ctm, marks, ctx.fill);
+      const r = patchInline(
+        parsed.ops[hit.op],
+        hit.ctm,
+        marks,
+        ctx.fills ?? ctx.fill,
+      );
       if ('raster' in r) raster.push(r.raster);
       else edits.set(hit.op, [r.op]);
       continue;
@@ -126,7 +133,7 @@ async function imageEdits(
       raster.push(img.raster);
       continue;
     }
-    paintCovered(img, hit.ctm, marks, ctx.fill);
+    paintCovered(img, hit.ctm, marks, ctx.fills ?? ctx.fill);
     const replacement = await encodeReplacement(
       ctx.doc,
       stream,

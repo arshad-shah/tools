@@ -1,10 +1,12 @@
-import { ColorField } from '@/shared/ui';
-import { formatColor } from '@/shared/lib/colour';
+import { ColorSwatchPicker } from '@/shared/ui';
 import { INK_COLORS } from '@/pdf/sign';
 
-const PRESETS = INK_COLORS.map((c) => c.value);
+const OPTIONS = INK_COLORS.map((c) => ({ value: c.value, label: c.label }));
 
-/** Ink colour (ruling R30 ColorField): opaque #rrggbb, presets as the palette. */
+/**
+ * Ink colour: Black, Blue and Dark blue as swatches (plan H-2), plus a
+ * custom opaque #rrggbb colour.
+ */
 export function InkField({
   value,
   onChange,
@@ -17,15 +19,14 @@ export function InkField({
   label?: string;
 }) {
   return (
-    <ColorField
+    <ColorSwatchPicker
       label={label}
+      showLabel
       value={value}
-      palette={PRESETS}
-      defaultFormat="hex"
+      options={OPTIONS}
+      allowCustom
       disabled={disabled}
-      onChange={(_, color) =>
-        onChange(formatColor({ ...color, alpha: 1 }, 'hex'))
-      }
+      onChange={onChange}
     />
   );
 }

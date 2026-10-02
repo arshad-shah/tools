@@ -24,6 +24,8 @@ export interface PageRedactReport {
   images: number;
   paths: number;
   annotations: number;
+  /** Fields emptied everywhere because one of their widgets was marked. */
+  clearedFields: number;
 }
 
 export interface RedactPagesResult {
@@ -46,6 +48,30 @@ export interface RedactOptions {
   glyphEdits?: typeof glyphEdits;
 }
 
+/**
+ * Draws the marks' overlay text over already redacted (and verified)
+ * pages. Verification runs without it, so the label can never count as
+ * text or as fill under a mark.
+ */
+export async function drawOverlayText(
+  bytes: Uint8Array,
+  pages: readonly PageMarks[],
+): Promise<Uint8Array> {
+  const withText = pages.filter((p) => p.marks.some((m) => m.overlayText));
+  if (!withText.length) return bytes;
+  const doc = await loadPdf(bytes);
+  for (const p of withText)
+    await drawFills(doc, doc.getPage(p.pageIndex), p.marks, 'text');
+  return doc.save({ useObjectStreams: true });
+}
+
+/** The marks without overlay text (what is redacted and verified). */
+export const withoutOverlayText = (pages: readonly PageMarks[]): PageMarks[] =>
+  pages.map((p) => ({
+    ...p,
+    marks: p.marks.map((m) => ({ ...m, overlayText: null })),
+  }));
+
 export const boxesOf = (p: PageMarks): Box[] => p.marks.map((m) => m.box);
 
 async function redactOnePage(
@@ -61,12 +87,13 @@ async function redactOnePage(
     codec: o.codec,
     fonts,
     fill: rgbOf(p.marks[0]?.fill ?? '#000000'),
+    fills: p.marks.map((m) => rgbOf(m.fill)),
     depth: 0,
     counts: { glyphs: 0, images: 0, paths: 0 },
     glyphEdits: o.glyphEdits,
   };
   const r = await redactPageContent(doc, page, boxes, ctx);
-  const annotations = removeAnnotations(doc, page, boxes);
+  const annots = removeAnnotations(doc, page, boxes);
   if (!r.raster.length) await drawFills(doc, page, p.marks);
   return {
     raster: r.raster,
@@ -74,7 +101,8 @@ async function redactOnePage(
       pageIndex: p.pageIndex,
       marks: p.marks.length,
       ...(r.raster.length ? { glyphs: 0, images: 0, paths: 0 } : ctx.counts),
-      annotations,
+      annotations: annots.count,
+      clearedFields: annots.clearedFields,
     },
   };
 }

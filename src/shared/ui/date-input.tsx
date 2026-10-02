@@ -10,6 +10,8 @@ export interface DateInputProps {
   max?: string;
   disabled?: boolean;
   id?: string;
+  /** 'sm': compact (inline editors). */
+  size?: 'sm' | 'md';
 }
 
 /** Native date (or date and time) field in the kit's input style. */
@@ -22,6 +24,7 @@ export function DateInput({
   max,
   disabled,
   id,
+  size,
 }: DateInputProps) {
   return (
     <Input
@@ -32,6 +35,7 @@ export function DateInput({
       min={min}
       max={max}
       disabled={disabled}
+      size={size}
       onChange={onChange}
     />
   );

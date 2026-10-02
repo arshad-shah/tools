@@ -12,7 +12,7 @@ import {
   type ImageFormat,
   type PageTextItems,
 } from '@/pdf/render';
-import { toMarkdown } from './markdown';
+import { toMarkdown, type CellBox } from './markdown';
 
 /**
  * Convert mode exports (spec 7.2): each action materialises the current
@@ -92,6 +92,28 @@ async function eachPageText(
   return out;
 }
 
+/**
+ * Each page's table cells from the flat-form cell detector, for GFM tables.
+ * A page the detector can't read just has none (its text stays prose).
+ */
+async function eachPageCells(
+  info: DocInfo,
+  env: ConvertEnv,
+): Promise<CellBox[][]> {
+  const out: CellBox[][] = [];
+  for (let i = 0; i < info.pageCount; i++) {
+    env.signal?.throwIfAborted();
+    try {
+      const d = await env.services.render.detect(info.docId, i, env.signal);
+      out.push(d.cells);
+    } catch (e) {
+      if (env.signal?.aborted) throw e;
+      out.push([]);
+    }
+  }
+  return out;
+}
+
 const emptyOf = (pages: PageTextItems[], numbers: number[]) =>
   pages.flatMap((p, i) =>
     p.items.some((it) => it.str.trim() !== '') ? [] : [numbers[i]],
@@ -122,8 +144,11 @@ export function exportMarkdown(
 ): Promise<{ markdown: string; emptyPages: number[] }> {
   return withMaterialized(model, blobs, pageIds, env, async (info, nums) => {
     const pages = await eachPageText(info, nums, env);
+    const cells = await eachPageCells(info, env);
     return {
-      markdown: toMarkdown(pages.map((items) => ({ items }))),
+      markdown: toMarkdown(
+        pages.map((items, i) => ({ items, geometry: { cells: cells[i] } })),
+      ),
       emptyPages: emptyOf(pages, nums),
     };
   });
@@ -136,13 +161,20 @@ export interface ImageExportOptions {
   quality: number;
 }
 
-/** One image per page; `capped` lists pages rendered below the asked DPI. */
+export type ImageSink = (file: { name: string; data: Uint8Array }) => void;
+
+/**
+ * One image per page; `capped` lists pages rendered below the asked DPI.
+ * With a `sink`, each image goes to it as soon as it is rendered and none
+ * is kept (`files` stays empty), so a long export never holds them all.
+ */
 export function exportImages(
   model: DocumentModel,
   blobs: BlobSource,
   pageIds: PageId[] | null,
   o: ImageExportOptions,
   env: ConvertEnv,
+  sink?: ImageSink,
 ): Promise<{
   files: { name: string; data: Uint8Array }[];
   capped: { page: number; dpi: number }[];
@@ -162,12 +194,15 @@ export function exportImages(
         i,
         o,
         env.signal,
+        2, // background: never ahead of the canvas
       );
       const n = String(nums[i]).padStart(digits, '0');
-      files.push({
+      const file = {
         name: deriveFilename(name, `page-${n}`, ext),
         data: img.bytes,
-      });
+      };
+      if (sink) sink(file);
+      else files.push(file);
       if (img.capped) capped.push({ page: nums[i], dpi: img.dpi });
     }
     return { files, capped };

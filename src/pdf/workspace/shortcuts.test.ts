@@ -23,6 +23,7 @@ const api = () =>
       'lastPage',
       'escape',
       'find',
+      'selectAllPages',
     ].map((k) => [k, vi.fn<(i?: number) => void>()]),
   ) as unknown as WorkspaceShortcutApi &
     Record<keyof WorkspaceShortcutApi, ReturnType<typeof vi.fn>>;
@@ -72,6 +73,18 @@ describe('workspaceShortcuts', () => {
     expect(a.lastPage).toHaveBeenCalled();
     press('0', { ctrlKey: true });
     expect(a.zoomFitWidth).toHaveBeenCalled();
+  });
+
+  it('Mod+A selects every page, but not while typing (native select all)', () => {
+    const a = api();
+    dispose = registerShortcuts(workspaceShortcuts(a));
+    press('a', { ctrlKey: true });
+    expect(a.selectAllPages).toHaveBeenCalledTimes(1);
+    const input = document.createElement('input');
+    document.body.append(input);
+    press('a', { ctrlKey: true }, input);
+    expect(a.selectAllPages).toHaveBeenCalledTimes(1);
+    input.remove();
   });
 
   it('single letters do nothing while typing', () => {

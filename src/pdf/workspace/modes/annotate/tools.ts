@@ -47,9 +47,6 @@ export const MARKUP_TOOLS: Partial<Record<AnnotateTool, MarkupSubtype>> = {
   squiggly: 'Squiggly',
 };
 
-export const isMarkupTool = (t: string | null): t is AnnotateTool =>
-  !!t && t in MARKUP_TOOLS;
-
 /** Tools that draw on the canvas with the pointer. */
 export const DRAW_TOOLS = new Set<string>([
   'freetext',

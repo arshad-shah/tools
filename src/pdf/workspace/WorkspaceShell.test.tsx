@@ -255,7 +255,7 @@ describe('WorkspaceShell', () => {
       name: 'Organize tools',
     });
     const big = (el: HTMLElement) =>
-      /\b(size-11|h-11|min-h-11)\b/.test(el.className);
+      /(^|\s)(size-touch|h-touch|min-h-touch)(\s|$)/.test(el.className);
     for (const b of within(tools).getAllByRole('button'))
       expect(big(b)).toBe(true);
     const bar = screen.getByRole('banner');
@@ -341,6 +341,39 @@ describe('WorkspaceShell', () => {
     fireEvent.change(name, { target: { value: 'renamed.pdf' } });
     fireEvent.keyDown(name, { key: 'Enter' });
     expect(model.getState().name).toBe('renamed.pdf');
+  });
+
+  it('Esc in the file name cancels the edit and keeps the selection', async () => {
+    const { ui, model } = setup();
+    render(ui);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Select page 2' }),
+    );
+    const rail = screen.getByRole('listbox', { name: 'Pages' });
+    const second = () =>
+      within(rail).getByRole('option', { name: /^Page 2 of/ });
+    expect(second().getAttribute('aria-selected')).toBe('true');
+    const name = screen.getByRole('textbox', { name: 'Document name' });
+    fireEvent.change(name, { target: { value: 'draft.pdf' } });
+    key('Escape', {}, name);
+    expect(second().getAttribute('aria-selected')).toBe('true');
+    expect((name as HTMLInputElement).value).toBe('a.pdf');
+    expect(model.getState().name).toBe('a.pdf');
+  });
+
+  it('skip links lead to the document and to the tools', async () => {
+    const { ui } = setup();
+    const { container } = render(ui);
+    await screen.findByRole('toolbar', { name: 'Organize tools' });
+    const [doc, tools] = [...container.querySelectorAll('a')];
+    expect(doc.textContent).toBe('Skip to the document');
+    expect(document.querySelector(doc.getAttribute('href')!)?.tagName).toBe(
+      'MAIN',
+    );
+    expect(tools.textContent).toBe('Skip to the tools');
+    expect(
+      document.querySelector(tools.getAttribute('href')!)?.getAttribute('role'),
+    ).toBe('tabpanel');
   });
 
   it('digit 1 activates Organize', async () => {

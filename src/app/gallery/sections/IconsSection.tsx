@@ -2,6 +2,7 @@ import * as Icons from '@/shared/ui/icons';
 import type { IconComponent, IconSize } from '@/shared/ui/icons';
 import { Logo, LogoMark } from '@/shared/ui/icons';
 import { Row, Section } from '../Section';
+import { IconReview } from './IconReview';
 
 const SIZES: IconSize[] = ['xs', 'sm', 'md', 'lg', 'xl'];
 
@@ -56,6 +57,7 @@ export function IconsSection() {
           </li>
         ))}
       </ul>
+      <IconReview />
     </Section>
   );
 }

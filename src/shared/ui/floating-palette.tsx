@@ -10,6 +10,8 @@ export interface FloatingPaletteProps {
   onSideChange(s: 'left' | 'right'): void;
   /** lg: 44px tools and grip for touch (spec §13.2). Default md. */
   size?: ToolbarSize;
+  /** Custom controls below the tools (colour, width: review P5-D). */
+  trailing?: React.ReactNode;
 }
 
 /**
@@ -23,6 +25,7 @@ export function FloatingPalette({
   side,
   onSideChange,
   size = 'md',
+  trailing,
 }: FloatingPaletteProps) {
   const drag = React.useRef<{ x: number; y: number } | null>(null);
   const [offset, setOffset] = React.useState<{ x: number; y: number } | null>(
@@ -80,7 +83,7 @@ export function FloatingPalette({
         }}
         className={cn(
           'flex shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-fg-subtle outline-none transition-colors duration-fast hover:bg-surface-2 hover:text-fg focus-visible:ring-2 focus-visible:ring-focus active:cursor-grabbing',
-          size === 'lg' ? 'size-11' : 'h-5 w-(--icon-button-sm)',
+          size === 'lg' ? 'h-touch w-touch' : 'h-5 w-(--icon-button-sm)',
         )}
       >
         <IconGripVertical size="sm" className="rotate-90" />
@@ -90,6 +93,7 @@ export function FloatingPalette({
         groups={groups}
         orientation="vertical"
         size={size}
+        trailing={trailing}
       />
     </div>
   );

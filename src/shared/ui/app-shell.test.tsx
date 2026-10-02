@@ -2,7 +2,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { findBanned } from '../../../eslint-rules/banned-glyphs.js';
-import { AppShell } from './app-shell';
+import { AppShell, SkipLinks } from './app-shell';
 import { Breadcrumb } from './breadcrumb';
 import { TopBar } from './top-bar';
 
@@ -19,6 +19,22 @@ describe('AppShell', () => {
     const firstFocusable = container.querySelector('a, button, [tabindex="0"]');
     expect(firstFocusable?.textContent).toBe('Skip to content');
     expect(firstFocusable?.getAttribute('href')).toBe('#main');
+  });
+
+  it('SkipLinks renders each link in order', () => {
+    render(
+      <SkipLinks
+        links={[
+          { href: '#doc', label: 'Skip to the document' },
+          { href: '#tools', label: 'Skip to the tools' },
+        ]}
+      />,
+    );
+    const links = screen.getAllByRole('link');
+    expect(links.map((l) => [l.textContent, l.getAttribute('href')])).toEqual([
+      ['Skip to the document', '#doc'],
+      ['Skip to the tools', '#tools'],
+    ]);
   });
 
   it('renders complementary regions only when given', () => {

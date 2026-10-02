@@ -1,9 +1,10 @@
 import { ToolError } from '@/shared/lib/errors';
 import type { RasterReason } from '@/pdf/edit/content/font-metrics';
-import type {
-  PageMarks,
-  RedactMark,
-  RedactPagesResult,
+import {
+  withoutOverlayText,
+  type PageMarks,
+  type RedactMark,
+  type RedactPagesResult,
 } from '@/pdf/redact/apply';
 import { verifyRedaction, type VerifyResult } from '@/pdf/redact/verify';
 import type { RedactApplyParams, RedactMarkParams } from '../ops/redact';
@@ -121,6 +122,7 @@ function report(
   pages: PageMarks[],
   r: RedactPagesResult,
   rasterised: Map<number, (RasterReason | 'verification')[]>,
+  v: VerifyResult,
 ): CheckpointReport {
   const marks = pages.reduce((n, p) => n + p.marks.length, 0);
   let title = `${marks} ${plural(marks, 'area')} on ${pages.length} ${plural(pages.length, 'page')}, verified`;
@@ -141,6 +143,11 @@ function report(
       );
     return `Page ${p.pageIndex + 1}: ${parts.join(', ')}`;
   });
+  for (const p of r.pages)
+    if (p.clearedFields)
+      lines.push(
+        `Page ${p.pageIndex + 1}: ${p.clearedFields} form ${plural(p.clearedFields, 'field')} also shown on other pages ${p.clearedFields === 1 ? 'was' : 'were'} emptied everywhere, because ${p.clearedFields === 1 ? 'it was' : 'they were'} under a mark.`,
+      );
   for (const item of r.scrubbed)
     lines.push(`Removed because it contained a search term: ${item}`);
   if (r.tagged)
@@ -148,6 +155,10 @@ function report(
       'Tagged structure was removed because it can contain hidden copies of text.',
     );
   lines.push('Verified: no content remains under the marks.');
+  if (v.kept.length)
+    lines.push(
+      'A search term left unmarked on other pages was searched for in the marked pages only, not in the whole file.',
+    );
   const warnings = [...rasterised].map(
     ([page, reasons]) =>
       `Page ${page + 1} was turned into an image because ${RASTER_WORDS[reasons[0]]}. Run OCR to make it searchable again.`,
@@ -170,9 +181,12 @@ export async function runRedaction(
   steps: RedactSteps = { verify: verifyRedaction, rasterise: rasterisePage },
 ): Promise<{ bytes: Uint8Array; report: CheckpointReport }> {
   const { services, signal, progress } = env;
-  const { pages, terms } = marksFromView(view);
-  if (!pages.length)
+  const marked = marksFromView(view);
+  const { terms } = marked;
+  if (!marked.pages.length)
     throw new ToolError('INVALID_INPUT', 'Mark something to redact first');
+  // Overlay text is drawn only after verification passes.
+  const pages = withoutOverlayText(marked.pages);
   const total = pages.length + 3;
   progress({ done: 0, total, label: 'Removing content under the marks' });
   const r = await services.edit.call(
@@ -228,8 +242,13 @@ export async function runRedaction(
       v = await steps.verify({ bytes: out, pages, terms }, services, signal);
       if (!v.ok) throw failure(v);
     }
+    out = await services.edit.call(
+      'drawOverlayText',
+      [out.slice(), marked.pages],
+      { signal },
+    );
     progress({ done: total, total, label: 'Redactions verified' });
-    return { bytes: out, report: report(pages, r, rasterised) };
+    return { bytes: out, report: report(pages, r, rasterised, v) };
   } finally {
     await services.render.close(original.docId);
   }

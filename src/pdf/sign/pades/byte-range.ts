@@ -115,6 +115,9 @@ export function signedContent(file: Uint8Array, r: ByteRangeInfo): Uint8Array {
   ]);
 }
 
+export const DID_NOT_FIT =
+  'The signature did not fit in the space reserved for it';
+
 /** Writes the DER signature into the placeholder (upper-case hex, zero padded). */
 export function insertSignature(
   file: Uint8Array,
@@ -123,10 +126,7 @@ export function insertSignature(
 ): Uint8Array {
   const room = r.contentsEnd - r.contentsStart - 2;
   if (der.length * 2 > room)
-    throw new ToolError(
-      'SIGNATURE_INVALID',
-      'The signature did not fit in the space reserved for it',
-    );
+    throw new ToolError('SIGNATURE_INVALID', DID_NOT_FIT);
   let hex = '';
   for (const b of der) hex += b.toString(16).toUpperCase().padStart(2, '0');
   const out = file.slice();

@@ -10,5 +10,6 @@ export function timeSourceText(
   if (r.time.source === 'timestamp' && r.timestampVerified)
     return 'Time from a trusted timestamp server';
   if (r.timestampValid) return 'Timestamp not verified';
-  return 'Time from the device clock';
+  // /M is whatever the signer's software wrote: not necessarily this device.
+  return 'Time stated by the signer (not verified)';
 }

@@ -3,7 +3,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ToolError } from '@/shared/lib/errors';
-import { CameraCapture, type CameraCaptureProps } from './camera-capture';
+import {
+  CameraCapture,
+  CameraFrameGuide,
+  type CameraCaptureProps,
+} from './camera-capture';
 import { CAMERA_BLOCKED } from './camera-errors';
 
 function fakeStream(caps: Record<string, unknown> = {}) {
@@ -73,6 +77,19 @@ afterEach(() => {
 const flush = () => act(async () => {});
 
 describe('CameraCapture', () => {
+  it('draws the overlay over the live preview only, hidden from readers', async () => {
+    const { stream } = fakeStream();
+    mockMedia(vi.fn().mockResolvedValue(stream));
+    render(<Harness overlay={<span>guide</span>} />);
+    expect(screen.queryByText('guide')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+    await flush();
+    const guide = screen.getByText('guide');
+    expect(guide.closest('[aria-hidden="true"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    expect(screen.queryByText('guide')).toBeNull();
+  });
+
   it('Start requests the stream; Stop stops every track', async () => {
     const { stream, track } = fakeStream();
     const gum = vi.fn().mockResolvedValue(stream);
@@ -182,5 +199,15 @@ describe('CameraCapture', () => {
         .getByRole('switch', { name: 'Torch' })
         .getAttribute('aria-checked'),
     ).toBe('true');
+  });
+});
+
+describe('CameraFrameGuide', () => {
+  it('shows its hint and is decorative', () => {
+    const { container } = render(<CameraFrameGuide hint="Sign here" />);
+    expect(screen.getByText('Sign here')).toBeTruthy();
+    expect(container.firstElementChild?.getAttribute('aria-hidden')).toBe(
+      'true',
+    );
   });
 });

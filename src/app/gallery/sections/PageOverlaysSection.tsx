@@ -6,6 +6,7 @@ import {
   ObjectLayer,
   OverlayLayer,
   PageBox,
+  PagePlaced,
   SelectionFrame,
   ShapeLayer,
   Sized,
@@ -25,7 +26,8 @@ const SHAPES: Shape[] = [
   {
     kind: 'rect',
     box: { x: 60, y: 640, width: 240, height: 40 },
-    stroke: { token: 'redact' },
+    // The hatch is drawn in the stroke colour: it must differ from the fill.
+    stroke: { token: 'fg-muted' },
     fill: { token: 'redact' },
     hatch: true,
   },
@@ -158,6 +160,19 @@ export function PageOverlaysSection() {
               pressed={pressed}
               onActivate={() => setPressed((p) => !p)}
             />
+            <PagePlaced
+              transform={T}
+              x={420}
+              y={80}
+              width={140}
+              height={40}
+              rotate={20}
+              className="rounded-sm border border-dashed border-line-strong"
+            >
+              <Text size="xs" tone="muted" className="p-1">
+                PagePlaced
+              </Text>
+            </PagePlaced>
             <PageBox transform={T} box={box} rotate={rotate}>
               <Text size="xs" tone="muted" className="p-1">
                 Hello

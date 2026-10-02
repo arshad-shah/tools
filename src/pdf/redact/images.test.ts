@@ -257,3 +257,78 @@ describe('form XObjects', () => {
     ).toContain('(SECRET)');
   });
 });
+
+describe('fill colours and footprints', () => {
+  it('paints each mark in its own fill colour', async () => {
+    const doc = await PDFDocument.create();
+    const im = image(
+      doc,
+      { ColorSpace: 'DeviceRGB', Filter: 'FlateDecode' },
+      zlibSync(solid(3, [200, 200, 200])),
+    );
+    const page = addPage(doc, DRAW, { Im0: im });
+    const c: RedactPageCtx = {
+      ...ctx(doc),
+      fills: [
+        [255, 0, 0],
+        [0, 0, 255],
+      ],
+    };
+    await redactPageContent(
+      doc,
+      page,
+      [
+        { x: 100, y: 100, width: 20, height: 100 },
+        { x: 180, y: 100, width: 20, height: 100 },
+      ],
+      c,
+    );
+    const px = unzlibSync(xobject(page, 'Rd0').stream.contents);
+    const at = (x: number, y: number) => [
+      ...px.subarray((y * W + x) * 3, (y * W + x) * 3 + 3),
+    ];
+    expect(at(5, 50)).toEqual([255, 0, 0]);
+    expect(at(95, 50)).toEqual([0, 0, 255]);
+    expect(at(50, 50)).toEqual([200, 200, 200]);
+  });
+
+  it('paints a low resolution pixel when a mark covers only part of it', async () => {
+    const doc = await PDFDocument.create();
+    const s = PDFRawStream.of(
+      doc.context.obj({
+        Type: 'XObject',
+        Subtype: 'Image',
+        Width: 4,
+        Height: 4,
+        BitsPerComponent: 8,
+        ColorSpace: 'DeviceGray',
+        Length: 16,
+      } as never) as unknown as PDFDict,
+      new Uint8Array(16).fill(200),
+    );
+    const page = addPage(doc, DRAW, { Im0: doc.context.register(s) });
+    // One image pixel spans 25 by 25 points; the mark is far smaller and
+    // away from that pixel's centre.
+    await redactPageContent(
+      doc,
+      page,
+      [{ x: 101, y: 101, width: 4, height: 4 }],
+      ctx(doc),
+    );
+    const px = unzlibSync(xobject(page, 'Rd0').stream.contents);
+    // Bottom-left image pixel (row 3, column 0) is painted, its neighbours are not.
+    expect(px[3 * 4 + 0]).toBe(0);
+    expect(px[3 * 4 + 1]).toBe(200);
+    expect(px[2 * 4 + 0]).toBe(200);
+  });
+
+  it('leaves pixels that only touch the edge of a mark', async () => {
+    const doc = await PDFDocument.create();
+    const im = image(doc, { ColorSpace: 'DeviceGray' }, solid(1, [200]));
+    const page = addPage(doc, DRAW, { Im0: im });
+    await redactPageContent(doc, page, [LEFT_HALF], ctx(doc));
+    const px = unzlibSync(xobject(page, 'Rd0').stream.contents);
+    expect(px[10 * W + 49]).toBe(0);
+    expect(px[10 * W + 50]).toBe(200);
+  });
+});

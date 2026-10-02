@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Rive } from '@rive-app/react-canvas';
+import type { Rive } from '@/shared/ui/adapters/rive-runtime';
 import { attachSpeedControl } from '../lib/speed';
 
 /**

@@ -5,8 +5,9 @@ import { effectiveStyle, overlayLayout, type FieldStyle } from './text-style';
 
 /**
  * A field's value drawn over the page before export, where the writer will
- * put it: single-line text with its size, colour, spacing and character
- * boxes; multiline text wrapped; ticks and crosses as vector marks.
+ * put it: text with its size, colour, spacing and character boxes (on
+ * wrapped lines too); plain multiline text wrapped; ticks and crosses as
+ * vector marks.
  */
 export function FieldValue({
   field,
@@ -36,6 +37,28 @@ export function FieldValue({
     );
   }
   const s = style ?? effectiveStyle(field, quarter);
+  const styledLines =
+    field.type === 'multiline' && (s.spacing > 0 || s.comb > 0);
+  if (styledLines) {
+    const wrapped = overlayLayout(value, field.rect, s, quarter, true);
+    return (
+      <>
+        {wrapped.lines.map((line, i) => (
+          <PageText
+            key={i}
+            transform={transform}
+            box={field.rect}
+            text={line.chars.join('')}
+            size={wrapped.size}
+            color={s.color}
+            x={line.x}
+            baseline={line.baseline}
+            data-testid={i === 0 ? `value-${field.key}` : undefined}
+          />
+        ))}
+      </>
+    );
+  }
   if (field.type === 'multiline')
     return (
       <PageBox
@@ -53,7 +76,7 @@ export function FieldValue({
     <PageText
       transform={transform}
       box={field.rect}
-      text={value}
+      text={layout.chars.join('')}
       size={layout.size}
       color={s.color}
       x={layout.x}

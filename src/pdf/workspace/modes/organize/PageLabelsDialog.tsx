@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { newId } from '@/shared/lib/id';
 import { IconPlus, IconTrash } from '@/shared/ui/icons';
 import {
   Button,
@@ -27,6 +28,8 @@ const STYLES = [
 ];
 
 interface Row {
+  /** Stable React key: removing a row never shifts another's inputs. */
+  key: string;
   /** 1-based page where the range starts. */
   from: number;
   style: string;
@@ -37,12 +40,13 @@ interface Row {
 const toRows = (ranges: readonly PageLabelRange[] | null): Row[] =>
   ranges?.length
     ? ranges.map((r) => ({
+        key: newId(),
         from: r.start + 1,
         style: r.style ?? 'none',
         prefix: r.prefix ?? '',
         first: r.first ?? 1,
       }))
-    : [{ from: 1, style: 'D', prefix: '', first: 1 }];
+    : [{ key: newId(), from: 1, style: 'D', prefix: '', first: 1 }];
 
 /** "Page labels": the numbers viewers show for pages (e.g. i, ii, then 1, 2). */
 export function PageLabelsDialog({
@@ -55,6 +59,7 @@ export function PageLabelsDialog({
   ctx: ModeProps;
 }) {
   const count = ctx.doc.view.pages.length;
+  const uid = useId();
   const [rows, setRows] = useState<Row[]>(() =>
     toRows(ctx.doc.view.pageLabels),
   );
@@ -84,16 +89,16 @@ export function PageLabelsDialog({
       <DialogBody className="flex flex-col gap-3">
         {rows.map((r, i) => (
           <fieldset
-            key={i}
+            key={r.key}
             className="flex flex-wrap items-end gap-3 rounded-md border border-line p-3"
           >
             <legend className="px-1 text-sm font-medium text-fg">
               Range {i + 1}
             </legend>
             <div className="flex flex-col gap-1">
-              <Label htmlFor={`label-from-${i}`}>From page</Label>
+              <Label htmlFor={`${uid}-from-${r.key}`}>From page</Label>
               <NumberInput
-                id={`label-from-${i}`}
+                id={`${uid}-from-${r.key}`}
                 value={r.from}
                 min={1}
                 max={count}
@@ -101,26 +106,26 @@ export function PageLabelsDialog({
               />
             </div>
             <div className="flex min-w-48 flex-col gap-1">
-              <Label htmlFor={`label-style-${i}`}>Style</Label>
+              <Label htmlFor={`${uid}-style-${r.key}`}>Style</Label>
               <Select
-                id={`label-style-${i}`}
+                id={`${uid}-style-${r.key}`}
                 value={r.style}
                 items={STYLES}
                 onValueChange={(style) => patch(i, { style })}
               />
             </div>
             <div className="flex w-28 flex-col gap-1">
-              <Label htmlFor={`label-prefix-${i}`}>Prefix</Label>
+              <Label htmlFor={`${uid}-prefix-${r.key}`}>Prefix</Label>
               <Input
-                id={`label-prefix-${i}`}
+                id={`${uid}-prefix-${r.key}`}
                 value={r.prefix}
                 onChange={(prefix) => patch(i, { prefix })}
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor={`label-first-${i}`}>Start at</Label>
+              <Label htmlFor={`${uid}-first-${r.key}`}>Start at</Label>
               <NumberInput
-                id={`label-first-${i}`}
+                id={`${uid}-first-${r.key}`}
                 value={r.first}
                 min={1}
                 onValueChange={(first) => patch(i, { first })}
@@ -144,6 +149,7 @@ export function PageLabelsDialog({
               setRows((rs) => [
                 ...rs,
                 {
+                  key: newId(),
                   from: Math.min(count, (rs.at(-1)?.from ?? 0) + 1),
                   style: 'D',
                   prefix: '',

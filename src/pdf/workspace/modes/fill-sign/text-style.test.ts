@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_TEXT,
+  knowContentHash,
   lastUsed,
+  textKey,
   overlayLayout,
   remember,
   useTextDefaults,
@@ -26,6 +28,20 @@ describe('text settings memory', () => {
     const docs = Object.keys(useTextDefaults.getState().byDoc);
     expect(docs).toHaveLength(30);
     expect(docs).not.toContain('d0');
+  });
+});
+
+describe('settings key', () => {
+  it('keys settings by the file content once its hash is known', () => {
+    const doc = { state: { id: 'doc-1' } };
+    expect(textKey(doc)).toBe('doc-1');
+    knowContentHash('doc-1', 'abc');
+    expect(textKey(doc)).toBe('abc');
+    remember(textKey(doc), { size: 16, color: '#000000', spacing: 1 }, () => 1);
+    // The same file opened again: a new document id, the same content.
+    knowContentHash('doc-2', 'abc');
+    remember('other', DEFAULT_TEXT, () => 2);
+    expect(lastUsed(textKey({ state: { id: 'doc-2' } })).size).toBe(16);
   });
 });
 

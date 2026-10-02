@@ -76,6 +76,8 @@ export async function openFile(
     { encryptedInput, restricted },
     opts.db ?? null,
   );
+  // Kept and saved: a restored copy can still check the owner password.
+  if (restricted) blobs.addOriginal(file.bytes);
   const model = new DocumentModel(state);
   return restricted
     ? { status: 'restricted', model, blobs, info }

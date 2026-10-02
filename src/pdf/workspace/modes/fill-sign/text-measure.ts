@@ -23,9 +23,6 @@ export function textWidth(text: string, size: number): number {
   return (units / 1000) * size;
 }
 
-/** The default flat-fill size for a box (same rule as the writer). */
-export const fillSize = (height: number) => Math.min(11, height * 0.75);
-
 /**
  * Whether `text` fits a box at the writer's size, shrinking down to 6pt
  * (spec §8.5): single lines shrink to the width; multiline text wraps at

@@ -13,11 +13,16 @@ import type { AssetId, OpId, OverlayItem, PageId, SourceId } from './types';
  * as exported), each with the page label it shows in the view.
  * `excludeOverlays` leaves those ops out of the page content (a placed
  * signature that becomes a digital signature's appearance, plan H-11).
+ * `filename` is the export's file name (header and footer {filename}).
  */
 export async function planFor(
   model: DocumentModel,
   blobs: BlobSource,
-  opts: { onlyPages?: PageId[]; excludeOverlays?: OpId[] } = {},
+  opts: {
+    onlyPages?: PageId[];
+    excludeOverlays?: readonly OpId[];
+    filename?: string;
+  } = {},
 ): Promise<MaterializePlan> {
   const view = model.getView();
   const state = model.getState();
@@ -26,6 +31,7 @@ export async function planFor(
   const pages = view.pages.filter((p) => !only || only.has(p.id));
   const order = new Map(state.log.map((op, i) => [op.id, i]));
   const excluded = new Set(opts.excludeOverlays ?? []);
+  const dispatchedAt = new Map(state.log.map((op) => [op.id, op.at]));
   const writes = (o: OverlayItem) =>
     !view.hidden.has(o.opId) &&
     !excluded.has(o.opId) &&
@@ -35,7 +41,11 @@ export async function planFor(
     ...pages.flatMap((p) => view.overlays.get(p.id) ?? []),
   ]
     .filter(writes)
-    .sort((a, b) => (order.get(a.opId) ?? 0) - (order.get(b.opId) ?? 0));
+    .sort((a, b) => (order.get(a.opId) ?? 0) - (order.get(b.opId) ?? 0))
+    .map((o) => {
+      const at = dispatchedAt.get(o.opId);
+      return at === undefined ? o : { ...o, at };
+    });
 
   const sourceIds = new Set<SourceId>();
   for (const p of pages)
@@ -68,5 +78,6 @@ export async function planFor(
         )
       : view.pageLabels,
     overlays,
+    ...(opts.filename !== undefined ? { filename: opts.filename } : {}),
   };
 }

@@ -15,8 +15,34 @@ export interface AppShellProps {
   layout?: ShellLayout;
   /** Skip-link target; default 'main'. */
   mainId?: string;
-  skipLinks?: { href: string; label: string }[];
+  skipLinks?: SkipLink[];
   className?: string;
+}
+
+export interface SkipLink {
+  href: string;
+  label: string;
+}
+
+/**
+ * Visually hidden links that appear on focus, first in the tab order
+ * (spec §13.2). AppShell renders them; a custom frame (the PDF workspace)
+ * renders them itself.
+ */
+export function SkipLinks({ links }: { links: readonly SkipLink[] }) {
+  return (
+    <>
+      {links.map((l) => (
+        <a
+          key={l.href}
+          href={l.href}
+          className="sr-only rounded-md bg-surface px-3 py-2 text-sm font-medium text-fg shadow-e2 focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-palette"
+        >
+          {l.label}
+        </a>
+      ))}
+    </>
+  );
 }
 
 /**
@@ -54,15 +80,7 @@ export function AppShell({
         )}
       >
         <div>
-          {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="sr-only rounded-md bg-surface px-3 py-2 text-sm font-medium text-fg shadow-e2 focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-palette"
-            >
-              {l.label}
-            </a>
-          ))}
+          <SkipLinks links={links} />
           <header role="banner">{topBar}</header>
         </div>
         <div className="flex min-h-0 min-w-0">

@@ -307,3 +307,34 @@ export async function sanitizeDoc(
   dropUnreachable(doc);
   return { bytes: await doc.save({ useObjectStreams: true }), report };
 }
+
+/**
+ * What each kind would remove, from one load (the Sanitise dialog
+ * preview). The kinds run in sanitizeDoc's order on the same document, so
+ * the lines match a run with every kind chosen; page private data and
+ * thumbnails, removed whatever is chosen, are listed under every kind.
+ */
+export async function sanitizePreviewDoc(
+  bytes: Uint8Array,
+): Promise<Record<keyof SanitizeOptions, string[]>> {
+  const doc = await loadPdf(bytes);
+  const lines = (fn: (d: PDFDocument, out: string[]) => void) => {
+    const out: string[] = [];
+    fn(doc, out);
+    return out;
+  };
+  const scripts = lines(removeScripts);
+  const attachments = lines(removeAttachments);
+  const links = lines(removeLinks);
+  const notes: string[] = [];
+  const hiddenLayers = lines((d, out) => removeHiddenLayers(d, out, notes));
+  const metadata = lines(removeMetadata);
+  const always = lines(removePrivateData);
+  return {
+    scripts: [...scripts, ...always],
+    attachments: [...attachments, ...always],
+    links: [...links, ...always],
+    hiddenLayers: [...hiddenLayers, ...always],
+    metadata: [...metadata, ...always],
+  };
+}

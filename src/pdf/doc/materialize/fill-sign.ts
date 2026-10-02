@@ -48,7 +48,7 @@ export const writeFlatFill = defineMaterializer<FlatFillParams>({
     const font = winAnsi.length
       ? ({ unicode: true } as const)
       : ({ standard: 'Helvetica' } as const);
-    if (!p.multiline && (p.color || p.spacing || p.comb)) {
+    if (p.spacing || p.comb || (!p.multiline && p.color)) {
       const laid = await drawStyledText(ctx.draw, page, p.value, box, {
         font,
         size,
@@ -56,6 +56,7 @@ export const writeFlatFill = defineMaterializer<FlatFillParams>({
         spacing: p.spacing,
         comb: p.comb,
         rotate,
+        multiline: p.multiline ?? false,
       });
       if (laid.truncated)
         ctx.note(

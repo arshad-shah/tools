@@ -39,7 +39,7 @@ const KEEP_DOCS = 30;
 interface Remembered {
   /** Default for documents without their own. */
   global: TextSettings;
-  /** Last used per document id, newest kept. */
+  /** Last used per document (content hash of the opened file), newest kept. */
   byDoc: Record<string, TextSettings & { at: number }>;
 }
 
@@ -48,6 +48,20 @@ export const useTextDefaults = createToolStore<Remembered>({
   toolId: 'pdf-fill-sign-text',
   initial: { global: DEFAULT_TEXT, byDoc: {} },
 });
+
+const hashes = new Map<string, string>();
+
+/** Records the content hash of an open document (the opened file's bytes). */
+export function knowContentHash(docId: string, hash: string): void {
+  hashes.set(docId, hash);
+}
+
+/**
+ * The key text settings are remembered under: the opened file's content
+ * hash once known (reopening the same file finds them), else the document id.
+ */
+export const textKey = (doc: { state: { id: string } }): string =>
+  hashes.get(doc.state.id) ?? doc.state.id;
 
 /** The settings a new text box starts with in this document. */
 export function lastUsed(docId: string): TextSettings {
@@ -80,15 +94,16 @@ const heights = (size: number) => ({
 });
 
 /**
- * Where the overlay draws a single line of text: the same layout the
- * writer uses (styled-layout), with Helvetica widths. `quarter` swaps the
- * box's sides for a page shown a quarter turn round.
+ * Where the overlay draws the text: the same layout the writer uses
+ * (styled-layout), with Helvetica widths. `quarter` swaps the box's sides
+ * for a page shown a quarter turn round; `multiline` wraps from the top.
  */
 export function overlayLayout(
   text: string,
   rect: { width: number; height: number },
   style: FieldStyle,
   quarter = false,
+  multiline = false,
 ): StyledLayout {
   const box = quarter
     ? { width: rect.height, height: rect.width }
@@ -97,6 +112,7 @@ export function overlayLayout(
     size: style.size,
     spacing: style.spacing,
     comb: style.comb || undefined,
+    multiline,
   });
 }
 

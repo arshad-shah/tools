@@ -9,13 +9,14 @@ import {
   DialogTitle,
 } from '@/shared/ui';
 import { PasswordPrompt } from '@/pdf/components/PasswordPrompt';
+import { blobKey } from '@/pdf/doc/serialize';
 import type { WorkspaceSession } from '@/pdf/workspace/session';
 
 export interface UnlockEditingDialogProps {
   open: boolean;
   onOpenChange(open: boolean): void;
   session: WorkspaceSession;
-  /** The encrypted original; null after a restore (the original is gone). */
+  /** The encrypted original (kept with a saved copy); null when it is not. */
   original: Uint8Array | null;
 }
 
@@ -44,6 +45,10 @@ export function UnlockEditingDialog({
         return;
       }
       session.model.unrestrict();
+      // Unlocked for good: the saved original is no longer needed.
+      void session.blobs
+        .drop([blobKey.original(session.model.getState().id)])
+        .catch(() => {});
       notify.success('Editing unlocked');
       onOpenChange(false);
     } catch (e) {

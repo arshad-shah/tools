@@ -35,6 +35,7 @@ const EXISTING: ExistingAnnotation = {
 
 function setup() {
   const model = makeModel();
+  const goToPage = vi.fn();
   const doc = () =>
     ({
       view: model.getView(),
@@ -48,6 +49,7 @@ function setup() {
         ),
       },
       announce: () => {},
+      goToPage,
     }) as unknown as DocumentApi;
   const props = (): ModeProps => ({
     doc: doc(),
@@ -63,7 +65,7 @@ function setup() {
   });
   const view = render(<CommentsPanel {...props()} />);
   const refresh = () => view.rerender(<CommentsPanel {...props()} />);
-  return { model, refresh };
+  return { model, refresh, goToPage };
 }
 
 const highlight = (author: string) => ({
@@ -166,6 +168,16 @@ describe('CommentsPanel', () => {
         pageId: 'ckpt0:0',
         target: { kind: 'existing', ref: '12R', nm: null, index: 0 },
       },
+    });
+  });
+
+  it('Go to navigates the canvas to the annotation and focuses its page', async () => {
+    const { goToPage } = setup();
+    const list = await screen.findByRole('list', { name: 'Annotations' });
+    fireEvent.click(within(list).getByRole('button', { name: 'Go to' }));
+    expect(goToPage).toHaveBeenCalledWith('ckpt0:0', {
+      box: expect.objectContaining({ width: 1, height: 1 }),
+      focus: true,
     });
   });
 });

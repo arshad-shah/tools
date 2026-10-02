@@ -201,6 +201,26 @@
 @utility duration-slow {
   transition-duration: 260ms;
 }
+/*
+ * Touch targets (spec §13.2): 44 CSS px whatever the root font size (the
+ * app's 14px root makes h-11 only 38.5px).
+ */
+@utility size-touch {
+  width: 44px;
+  height: 44px;
+}
+@utility h-touch {
+  height: 44px;
+}
+@utility w-touch {
+  width: 44px;
+}
+@utility min-w-touch {
+  min-width: 44px;
+}
+@utility min-h-touch {
+  min-height: 44px;
+}
 @utility z-rail {
   z-index: 10;
 }
@@ -216,8 +236,15 @@
 @utility z-dialog {
   z-index: 50;
 }
+/* Menus and tooltips are portalled: above the dialog or sheet they open from. */
+@utility z-menu {
+  z-index: 55;
+}
 @utility z-toast {
   z-index: 60;
+}
+@utility z-tooltip {
+  z-index: 65;
 }
 @utility z-palette {
   z-index: 70;

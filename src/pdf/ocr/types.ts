@@ -26,9 +26,9 @@ export interface OcrCore extends OcrAsset {
   dir: string;
 }
 
-/** public/ocr/<v>/ocr-manifest.json, written by scripts/copy-ocr-assets.mjs. */
+/** public/ocr/<v>/ocr-manifest.json (scripts/copy-ocr-assets.mjs), inlined at build time. */
 export interface OcrManifest {
-  /** The tesseract.js version, also the folder name. */
+  /** The folder name: tesseract.js and core versions, e.g. 7.0.0-core-7.0.0. */
   version: string;
   worker: OcrAsset;
   /** One of the two is fetched, by SIMD support. */

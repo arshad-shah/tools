@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { EventType } from '@rive-app/react-canvas';
+import { EventType } from '@/shared/ui/adapters/rive-runtime';
 import {
   animationTime,
   isAnimationPlaying,

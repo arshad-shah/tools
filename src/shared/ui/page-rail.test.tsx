@@ -179,6 +179,34 @@ describe('PageRail', () => {
     fireEvent.keyDown(second, { key: 'Enter' });
     expect(onActivate).toHaveBeenCalledWith('p2');
   });
+
+  it('renders a badge slot over the bottom-left of the thumbnail (P5-F)', () => {
+    render(
+      <PageRail
+        label="Pages"
+        pages={make(2)}
+        selected={new Set()}
+        current={null}
+        width={160}
+        onSelect={() => {}}
+        onActivate={() => {}}
+        renderThumb={(p) => <span>thumb {p.label}</span>}
+        renderBadge={(p) => (p.id === 'p2' ? <span>3 fields left</span> : null)}
+      />,
+    );
+    const badge = screen.getByText('3 fields left');
+    const slot = badge.parentElement!;
+    expect(slot.getAttribute('data-rail-badge')).toBe('');
+    expect(slot.className).toContain('absolute');
+    expect(slot.className).toContain('bottom-1');
+    expect(slot.className).toContain('left-1');
+    // Inside the thumbnail box, which positions it.
+    const thumb = slot.parentElement!;
+    expect(thumb.textContent).toContain('thumb 2');
+    expect(thumb.className).toContain('relative');
+    // No empty slot for pages without a badge.
+    expect(document.querySelectorAll('[data-rail-badge]').length).toBe(1);
+  });
 });
 
 describe('PageRail on touch', () => {

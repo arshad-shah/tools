@@ -86,6 +86,50 @@ describe('ModeTabs', () => {
     );
   });
 
+  it('keeps focus on the current tab when the switch is refused', () => {
+    // "Leave mode?" said no: the value never changes.
+    render(
+      <ModeTabs
+        label="Modes"
+        items={ITEMS.slice(0, 3)}
+        value="m1"
+        maxVisible={3}
+        onChange={() => {}}
+      />,
+    );
+    const [first] = screen.getAllByRole('tab');
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(first);
+  });
+
+  it('moves focus once a pending switch is confirmed', () => {
+    const { rerender } = render(
+      <ModeTabs
+        label="Modes"
+        items={ITEMS.slice(0, 3)}
+        value="m1"
+        maxVisible={3}
+        onChange={() => {}}
+      />,
+    );
+    const [first] = screen.getAllByRole('tab');
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+    rerender(
+      <ModeTabs
+        label="Modes"
+        items={ITEMS.slice(0, 3)}
+        value="m2"
+        maxVisible={3}
+        onChange={() => {}}
+      />,
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole('tab', { name: /Mode 2/ }),
+    );
+  });
+
   it('End selects the last tab and Home the first; ArrowLeft wraps', () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
@@ -161,5 +205,40 @@ describe('FloatingDock', () => {
     expect(second.getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(second, { key: 'ArrowRight' });
     expect(onChange).toHaveBeenLastCalledWith('m3');
+  });
+
+  it('labels="responsive" shows the names beside the icons from md up', () => {
+    render(
+      <FloatingDock
+        label="Modes"
+        items={ITEMS.slice(0, 2)}
+        value="m1"
+        onChange={() => {}}
+        labels="responsive"
+      />,
+    );
+    const text = within(screen.getByRole('tab', { name: 'Mode 1' })).getByText(
+      'Mode 1',
+    );
+    // Hidden from sight on phones only; beside the icon from md up.
+    expect(text.className).toContain('max-md:sr-only');
+    expect(screen.getByRole('tab', { name: 'Mode 1' }).className).toContain(
+      'md:flex-row',
+    );
+  });
+
+  it('phone size has 44px or larger targets with a small name (6-H)', () => {
+    render(
+      <FloatingDock
+        label="Modes"
+        items={ITEMS.slice(0, 2)}
+        value="m1"
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    const tab = screen.getByRole('tab', { name: 'Mode 1' });
+    expect(within(tab).getByText('Mode 1').className).not.toContain('sr-only');
+    expect(tab.className).toContain('size-14');
   });
 });

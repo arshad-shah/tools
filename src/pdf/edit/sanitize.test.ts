@@ -15,7 +15,11 @@ import {
   VISIBLE_LAYER_TEXT,
 } from '../../../test/fixtures/protect';
 import { getMetadata } from './metadata';
-import { sanitizeDoc, type SanitizeOptions } from './sanitize';
+import {
+  sanitizeDoc,
+  sanitizePreviewDoc,
+  type SanitizeOptions,
+} from './sanitize';
 
 const ALL: SanitizeOptions = {
   scripts: true,
@@ -163,5 +167,21 @@ describe('sanitize actions beyond the page', () => {
       expect(raw, s).not.toContain(s);
     expect(raw).toContain('Run');
     expect(report.removed).toContain('Actions on 2 bookmarks');
+  });
+});
+
+describe('sanitizePreviewDoc', () => {
+  it('reports per kind from one load what separate dry runs report', async () => {
+    for (const bytes of [src, await makeActionsPdf()]) {
+      const preview = await sanitizePreviewDoc(bytes);
+      for (const k of Object.keys(NONE) as (keyof SanitizeOptions)[]) {
+        const one = await sanitizeDoc(bytes, {
+          ...NONE,
+          [k]: true,
+          dryRun: true,
+        });
+        expect(preview[k], k).toEqual(one.report.removed);
+      }
+    }
   });
 });

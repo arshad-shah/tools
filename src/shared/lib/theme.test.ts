@@ -2,6 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  applyTheme,
   readThemePreference,
   resetThemeForTests,
   startThemeSync,
@@ -37,6 +38,17 @@ beforeEach(() => {
   delete document.documentElement.dataset.theme;
 });
 afterEach(() => vi.unstubAllGlobals());
+
+describe('applyTheme', () => {
+  it('sets data-theme only; color-scheme follows from tokens.css', () => {
+    document.documentElement.removeAttribute('style');
+    applyTheme('dark');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    // No inline style: an inline color-scheme would outlive a theme switch
+    // and is UI styling outside the kit (rule (b)).
+    expect(document.documentElement.getAttribute('style')).toBeNull();
+  });
+});
 
 describe('resolveTheme', () => {
   it.each<[ThemePreference, boolean, string]>([

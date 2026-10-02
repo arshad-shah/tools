@@ -154,6 +154,16 @@ export function WorkspaceBarsSection() {
           />
         </div>
       </Row>
+      <Row label="Toolbar, labels responsive (text from md up), one scrolling row">
+        <div className="w-full max-w-md rounded-lg border border-line p-1">
+          <Toolbar
+            label="Labelled organize tools"
+            groups={groups}
+            labelled
+            trailing={<Button size="sm">Export</Button>}
+          />
+        </div>
+      </Row>
       <Row label="FloatingDock and FloatingPalette (contained here)">
         <div className="relative h-72 w-full overflow-hidden rounded-lg bg-backdrop [contain:layout]">
           <FloatingPalette
@@ -167,6 +177,7 @@ export function WorkspaceBarsSection() {
             items={MODES.slice(0, 5)}
             value={mode}
             onChange={setMode}
+            labels="responsive"
           />
         </div>
       </Row>

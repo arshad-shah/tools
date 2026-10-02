@@ -1,11 +1,20 @@
 import { check } from '@arshad-shah/qpdf-wasm';
-import { PDFDocument } from 'pdf-lib';
+import {
+  decodePDFRawStream,
+  degrees,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFRawStream,
+  PDFString,
+} from 'pdf-lib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { makeTextPdf } from '../../../../test/fixtures/builders';
 import { signBytes } from '../../../../test/fixtures/signing';
 import type { SigningIdentity } from './pkcs12';
 import { createSelfSigned } from './self-signed';
+import { INLINE_FIELD_MESSAGE, prepareSignature } from './sign-pdf';
 import { readTail } from './tail';
 import { verifyPdfSignatures } from './verify';
 
@@ -106,5 +115,72 @@ describe('prepareSignature', () => {
       'Signature1',
       'Signature2',
     ]);
+  });
+
+  it('refuses clearly to sign into a field held inline in /Fields', async () => {
+    const doc = await PDFDocument.load(await makeTextPdf({ pages: 1 }));
+    const field = doc.context.obj({
+      FT: 'Sig',
+      T: PDFString.of('Inline'),
+      Rect: [10, 10, 110, 50],
+    });
+    doc.catalog.set(
+      PDFName.of('AcroForm'),
+      doc.context.register(doc.context.obj({ Fields: [field] })),
+    );
+    const bytes = await doc.save({ useObjectStreams: false });
+    await expect(
+      prepareSignature({
+        bytes,
+        placement: {
+          pageIndex: 0,
+          rect: { x: 10, y: 10, width: 100, height: 40 },
+          visual: null,
+          fieldName: 'Inline',
+        },
+        m: new Date(),
+        caption: false,
+        name: 'T',
+        contentsBytes: 16384,
+      }),
+    ).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+      message: INLINE_FIELD_MESSAGE('Inline'),
+    });
+  });
+
+  it('turns the visual and its caption with a quarter-turned page', async () => {
+    const doc = await PDFDocument.load(await makeTextPdf({ pages: 1 }));
+    doc.getPage(0).setRotation(degrees(90));
+    const signed = await signBytes(
+      await doc.save({ useObjectStreams: false }),
+      id,
+      {
+        placement: {
+          pageIndex: 0,
+          rect: { x: 72, y: 72, width: 60, height: 180 },
+          visual: ink,
+        },
+      },
+    );
+    const out = await PDFDocument.load(signed);
+    const annots = out.getPage(0).node.lookup(PDFName.of('Annots'));
+    const widget = (annots as unknown as { asArray(): unknown[] })
+      .asArray()
+      .map((r) => out.context.lookup(r as never))
+      .find(
+        (d) =>
+          d instanceof PDFDict &&
+          d.lookup(PDFName.of('FT')) === PDFName.of('Sig'),
+      ) as PDFDict;
+    const ap = (widget.lookup(PDFName.of('AP')) as PDFDict).lookup(
+      PDFName.of('N'),
+    ) as PDFRawStream;
+    const content = new TextDecoder('latin1').decode(
+      decodePDFRawStream(ap).decode(),
+    );
+    expect(content).toContain('0 1 -1 0 60 0 cm');
+    const [r] = await verifyPdfSignatures(signed);
+    expect(r.integrity).toBe('intact');
   });
 });

@@ -127,9 +127,10 @@ describe('markup writers', () => {
     signal: new AbortController().signal,
     progress: () => {},
   });
-  const run = (overlays: OverlayItem[]) =>
+  const run = (overlays: OverlayItem[], filename?: string) =>
     materialize(
       {
+        ...(filename ? { filename } : {}),
         base,
         baseSourceId: 's0',
         sources: {},
@@ -145,6 +146,15 @@ describe('markup writers', () => {
       },
       rpc(),
     );
+
+  it('{filename} is the exported file name', async () => {
+    const model = makeModel();
+    model.dispatch(hf());
+    const out = await run([...model.getView().docOverlays], 'final.edited.pdf');
+    const p1 = (await textPositions(out.bytes, 0)).map((t) => t.str);
+    expect(p1).toContain('final.edited.pdf');
+    expect(p1).not.toContain('report.pdf');
+  });
 
   it('writes header, footer, watermark and page numbers', async () => {
     const model = makeModel();

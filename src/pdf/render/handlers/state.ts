@@ -76,8 +76,10 @@ export async function paintPage(
   canvas: OffscreenCanvas,
   viewport: PageViewport,
   transform?: number[],
+  options?: { annotationMode?: number },
 ): Promise<void> {
   const task = page.render({
+    ...options,
     canvas: canvas as unknown as HTMLCanvasElement,
     canvasContext: canvas.getContext(
       '2d',

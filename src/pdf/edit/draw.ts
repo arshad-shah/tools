@@ -18,7 +18,6 @@ import {
   type FittedText,
 } from './draw-fit';
 import type { FontCache, FontSpec } from './font-cache';
-import { assertDrawable } from './fonts';
 
 export { fitText, type FittedText };
 
@@ -69,8 +68,9 @@ export {
 /**
  * Draws text laid out by `fitText` (shrinking with `fit: 'shrink'` down to
  * `minSize`, default 6). Single-line text is centred vertically in the box,
- * multiline text starts at the top. Characters the font can't draw are
- * refused with INVALID_INPUT naming them, before anything is drawn.
+ * multiline text starts at the top. The Unicode font falls back per
+ * character (Latin Extended, Greek, Cyrillic); characters no font can draw
+ * are refused with INVALID_INPUT naming them, before anything is drawn.
  */
 export async function drawText(
   ctx: DrawCtx,
@@ -89,9 +89,9 @@ export async function drawText(
   checkOpacity(style.opacity);
   if (!(style.size > 0 && Number.isFinite(style.size)))
     throw invalid('The text size must be a positive number');
-  const font = await ctx.fonts.get(style.font);
   const clean = normalizeText(text);
-  assertDrawable(font, clean.replace(/\n/g, ''), 'The text');
+  const font = await ctx.fonts.forText(style.font, clean);
+  font.assertDrawable(clean.replace(/\n/g, ''), 'The text');
   const lh = style.lineHeight ?? DEFAULT_LINE_HEIGHT;
   const minSize =
     style.fit === 'shrink'
@@ -124,14 +124,19 @@ export async function drawText(
           ? box.x + box.width - w
           : box.x;
     const y = blockTop - i * lineH - (lineH - glyphH) / 2 - ascent;
-    page.drawText(line, {
-      x,
-      y,
-      size,
-      font,
-      color: rgb(color.r, color.g, color.b),
-      opacity: style.opacity,
-    });
+    // One run per font: a fallback draws what the main font lacks.
+    let at = x;
+    for (const run of font.runs(line)) {
+      page.drawText(run.text, {
+        x: at,
+        y,
+        size,
+        font: run.font,
+        color: rgb(color.r, color.g, color.b),
+        opacity: style.opacity,
+      });
+      at += run.font.widthOfTextAtSize(run.text, size);
+    }
   });
   page.pushOperators(popGraphicsState());
   return fitted;

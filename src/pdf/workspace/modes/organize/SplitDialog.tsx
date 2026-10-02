@@ -15,34 +15,46 @@ import {
   RadioGroup,
 } from '@/shared/ui';
 import type { ModeProps } from '../types';
+import type { OrganizeSurface } from './surface';
 import { useWorkspace } from '../../workspace-context';
-import { splitDocument } from './split-extract';
+import { splitDocument, splitGroups } from './split-extract';
 
 /** "Split": new files at the selected pages or every N pages, saved as a ZIP. */
 export function SplitDialog({
   open,
   onOpenChange,
   ctx,
+  surface,
 }: {
   open: boolean;
   onOpenChange(o: boolean): void;
   ctx: ModeProps;
+  /** Where it shows: by its tool (popover) or as a phone sheet. */
+  surface?: OrganizeSurface;
 }) {
   const ws = useWorkspace();
   const [how, setHow] = useState<'selected' | 'every'>('every');
   const [every, setEvery] = useState(1);
   const split = async () => {
-    onOpenChange(false);
     const { model, blobs, services } = ws.session;
+    const at = how === 'selected' ? 'selected' : { every };
+    try {
+      // A choice that makes no parts keeps the dialog open to fix it.
+      splitGroups(
+        model.getView().pages.map((p) => p.id),
+        at,
+        ctx.selection.pages,
+      );
+    } catch (e) {
+      return notify.error(toToolError(e));
+    }
+    onOpenChange(false);
     try {
       const parts = await ws.runJob('Splitting', (job) =>
-        splitDocument(
-          model,
-          blobs,
-          how === 'selected' ? 'selected' : { every },
-          ctx.selection.pages,
-          { ...job, services },
-        ),
+        splitDocument(model, blobs, at, ctx.selection.pages, {
+          ...job,
+          services,
+        }),
       );
       if (!parts) return;
       await saveZip(
@@ -55,7 +67,12 @@ export function SplitDialog({
     }
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      label="Split into files"
+      {...surface}
+    >
       <DialogHeader>
         <DialogTitle>Split into files</DialogTitle>
         <DialogDescription>

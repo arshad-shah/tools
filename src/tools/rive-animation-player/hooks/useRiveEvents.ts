@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { EventType, type Rive } from '@rive-app/react-canvas';
+import { EventType, type Rive } from '@/shared/ui/adapters/rive-runtime';
 
 export interface LoggedEvent {
   id: number;
