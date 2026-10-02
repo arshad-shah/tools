@@ -137,7 +137,7 @@ export function WidgetsSection() {
         <ShareButton
           share={{
             canShare: false,
-            reason: 'Too large to share as a link (2.4 MB)',
+            reason: 'Too large to share as a link (9,214 of 6,000 characters)',
             share: () => {},
           }}
         />
