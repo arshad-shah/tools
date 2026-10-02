@@ -416,8 +416,8 @@ test('a click-anywhere text box with 8 character boxes exports evenly spaced dig
   const input = page.locator('[data-state="focused"] input');
   await expect(input).toBeFocused();
   // The text settings bar sits by the box: turn on 8 character boxes.
-  const bar = page.getByRole('dialog', { name: 'Text settings' });
-  await bar.getByRole('switch', { name: 'Character boxes' }).click();
+  const bar = page.getByRole('toolbar', { name: 'Text settings' });
+  await bar.getByRole('button', { name: 'Character boxes' }).click();
   await expect(
     bar.getByRole('spinbutton', { name: 'Number of character boxes' }),
   ).toHaveValue('8');
@@ -488,7 +488,7 @@ test('the text settings of a detected field export as letter spacing', async ({
     .click();
   const input = page.getByRole('textbox', { name: 'Surname' });
   await input.press('Alt+t');
-  const bar = page.getByRole('dialog', { name: 'Text settings' });
+  const bar = page.getByRole('toolbar', { name: 'Text settings' });
   await expect(bar.getByRole('spinbutton').first()).toBeFocused();
   await bar
     .getByRole('spinbutton', { name: 'Letter spacing in points' })

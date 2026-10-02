@@ -142,11 +142,30 @@ export function PageRail({
     else if (bottom > el.scrollTop + view) el.scrollTop = bottom - view + PAD;
   };
 
+  // Opening (a phone drawer mounts the rail): the current page in view.
+  const revealed = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (revealed.current) return;
+    const el = scrollRef.current;
+    const i = pages.findIndex((p) => p.id === current);
+    if (!el || i < 0 || !sizes.length) return;
+    revealed.current = true;
+    const view = el.clientHeight || FALLBACK_HEIGHT;
+    const top = offsets[i] + PAD;
+    if (top < el.scrollTop || top + sizes[i] > el.scrollTop + view)
+      el.scrollTop = Math.max(0, top - (view - sizes[i]) / 2);
+  }, [current, pages, offsets, sizes, scrollRef]);
+
+  // A touch tap goes to the page (a phone has no double click).
+  const pointerType = React.useRef('mouse');
+
   const sortRef = useSortable({
     items: ITEM,
     direction: 'y',
     animation: 150,
     keyboard: false,
+    // Swipes scroll the rail; a touch drag starts after a short press.
+    touchAction: 'manipulation',
     disabled: !onMove,
     onSort: ({ item, from, to }) => {
       restoreDomOrder(from.container, item, from.index);
@@ -239,12 +258,16 @@ export function PageRail({
                 tabIndex={page.id === roving ? 0 : -1}
                 onFocus={() => setFocusId(page.id)}
                 onKeyDown={(e) => onKeyDown(e, i)}
-                onClick={(e) =>
+                onPointerDown={(e) => {
+                  pointerType.current = e.pointerType;
+                }}
+                onClick={(e) => {
                   onSelect(page.id, {
                     shift: e.shiftKey,
                     meta: e.metaKey || e.ctrlKey,
-                  })
-                }
+                  });
+                  if (pointerType.current === 'touch') onActivate(page.id);
+                }}
                 onDoubleClick={() => onActivate(page.id)}
                 className={cn(
                   'flex cursor-pointer flex-col items-center gap-1 rounded-lg p-1.5 outline-none transition-colors duration-fast',

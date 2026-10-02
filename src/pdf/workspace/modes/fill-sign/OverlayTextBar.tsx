@@ -41,7 +41,7 @@ export function OverlayTextBar({
   );
   const barClosed = useFillSign((s) => s.barClosed);
   const barFocus = useFillSign((s) => s.barFocus);
-  const large = ctx.layout !== 'standard';
+  const finish = () => fillSign.set({ finish: fillSign.get().finish + 1 });
   // Settled changes land after a delay: they use the field as it is then.
   const latest = useRef<{ ctx: ModeProps; fields: readonly ViewField[] }>({
     ctx,
@@ -60,11 +60,14 @@ export function OverlayTextBar({
         anchor={boxAnchor(root, transform, draft.rect)}
         settings={draft.style}
         multiline={false}
-        large={large}
+        layout={ctx.layout}
         focusNonce={barFocus}
         onPreview={setDraft}
         onChange={setDraft}
         onClose={() => fillSign.set({ barClosed: DRAFT_KEY })}
+        onDone={finish}
+        scrollRoot={root}
+        boxKey={DRAFT_KEY}
       />
     );
   }
@@ -84,7 +87,9 @@ export function OverlayTextBar({
       anchor={boxAnchor(root, transform, active.rect)}
       settings={effectiveStyle(active, quarter)}
       multiline={active.type === 'multiline'}
-      large={large}
+      layout={ctx.layout}
+      scrollRoot={root}
+      boxKey={active.key}
       focusNonce={barFocus}
       onPreview={(style) =>
         fillSign.set({ styling: { key: active.key, style } })
@@ -103,6 +108,10 @@ export function OverlayTextBar({
           now.ctx.selection.selectObjects([opId]);
       }}
       onClose={() => fillSign.set({ barClosed: active.key, styling: null })}
+      onDone={() => {
+        if (active.key === editing) finish();
+        else ctx.selection.clear();
+      }}
       onEditText={
         free ? () => fillSign.set({ editing: active.key }) : undefined
       }

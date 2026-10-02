@@ -91,12 +91,48 @@ for (const theme of ['light', 'dark'] as const) {
         .click();
       const input = page.getByRole('textbox', { name: 'Surname' });
       await input.press('Alt+t');
-      const bar = page.getByRole('dialog', { name: 'Text settings' });
-      await bar.getByRole('switch', { name: 'Character boxes' }).click();
+      const bar = page.getByRole('toolbar', { name: 'Text settings' });
+      await bar.getByRole('button', { name: 'Character boxes' }).click();
       await input.click();
       await input.fill('DOE');
       await expect(page).toHaveScreenshot(
         `fill-sign-text-settings-${theme}.png`,
+      );
+      await expectAxeClean(page);
+    });
+
+    test('text bar', async ({ page }) => {
+      await openForm(page, theme);
+      await page
+        .getByRole('button', { name: 'Text field: Surname, empty' })
+        .first()
+        .click();
+      await page.getByRole('textbox', { name: 'Surname' }).fill('Doe');
+      await expect(
+        page.getByRole('toolbar', { name: 'Text settings' }),
+      ).toBeVisible();
+      await expect(page).toHaveScreenshot(`fill-sign-text-bar-${theme}.png`);
+      await expectAxeClean(page);
+    });
+
+    test('text bar phone', async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.phone);
+      await openForm(page, theme);
+      await page
+        .getByRole('button', { name: 'Text field: Surname, empty' })
+        .first()
+        .click();
+      await page.getByRole('textbox', { name: 'Surname' }).fill('Doe');
+      const bar = page.getByRole('toolbar', { name: 'Text settings' });
+      await expect(bar).toBeVisible();
+      await expect(page).toHaveScreenshot(
+        `fill-sign-text-bar-phone-${theme}.png`,
+      );
+      await bar.getByRole('button', { name: 'More text settings' }).click();
+      const sheet = page.getByRole('dialog', { name: 'Text settings' });
+      await expect(sheet).toBeVisible();
+      await expect(page).toHaveScreenshot(
+        `fill-sign-text-sheet-phone-${theme}.png`,
       );
       await expectAxeClean(page);
     });

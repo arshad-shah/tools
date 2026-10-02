@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { markBox, snapToCell } from './snap';
+import { clampToPage, markBox, snapToCell } from './snap';
 
 const label = { x: 50, y: 700, width: 160, height: 22 };
 const value = { x: 210, y: 700, width: 340, height: 22 };
@@ -30,5 +30,28 @@ describe('snapToCell', () => {
       width: 10,
       height: 10,
     });
+  });
+});
+
+describe('clampToPage', () => {
+  const page = { x: 0, y: 0, width: 612, height: 792 };
+  it('narrows a box that would run off the right edge', () => {
+    expect(
+      clampToPage({ x: 500, y: 100, width: 160, height: 14 }, page),
+    ).toEqual({ x: 500, y: 100, width: 112, height: 14 });
+  });
+  it('moves a box left only when the minimum width does not fit', () => {
+    expect(
+      clampToPage({ x: 600, y: 100, width: 160, height: 14 }, page),
+    ).toEqual({ x: 572, y: 100, width: 40, height: 14 });
+  });
+  it('keeps a box inside the top edge', () => {
+    expect(
+      clampToPage({ x: 10, y: 785, width: 160, height: 14 }, page),
+    ).toEqual({ x: 10, y: 778, width: 160, height: 14 });
+  });
+  it('leaves a box that fits alone', () => {
+    const b = { x: 10, y: 10, width: 160, height: 14 };
+    expect(clampToPage(b, page)).toEqual(b);
   });
 });

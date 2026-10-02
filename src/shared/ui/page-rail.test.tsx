@@ -180,3 +180,30 @@ describe('PageRail', () => {
     expect(onActivate).toHaveBeenCalledWith('p2');
   });
 });
+
+describe('PageRail on touch', () => {
+  it('a tap goes to the page; a mouse click only selects', () => {
+    const onActivate = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <PageRail
+        label="Pages"
+        pages={make(3)}
+        selected={new Set()}
+        current="p1"
+        width={160}
+        onSelect={onSelect}
+        onActivate={onActivate}
+        renderThumb={() => null}
+      />,
+    );
+    const opt = screen.getByRole('option', { name: 'Page 2 of 3' });
+    fireEvent.pointerDown(opt, { pointerType: 'mouse' });
+    fireEvent.click(opt);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onActivate).not.toHaveBeenCalled();
+    fireEvent.pointerDown(opt, { pointerType: 'touch' });
+    fireEvent.click(opt);
+    expect(onActivate).toHaveBeenCalledWith('p2');
+  });
+});

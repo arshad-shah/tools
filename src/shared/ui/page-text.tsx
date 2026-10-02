@@ -1,3 +1,4 @@
+import React from 'react';
 import { cn } from '@/shared/lib/cn';
 import { ToolError } from '@/shared/lib/errors';
 import { Positioned } from './positioned';
@@ -81,3 +82,41 @@ export function PageText({
   );
 }
 PageText.displayName = 'PageText';
+
+export interface PageTextInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'onChange' | 'value' | 'style' | 'size' | 'className'
+> {
+  value: string;
+  onChange(value: string): void;
+  /** The text's font size on screen, CSS px. */
+  fontPx: number;
+  /** Letter spacing on screen, CSS px. */
+  spacingPx?: number;
+  'aria-label': string;
+}
+
+/**
+ * The caret for typing straight onto a page: a transparent input that
+ * fills its parent (the box being edited). The text itself is drawn by
+ * PageText where the export puts it, so the page shows through and the
+ * text appears in place at its true size; this input only carries the
+ * caret, the selection and the keyboard.
+ */
+export const PageTextInput = React.forwardRef<
+  HTMLInputElement,
+  PageTextInputProps
+>(({ value, onChange, fontPx, spacingPx = 0, ...rest }, ref) => (
+  <input
+    ref={ref}
+    type="text"
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    autoComplete="off"
+    spellCheck={false}
+    className="absolute inset-0 m-0 h-full w-full border-0 bg-transparent p-0 [font-family:Helvetica,Arial,sans-serif] leading-none text-transparent caret-accent-fg outline-none selection:bg-accent-soft"
+    style={{ fontSize: fontPx, letterSpacing: spacingPx }}
+    {...rest}
+  />
+));
+PageTextInput.displayName = 'PageTextInput';

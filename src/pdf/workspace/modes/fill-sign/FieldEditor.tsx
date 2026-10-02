@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { IconAlertTriangle } from '@/shared/ui/icons';
-import { DateInput, Input, Select, Text, Textarea } from '@/shared/ui';
+import {
+  DateInput,
+  Input,
+  PageTextInput,
+  Select,
+  Text,
+  Textarea,
+} from '@/shared/ui';
 import type { ViewField } from './fields';
 import { displayToIso, isoToDisplay } from './dates';
 import { fitsBox } from './text-measure';
@@ -16,6 +23,18 @@ export interface FieldEditorProps {
   onDraft?(value: string): void;
   /** Alt+T: to the text settings bar. */
   onSettings?(): void;
+  /**
+   * Single-line text typed straight onto the page: a transparent caret
+   * over the box at the text's on-screen size, the page showing through
+   * (the value is drawn in place by FieldValue).
+   */
+  inline?: { fontPx: number; spacingPx: number };
+  /** Esc keeps the text (commits) instead of discarding the edit. */
+  escapeKeeps?: boolean;
+  /** Changes when the text bar's Done is pressed: keep the text and close. */
+  finishNonce?: number;
+  /** Done: default onCommit. */
+  onFinish?(value: string): void;
 }
 
 /**
@@ -31,6 +50,10 @@ export function FieldEditor({
   onTab,
   onDraft,
   onSettings,
+  inline,
+  escapeKeeps = false,
+  finishNonce,
+  onFinish,
 }: FieldEditorProps) {
   const [value, setRaw] = useState(
     field.type === 'date' ? displayToIso(field.value) : field.value,
@@ -48,6 +71,16 @@ export function FieldEditor({
       ?.focus();
   }, []);
 
+  // Done in the text bar: the nonce it opened with is not a request.
+  const [openedAt] = useState(finishNonce);
+  const finish = useRef<() => void>(() => {});
+  useEffect(() => {
+    finish.current = () => (onFinish ?? onCommit)(out());
+  });
+  useEffect(() => {
+    if (finishNonce !== undefined && finishNonce !== openedAt) finish.current();
+  }, [finishNonce, openedAt]);
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (onSettings && e.altKey && e.key.toLowerCase() === 't') {
       e.preventDefault();
@@ -56,7 +89,8 @@ export function FieldEditor({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      onCancel();
+      if (escapeKeeps) onCommit(out());
+      else onCancel();
     } else if (
       e.key === 'Enter' &&
       !(field.type === 'multiline' && e.shiftKey)
@@ -75,6 +109,30 @@ export function FieldEditor({
     (field.type === 'text' || field.type === 'multiline') &&
     !fitsBox(value, field.rect, field.type === 'multiline');
   const name = field.label ?? 'Field';
+  const warning = tooLong ? (
+    <Text size="xs" className="flex items-center gap-1 px-1 text-warning">
+      <IconAlertTriangle size="xs" />
+      Text is too long for this field
+    </Text>
+  ) : null;
+  if (inline && field.type === 'text')
+    return (
+      <div ref={wrap} onKeyDown={onKeyDown} className="absolute inset-0">
+        <PageTextInput
+          aria-label={name}
+          aria-keyshortcuts={onSettings ? 'Alt+T' : undefined}
+          value={value}
+          onChange={setValue}
+          fontPx={inline.fontPx}
+          spacingPx={inline.spacingPx}
+        />
+        {warning ? (
+          <div className="absolute top-full left-0 mt-1 w-max max-w-[60vw] rounded-md bg-surface shadow-e2">
+            {warning}
+          </div>
+        ) : null}
+      </div>
+    );
   return (
     <div
       ref={wrap}
@@ -108,12 +166,7 @@ export function FieldEditor({
           onChange={setValue}
         />
       )}
-      {tooLong ? (
-        <Text size="xs" className="flex items-center gap-1 px-1 text-warning">
-          <IconAlertTriangle size="xs" />
-          Text is too long for this field
-        </Text>
-      ) : null}
+      {warning}
     </div>
   );
 }

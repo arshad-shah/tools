@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
+import { useDockedBarOpen } from './docked-bar-state';
 import type { ModeTabItem } from './mode-tabs';
 import { rovingIndex } from './roving';
 import { useScrollRow } from './use-scroll-row';
@@ -26,6 +27,8 @@ export function FloatingDock({
 }: FloatingDockProps) {
   const tabs = React.useRef(new Map<string, HTMLButtonElement>());
   const scroller = useScrollRow<HTMLDivElement>('x');
+  // A contextual bar docked at the bottom takes this place for a while.
+  const away = useDockedBarOpen();
   const onKeyDown = (e: React.KeyboardEvent, index: number) => {
     const to = rovingIndex(e, index, items.length);
     if (to === null) return;
@@ -39,7 +42,11 @@ export function FloatingDock({
       ref={scroller}
       role="tablist"
       aria-label={label}
-      className="fixed bottom-4 left-1/2 z-dock flex max-w-[calc(100vw-2rem)] -translate-x-1/2 snap-x snap-proximity flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain rounded-xl bg-surface p-1.5 shadow-e3 scrollbar-none scroll-fade-x"
+      inert={away}
+      className={cn(
+        'fixed bottom-4 left-1/2 z-dock flex max-w-[calc(100vw-2rem)] -translate-x-1/2 snap-x snap-proximity flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain rounded-xl bg-surface p-1.5 shadow-e3 scrollbar-none scroll-fade-x',
+        away && 'invisible',
+      )}
     >
       {items.map((it, i) => {
         const selected = it.id === value;

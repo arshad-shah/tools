@@ -6,7 +6,7 @@ import type {
   MakeFillableField,
   SignPlaceParams,
 } from '@/pdf/doc/ops/fill-sign';
-import type { Box, NewOperation, PageId } from '@/pdf/doc/types';
+import type { Box, NewOperation, PageId, PageRef } from '@/pdf/doc/types';
 import { effectiveRotation } from '@/pdf/doc/page-map';
 import type { ModeProps } from '../types';
 import { detectedKey, fieldName, FREE, type ViewField } from './fields';
@@ -261,6 +261,19 @@ export function addField(
   return ops.length ? detectedKey(pageId, `added:${ops[0].id}`) : null;
 }
 
+/** The page's visible area in page space (its pending crop, else its view box). */
+export function pageBounds(ctx: ModeProps, page: PageRef): Box {
+  const g = ctx.doc.pageGeom(page);
+  return (
+    page.crop ?? {
+      x: g.view[0],
+      y: g.view[1],
+      width: g.view[2] - g.view[0],
+      height: g.view[3] - g.view[1],
+    }
+  );
+}
+
 /**
  * A text box at the current page's centre, ready to type (plan R39: the
  * keyboard path to click-anywhere text).
@@ -268,13 +281,7 @@ export function addField(
 export function addTextAtCentre(ctx: ModeProps): void {
   const page = ctx.doc.view.pages.find((p) => p.id === ctx.doc.currentPage);
   if (!page) return;
-  const g = ctx.doc.pageGeom(page);
-  const box = page.crop ?? {
-    x: g.view[0],
-    y: g.view[1],
-    width: g.view[2] - g.view[0],
-    height: g.view[3] - g.view[1],
-  };
+  const box = pageBounds(ctx, page);
   const style = { ...lastUsed(ctx.doc.state.id), comb: 0 };
   const h = 1.25 * style.size + 4;
   fillSign.set({
