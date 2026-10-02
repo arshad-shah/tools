@@ -58,3 +58,34 @@ export async function expectAxeClean(page: Page): Promise<void> {
     }));
   expect(blocking).toEqual([]);
 }
+
+/**
+ * Touch emulation (pointer: coarse) is dropped by Chromium whenever
+ * Playwright overrides the device metrics, which a full-page screenshot and
+ * setViewportSize both do. Turn it back on over CDP.
+ */
+export async function keepTouch(page: Page): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setTouchEmulationEnabled', {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  await expect
+    .poll(() => page.evaluate(() => matchMedia('(pointer: coarse)').matches))
+    .toBe(true);
+}
+
+/**
+ * Grows the viewport to the whole page on a touch screen, so a plain
+ * (viewport) screenshot shows everything with the coarse-pointer styles.
+ * Measured twice: touch sizing changes the page height.
+ */
+export async function touchFullPage(page: Page, width: number): Promise<void> {
+  for (let i = 0; i < 2; i++) {
+    const height = await page.evaluate(
+      () => document.documentElement.scrollHeight,
+    );
+    await page.setViewportSize({ width, height });
+    await keepTouch(page);
+  }
+}

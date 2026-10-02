@@ -111,7 +111,8 @@ export function ColorField({
         onOpenChange={setOpen}
         anchor={trigger}
         label={label}
-        className="w-72"
+        // The picker is 18rem wide; the surface adds its 0.75rem padding.
+        className="w-[19.5rem] max-w-[calc(100vw-1rem)]"
       >
         <ColorPicker
           {...picker}
