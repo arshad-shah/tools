@@ -177,7 +177,8 @@ export interface ShortcutDef {
   when?: () => boolean;
   /**
    * Fire while a text field has focus. Default false: fields keep their own
-   * keys (native undo, select all, typing). Escape is always allowed.
+   * keys (native undo, select all, typing). Escape is always allowed. Keys
+   * typed with AltGraph held never fire in a field.
    */
   allowInFields?: boolean;
   /**
@@ -215,6 +216,9 @@ function onKeyDown(e: KeyboardEvent): void {
   // An IME is composing: the key belongs to the composition.
   if (e.isComposing || e.key === 'Process') return;
   const typing = isTypingTarget(e.target);
+  // AltGr types characters ("@" on German layouts) and Windows reports it as
+  // Ctrl+Alt: in a field it is text, never a Ctrl+Alt shortcut.
+  const altGraph = e.getModifierState?.('AltGraph') ?? false;
   const modal = modalOpen(e.target);
   for (let r = stack.length - 1; r >= 0; r--) {
     const defs = stack[r].defs;
@@ -222,7 +226,7 @@ function onKeyDown(e: KeyboardEvent): void {
       const def = defs[i];
       if (!matchesHotkey(e, def.combo)) continue;
       const escape = parseHotkey(def.combo).key === 'Escape';
-      if (typing && !def.allowInFields && !escape) continue;
+      if (typing && (!def.allowInFields || altGraph) && !escape) continue;
       if (modal && !def.allowInModal && !escape) continue;
       if (def.when && !def.when()) continue;
       e.preventDefault();

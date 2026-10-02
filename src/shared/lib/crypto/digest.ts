@@ -256,6 +256,10 @@ const CHECKSUMS: Partial<Record<DigestId, () => Checksum>> = {
   xxhash3: createXxh3,
 };
 
+/** Own-property lookup, so ids such as `toString` find nothing. */
+const own = <T>(table: Partial<Record<DigestId, T>>, id: string) =>
+  Object.hasOwn(table, id) ? table[id as DigestId] : undefined;
+
 const unknown = (id: string) =>
   new ToolError('INVALID_INPUT', `Unknown algorithm ${id}`);
 
@@ -265,7 +269,7 @@ export interface IncrementalDigest {
 }
 
 function startDigest(id: DigestId): IncrementalDigest {
-  const fn = CRYPTO[id];
+  const fn = own(CRYPTO, id);
   if (fn) {
     const h = fn.create();
     return {
@@ -273,7 +277,7 @@ function startDigest(id: DigestId): IncrementalDigest {
       digestHex: () => bytesToHex(h.digest()),
     };
   }
-  const checksum = CHECKSUMS[id];
+  const checksum = own(CHECKSUMS, id);
   if (checksum) return checksum();
   throw unknown(id);
 }
@@ -296,7 +300,7 @@ export async function hmac(
   key: Uint8Array,
   bytes: Uint8Array,
 ): Promise<string> {
-  const fn = CRYPTO[id];
+  const fn = own(CRYPTO, id);
   if (!fn) throw unknown(`HMAC-${id}`);
   return bytesToHex(nobleHmac(fn, key, bytes));
 }

@@ -2,9 +2,9 @@ import { ToolError } from '@/shared/lib/errors';
 
 /**
  * XML on the platform DOMParser: parse errors with line and column, a pretty
- * printer that walks the DOM and keeps the declaration, comments, CDATA,
- * processing instructions, mixed content and `xml:space="preserve"`, and a
- * JSON mapping (`@attr`, `#text`, repeated elements as arrays).
+ * printer that walks the DOM and keeps the declaration, the DOCTYPE (with
+ * its internal subset), comments, CDATA, processing instructions, mixed
+ * content and `xml:space="preserve"`, and a JSON mapping (`@attr`, `#text`, repeated elements as arrays).
  */
 
 const ELEMENT = 1;
@@ -36,6 +36,59 @@ function errorMessage(text: string): string {
   return raw.replace(/\.$/, '');
 }
 
+const DECL_RE = /^\uFEFF?\s*(<\?xml\s[^?]*\?>)/;
+
+/**
+ * The source text of the prolog's DOCTYPE, internal subset included (the
+ * DOM keeps only name and ids). Quotes may hold `]` and `>`.
+ */
+function doctypeSource(text: string): string | undefined {
+  const start = text.search(/<!DOCTYPE[\s[>]/);
+  if (start < 0) return undefined;
+  const firstElement = text.search(/<[A-Za-z_]/);
+  if (firstElement >= 0 && firstElement < start) return undefined;
+  let quote = '';
+  let depth = 0;
+  for (let i = start + 9; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (c === quote) quote = '';
+    } else if (c === '"' || c === "'") quote = c;
+    else if (c === '[') depth++;
+    else if (c === ']') depth--;
+    else if (c === '>' && depth <= 0) return text.slice(start, i + 1);
+  }
+  return undefined;
+}
+
+interface Prolog {
+  decl?: string;
+  doctype?: string;
+}
+
+/** What parseXml saw before the root element, for re-serialising. */
+const prologs = new WeakMap<Document, Prolog>();
+
+const prologOf = (text: string): Prolog => ({
+  decl: DECL_RE.exec(text)?.[1],
+  doctype: doctypeSource(text),
+});
+
+/** A walker's stack overflow on very deep nesting, as INVALID_INPUT. */
+function guardDepth<T>(run: () => T): T {
+  try {
+    return run();
+  } catch (e) {
+    if (e instanceof RangeError)
+      throw new ToolError(
+        'INVALID_INPUT',
+        'The document is nested too deeply to process',
+        { cause: e },
+      );
+    throw e;
+  }
+}
+
 /** Parses XML; a malformed document is INVALID_INPUT with line and column. */
 export function parseXml(text: string): Document {
   const doc = new DOMParser().parseFromString(text, 'application/xml');
@@ -52,10 +105,9 @@ export function parseXml(text: string): Document {
       pos ?? {},
     );
   }
+  prologs.set(doc, prologOf(text));
   return doc;
 }
-
-const DECL_RE = /^\uFEFF?\s*(<\?xml\s[^?]*\?>)/;
 
 const escText = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -69,6 +121,8 @@ interface WriteOptions {
   pretty: boolean;
   indent: string;
   comments: boolean;
+  /** The DOCTYPE as written in the source, internal subset included. */
+  doctype?: string;
 }
 
 const isBlank = (n: Node) =>
@@ -99,6 +153,7 @@ function exact(node: Node, opts: WriteOptions): string {
     case PI:
       return `<?${(node as ProcessingInstruction).target}${node.nodeValue ? ` ${node.nodeValue}` : ''}?>`;
     case DOCTYPE: {
+      if (opts.doctype) return opts.doctype;
       const d = node as DocumentType;
       const id = d.publicId
         ? ` PUBLIC "${d.publicId}" "${d.systemId}"`
@@ -157,10 +212,14 @@ function write(
 
 function serialise(input: string | Document, opts: WriteOptions): string {
   const doc = typeof input === 'string' ? parseXml(input) : input;
-  const decl = typeof input === 'string' ? DECL_RE.exec(input)?.[1] : undefined;
+  const { decl, doctype } =
+    typeof input === 'string' ? prologOf(input) : (prologs.get(doc) ?? {});
   const out: string[] = [];
   if (decl) out.push(decl);
-  for (const n of Array.from(doc.childNodes)) write(n, 0, opts, out);
+  const withDoctype = { ...opts, doctype };
+  guardDepth(() => {
+    for (const n of Array.from(doc.childNodes)) write(n, 0, withDoctype, out);
+  });
   return opts.pretty ? out.join('\n') + '\n' : out.join('');
 }
 
@@ -253,8 +312,8 @@ export function jsonToXml(
     entries[0][0] !== textKey &&
     !Array.isArray(entries[0][1])
   )
-    return element(entries[0][0], entries[0][1]);
-  return element(root, value);
+    return guardDepth(() => element(entries[0][0], entries[0][1]));
+  return guardDepth(() => element(root, value));
 }
 
 /** Sets an own property, even one named `__proto__`. */
@@ -306,5 +365,5 @@ export function xmlToJson(
     return out;
   };
   const root = doc.documentElement;
-  return { [root.tagName]: convert(root) };
+  return { [root.tagName]: guardDepth(() => convert(root)) };
 }

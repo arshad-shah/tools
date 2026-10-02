@@ -22,8 +22,9 @@ const hasModifier = (combo: string) => {
 /**
  * Registers a tool's commands with the Mod+K palette (source `tool:<id>`)
  * and binds their shortcuts (spec §4.6). Shortcuts with a modifier also
- * fire while typing; single keys never do. Commands are read through a ref,
- * so closures stay fresh without re-registering.
+ * fire while typing (unless AltGraph is held: AltGr reads as Ctrl+Alt on
+ * Windows); single keys never do. Commands are read through a ref, so
+ * closures stay fresh without re-registering.
  */
 export function useToolCommands(toolId: string, commands: ToolCommand[]): void {
   const latest = useRef(commands);

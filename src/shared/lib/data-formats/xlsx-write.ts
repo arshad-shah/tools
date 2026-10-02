@@ -7,11 +7,17 @@ import { cellText } from './csv-write';
  * strings, numeric and boolean cells, a header row.
  */
 
-/** Drops characters XML 1.0 forbids even when escaped (most controls). */
+/**
+ * Drops characters XML 1.0 forbids even when escaped: most controls, lone
+ * surrogates, U+FFFE and U+FFFF (Excel refuses a file holding them).
+ */
 const xmlChars = (s: string) =>
   [...s]
     .filter((ch) => {
+      if (ch.length === 2) return true; // a surrogate pair: U+10000 and up
       const c = ch.charCodeAt(0);
+      if (c >= 0xd800 && c <= 0xdfff) return false;
+      if (c === 0xfffe || c === 0xffff) return false;
       return c >= 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
     })
     .join('');
@@ -62,6 +68,8 @@ export function toXlsx(
       'INVALID_INPUT',
       'Sheet names have 1 to 31 characters and no [ ] : * ? / or \\',
     );
+  if (columns.length > 16_384)
+    throw new ToolError('INVALID_INPUT', 'XLSX holds at most 16,384 columns');
   if (rows.length + 1 > 1_048_576)
     throw new ToolError('TOO_LARGE', 'XLSX holds at most 1,048,575 data rows');
   const lines = [columns, ...rows.map((r) => columns.map((c) => r[c]))].map(
