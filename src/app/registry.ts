@@ -1,8 +1,35 @@
+import { getCategory } from './categories';
+import { RESERVED_SLUGS, toolPath } from './routes';
 import type { ToolManifest } from './tool';
 
 type ManifestModules = Record<string, { default: ToolManifest }>;
 
-const REQUIRED_STRINGS = ['name', 'description', 'category'] as const;
+const REQUIRED_STRINGS = ['name', 'description', 'category', 'slug'] as const;
+const KINDS = new Set(['tool', 'quick-task', 'workspace']);
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Route and search fields (spec §3.1). */
+function validateRouting(path: string, m: ToolManifest) {
+  const fail = (msg: string) => {
+    throw new Error(`${path}: tool "${m.id}" ${msg}`);
+  };
+  if (!getCategory(m.category)) fail(`has unknown category "${m.category}"`);
+  if (!SLUG_RE.test(m.slug)) fail(`slug "${m.slug}" must be kebab-case`);
+  if (RESERVED_SLUGS[m.category].includes(m.slug))
+    fail(`slug "${m.slug}" is reserved under /${m.category}`);
+  if (!KINDS.has(m.kind)) fail(`has invalid kind "${String(m.kind)}"`);
+  if (
+    !Array.isArray(m.keywords) ||
+    m.keywords.some((k) => typeof k !== 'string' || !k.trim())
+  )
+    fail('needs keywords to be an array of non-empty strings');
+  for (const c of m.alsoIn ?? [])
+    if (!getCategory(c) || c === m.category)
+      fail(`alsoIn "${c}" must be another existing category`);
+  for (const rule of m.accepts ?? [])
+    if (!Array.isArray(rule.kinds) || rule.kinds.length === 0)
+      fail('has an accepts rule without kinds');
+}
 function validate(path: string, manifest: ToolManifest | undefined) {
   if (!manifest || typeof manifest.id !== 'string' || !manifest.id) {
     throw new Error(`${path} must default-export defineTool({...})`);
@@ -27,10 +54,12 @@ function validate(path: string, manifest: ToolManifest | undefined) {
     throw new Error(
       `Tool folder "${folder}" must match its id "${manifest.id}" (${path})`,
     );
+  validateRouting(path, manifest);
 }
 
 export function buildRegistry(modules: ManifestModules): ToolManifest[] {
   const seen = new Map<string, string>();
+  const routes = new Map<string, string>();
   const list: ToolManifest[] = [];
   for (const [path, mod] of Object.entries(modules)) {
     const manifest = mod.default;
@@ -41,6 +70,11 @@ export function buildRegistry(modules: ManifestModules): ToolManifest[] {
         `Duplicate tool id "${manifest.id}" in ${path} and ${previous}`,
       );
     seen.set(manifest.id, path);
+    const route = toolPath(manifest);
+    const clash = routes.get(route);
+    if (clash)
+      throw new Error(`Duplicate route ${route} in ${path} and ${clash}`);
+    routes.set(route, path);
     list.push(manifest);
   }
   return list.sort((a, b) => a.name.localeCompare(b.name));

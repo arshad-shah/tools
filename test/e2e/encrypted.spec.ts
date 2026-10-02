@@ -1,30 +1,31 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 const FILE = 'test/fixtures/generated/encrypted-aes.pdf';
 const OWNER_ONLY = 'test/fixtures/generated/encrypted-owner-only.pdf';
-const ROUTES = [
-  '/pdf-merger',
-  '/pdf-splitter',
-  '/pdf-organize',
-  '/pdf-to-images',
-  '/pdf-to-text',
-  '/pdf-watermark',
-  '/pdf-page-numbers',
-  '/pdf-sign',
-  '/pdf-fill-form',
-  '/pdf-compressor',
-  '/pdf-metadata',
-  '/pdf-protect',
+const TOOLS = [
+  'pdf-merger',
+  'pdf-splitter',
+  'pdf-organize',
+  'pdf-to-images',
+  'pdf-to-text',
+  'pdf-watermark',
+  'pdf-page-numbers',
+  'pdf-sign',
+  'pdf-fill-form',
+  'pdf-compressor',
+  'pdf-metadata',
+  'pdf-protect',
 ];
 
 /** Proof that the tool really worked on the decrypted bytes. */
 const PROCESSED: Record<string, (page: Page) => Promise<void>> = {
-  '/pdf-fill-form': (page) =>
+  'pdf-fill-form': (page) =>
     expect(
       page.getByText('This PDF has no fillable form fields.'),
     ).toBeVisible(),
-  '/pdf-metadata': (page) =>
+  'pdf-metadata': (page) =>
     expect(page.getByLabel('Title', { exact: true })).toHaveValue(
       'Locked fixture',
     ),
@@ -32,11 +33,11 @@ const PROCESSED: Record<string, (page: Page) => Promise<void>> = {
 const rendered = (page: Page) =>
   expect(page.locator('canvas[data-rendered="true"]').first()).toBeAttached();
 
-for (const route of ROUTES) {
-  test(`${route} asks for the password of an AES-256 PDF and opens it`, async ({
+for (const id of TOOLS) {
+  test(`${id} asks for the password of an AES-256 PDF and opens it`, async ({
     page,
   }) => {
-    await page.goto(route);
+    await page.goto(pathOf(id));
     await page.locator('input[type=file]').first().setInputFiles(FILE);
     const password = page.getByLabel('Password for encrypted-aes.pdf', {
       exact: true,
@@ -54,14 +55,14 @@ for (const route of ROUTES) {
     await expect(
       page.getByText('encrypted-aes.pdf', { exact: true }).first(),
     ).toBeVisible();
-    await (PROCESSED[route] ?? rendered)(page);
+    await (PROCESSED[id] ?? rendered)(page);
   });
 }
 
 test('the decrypted output is real and says it is unencrypted', async ({
   page,
 }) => {
-  await page.goto('/pdf-to-text');
+  await page.goto(pathOf('pdf-to-text'));
   await page.locator('input[type=file]').setInputFiles(FILE);
   await page
     .getByLabel('Password for encrypted-aes.pdf', { exact: true })
@@ -81,7 +82,7 @@ test('the decrypted output is real and says it is unencrypted', async ({
 });
 
 test('a permissions-only PDF opens without a prompt', async ({ page }) => {
-  await page.goto('/pdf-to-text');
+  await page.goto(pathOf('pdf-to-text'));
   await page.locator('input[type=file]').setInputFiles(OWNER_ONLY);
   await expect(
     page.getByText('encrypted-owner-only.pdf', { exact: true }),
@@ -94,7 +95,7 @@ test('a permissions-only PDF opens without a prompt', async ({ page }) => {
 });
 
 test('a locked file can be skipped', async ({ page }) => {
-  await page.goto('/pdf-merger');
+  await page.goto(pathOf('pdf-merger'));
   await page
     .locator('input[type=file]')
     .setInputFiles([FILE, 'test/fixtures/generated/text-3.pdf']);
@@ -109,7 +110,7 @@ test('Merger keeps drop order when locked files are unlocked later', async ({
   page,
 }) => {
   const locked = readFileSync(FILE);
-  await page.goto('/pdf-merger');
+  await page.goto(pathOf('pdf-merger'));
   await page.locator('input[type=file]').setInputFiles([
     { name: 'a.pdf', mimeType: 'application/pdf', buffer: locked },
     {

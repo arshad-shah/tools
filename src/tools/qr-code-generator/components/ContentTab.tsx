@@ -70,7 +70,7 @@ export const ContentTab: React.FC<{
           {QR_TYPE_OPTIONS.map((t) => (
             <Button
               key={t.value}
-              variant={state.qrType === t.value ? 'solid' : 'soft'}
+              variant={state.qrType === t.value ? 'primary' : 'secondary'}
               size="sm"
               leftIcon={t.icon}
               onClick={() => setQrType(t.value)}

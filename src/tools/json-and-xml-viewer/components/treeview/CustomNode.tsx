@@ -6,16 +6,16 @@ import { MainNode, NodeType } from './types';
 
 /** Network-node classes (formerly a CSS module). */
 const styles = {
-  node: 'max-w-[280px] min-w-[180px] overflow-hidden rounded-lg border border-line bg-surface font-sans text-[12px] text-fg shadow-raised',
+  node: 'max-w-[280px] min-w-[180px] overflow-hidden rounded-lg border border-line bg-surface font-sans text-[12px] text-fg shadow-e1',
   header:
-    'flex items-center gap-1.5 border-b border-line bg-surface-subtle px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.04em] text-fg-muted uppercase',
+    'flex items-center gap-1.5 border-b border-line bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.04em] text-fg-muted uppercase',
   label:
     'min-w-0 flex-1 truncate font-mono text-[12px] font-semibold tracking-normal text-fg normal-case',
   body: 'max-h-[220px] overflow-auto px-2.5 py-1.5 font-mono text-[12px]',
   row: 'flex min-w-0 items-baseline justify-between gap-3 py-0.5 [&+&]:border-t [&+&]:border-dashed [&+&]:border-line',
   key: 'max-w-[60%] truncate font-medium text-fg-muted',
   val: 'min-w-0 truncate text-right',
-  string: 'text-success',
+  string: 'text-accent-fg',
   number: 'text-info',
   boolean: 'font-semibold text-warning',
   null: 'italic text-fg-subtle',
@@ -26,7 +26,7 @@ const styles = {
 const TYPE_ACCENT: Record<NodeType, string> = {
   object: 'border-t-[3px] border-t-accent',
   array: 'border-t-[3px] border-t-warning',
-  primitive: 'border-t-[3px] border-t-success',
+  primitive: 'border-t-[3px] border-t-accent-fg',
 };
 
 const parseKeyValuePairs = (content: string): Record<string, string> | null => {

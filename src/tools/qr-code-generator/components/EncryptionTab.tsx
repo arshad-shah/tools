@@ -99,7 +99,7 @@ export const EncryptionTab: React.FC<{
                         />
                       </Box>
                       <Button
-                        variant="soft"
+                        variant="secondary"
                         leftIcon={<IconRefreshCw size="sm" />}
                         onClick={generateRandomIV}
                       >
@@ -123,7 +123,7 @@ export const EncryptionTab: React.FC<{
                           />
                         </Box>
                         <Button
-                          variant="soft"
+                          variant="secondary"
                           leftIcon={<IconRefreshCw size="sm" />}
                           onClick={generateRandomSalt}
                         >

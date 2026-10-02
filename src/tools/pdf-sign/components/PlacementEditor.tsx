@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { useDraggable, useResizable } from '@arshad-shah/detent-react';
-import { Text } from '@/shared/ui';
+import { Positioned, Text } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import type { VisualRect } from '@/pdf/edit';
 import type { DocInfo } from '@/pdf/render';
@@ -132,6 +132,7 @@ export const PlacementEditor: React.FC<PlacementEditorProps> = ({
   };
 
   const round = Math.round;
+  const px = rect ? rectToPixels(rect, scale) : null;
   return (
     <div className="flex flex-col items-start gap-2">
       <div
@@ -146,8 +147,8 @@ export const PlacementEditor: React.FC<PlacementEditorProps> = ({
           width={width}
           label={`Page ${pageIndex + 1}`}
         />
-        {rect && (
-          <div
+        {rect && px && (
+          <Positioned
             key={revision}
             ref={boxRef}
             tabIndex={0}
@@ -155,10 +156,13 @@ export const PlacementEditor: React.FC<PlacementEditorProps> = ({
             aria-label="Signature placement. Arrow keys move it; plus and minus resize it."
             onKeyDown={onKeyDown}
             className={cn(
-              'absolute cursor-move outline-dashed outline-2 outline-accent focus-visible:ring-2 focus-visible:ring-accent',
+              'cursor-move outline-dashed outline-2 outline-focus focus-visible:ring-2 focus-visible:ring-focus',
               disabled && 'cursor-default',
             )}
-            style={rectToPixels(rect, scale)}
+            x={px.left}
+            y={px.top}
+            width={px.width}
+            height={px.height}
           >
             {preview}
             {HANDLES.map((h) => (
@@ -167,12 +171,12 @@ export const PlacementEditor: React.FC<PlacementEditorProps> = ({
                 data-handle={h.name}
                 aria-hidden
                 className={cn(
-                  'absolute size-3 rounded-full border-2 border-surface bg-accent',
+                  'absolute size-3 rounded-full border-2 border-surface bg-accent-indicator',
                   h.className,
                 )}
               />
             ))}
-          </div>
+          </Positioned>
         )}
       </div>
       {rect && (

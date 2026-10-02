@@ -49,7 +49,7 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
   };
   const total = files.reduce((n, f) => n + f.bytes.byteLength, 0);
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-success/40 bg-success/5 p-4">
+    <div className="flex flex-col gap-3 rounded-md border border-accent-fg/40 bg-accent-fg/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Text size="sm" weight="semibold">
           {files.length === 1 ? 'Ready' : `${files.length} files ready`} ·{' '}
@@ -64,7 +64,7 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
         {zipName && files.length > 1 && (
           <Button
             size="sm"
-            variant="solid"
+            variant="primary"
             leftIcon={<IconDownload size="sm" />}
             loading={zipping}
             onClick={() => void downloadZip(zipName)}
@@ -87,7 +87,7 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
             </div>
             <Button
               size="sm"
-              variant={files.length === 1 ? 'solid' : 'soft'}
+              variant={files.length === 1 ? 'primary' : 'secondary'}
               leftIcon={<IconFileDown size="sm" />}
               aria-label={`Download ${f.name}`}
               onClick={() =>

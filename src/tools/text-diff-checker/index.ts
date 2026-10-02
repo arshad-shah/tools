@@ -7,6 +7,17 @@ export default defineTool({
   description: 'Compare differences between text files or snippets',
   icon: IconSplit,
   category: 'text',
+  slug: 'diff',
+  kind: 'tool',
+  keywords: ['compare', 'difference', 'changes', 'text'],
+  accepts: [
+    {
+      kinds: ['text', 'csv', 'tsv', 'json', 'xml', 'log'],
+      multiple: true,
+      min: 2,
+      max: 2,
+    },
+  ],
   version: '1.0.0',
   enabled: true,
   load: () => import('./Tool'),

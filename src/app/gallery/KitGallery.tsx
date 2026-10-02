@@ -9,6 +9,7 @@ import { DialogsSection } from './sections/DialogsSection';
 import { IconsSection } from './sections/IconsSection';
 import { InputsSection } from './sections/InputsSection';
 import { KeysSection } from './sections/KeysSection';
+import { MediaSection } from './sections/MediaSection';
 import { NavigationSection } from './sections/NavigationSection';
 import { OverlaysSection } from './sections/OverlaysSection';
 import { ShellSection } from './sections/ShellSection';
@@ -51,6 +52,7 @@ export default function KitGallery() {
       <DataSection />
       <DiagramSection />
       <StatesSection />
+      <MediaSection />
       <KeysSection />
       <IconsSection />
     </div>

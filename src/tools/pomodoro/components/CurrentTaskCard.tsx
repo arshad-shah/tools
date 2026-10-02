@@ -45,7 +45,7 @@ export const CurrentTaskCard: React.FC = () => {
               </Stack>
             </Inline>
             <Button
-              variant="solid"
+              variant="primary"
               size="sm"
               onClick={() =>
                 usePomodoroStore.getState().setCurrentTask(nextTask.id)

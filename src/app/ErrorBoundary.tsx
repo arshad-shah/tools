@@ -119,14 +119,14 @@ class ErrorBoundary extends Component<Props, State> {
                     Dismiss
                   </Button>
                   <Button
-                    variant="soft"
+                    variant="secondary"
                     leftIcon={<IconHome size="sm" />}
                     onClick={this.handleGoHome}
                   >
                     Go to dashboard
                   </Button>
                   <Button
-                    variant="solid"
+                    variant="primary"
                     leftIcon={<IconRefreshCw size="sm" />}
                     onClick={this.handleReload}
                   >

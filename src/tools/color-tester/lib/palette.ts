@@ -76,9 +76,23 @@ export const toRgbString = (
 export const luminance = (red: number, green: number, blue: number): number =>
   (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
 
-/** Dark or white text, whichever reads better on the colour. */
-export const textColorFor = (red: number, green: number, blue: number) =>
-  luminance(red, green, blue) > 0.5 ? '#1a202c' : '#ffffff';
+/** WCAG relative luminance of an sRGB colour, 0-1. */
+const relativeLuminance = (red: number, green: number, blue: number) => {
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(red) + 0.7152 * lin(green) + 0.0722 * lin(blue);
+};
+
+/**
+ * Black or white text, whichever has the higher WCAG contrast ratio on the
+ * colour (every opaque colour reaches at least 4.58:1 with one of them).
+ */
+export const textColorFor = (red: number, green: number, blue: number) => {
+  const l = relativeLuminance(red, green, blue);
+  return (l + 0.05) / 0.05 >= 1.05 / (l + 0.05) ? '#000000' : '#ffffff';
+};
 
 /** Channels of an `rgb(r, g, b)` string, or null if it is not one. */
 export const parseRgb = (

@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
+import { pathOf } from './tool-routes';
 
 test('extracts text into one file', async ({ page }) => {
-  await page.goto('/pdf-to-text');
+  await page.goto(pathOf('pdf-to-text'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -25,7 +26,7 @@ test('extracts text into one file', async ({ page }) => {
 test('flags pages without a text layer and offers per-page files', async ({
   page,
 }) => {
-  await page.goto('/pdf-to-text');
+  await page.goto(pathOf('pdf-to-text'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/shapes-2.pdf');
@@ -61,7 +62,7 @@ test('copies the extracted text to the clipboard', async ({ page }) => {
       },
     });
   });
-  await page.goto('/pdf-to-text');
+  await page.goto(pathOf('pdf-to-text'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');

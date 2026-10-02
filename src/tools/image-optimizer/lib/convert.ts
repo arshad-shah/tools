@@ -59,7 +59,7 @@ export async function decodeImage(
   return { image, width, height };
 }
 
-/** Re-encodes an image in the browser through a canvas. */
+/** Re-encodes an image in the browser through an OffscreenCanvas. */
 export async function convertImage(
   file: Blob,
   opts: { format: OutputFormat; quality: number; background?: string },
@@ -75,9 +75,12 @@ export async function convertImage(
   }
   const { image, width, height } = await decodeImage(file);
   if (signal?.aborted) throw new ToolError('CANCELLED', 'Cancelled');
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  if (typeof OffscreenCanvas === 'undefined')
+    throw new ToolError(
+      'UNSUPPORTED_FEATURE',
+      'This browser cannot re-encode images (no OffscreenCanvas)',
+    );
+  const canvas = new OffscreenCanvas(width, height);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new ToolError('UNKNOWN', 'Unable to get canvas context');
   if (needsBackground(opts.format)) {
@@ -87,13 +90,12 @@ export async function convertImage(
   }
   ctx.drawImage(image, 0, 0, width, height);
   const mime = mimeFor(opts.format);
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(
-      resolve,
-      mime,
-      qualityApplies(opts.format) ? opts.quality : undefined,
-    ),
-  );
+  const blob = await canvas
+    .convertToBlob({
+      type: mime,
+      quality: qualityApplies(opts.format) ? opts.quality : undefined,
+    })
+    .catch(() => null);
   if (!blob)
     throw new ToolError(
       'UNSUPPORTED_FEATURE',

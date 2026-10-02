@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 test('calculator expression box inserts typed digits at the caret', async ({
   page,
 }) => {
-  await page.goto('/calculator');
+  await page.goto(pathOf('calculator'));
   await page.getByRole('tab', { name: 'Expression' }).click();
   const box = page.getByRole('textbox', { name: 'Expression' });
   await box.fill('');
@@ -18,7 +19,7 @@ test('calculator expression box inserts typed digits at the caret', async ({
 test('calculator expression mode honours degrees and radians', async ({
   page,
 }) => {
-  await page.goto('/calculator');
+  await page.goto(pathOf('calculator'));
   await page.getByRole('tab', { name: 'Expression' }).click();
   const box = page.getByRole('textbox', { name: 'Expression' });
 
@@ -34,7 +35,7 @@ test('calculator expression mode honours degrees and radians', async ({
 });
 
 test('calculator standard mode works from the keyboard', async ({ page }) => {
-  await page.goto('/calculator');
+  await page.goto(pathOf('calculator'));
   const display = page.locator('main h3.tabular-nums');
   // The route is lazy: on a cold dev server its first compile can outlast the
   // 5 s expect timeout. Wait for it like the other tests' first click does
@@ -56,7 +57,7 @@ test('calculator standard mode works from the keyboard', async ({ page }) => {
 test('calculator expression box keeps Escape and Enter to itself', async ({
   page,
 }) => {
-  await page.goto('/calculator');
+  await page.goto(pathOf('calculator'));
   await page.getByRole('tab', { name: 'Expression' }).click();
   const box = page.getByRole('textbox', { name: 'Expression' });
   await box.fill('sin(30)');
@@ -67,7 +68,7 @@ test('calculator expression box keeps Escape and Enter to itself', async ({
 test('calculator plots exp(x) and reports an expression it cannot plot', async ({
   page,
 }) => {
-  await page.goto('/calculator');
+  await page.goto(pathOf('calculator'));
   await page.getByRole('tab', { name: 'Expression' }).click();
   const box = page.getByRole('textbox', { name: 'Expression' });
   await box.fill('exp(x)');

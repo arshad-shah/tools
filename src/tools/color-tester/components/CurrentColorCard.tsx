@@ -14,6 +14,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  ColorBlock,
   Heading,
   IconButton,
   Inline,
@@ -25,6 +26,7 @@ interface CurrentColorCardProps {
   rgbString: string;
   textColor: string;
   hexCode: string;
+  alpha: number;
   colorNameSuggestion: string;
   generateRandomColor: () => void;
   saveColor: () => void;
@@ -36,6 +38,7 @@ export const CurrentColorCard: React.FC<CurrentColorCardProps> = ({
   rgbString,
   textColor,
   hexCode,
+  alpha,
   colorNameSuggestion,
   generateRandomColor,
   saveColor,
@@ -51,34 +54,27 @@ export const CurrentColorCard: React.FC<CurrentColorCardProps> = ({
     </CardHeader>
     <CardBody>
       <Stack gap="4">
-        <Card
-          // data-driven: user colour and its luminance-derived text colour
-          style={{ background: rgbString, color: textColor }}
+        <ColorBlock
+          color={hexCode}
+          alpha={alpha}
+          textColor={textColor}
+          className="flex flex-col rounded-lg shadow-e1"
         >
           <CardBody>
             <Stack gap="2" align="center">
               <IconSparkles size="2xl" />
-              <Heading
-                level={3}
-                size="xl"
-                // data-driven: luminance-derived text colour
-                style={{ color: textColor }}
-              >
+              <Heading level={3} size="xl" className="text-inherit">
                 {colorNameSuggestion}
               </Heading>
-              <Text
-                size="sm"
-                // data-driven: luminance-derived text colour
-                style={{ color: textColor }}
-              >
+              <Text size="sm" className="text-inherit">
                 {hexCode}
               </Text>
             </Stack>
           </CardBody>
-        </Card>
+        </ColorBlock>
         <Inline gap="2" wrap>
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconRefreshCw size="sm" />}
             onClick={generateRandomColor}
@@ -86,7 +82,7 @@ export const CurrentColorCard: React.FC<CurrentColorCardProps> = ({
             Random
           </Button>
           <Button
-            variant="solid"
+            variant="primary"
             size="sm"
             leftIcon={<IconSave size="sm" />}
             onClick={saveColor}

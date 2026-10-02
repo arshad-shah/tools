@@ -40,6 +40,7 @@ import {
   rotateTiles,
   tilesToEdits,
 } from './lib/edits';
+import { useHandoff } from '@/shared/lib/handoff';
 
 /**
  * Edits belong to one loaded file (not to a worker docId, which changes if
@@ -53,6 +54,8 @@ interface EditState {
 const only = (key: string) => new Set([key]);
 
 const OrganizeTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [edit, setEdit] = useState<EditState | null>(null);
   const { doc, loading, error } = usePdfDocument(file);
@@ -98,6 +101,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={changeFile}
             onClear={() => changeFile(null)}
@@ -162,8 +166,8 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                     <IconButton
                       tabIndex={tabIndex}
                       label={`Rotate page ${tile.pageIndex + 1} left`}
-                      icon={<IconRotateCcw size="xs" />}
-                      size="xs"
+                      icon={<IconRotateCcw size="sm" />}
+                      size="sm"
                       variant="ghost"
                       disabled={busy}
                       onClick={() =>
@@ -173,8 +177,8 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                     <IconButton
                       tabIndex={tabIndex}
                       label={`Rotate page ${tile.pageIndex + 1} right`}
-                      icon={<IconRotateCw size="xs" />}
-                      size="xs"
+                      icon={<IconRotateCw size="sm" />}
+                      size="sm"
                       variant="ghost"
                       disabled={busy}
                       onClick={() =>
@@ -184,8 +188,8 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                     <IconButton
                       tabIndex={tabIndex}
                       label={`Delete page ${tile.pageIndex + 1}`}
-                      icon={<IconTrash2 size="xs" />}
-                      size="xs"
+                      icon={<IconTrash2 size="sm" />}
+                      size="sm"
                       variant="ghost"
                       disabled={busy || tiles.length === 1}
                       onClick={() => commit(removeTiles(tiles, only(tile.key)))}
@@ -194,7 +198,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 )}
               />
               <Button
-                variant="solid"
+                variant="primary"
                 leftIcon={<IconDownload size="sm" />}
                 disabled={busy}
                 onClick={() => job.run(file, tiles)}

@@ -1,46 +1,24 @@
-import React from 'react';
-import { Container, Section, Inline, Text } from '@/shared/ui';
+import { useTheme, type ThemePreference } from '@/shared/lib/theme';
+import {
+  IconGithub,
+  IconMonitor,
+  IconMoon,
+  IconSun,
+  Logo,
+} from '@/shared/ui/icons';
+import { MetaList, SegmentedControl, StatusDot } from '@/shared/ui';
 import type { ToolDefinition } from './tool';
 import { getEnabledTools } from './registry';
-import { DOT, formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
+import { formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
 
 const AUTHOR = 'Arshad Shah';
 
 const linkClass =
-  'inline-flex items-center gap-1.5 rounded-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex items-center gap-1.5 rounded-sm text-fg-muted transition-colors duration-fast hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 
-// GitHub is a brand mark and is intentionally not part of the icon set
-// (lucide v1 dropped brand glyphs), so it ships as an inline SVG.
-const GithubIcon: React.FC<{ size?: number }> = ({ size = 14 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden
-  >
-    <path d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.21 3.44 9.62 8.21 11.18.6.11.82-.25.82-.56v-2.1c-3.34.71-4.04-1.58-4.04-1.58-.55-1.36-1.34-1.72-1.34-1.72-1.09-.73.08-.72.08-.72 1.2.08 1.84 1.21 1.84 1.21 1.07 1.79 2.81 1.27 3.5.97.11-.76.42-1.27.76-1.56-2.67-.3-5.47-1.3-5.47-5.79 0-1.28.47-2.32 1.24-3.14-.12-.3-.54-1.52.12-3.17 0 0 1.01-.32 3.3 1.2a11.6 11.6 0 0 1 6 0c2.29-1.52 3.3-1.2 3.3-1.2.66 1.65.24 2.87.12 3.17.77.82 1.24 1.86 1.24 3.14 0 4.5-2.81 5.48-5.49 5.78.43.36.81 1.08.81 2.18v3.23c0 .31.22.68.83.56A12.02 12.02 0 0 0 24 12.29C24 5.78 18.63.5 12 .5z" />
-  </svg>
-);
-
-const Sep: React.FC = () => (
-  <span aria-hidden className="text-fg-faint">
-    {DOT}
-  </span>
-);
-
-/**
- * A footer item led by its separator, kept on one line together, so a
- * wrap never leaves a dangling "·" at the end of a line.
- */
-const Item: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="inline-flex items-center gap-3 whitespace-nowrap">
-    <Sep />
-    {children}
-  </span>
-);
-
-const Footer: React.FC<{ tool?: ToolDefinition }> = ({ tool }) => {
+/** Version and build info, privacy note, theme switch (spec §5.2). */
+export default function Footer({ tool }: { tool?: ToolDefinition }) {
+  const { preference, setPreference } = useTheme();
   const year = new Date().getFullYear();
   const toolCount = getEnabledTools().length;
   const stamp = formatBuildStamp(
@@ -50,75 +28,68 @@ const Footer: React.FC<{ tool?: ToolDefinition }> = ({ tool }) => {
   );
 
   return (
-    <Section as="footer" className="border-t border-line py-4">
-      <Container size="xl">
-        <Text
-          as="div"
-          mono
-          size="xs"
-          tone="muted"
-          className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2"
-        >
-          <Inline gap="3" wrap>
-            <span className="inline-flex items-baseline gap-1.5 font-bold text-fg">
-              <span>
-                <span className="text-fg-faint">~/</span>tools
-              </span>
-              <span
-                aria-hidden
-                className="inline-block h-3 w-1.5 animate-caret bg-accent"
-              />
-            </span>
-            <Item>
-              <span>{toolCount} tools</span>
-            </Item>
-            <Item>
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  aria-hidden
-                  className="inline-block size-1.5 rounded-full bg-success"
-                />
-                runs locally, no uploads
-              </span>
-            </Item>
-            <Item>
-              {stamp.href && stamp.sha ? (
-                <span className="inline-flex items-center gap-1.5">
-                  {stamp.version} <Sep />
-                  <a
-                    href={stamp.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Build ${stamp.sha} on GitHub`}
-                    className={linkClass}
-                  >
-                    {stamp.sha}
-                  </a>
-                </span>
-              ) : (
-                <span>{stamp.label}</span>
-              )}
-            </Item>
-          </Inline>
-
-          <Inline gap="3" wrap>
-            <span>
-              Copyright {year} {AUTHOR}
-            </span>
-            <Item>
+    <footer className="border-t border-line bg-surface">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 md:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <Logo className="h-4 self-start" />
+            <p className="flex items-center gap-2 text-sm text-fg-muted">
+              <StatusDot tone="accent" decorative />
+              Your files are processed on this device and never uploaded.
+            </p>
+          </div>
+          <SegmentedControl<ThemePreference>
+            label="Theme"
+            size="sm"
+            value={preference}
+            onChange={setPreference}
+            options={[
+              { value: 'system', label: 'System', icon: IconMonitor },
+              { value: 'light', label: 'Light', icon: IconSun },
+              { value: 'dark', label: 'Dark', icon: IconMoon },
+            ]}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <MetaList
+            items={[
+              `${toolCount} tools`,
+              <span key="build" data-dynamic="">
+                {stamp.href && stamp.sha ? (
+                  <>
+                    {stamp.version}{' '}
+                    <a
+                      href={stamp.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Build ${stamp.sha} on GitHub`}
+                      className={linkClass}
+                    >
+                      {stamp.sha}
+                    </a>
+                  </>
+                ) : (
+                  stamp.label
+                )}
+              </span>,
+              `Copyright ${year} ${AUTHOR}`,
+            ]}
+          />
+          <MetaList
+            items={[
               <a
+                key="source"
                 href={REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="View source on GitHub"
                 className={linkClass}
               >
-                <GithubIcon />
+                <IconGithub size="xs" />
                 source
-              </a>
-            </Item>
-            <Item>
+              </a>,
               <a
+                key="issues"
                 href={issuesUrl(tool)}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -131,13 +102,11 @@ const Footer: React.FC<{ tool?: ToolDefinition }> = ({ tool }) => {
                 className={linkClass}
               >
                 issues
-              </a>
-            </Item>
-          </Inline>
-        </Text>
-      </Container>
-    </Section>
+              </a>,
+            ]}
+          />
+        </div>
+      </div>
+    </footer>
   );
-};
-
-export default Footer;
+}

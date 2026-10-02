@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IconImageOff } from '@/shared/ui/icons';
-import { Spinner } from '@/shared/ui';
+import { Image, Spinner } from '@/shared/ui';
 import { useObjectUrl } from '@/shared/lib/object-url';
 
 interface ImageThumbProps {
@@ -31,11 +31,12 @@ export const ImageThumb: React.FC<ImageThumbProps> = ({
       </span>
     );
   return (
-    <img
+    <Image
       src={url}
       alt={name}
+      fit="contain"
       onError={() => setFailedUrl(url)}
-      className="max-h-14 max-w-14 rounded-sm border border-line object-contain"
+      className="max-h-14 max-w-14 rounded-sm border border-line"
     />
   );
 };

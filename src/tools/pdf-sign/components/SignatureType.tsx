@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   AlertDescription,
+  FontSample,
   Inline,
   Input,
   Label,
@@ -123,13 +124,14 @@ export const SignatureType: React.FC<SignatureSourceProps> = ({
         </Alert>
       )}
       {name.trim() ? (
-        <p
+        <FontSample
           aria-label="Typed signature preview"
           className="min-h-14 truncate rounded-md border border-line bg-white px-3 py-2 text-4xl"
-          style={{ fontFamily: `"${fontById(fontId).family}"`, color }}
+          family={fontById(fontId).family}
+          color={color}
         >
           {name.trim()}
-        </p>
+        </FontSample>
       ) : (
         <Text size="sm" tone="muted">
           Type your name to preview it in the chosen font.

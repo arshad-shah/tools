@@ -18,37 +18,37 @@ const pdfRoute = (route: string): WarmRoute => ({
 });
 /** A plain route warms up by rendering FIXTURE with pdf.js. */
 const TOOL_ROUTES: (string | WarmRoute)[] = [
-  '/pdf-merger',
-  '/pdf-splitter',
-  '/pdf-organize',
-  '/pdf-to-images',
-  '/pdf-to-text',
-  '/pdf-watermark',
-  '/pdf-page-numbers',
-  '/pdf-sign',
-  '/pdf-compressor',
-  '/pdf-protect',
+  '/pdf/merge',
+  '/pdf/split',
+  '/pdf/organize',
+  '/pdf/to-images',
+  '/pdf/to-text',
+  '/pdf/watermark',
+  '/pdf/page-numbers',
+  '/pdf/sign',
+  '/pdf/compress',
+  '/pdf/protect',
   // Image tools show <img> previews rather than pdf.js canvases.
   {
-    route: '/images-to-pdf',
+    route: '/pdf/images-to-pdf',
     fixture: 'test/fixtures/generated/photo.png',
     ready: 'li[data-sortable-item] img',
   },
   // Fill Form renders no page canvas: it lists the form's fields.
   {
-    route: '/pdf-fill-form',
+    route: '/pdf/fill-form',
     fixture: 'test/fixtures/generated/form.pdf',
     ready: 'label[for="field-0"]',
   },
   // Metadata shows the document's properties, not its pages.
   {
-    route: '/pdf-metadata',
+    route: '/pdf/metadata',
     fixture: 'test/fixtures/generated/metadata.pdf',
     ready: '#meta-title',
   },
   // Unlock takes the encrypted file as it is and asks for its password.
   {
-    route: '/pdf-unlock',
+    route: '/pdf/unlock',
     fixture: 'test/fixtures/generated/encrypted-aes.pdf',
     ready: 'input[type=password]',
   },
@@ -71,12 +71,12 @@ async function warmUp(baseURL: string) {
     // Load every tool once so cold dependency optimisation (plotly, xyflow,
     // rive) can't reload a page mid-test.
     for (const tool of toolRoutes().filter((t) => t.enabled)) {
-      await page.goto(`/${tool.id}`, {
+      await page.goto(tool.path, {
         waitUntil: 'load',
         timeout: COLD_TIMEOUT,
       });
       await page
-        .getByText(`Loading ${tool.name}…`)
+        .getByText(`Loading ${tool.name}`, { exact: true })
         .waitFor({ state: 'detached', timeout: COLD_TIMEOUT });
     }
     for (const entry of TOOL_ROUTES) {

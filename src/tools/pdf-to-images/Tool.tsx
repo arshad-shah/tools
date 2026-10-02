@@ -45,6 +45,7 @@ import {
   pagesToExport,
 } from './lib/plan';
 import { useImageExportSettings } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 interface Snapshot {
   pages: string;
@@ -57,6 +58,8 @@ const clampDpi = (n: number) =>
   Math.min(MAX_EXPORT_DPI, Math.max(MIN_EXPORT_DPI, Math.round(n)));
 
 const PdfToImagesTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [pages, setPages] = useState('');
   const { format, dpi, quality, setFormat, setDpi, setQuality } =
@@ -133,6 +136,7 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -223,7 +227,7 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
               )}
               <div>
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconImages size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() =>

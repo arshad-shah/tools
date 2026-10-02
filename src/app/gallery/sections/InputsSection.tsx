@@ -11,6 +11,8 @@ import {
   Stack,
   Switch,
   Textarea,
+  FontSample,
+  RadioGroup,
 } from '@/shared/ui';
 import { IconMonitor, IconMoon, IconSun } from '@/shared/ui/icons';
 import { Row, Section } from '../Section';
@@ -22,6 +24,7 @@ export function InputsSection() {
   const [fruit, setFruit] = useState('pear');
   const [on, setOn] = useState(true);
   const [checked, setChecked] = useState(true);
+  const [size, setSize] = useState('m');
   const [level, setLevel] = useState(40);
   const [count, setCount] = useState(3);
   const [mode, setMode] = useState<'system' | 'light' | 'dark'>('light');
@@ -125,6 +128,21 @@ export function InputsSection() {
             { value: 'legal', label: 'Legal', disabled: true },
           ]}
         />
+      </Row>
+      <Row label="RadioGroup, FontSample">
+        <RadioGroup
+          label="Size"
+          value={size}
+          onValueChange={setSize}
+          options={[
+            { value: 's', label: 'Small' },
+            { value: 'm', label: 'Medium' },
+            { value: 'l', label: 'Large' },
+          ]}
+        />
+        <FontSample family="Sign Caveat" color="#1e3a8a" className="text-2xl">
+          Ada Lovelace
+        </FontSample>
       </Row>
     </Section>
   );

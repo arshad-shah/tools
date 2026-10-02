@@ -6,18 +6,22 @@ import { Swatch } from './Swatch';
 
 interface PsychologyTabProps {
   rgbString: string;
+  hexCode: string;
+  alpha: number;
   colorNameSuggestion: string;
   colorMood: string;
 }
 
 export const PsychologyTab: React.FC<PsychologyTabProps> = ({
   rgbString,
+  hexCode,
+  alpha,
   colorNameSuggestion,
   colorMood,
 }) => (
   <Stack gap="3">
     <Inline align="center" gap="3" wrap>
-      <Swatch color={rgbString} size="lg" />
+      <Swatch color={hexCode} alpha={alpha} size="lg" />
       <Stack gap="1">
         <Heading level={3} size="lg">
           {colorNameSuggestion}

@@ -14,6 +14,7 @@ import {
   FileUpload,
   Grid,
   Heading,
+  Image,
   Inline,
   Input,
   Label,
@@ -40,6 +41,7 @@ import {
   reductionLabel,
   type OutputFormat,
 } from './lib/convert';
+import { useHandoffFiles } from '@/shared/lib/handoff';
 
 interface LoadedImage {
   file: File;
@@ -109,6 +111,8 @@ const ImageOptimiser: React.FC = () => {
     resetJob();
     setLoaded(next);
   };
+  // Images dropped on a hub open like picked ones (spec §5.3).
+  useHandoffFiles((files) => void handleFiles(files));
 
   const processImage = () => {
     if (!selectedFile) return;
@@ -194,7 +198,7 @@ const ImageOptimiser: React.FC = () => {
             </CardHeader>
             <CardBody>
               <Stack gap="3">
-                <img src={preview} alt="Preview" width="100%" />
+                <Image src={preview} alt="Preview" className="w-full" />
                 <Inline justify="between" align="center" wrap>
                   <Text size="sm" tone="subtle">
                     Size: {originalSize}
@@ -204,7 +208,7 @@ const ImageOptimiser: React.FC = () => {
                   </Text>
                 </Inline>
                 {metadata && (
-                  <Card className="bg-surface-subtle">
+                  <Card className="bg-surface-2">
                     <CardBody>
                       <Stack gap="1">
                         <Text size="xs" weight="semibold">
@@ -294,7 +298,7 @@ const ImageOptimiser: React.FC = () => {
                   </Stack>
                 )}
                 <Button
-                  variant="solid"
+                  variant="primary"
                   fullWidth
                   loading={isProcessing}
                   disabled={
@@ -334,10 +338,14 @@ const ImageOptimiser: React.FC = () => {
                     Processed image
                   </Heading>
                   {processedUrl && (
-                    <img src={processedUrl} alt="Processed" width="100%" />
+                    <Image
+                      src={processedUrl}
+                      alt="Processed"
+                      className="w-full"
+                    />
                   )}
                   <Grid max={2} gap="3">
-                    <Card className="bg-surface-subtle">
+                    <Card className="bg-surface-2">
                       <CardBody>
                         <Text size="xs" tone="subtle">
                           Original
@@ -347,7 +355,7 @@ const ImageOptimiser: React.FC = () => {
                         </Text>
                       </CardBody>
                     </Card>
-                    <Card className="bg-surface-subtle">
+                    <Card className="bg-surface-2">
                       <CardBody>
                         <Text size="xs" tone="subtle">
                           Compressed
@@ -362,7 +370,7 @@ const ImageOptimiser: React.FC = () => {
               </Box>
               <Stack gap="3" justify="center" align="center">
                 <Button
-                  variant="solid"
+                  variant="primary"
                   size="lg"
                   fullWidth
                   leftIcon={<IconSave size="lg" />}

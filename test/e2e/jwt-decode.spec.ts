@@ -1,5 +1,6 @@
 import { createHmac, generateKeyPairSync } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 const part = (v: unknown) =>
   Buffer.from(JSON.stringify(v)).toString('base64url');
@@ -22,7 +23,7 @@ const future = Math.floor(Date.now() / 1000) + 3600;
 test('jwt-decode never calls a token valid without checking the signature', async ({
   page,
 }) => {
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   await waitForSample(page);
   await page
     .getByRole('textbox', { name: 'JWT token' })
@@ -33,7 +34,7 @@ test('jwt-decode never calls a token valid without checking the signature', asyn
 });
 
 test('jwt-decode decodes non-ASCII claims as UTF-8', async ({ page }) => {
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   await waitForSample(page);
   await page
     .getByRole('textbox', { name: 'JWT token' })
@@ -44,7 +45,7 @@ test('jwt-decode decodes non-ASCII claims as UTF-8', async ({ page }) => {
 test('jwt-decode verifies an HS256 signature with the secret', async ({
   page,
 }) => {
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   await waitForSample(page);
   await page
     .getByRole('textbox', { name: 'JWT token' })
@@ -70,7 +71,7 @@ test('jwt-decode refuses a public key for an HS256 token (algorithm confusion)',
 }) => {
   const { publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
   const pem = publicKey.export({ type: 'spki', format: 'pem' }).toString();
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   await waitForSample(page);
   // Forged: HS256 signed with the issuer's public key text as the secret.
   await page
@@ -93,7 +94,7 @@ test('jwt-decode refuses a public key for an HS256 token (algorithm confusion)',
 });
 
 test('jwt-decode reports an alg none token as unsigned', async ({ page }) => {
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   await waitForSample(page);
   await page
     .getByRole('textbox', { name: 'JWT token' })
@@ -107,7 +108,7 @@ test('jwt-decode reports an alg none token as unsigned', async ({ page }) => {
 
 test('jwt-decode applies clock skew and checks iat', async ({ page }) => {
   const now = Math.floor(Date.now() / 1000);
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   await waitForSample(page);
   const box = page.getByRole('textbox', { name: 'JWT token' });
 

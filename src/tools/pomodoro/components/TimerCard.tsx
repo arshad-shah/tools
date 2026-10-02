@@ -103,7 +103,7 @@ export const TimerCard: React.FC = () => {
 
             <Inline gap="3" wrap justify="center">
               <Button
-                variant={timer.isActive ? 'danger' : 'solid'}
+                variant={timer.isActive ? 'danger' : 'primary'}
                 size="lg"
                 leftIcon={
                   timer.isActive ? (
@@ -120,14 +120,14 @@ export const TimerCard: React.FC = () => {
                 {timer.isActive ? 'Pause' : 'Start'}
               </Button>
               <IconButton
-                variant="soft"
+                variant="secondary"
                 size="lg"
                 label="Reset"
                 icon={<IconRotateCcw size="lg" />}
                 onClick={() => usePomodoroStore.getState().resetTimer()}
               />
               <IconButton
-                variant="soft"
+                variant="secondary"
                 size="lg"
                 label="Skip"
                 icon={<IconSkipForward size="lg" />}

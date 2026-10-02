@@ -82,7 +82,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
         <Inline gap="2" wrap>
           <Box className="flex-1">
             <Button
-              variant="solid"
+              variant="primary"
               leftIcon={<IconRefreshCw size="sm" />}
               onClick={() => setJwt(jwt)}
               className="w-full"
@@ -91,7 +91,7 @@ export const TokenInput: React.FC<TokenInputProps> = ({
             </Button>
           </Box>
           <Button
-            variant="soft"
+            variant="secondary"
             leftIcon={<IconTrash2 size="sm" />}
             onClick={clear}
           >

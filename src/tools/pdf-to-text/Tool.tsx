@@ -42,8 +42,11 @@ import {
   type TextMode,
 } from './lib/output';
 import { useTextSettings } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const PdfToTextTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const { mode, setMode } = useTextSettings();
   const { doc, loading, error } = usePdfDocument(file);
@@ -88,6 +91,7 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -125,7 +129,7 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
               </Stack>
               <div>
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconFileText size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() => job.run(doc)}
@@ -167,7 +171,7 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
                 </Stack>
                 <div>
                   <Button
-                    variant="soft"
+                    variant="secondary"
                     leftIcon={<IconCopy size="sm" />}
                     onClick={() => void copyAll()}
                   >

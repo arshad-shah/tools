@@ -87,7 +87,7 @@ export const RequestForm: React.FC<RequestFormProps> = ({
           />
         </Box>
         <Button
-          variant="solid"
+          variant="primary"
           loading={isLoading}
           leftIcon={<IconSend size="sm" />}
           onClick={onSend}
@@ -95,7 +95,7 @@ export const RequestForm: React.FC<RequestFormProps> = ({
           Send
         </Button>
         {isLoading && (
-          <Button variant="soft" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
         )}

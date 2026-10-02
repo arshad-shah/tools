@@ -3,6 +3,7 @@ import {
   Alert,
   AlertDescription,
   Button,
+  Image,
   Inline,
   Label,
   Stack,
@@ -155,10 +156,11 @@ export const SignatureUpload: React.FC<SignatureSourceProps> = ({
         </Alert>
       )}
       {previewUrl && (
-        <img
+        <Image
           src={previewUrl}
           alt="Signature preview"
-          className="max-h-32 max-w-full self-start rounded-md border border-line bg-white object-contain p-2"
+          fit="contain"
+          className="max-h-32 self-start rounded-md border border-line bg-white p-2"
         />
       )}
     </Stack>

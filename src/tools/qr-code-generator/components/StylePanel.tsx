@@ -68,8 +68,8 @@ export const StylePanel: React.FC<{
                 variant={
                   p.bg === state.backgroundColor &&
                   p.fg === state.foregroundColor
-                    ? 'solid'
-                    : 'soft'
+                    ? 'primary'
+                    : 'secondary'
                 }
                 size="sm"
                 onClick={() => {
@@ -114,7 +114,7 @@ export const StylePanel: React.FC<{
               <Button
                 key={level}
                 variant={
-                  state.errorCorrectionLevel === level ? 'solid' : 'soft'
+                  state.errorCorrectionLevel === level ? 'primary' : 'secondary'
                 }
                 size="sm"
                 onClick={() => setErrorCorrectionLevel(level)}
@@ -136,14 +136,14 @@ export const StylePanel: React.FC<{
           <Label>Output format</Label>
           <ButtonGroup>
             <Button
-              variant={state.renderAs === 'canvas' ? 'solid' : 'soft'}
+              variant={state.renderAs === 'canvas' ? 'primary' : 'secondary'}
               size="sm"
               onClick={() => setRenderAs('canvas')}
             >
               PNG
             </Button>
             <Button
-              variant={state.renderAs === 'svg' ? 'solid' : 'soft'}
+              variant={state.renderAs === 'svg' ? 'primary' : 'secondary'}
               size="sm"
               onClick={() => setRenderAs('svg')}
             >

@@ -34,6 +34,7 @@ import {
   UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { usePageNumberSettings } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const MARGIN = 28;
 
@@ -46,6 +47,8 @@ const FORMAT_ITEMS: { value: PageNumberFormat; label: string }[] = [
 type NumberSettings = Omit<PageNumberOptions, 'pages' | 'total'>;
 
 const PdfPageNumbersTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [pageMode, setPageMode] = useState<'all' | 'ranges'>('all');
   const [rangeText, setRangeText] = useState('');
@@ -122,6 +125,7 @@ const PdfPageNumbersTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={change(setFile)}
             onClear={() => {
@@ -189,7 +193,7 @@ const PdfPageNumbersTool: React.FC<ToolProps> = () => {
                   error={selection.error}
                 />
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconListOrdered size="sm" />}
                   disabled={
                     job.status === 'running' || selection.error !== null

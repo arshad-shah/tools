@@ -1,5 +1,4 @@
 import { FC, useMemo, useState } from 'react';
-import PlotModule from 'react-plotly.js';
 import {
   Alert,
   AlertDescription,
@@ -12,13 +11,9 @@ import {
 } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { toToolError } from '@/shared/lib/errors';
-import { unwrapDefault } from '@/shared/lib/interop';
+import { Chart } from '@/shared/ui/adapters/Chart';
 import { compileFunction, sampleFunction } from '../lib/evaluate';
 import type { AngleUnit } from '../types';
-
-// react-plotly.js is CommonJS (`exports.default = Plot`); Vite may hand the
-// default import back as the module object.
-const Plot = unwrapDefault(PlotModule);
 
 const SAMPLES = 400;
 
@@ -101,9 +96,9 @@ export const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
             <AlertDescription>Cannot plot: {compiled.error}</AlertDescription>
           </Alert>
         ) : (
-          <Plot
+          <Chart
+            label={`Graph of f(x) = ${expression}`}
             className="h-[400px] w-full"
-            config={{ responsive: true }}
             data={[
               {
                 x: xs,

@@ -4,6 +4,7 @@ import {
   IconCodeXml,
   IconColumns,
   IconDownload,
+  IconFolderOpen,
   IconList,
   IconMonitor,
   IconMoreHorizontal,
@@ -28,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  FilePicker,
   Grid,
   IconButton,
   Inline,
@@ -37,6 +39,9 @@ import {
   Tooltip,
 } from '@/shared/ui';
 import { saveBlob } from '@/shared/lib/download';
+import { toToolError } from '@/shared/lib/errors';
+import { loadTextFile } from '@/shared/lib/files';
+import { useHandoffFiles } from '@/shared/lib/handoff';
 import { EditorPane } from './components/EditorPane';
 import { ViewerPane } from './components/ViewerPane';
 import { parseJson, parseXml } from './lib/parse';
@@ -104,6 +109,21 @@ const DataViewer = () => {
     }
   }, [format, inputText]);
 
+  // A picked file and a file dropped on a hub load the same way: the text
+  // goes into the editor, the format follows the content.
+  const openFile = useCallback(async (file: File) => {
+    try {
+      const { text } = await loadTextFile(file, { maxBytes: 20 * 1024 * 1024 });
+      setFormat(text.trimStart().startsWith('<') ? 'xml' : 'json');
+      setInputText(text);
+      setParsedData(null);
+      setError('');
+    } catch (e) {
+      setError(toToolError(e).message);
+    }
+  }, []);
+  useHandoffFiles((files) => void openFile(files[0]));
+
   const handleDownload = useCallback(() => {
     saveBlob(
       new Blob([inputText], {
@@ -157,7 +177,7 @@ const DataViewer = () => {
                         label="Tree view"
                         icon={<IconList size="sm" />}
                         size="sm"
-                        variant={viewMode === 'tree' ? 'solid' : 'ghost'}
+                        variant={viewMode === 'tree' ? 'primary' : 'ghost'}
                         onClick={() => setViewMode('tree')}
                       />
                     </Tooltip>
@@ -166,7 +186,7 @@ const DataViewer = () => {
                         label="Network view"
                         icon={<IconNetwork size="sm" />}
                         size="sm"
-                        variant={viewMode === 'network' ? 'solid' : 'ghost'}
+                        variant={viewMode === 'network' ? 'primary' : 'ghost'}
                         onClick={() => setViewMode('network')}
                       />
                     </Tooltip>
@@ -178,7 +198,7 @@ const DataViewer = () => {
                         label="Split layout"
                         icon={<IconColumns size="sm" />}
                         size="sm"
-                        variant={layout === 'split' ? 'solid' : 'ghost'}
+                        variant={layout === 'split' ? 'primary' : 'ghost'}
                         onClick={() => setLayout('split')}
                       />
                     </Tooltip>
@@ -187,7 +207,7 @@ const DataViewer = () => {
                         label="Single layout"
                         icon={<IconMonitor size="sm" />}
                         size="sm"
-                        variant={layout === 'single' ? 'solid' : 'ghost'}
+                        variant={layout === 'single' ? 'primary' : 'ghost'}
                         onClick={() => setLayout('single')}
                       />
                     </Tooltip>
@@ -200,7 +220,9 @@ const DataViewer = () => {
                           label="Editor pane"
                           icon={<IconPanelLeft size="sm" />}
                           size="sm"
-                          variant={activePane === 'editor' ? 'solid' : 'ghost'}
+                          variant={
+                            activePane === 'editor' ? 'primary' : 'ghost'
+                          }
                           onClick={() => setActivePane('editor')}
                         />
                       </Tooltip>
@@ -209,7 +231,7 @@ const DataViewer = () => {
                           label="Viewer pane"
                           icon={<IconPanelRight size="sm" />}
                           size="sm"
-                          variant={activePane === 'view' ? 'solid' : 'ghost'}
+                          variant={activePane === 'view' ? 'primary' : 'ghost'}
                           onClick={() => setActivePane('view')}
                         />
                       </Tooltip>
@@ -218,8 +240,23 @@ const DataViewer = () => {
                 </Inline>
 
                 <Inline gap="2" align="center">
+                  <FilePicker
+                    accept=".json,.xml,application/json,text/xml"
+                    onFiles={(files) => void openFile(files[0])}
+                  >
+                    {(open) => (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<IconFolderOpen size="sm" />}
+                        onClick={open}
+                      >
+                        Open file
+                      </Button>
+                    )}
+                  </FilePicker>
                   <Button
-                    variant="solid"
+                    variant="primary"
                     size="sm"
                     leftIcon={<IconWand2 size="sm" />}
                     onClick={handleParse}
@@ -229,9 +266,9 @@ const DataViewer = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger>
                       <Button
-                        variant="soft"
+                        variant="secondary"
                         size="sm"
-                        rightIcon={<IconChevronDown size="xs" />}
+                        rightIcon={<IconChevronDown size="sm" />}
                         leftIcon={<IconMoreHorizontal size="sm" />}
                         aria-label="More actions"
                       >

@@ -56,20 +56,22 @@ const find = (list: HashAlgorithm[], id: string): HashAlgorithm => {
   return algo;
 };
 
-/** Hex digest of the UTF-8 bytes of `input`. */
-export function computeHash(id: string, input: string): string {
-  return bytesToHex(find(ALGORITHMS, id).fn(utf8ToBytes(input)));
+/** Text is hashed as its UTF-8 bytes; file bytes as they are. */
+const toBytes = (input: string | Uint8Array) =>
+  typeof input === 'string' ? utf8ToBytes(input) : input;
+
+/** Hex digest of `input` (UTF-8 text or raw bytes). */
+export function computeHash(id: string, input: string | Uint8Array): string {
+  return bytesToHex(find(ALGORITHMS, id).fn(toBytes(input)));
 }
 
-/** Hex HMAC of the UTF-8 bytes of `input` under `key`. */
+/** Hex HMAC of `input` (UTF-8 text or raw bytes) under `key`. */
 export function computeHmac(
   id: string,
   key: Uint8Array,
-  input: string,
+  input: string | Uint8Array,
 ): string {
-  return bytesToHex(
-    hmac(find(HMAC_ALGORITHMS, id).fn, key, utf8ToBytes(input)),
-  );
+  return bytesToHex(hmac(find(HMAC_ALGORITHMS, id).fn, key, toBytes(input)));
 }
 
 /** The key's bytes: UTF-8 text, or hex (whitespace ignored, any case). */

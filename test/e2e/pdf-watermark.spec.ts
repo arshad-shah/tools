@@ -8,11 +8,12 @@ import {
   PDFRawStream,
 } from 'pdf-lib';
 import { imagePlacements, pdfPageTexts } from '../fixtures/builders';
+import { pathOf } from './tool-routes';
 
 test('adds a text watermark to the chosen pages with a live preview', async ({
   page,
 }) => {
-  await page.goto('/pdf-watermark');
+  await page.goto(pathOf('pdf-watermark'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -22,7 +23,9 @@ test('adds a text watermark to the chosen pages with a live preview', async ({
   ).toHaveAttribute('data-rendered', 'true');
   await page.getByRole('tab', { name: 'Some pages' }).click();
   await page.getByLabel('Page ranges', { exact: true }).fill('2');
-  await page.getByRole('button', { name: 'Add watermark' }).click();
+  await page
+    .getByRole('button', { name: 'Add watermark', exact: true })
+    .click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download text-3.watermarked.pdf' })
@@ -37,7 +40,7 @@ test('adds a text watermark to the chosen pages with a live preview', async ({
 });
 
 test('adds an image watermark', async ({ page }) => {
-  await page.goto('/pdf-watermark');
+  await page.goto(pathOf('pdf-watermark'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -46,7 +49,9 @@ test('adds an image watermark', async ({ page }) => {
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/photo.png');
   await expect(page.getByText('photo.png', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Add watermark' }).click();
+  await page
+    .getByRole('button', { name: 'Add watermark', exact: true })
+    .click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download text-3.watermarked.pdf' })
@@ -62,12 +67,15 @@ test('adds an image watermark', async ({ page }) => {
 });
 
 test('checks page ranges as you type', async ({ page }) => {
-  await page.goto('/pdf-watermark');
+  await page.goto(pathOf('pdf-watermark'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
   await page.getByRole('tab', { name: 'Some pages' }).click();
-  const apply = page.getByRole('button', { name: 'Add watermark' });
+  const apply = page.getByRole('button', {
+    name: 'Add watermark',
+    exact: true,
+  });
   await expect(apply).toBeDisabled(); // nothing entered yet
   await page.getByLabel('Page ranges', { exact: true }).fill('9');
   await expect(
@@ -81,7 +89,7 @@ test('checks page ranges as you type', async ({ page }) => {
 test('draws a sideways phone photo (EXIF orientation) upright', async ({
   page,
 }) => {
-  await page.goto('/pdf-watermark');
+  await page.goto(pathOf('pdf-watermark'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -93,7 +101,9 @@ test('draws a sideways phone photo (EXIF orientation) upright', async ({
   await expect(
     page.getByText('signature-exif6.jpg', { exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Add watermark' }).click();
+  await page
+    .getByRole('button', { name: 'Add watermark', exact: true })
+    .click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download text-3.watermarked.pdf' })

@@ -87,7 +87,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Button
-              variant="soft"
+              variant="secondary"
               size="sm"
               rightIcon={<IconChevronDown size="sm" />}
               leftIcon={<IconSettings size="sm" />}

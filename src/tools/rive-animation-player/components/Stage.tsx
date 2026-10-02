@@ -8,7 +8,7 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { RivePlayer } from '@/shared/ui/adapters/RivePlayer';
 import { PlayerState, type BackgroundColor, type Status } from '../types';
 
 /** Drop zone, the Rive canvas and the loading overlay. */
@@ -47,16 +47,11 @@ export function Stage({
           onDragLeave={handleDragLeave}
           className="relative h-[60vh] min-h-[400px] w-full overflow-hidden rounded-lg"
         >
-          <canvas
+          <RivePlayer
             ref={canvasRef}
-            className={cn(
-              shouldDisplayCanvas() ? 'block' : 'hidden',
-              background === 'white'
-                ? 'bg-white'
-                : background === 'black'
-                  ? 'bg-black'
-                  : 'bg-transparent',
-            )}
+            label="Rive animation"
+            background={background}
+            hidden={!shouldDisplayCanvas()}
           />
 
           {!shouldDisplayCanvas() && (

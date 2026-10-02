@@ -60,9 +60,17 @@ const PAIRS: [string, string, number][] = [
   ['accent-fg', 'surface', 4.5],
   ['accent-fg', 'canvas', 4.5],
   ['accent-fg', 'surface-2', 4.5],
+  // A2-12 codemod: legacy mint text-accent became accent-fg, which also sits
+  // on hovered and selected rows (tool card icons, JSON and JWT values).
+  ['accent-fg', 'surface-3', 4.5],
   ['danger', 'surface', 4.5],
   ['warning', 'surface', 4.5],
   ['info', 'surface', 4.5],
+  // Status text inside tools sits on input fills and the app canvas too.
+  ['danger', 'surface-2', 4.5],
+  ['danger', 'canvas', 4.5],
+  ['warning', 'surface-2', 4.5],
+  ['info', 'surface-2', 4.5],
   ['logo-glyph', 'logo-tile', 7],
   // Solid badges: canvas-coloured text on status fills.
   ['canvas', 'warning', 4.5],
@@ -88,6 +96,9 @@ const SOFT_PAIRS: [string, string][] = [
   ['warning', 'warning-soft'],
   ['info', 'info-soft'],
   ['accent-fg', 'accent-soft'],
+  // A2: selected page tiles (bg-accent-soft) keep their fg and fg-muted text.
+  ['fg', 'accent-soft'],
+  ['fg-muted', 'accent-soft'],
 ];
 
 describe('token file', () => {

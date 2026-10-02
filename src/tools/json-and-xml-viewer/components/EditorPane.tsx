@@ -1,5 +1,4 @@
 import React from 'react';
-import CodeEditor from '@uiw/react-textarea-code-editor';
 import rehypePrism from 'rehype-prism-plus';
 import rehypeRewrite, { type RehypeRewriteOptions } from 'rehype-rewrite';
 import { IconCodeXml, IconFileJson } from '@/shared/ui/icons';
@@ -13,9 +12,13 @@ import {
   Heading,
   Inline,
 } from '@/shared/ui';
+import {
+  CodeEditor,
+  type CodeEditorProps,
+} from '@/shared/ui/adapters/CodeEditor';
 import type { FormatType } from '../types';
 
-type RehypePlugins = React.ComponentProps<typeof CodeEditor>['rehypePlugins'];
+type RehypePlugins = CodeEditorProps['rehypePlugins'];
 type RewriteNode = Parameters<RehypeRewriteOptions['rewrite']>[0];
 
 interface EditorPaneProps {
@@ -57,12 +60,9 @@ export const EditorPane: React.FC<EditorPaneProps> = ({
       value={inputText}
       language={format}
       placeholder={`Enter ${format.toUpperCase()} here…`}
-      onChange={(evn) => setInputText(evn.target.value)}
-      padding={15}
-      // "!": the editor's unlayered CSS sets font-size/family and its inline
-      // container style sets padding: 0, both of which beat plain utilities.
-      className="min-h-96 rounded-lg pb-8! font-mono! text-[0.875rem]!"
-      data-color-mode="dark"
+      onChange={setInputText}
+      label={`${format.toUpperCase()} input`}
+      className="min-h-96"
       rehypePlugins={rehypePlugins}
     />
   );

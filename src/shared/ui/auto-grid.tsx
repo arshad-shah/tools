@@ -15,7 +15,10 @@ const GAP: Record<Gap, string> = {
   '12': 'gap-12',
 };
 
-export interface AutoGridProps {
+export interface AutoGridProps extends Omit<
+  React.HTMLAttributes<HTMLElement>,
+  'style'
+> {
   /** Minimum column width in px. */
   min: number;
   gap?: Gap;
@@ -25,22 +28,21 @@ export interface AutoGridProps {
 }
 
 /** Responsive grid: as many columns of at least `min` px as fit. */
-export function AutoGrid({
-  min,
-  gap = '4',
-  as: Tag = 'div',
-  className,
-  children,
-}: AutoGridProps) {
-  return (
-    <Tag
-      className={cn('grid', GAP[gap], Tag === 'ul' && 'list-none', className)}
-      style={{
-        gridTemplateColumns: `repeat(auto-fill, minmax(min(${min}px, 100%), 1fr))`,
-      }}
-    >
-      {children}
-    </Tag>
-  );
-}
+export const AutoGrid = React.forwardRef<HTMLElement, AutoGridProps>(
+  ({ min, gap = '4', as = 'div', className, children, ...rest }, ref) => {
+    const Tag = as as 'div';
+    return (
+      <Tag
+        ref={ref as React.Ref<HTMLDivElement>}
+        className={cn('grid', GAP[gap], as === 'ul' && 'list-none', className)}
+        style={{
+          gridTemplateColumns: `repeat(auto-fill, minmax(min(${min}px, 100%), 1fr))`,
+        }}
+        {...rest}
+      >
+        {children}
+      </Tag>
+    );
+  },
+);
 AutoGrid.displayName = 'AutoGrid';

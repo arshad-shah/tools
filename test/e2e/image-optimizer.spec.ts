@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import jpeg from 'jpeg-js';
 import { expect, test, type Page } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 /** A 16x16 PNG drawn by the browser: clear, or filled with `fill`. */
 async function transparentPng(page: Page, fill?: string): Promise<Buffer> {
@@ -31,7 +32,7 @@ async function convertToJpeg(page: Page): Promise<number[]> {
 test('image-optimizer paints transparency on white, or a chosen colour, for JPEG', async ({
   page,
 }) => {
-  await page.goto('/image-optimizer');
+  await page.goto(pathOf('image-optimizer'));
   const png = await transparentPng(page);
   await page
     .locator('input[type=file]')
@@ -50,7 +51,7 @@ test('image-optimizer paints transparency on white, or a chosen colour, for JPEG
 test('image-optimizer hides quality for lossless PNG and explains why', async ({
   page,
 }) => {
-  await page.goto('/image-optimizer');
+  await page.goto(pathOf('image-optimizer'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/photo.png');
@@ -64,7 +65,7 @@ test('image-optimizer hides quality for lossless PNG and explains why', async ({
 test('image-optimizer blends semi-transparent pixels over the background', async ({
   page,
 }) => {
-  await page.goto('/image-optimizer');
+  await page.goto(pathOf('image-optimizer'));
   const png = await transparentPng(page, 'rgba(255, 0, 0, 0.5)');
   await page
     .locator('input[type=file]')

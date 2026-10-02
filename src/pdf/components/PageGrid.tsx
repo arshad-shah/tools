@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
+import { AutoGrid, Checkbox } from '@/shared/ui';
 import type { DocInfo } from '@/pdf/render';
 import type { Rotation } from '@/pdf/edit';
 import { PageThumb } from './PageThumb';
@@ -62,13 +63,12 @@ export const PageGrid: React.FC<PageGridProps> = ({
 
   return (
     <>
-      <ul
+      <AutoGrid
+        as="ul"
         ref={sortRef}
         aria-label={onReorder ? 'Pages (Alt + arrow keys to reorder)' : 'Pages'}
-        className="grid gap-4"
-        style={{
-          gridTemplateColumns: `repeat(auto-fill, minmax(${thumbWidth + 24}px, 1fr))`,
-        }}
+        min={thumbWidth + 24}
+        gap="4"
       >
         {tiles.map((tile, position) => {
           const isSelected = selected?.has(tile.key) ?? false;
@@ -103,10 +103,10 @@ export const PageGrid: React.FC<PageGridProps> = ({
                 }
               }}
               className={cn(
-                'flex flex-col items-center gap-2 rounded-md border p-3 outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                'flex flex-col items-center gap-2 rounded-md border p-3 outline-none focus-visible:ring-2 focus-visible:ring-focus',
                 onReorder && 'cursor-grab',
                 isSelected
-                  ? 'border-accent bg-accent/5'
+                  ? 'border-accent-indicator bg-accent-soft'
                   : 'border-line hover:border-line-strong',
               )}
             >
@@ -123,14 +123,12 @@ export const PageGrid: React.FC<PageGridProps> = ({
                   {onToggle && (
                     // Tiles hold buttons, so they can't be listbox options:
                     // a real checkbox carries the selection semantics.
-                    <input
-                      type="checkbox"
-                      className="size-3.5 accent-accent"
+                    <Checkbox
+                      size="sm"
                       aria-label={`Select page ${n}`}
                       checked={isSelected}
                       tabIndex={tabIndex}
-                      onChange={() => {}}
-                      onClick={(e) =>
+                      onCheckedChange={(_, e) =>
                         onToggle(tile.key, { shift: e.shiftKey, meta: true })
                       }
                     />
@@ -142,7 +140,7 @@ export const PageGrid: React.FC<PageGridProps> = ({
             </li>
           );
         })}
-      </ul>
+      </AutoGrid>
       <p aria-live="polite" className="sr-only">
         {keyboard.announcement}
       </p>

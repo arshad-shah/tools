@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 test('regex-tester survives catastrophic backtracking', async ({ page }) => {
   test.setTimeout(30_000);
-  await page.goto('/regex-tester');
+  await page.goto(pathOf('regex-tester'));
   await page.getByLabel('Test string').fill('a'.repeat(40) + 'b');
   await page.getByLabel('Regex pattern').fill('(a+)+$');
 
@@ -21,7 +22,7 @@ test('regex-tester copies working JavaScript for a pattern with a slash', async 
   context,
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto('/regex-tester');
+  await page.goto(pathOf('regex-tester'));
   await page.getByLabel('Test string').fill("it's a/b\nand a/b");
   await page.getByLabel('Regex pattern').fill('a/b');
   await expect(page.getByText('2 matches').first()).toBeVisible();
@@ -43,7 +44,7 @@ test('regex-tester copies working JavaScript for a pattern with a slash', async 
 test('regex-tester shows syntax errors without running the pattern', async ({
   page,
 }) => {
-  await page.goto('/regex-tester');
+  await page.goto(pathOf('regex-tester'));
   await page.getByLabel('Test string').fill('abc');
   await page.getByLabel('Regex pattern').fill('(');
   await expect(page.getByText('Invalid', { exact: true })).toBeVisible();

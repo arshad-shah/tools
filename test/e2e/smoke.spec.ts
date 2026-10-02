@@ -9,18 +9,55 @@ const READY: Record<string, string> = {
   'jwt-decode': 'role=button[name="Raw JSON"]',
 };
 
-test('dashboard lists tools', async ({ page }) => {
+test('home states the promise and lists the categories', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('tools');
-  await expect(page.getByText('PDF Merger')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Free, private tools. Nothing leaves your browser.',
+  );
+  await expect(page.getByRole('link', { name: 'PDF' })).toBeVisible();
 });
 
-test('footer shows on dashboard and tool pages with per-tool issue link', async ({
+test('a tool lives at /<category>/<slug>', async ({ page }) => {
+  await page.goto('/text/regex');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Regex Tester' }),
+  ).toBeVisible();
+});
+
+test('old tool URLs show NotFound, with no redirect', async ({ page }) => {
+  await page.goto('/regex-tester');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'No page at /regex-tester',
+  );
+  expect(new URL(page.url()).pathname).toBe('/regex-tester');
+});
+
+test('an unknown path offers search over the tools', async ({ page }) => {
+  await page.goto('/nope/thing');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'No page at /nope/thing',
+  );
+  await page.getByRole('searchbox', { name: 'Search tools' }).fill('regex');
+  await page.getByRole('link', { name: 'Regex Tester' }).click();
+  await expect(page).toHaveURL(/\/text\/regex$/);
+});
+
+test('Mod+K opens the palette and runs a tool', async ({ page }) => {
+  await page.goto('/');
+  // The shortcut registers once the frame has mounted.
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await page.keyboard.press('ControlOrMeta+k');
+  await page.getByRole('combobox').fill('regex');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/text\/regex$/);
+});
+
+test('footer shows on home and tool pages with per-tool issue link', async ({
   page,
 }) => {
   await page.goto('/');
   await expect(page.locator('footer')).toBeVisible();
-  await page.goto('/pdf-merger');
+  await page.goto('/pdf/merge');
   const footer = page.locator('footer');
   await expect(footer).toBeVisible();
   await expect(
@@ -53,12 +90,14 @@ for (const tool of ENABLED) {
       if (m.type() === 'error') errors.push(`console.error: ${m.text()}`);
     });
 
-    await page.goto(`/${tool.id}`);
+    await page.goto(tool.path);
     await expect(
       page.getByRole('heading', { level: 1, name: tool.name }),
     ).toBeVisible();
     // The lazy chunk resolved and the tool did not hit its error boundary.
-    await expect(page.getByText(`Loading ${tool.name}…`)).toHaveCount(0, {
+    await expect(
+      page.getByText(`Loading ${tool.name}`, { exact: true }),
+    ).toHaveCount(0, {
       timeout: 30_000,
     });
     await expect(

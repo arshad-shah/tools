@@ -55,11 +55,11 @@ export function SortableFileList<T extends FileItem>({
             data-sortable-item
             tabIndex={0}
             onKeyDown={(e) => keyboard.onItemKeyDown(e, i)}
-            className="flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             <IconGripVertical
               size="sm"
-              className="shrink-0 cursor-grab text-fg-faint"
+              className="shrink-0 cursor-grab text-fg-subtle"
             />
             {renderPreview && (
               <div className="flex w-14 shrink-0 items-center justify-center">

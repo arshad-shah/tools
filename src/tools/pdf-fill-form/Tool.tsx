@@ -28,6 +28,7 @@ import {
 } from '@/pdf/components';
 import { FieldControl } from './components/FieldControl';
 import { changedValues, initialValues, type FormValues } from './lib/values';
+import { useHandoff } from '@/shared/lib/handoff';
 
 interface Listing {
   file: PdfInputFile;
@@ -37,6 +38,8 @@ interface Listing {
 }
 
 const PdfFillFormTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [listing, setListing] = useState<Listing | null>(null);
   const [values, setValues] = useState<FormValues>({});
@@ -103,6 +106,7 @@ const PdfFillFormTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -152,7 +156,7 @@ const PdfFillFormTool: React.FC<ToolProps> = () => {
                     </Label>
                   </Inline>
                   <Button
-                    variant="solid"
+                    variant="primary"
                     leftIcon={<IconFormInput size="sm" />}
                     disabled={job.status === 'running'}
                     onClick={() =>

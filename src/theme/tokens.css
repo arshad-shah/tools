@@ -114,22 +114,11 @@
   --color-redact: var(--redact);
   --color-logo-tile: var(--logo-tile);
   --color-logo-glyph: var(--logo-glyph);
-  /* Legacy aliases (decision G20): removed in A2-12 after the codemod. */
-  --color-surface-subtle: var(--surface-2);
-  --color-surface-strong: var(--surface-3);
-  --color-accent-hover: var(--accent);
-  --color-accent-dim: var(--accent-soft);
-  --color-danger-dim: var(--danger-soft);
-  --color-success: var(--accent-fg);
-  --color-fg-faint: var(--fg-subtle);
 
   --shadow-e1: var(--elevation-1);
   --shadow-e2: var(--elevation-2);
   --shadow-e3: var(--elevation-3);
   --shadow-page: var(--elevation-page);
-  /* Legacy aliases (G20). */
-  --shadow-raised: var(--elevation-1);
-  --shadow-overlay: var(--elevation-2);
 }
 
 @theme {
@@ -253,30 +242,4 @@
       scroll-behavior: auto !important;
     }
   }
-}
-
-/* P4-D's backdrop utility, re-expressed on the new tokens. */
-@utility bg-terminal-grid {
-  background-color: var(--canvas);
-  background-image:
-    radial-gradient(
-      60% 100% at 50% 0%,
-      color-mix(in oklab, var(--accent) 8%, transparent),
-      transparent 70%
-    ),
-    linear-gradient(
-      to right,
-      color-mix(in oklab, var(--fg) 4%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--fg) 4%, transparent) 1px,
-      transparent 1px
-    );
-  background-size:
-    100% 20rem,
-    32px 32px,
-    32px 32px;
-  background-repeat: no-repeat, repeat, repeat;
 }

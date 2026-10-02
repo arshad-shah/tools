@@ -50,9 +50,15 @@ Switch.displayName = 'Switch';
  * ------------------------------------------------------------------ */
 interface CheckboxProps {
   checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
+  /** The click is passed on for modifier keys (shift-click ranges). */
+  onCheckedChange: (
+    checked: boolean,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => void;
   disabled?: boolean;
   id?: string;
+  size?: 'sm' | 'md';
+  tabIndex?: number;
   'aria-label'?: string;
 }
 export const Checkbox: React.FC<CheckboxProps> = ({
@@ -60,6 +66,8 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   onCheckedChange,
   disabled,
   id,
+  size = 'md',
+  tabIndex,
   ...aria
 }) => (
   <button
@@ -68,9 +76,11 @@ export const Checkbox: React.FC<CheckboxProps> = ({
     id={id}
     aria-checked={checked}
     disabled={disabled}
-    onClick={() => onCheckedChange(!checked)}
+    tabIndex={tabIndex}
+    onClick={(e) => onCheckedChange(!checked, e)}
     className={cn(
-      'inline-flex size-5 shrink-0 items-center justify-center rounded-sm border transition-colors duration-fast',
+      'inline-flex shrink-0 items-center justify-center rounded-sm border transition-colors duration-fast',
+      size === 'sm' ? 'size-4' : 'size-5',
       'disabled:cursor-not-allowed disabled:opacity-50',
       checked
         ? 'border-accent-indicator bg-accent text-accent-ink'
@@ -78,7 +88,9 @@ export const Checkbox: React.FC<CheckboxProps> = ({
     )}
     {...aria}
   >
-    {checked && <IconCheck size="sm" strokeWidth={2} />}
+    {checked && (
+      <IconCheck size={size === 'sm' ? 'xs' : 'sm'} strokeWidth={2} />
+    )}
   </button>
 );
 Checkbox.displayName = 'Checkbox';

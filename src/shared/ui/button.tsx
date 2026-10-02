@@ -29,7 +29,7 @@ Slot.displayName = 'Slot';
  * Button
  * ------------------------------------------------------------------ */
 /** Spinner size that visually matches each button size. */
-const spinnerForSize = { xs: 'sm', sm: 'sm', md: 'sm', lg: 'md' } as const;
+const spinnerForSize = { sm: 'sm', md: 'sm', lg: 'md' } as const;
 
 export interface ButtonProps
   extends
@@ -94,13 +94,11 @@ Button.displayName = 'Button';
  * IconButton — square, icon-only, requires a label
  * ------------------------------------------------------------------ */
 const iconButtonSize = {
-  xs: 'size-8',
   sm: 'size-8',
   md: 'size-9',
   lg: 'size-11',
 } as const;
 const iconSizeFor: Record<keyof typeof iconButtonSize, IconSize> = {
-  xs: 'sm',
   sm: 'sm',
   md: 'md',
   lg: 'lg',

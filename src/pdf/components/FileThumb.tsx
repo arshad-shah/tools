@@ -6,7 +6,7 @@ import React, {
   useState,
 } from 'react';
 import { IconAlertTriangle } from '@/shared/ui/icons';
-import { Spinner } from '@/shared/ui';
+import { Sized, Spinner } from '@/shared/ui';
 import { usePdfDocument } from '@/pdf/render';
 import { PageThumb } from './PageThumb';
 
@@ -115,9 +115,10 @@ export const FileThumb: React.FC<FileThumbProps> = ({
     );
   } else {
     thumb = (
-      <div
-        className="flex items-center justify-center rounded-sm border border-line bg-surface-subtle"
-        style={{ width, height: Math.round(width * PLACEHOLDER_RATIO) }}
+      <Sized
+        className="flex items-center justify-center rounded-sm border border-line bg-surface-2"
+        width={width}
+        height={Math.round(width * PLACEHOLDER_RATIO)}
       >
         {error ? (
           <span
@@ -134,7 +135,7 @@ export const FileThumb: React.FC<FileThumbProps> = ({
             <Spinner size="sm" label={`Opening ${name}`} />
           </span>
         )}
-      </div>
+      </Sized>
     );
   }
 
@@ -153,7 +154,7 @@ export const FileThumb: React.FC<FileThumbProps> = ({
           ref={panel}
           aria-hidden
           aria-label={`Preview of ${name}`}
-          className="pointer-events-none absolute top-0 left-full z-50 hidden rounded-md border border-line-strong bg-surface-subtle p-2 shadow-lg sm:block"
+          className="pointer-events-none absolute top-0 left-full z-50 hidden rounded-md border border-line-strong bg-surface-2 p-2 shadow-lg sm:block"
         >
           <PageThumb
             docId={doc.docId}

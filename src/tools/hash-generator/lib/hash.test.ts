@@ -9,6 +9,16 @@ import {
 } from './hash';
 
 describe('computeHash', () => {
+  it('hashes raw bytes as they are (files), text as UTF-8', () => {
+    const bytes = new Uint8Array([0xff, 0x00, 0x61]);
+    expect(computeHash('sha256', bytes)).toBe(
+      createHash('sha256').update(Buffer.from(bytes)).digest('hex'),
+    );
+    expect(computeHash('sha256', 'abc')).toBe(
+      computeHash('sha256', new TextEncoder().encode('abc')),
+    );
+  });
+
   // FIPS 202 / NIST CSRC examples for the message "abc".
   it.each([
     ['sha3-224', 'e642824c3f8cf24ad09234ee7d3c766fc9a3a5168d0c94ad73b46fdf'],

@@ -31,6 +31,32 @@ const fake = (name: string) =>
   new File([new TextEncoder().encode('nope')], name);
 
 describe('PdfDropzone', () => {
+  it('processes handed-over files once, through the same load path', async () => {
+    const onFiles = vi.fn();
+    const files = [pdf('handed.pdf'), fake('bad.pdf')];
+    const { rerender } = render(
+      <PdfDropzone multiple onFiles={onFiles} initialFiles={files} />,
+    );
+    await waitFor(() => expect(onFiles).toHaveBeenCalledOnce());
+    expect(onFiles.mock.calls[0][0][0]).toMatchObject({ name: 'handed.pdf' });
+    expect(await screen.findByText('bad.pdf is not a PDF file')).toBeTruthy();
+    rerender(<PdfDropzone multiple onFiles={onFiles} initialFiles={files} />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onFiles).toHaveBeenCalledOnce();
+  });
+
+  it('takes only the first handed-over file when single', async () => {
+    const onFiles = vi.fn();
+    render(
+      <PdfDropzone
+        onFiles={onFiles}
+        initialFiles={[pdf('one.pdf'), pdf('two.pdf')]}
+      />,
+    );
+    await waitFor(() => expect(onFiles).toHaveBeenCalledOnce());
+    expect(onFiles.mock.calls[0][0]).toHaveLength(1);
+  });
+
   it('passes valid files and lists rejected ones', async () => {
     const onFiles = vi.fn();
     const { container } = render(<PdfDropzone multiple onFiles={onFiles} />);

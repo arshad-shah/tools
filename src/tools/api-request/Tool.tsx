@@ -171,14 +171,14 @@ const ApiTester: React.FC = () => {
                   <CardTitle as="h3">Collections</CardTitle>
                   <Inline gap="1">
                     <IconButton
-                      variant="soft"
+                      variant="secondary"
                       size="sm"
                       label="New request"
                       icon={<IconFilePlus size="sm" />}
                       onClick={handleCreateNewRequest}
                     />
                     <IconButton
-                      variant="soft"
+                      variant="secondary"
                       size="sm"
                       label="New collection"
                       icon={<IconFolderPlus size="sm" />}
@@ -204,14 +204,14 @@ const ApiTester: React.FC = () => {
             <Inline justify="between" align="center" wrap gap="2">
               <ButtonGroup>
                 <Button
-                  variant={requestType === 'rest' ? 'solid' : 'soft'}
+                  variant={requestType === 'rest' ? 'primary' : 'secondary'}
                   size="sm"
                   onClick={() => editor.setField('requestType', 'rest')}
                 >
                   REST
                 </Button>
                 <Button
-                  variant={requestType === 'graphql' ? 'solid' : 'soft'}
+                  variant={requestType === 'graphql' ? 'primary' : 'secondary'}
                   size="sm"
                   onClick={() => editor.setField('requestType', 'graphql')}
                 >
@@ -220,7 +220,7 @@ const ApiTester: React.FC = () => {
               </ButtonGroup>
               <Inline gap="2">
                 <Button
-                  variant="soft"
+                  variant="secondary"
                   size="sm"
                   leftIcon={<IconSave size="sm" />}
                   onClick={() => setSaveModalOpen(true)}
@@ -228,7 +228,7 @@ const ApiTester: React.FC = () => {
                   Save
                 </Button>
                 <Button
-                  variant="soft"
+                  variant="secondary"
                   size="sm"
                   onClick={() => setSidebarActive(!sidebarActive)}
                 >
@@ -282,7 +282,7 @@ const ApiTester: React.FC = () => {
                     </EmptyStateDescription>
                     <EmptyStateActions>
                       <Button
-                        variant="solid"
+                        variant="primary"
                         leftIcon={<IconFilePlus size="sm" />}
                         onClick={handleCreateNewRequest}
                       >

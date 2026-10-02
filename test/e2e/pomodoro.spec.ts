@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 const KIT_KEY = 'kit:store:tool:pomodoro';
 const LEGACY_KEY = 'persist:pomodoro-store';
@@ -50,12 +51,12 @@ async function seedLegacy(page: Page) {
   );
 }
 
-// The countdown is a role="timer" element (ToolLayout owns the page h1).
+// The countdown is a role="timer" element (ToolPage owns the page h1).
 const timerHeading = (page: Page) => page.getByRole('timer');
 
 test('existing Redux Persist data survives the migration', async ({ page }) => {
   await seedLegacy(page);
-  await page.goto('/pomodoro');
+  await page.goto(pathOf('pomodoro'));
   await expect(timerHeading(page)).toHaveText('30:00');
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await expect(page.getByText('Write report')).toBeVisible();
@@ -80,7 +81,7 @@ test('start counts down and pause stops; state persists across reload', async ({
   page,
 }) => {
   await seedLegacy(page);
-  await page.goto('/pomodoro');
+  await page.goto(pathOf('pomodoro'));
   await page.getByRole('button', { name: 'Start' }).click();
   await expect(timerHeading(page)).not.toHaveText('30:00', { timeout: 5_000 });
   await page.getByRole('button', { name: 'Pause' }).click();
@@ -94,7 +95,7 @@ test('a running timer keeps going across a reload, with the time really left', a
   page,
 }) => {
   await seedLegacy(page);
-  await page.goto('/pomodoro');
+  await page.goto(pathOf('pomodoro'));
   await page.getByRole('button', { name: 'Start' }).click();
   await expect(timerHeading(page)).toHaveText('29:59', { timeout: 5_000 });
   await page.reload();
@@ -167,7 +168,7 @@ test('a finished work session counts once, chimes once and the break auto-starts
       }),
     );
   }, KIT_KEY);
-  await page.goto('/pomodoro');
+  await page.goto(pathOf('pomodoro'));
   await page.getByRole('button', { name: 'Start' }).click();
   await expect(
     page.getByRole('heading', { level: 2, name: 'Short Break' }),

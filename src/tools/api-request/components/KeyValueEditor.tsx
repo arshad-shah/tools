@@ -74,7 +74,7 @@ export const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
       </Inline>
     ))}
     <Button
-      variant="soft"
+      variant="secondary"
       size="sm"
       leftIcon={<IconPlus size="sm" />}
       onClick={onAdd}

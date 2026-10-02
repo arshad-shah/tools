@@ -60,7 +60,7 @@ export const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
             <Inline justify="between" align="center" gap="3" wrap>
               <CharLegend />
               <Button
-                variant={copied ? 'solid' : 'soft'}
+                variant={copied ? 'primary' : 'secondary'}
                 size="md"
                 leftIcon={
                   copied ? (

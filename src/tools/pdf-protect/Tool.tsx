@@ -33,6 +33,7 @@ import {
   type PermissionChoices,
 } from './lib/permissions';
 import { usePermissionSettings } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const PRINT_ITEMS: SelectItem[] = [
   { value: 'none', label: 'Not allowed' },
@@ -57,6 +58,8 @@ const EMPTY: PasswordInput = {
 };
 
 const ProtectTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   // Passwords live in component state only, never in the store.
   const [passwords, setPasswords] = useState<PasswordInput>(EMPTY);
@@ -128,6 +131,7 @@ const ProtectTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -235,7 +239,7 @@ const ProtectTool: React.FC<ToolProps> = () => {
               </Text>
               <div>
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconLock size="sm" />}
                   disabled={!!problem || job.status === 'running'}
                   onClick={() => void protect(file)}

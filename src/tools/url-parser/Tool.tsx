@@ -78,7 +78,7 @@ const URLParser: React.FC = () => {
       />
       <Inline justify="end">
         <Button
-          variant="soft"
+          variant="secondary"
           size="sm"
           leftIcon={<IconClipboard size="sm" />}
           onClick={handlePaste}
@@ -161,7 +161,7 @@ const URLParser: React.FC = () => {
             {fields
               .filter((f) => f.value)
               .map((f) => (
-                <Card key={f.label} className="bg-surface-subtle">
+                <Card key={f.label} className="bg-surface-2">
                   <CardBody>
                     <Stack gap="2">
                       <Inline justify="between" align="center" gap="2" wrap>
@@ -213,7 +213,7 @@ const URLParser: React.FC = () => {
               </Stack>
               {item.value && (
                 <Button
-                  variant="soft"
+                  variant="secondary"
                   size="sm"
                   leftIcon={
                     copiedKey === `table-${item.label}` ? (
@@ -248,7 +248,7 @@ const URLParser: React.FC = () => {
                   <Code block>{value}</Code>
                 </Stack>
                 <Button
-                  variant="soft"
+                  variant="secondary"
                   size="sm"
                   leftIcon={
                     copiedKey === `param-${key}` ? (

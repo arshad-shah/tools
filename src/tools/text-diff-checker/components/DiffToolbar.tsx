@@ -70,7 +70,7 @@ export const DiffToolbar: React.FC<DiffToolbarProps> = ({
           </Inline>
           <Inline gap="2" wrap>
             <Button
-              variant={showStats ? 'solid' : 'soft'}
+              variant={showStats ? 'primary' : 'secondary'}
               size="sm"
               leftIcon={<IconBarChart2 size="sm" />}
               onClick={() => setShowStats(!showStats)}
@@ -78,7 +78,7 @@ export const DiffToolbar: React.FC<DiffToolbarProps> = ({
               Stats
             </Button>
             <Button
-              variant={autoRefresh ? 'solid' : 'soft'}
+              variant={autoRefresh ? 'primary' : 'secondary'}
               size="sm"
               leftIcon={<IconPlay size="sm" />}
               onClick={() => setAutoRefresh(!autoRefresh)}
@@ -87,7 +87,7 @@ export const DiffToolbar: React.FC<DiffToolbarProps> = ({
             </Button>
             {!autoRefresh && (
               <Button
-                variant="soft"
+                variant="secondary"
                 size="sm"
                 leftIcon={<IconRotateCcw size="sm" />}
                 disabled={isDiffing}
@@ -97,7 +97,7 @@ export const DiffToolbar: React.FC<DiffToolbarProps> = ({
               </Button>
             )}
             <Button
-              variant="soft"
+              variant="secondary"
               size="sm"
               leftIcon={<IconArrowRightLeft size="sm" />}
               disabled={isDiffing}
@@ -106,7 +106,7 @@ export const DiffToolbar: React.FC<DiffToolbarProps> = ({
               Swap
             </Button>
             <Button
-              variant="soft"
+              variant="secondary"
               size="sm"
               leftIcon={<IconDownload size="sm" />}
               disabled={!hasResults}
@@ -130,7 +130,7 @@ export const DiffToolbar: React.FC<DiffToolbarProps> = ({
           {VIEW_MODES.map((mode) => (
             <Button
               key={mode.id}
-              variant={diffViewMode === mode.id ? 'solid' : 'soft'}
+              variant={diffViewMode === mode.id ? 'primary' : 'secondary'}
               size="sm"
               leftIcon={mode.icon}
               onClick={() => setDiffViewMode(mode.id)}

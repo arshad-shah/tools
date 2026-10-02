@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
+import { pathOf } from './tool-routes';
 
 test('reorders, rotates and deletes pages', async ({ page }) => {
-  await page.goto('/pdf-organize');
+  await page.goto(pathOf('pdf-organize'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -37,7 +38,7 @@ test('reorders, rotates and deletes pages', async ({ page }) => {
 test('handles a 300-page document without rendering every page up front', async ({
   page,
 }) => {
-  await page.goto('/pdf-organize');
+  await page.goto(pathOf('pdf-organize'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-300.pdf');
@@ -70,7 +71,7 @@ test('handles a 300-page document without rendering every page up front', async 
 });
 
 test('guards keep one page, range-selects and resets', async ({ page }) => {
-  await page.goto('/pdf-organize');
+  await page.goto(pathOf('pdf-organize'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -110,7 +111,7 @@ test('guards keep one page, range-selects and resets', async ({ page }) => {
 test('keeps document structure and says plainly what it removed', async ({
   page,
 }) => {
-  await page.goto('/pdf-organize');
+  await page.goto(pathOf('pdf-organize'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/structured-3.pdf');
@@ -148,7 +149,7 @@ test('keeps document structure and says plainly what it removed', async ({
 test('arrow keys move focus between tiles; the grid is one Tab stop', async ({
   page,
 }) => {
-  await page.goto('/pdf-organize');
+  await page.goto(pathOf('pdf-organize'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');

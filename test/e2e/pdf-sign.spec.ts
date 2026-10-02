@@ -12,9 +12,10 @@ import {
   pdfPageTexts,
   textPositions,
 } from '../fixtures/builders';
+import { pathOf } from './tool-routes';
 
 async function open(page: Page) {
-  await page.goto('/pdf-sign');
+  await page.goto(pathOf('pdf-sign'));
   await page
     .locator('input[type=file]')
     .first()

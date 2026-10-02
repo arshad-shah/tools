@@ -1,17 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IconAlertTriangle } from '@/shared/ui/icons';
-import { Spinner } from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+import { BitmapCanvas, Sized, Spinner } from '@/shared/ui';
 import { usePageBitmap, type PageInfo } from '@/pdf/render';
 import type { Rotation } from '@/pdf/edit';
 import { thumbBoxSize } from './thumb-size';
-
-const rotationClass: Record<Rotation, string> = {
-  0: '',
-  90: 'rotate-90',
-  180: 'rotate-180',
-  270: '-rotate-90',
-};
 
 interface PageThumbProps {
   docId: string;
@@ -44,7 +36,6 @@ export const PageThumb: React.FC<PageThumbProps> = ({
   label,
 }) => {
   const box = useRef<HTMLDivElement>(null);
-  const canvas = useRef<HTMLCanvasElement>(null);
   const [visible, setVisible] = useState(false);
   // Which page/width the canvas currently shows. Kept when the hook later
   // returns null (cache eviction) so the drawn pixels stay on screen; cleared
@@ -59,7 +50,7 @@ export const PageThumb: React.FC<PageThumbProps> = ({
   );
   const key = `${docId}:${pageIndex}:${pixelWidth}`;
   const drawable = visible && bitmap !== null && bitmap.width > 0;
-  // Adjust state during render; the effect below draws this bitmap on commit.
+  // Adjust state during render; BitmapCanvas draws this bitmap on commit.
   if (drawable && drawnKey !== key) setDrawnKey(key);
   if (!visible && drawnKey !== null) setDrawnKey(null);
   const hasDrawn = drawable || (visible && drawnKey === key);
@@ -90,47 +81,23 @@ export const PageThumb: React.FC<PageThumbProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    const c = canvas.current;
-    if (!c) return;
-    if (!visible) {
-      // Free the backing store (~0.45 MB per tile at DPR 2).
-      c.width = 0;
-      c.height = 0;
-      delete c.dataset.rendered;
-      return;
-    }
-    if (!bitmap || bitmap.width === 0) return;
-    c.width = bitmap.width;
-    c.height = bitmap.height;
-    c.getContext('2d')?.drawImage(bitmap, 0, 0);
-    // Marker for tests/tools: pixels are drawn (kept after cache eviction,
-    // removed when released off-screen).
-    c.dataset.rendered = 'true';
-  }, [bitmap, visible]);
-
   return (
-    <div
+    <Sized
       ref={box}
       className="flex items-center justify-center overflow-hidden"
-      style={{ width, height: outerHeight }}
+      width={width}
+      height={outerHeight}
     >
-      <div
-        className={cn(
-          'relative shrink-0 bg-white shadow-sm transition-transform',
-          rotationClass[rotation],
-        )}
-        style={{
-          width: innerWidth,
-          aspectRatio: `${page.width} / ${page.height}`,
-        }}
+      <BitmapCanvas
+        bitmap={drawable ? bitmap : null}
+        // Far off-screen the tile frees its backing store (~0.45 MB at DPR 2).
+        release={!visible}
+        width={innerWidth}
+        aspect={page.width / page.height}
+        rotation={rotation}
+        label={label}
+        className="bg-white shadow-sm transition-transform"
       >
-        <canvas
-          ref={canvas}
-          role="img"
-          aria-label={label}
-          className="block size-full"
-        />
         {!hasDrawn && (
           <div className="absolute inset-0 flex items-center justify-center">
             {error ? (
@@ -150,7 +117,7 @@ export const PageThumb: React.FC<PageThumbProps> = ({
             )}
           </div>
         )}
-      </div>
-    </div>
+      </BitmapCanvas>
+    </Sized>
   );
 };

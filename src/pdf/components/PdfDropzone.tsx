@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle, FileUpload } from '@/shared/ui';
 import {
   acceptAttribute,
@@ -43,6 +43,11 @@ interface PdfDropzoneProps {
    * encrypted file itself (Unlock).
    */
   unlock?: boolean;
+  /**
+   * Files handed over by a hub drop (`useHandoff`), processed once through
+   * the same load and password flow as a drop.
+   */
+  initialFiles?: File[] | null;
 }
 
 interface LockedEntry {
@@ -69,6 +74,7 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
   label,
   hint,
   unlock = true,
+  initialFiles,
 }) => {
   const [rejected, setRejected] = useState<string[]>([]);
   const [locked, setLocked] = useState<LockedEntry[]>([]);
@@ -146,6 +152,17 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
     }
     if (ready.length) onFiles(ready);
   };
+
+  // Each handed-over list is processed once (StrictMode re-runs effects).
+  const handedOver = useRef<File[] | null>(null);
+  const takeHandoff = useEffectEvent((files: File[]) => {
+    void handle(multiple ? files : files.slice(0, 1));
+  });
+  useEffect(() => {
+    if (!initialFiles?.length || handedOver.current === initialFiles) return;
+    handedOver.current = initialFiles;
+    takeHandoff(initialFiles);
+  }, [initialFiles]);
 
   const patch = (id: string, p: Partial<LockedEntry>) =>
     updateLocked((prev) =>

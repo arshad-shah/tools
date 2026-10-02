@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 test('hash-generator computes HMAC only with the key the user enters', async ({
   page,
 }) => {
-  await page.goto('/hash-generator');
+  await page.goto(pathOf('hash-generator'));
   await page.getByLabel('Text to hash').fill('what do ya want for nothing?');
   // No key yet: no HMAC is shown, only a prompt for one.
   await expect(page.getByTestId('hash-sha256')).toBeVisible();
@@ -22,7 +23,7 @@ test('hash-generator computes HMAC only with the key the user enters', async ({
 test('hash-generator offers FIPS 202 SHA3-256 and a labelled Keccak-256', async ({
   page,
 }) => {
-  await page.goto('/hash-generator');
+  await page.goto(pathOf('hash-generator'));
   await page.getByLabel('Text to hash').fill('abc');
   await expect(page.getByTestId('hash-sha3-256')).toHaveText(
     '3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532',
@@ -33,7 +34,7 @@ test('hash-generator offers FIPS 202 SHA3-256 and a labelled Keccak-256', async 
 });
 
 test('hash-generator can hash an empty message', async ({ page }) => {
-  await page.goto('/hash-generator');
+  await page.goto(pathOf('hash-generator'));
   await expect(page.getByTestId('hash-sha256')).toHaveCount(0);
   await page.getByRole('switch', { name: 'Hash an empty message' }).click();
   await expect(page.getByTestId('hash-sha256')).toHaveText(

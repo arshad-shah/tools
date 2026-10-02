@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 test('color-tester exports the palette as JSON', async ({ page }) => {
-  await page.goto('/color-tester');
+  await page.goto(pathOf('color-tester'));
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export' }).click();
   const file = await download;
@@ -12,7 +13,7 @@ test('color-tester exports the palette as JSON', async ({ page }) => {
 });
 
 test('qr-code-generator downloads a PNG', async ({ page }) => {
-  await page.goto('/qr-code-generator');
+  await page.goto(pathOf('qr-code-generator'));
   await page.getByRole('textbox').first().fill('https://example.com');
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download QR code' }).click();
@@ -23,7 +24,7 @@ test('qr-code-generator downloads a PNG', async ({ page }) => {
 
 test('url-encoder-decoder copies output', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto('/url-encoder-decoder');
+  await page.goto(pathOf('url-encoder-decoder'));
   await page.getByRole('textbox').first().fill('a b&c');
   await page.getByRole('button', { name: 'Copy' }).click();
   await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
@@ -37,7 +38,7 @@ test('jwt-decode shows "Copied" only on the button pressed', async ({
   context,
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   await page.getByRole('tab', { name: 'Signature' }).click();
   await page.getByRole('button', { name: 'Signature value' }).click();
   const copy = page.getByRole('button', { name: 'Copy', exact: true });
@@ -50,7 +51,7 @@ test('jwt-decode shows "Copied" only on the button pressed', async ({
 test('jwt-decode accordion triggers have accessible names', async ({
   page,
 }) => {
-  await page.goto('/jwt-decode');
+  await page.goto(pathOf('jwt-decode'));
   for (const name of [
     'Identity claims',
     'Access & permissions',
@@ -68,7 +69,7 @@ test('jwt-decode accordion triggers have accessible names', async ({
 });
 
 test('image-optimizer converts and downloads', async ({ page }) => {
-  await page.goto('/image-optimizer');
+  await page.goto(pathOf('image-optimizer'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/photo.png');
@@ -81,7 +82,7 @@ test('image-optimizer converts and downloads', async ({ page }) => {
 });
 
 test('image-optimizer converts an SVG', async ({ page }) => {
-  await page.goto('/image-optimizer');
+  await page.goto(pathOf('image-optimizer'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'logo.svg',
     mimeType: 'image/svg+xml',
@@ -98,7 +99,7 @@ test('image-optimizer converts an SVG', async ({ page }) => {
 });
 
 test('image-optimizer rejects non-images inline', async ({ page }) => {
-  await page.goto('/image-optimizer');
+  await page.goto(pathOf('image-optimizer'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'notes.txt',
     mimeType: 'text/plain',
@@ -108,7 +109,7 @@ test('image-optimizer rejects non-images inline', async ({ page }) => {
 });
 
 test('csv-viewer loads a CSV and exports it', async ({ page }) => {
-  await page.goto('/csv-viewer');
+  await page.goto(pathOf('csv-viewer'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'people.csv',
     mimeType: 'text/csv',
@@ -121,7 +122,7 @@ test('csv-viewer loads a CSV and exports it', async ({ page }) => {
 });
 
 test('csv-viewer rejects a non-text file inline', async ({ page }) => {
-  await page.goto('/csv-viewer');
+  await page.goto(pathOf('csv-viewer'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'photo.png',
     mimeType: 'image/png',
@@ -133,7 +134,7 @@ test('csv-viewer rejects a non-text file inline', async ({ page }) => {
 });
 
 test('csv-viewer still parses a dropped .txt as CSV', async ({ page }) => {
-  await page.goto('/csv-viewer');
+  await page.goto(pathOf('csv-viewer'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'data.txt',
     mimeType: 'text/plain',
@@ -143,7 +144,7 @@ test('csv-viewer still parses a dropped .txt as CSV', async ({ page }) => {
 });
 
 test('text-diff-checker loads a file into the left pane', async ({ page }) => {
-  await page.goto('/text-diff-checker');
+  await page.goto(pathOf('text-diff-checker'));
   await page
     .locator('input[type=file]')
     .first()
@@ -161,7 +162,7 @@ test('text-diff-checker loads a file into the left pane', async ({ page }) => {
 test('rive-animation-player rejects a non-Rive file with a toast', async ({
   page,
 }) => {
-  await page.goto('/rive-animation-player');
+  await page.goto(pathOf('rive-animation-player'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'fake.riv',
     mimeType: 'application/octet-stream',
@@ -199,7 +200,7 @@ test('api-request keeps collections saved under the legacy key', async ({
       ]),
     );
   });
-  await page.goto('/api-request');
+  await page.goto(pathOf('api-request'));
   await expect(page.getByText('Legacy Collection')).toBeVisible();
   await expect(page.getByText('Legacy Request')).toBeVisible();
   expect(
@@ -215,7 +216,7 @@ test('api-request toasts invalid input instead of window.alert', async ({
   page.on('dialog', () => {
     throw new Error('unexpected window dialog');
   });
-  await page.goto('/api-request');
+  await page.goto(pathOf('api-request'));
   await page.getByRole('button', { name: 'New request' }).first().click();
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(
@@ -226,7 +227,7 @@ test('api-request toasts invalid input instead of window.alert', async ({
 test('text-diff-checker accepts a text/plain file of any extension', async ({
   page,
 }) => {
-  await page.goto('/text-diff-checker');
+  await page.goto(pathOf('text-diff-checker'));
   await page
     .locator('input[type=file]')
     .last()
@@ -247,7 +248,7 @@ test('api-request keeps the last response when a send fails validation', async (
   await page.route('https://jsonplaceholder.typicode.com/users', (route) =>
     route.fulfill({ json: [{ id: 1, name: 'Mocked' }] }),
   );
-  await page.goto('/api-request');
+  await page.goto(pathOf('api-request'));
   await page.getByText('Get Users').click();
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByText('200', { exact: false }).first()).toBeVisible();
@@ -261,7 +262,7 @@ test('api-request keeps the last response when a send fails validation', async (
 });
 
 test('calculator plots an expression without crashing', async ({ page }) => {
-  await page.goto('/calculator');
+  await page.goto(pathOf('calculator'));
   await page.getByRole('tab', { name: 'Expression' }).click();
   await page.getByRole('textbox', { name: 'Expression' }).fill('sin(x)');
   await page.getByRole('button', { name: 'Plot expression' }).click();
@@ -274,7 +275,7 @@ test('calculator plots an expression without crashing', async ({ page }) => {
 test('json-and-xml-viewer highlights editor lines that match the search', async ({
   page,
 }) => {
-  await page.goto('/json-and-xml-viewer');
+  await page.goto(pathOf('json-and-xml-viewer'));
   await page
     .locator('textarea')
     .first()

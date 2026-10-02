@@ -34,7 +34,7 @@ export const TestStringCard: React.FC<TestStringCardProps> = ({
         </Inline>
         {canGenerateSample && (
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconZap size="sm" />}
             onClick={onGenerateSample}

@@ -44,10 +44,10 @@ export const NewCollectionDialog: React.FC<NewCollectionDialogProps> = ({
       </Stack>
     </DialogBody>
     <DialogFooter>
-      <Button variant="soft" onClick={() => onOpenChange(false)}>
+      <Button variant="secondary" onClick={() => onOpenChange(false)}>
         Cancel
       </Button>
-      <Button variant="solid" onClick={onCreate}>
+      <Button variant="primary" onClick={onCreate}>
         Create
       </Button>
     </DialogFooter>

@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 import { pdfPageTexts } from '../fixtures/builders';
+import { pathOf } from './tool-routes';
 
 test('merges two PDFs honouring order and page selection', async ({ page }) => {
-  await page.goto('/pdf-merger');
+  await page.goto(pathOf('pdf-merger'));
   await page
     .locator('input[type=file]')
     .setInputFiles([
@@ -78,7 +79,7 @@ test('merges two PDFs honouring order and page selection', async ({ page }) => {
 });
 
 test('rejects an invalid file by name', async ({ page }) => {
-  await page.goto('/pdf-merger');
+  await page.goto(pathOf('pdf-merger'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'broken.pdf',
     mimeType: 'application/pdf',
@@ -90,7 +91,7 @@ test('rejects an invalid file by name', async ({ page }) => {
 });
 
 test('names the file when a page range is out of range', async ({ page }) => {
-  await page.goto('/pdf-merger');
+  await page.goto(pathOf('pdf-merger'));
   await page
     .locator('input[type=file]')
     .setInputFiles([

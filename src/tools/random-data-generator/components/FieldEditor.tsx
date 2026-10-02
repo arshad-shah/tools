@@ -219,7 +219,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 />
               ))}
               <Button
-                variant="soft"
+                variant="secondary"
                 leftIcon={<IconPlus size="sm" />}
                 onClick={() => onAddField(fullPath)}
                 fullWidth

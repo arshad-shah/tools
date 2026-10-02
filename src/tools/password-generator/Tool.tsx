@@ -136,7 +136,7 @@ const SecurePasswordGenerator: React.FC = () => {
         onClick={handleGenerate}
         leftIcon={<IconRefreshCw size="lg" />}
         size="lg"
-        variant="solid"
+        variant="primary"
         className="w-full"
       >
         Generate secure password

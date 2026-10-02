@@ -13,6 +13,7 @@ import {
   type PdfInputFile,
   type ResultFile,
 } from '@/pdf/components';
+import { useHandoff } from '@/shared/lib/handoff';
 
 interface Inspected {
   file: PdfInputFile;
@@ -21,6 +22,8 @@ interface Inspected {
 }
 
 const UnlockTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [inspected, setInspected] = useState<Inspected | null>(null);
 
@@ -74,6 +77,7 @@ const UnlockTool: React.FC<ToolProps> = () => {
         <Stack gap="5">
           {/* The encrypted file itself is what this tool works on. */}
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}

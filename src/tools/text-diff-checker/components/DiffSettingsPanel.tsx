@@ -33,7 +33,7 @@ export const DiffSettingsPanel: React.FC<DiffSettingsPanelProps> = ({
       <Stack gap="3">
         <Inline gap="2" wrap>
           <Button
-            variant={diffSettings.ignoreWhitespace ? 'solid' : 'soft'}
+            variant={diffSettings.ignoreWhitespace ? 'primary' : 'secondary'}
             size="sm"
             onClick={() =>
               updateDiffSetting(
@@ -45,7 +45,7 @@ export const DiffSettingsPanel: React.FC<DiffSettingsPanelProps> = ({
             Ignore whitespace
           </Button>
           <Button
-            variant={diffSettings.ignoreCase ? 'solid' : 'soft'}
+            variant={diffSettings.ignoreCase ? 'primary' : 'secondary'}
             size="sm"
             onClick={() =>
               updateDiffSetting('ignoreCase', !diffSettings.ignoreCase)
@@ -54,7 +54,9 @@ export const DiffSettingsPanel: React.FC<DiffSettingsPanelProps> = ({
             Ignore case
           </Button>
           <Button
-            variant={diffSettings.highlightIntralineChanges ? 'solid' : 'soft'}
+            variant={
+              diffSettings.highlightIntralineChanges ? 'primary' : 'secondary'
+            }
             size="sm"
             onClick={() =>
               updateDiffSetting(
@@ -66,7 +68,7 @@ export const DiffSettingsPanel: React.FC<DiffSettingsPanelProps> = ({
             Intraline changes
           </Button>
           <Button
-            variant={diffSettings.showLineNumbers ? 'solid' : 'soft'}
+            variant={diffSettings.showLineNumbers ? 'primary' : 'secondary'}
             size="sm"
             onClick={() =>
               updateDiffSetting(
@@ -95,7 +97,7 @@ export const DiffSettingsPanel: React.FC<DiffSettingsPanelProps> = ({
             {(['character', 'word', 'line'] as const).map((mode) => (
               <Button
                 key={mode}
-                variant={highlightMode === mode ? 'solid' : 'soft'}
+                variant={highlightMode === mode ? 'primary' : 'secondary'}
                 size="sm"
                 onClick={() => setHighlightMode(mode)}
               >

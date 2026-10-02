@@ -137,7 +137,7 @@ export const ConversionCard: React.FC<ConversionCardProps> = ({
 
           <Inline justify="center" className="py-4">
             <IconButton
-              variant="solid"
+              variant="primary"
               className="rounded-full"
               label="Swap units"
               icon={<IconArrowRightLeft size="lg" />}

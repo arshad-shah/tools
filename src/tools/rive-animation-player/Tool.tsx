@@ -33,9 +33,12 @@ import { PlaybackControls } from './components/PlaybackControls';
 import { Stage } from './components/Stage';
 import { useRivePlayer } from './hooks/useRivePlayer';
 import { PlayerError, type BackgroundColor } from './types';
+import { useHandoffFiles } from '@/shared/lib/handoff';
 
 export default function RiveAnimationPlayer() {
   const player = useRivePlayer();
+  // A .riv dropped on a hub loads like a picked one (spec §5.3).
+  useHandoffFiles((files) => void player.load(files[0]));
   const { status, filename, fileSize, riveInfo, isPlaying } = player;
 
   const [background, setBackground] = useState<BackgroundColor>('transparent');
@@ -110,7 +113,7 @@ export default function RiveAnimationPlayer() {
                 )}
 
                 <Button
-                  variant="soft"
+                  variant="secondary"
                   size="sm"
                   leftIcon={<IconInfo size="sm" />}
                   onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)}

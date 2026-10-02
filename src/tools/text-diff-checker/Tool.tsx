@@ -16,6 +16,7 @@ import { DiffSettingsPanel } from './components/DiffSettingsPanel';
 import { DiffStats } from './components/DiffStats';
 import { DiffTextArea } from './components/DiffTextArea';
 import { DiffToolbar } from './components/DiffToolbar';
+import { useHandoffFiles } from '@/shared/lib/handoff';
 
 const TextDiffChecker: React.FC = () => {
   const [leftText, setLeftText] = useState('');
@@ -69,6 +70,12 @@ const TextDiffChecker: React.FC = () => {
       notify.error(toToolError(e));
     }
   };
+
+  // Two files dropped on a hub become the original and the changed text.
+  useHandoffFiles((files) => {
+    void loadSide('left', files[0]);
+    if (files[1]) void loadSide('right', files[1]);
+  });
 
   const swapTexts = useCallback(() => {
     setLeftText(rightText);

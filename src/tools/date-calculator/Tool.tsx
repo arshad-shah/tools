@@ -187,7 +187,7 @@ const DateCalculator: React.FC = () => {
                 />
               </Stack>
               <Button
-                variant="solid"
+                variant="primary"
                 className="w-full"
                 onClick={calculateDifference}
               >
@@ -248,7 +248,7 @@ const DateCalculator: React.FC = () => {
                   />
                 </Stack>
               </Grid>
-              <Button variant="solid" className="w-full" onClick={modifyDate}>
+              <Button variant="primary" className="w-full" onClick={modifyDate}>
                 Calculate new date
               </Button>
               {modifyResult && (
