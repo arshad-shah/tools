@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { KillableClient } from '@/shared/lib/killable-client';
 import { exposeRpc, type RpcEndpoint } from '@/shared/lib/worker-rpc';
 import { textHandlers } from './handlers';
-import { createTextWorker } from './text-client';
+import { createSharedTextWorker, createTextWorker } from './text-client';
 
 const channels: MessageChannel[] = [];
 afterEach(() => {
@@ -13,16 +13,22 @@ afterEach(() => {
   }
 });
 
-// The hang handler exists only in this test.
+// The hang and slow handlers exist only in this test.
 const handlers = {
   ...textHandlers,
   hang: () => new Promise<never>(() => {}),
+  slow: (_ctx: unknown, s: string) =>
+    new Promise<string>((r) => setTimeout(() => r(s), 40)),
 };
 
 type WithHang = KillableClient<typeof handlers>;
 
+/** Counts workers started by `connect`. */
+let started = 0;
+
 /** An in-process "worker" over a MessageChannel (the P0-4 harness). */
 function connect(): RpcEndpoint {
+  started++;
   const channel = new MessageChannel();
   channels.push(channel);
   exposeRpc(handlers, channel.port2 as unknown as RpcEndpoint);
@@ -60,5 +66,22 @@ describe('text worker', () => {
     expect(bSettled).toBe(false);
     a.terminate();
     b.terminate();
+  });
+
+  it('the shared worker cancels only the aborted job, never the worker', async () => {
+    const shared = createSharedTextWorker({ connect }) as WithHang;
+    started = 0;
+    const ctrl = new AbortController();
+    const other = shared.call('slow', ['still running']);
+    const victim = shared.call('hang', [], { signal: ctrl.signal });
+    ctrl.abort();
+    await expect(victim).rejects.toMatchObject({ code: 'CANCELLED' });
+    await expect(other).resolves.toBe('still running');
+    const timed = shared.call('hang', [], { timeoutMs: 20 });
+    const alongside = shared.call('slow', ['also fine']);
+    await expect(timed).rejects.toMatchObject({ code: 'TIMEOUT' });
+    await expect(alongside).resolves.toBe('also fine');
+    expect(started).toBe(1);
+    shared.terminate();
   });
 });

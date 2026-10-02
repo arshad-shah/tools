@@ -30,10 +30,27 @@ export function createTextWorker(
   });
 }
 
+/**
+ * A text worker meant to be shared: a timeout or abort cancels only that
+ * call (its handler sees the signal) and never terminates the worker, so
+ * one tool's cancel cannot fail another tool's job.
+ */
+export function createSharedTextWorker(
+  opts: Pick<TextWorkerOptions, 'connect'> = {},
+): KillableClient<TextHandlers> {
+  return createKillableClient<TextHandlers>(opts.connect ?? connectWorker, {
+    kill: false,
+  });
+}
+
 let shared: KillableClient<TextHandlers> | null = null;
 
-/** The shared text worker for short, trusted jobs (no default timeout). */
+/**
+ * The shared text worker for short, trusted jobs (no default timeout).
+ * Handlers must honour `ctx.signal`; untrusted or uninterruptible work goes
+ * to a dedicated `createTextWorker()`.
+ */
 export function textWorker(): KillableClient<TextHandlers> {
-  shared ??= createTextWorker();
+  shared ??= createSharedTextWorker();
   return shared;
 }
