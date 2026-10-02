@@ -272,15 +272,15 @@ export const LICENCES: LicenceEntry[] = [
     note: 'Pressure-sensitive ink outlines for drawn signatures',
   },
   {
-    name: 'PKI.js and ASN1.js',
+    name: 'pkijs, asn1js',
     licence: 'BSD-3-Clause',
     url: 'https://github.com/PeculiarVentures/PKI.js',
-    note: 'PKCS#12, X.509 and CMS for digital signatures',
+    note: 'PKI.js and ASN1.js: PKCS#12, X.509 and CMS for digital signatures',
   },
   {
-    name: 'Signature fonts (Sacramento, Allura, Alex Brush, Parisienne, Pinyon Script, Mr Dafoe, Kristi)',
+    name: '@fontsource/sacramento, allura, alex-brush, parisienne, pinyon-script, mr-dafoe, kristi',
     licence: 'OFL-1.1',
     url: 'https://fontsource.org',
-    note: 'Typed signatures; embedded as subsets in signed PDFs',
+    note: 'Signature fonts for typed signatures; embedded as subsets in signed PDFs',
   },
 ];
