@@ -16,6 +16,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  CopyButton,
   Inline,
   Input,
   Label,
@@ -27,9 +28,7 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 import {
-  IconCheck,
   IconClipboard,
-  IconCopy,
   IconQrCode,
   IconSend,
   IconType,
@@ -73,7 +72,7 @@ export default function UrlInspector() {
   const [settings, update] = urlSettings.useSettings();
   const [text, setText] = useState(SAMPLE);
   const [parsed, setParsed] = useState<Parsed>(() => parse(SAMPLE, '', null));
-  const { copiedKey, copy } = useClipboard();
+  const { copy } = useClipboard();
   const [tab, setTab] = useState('parts');
 
   const share = useShareableState({
@@ -140,7 +139,7 @@ export default function UrlInspector() {
       id: 'copy',
       label: 'Copy URL',
       shortcut: 'Mod+Shift+C',
-      run: () => void copy(text, 'url'),
+      run: () => void copy(text),
     },
     {
       id: 'clear',
@@ -178,7 +177,7 @@ export default function UrlInspector() {
               aria-describedby={parsed.error ? 'url-error' : undefined}
             />
             {parsed.error && (
-              <Alert status="danger" id="url-error">
+              <Alert status="danger" size="sm" id="url-error">
                 <AlertDescription>{parsed.error.message}</AlertDescription>
               </Alert>
             )}
@@ -209,21 +208,7 @@ export default function UrlInspector() {
               >
                 Paste
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={
-                  copiedKey === 'url' ? (
-                    <IconCheck size="sm" />
-                  ) : (
-                    <IconCopy size="sm" />
-                  )
-                }
-                onClick={() => void copy(text, 'url')}
-                disabled={!text}
-              >
-                Copy URL
-              </Button>
+              <CopyButton variant="text" label="URL" value={text} />
               <Button
                 size="sm"
                 variant="secondary"
@@ -251,7 +236,7 @@ export default function UrlInspector() {
               >
                 Open in Text Encoder
               </Button>
-              <ShareButton share={share} label="Share link" size="sm" />
+              <ShareButton share={share} />
             </Inline>
             {secrets.length > 0 && (
               <Alert status="warning">

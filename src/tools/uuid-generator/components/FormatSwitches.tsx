@@ -1,5 +1,5 @@
 import React from 'react';
-import { Inline, Label, Switch } from '@/shared/ui';
+import { Inline, SwitchField } from '@/shared/ui';
 import type { UuidFormat } from '../lib/uuid';
 
 const OPTIONS: { key: keyof UuidFormat; label: string }[] = [
@@ -15,15 +15,13 @@ export const FormatSwitches: React.FC<{
 }> = ({ format, onChange }) => (
   <Inline gap="4" wrap>
     {OPTIONS.map((o) => (
-      <Inline key={o.key} gap="2" align="center">
-        <Switch
-          id={`uuid-${o.key}`}
-          checked={format[o.key]}
-          onCheckedChange={(v) => onChange({ ...format, [o.key]: v })}
-          aria-label={o.label}
-        />
-        <Label htmlFor={`uuid-${o.key}`}>{o.label}</Label>
-      </Inline>
+      <SwitchField
+        key={o.key}
+        id={`uuid-${o.key}`}
+        label={o.label}
+        checked={format[o.key]}
+        onCheckedChange={(v) => onChange({ ...format, [o.key]: v })}
+      />
     ))}
   </Inline>
 );

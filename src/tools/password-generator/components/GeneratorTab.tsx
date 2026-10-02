@@ -8,6 +8,7 @@ import {
   NumberInput,
   Slider,
   Stack,
+  SwitchField,
   Text,
 } from '@/shared/ui';
 import { toToolError } from '@/shared/lib/errors';
@@ -20,7 +21,6 @@ import {
 } from '../lib/generate';
 import { optionsFrom } from '../lib/options';
 import type { PasswordSettings } from '../settings';
-import { OptionSwitch } from './OptionSwitch';
 import { ResultCard } from './ResultCard';
 
 interface GeneratorTabProps {
@@ -68,17 +68,17 @@ export const GeneratorTab: React.FC<GeneratorTabProps> = ({
             />
           </Inline>
           <Inline gap="4" wrap>
-            <OptionSwitch
+            <SwitchField
               id="pin-repeats"
               label="No repeated digits in a row"
               checked={s.pinNoRepeats}
-              onChange={(v) => update({ pinNoRepeats: v })}
+              onCheckedChange={(v) => update({ pinNoRepeats: v })}
             />
-            <OptionSwitch
+            <SwitchField
               id="pin-sequences"
               label="No runs like 123 or 321"
               checked={s.pinNoSequences}
-              onChange={(v) => update({ pinNoSequences: v })}
+              onCheckedChange={(v) => update({ pinNoSequences: v })}
             />
           </Inline>
         </Stack>
@@ -101,43 +101,43 @@ export const GeneratorTab: React.FC<GeneratorTabProps> = ({
             />
           </Stack>
           <Inline gap="4" wrap>
-            <OptionSwitch
+            <SwitchField
               id="pw-lower"
               label="Lowercase"
               checked={s.lower}
-              onChange={(v) => update({ lower: v })}
+              onCheckedChange={(v) => update({ lower: v })}
             />
-            <OptionSwitch
+            <SwitchField
               id="pw-upper"
               label="Uppercase"
               checked={s.upper}
-              onChange={(v) => update({ upper: v })}
+              onCheckedChange={(v) => update({ upper: v })}
             />
-            <OptionSwitch
+            <SwitchField
               id="pw-digits"
               label="Digits"
               checked={s.digits}
-              onChange={(v) => update({ digits: v })}
+              onCheckedChange={(v) => update({ digits: v })}
             />
-            <OptionSwitch
+            <SwitchField
               id="pw-symbols"
               label="Symbols"
               checked={s.symbols}
-              onChange={(v) => update({ symbols: v })}
+              onCheckedChange={(v) => update({ symbols: v })}
             />
           </Inline>
           <Inline gap="4" wrap>
-            <OptionSwitch
+            <SwitchField
               id="pw-ambiguous"
               label="Exclude look-alikes (Il1O0o)"
               checked={s.excludeAmbiguous}
-              onChange={(v) => update({ excludeAmbiguous: v })}
+              onCheckedChange={(v) => update({ excludeAmbiguous: v })}
             />
-            <OptionSwitch
+            <SwitchField
               id="pw-leading"
               label="Do not start with a symbol"
               checked={s.noLeadingSymbol}
-              onChange={(v) => update({ noLeadingSymbol: v })}
+              onCheckedChange={(v) => update({ noLeadingSymbol: v })}
             />
           </Inline>
           <Inline gap="4" wrap align="end">

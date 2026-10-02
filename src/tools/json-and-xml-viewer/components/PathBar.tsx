@@ -6,7 +6,7 @@ import {
   IconCopy,
   IconFileJson,
 } from '@/shared/ui/icons';
-import { Code, IconButton, Inline, Text, Tooltip } from '@/shared/ui';
+import { Code, EmptyState, IconButton, Inline, Tooltip } from '@/shared/ui';
 import type { DocNode } from '../lib/doc-model';
 import { isXmlPath, toDisplayPath, toJsAccessor } from '../lib/paths';
 import { nodeValueText, subtreeJson } from '../lib/subtree';
@@ -21,11 +21,7 @@ export interface PathBarProps {
 export function PathBar({ node, value, xml }: PathBarProps) {
   const { copy, copiedKey } = useClipboard();
   if (!node)
-    return (
-      <Text size="sm" tone="muted" className="px-1 py-1.5">
-        Select a node to see its path
-      </Text>
-    );
+    return <EmptyState size="sm" description="Select a node to see its path" />;
   const xmlDoc = isXmlPath(node.path);
   const path = toDisplayPath(node.path);
   const actions = [

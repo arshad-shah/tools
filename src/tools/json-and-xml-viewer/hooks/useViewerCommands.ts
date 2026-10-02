@@ -9,8 +9,15 @@ import { toDisplayPath } from '../lib/paths';
 import type { ViewerTab } from '../settings';
 import type { ParsedDocument } from './useParsedDocument';
 
-const TAB_ORDER: ViewerTab[] = ['tree', 'map', 'query', 'convert'];
-const TAB_LABEL: Record<ViewerTab, string> = {
+export const TAB_ORDER: ViewerTab[] = [
+  'source',
+  'tree',
+  'map',
+  'query',
+  'convert',
+];
+export const TAB_LABEL: Record<ViewerTab, string> = {
+  source: 'Source',
   tree: 'Tree',
   map: 'Map',
   query: 'Query',
@@ -99,7 +106,7 @@ export function useViewerCommands(d: ViewerCommandDeps): void {
       label: `Show ${TAB_LABEL[t]}`,
       group: 'View',
       shortcut: `Alt+${i + 1}`,
-      enabled: ready,
+      enabled: t === 'source' || ready,
       run: () => d.setTab(t),
     })),
   ];

@@ -1,4 +1,6 @@
 import { toToolError, type ToolError } from '@/shared/lib/errors';
+import type { KillableClient } from '@/shared/lib/killable-client';
+import type { TextHandlers } from '@/shared/workers/handlers';
 import { queryJsonPath } from './jsonpath';
 import { toJsonPath } from './paths';
 import { queryXPath } from './xpath';
@@ -25,7 +27,15 @@ export type QueryOutcome =
   | { ok: true; rows: QueryRow[] }
   | { ok: false; error: ToolError };
 
-/** JSONPath over a JSON value, or XPath over an XML document. */
+/** JSONPath rows over a JSON value; throws a positioned ToolError. */
+export function jsonQueryRows(value: unknown, expr: string): QueryRow[] {
+  return queryJsonPath(value, expr).map((r) => {
+    const path = toJsonPath(r.path);
+    return { id: path, path, preview: preview(r.value), value: r.value };
+  });
+}
+
+/** JSONPath over a JSON value, or XPath over an XML document (sync). */
 export function runQuery(
   expr: string,
   source: { value: unknown; xml: Document | null },
@@ -43,10 +53,26 @@ export function runQuery(
       }));
       return { ok: true, rows };
     }
-    const rows = queryJsonPath(source.value, expr).map((r) => {
-      const path = toJsonPath(r.path);
-      return { id: path, path, preview: preview(r.value), value: r.value };
-    });
+    return { ok: true, rows: jsonQueryRows(source.value, expr) };
+  } catch (e) {
+    return { ok: false, error: toToolError(e) };
+  }
+}
+
+/**
+ * Like `runQuery`, but JSONPath runs on the text worker (`json.query`,
+ * spec 4.4) so a large document never blocks typing. XPath needs the DOM
+ * and stays here; without a Worker (tests) JSONPath runs in place too.
+ */
+export async function runQueryOffThread(
+  expr: string,
+  source: { value: unknown; xml: Document | null },
+  worker: () => KillableClient<TextHandlers>,
+): Promise<QueryOutcome> {
+  if (source.xml || typeof Worker === 'undefined')
+    return runQuery(expr, source);
+  try {
+    const rows = await worker().call('json.query', [source.value, expr]);
     return { ok: true, rows };
   } catch (e) {
     return { ok: false, error: toToolError(e) };

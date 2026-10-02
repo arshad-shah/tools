@@ -157,6 +157,16 @@ test('the chart tab draws a chart of the filtered rows', async ({ page }) => {
   ).toBeVisible();
 });
 
+test('Send CSV to lists Text Diff and hands the shown rows over', async ({
+  page,
+}) => {
+  await open(page, 'numbers.csv', NUMBERS);
+  await page.getByRole('button', { name: 'Send CSV to' }).click();
+  await page.getByRole('menuitem', { name: /Text Diff/ }).click();
+  await expect(page).toHaveURL(/diff/);
+  await expect(page.getByText('item0,5').first()).toBeAttached();
+});
+
 test.skip('Open as JSON shows the tree in the JSON Viewer', () => {
   // Waits for Part 6-B (JSON Viewer accepts application/json); H-1 removes
   // this skip.

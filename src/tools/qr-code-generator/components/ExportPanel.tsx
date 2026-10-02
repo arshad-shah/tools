@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { saveBlob } from '@/shared/lib/download';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
 import {
@@ -94,7 +94,7 @@ export function ExportPanel({
           disabled={disabled || busy}
           onClick={() =>
             void run('make the PNG', async () =>
-              saveBlob(await png(), `${baseName}.png`),
+              saveBlob(await png(), deriveFilename(baseName, '', 'png')),
             )
           }
         >
@@ -110,7 +110,7 @@ export function ExportPanel({
                 new Blob([await qrSvg(value, style, 512)], {
                   type: 'image/svg+xml',
                 }),
-                `${baseName}.svg`,
+                deriveFilename(baseName, '', 'svg'),
               ),
             )
           }

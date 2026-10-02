@@ -26,10 +26,30 @@ const BOOKSTORE = JSON.stringify(
 const editor = (page: Page) => page.getByRole('textbox', { name: 'Document' });
 const tree = (page: Page) => page.getByRole('tree', { name: 'Document tree' });
 
+/** One pane at a time (ruling R41): Source, Tree, Map, Query, Convert. */
+const show = (page: Page, name: string) =>
+  page.getByRole('tab', { name, exact: true }).click();
+
 async function open(page: Page, text: string) {
   await page.goto(pathOf('json-and-xml-viewer'));
   await editor(page).fill(text);
 }
+
+test('the panes are tabs, Source first, and a view before a document points back', async ({
+  page,
+}) => {
+  await page.goto(pathOf('json-and-xml-viewer'));
+  await expect(page.getByRole('tab')).toHaveText([
+    'Source',
+    'Tree',
+    'Map',
+    'Query',
+    'Convert',
+  ]);
+  await show(page, 'Map');
+  await page.getByRole('button', { name: 'Go to Source' }).click();
+  await expect(editor(page)).toBeVisible();
+});
 
 test('a JSON error shows its line and column, and Jump to error moves the caret', async ({
   page,
@@ -48,6 +68,7 @@ test('searching for ( is literal and never crashes', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await open(page, '{"note": "call f(x)", "list": "[1]"}');
+  await show(page, 'Tree');
   const search = page.getByRole('searchbox', { name: 'Search the tree' });
   await search.fill('(');
   await expect(page.getByText('1 of 1')).toBeVisible();
@@ -62,6 +83,7 @@ test('selecting in the Tree fills the path bar and copies the JSONPath', async (
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await open(page, BOOKSTORE);
+  await show(page, 'Tree');
   await page.getByRole('searchbox', { name: 'Search the tree' }).fill('Sword');
   await tree(page)
     .getByRole('treeitem', { name: /Sword of Honour/ })
@@ -77,6 +99,7 @@ test('selecting in the Tree fills the path bar and copies the JSONPath', async (
 
 test('the Map shows the selection and ] moves to a child', async ({ page }) => {
   await open(page, BOOKSTORE);
+  await show(page, 'Tree');
   await page.getByRole('searchbox', { name: 'Search the tree' }).fill('Sword');
   await tree(page)
     .getByRole('treeitem', { name: /Sword of Honour/ })
@@ -142,6 +165,7 @@ test('XML: XPath returns attribute rows and Format keeps the comment', async ({
   await page.goto(pathOf('json-and-xml-viewer'));
   await page.getByRole('button', { name: 'Load a sample' }).click();
   await page.getByRole('menuitem', { name: 'XML catalogue' }).click();
+  await show(page, 'Tree');
   await expect(tree(page)).toBeVisible();
   await page.getByRole('tab', { name: 'Query' }).click();
   const q = page.getByRole('textbox', { name: 'XPath query' });
@@ -151,6 +175,7 @@ test('XML: XPath returns attribute rows and Format keeps the comment', async ({
   await expect(page.getByRole('list', { name: 'Query results' })).toContainText(
     '/catalog/book[1]/@id',
   );
+  await show(page, 'Source');
   await editor(page).fill('<r><!-- keep me --><a>1</a></r>');
   await editor(page).press('ControlOrMeta+Shift+F');
   await expect(editor(page)).toHaveValue(
@@ -192,6 +217,7 @@ test('a 20 MB file parses in the background and the Tree scrolls smoothly', asyn
     type: 'open-and-parse-ms',
     description: String(Date.now() - start),
   });
+  await show(page, 'Tree');
   await expect(tree(page)).toBeVisible();
   const longTasks = await observeLongTasks(page);
   await tree(page).hover();
@@ -214,7 +240,9 @@ test('the Map lays out 5,000 cards in the worker without blocking', async ({
     .locator('input[type=file]')
     .first()
     .setInputFiles('test/fixtures/generated/map-5000.json');
-  await expect(tree(page)).toBeVisible({ timeout: 30_000 });
+  await expect(status(page).getByText('Parsed', { exact: true })).toBeVisible({
+    timeout: 30_000,
+  });
   await page.getByRole('tab', { name: 'Map' }).click();
   const longTasks = await observeLongTasks(page);
   await page.getByLabel('Node cap').selectOption('5000');

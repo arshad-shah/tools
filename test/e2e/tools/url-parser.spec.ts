@@ -54,7 +54,7 @@ test('the share link round-trips without the password', async ({
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(pathOf('url-parser'));
   await input(page).fill('https://ada:secret@example.org/p?x=1');
-  await page.getByRole('button', { name: 'Share link' }).click();
+  await page.getByRole('button', { name: 'Share' }).click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
   expect(link).toContain('#s=1.');
   await page.goto('about:blank');

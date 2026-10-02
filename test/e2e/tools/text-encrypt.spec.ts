@@ -105,6 +105,8 @@ test('encrypts and decrypts text', async ({ page }) => {
   await expect(out).toHaveValue(/BEGIN TOOLS ENCRYPTED MESSAGE/);
   const armoured = await out.inputValue();
   await page.getByRole('radio', { name: 'Decrypt' }).click();
+  // Encrypt showed the Output pane; the armoured text goes in Input.
+  await page.getByRole('tab', { name: 'Input' }).click();
   await page.getByRole('textbox', { name: 'Encrypted message' }).fill(armoured);
   await page.getByRole('button', { name: 'Decrypt', exact: true }).click();
   await expect(

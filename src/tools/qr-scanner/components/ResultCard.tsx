@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { sendTo } from '@/shared/lib/handoff';
 import { FORMAT_LABELS, type DecodedBarcode } from '@/shared/lib/qr-decode';
@@ -12,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
   Code,
+  CopyButton,
   Dialog,
   DialogBody,
   DialogDescription,
@@ -28,8 +28,6 @@ import {
 } from '@/shared/ui';
 import {
   IconCalendar,
-  IconCheck,
-  IconCopy,
   IconExternalLink,
   IconLink,
   IconQrCode,
@@ -49,7 +47,6 @@ export function ResultCard({
 }) {
   const navigate = useNavigate();
   const info = interpret(result.text);
-  const { copiedKey, copy } = useClipboard();
   const [revealed, setRevealed] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const link =
@@ -107,20 +104,7 @@ export function ResultCard({
               </Code>
             )}
           <Inline gap="2" wrap>
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={
-                copiedKey === 'text' ? (
-                  <IconCheck size="sm" />
-                ) : (
-                  <IconCopy size="sm" />
-                )
-              }
-              onClick={() => void copy(result.text, 'text')}
-            >
-              Copy
-            </Button>
+            <CopyButton variant="text" label="text" value={result.text} />
             {info.actions.includes('open') && (
               <Button
                 size="sm"

@@ -7,8 +7,8 @@ import {
   Popover,
   Select,
   Stack,
-  Switch,
   Text,
+  SwitchField,
 } from '@/shared/ui';
 import { IconChevronDown } from '@/shared/ui/icons';
 import { ENCODING_LABEL, TEXT_ENCODINGS } from '../lib/decode';
@@ -85,15 +85,13 @@ export function ParseOptions({
           />
         </Inline>
       )}
-      <Inline gap="2" align="center" wrap={false}>
-        <Switch
-          id={headerId}
-          checked={choices.header}
-          disabled={disabled}
-          onCheckedChange={(header) => onChange({ header, keepText: [] })}
-        />
-        <Label htmlFor={headerId}>Header row</Label>
-      </Inline>
+      <SwitchField
+        label="Header row"
+        id={headerId}
+        checked={choices.header}
+        disabled={disabled}
+        onCheckedChange={(header) => onChange({ header, keepText: [] })}
+      />
       <Inline gap="2" align="center" wrap={false}>
         <Label htmlFor={quoteId}>Quote</Label>
         <Select

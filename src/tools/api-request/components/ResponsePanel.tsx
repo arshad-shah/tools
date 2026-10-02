@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
 import { useSendCommands } from '@/shared/lib/send-commands';
@@ -11,6 +10,8 @@ import {
   Card,
   CardBody,
   CardHeader,
+  CopyButton,
+  EmptyState,
   Inline,
   MetaList,
   Stack,
@@ -24,10 +25,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  Text,
 } from '@/shared/ui';
 import {
-  IconCopy,
   IconDownload,
   IconFileJson,
   IconKey,
@@ -68,7 +67,6 @@ const EXT: Record<string, string> = {
 /** Status, timing, size, headers and the body views, with hand-offs. */
 export function ResponsePanel({ sent }: { sent: Sent }) {
   const navigate = useNavigate();
-  const { copiedKey, copy } = useClipboard();
   const res = sent.response;
   const view = bodyView(res);
   const [tab, setTab] = useState('pretty');
@@ -140,15 +138,12 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
       <CardBody>
         <Stack gap="3">
           <Inline gap="2" wrap>
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconCopy size="sm" />}
+            <CopyButton
+              variant="text"
+              label="body"
+              value={res.text ?? ''}
               disabled={res.text === undefined}
-              onClick={() => void copy(res.text ?? '', 'body')}
-            >
-              {copiedKey === 'body' ? 'Copied' : 'Copy body'}
-            </Button>
+            />
             <Button
               size="sm"
               variant="secondary"
@@ -157,7 +152,7 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
               onClick={() =>
                 saveBlob(
                   res.bytes,
-                  `response.${EXT[res.contentType] ?? 'bin'}`,
+                  deriveFilename('response', '', EXT[res.contentType] ?? 'bin'),
                   res.contentType || 'application/octet-stream',
                 )
               }
@@ -246,10 +241,11 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
                   </TableBody>
                 </Table>
               ) : (
-                <Text tone="muted">
-                  The browser exposed no headers (cross-origin responses show
-                  only safe ones).
-                </Text>
+                <EmptyState
+                  size="sm"
+                  title="No headers"
+                  description="The browser exposed no headers (cross-origin responses show only safe ones)."
+                />
               )}
             </TabsContent>
           </Tabs>

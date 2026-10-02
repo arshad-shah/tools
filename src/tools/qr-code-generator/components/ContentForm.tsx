@@ -4,9 +4,8 @@ import {
   Label,
   Select,
   Stack,
-  Switch,
   Textarea,
-  Inline,
+  SwitchField,
 } from '@/shared/ui';
 import { FORM_SPECS, type FieldSpec } from '../lib/form-spec';
 import {
@@ -42,10 +41,12 @@ function Field({
 }) {
   if (spec.kind === 'switch')
     return (
-      <Inline gap="2" align="center">
-        <Switch id={id} checked={value === true} onCheckedChange={onChange} />
-        <Label htmlFor={id}>{spec.label}</Label>
-      </Inline>
+      <SwitchField
+        label={spec.label}
+        id={id}
+        checked={value === true}
+        onCheckedChange={onChange}
+      />
     );
   const text = typeof value === 'string' ? value : '';
   return (

@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { IconDownload, IconRefreshCw } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Card,
   CardBody,
+  ErrorState,
   Inline,
   Input,
   Kbd,
@@ -17,8 +16,8 @@ import {
   Text,
   TextInputPanel,
 } from '@/shared/ui';
-import { saveBlob } from '@/shared/lib/download';
-import { toToolError } from '@/shared/lib/errors';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
+import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { DecodePanel } from './components/DecodePanel';
 import { FormatSwitches } from './components/FormatSwitches';
@@ -75,7 +74,7 @@ const UuidGenerator: React.FC = () => {
   const [v5Result, setV5Result] = useState<{
     key: string;
     ids: string[];
-    error?: string;
+    error?: ToolError;
   }>();
   // One generator per page, so v7 and ULID stay monotonic across runs.
   const [makers] = useState(() => ({ v7: createUuidV7(), ulid: createUlid() }));
@@ -83,7 +82,7 @@ const UuidGenerator: React.FC = () => {
   const count =
     s.kind === 'v5' || s.kind === 'nil' || s.kind === 'max' ? 1 : s.count;
 
-  const sync = useMemo((): { ids: string[]; error?: string } => {
+  const sync = useMemo((): { ids: string[]; error?: ToolError } => {
     void nonce;
     try {
       const fmt = (u: string) => formatUuid(u, s.format);
@@ -106,7 +105,7 @@ const UuidGenerator: React.FC = () => {
       if (s.kind === 'v5') return { ids: [] };
       return { ids: Array.from({ length: count }, one) };
     } catch (e) {
-      return { ids: [], error: toToolError(e).message };
+      return { ids: [], error: toToolError(e) };
     }
   }, [s, count, nonce, makers]);
 
@@ -118,8 +117,7 @@ const UuidGenerator: React.FC = () => {
       (u) =>
         live && setV5Result({ key: v5Key, ids: [formatUuid(u, s.format)] }),
       (e) =>
-        live &&
-        setV5Result({ key: v5Key, ids: [], error: toToolError(e).message }),
+        live && setV5Result({ key: v5Key, ids: [], error: toToolError(e) }),
     );
     return () => {
       live = false;
@@ -134,7 +132,7 @@ const UuidGenerator: React.FC = () => {
   const download = (format: ExportFormat) =>
     saveBlob(
       new TextEncoder().encode(exportIds(ids, format)),
-      `ids.${format}`,
+      deriveFilename('ids', '', format),
       EXPORT_MIME[format],
     );
 
@@ -295,11 +293,7 @@ const UuidGenerator: React.FC = () => {
         </CardBody>
       </Card>
 
-      {error && (
-        <Alert status="danger">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <ErrorState title="Could not generate IDs" error={error} />}
       <Inline gap="2" align="center" wrap>
         <Button
           variant="primary"

@@ -28,6 +28,11 @@ test('a WiFi code with ; in the SSID decodes back and cannot be shared', async (
     .getByRole('textbox', { name: 'Network name (SSID)' })
     .fill('my;net');
   await page.getByLabel('Password').fill('pw:1');
+  // The Preview pane marks the change with a dot (R41).
+  await expect(
+    page.getByRole('tab', { name: /Preview.*updated/ }),
+  ).toBeVisible();
+  await page.getByRole('tab', { name: /Preview/ }).click();
   await expect(page.getByLabel('Encoded text')).toHaveText(
     'WIFI:T:WPA;S:my\\;net;P:pw\\:1;;',
   );
@@ -40,13 +45,17 @@ test('a WiFi code with ; in the SSID decodes back and cannot be shared', async (
 test('a CSV batch gives a ZIP of 3 PNGs', async ({ page }) => {
   await page.goto(QR);
   await page.getByRole('tab', { name: 'Batch' }).click();
-  await page.locator('input[type=file]').setInputFiles({
-    name: 'links.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from(
-      'name,link\nOne,https://a.test\nTwo,https://b.test\nOne,https://c.test\n',
-    ),
-  });
+  // Every pane stays mounted: the shown one holds the right file input.
+  await page
+    .getByRole('tabpanel')
+    .locator('input[type=file]')
+    .setInputFiles({
+      name: 'links.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(
+        'name,link\nOne,https://a.test\nTwo,https://b.test\nOne,https://c.test\n',
+      ),
+    });
   await page
     .getByRole('combobox', { name: 'Content column' })
     .selectOption('link');
@@ -80,9 +89,11 @@ test('a local logo upload makes no network request', async ({ page }) => {
     'base64',
   );
   await page
+    .getByRole('tabpanel')
     .locator('input[type=file]')
     .setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: png });
   await expect(page.getByRole('button', { name: 'Remove logo' })).toBeVisible();
+  await page.getByRole('tab', { name: /Preview/ }).click();
   await expect(
     page.getByText(/Decodes correctly|Could not decode/),
   ).toBeVisible({ timeout: 20_000 });

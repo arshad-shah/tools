@@ -45,9 +45,16 @@ test('GET with params shows a 200 JSON tree', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Value, row 1' }).fill('a b');
   await expect(params).toBeVisible();
   await send(page);
+  // Sending shows the Response pane (one pane at a time, R41).
+  await expect(page.getByRole('tab', { name: 'Response' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   await expect(page.getByText('200 OK')).toBeVisible();
   expect(seen).toBe(`${API}/items?q=a+b`);
   await expect(page.getByRole('tree', { name: 'Response JSON' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Request', exact: true }).click();
+  await expect(urlBox(page)).toBeVisible();
 });
 
 test('POST form-data reaches the server with both parts', async ({ page }) => {
@@ -141,7 +148,9 @@ test('opens the response in the JSON Viewer', async ({ page }) => {
   await send(page);
   await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
   await expect(page).toHaveURL(new RegExp(`${pathOf('json-and-xml-viewer')}`));
-  await expect(page.getByText('world').first()).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+    /"world"/,
+  );
 });
 
 test('keeps collections saved under the legacy key', async ({ page }) => {

@@ -5,12 +5,12 @@ import {
   AlertDescription,
   Button,
   BytesView,
-  CodeSurface,
   CodeTree,
   Image,
   SandboxedHtml,
   Stack,
   Text,
+  TextInputPanel,
 } from '@/shared/ui';
 import type { HttpResponse } from '../lib/http';
 import { jsonNode } from '../lib/json-tree';
@@ -54,10 +54,11 @@ export function PrettyView({
   if (view === 'binary' || view === 'image')
     return <Text tone="muted">Binary body: see Preview or Hex.</Text>;
   return (
-    <CodeSurface
+    <TextInputPanel
       label="Response body"
       language={view === 'xml' || view === 'html' ? 'xml' : 'plain'}
       value={pretty}
+      onChange={() => {}}
       readOnly
       wrap
       maxHeight={480}
@@ -69,10 +70,11 @@ export function RawView({ res }: { res: HttpResponse }) {
   if (res.text === undefined)
     return <Text tone="muted">Binary body: see Hex.</Text>;
   return (
-    <CodeSurface
+    <TextInputPanel
       label="Raw response body"
       language="plain"
       value={res.text}
+      onChange={() => {}}
       readOnly
       wrap
       maxHeight={480}
@@ -96,14 +98,14 @@ export function PreviewView({
         mime={res.contentType}
         alt="Response image"
         fit="contain"
-        className="max-h-[480px]"
+        className="max-h-120"
       />
     );
   if (view === 'html' && res.text !== undefined)
     return (
       <Stack gap="2">
         {!remote && (
-          <Alert status="info">
+          <Alert status="info" size="sm">
             <AlertDescription>
               Remote images and styles are blocked.{' '}
               <Button size="sm" variant="ghost" onClick={() => setRemote(true)}>
@@ -116,7 +118,7 @@ export function PreviewView({
           html={res.text}
           title="Response preview"
           allowRemoteImages={remote}
-          className="h-[480px]"
+          className="h-120"
         />
       </Stack>
     );

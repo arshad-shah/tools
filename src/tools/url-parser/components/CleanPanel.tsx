@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { IconCheck, IconCopy, IconEraser } from '@/shared/ui/icons';
+import { IconEraser } from '@/shared/ui/icons';
 import {
   Button,
   Code,
+  CopyButton,
+  EmptyState,
   Inline,
   Label,
   Stack,
@@ -27,7 +28,6 @@ export function CleanPanel({
   onApply,
 }: Props) {
   const result = useMemo(() => cleanUrl(url, patterns), [url, patterns]);
-  const { copiedKey, copy } = useClipboard();
   return (
     <Stack gap="3">
       {result.removed.length ? (
@@ -37,28 +37,13 @@ export function CleanPanel({
           {result.removed.join(', ')}
         </Text>
       ) : (
-        <Text size="sm" tone="muted">
-          No tracking parameters found.
-        </Text>
+        <EmptyState size="sm" title="No tracking parameters found" />
       )}
       <Code block className="break-all">
         {result.url}
       </Code>
       <Inline gap="2">
-        <Button
-          size="sm"
-          variant="secondary"
-          leftIcon={
-            copiedKey === 'clean' ? (
-              <IconCheck size="sm" />
-            ) : (
-              <IconCopy size="sm" />
-            )
-          }
-          onClick={() => void copy(result.url, 'clean')}
-        >
-          Copy clean link
-        </Button>
+        <CopyButton variant="text" label="clean link" value={result.url} />
         <Button
           size="sm"
           variant="primary"

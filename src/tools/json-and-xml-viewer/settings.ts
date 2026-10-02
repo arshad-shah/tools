@@ -1,11 +1,12 @@
 import { createToolSettings } from '@/shared/lib/tool-settings';
 
-export type ViewerTab = 'tree' | 'map' | 'query' | 'convert';
+/** The shown pane (ruling R41: Source, Tree, Map, Query, Convert as tabs). */
+export type ViewerTab = 'source' | 'tree' | 'map' | 'query' | 'convert';
 
 /** Viewer options (spec §7.2). Query history holds expressions only, never data. */
 export const DEFAULT_SETTINGS = {
   indent: 2 as number,
-  tab: 'tree' as ViewerTab,
+  tab: 'source' as ViewerTab,
   direction: 'LR' as 'LR' | 'TB',
   minimap: true,
   cap: 2000 as number,
