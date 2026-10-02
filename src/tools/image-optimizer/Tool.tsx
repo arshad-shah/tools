@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import { IconSave, IconSettings } from '@/shared/ui/icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { deriveFilename, saveBlob, saveZip } from '@/shared/lib/download';
+import { ToolError } from '@/shared/lib/errors';
+import { readBytes } from '@/shared/lib/files';
+import { formatBytes } from '@/shared/lib/format';
+import { useHandoffFiles } from '@/shared/lib/handoff';
+import { EXTENSION, type ImageJob } from '@/shared/lib/image/pipeline';
+import { notify } from '@/shared/lib/notify';
+import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
   Alert,
   AlertDescription,
@@ -7,387 +14,293 @@ import {
   Badge,
   Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  FileUpload,
+  DropZone,
   Grid,
-  Heading,
-  Image,
   Inline,
-  Input,
-  Label,
-  Select,
-  Slider,
+  Progress,
   Stack,
+  Statistic,
   Text,
 } from '@/shared/ui';
-import { deriveFilename, saveBlob } from '@/shared/lib/download';
-import { ToolError } from '@/shared/lib/errors';
-import { readBytes } from '@/shared/lib/files';
-import { formatBytes } from '@/shared/lib/format';
-import { useObjectUrl } from '@/shared/lib/object-url';
-import { useJob } from '@/shared/state/useJob';
-import {
-  aspectRatio,
-  assertImageFile,
-  convertImage,
-  decodeImage,
-  DEFAULT_BACKGROUND,
-  isHexColor,
-  needsBackground,
-  qualityApplies,
-  reductionLabel,
-  type OutputFormat,
-} from './lib/convert';
-import { useHandoffFiles } from '@/shared/lib/handoff';
+import { IconDownload, IconShieldCheck, IconX } from '@/shared/ui/icons';
+import { BatchTable } from './components/BatchTable';
+import { ComparePanel } from './components/ComparePanel';
+import { EstimateCard } from './components/EstimateCard';
+import { HandoffActions, TOOL_ID } from './components/HandoffActions';
+import { PresetPanel } from './components/PresetPanel';
+import { batchTotals, notSmaller } from './lib/batch';
+import { imageSettings, jobFromSettings } from './settings';
+import { useBatch, type BatchEntry } from './useBatch';
 
-interface LoadedImage {
-  file: File;
-  bytes: Uint8Array;
-  width: number;
-  height: number;
+const RERUN_DEBOUNCE_MS = 400;
+const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif';
+
+const isImage = (f: File) => !f.type || f.type.startsWith('image/');
+
+/** The name a finished entry downloads as. */
+function outputName(e: BatchEntry): string {
+  if (e.row.keepOriginal || !e.job) return e.file.name;
+  return deriveFilename(e.file.name, '', EXTENSION[e.job.encoding]);
 }
 
-const ImageOptimiser: React.FC = () => {
-  const [loaded, setLoaded] = useState<LoadedImage | null>(null);
-  const [outputFormat, setOutputFormat] = useState<OutputFormat>('jpeg');
-  const [compressionLevel, setCompressionLevel] = useState<number>(80);
-
-  // A newer pick supersedes an older one still decoding, so the last file
-  // picked always wins.
-  const loadJob = useJob(async (_ctx, file: File): Promise<LoadedImage> => {
-    assertImageFile(file);
-    const bytes = await readBytes(file);
-    try {
-      const { width, height } = await decodeImage(
-        new Blob([bytes as Uint8Array<ArrayBuffer>], { type: file.type }),
-      );
-      return { file, bytes, width, height };
-    } catch (cause) {
-      throw new ToolError('INVALID_FILE', 'Failed to load the image', {
-        cause,
-      });
-    }
+/** The finished entry as a File (the original when it is kept). */
+function outputFile(e: BatchEntry): File {
+  if (e.row.keepOriginal || !e.result) return e.file;
+  return new File([e.result.bytes as Uint8Array<ArrayBuffer>], outputName(e), {
+    type: e.result.mime,
   });
+}
 
-  const [background, setBackground] = useState(DEFAULT_BACKGROUND);
-  const backgroundValid = isHexColor(background);
+const ImageCompressor: React.FC = () => {
+  const [settings, update] = imageSettings.useSettings();
+  const job = useMemo(() => jobFromSettings(settings), [settings]);
+  const jobKey = JSON.stringify(job);
+  const { entries, running, add, rerun, cancel, clear, setKeepOriginal } =
+    useBatch();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** The preset the batch last ran with. */
+  const ranKey = useRef(jobKey);
 
-  const job = useJob(
-    (ctx, file: File, format: OutputFormat, quality: number, fill: string) =>
-      convertImage(file, { format, quality, background: fill }, ctx.signal),
-  );
-  const { reset: resetJob } = job;
-  const result = job.result;
-  const isProcessing = job.status === 'running';
-
-  const selectedFile = loaded?.file ?? null;
-  const preview = useObjectUrl(
-    loaded?.bytes ?? null,
-    loaded?.file.type ?? 'application/octet-stream',
-  );
-  const processedUrl = useObjectUrl(
-    result?.bytes ?? null,
-    result?.mime ?? 'application/octet-stream',
-  );
-  const dimensions = {
-    width: loaded?.width ?? 0,
-    height: loaded?.height ?? 0,
+  const addFiles = (files: File[]) => {
+    const images = files.filter(isImage);
+    const skipped = files.length - images.length;
+    if (skipped > 0)
+      notify.error(
+        new ToolError(
+          'INVALID_FILE',
+          skipped === 1
+            ? `${files.find((f) => !isImage(f))?.name} is not an image`
+            : `${skipped} files are not images`,
+        ),
+      );
+    if (images.length === 0) return;
+    ranKey.current = jobKey;
+    add(images, job);
   };
-  const metadata = loaded && {
-    filename: loaded.file.name,
-    fileType: loaded.file.type,
-    lastModified: new Date(loaded.file.lastModified).toLocaleString(),
-    aspectRatio: aspectRatio(loaded.width, loaded.height),
-  };
+  // Images dropped on a hub or sent from another tool open like picked ones.
+  useHandoffFiles(addFiles);
 
-  const handleFiles = async (files: File[]) => {
-    const file = files[0];
-    if (!file) return;
-    const next = await loadJob.run(file);
-    if (!next) return; // the error is shown inline
-    resetJob();
-    setLoaded(next);
-  };
-  // Images dropped on a hub open like picked ones (spec §5.3).
-  useHandoffFiles((files) => void handleFiles(files));
+  // Live results: a changed preset re-runs the batch once it settles.
+  const hasEntries = entries.length > 0;
+  useEffect(() => {
+    if (jobKey === ranKey.current) return;
+    if (!hasEntries) {
+      ranKey.current = jobKey;
+      return;
+    }
+    const timer = setTimeout(() => {
+      ranKey.current = jobKey;
+      rerun(JSON.parse(jobKey) as ImageJob);
+    }, RERUN_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [jobKey, hasEntries, rerun]);
 
-  const processImage = () => {
-    if (!selectedFile) return;
-    void job.run(
-      selectedFile,
-      outputFormat,
-      compressionLevel / 100,
-      background,
-    );
-  };
+  const rows = useMemo(() => entries.map((e) => e.row), [entries]);
+  const done = entries.filter((e) => e.row.status === 'done' && e.result);
+  const totals = batchTotals(rows);
+  const finished = rows.filter(
+    (r) => r.status !== 'queued' && r.status !== 'running',
+  ).length;
+  const larger = entries.filter((e) => notSmaller(e.row));
+  const selected = done.find((e) => e.row.id === selectedId) ?? done[0] ?? null;
 
-  const downloadImage = () => {
-    if (!result || !selectedFile) return;
-    saveBlob(
-      result.bytes,
-      deriveFilename(selectedFile.name, 'optimized', outputFormat),
-      result.mime,
-    );
+  const downloadOne = (e: BatchEntry) => {
+    const f = outputFile(e);
+    saveBlob(f, outputName(e), f.type);
   };
 
-  const originalSize = selectedFile ? formatBytes(selectedFile.size) : null;
-  const newSize = result ? formatBytes(result.bytes.length) : null;
+  const downloadZip = async () => {
+    if (done.length === 0) return;
+    try {
+      const files = await Promise.all(
+        done.map(async (e) => ({
+          name: outputName(e),
+          data:
+            e.row.keepOriginal || !e.result
+              ? await readBytes(e.file)
+              : e.result.bytes,
+        })),
+      );
+      await saveZip(files, 'images.zip');
+    } catch (e) {
+      notify.error(e instanceof ToolError ? e : 'Could not build the ZIP file');
+    }
+  };
 
-  const qualityHint =
-    compressionLevel < 40
-      ? 'Small file, lower quality'
-      : compressionLevel < 70
-        ? 'Balanced size and quality'
-        : 'High quality, larger file';
+  const clearAll = () => {
+    clear();
+    setSelectedId(null);
+  };
 
-  const reduction =
-    selectedFile && result
-      ? reductionLabel(selectedFile.size, result.bytes.length)
-      : 'N/A';
-  const reductionStatus: 'success' | 'warning' =
-    reduction === 'No reduction' ? 'warning' : 'success';
-  const shownError = loadJob.error?.message ?? job.error?.message;
+  useToolCommands(TOOL_ID, [
+    {
+      id: 'download-zip',
+      label: 'Download all as ZIP',
+      run: () => void downloadZip(),
+      enabled: done.length > 0,
+    },
+    { id: 'clear', label: 'Clear', run: clearAll, enabled: hasEntries },
+    { id: 'cancel', label: 'Cancel all', run: cancel, enabled: running },
+  ]);
+
+  const firstFile = entries[0]?.file ?? null;
 
   return (
     <Stack gap="6">
-      <Card>
-        <CardBody>
-          <Stack gap="3" align="center">
-            <FileUpload
-              onFiles={(f) => void handleFiles(f)}
-              accept="image/*"
-              className="w-full"
-              label="Select an image"
+      <DropZone
+        variant={hasEntries ? 'inline' : 'hero'}
+        accept={ACCEPT}
+        multiple
+        onFiles={addFiles}
+        title={hasEntries ? 'Add more images' : 'Drop images here'}
+        hint="PNG, JPEG, WebP or GIF. Many at once is fine."
+        chooseLabel="Choose images"
+      />
+
+      <Grid max={3} gap="4" className="items-start">
+        <Stack gap="4">
+          <PresetPanel settings={settings} update={update} />
+          {firstFile && (
+            <EstimateCard
+              file={firstFile}
+              quality={settings.quality}
+              background={settings.background}
+              resize={job.resize}
+              current={settings.encoding}
+              onUse={(encoding) => update({ encoding })}
             />
-            {selectedFile ? (
-              <Text size="sm" tone="subtle">
-                Selected:{' '}
-                <Text as="span" weight="medium">
-                  {selectedFile.name}
-                </Text>
-              </Text>
-            ) : (
-              <Text size="sm" tone="subtle">
-                Supported: JPG, PNG, GIF, WebP, BMP
-              </Text>
-            )}
-          </Stack>
-        </CardBody>
-      </Card>
+          )}
+        </Stack>
 
-      {shownError && (
-        <Alert status="danger">
-          <AlertDescription>{shownError}</AlertDescription>
-        </Alert>
-      )}
-
-      {preview && (
-        <Grid max={2} gap="4">
-          <Card>
-            <CardHeader>
-              <Inline align="center" gap="2">
-                <span
-                  className="inline-block size-2 rounded-full bg-accent"
-                  aria-hidden
-                />
-                <CardTitle as="h3">Original image</CardTitle>
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              <Stack gap="3">
-                <Image src={preview} alt="Preview" className="w-full" />
-                <Inline justify="between" align="center" wrap>
-                  <Text size="sm" tone="subtle">
-                    Size: {originalSize}
-                  </Text>
-                  <Text size="sm" tone="subtle">
-                    {dimensions.width} × {dimensions.height}px
-                  </Text>
-                </Inline>
-                {metadata && (
-                  <Card className="bg-surface-2">
-                    <CardBody>
-                      <Stack gap="1">
-                        <Text size="xs" weight="semibold">
-                          Metadata
-                        </Text>
-                        <Text size="xs">Filename: {metadata.filename}</Text>
-                        <Text size="xs">Type: {metadata.fileType}</Text>
-                        <Text size="xs">Modified: {metadata.lastModified}</Text>
-                        <Text size="xs">Aspect: {metadata.aspectRatio}</Text>
-                      </Stack>
-                    </CardBody>
-                  </Card>
-                )}
-              </Stack>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Inline align="center" gap="2">
-                <IconSettings size="md" />
-                <CardTitle as="h3">Conversion settings</CardTitle>
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              <Stack gap="5">
-                <Stack gap="2">
-                  <Label>Output format</Label>
-                  <Select
-                    value={outputFormat}
-                    onValueChange={(v) => {
-                      setOutputFormat(v as OutputFormat);
-                      resetJob();
-                    }}
-                    items={[
-                      { value: 'jpeg', label: 'JPEG' },
-                      { value: 'png', label: 'PNG' },
-                      { value: 'webp', label: 'WEBP' },
-                    ]}
-                    aria-label="Output format"
-                  />
-                </Stack>
-                {qualityApplies(outputFormat) ? (
-                  <Stack gap="2">
-                    <Label>Compression quality: {compressionLevel}%</Label>
-                    <Slider
-                      value={compressionLevel}
-                      onValueChange={(v) => {
-                        setCompressionLevel(v);
-                        resetJob();
-                      }}
-                      min={1}
-                      max={100}
-                      step={1}
-                      aria-label="Compression quality"
-                    />
-                    <Text size="xs" tone="subtle">
-                      {qualityHint}
-                    </Text>
-                  </Stack>
-                ) : (
-                  <Text size="sm" tone="subtle">
-                    PNG is lossless, so there is no quality setting and the file
-                    can end up larger than the original. Choose JPEG or WebP for
-                    a smaller file.
-                  </Text>
-                )}
-                {needsBackground(outputFormat) && (
-                  <Stack gap="2">
-                    <Label htmlFor="image-background">Background colour</Label>
-                    <Input
-                      id="image-background"
-                      value={background}
-                      onChange={(v) => {
-                        setBackground(v.trim());
-                        resetJob();
-                      }}
-                      invalid={!backgroundValid}
-                      spellCheck={false}
-                      autoComplete="off"
-                    />
-                    <Text size="xs" tone="subtle">
-                      {backgroundValid
-                        ? 'JPEG has no transparency: transparent areas are filled with this colour.'
-                        : 'Enter a colour as #rrggbb, for example #ffffff.'}
-                    </Text>
-                  </Stack>
-                )}
-                <Button
-                  variant="primary"
-                  fullWidth
-                  loading={isProcessing}
-                  disabled={
-                    !selectedFile ||
-                    (needsBackground(outputFormat) && !backgroundValid)
-                  }
-                  onClick={processImage}
-                >
-                  {isProcessing ? 'Processing…' : 'Convert & compress'}
-                </Button>
-              </Stack>
-            </CardBody>
-          </Card>
-        </Grid>
-      )}
-
-      {result && (
-        <Card>
-          <CardHeader>
-            <Alert status={reductionStatus}>
-              <AlertTitle>Processing complete</AlertTitle>
-              {reduction !== 'No reduction' && (
-                <AlertDescription>
-                  Size reduction:{' '}
-                  <Text as="span" weight="semibold">
-                    {reduction}
-                  </Text>
-                </AlertDescription>
-              )}
-            </Alert>
-          </CardHeader>
-          <CardBody>
-            <Grid max={3} gap="4">
-              <Box className="lg:col-span-2">
-                <Stack gap="3">
-                  <Heading level={4} size="md">
-                    Processed image
-                  </Heading>
-                  {processedUrl && (
-                    <Image
-                      src={processedUrl}
-                      alt="Processed"
-                      className="w-full"
-                    />
+        <Stack gap="4" className="sm:col-span-1 lg:col-span-2">
+          {hasEntries && (
+            <>
+              <Inline gap="2" wrap justify="between" align="center">
+                <Inline gap="2" wrap>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<IconDownload size="sm" />}
+                    disabled={done.length === 0}
+                    onClick={() => void downloadZip()}
+                  >
+                    Download all as ZIP
+                  </Button>
+                  {running && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={<IconX size="sm" />}
+                      onClick={cancel}
+                    >
+                      Cancel all
+                    </Button>
                   )}
-                  <Grid max={2} gap="3">
-                    <Card className="bg-surface-2">
-                      <CardBody>
-                        <Text size="xs" tone="subtle">
-                          Original
-                        </Text>
-                        <Text size="md" weight="semibold">
-                          {originalSize}
-                        </Text>
-                      </CardBody>
-                    </Card>
-                    <Card className="bg-surface-2">
-                      <CardBody>
-                        <Text size="xs" tone="subtle">
-                          Compressed
-                        </Text>
-                        <Text size="md" weight="semibold">
-                          {newSize}
-                        </Text>
-                      </CardBody>
-                    </Card>
-                  </Grid>
-                </Stack>
+                  <Button variant="ghost" size="sm" onClick={clearAll}>
+                    Clear
+                  </Button>
+                </Inline>
+                {done.length > 0 && (
+                  <HandoffActions
+                    outputs={() => done.map(outputFile)}
+                    originals={entries.map((e) => e.file)}
+                  />
+                )}
+              </Inline>
+
+              {running && (
+                <Progress
+                  value={finished}
+                  max={rows.length}
+                  label="Compression progress"
+                />
+              )}
+
+              <BatchTable rows={rows} onSelect={setSelectedId} />
+
+              <Box role="group" aria-label="Totals">
+                <Grid cols={{ base: 2, md: 4 }} gap="3">
+                  <Statistic label="Files done" value={totals.files} />
+                  <Statistic
+                    label="Total before"
+                    value={formatBytes(totals.before)}
+                  />
+                  <Statistic
+                    label="Total after"
+                    value={formatBytes(totals.after)}
+                  />
+                  <Statistic
+                    label="Saving"
+                    value={
+                      totals.saving === null
+                        ? 'None yet'
+                        : `${totals.saving.toFixed(1)}%`
+                    }
+                  />
+                </Grid>
               </Box>
-              <Stack gap="3" justify="center" align="center">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  leftIcon={<IconSave size="lg" />}
-                  onClick={downloadImage}
-                >
-                  Download image
-                </Button>
-                <Badge variant="soft" tone="neutral" size="sm">
-                  Format: {outputFormat.toUpperCase()}
-                </Badge>
-              </Stack>
-            </Grid>
-          </CardBody>
-        </Card>
-      )}
+
+              {done.length > 0 && (
+                <Inline gap="2">
+                  <Badge
+                    tone="success"
+                    variant="soft"
+                    icon={<IconShieldCheck size="sm" />}
+                  >
+                    Metadata removed (EXIF, GPS)
+                  </Badge>
+                </Inline>
+              )}
+
+              {larger.length > 0 && (
+                <Alert status="warning">
+                  <AlertTitle>Not smaller than the original</AlertTitle>
+                  <AlertDescription>
+                    Try another format or a lower quality, or keep the original
+                    for these files.
+                  </AlertDescription>
+                  <Stack gap="2" className="mt-2">
+                    {larger.map((e) => (
+                      <Inline key={e.row.id} gap="2" align="center" wrap>
+                        <Text size="sm" weight="medium">
+                          {e.row.name}
+                        </Text>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          aria-label={`${
+                            e.row.keepOriginal
+                              ? 'Use compressed for'
+                              : 'Keep original for'
+                          } ${e.row.name}`}
+                          onClick={() =>
+                            setKeepOriginal(e.row.id, !e.row.keepOriginal)
+                          }
+                        >
+                          {e.row.keepOriginal
+                            ? 'Use compressed'
+                            : 'Keep original'}
+                        </Button>
+                      </Inline>
+                    ))}
+                  </Stack>
+                </Alert>
+              )}
+
+              {selected && (
+                <ComparePanel
+                  entries={done}
+                  selected={selected}
+                  onSelect={setSelectedId}
+                  onDownload={downloadOne}
+                />
+              )}
+            </>
+          )}
+        </Stack>
+      </Grid>
     </Stack>
   );
 };
 
-export default ImageOptimiser;
+export default ImageCompressor;

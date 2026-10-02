@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
+import { parseColor } from '@/shared/lib/colour';
+import { CHECKER_IMAGE, colourPaint } from '../swatch-paint';
 
 const BACKGROUND = {
   transparent: 'bg-transparent',
@@ -12,8 +14,30 @@ export interface RivePlayerProps {
   label: string;
   /** The stage behind the artboard (a user choice, not a theme colour). */
   background?: keyof typeof BACKGROUND;
+  /**
+   * Any CSS colour behind the artboard (a user choice); overrides
+   * `background`. Invalid text falls back to `background`.
+   */
+  color?: string;
+  /** A checkerboard behind the artboard, to judge transparency. */
+  checkerboard?: boolean;
   hidden?: boolean;
   className?: string;
+}
+
+function stagePaint(
+  color: string | undefined,
+  checkerboard: boolean | undefined,
+): React.CSSProperties | undefined {
+  if (checkerboard)
+    return { backgroundImage: CHECKER_IMAGE, backgroundSize: '16px 16px' };
+  if (!color) return undefined;
+  try {
+    // Fully transparent shows the page; translucent shows over a checkerboard.
+    return parseColor(color).alpha === 0 ? undefined : colourPaint(color);
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -22,7 +46,17 @@ export interface RivePlayerProps {
  * Rive imperatively: artboards, inputs, layout).
  */
 export const RivePlayer = React.forwardRef<HTMLCanvasElement, RivePlayerProps>(
-  ({ label, background = 'transparent', hidden, className }, ref) => (
+  (
+    {
+      label,
+      background = 'transparent',
+      color,
+      checkerboard,
+      hidden,
+      className,
+    },
+    ref,
+  ) => (
     <canvas
       ref={ref}
       role="img"
@@ -32,6 +66,7 @@ export const RivePlayer = React.forwardRef<HTMLCanvasElement, RivePlayerProps>(
         BACKGROUND[background],
         className,
       )}
+      style={stagePaint(color, checkerboard)}
     />
   ),
 );

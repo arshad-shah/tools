@@ -24,10 +24,14 @@ describe('routeDrop', () => {
       await routeDrop([f('one\ntwo'), f('three\nfour')], TOOLS, 'text'),
     ).toMatchObject({ type: 'navigate', path: '/text/diff' });
   });
-  it('sends three PNGs on the media hub to the image optimizer', async () => {
-    expect(
-      await routeDrop([f(PNG), f(PNG), f(PNG)], TOOLS, 'media'),
-    ).toMatchObject({ type: 'navigate', path: '/media/image-optimizer' });
+  it('offers the image compressor or the EXIF viewer for three PNGs on the media hub', async () => {
+    const d = await routeDrop([f(PNG), f(PNG), f(PNG)], TOOLS, 'media');
+    expect(d.type).toBe('choose');
+    if (d.type !== 'choose') return;
+    expect(d.options.map((o) => o.path).sort()).toEqual([
+      '/media/exif',
+      '/media/image-optimizer',
+    ]);
   });
   it('offers a choice for a PDF on the security hub', async () => {
     const d = await routeDrop([pdf()], TOOLS, 'security');

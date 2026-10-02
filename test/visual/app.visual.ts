@@ -18,6 +18,13 @@ const QUICK_TASKS = new Set([
   'pdf-protect',
   'pdf-unlock',
 ]);
+const PHONE_TOOLS = new Set([
+  'image-optimizer',
+  'color-tester',
+  'regex-tester',
+  'text-diff-checker',
+  'markdown-editor',
+]);
 const TOOLS = toolRoutes().filter(
   (t) => t.enabled && (t.category !== 'pdf' || QUICK_TASKS.has(t.id)),
 );
@@ -96,9 +103,7 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     // Part 6-C flagship text tools at phone width (spec 12.5).
-    for (const tool of TOOLS.filter((t) =>
-      ['regex-tester', 'text-diff-checker', 'markdown-editor'].includes(t.id),
-    ))
+    for (const tool of TOOLS.filter((t) => PHONE_TOOLS.has(t.id)))
       test(`tool ${tool.id} phone`, async ({ page }) => {
         await page.setViewportSize(VIEWPORTS.phone);
         await open(page, tool.path, theme);

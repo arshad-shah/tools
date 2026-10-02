@@ -3,7 +3,8 @@ import type { Rive } from '@rive-app/react-canvas';
 import type { Dimensions } from '../types';
 
 /**
- * Tracks the preview's size (on mount and window resize) and keeps the
+ * Tracks the preview's size (on mount, window resize and, where supported,
+ * any resize of the preview itself, such as a device frame) and keeps the
  * canvas and the Rive layout bounds in step with it.
  */
 export function useCanvasSize(
@@ -39,7 +40,16 @@ export function useCanvasSize(
     };
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    const el = previewRef.current;
+    const observer =
+      el && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(updateDimensions)
+        : null;
+    if (el) observer?.observe(el);
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      observer?.disconnect();
+    };
   }, [previewRef]);
 
   return dimensions;

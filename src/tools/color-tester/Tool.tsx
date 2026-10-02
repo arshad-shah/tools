@@ -1,242 +1,227 @@
-import React, { useMemo, useState } from 'react';
-import { IconBrain, IconCheck, IconEye, IconPalette } from '@/shared/ui/icons';
-
+import { useMemo, useState } from 'react';
+import { formatColor, parseColor, type Color } from '@/shared/lib/colour';
+import { copyText } from '@/shared/lib/clipboard';
+import { ToolError } from '@/shared/lib/errors';
+import { notify } from '@/shared/lib/notify';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
+  Alert,
+  AlertDescription,
   Box,
   Card,
   CardBody,
+  CardHeader,
+  CardTitle,
+  Grid,
+  IconButton,
   Inline,
+  ShareButton,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
-import { ColorInfo, ColorLike, TabType } from './types';
-import { hexToRgb } from './lib/color-convert';
-import { analyzeColor } from './lib/color-analysis';
+import { IconX } from '@/shared/ui/icons';
+import { ColorInput } from './components/ColorInput';
+import { ContrastPanel } from './components/ContrastPanel';
+import { CvdToggle } from './components/CvdToggle';
+import { ExtractPanel } from './components/ExtractPanel';
+import { FormatList } from './components/FormatList';
+import { PalettePanel } from './components/PalettePanel';
+import type { CvdMode } from './lib/harmonies';
+import { COLOR_DEFAULTS, colorSettings, type ColorSettings } from './settings';
 import {
-  INITIAL_PALETTE,
-  parseRgb,
-  textColorFor,
-  toHex,
-  toRgbString,
-} from './lib/palette';
-import { CurrentColorCard } from './components/CurrentColorCard';
-import { HarmonyTab } from './components/HarmonyTab';
-import { PsychologyTab } from './components/PsychologyTab';
-import { PreviewTab } from './components/PreviewTab';
-import { AccessibilityTab } from './components/AccessibilityTab';
-import { ColorEditor } from './components/ColorEditor';
-import { SavedPalette } from './components/SavedPalette';
+  COLOR_SHARE_VERSION,
+  MAX_SHARED_PALETTE,
+  parseColorShare,
+  type ColorShare,
+} from './share';
 
-const ColorTester: React.FC = () => {
-  const [red, setRed] = useState(70);
-  const [green, setGreen] = useState(130);
-  const [blue, setBlue] = useState(180);
-  const [alpha, setAlpha] = useState(1);
+const TOOL_ID = 'color-tester';
 
-  const [savedColors, setSavedColors] = useState<ColorInfo[]>(INITIAL_PALETTE);
-  const { copiedKey, copy } = useClipboard();
-  const [activeTab, setActiveTab] = useState<TabType>('harmony');
+type Colors = ColorSettings['lastColors'];
 
-  // Derived from the channels; nothing to keep in sync.
-  const analysis = useMemo(
-    () => analyzeColor(red, green, blue),
-    [red, green, blue],
+const toHex = (css: string) => formatColor(parseColor(css), 'hex');
+
+const parseOr = (css: string, fallback: string): Color => {
+  try {
+    return parseColor(css);
+  } catch {
+    return parseColor(fallback);
+  }
+};
+
+const ColorTester = () => {
+  const [settings, update] = colorSettings.useSettings();
+  const [colors, setColorsState] = useState<Colors>(settings.lastColors);
+  const [scale, setScaleState] = useState(settings.scale);
+  const [palette, setPalette] = useState<string[]>([]);
+  const [cvd, setCvd] = useState<CvdMode>('none');
+  const [hydrated, setHydrated] = useState(false);
+  const [showLoaded, setShowLoaded] = useState(false);
+
+  const share = useShareableState<ColorShare>({
+    toolId: TOOL_ID,
+    version: COLOR_SHARE_VERSION,
+    parse: parseColorShare,
+    select: () => ({
+      colors,
+      palette: palette.slice(0, MAX_SHARED_PALETTE),
+      scale,
+    }),
+  });
+
+  // Hydrate once from a share link (render-phase, before the first paint).
+  if (!hydrated) {
+    setHydrated(true);
+    if (share.loaded) {
+      setColorsState(share.loaded.colors);
+      setScaleState(share.loaded.scale);
+      setPalette(share.loaded.palette.map(toHex));
+      setShowLoaded(true);
+    }
+  }
+
+  const setColors = (patch: Partial<Colors>) => {
+    const next = { ...colors, ...patch };
+    setColorsState(next);
+    update({ lastColors: next });
+  };
+  const setScale = (next: ColorSettings['scale']) => {
+    setScaleState(next);
+    update({ scale: next });
+  };
+
+  const base = useMemo(
+    () => parseOr(colors.base, COLOR_DEFAULTS.lastColors.base),
+    [colors.base],
   );
-  const {
-    harmony: colorHarmony,
-    name: colorNameSuggestion,
-    mood: colorMood,
-    contrast: contrastRatios,
-  } = analysis;
 
-  const hexCode = toHex(red, green, blue);
-  const rgbString = toRgbString(red, green, blue, alpha);
-  const textColor = textColorFor(red, green, blue);
-
-  const copyToClipboard = (text: string, key: string) => void copy(text, key);
-
-  const generateRandomColor = () => {
-    setRed(Math.floor(Math.random() * 256));
-    setGreen(Math.floor(Math.random() * 256));
-    setBlue(Math.floor(Math.random() * 256));
-  };
-
-  const saveColor = () => {
-    setSavedColors((prev) => [
-      ...prev,
-      {
-        hex: hexCode,
-        rgb: rgbString,
-        red,
-        green,
-        blue,
-        alpha,
-        name: colorNameSuggestion,
-      },
-    ]);
-  };
-
-  const loadColor = (c: ColorInfo) => {
-    setRed(c.red);
-    setGreen(c.green);
-    setBlue(c.blue);
-    setAlpha(c.alpha || 1);
-  };
-
-  const loadHarmonyColor = (rgb: string) => {
-    const parsed = parseRgb(rgb);
-    if (parsed) {
-      setRed(parsed.r);
-      setGreen(parsed.g);
-      setBlue(parsed.b);
+  const swap = () => setColors({ fg: colors.bg, bg: colors.fg });
+  const copyHex = async () => {
+    const hex = formatColor(base, 'hex');
+    try {
+      await copyText(hex);
+      notify.success(`Copied ${hex}`);
+    } catch (e) {
+      notify.error(e instanceof ToolError ? e : 'Could not copy');
     }
   };
-
-  const deleteColor = (index: number) => {
-    setSavedColors((prev) => {
-      const next = [...prev];
-      next.splice(index, 1);
-      return next;
+  const resetAll = () => {
+    setColorsState(COLOR_DEFAULTS.lastColors);
+    setScaleState(COLOR_DEFAULTS.scale);
+    setPalette([]);
+    setCvd('none');
+    // Saved palettes are the user's presets and survive a reset.
+    update({
+      lastColors: COLOR_DEFAULTS.lastColors,
+      scale: COLOR_DEFAULTS.scale,
     });
   };
 
-  const exportPalette = () => {
-    saveBlob(
-      new Blob([JSON.stringify(savedColors, null, 2)], {
-        type: 'application/json',
-      }),
-      'color-palette.json',
-    );
-  };
+  useToolCommands(TOOL_ID, [
+    { id: 'copy-hex', label: 'Copy hex', run: () => void copyHex() },
+    { id: 'swap', label: 'Swap colours', run: swap },
+    { id: 'reset', label: 'Clear and reset colours', run: resetAll },
+  ]);
 
-  const handleColorPicker = (color: ColorLike) => {
-    const hex = color.toString('hex');
-    const { r, g, b } = hexToRgb(hex);
-    setRed(r);
-    setGreen(g);
-    setBlue(b);
-  };
+  const addToPalette = (hexes: string[]) =>
+    setPalette((p) =>
+      [...p, ...hexes.filter((h) => !p.includes(h))].slice(
+        0,
+        MAX_SHARED_PALETTE,
+      ),
+    );
 
   return (
-    <Stack gap="4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-        <div className="min-w-0 md:col-span-5">
-          <CurrentColorCard
-            rgbString={rgbString}
-            textColor={textColor}
-            hexCode={hexCode}
-            alpha={alpha}
-            colorNameSuggestion={colorNameSuggestion}
-            generateRandomColor={generateRandomColor}
-            saveColor={saveColor}
-            copiedKey={copiedKey}
-            copyToClipboard={copyToClipboard}
-          />
-        </div>
+    <Box data-cvd={cvd} className="min-w-0">
+      <Stack gap="4">
+        <Inline gap="3" justify="between" align="center">
+          <CvdToggle value={cvd} onChange={setCvd} />
+          <ShareButton share={share} />
+        </Inline>
+        {showLoaded && (
+          <Alert status="info">
+            <Inline gap="2" justify="between" align="center" wrap={false}>
+              <AlertDescription className="mt-0">
+                Loaded from a shared link
+              </AlertDescription>
+              <IconButton
+                label="Dismiss"
+                icon={IconX}
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowLoaded(false)}
+              />
+            </Inline>
+          </Alert>
+        )}
 
-        <div className="min-w-0 md:col-span-7">
+        <Grid cols={{ base: 1, lg: 2 }} gap="4">
           <Card>
+            <CardHeader>
+              <CardTitle>Colour</CardTitle>
+            </CardHeader>
             <CardBody>
-              <Tabs
-                value={activeTab}
-                onValueChange={(v) => setActiveTab(v as TabType)}
-                variant="line"
-              >
-                <TabsList aria-label="Tester views">
-                  <TabsTrigger value="harmony">
-                    <Inline gap="2" align="center" wrap={false}>
-                      <IconPalette size="sm" />
-                      <span>Harmony</span>
-                    </Inline>
-                  </TabsTrigger>
-                  <TabsTrigger value="psychology">
-                    <Inline gap="2" align="center" wrap={false}>
-                      <IconBrain size="sm" />
-                      <span>Psychology</span>
-                    </Inline>
-                  </TabsTrigger>
-                  <TabsTrigger value="preview">
-                    <Inline gap="2" align="center" wrap={false}>
-                      <IconEye size="sm" />
-                      <span>Preview</span>
-                    </Inline>
-                  </TabsTrigger>
-                  <TabsTrigger value="accessibility">
-                    <Inline gap="2" align="center" wrap={false}>
-                      <IconCheck size="sm" />
-                      <span>A11y</span>
-                    </Inline>
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="harmony">
-                  <Box className="pt-4">
-                    <HarmonyTab
-                      colorHarmony={colorHarmony}
-                      loadHarmonyColor={loadHarmonyColor}
-                    />
-                  </Box>
-                </TabsContent>
-                <TabsContent value="psychology">
-                  <Box className="pt-4">
-                    <PsychologyTab
-                      rgbString={rgbString}
-                      hexCode={hexCode}
-                      alpha={alpha}
-                      colorNameSuggestion={colorNameSuggestion}
-                      colorMood={colorMood}
-                    />
-                  </Box>
-                </TabsContent>
-                <TabsContent value="preview">
-                  <Box className="pt-4">
-                    <PreviewTab
-                      hexCode={hexCode}
-                      alpha={alpha}
-                      textColor={textColor}
-                    />
-                  </Box>
-                </TabsContent>
-                <TabsContent value="accessibility">
-                  <Box className="pt-4">
-                    <AccessibilityTab
-                      hexCode={hexCode}
-                      alpha={alpha}
-                      contrastRatios={contrastRatios}
-                    />
-                  </Box>
-                </TabsContent>
-              </Tabs>
+              <ColorInput
+                value={colors.base}
+                onChange={(css) => setColors({ base: css })}
+              />
             </CardBody>
           </Card>
-        </div>
-      </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Formats</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <FormatList color={base} />
+            </CardBody>
+          </Card>
+        </Grid>
 
-      <ColorEditor
-        hexCode={hexCode}
-        handleColorPicker={handleColorPicker}
-        red={red}
-        setRed={setRed}
-        green={green}
-        setGreen={setGreen}
-        blue={blue}
-        setBlue={setBlue}
-        alpha={alpha}
-        setAlpha={setAlpha}
-      />
+        <Card>
+          <CardHeader>
+            <CardTitle>Contrast</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <ContrastPanel
+              fg={colors.fg}
+              bg={colors.bg}
+              onFg={(css) => setColors({ fg: css })}
+              onBg={(css) => setColors({ bg: css })}
+              onSwap={swap}
+              cvd={cvd}
+            />
+          </CardBody>
+        </Card>
 
-      <SavedPalette
-        savedColors={savedColors}
-        exportPalette={exportPalette}
-        loadColor={loadColor}
-        deleteColor={deleteColor}
-      />
-    </Stack>
+        <Card>
+          <CardHeader>
+            <CardTitle>Palette</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <PalettePanel
+              base={base}
+              palette={palette}
+              onPaletteChange={setPalette}
+              scale={scale}
+              onScaleChange={setScale}
+              onPickBase={(css) => setColors({ base: css })}
+              cvd={cvd}
+              saved={settings.palettes}
+              onSavedChange={(palettes) => update({ palettes })}
+            />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Palette from an image</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <ExtractPanel onAdd={addToPalette} cvd={cvd} />
+          </CardBody>
+        </Card>
+      </Stack>
+    </Box>
   );
 };
 

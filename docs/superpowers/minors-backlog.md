@@ -2,7 +2,6 @@
 
 Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Append one line per item: `- <Part>: <file:line> <finding> -> <fix>`.
 
-- P6-G1: verify Rive artboard switching (rive.reset({artboard})) with a real multi-artboard .riv file (from P4-E B16)
 - Milestone e2e after P5-A2: confirm pdf-splitter (3) and encrypted (2) specs pass on a quiet machine (seen failing under load in P4-E)
 - P6-H dependency sweep: GitHub Dependabot reports 35 vulnerabilities on master (1 critical, 13 high, 15 moderate, 6 low); resolve or document each
 - P6-A3: src/shared/ui/menu.tsx DropdownMenuTrigger drops props such as aria-describedby, so a Tooltip cannot describe a menu trigger (DiagramCanvas Export uses aria-keyshortcuts instead) -> forward extra props from DropdownMenuTrigger to its child
@@ -113,3 +112,12 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P6-D: `pnpm why lodash` still lists lodash through dagre -> clears when 6-B removes dagre.
 - P6-D: Linux and win32 visual baselines for tool-code-formatter, tool-csv-viewer (desktop and phone), tool-random-data-generator and pages that list tools (home, hubs) were not generated in the cloud lane (no Docker, Chromium 1194) -> run the CI "Regenerate Linux visual baselines" dispatch and `pnpm test:visual --update-snapshots` on the controller.
 - P6-D: src/tools/code-formatter accepts kinds ['text'] and is cross-listed on the data hub, so a dropped .txt on /data now routes to the Formatter (drop-routing test updated) -> confirm this is wanted or drop `kinds` from its accepts rule.
+- P6-G1: src/shared/ui/alert.tsx AlertDescription renders a <p>, so lists and stacks inside it are invalid DOM (G1 moved them out) -> make it a div with paragraph spacing.
+- P6-G1: src/shared/ui/data-grid cells are text only, so per-row actions (Keep original, single download) live outside the grid in Image Compressor and EXIF -> add an action-cell column type.
+- P6-G1: src/tools/rive-animation-player/lib/{speed,animator}.ts read private runtime members (\_boundDraw, animator, file) behind null-safe readers -> re-check on every @rive-app upgrade (runtime.test.ts pins the version pair).
+- P6-G1: src/tools/rive-animation-player side tabs overflow the card by about 16 px at 1400 px wide -> let the tab list scroll or wrap.
+- P6-G1: src/tools/rive-animation-player/hooks/useRivePlayer.ts is 394 lines -> split the load path out before the next change.
+- P6-G1: src/app/tool.ts AcceptKind has no 'svg', so the Favicon Generator takes SVG only through its own drop zone, not from a hub drop -> add an svg kind with a sniff.
+- P6-G1: src/tools/exif-tool Keep ICC and Keep orientation are page state (no settings.ts) -> persist them with createToolSettings.
+- P6-G2: qr-code-generator must accept application/vnd.tools.colors+json ({fg,bg}) from Color & Contrast "Use colours in QR" (G1 sends it; the target is G2's).
+- P6-G1: test/fixtures/rive/vehicles.riv is Rive's public example file (no licence text in the file) -> controller to confirm it may stay, or swap for an own-made .riv.
