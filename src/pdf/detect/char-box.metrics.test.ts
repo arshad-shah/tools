@@ -79,13 +79,17 @@ describe('character-box form (EUTR5 page 7)', () => {
     );
   });
 
-  it('stays fast on a 37-page form', async () => {
-    const { bytes } = await makeCharBoxForm(37);
-    const pages = await detectAll(bytes);
-    const ms = pages.map((p) => p.ms).sort((a, b) => a - b);
-    expect(pages).toHaveLength(37);
-    // Shared CI runners are several times slower than a dev machine.
-    const budget = process.env.CI ? 200 : 40;
-    expect(ms[Math.floor(ms.length / 2)]).toBeLessThanOrEqual(budget);
-  });
+  it(
+    'stays fast on a 37-page form',
+    async () => {
+      const { bytes } = await makeCharBoxForm(37);
+      const pages = await detectAll(bytes);
+      const ms = pages.map((p) => p.ms).sort((a, b) => a - b);
+      expect(pages).toHaveLength(37);
+      // Shared CI runners are several times slower than a dev machine.
+      const budget = process.env.CI ? 200 : 40;
+      expect(ms[Math.floor(ms.length / 2)]).toBeLessThanOrEqual(budget);
+    },
+    process.env.CI ? 60_000 : 20_000,
+  );
 });
