@@ -86,6 +86,29 @@ describe('parseInstant', () => {
     expect(new Date(t.epochMs).toISOString()).toBe('2024-03-31T11:00:00.000Z');
   });
 
+  it('applies exact units to now itself, even in a repeated hour', () => {
+    // 06:30Z is the second 01:30 in New York (EST, after the fall-back).
+    const now = Date.UTC(2024, 10, 3, 6, 30);
+    const at = (t: string) =>
+      new Date(
+        parseInstant(t, { now, zone: 'America/New_York' }).epochMs,
+      ).toISOString();
+    expect(at('now - 2h')).toBe('2024-11-03T04:30:00.000Z');
+    expect(at('now + 0h')).toBe('2024-11-03T06:30:00.000Z');
+    expect(at('now + 90min')).toBe('2024-11-03T08:00:00.000Z');
+    // Calendar units keep the starting offset while it is still valid.
+    expect(at('now + 0d')).toBe('2024-11-03T06:30:00.000Z');
+    expect(at('now + 1d')).toBe('2024-11-04T06:30:00.000Z');
+    // The first 01:30 (EDT) keeps EDT too.
+    const early = Date.UTC(2024, 10, 3, 5, 30);
+    expect(
+      new Date(
+        parseInstant('now + 0d', { now: early, zone: 'America/New_York' })
+          .epochMs,
+      ).toISOString(),
+    ).toBe('2024-11-03T05:30:00.000Z');
+  });
+
   it('names the field that is out of range', () => {
     expect(() => parseInstant('2024-13-01', UTC)).toThrow(
       'Month 13 is out of range',
