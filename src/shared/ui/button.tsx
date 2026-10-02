@@ -129,6 +129,11 @@ export interface IconButtonProps extends Omit<
   tone?: keyof typeof iconButtonTone;
   loading?: boolean;
   asChild?: boolean;
+  /**
+   * desktop: the label shows as text beside the icon with a fine pointer on
+   * wide screens (6-H); icon only, with its accessible name, elsewhere.
+   */
+  showLabel?: 'desktop';
 }
 function renderIcon(icon: IconComponent | React.ReactNode, size: IconSize) {
   if (typeof icon === 'function') {
@@ -150,6 +155,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       loading,
       asChild,
       disabled,
+      showLabel,
       children,
       ...props
     },
@@ -160,6 +166,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       'p-0',
       iconButtonSize[size],
       typeof icon === 'function' && iconGlyphSize[size],
+      showLabel && 'desk:w-auto desk:gap-1.5 desk:px-2.5',
       tone && iconButtonTone[tone],
       className,
     );
@@ -184,6 +191,11 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         ) : (
           renderIcon(icon, iconSizeFor[size])
         )}
+        {showLabel ? (
+          <span aria-hidden className="hidden text-sm desk:inline">
+            {label}
+          </span>
+        ) : null}
       </button>
     );
   },

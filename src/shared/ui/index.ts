@@ -262,3 +262,4 @@ export * from './copy-button';
 export * from './switch-field';
 export * from './pane-tabs';
 export * from './use-pane-tab';
+export * from './nav-list';

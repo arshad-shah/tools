@@ -9,6 +9,8 @@
  */
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+/* 6-H: desktop = a fine pointer on a wide screen (labels beside icons). */
+@custom-variant desk (@media (pointer: fine) and (min-width: 1024px));
 
 /* Spec §4.2. Light is the default before the bootstrap script runs. */
 :root,

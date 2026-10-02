@@ -43,6 +43,12 @@ export interface ToolbarProps {
    * targets for the Focus and phone layouts (spec §13.2).
    */
   size?: ToolbarSize;
+  /**
+   * Horizontal bars: each tool's label shows beside its icon on desktop
+   * (fine pointer, 1024 px and up); icon only with a tooltip below that,
+   * where the row scrolls (6-H).
+   */
+  labelled?: boolean;
 }
 
 export type ToolbarSize = 'md' | 'lg';
@@ -69,6 +75,7 @@ export function Toolbar({
   orientation = 'horizontal',
   trailing,
   size = 'md',
+  labelled = false,
 }: ToolbarProps) {
   const flat = groups.flatMap((g) => g.items);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -122,6 +129,7 @@ export function Toolbar({
         icon={item.icon}
         variant="ghost"
         size={BUTTON_SIZE[size]}
+        showLabel={labelled && !vertical ? 'desktop' : undefined}
         tabIndex={item.id === active ? 0 : -1}
         aria-pressed={
           item.kind === 'toggle' ? Boolean(item.pressed) : undefined

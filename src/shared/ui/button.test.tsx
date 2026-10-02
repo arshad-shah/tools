@@ -56,3 +56,14 @@ describe('Button busy state', () => {
     expect(screen.getByRole('button').getAttribute('aria-busy')).toBe('true');
   });
 });
+
+describe('IconButton showLabel (6-H desktop labels)', () => {
+  it('adds a desktop-only text label and keeps the accessible name', () => {
+    render(<IconButton label="Export" icon={<span />} showLabel="desktop" />);
+    const b = screen.getByRole('button', { name: 'Export' });
+    const text = b.querySelector('span.desk\\:inline');
+    expect(text?.textContent).toBe('Export');
+    expect(text?.className).toContain('hidden');
+    expect(b.className).toContain('desk:w-auto');
+  });
+});
