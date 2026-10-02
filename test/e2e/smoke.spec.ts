@@ -96,6 +96,11 @@ for (const tool of ENABLED) {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     page.on('console', (m) => {
+      // Playwright's trace snapshotter tries to run script in every frame;
+      // the Markdown preview's srcdoc frame is sandboxed without scripts on
+      // purpose, so Chromium logs this refusal (proof the sandbox holds).
+      if (m.text().startsWith("Blocked script execution in 'about:srcdoc'"))
+        return;
       if (m.type() === 'error') errors.push(`console.error: ${m.text()}`);
     });
 

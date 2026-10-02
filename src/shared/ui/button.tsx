@@ -93,10 +93,17 @@ Button.displayName = 'Button';
 /* ------------------------------------------------------------------ *
  * IconButton — square, icon-only, requires a label
  * ------------------------------------------------------------------ */
+/** Square sizes and glyph sizes from tokens (pointer and width aware). */
 const iconButtonSize = {
-  sm: 'size-8',
-  md: 'size-9',
+  sm: 'size-(--control-icon-sm)',
+  md: 'size-(--control-icon-md)',
   lg: 'size-11',
+} as const;
+/** Glyph size for icon components (a rendered node keeps its own size). */
+const iconGlyphSize = {
+  sm: '[&>svg]:size-(--glyph-icon-sm)',
+  md: '[&>svg]:size-(--glyph-icon-md)',
+  lg: '[&>svg]:size-(--glyph-icon-lg)',
 } as const;
 const iconSizeFor: Record<keyof typeof iconButtonSize, IconSize> = {
   sm: 'sm',
@@ -152,6 +159,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       buttonVariants({ variant }),
       'p-0',
       iconButtonSize[size],
+      typeof icon === 'function' && iconGlyphSize[size],
       tone && iconButtonTone[tone],
       className,
     );

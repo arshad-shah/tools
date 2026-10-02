@@ -167,15 +167,15 @@ describe('Toolbar', () => {
 
   it('size lg gives every control a 44px target (review I11)', () => {
     const { rerender } = render(<Toolbar label="Tools" groups={groups()} />);
-    // Default keeps the compact 32px buttons.
+    // Default keeps the compact buttons (32px, 36px on desktop).
     expect(screen.getByRole('button', { name: 'Undo' }).className).toContain(
-      'size-8',
+      'size-(--control-icon-sm)',
     );
     rerender(<Toolbar label="Tools" groups={groups()} size="lg" />);
     for (const name of ['Undo', 'Pen', 'Rotate']) {
       const b = screen.getByRole('button', { name });
       expect(b.className).toContain('size-11');
-      expect(b.className).not.toContain('size-8');
+      expect(b.className).not.toContain('--control-icon-sm');
     }
     // The split button's menu trigger is 44px along the bar too.
     expect(
@@ -223,7 +223,6 @@ describe('FloatingPalette', () => {
       'size-11',
     );
     const grip = screen.getByRole('button', { name: /Move tools/ });
-    expect(grip.className).toContain('h-11');
-    expect(grip.className).toContain('w-11');
+    expect(grip.className).toContain('size-11');
   });
 });

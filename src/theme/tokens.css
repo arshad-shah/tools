@@ -347,3 +347,94 @@
   --color-chart-7: var(--chart-7);
   --color-chart-8: var(--chart-8);
 }
+
+/*
+ * 6-H: one-row scrolling bars (useScrollRow). The mask fades whichever end
+ * hides content (data-fade="start end"); the scrollbar stays hidden because
+ * the fade is the cue. Mask colours are alpha only.
+ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility scroll-fade-x {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--fade-start),
+    black calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+  &[data-fade~='start'] {
+    --fade-start: 1.5rem;
+  }
+  &[data-fade~='end'] {
+    --fade-end: 1.5rem;
+  }
+  &:dir(rtl) {
+    mask-image: linear-gradient(
+      to left,
+      transparent 0,
+      black var(--fade-start),
+      black calc(100% - var(--fade-end)),
+      transparent 100%
+    );
+  }
+}
+@utility scroll-fade-y {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--fade-start),
+    black calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+  &[data-fade~='start'] {
+    --fade-start: 1.5rem;
+  }
+  &[data-fade~='end'] {
+    --fade-end: 1.5rem;
+  }
+}
+
+/*
+ * 6-H: control sizes in px (the root font is 14px, so Tailwind's size-11 is
+ * only 38.5px). Icon buttons are one step larger with a fine pointer on
+ * desktop widths (sm 28 to 32px, md 32 to 36px, sm glyphs 14 to 16px) and at
+ * least 44px with a coarse pointer (touch and phones). --control-touch is
+ * the 44px minimum every touch target meets.
+ */
+:root {
+  --control-touch: 44px;
+  --control-icon-sm: 28px;
+  --control-icon-md: 32px;
+  --control-icon-lg: 44px;
+  --glyph-icon-sm: 14px;
+  --glyph-icon-md: 18px;
+  --glyph-icon-lg: 20px;
+}
+/* Step 11 (h-11, size-11, min-h-11) is the 44px touch size everywhere. */
+@theme {
+  --spacing-11: 44px;
+}
+@media (pointer: fine) and (min-width: 1024px) {
+  :root {
+    --control-icon-sm: 32px;
+    --control-icon-md: 36px;
+    --glyph-icon-sm: 16px;
+  }
+}
+@media (pointer: coarse) {
+  :root {
+    --control-icon-sm: 44px;
+    --control-icon-md: 44px;
+    --glyph-icon-sm: 18px;
+    --glyph-icon-md: 20px;
+  }
+}

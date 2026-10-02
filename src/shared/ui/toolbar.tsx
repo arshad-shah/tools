@@ -10,6 +10,7 @@ import {
 } from './menu';
 import { rovingIndex } from './roving';
 import { Tooltip } from './tooltip';
+import { useScrollRow } from './use-scroll-row';
 
 export interface ToolItem {
   id: string;
@@ -50,7 +51,10 @@ export type ToolbarSize = 'md' | 'lg';
 const BUTTON_SIZE = { md: 'sm', lg: 'lg' } as const;
 /** The split button's menu trigger: thin across the bar, full size along it. */
 const SPLIT_TRIGGER = {
-  md: { vertical: 'h-4 w-8', horizontal: 'h-8 w-4' },
+  md: {
+    vertical: 'h-4 w-(--control-icon-sm)',
+    horizontal: 'h-(--control-icon-sm) w-4',
+  },
   lg: { vertical: 'h-5 w-11', horizontal: 'h-11 w-5' },
 } as const;
 
@@ -74,6 +78,7 @@ export function Toolbar({
   const nodes = React.useRef(new Map<string, HTMLButtonElement>());
   const menus = React.useRef(new Map<string, HTMLButtonElement>());
   const vertical = orientation === 'vertical';
+  const scroller = useScrollRow<HTMLDivElement>(vertical ? 'y' : 'x');
 
   const focusItem = (id: string) => {
     setActiveId(id);
@@ -83,12 +88,8 @@ export function Toolbar({
   const openMenu = (id: string) => {
     const trigger = menus.current.get(id);
     if (!trigger) return;
+    // A programmatic click counts as keyboard: the menu focuses its first item.
     trigger.click();
-    requestAnimationFrame(() =>
-      trigger.parentElement
-        ?.querySelector<HTMLElement>('[role="menuitem"]')
-        ?.focus(),
-    );
   };
 
   const onKeyDown = (e: React.KeyboardEvent, item: ToolItem) => {
@@ -186,12 +187,17 @@ export function Toolbar({
 
   return (
     <div
+      ref={scroller}
       role="toolbar"
       aria-label={label}
       aria-orientation={orientation}
       className={cn(
-        'flex items-center gap-1',
-        vertical ? 'flex-col' : 'flex-row flex-wrap',
+        // One row (or column) that scrolls instead of wrapping: edge fades
+        // show there is more, the focused or active tool scrolls into view.
+        'flex min-h-0 min-w-0 max-w-full items-center gap-1 p-0.5 scrollbar-none',
+        vertical
+          ? 'max-h-full scroll-py-0.5 flex-col overflow-y-auto overscroll-y-contain scroll-fade-y snap-y snap-proximity'
+          : 'scroll-px-0.5 flex-row flex-nowrap overflow-x-auto overscroll-x-contain scroll-fade-x snap-x snap-proximity',
       )}
     >
       {groups.map((g, gi) => (
@@ -201,7 +207,7 @@ export function Toolbar({
               role="separator"
               aria-orientation={vertical ? 'horizontal' : 'vertical'}
               className={cn(
-                'bg-line',
+                'shrink-0 bg-line',
                 vertical ? 'my-1 h-px w-6' : 'mx-1 h-5 w-px',
               )}
             />
@@ -209,7 +215,10 @@ export function Toolbar({
           <div
             role="group"
             aria-label={g.label}
-            className={cn('flex items-center gap-0.5', vertical && 'flex-col')}
+            className={cn(
+              'flex shrink-0 snap-start items-center gap-0.5',
+              vertical && 'flex-col',
+            )}
           >
             {g.items.map(renderItem)}
           </div>
@@ -218,7 +227,7 @@ export function Toolbar({
       {trailing ? (
         <div
           className={cn(
-            'flex items-center gap-1',
+            'flex shrink-0 items-center gap-1',
             vertical ? 'mt-1' : 'ml-auto',
           )}
         >

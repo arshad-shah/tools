@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './menu';
+import { menuOf } from './menu-dom';
 import { Spinner } from './spinner';
 
 export interface SendToMenuProps {
@@ -45,11 +46,10 @@ async function targetsFor(
   return [];
 }
 
-/** The open menu's items (the menu is the trigger's sibling in DropdownMenu). */
+/** The open menu's items (the menu is portalled; the trigger controls it). */
 const items = (trigger: HTMLElement | null) => [
-  ...(trigger?.parentElement?.querySelectorAll<HTMLElement>(
-    '[role="menu"] [role="menuitem"]',
-  ) ?? []),
+  ...(menuOf(trigger)?.querySelectorAll<HTMLElement>('[role="menuitem"]') ??
+    []),
 ];
 
 /**

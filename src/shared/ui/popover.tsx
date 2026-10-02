@@ -1,21 +1,14 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/shared/lib/cn';
-import { placeFloating, type Align, type Side } from './position';
-
-type VirtualAnchor = { getBoundingClientRect(): DOMRect };
+import type { Align, Side } from './position';
+import { isAnchorRef, useFloating, type FloatingAnchor } from './use-floating';
 
 export interface PopoverProps {
   open: boolean;
   onOpenChange(open: boolean): void;
   /** An element ref, or a virtual anchor such as a selection rectangle. */
-  anchor: React.RefObject<HTMLElement | null> | VirtualAnchor;
+  anchor: FloatingAnchor;
   side?: Side;
   align?: Align;
   offset?: number;
@@ -42,15 +35,6 @@ const PADDING = 8;
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-const isRef = (
-  a: PopoverProps['anchor'],
-): a is React.RefObject<HTMLElement | null> => 'current' in a;
-
-const anchorRect = (a: PopoverProps['anchor']): DOMRect | null =>
-  isRef(a)
-    ? (a.current?.getBoundingClientRect() ?? null)
-    : a.getBoundingClientRect();
-
 /**
  * Anchored floating surface with collision handling (spec §4.6, no Radix).
  * Portals to body; Esc and outside pointerdown close it and focus returns to
@@ -71,61 +55,22 @@ export function Popover({
   className,
   children,
 }: PopoverProps) {
-  const surface = useRef<HTMLDivElement>(null);
   const focused = useRef(false);
-  const [pos, setPos] = useState<{ x: number; y: number; side: Side } | null>(
-    null,
-  );
+  const {
+    ref: surface,
+    layout: pos,
+    style,
+  } = useFloating({ open, anchor, side, align, offset, padding: PADDING });
 
   const close = useCallback(() => {
     onOpenChange(false);
-    if (isRef(anchor)) anchor.current?.focus();
+    if (isAnchorRef(anchor)) anchor.current?.focus();
   }, [anchor, onOpenChange]);
 
-  const measure = useCallback(() => {
-    const el = surface.current;
-    const a = anchorRect(anchor);
-    if (!el || !a) return;
-    const viewport = {
-      x: 0,
-      y: 0,
-      width: window.innerWidth,
-      height: window.innerHeight,
-    };
-    setPos(
-      placeFloating(
-        { x: a.left, y: a.top, width: a.width, height: a.height },
-        { width: el.offsetWidth, height: el.offsetHeight },
-        viewport,
-        { side, align, offset, padding: PADDING },
-      ),
-    );
-  }, [anchor, side, align, offset]);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    measure();
-    const el = surface.current;
-    const ro =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(measure)
-        : null;
-    if (el) ro?.observe(el);
-    window.addEventListener('resize', measure);
-    window.addEventListener('scroll', measure, true);
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('scroll', measure, true);
-    };
-  }, [open, measure]);
-
-  // Closing forgets the position, so the next open measures afresh and
-  // focuses again.
+  // Closing forgets the focus marker, so the next open focuses again.
   useLayoutEffect(() => {
     if (!open) return;
     return () => {
-      setPos(null);
       focused.current = false;
     };
   }, [open]);
@@ -141,20 +86,20 @@ export function Popover({
     const target =
       initialFocus?.current ?? el.querySelector<HTMLElement>(FOCUSABLE) ?? el;
     target.focus();
-  }, [open, placed, initialFocus, autoFocus]);
+  }, [open, placed, initialFocus, autoFocus, surface]);
 
   useEffect(() => {
     if (!open || !dismissOnOutside) return;
     const onPointerDown = (e: PointerEvent) => {
       const t = e.target as Node;
       if (surface.current?.contains(t)) return;
-      if (isRef(anchor) && anchor.current?.contains(t)) return;
+      if (isAnchorRef(anchor) && anchor.current?.contains(t)) return;
       onOpenChange(false);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () =>
       document.removeEventListener('pointerdown', onPointerDown, true);
-  }, [open, anchor, onOpenChange, dismissOnOutside]);
+  }, [open, anchor, onOpenChange, dismissOnOutside, surface]);
 
   if (!open || typeof document === 'undefined') return null;
 
@@ -200,17 +145,10 @@ export function Popover({
       onKeyDown={onKeyDown}
       onBlur={onBlur}
       className={cn(
-        'fixed z-popover rounded-xl bg-surface p-3 text-fg shadow-e2 outline-none',
+        'fixed z-popover overflow-auto rounded-xl bg-surface p-3 text-fg shadow-e2 outline-none',
         className,
       )}
-      style={{
-        left: pos?.x ?? 0,
-        top: pos?.y ?? 0,
-        // Before the first measurement: transparent and inert, but still in
-        // the layout and focusable (visibility:hidden would block focus).
-        opacity: pos ? 1 : 0,
-        pointerEvents: pos ? undefined : 'none',
-      }}
+      style={style}
     >
       {children}
     </div>,

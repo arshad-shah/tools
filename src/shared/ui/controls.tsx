@@ -27,7 +27,7 @@ export const Switch: React.FC<SwitchProps> = ({
     disabled={disabled}
     onClick={() => onCheckedChange(!checked)}
     className={cn(
-      'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-fast',
+      'relative inline-flex h-6 w-[2.75rem] shrink-0 items-center rounded-full border transition-colors duration-fast',
       'disabled:cursor-not-allowed disabled:opacity-50',
       checked
         ? 'border-accent-indicator bg-accent'

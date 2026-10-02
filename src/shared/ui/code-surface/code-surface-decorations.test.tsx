@@ -25,7 +25,7 @@ describe('CodeSurface decorations', () => {
     expect(tip?.getAttribute('role')).toBe('tooltip');
     expect(tip?.textContent).toBe('Unexpected token');
     fireEvent.pointerEnter(icon.parentElement!);
-    expect(container.querySelector('[data-tooltip-bubble]')?.textContent).toBe(
+    expect(document.querySelector('[data-tooltip-bubble]')?.textContent).toBe(
       'Unexpected token',
     );
     const underline = container.querySelector(

@@ -44,7 +44,7 @@ export function FloatingPalette({
       onKeyDown={onKeyDown}
       data-side={side}
       className={cn(
-        'fixed top-1/2 z-toolbar flex -translate-y-1/2 flex-col items-center gap-1 rounded-xl bg-surface p-1.5 shadow-e3',
+        'fixed top-1/2 z-toolbar flex max-h-[calc(100dvh-7rem)] -translate-y-1/2 flex-col items-center gap-1 rounded-xl bg-surface p-1.5 shadow-e3',
         side === 'left' ? 'left-3' : 'right-3',
         offset && 'opacity-90',
       )}
@@ -79,8 +79,8 @@ export function FloatingPalette({
           setOffset(null);
         }}
         className={cn(
-          'flex cursor-grab touch-none items-center justify-center rounded-md text-fg-subtle outline-none transition-colors duration-fast hover:bg-surface-2 hover:text-fg focus-visible:ring-2 focus-visible:ring-focus active:cursor-grabbing',
-          size === 'lg' ? 'h-11 w-11' : 'h-5 w-8',
+          'flex shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-fg-subtle outline-none transition-colors duration-fast hover:bg-surface-2 hover:text-fg focus-visible:ring-2 focus-visible:ring-focus active:cursor-grabbing',
+          size === 'lg' ? 'size-11' : 'h-5 w-(--control-icon-sm)',
         )}
       >
         <IconGripVertical size="sm" className="rotate-90" />

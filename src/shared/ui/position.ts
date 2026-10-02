@@ -105,3 +105,76 @@ export function placeFloating(
   const c = clamp(cross, lo, hi);
   return vertical ? { x: c, y: main, side } : { x: main, y: c, side };
 }
+
+export interface FloatingLayout {
+  x: number;
+  y: number;
+  side: Side;
+  /** Room on the chosen side, so the surface can wrap or scroll instead of clipping. */
+  maxWidth: number;
+  maxHeight: number;
+  /**
+   * Where an arrow sits along the surface's cross axis (px from its left or
+   * top edge): under the anchor's centre, kept `arrowPadding` from the
+   * corners. Follows the anchor after a shift.
+   */
+  arrow: number;
+}
+
+/**
+ * `placeFloating` plus what a positioned surface needs to stay whole: the
+ * space available on the chosen side and the arrow offset. With `rtl`,
+ * start and end alignment mirror on the top and bottom sides.
+ */
+export function layoutFloating(
+  anchor: Rect,
+  floating: { width: number; height: number },
+  viewport: Rect,
+  opts: {
+    side: Side;
+    align: Align;
+    offset: number;
+    padding: number;
+    rtl?: boolean;
+    arrowPadding?: number;
+  },
+): FloatingLayout {
+  const vertical0 = opts.side === 'top' || opts.side === 'bottom';
+  const align: Align =
+    opts.rtl && vertical0 && opts.align !== 'center'
+      ? opts.align === 'start'
+        ? 'end'
+        : 'start'
+      : opts.align;
+  const placed = placeFloating(anchor, floating, viewport, { ...opts, align });
+  const { side } = placed;
+  const vertical = side === 'top' || side === 'bottom';
+  const p = opts.padding;
+  const room: Record<Side, number> = {
+    top: anchor.y - opts.offset - (viewport.y + p),
+    bottom:
+      viewport.y +
+      viewport.height -
+      p -
+      (anchor.y + anchor.height + opts.offset),
+    left: anchor.x - opts.offset - (viewport.x + p),
+    right:
+      viewport.x + viewport.width - p - (anchor.x + anchor.width + opts.offset),
+  };
+  const maxWidth = Math.max(0, vertical ? viewport.width - 2 * p : room[side]);
+  const maxHeight = Math.max(
+    0,
+    vertical ? room[side] : viewport.height - 2 * p,
+  );
+  const size = vertical ? floating.width : floating.height;
+  const centre = vertical
+    ? anchor.x + anchor.width / 2 - placed.x
+    : anchor.y + anchor.height / 2 - placed.y;
+  const pad = Math.min(opts.arrowPadding ?? 8, size / 2);
+  return {
+    ...placed,
+    maxWidth,
+    maxHeight,
+    arrow: clamp(centre, pad, size - pad),
+  };
+}

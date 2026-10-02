@@ -55,20 +55,48 @@ describe('Tooltip, WCAG 1.4.13 (review M16)', () => {
     );
     const button = screen.getByRole('button');
     const wrapper = button.parentElement!;
-    const bubble = () => utils.container.querySelector('[data-tooltip-bubble]');
-    return { button, wrapper, bubble };
+    const bubble = () => document.querySelector('[data-tooltip-bubble]');
+    return { button, wrapper, bubble, utils };
   };
 
   it('shows on hover and stays while the pointer is over the bubble', () => {
-    const { wrapper, bubble } = setup();
+    vi.useFakeTimers();
+    const { wrapper, bubble, utils } = setup();
     expect(bubble()).toBeNull();
     fireEvent.pointerEnter(wrapper);
     expect(bubble()).not.toBeNull();
-    // The bubble is inside the wrapper and accepts the pointer.
-    expect(wrapper.contains(bubble())).toBe(true);
+    // Portalled out of the trigger (scrolling bars never clip it) and
+    // accepts the pointer.
+    expect(utils.container.contains(bubble())).toBe(false);
     expect(bubble()!.className).not.toContain('pointer-events-none');
+    // Crossing the gap to the bubble keeps it open.
     fireEvent.pointerLeave(wrapper);
+    fireEvent.pointerEnter(bubble()!);
+    act(() => vi.advanceTimersByTime(500));
+    expect(bubble()).not.toBeNull();
+    // Leaving the bubble closes it after the grace period.
+    fireEvent.pointerLeave(bubble()!);
+    act(() => vi.advanceTimersByTime(500));
     expect(bubble()).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('flips and shifts inside the viewport, with the arrow on the trigger', () => {
+    const { wrapper, bubble } = setup();
+    // A trigger in the top-left corner: no room above, none to the left.
+    vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 32, 32),
+    );
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(120);
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(24);
+    fireEvent.pointerEnter(wrapper);
+    const b = bubble() as HTMLElement;
+    expect(b.dataset.side).toBe('bottom');
+    expect(parseFloat(b.style.left)).toBe(8);
+    expect(parseFloat(b.style.top)).toBeGreaterThanOrEqual(32);
+    const arrow = b.querySelector<HTMLElement>('[data-tooltip-arrow]')!;
+    // The trigger's centre (16px) sits 8px into the shifted bubble.
+    expect(parseFloat(arrow.style.left)).toBe(8);
   });
 
   it('shows on focus and Escape dismisses it without moving focus', () => {
