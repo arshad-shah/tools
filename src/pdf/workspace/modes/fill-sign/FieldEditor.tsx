@@ -31,6 +31,8 @@ export interface FieldEditorProps {
   inline?: { fontPx: number; spacingPx: number };
   /** Esc keeps the text (commits) instead of discarding the edit. */
   escapeKeeps?: boolean;
+  /** Esc with escapeKeeps: default onCommit. */
+  onEscape?(value: string): void;
   /** Changes when the text bar's Done is pressed: keep the text and close. */
   finishNonce?: number;
   /** Done: default onCommit. */
@@ -40,7 +42,8 @@ export interface FieldEditorProps {
 /**
  * The inline editor inside a field (spec §8.5): a single-line Input, a
  * Textarea for multiline fields, a date input, or a choice list. Enter
- * commits, Esc cancels, Tab and Shift+Tab commit and move. A warning shows
+ * commits, Esc cancels (or keeps the text, with escapeKeeps), Tab and
+ * Shift+Tab commit and move. A warning shows
  * when the text will not fit at 6pt.
  */
 export function FieldEditor({
@@ -52,6 +55,7 @@ export function FieldEditor({
   onSettings,
   inline,
   escapeKeeps = false,
+  onEscape,
   finishNonce,
   onFinish,
 }: FieldEditorProps) {
@@ -89,7 +93,7 @@ export function FieldEditor({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      if (escapeKeeps) onCommit(out());
+      if (escapeKeeps) (onEscape ?? onCommit)(out());
       else onCancel();
     } else if (
       e.key === 'Enter' &&

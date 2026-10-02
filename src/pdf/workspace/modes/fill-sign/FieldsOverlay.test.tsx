@@ -120,7 +120,19 @@ describe('FieldsOverlay', () => {
     expect(document.activeElement).toBe(next);
   });
 
-  it('Esc cancels without filling', () => {
+  it('Esc keeps the typed text and closes without moving on', () => {
+    const model = setup();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Text field: Surname, empty' }),
+    );
+    const input = screen.getByRole('textbox', { name: 'Surname' });
+    fireEvent.change(input, { target: { value: 'Doe' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(fills(model)).toEqual(['Doe']);
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
+  it('Esc on an untouched field adds nothing', () => {
     const model = setup();
     fireEvent.click(
       screen.getByRole('button', { name: 'Text field: Surname, empty' }),
@@ -181,5 +193,37 @@ describe('text settings still settling', () => {
       spacing: 2,
     });
     expect(fillSign.get().styling).toBeNull();
+  });
+});
+
+describe('a new text box being typed', () => {
+  it('has resize handles that move its box', () => {
+    setup();
+    act(() =>
+      fillSign.set({
+        draft: {
+          pageId: 'ckpt0:0',
+          rect: { x: 100, y: 400, width: 120, height: 20 },
+          kind: 'text',
+          style: { size: 11, color: '#000000', spacing: 0, comb: 0 },
+        },
+      }),
+    );
+    const frame = screen.getByRole('group', { name: 'Resize new text box' });
+    expect(frame.querySelectorAll('[data-handle]')).toHaveLength(8);
+    act(() => {
+      fireEvent.keyDown(frame, { key: 'ArrowRight', altKey: true });
+      fireEvent.keyUp(frame, { key: 'ArrowRight', altKey: true });
+    });
+    expect(fillSign.get().draft?.rect).toEqual({
+      x: 100,
+      y: 400,
+      width: 121,
+      height: 20,
+    });
+    // Back to typing after the resize.
+    expect(document.activeElement).toBe(
+      screen.getByRole('textbox', { name: 'Text' }),
+    );
   });
 });

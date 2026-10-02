@@ -1,5 +1,6 @@
-import { FieldBox, type OverlayTransform } from '@/shared/ui';
-import type { PageRef } from '@/pdf/doc/types';
+import { useRef, useState } from 'react';
+import { FieldBox, SelectionFrame, type OverlayTransform } from '@/shared/ui';
+import type { Box, PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { placeFree } from './actions';
 import { FieldEditor } from './FieldEditor';
@@ -11,7 +12,11 @@ import { caretMetrics, remember } from './text-style';
 /** The key of the click-anywhere box being typed (not in the document yet). */
 export const DRAFT_KEY = 'draft';
 
-/** A new text or date box being typed: committed as a free fill on Enter. */
+/**
+ * A new text or date box being typed: committed as a free fill on Enter.
+ * Its selection frame resizes or moves the box while it is typed; the
+ * caret goes back to the text after each change.
+ */
 export function DraftBox({
   ctx,
   page,
@@ -32,12 +37,15 @@ export function DraftBox({
     s.typing?.key === DRAFT_KEY ? s.typing.value : '',
   );
   const finish = useFillSign((s) => s.finish);
+  const [preview, setPreview] = useState<Box | null>(null);
+  const editor = useRef<HTMLDivElement>(null);
   if (!draft) return null;
+  const rect = preview ?? draft.rect;
   const field: ViewField = {
     key: DRAFT_KEY,
     page,
     pageNumber,
-    rect: draft.rect,
+    rect,
     type: draft.kind,
     label: draft.kind === 'date' ? 'Date' : 'Text',
     autofill: null,
@@ -63,6 +71,10 @@ export function DraftBox({
     remember(ctx.doc.state.id, draft.style);
     ctx.selection.selectObjects([placed.opId]);
   };
+  const backToText = () =>
+    editor.current
+      ?.querySelector<HTMLElement>('input, textarea, select')
+      ?.focus({ preventScroll: true });
   return (
     <>
       <FieldValue
@@ -72,45 +84,60 @@ export function DraftBox({
         transform={transform}
         quarter={quarter}
       />
-      <FieldBox
+      <SelectionFrame
         transform={transform}
-        box={draft.rect}
-        state="focused"
-        label={fieldName(field)}
-        inTabOrder
-        onActivate={() => {}}
-      >
-        <FieldEditor
-          field={field}
-          inline={
-            draft.kind === 'text'
-              ? caretMetrics(
-                  typing,
-                  draft.rect,
-                  draft.style,
-                  Math.hypot(transform.a, transform.b) || 1,
-                  quarter,
-                )
-              : undefined
-          }
-          escapeKeeps
-          finishNonce={finish}
-          onFinish={(v) => {
-            // Done: keep the text, close the editor and the bar.
-            commit(v);
-            ctx.selection.clear();
-          }}
-          onDraft={(v) =>
-            fillSign.set({ typing: { key: DRAFT_KEY, value: v } })
-          }
-          onSettings={() =>
-            fillSign.set({ barFocus: fillSign.get().barFocus + 1 })
-          }
-          onCommit={commit}
-          onCancel={() => fillSign.set({ draft: null, typing: null })}
-          onTab={(v) => commit(v)}
-        />
-      </FieldBox>
+        box={rect}
+        resizable
+        label={`Resize new ${draft.kind === 'date' ? 'date' : 'text'} box`}
+        onChange={setPreview}
+        onCommit={(box) => {
+          setPreview(null);
+          const cur = fillSign.get().draft;
+          if (cur) fillSign.set({ draft: { ...cur, rect: box } });
+          backToText();
+        }}
+      />
+      <div ref={editor} className="contents">
+        <FieldBox
+          transform={transform}
+          box={rect}
+          state="focused"
+          label={fieldName(field)}
+          inTabOrder
+          onActivate={() => {}}
+        >
+          <FieldEditor
+            field={field}
+            inline={
+              draft.kind === 'text'
+                ? caretMetrics(
+                    typing,
+                    rect,
+                    draft.style,
+                    Math.hypot(transform.a, transform.b) || 1,
+                    quarter,
+                  )
+                : undefined
+            }
+            escapeKeeps
+            finishNonce={finish}
+            onFinish={(v) => {
+              // Done: keep the text, close the editor and the bar.
+              commit(v);
+              ctx.selection.clear();
+            }}
+            onDraft={(v) =>
+              fillSign.set({ typing: { key: DRAFT_KEY, value: v } })
+            }
+            onSettings={() =>
+              fillSign.set({ barFocus: fillSign.get().barFocus + 1 })
+            }
+            onCommit={commit}
+            onCancel={() => fillSign.set({ draft: null, typing: null })}
+            onTab={(v) => commit(v)}
+          />
+        </FieldBox>
+      </div>
     </>
   );
 }
