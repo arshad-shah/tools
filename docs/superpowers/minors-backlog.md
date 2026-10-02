@@ -121,3 +121,7 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P6-G1: src/tools/exif-tool Keep ICC and Keep orientation are page state (no settings.ts) -> persist them with createToolSettings.
 - P6-G2: qr-code-generator must accept application/vnd.tools.colors+json ({fg,bg}) from Color & Contrast "Use colours in QR" (G1 sends it; the target is G2's).
 - P6-G1: test/fixtures/rive/vehicles.riv is Rive's public example file (no licence text in the file) -> controller to confirm it may stay, or swap for an own-made .riv.
+- P6-G1: verify Rive artboard switching (rive.reset({artboard})) with a real multi-artboard .riv file (from P4-E B16)
+- Milestone e2e after P5-A2: confirm pdf-splitter (3) and encrypted (2) specs pass on a quiet machine (seen failing under load in P4-E)
+- P5-G: src/pdf/workspace/ModeHost.test.tsx 'renders the toolbar and registers commands only while active' flaked in CI on PR #69 (expected [] to include 'Organize command'); passes locally -> make the command-registration assertion wait (findBy/waitFor) and check registry isolation between tests
+- P6 cloud sessions: gitleaks generic-api-key trips on test rows like key: '...'; brief says build from parts — remind in any future prompt
