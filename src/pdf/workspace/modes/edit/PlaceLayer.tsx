@@ -3,7 +3,7 @@ import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
 import { OverlayLayer, ShapeLayer, type Shape } from '@/shared/ui';
 import { toPage, type Viewport } from '@/pdf/doc/geometry';
-import type { Box, PageRef } from '@/pdf/doc/types';
+import type { Box, OpId, PageRef } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';
 import { addImage, addShape, openPrompt, TEXT_BOX } from './place';
 import { getEditUi, type EditTool } from './ui-store';
@@ -21,7 +21,8 @@ const boxOf = (a: Pt, b: Pt): Box => ({
 /**
  * Click or drag to place: text (click: a default box, drag: that box),
  * image, shapes, and cover and replace (drag over text; the cover colour is
- * sampled from the rendered page).
+ * sampled from the rendered page). A placed image or shape goes to
+ * `onPlaced`, so the mode selects it and returns to Select.
  */
 export function PlaceLayer({
   doc,
@@ -31,6 +32,7 @@ export function PlaceLayer({
   viewport,
   width,
   height,
+  onPlaced,
 }: {
   doc: DocumentApi;
   page: PageRef;
@@ -39,6 +41,7 @@ export function PlaceLayer({
   viewport: Viewport;
   width: number;
   height: number;
+  onPlaced?: (id: OpId) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<[Pt, Pt] | null>(null);
@@ -65,6 +68,9 @@ export function PlaceLayer({
     const dragged =
       Math.hypot(end[0] - start[0], end[1] - start[1]) * scale >= MIN_DRAG;
     const box = boxOf(start, end);
+    const placed = (ops: readonly { id: OpId }[]) => {
+      if (ops.length) onPlaced?.(ops[0].id);
+    };
     switch (tool) {
       case 'text':
         openPrompt({
@@ -80,10 +86,10 @@ export function PlaceLayer({
           doc.announce('Choose an image first');
           return;
         }
-        addImage(doc, page.id, start, dragged ? box : null);
+        placed(addImage(doc, page.id, start, dragged ? box : null));
         return;
       case 'shape':
-        if (dragged) addShape(doc, page.id, start, end);
+        if (dragged) placed(addShape(doc, page.id, start, end));
         return;
       case 'cover':
         if (!dragged) return;

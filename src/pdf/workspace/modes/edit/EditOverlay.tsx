@@ -113,6 +113,10 @@ export function EditOverlay(props: PageOverlayProps) {
           viewport={viewport}
           width={width}
           height={height}
+          onPlaced={(id) => {
+            selection.selectObjects([id]);
+            props.tool.set(null);
+          }}
         />
       ) : null}
       {prompt ? (
