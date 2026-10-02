@@ -11,15 +11,21 @@ export interface SqlInsertOptions {
   columns?: string[];
 }
 
-/** One identifier, quoted per dialect; `schema.table` keeps its dot. */
+/**
+ * One identifier, quoted whole per dialect: a column `a.b` (flattenObject
+ * output) stays one name.
+ */
 export function quoteIdent(name: string, dialect: SqlDialect): string {
+  if (dialect === 'mysql') return `\`${name.replace(/`/g, '``')}\``;
+  if (dialect === 'mssql') return `[${name.replace(/]/g, ']]')}]`;
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+/** A table name: `schema.table` is split on dots, each part quoted. */
+export function quoteTable(name: string, dialect: SqlDialect): string {
   return name
     .split('.')
-    .map((part) => {
-      if (dialect === 'mysql') return `\`${part.replace(/`/g, '``')}\``;
-      if (dialect === 'mssql') return `[${part.replace(/]/g, ']]')}]`;
-      return `"${part.replace(/"/g, '""')}"`;
-    })
+    .map((part) => quoteIdent(part, dialect))
     .join('.');
 }
 
@@ -49,7 +55,7 @@ export function toSqlInsert(
     throw new ToolError('INVALID_INPUT', 'The batch size must be at least 1');
   const cols = columns ?? columnsOf(rows);
   if (rows.length === 0 || cols.length === 0) return '';
-  const head = `INSERT INTO ${quoteIdent(table, dialect)} (${cols
+  const head = `INSERT INTO ${quoteTable(table, dialect)} (${cols
     .map((c) => quoteIdent(c, dialect))
     .join(', ')}) VALUES`;
   const out: string[] = [];

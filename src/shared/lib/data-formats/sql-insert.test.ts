@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { toSqlInsert } from './sql-insert';
+import { flattenObject } from './csv-write';
+import { quoteIdent, quoteTable, toSqlInsert } from './sql-insert';
 
 const rows = [{ name: "O'Brien", ok: true, n: 1.5, x: null }];
 
@@ -41,5 +42,26 @@ describe('toSqlInsert', () => {
     expect(() => toSqlInsert(rows, { table: ' ', dialect: 'mysql' })).toThrow(
       /table name/,
     );
+  });
+});
+
+describe('dotted names', () => {
+  const rows = [flattenObject({ user: { name: 'a', id: 1 } })];
+  it.each([
+    ['postgres', 'INSERT INTO "app"."people" ("user.name", "user.id")'],
+    ['sqlite', 'INSERT INTO "app"."people" ("user.name", "user.id")'],
+    ['mysql', 'INSERT INTO `app`.`people` (`user.name`, `user.id`)'],
+    ['mssql', 'INSERT INTO [app].[people] ([user.name], [user.id])'],
+  ] as const)(
+    '%s quotes flattened column names whole and splits only the table',
+    (dialect, head) => {
+      expect(
+        toSqlInsert(rows, { table: 'app.people', dialect }).split('\n')[0],
+      ).toBe(`${head} VALUES`);
+    },
+  );
+  it('exposes both quoting helpers', () => {
+    expect(quoteIdent('a.b', 'postgres')).toBe('"a.b"');
+    expect(quoteTable('s.t', 'mssql')).toBe('[s].[t]');
   });
 });
