@@ -1,3 +1,4 @@
+import json from './json';
 import ping from './ping';
 
 /**
@@ -8,6 +9,7 @@ import ping from './ping';
  */
 export const textHandlers = {
   ...ping,
+  ...json,
 };
 
 export type TextHandlers = typeof textHandlers;

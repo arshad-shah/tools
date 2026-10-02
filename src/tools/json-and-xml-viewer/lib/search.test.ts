@@ -1,17 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { matchingLines } from './search';
+import { fromValue } from './doc-model';
+import { searchDoc } from './search';
 
-describe('matchingLines', () => {
-  it('returns [] for an empty term', () => {
-    expect(matchingLines('a\nb', '')).toEqual([]);
+describe('searchDoc', () => {
+  const doc = fromValue({ a: 'f(x)', b: [1, 'beta'], 'c(': true });
+
+  it('is literal by default and matches keys or values', () => {
+    expect([...searchDoc(doc, '(').ids]).toEqual(['$.a', "$['c(']"]);
+    expect([...searchDoc(doc, 'BETA').ids]).toEqual(['$.b[1]']);
+    expect(searchDoc(doc, '').ids.size).toBe(0);
   });
 
-  it('returns the 1-based lines containing the term, case-insensitively', () => {
-    expect(matchingLines('Foo\nbar\nfoo bar\n', 'FOO')).toEqual([1, 3]);
+  it('reports an invalid regex without throwing', () => {
+    expect(searchDoc(doc, '(', { regex: true })).toEqual({
+      ids: new Set(),
+      error: 'Invalid regex',
+    });
   });
 
-  it('treats regex-special characters literally', () => {
-    expect(matchingLines('f(x)\n[1]\n.*', '(')).toEqual([1]);
-    expect(matchingLines('f(x)\n[1]\n.*', '.*')).toEqual([3]);
+  it('matches regexes against keys', () => {
+    expect([...searchDoc(doc, '^a', { regex: true }).ids]).toEqual(['$.a']);
   });
 });

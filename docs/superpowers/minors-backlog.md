@@ -65,3 +65,8 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P6-F: src/tools/cron-builder/components/NextRuns.tsx computes next runs from page open and does not refresh while the page stays open -> refresh on a minute tick if users keep it open.
 - P6-F: test/e2e-csp/csp.spec.ts calculator check was moved to the Grapher but not run in the cloud (separate CSP config) -> run it on the controller.
 - P6-F: src/pdf/workspace/ModeHost.test.tsx failed once under a full parallel vitest run and passed alone and with --maxWorkers=2 -> watch for flakiness.
+- P6-B: src/app (tool page shell) every tool page is wider than a 390 px phone (json-xml 493 px, csv 469 px scrollWidth), so phone screenshots scroll sideways -> find the min-content culprit in the tool page header or top bar and let it wrap
+- P6-B: test/visual (app.visual.ts tool-json-and-xml-viewer-{light,dark}.png and the new json-and-xml-viewer.visual.ts) baselines need regenerating on the controller (Linux in the pinned container, plus win32); the cloud container has no Docker daemon
+- P6-B: src/tools/json-and-xml-viewer/lib/query.ts JSONPath runs on the main thread; spec 4.4 lists a `json.query` worker method -> move it to the text worker if queries over 20 MB documents feel slow
+- P6-B: src/tools/json-and-xml-viewer/hooks/useViewerCommands.ts Focus search is `/` (single key, never while typing) rather than Mod+F, which CodeSurface already uses for find in the editor
+- P6-B: test/e2e/tools/json-and-xml-viewer.spec.ts the 20 MB scroll check tolerates one long task over 100 ms (the cloud container measured one at 176 ms); the 2 s parse budget is recorded as an annotation, not asserted (cloud end-to-end open-and-parse was 6 to 17 s, dominated by the file transfer)

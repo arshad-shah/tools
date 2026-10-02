@@ -15,7 +15,11 @@ import { hotkeyLabel, matchesHotkey } from '@/shared/lib/hotkeys';
 import { notify } from '@/shared/lib/notify';
 import { Alert } from './alert';
 import { Badge } from './badge';
-import { CodeSurface, type CodeMarker } from './code-surface';
+import {
+  CodeSurface,
+  type CodeMarker,
+  type CodeSurfaceHandle,
+} from './code-surface';
 import type { LanguageId } from '@/shared/lib/syntax/tokenize';
 import { MetaList } from './meta-list';
 import {
@@ -79,6 +83,10 @@ export interface TextInputPanelProps {
   minHeight?: number | string;
   maxHeight?: number | string;
   className?: string;
+  /** The editor, for selecting a range from outside (source sync). */
+  editorRef?: React.Ref<CodeSurfaceHandle>;
+  /** Caret or selection moves in the editor (offsets into `value`). */
+  onSelectionChange?(start: number, end: number): void;
 }
 
 /**
@@ -111,6 +119,8 @@ export function TextInputPanel({
   minHeight = 160,
   maxHeight,
   className,
+  editorRef,
+  onSelectionChange,
 }: TextInputPanelProps) {
   const labelId = useId();
   const [error, setError] = useState<ToolError | null>(null);
@@ -292,6 +302,8 @@ export function TextInputPanel({
         </Alert>
       ) : null}
       <CodeSurface
+        ref={editorRef}
+        onSelectionChange={onSelectionChange}
         value={value}
         onChange={readOnly ? undefined : (v) => accept_(v, 'The text')}
         language={language}
