@@ -45,12 +45,12 @@ async function targetsFor(
   return [];
 }
 
-/** The open menu's items (the menu is the trigger's sibling in DropdownMenu). */
-const items = (trigger: HTMLElement | null) => [
-  ...(trigger?.parentElement?.querySelectorAll<HTMLElement>(
-    '[role="menu"] [role="menuitem"]',
-  ) ?? []),
-];
+/** The open menu's items (the trigger names the portaled menu it controls). */
+const items = (trigger: HTMLElement | null) => {
+  const id = trigger?.getAttribute('aria-controls');
+  const menu = id ? document.getElementById(id) : null;
+  return [...(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+};
 
 /**
  * "Send to" menu button (spec §4.3): lists the other enabled tools that take

@@ -167,15 +167,15 @@ describe('Toolbar', () => {
 
   it('size lg gives every control a 44px target (review I11)', () => {
     const { rerender } = render(<Toolbar label="Tools" groups={groups()} />);
-    // Default keeps the compact 32px buttons.
+    // Default keeps the compact buttons (sized by the sm token).
     expect(screen.getByRole('button', { name: 'Undo' }).className).toContain(
-      'size-8',
+      'size-(--icon-button-sm)',
     );
     rerender(<Toolbar label="Tools" groups={groups()} size="lg" />);
     for (const name of ['Undo', 'Pen', 'Rotate']) {
       const b = screen.getByRole('button', { name });
       expect(b.className).toContain('size-11');
-      expect(b.className).not.toContain('size-8');
+      expect(b.className).not.toContain('--icon-button-sm');
     }
     // The split button's menu trigger is 44px along the bar too.
     expect(
