@@ -220,7 +220,7 @@ describe('TOOLS', () => {
     const ids = TOOLS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
     // One per src/tools/*/index.ts at this commit.
-    expect(ids).toHaveLength(35);
+    expect(ids).toHaveLength(36);
     // Exact: an extra or missing manifest fails.
     expect([...ids].sort()).toEqual(
       [
@@ -252,6 +252,7 @@ describe('TOOLS', () => {
         'pdf-watermark',
         'pomodoro',
         'qr-code-generator',
+        'qr-scanner',
         'random-data-generator',
         'regex-tester',
         'rive-animation-player',

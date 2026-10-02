@@ -17,7 +17,11 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
-import type { CollectionType, FolderItemType, RequestItemType } from '../types';
+import type { Folder, SavedRequest } from '../lib/collections-migrate';
+
+type CollectionType = Folder;
+type FolderItemType = Folder;
+type RequestItemType = SavedRequest;
 
 const methodColor = (
   method: string,
@@ -37,6 +41,9 @@ const methodColor = (
       return 'neutral';
   }
 };
+
+const methodOf = (r: SavedRequest) =>
+  r.request.mode === 'graphql' ? 'GQL' : r.request.method;
 
 interface CollectionItemProps {
   item: RequestItemType | FolderItemType;
@@ -115,8 +122,12 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
         <CardBody>
           <Inline justify="between" align="center" gap="2" wrap>
             <Inline align="center" gap="2">
-              <Badge variant="solid" tone={methodColor(item.method)} size="xs">
-                {item.method}
+              <Badge
+                variant="solid"
+                tone={methodColor(methodOf(item))}
+                size="xs"
+              >
+                {methodOf(item)}
               </Badge>
               <Text size="sm" weight="medium" className="truncate">
                 {item.name}

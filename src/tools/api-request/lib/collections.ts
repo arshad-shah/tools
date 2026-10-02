@@ -1,10 +1,13 @@
 import { ToolError } from '@/shared/lib/errors';
 import { newId } from '@/shared/lib/id';
-import type { CollectionType, FolderItemType, RequestItemType } from '../types'; // PR C moves this to ./types
+import type { Folder, SavedRequest } from './collections-migrate';
 
-type Node = RequestItemType | FolderItemType;
+type Node = SavedRequest | Folder;
+type CollectionType = Folder;
+type RequestItemType = SavedRequest;
 
-export const DEFAULT_COLLECTIONS: CollectionType[] = [
+/** The starter collection in the v1 (flat) shape; settings migrate it. */
+export const DEFAULT_COLLECTIONS: unknown[] = [
   {
     id: '1',
     type: 'folder',
@@ -81,4 +84,27 @@ export function deleteNode<T extends Node>(nodes: T[], id: string): T[] {
     .map((n) =>
       n.type === 'folder' ? { ...n, children: deleteNode(n.children, id) } : n,
     );
+}
+
+/** Replaces the saved request `id` anywhere in the tree. */
+export function replaceRequest<T extends Node>(
+  nodes: T[],
+  req: SavedRequest,
+): T[] {
+  return nodes.map((n) => {
+    if (n.type === 'request') return (n.id === req.id ? req : n) as T;
+    return { ...n, children: replaceRequest(n.children, req) };
+  });
+}
+
+/** Finds a saved request by id. */
+export function findRequest(nodes: Node[], id: string): SavedRequest | null {
+  for (const n of nodes) {
+    if (n.type === 'request' && n.id === id) return n;
+    if (n.type === 'folder') {
+      const hit = findRequest(n.children, id);
+      if (hit) return hit;
+    }
+  }
+  return null;
 }

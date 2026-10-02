@@ -1,299 +1,304 @@
-import React, { useMemo, useState } from 'react';
-import {
-  IconCheckCheck,
-  IconClipboard,
-  IconCopy,
-  IconExternalLink,
-} from '@/shared/ui/icons';
-
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
+import { ToolError, toToolError } from '@/shared/lib/errors';
+import { sendTo, useHandoff } from '@/shared/lib/handoff';
+import { notify } from '@/shared/lib/notify';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Badge,
   Button,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
-  Code,
-  EmptyState,
-  EmptyStateDescription,
-  EmptyStateTitle,
-  Grid,
-  IconButton,
   Inline,
   Input,
+  Label,
+  ShareButton,
   Stack,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  Text,
 } from '@/shared/ui';
-import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
-import { toToolError } from '@/shared/lib/errors';
-import { notify } from '@/shared/lib/notify';
-import { parseUrl } from './lib/parse-url';
+import {
+  IconCheck,
+  IconClipboard,
+  IconCopy,
+  IconQrCode,
+  IconSend,
+  IconType,
+} from '@/shared/ui/icons';
+import { AnatomyStrip } from './components/AnatomyStrip';
+import { CleanPanel } from './components/CleanPanel';
+import { DomainPanel } from './components/DomainPanel';
+import { ParamsEditor } from './components/ParamsEditor';
+import { PartsEditor } from './components/PartsEditor';
+import { asUriList, toHttpClient, urlFromHandoff } from './lib/actions';
+import { anatomy, reuseIds } from './lib/anatomy';
+import { buildUrl } from './lib/build';
+import { parseUrlModel, type UrlModel } from './lib/model';
+import { urlSettings } from './settings';
+import {
+  parseUrlShare,
+  secretQueryKeys,
+  toUrlShare,
+  URL_SHARE_VERSION,
+} from './share';
 
-type FieldColor =
-  | 'accent'
-  | 'success'
-  | 'warning'
-  | 'danger'
-  | 'info'
-  | 'neutral';
+const SAMPLE =
+  'https://user@www.example.com:8080/path/to/page.html?query=string&foo=bar&utm_source=news#section';
 
-const URLParser: React.FC = () => {
-  const [url, setUrl] = useState(
-    'https://user:pass@www.example.com:8080/path/to/page.html?query=string&foo=bar#hash',
-  );
-  const { parsed, isValid } = useMemo(() => parseUrl(url), [url]);
+type Parsed =
+  | { model: UrlModel; error: null }
+  | { model: null; error: ToolError };
+
+function parse(text: string, base: string, prev: UrlModel | null): Parsed {
+  try {
+    const model = parseUrlModel(text, base);
+    if (prev) model.params = reuseIds(prev.params, model.params);
+    return { model, error: null };
+  } catch (e) {
+    return { model: null, error: toToolError(e, 'Not a valid URL') };
+  }
+}
+
+export default function UrlInspector() {
+  const navigate = useNavigate();
+  const [settings, update] = urlSettings.useSettings();
+  const [text, setText] = useState(SAMPLE);
+  const [parsed, setParsed] = useState<Parsed>(() => parse(SAMPLE, '', null));
   const { copiedKey, copy } = useClipboard();
-  const [activeTab, setActiveTab] = useState('visualization');
+  const [tab, setTab] = useState('parts');
 
-  const handleCopy = (text: string, key: string) => {
-    if (text) void copy(text, key);
+  const share = useShareableState({
+    toolId: 'url-parser',
+    version: URL_SHARE_VERSION,
+    parse: parseUrlShare,
+    select: () => toUrlShare(text),
+  });
+
+  const fromText = (t: string, base = settings.base) => {
+    setText(t);
+    setParsed((p) => parse(t, base, p.model));
   };
 
-  const handlePaste = async () => {
+  // Hydrate once from a share link or a hand-off.
+  const handoff = useHandoff((p) => urlFromHandoff(p) !== null);
+  const incoming = share.loaded ?? handoff;
+  const [hydrated, setHydrated] = useState<unknown>(null);
+  if (incoming && hydrated !== incoming) {
+    // Adjusting state while rendering: runs once per new source.
+    setHydrated(incoming);
+    const url = share.loaded?.url ?? (handoff ? urlFromHandoff(handoff) : null);
+    if (url) fromText(url);
+  }
+
+  const fromModel = (m: UrlModel) => {
+    const url = buildUrl(m);
+    setText(url);
+    setParsed(parse(url, settings.base, m));
+  };
+
+  const model = parsed.model;
+  const segments = useMemo(() => (model ? anatomy(model) : []), [model]);
+  const secrets = useMemo(() => secretQueryKeys(text), [text]);
+
+  const paste = async () => {
     try {
-      setUrl(await readClipboardText());
+      fromText(await readClipboardText());
     } catch (e) {
-      notify.error(toToolError(e));
+      notify.error(toToolError(e, 'Could not read the clipboard'));
     }
   };
 
-  const urlInput = (
-    <Stack gap="2">
-      <Input
-        type="url"
-        value={url}
-        onChange={setUrl}
-        placeholder="Enter a URL to parse…"
-        invalid={!isValid}
-        leadingSlot={<IconExternalLink size="md" />}
-        clearable
-        aria-label="URL to parse"
-      />
-      <Inline justify="end">
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={<IconClipboard size="sm" />}
-          onClick={handlePaste}
-        >
-          Paste from clipboard
-        </Button>
-      </Inline>
-    </Stack>
-  );
-
-  if (!parsed) {
-    return (
-      <Card>
-        <CardBody>
-          <Stack gap="6">
-            {urlInput}
-            <Alert status="danger">
-              <AlertTitle>Invalid URL</AlertTitle>
-              <AlertDescription>
-                Please enter a valid URL including a protocol (e.g.{' '}
-                <Code>https://example.com</Code>).
-              </AlertDescription>
-            </Alert>
-          </Stack>
-        </CardBody>
-      </Card>
-    );
-  }
-
-  const fields: { label: string; value: string; color: FieldColor }[] = [
-    { label: 'Protocol', value: parsed.protocol, color: 'accent' },
-    { label: 'Username', value: parsed.username, color: 'info' },
-    { label: 'Password', value: parsed.password, color: 'info' },
-    { label: 'Hostname', value: parsed.hostname, color: 'success' },
-    { label: 'Port', value: parsed.port, color: 'danger' },
-    { label: 'Path', value: parsed.pathname, color: 'accent' },
-    { label: 'Query', value: parsed.search, color: 'warning' },
-    { label: 'Fragment', value: parsed.hash, color: 'warning' },
-  ];
-
-  const allComponents = [
-    { label: 'Full URL', value: url },
-    { label: 'Origin', value: parsed.origin },
-    { label: 'Protocol', value: parsed.protocol },
-    { label: 'Username', value: parsed.username },
-    { label: 'Password', value: parsed.password },
-    { label: 'Host', value: parsed.host },
-    { label: 'Hostname', value: parsed.hostname },
-    { label: 'Port', value: parsed.port },
-    { label: 'Pathname', value: parsed.pathname },
-    { label: 'Search', value: parsed.search },
-    { label: 'Hash', value: parsed.hash },
-  ];
-
-  const visualBreakdown = (
-    <Stack gap="6">
-      <Card>
-        <CardBody>
-          <Stack gap="2">
-            {fields
-              .filter((f) => f.value)
-              .map((f) => (
-                <Stack key={f.label} gap="1">
-                  <Badge variant="soft" tone={f.color} size="sm" pill>
-                    {f.label}
-                  </Badge>
-                  <Code block>{f.value}</Code>
-                </Stack>
-              ))}
-          </Stack>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle as="h3">URL components</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <Grid max={2} gap="3">
-            {fields
-              .filter((f) => f.value)
-              .map((f) => (
-                <Card key={f.label} className="bg-surface-2">
-                  <CardBody>
-                    <Stack gap="2">
-                      <Inline justify="between" align="center" gap="2" wrap>
-                        <Badge variant="soft" tone={f.color} size="xs">
-                          {f.label}
-                        </Badge>
-                        <IconButton
-                          variant="ghost"
-                          size="sm"
-                          label={`Copy ${f.label}`}
-                          icon={
-                            copiedKey === f.label ? (
-                              <IconCheckCheck size="sm" />
-                            ) : (
-                              <IconCopy size="sm" />
-                            )
-                          }
-                          onClick={() => handleCopy(f.value, f.label)}
-                        />
-                      </Inline>
-                      <Code block>{f.value}</Code>
-                    </Stack>
-                  </CardBody>
-                </Card>
-              ))}
-          </Grid>
-        </CardBody>
-      </Card>
-    </Stack>
-  );
-
-  const componentsTable = (
-    <Stack gap="2">
-      {allComponents.map((item) => (
-        <Card key={item.label}>
-          <CardBody>
-            <Inline justify="between" align="center" gap="3" wrap>
-              <Stack gap="1">
-                <Text size="sm" weight="semibold">
-                  {item.label}
-                </Text>
-                {item.value ? (
-                  <Code block>{item.value}</Code>
-                ) : (
-                  <Text size="sm" tone="subtle">
-                    (empty)
-                  </Text>
-                )}
-              </Stack>
-              {item.value && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={
-                    copiedKey === `table-${item.label}` ? (
-                      <IconCheckCheck size="sm" />
-                    ) : (
-                      <IconCopy size="sm" />
-                    )
-                  }
-                  onClick={() => handleCopy(item.value, `table-${item.label}`)}
-                >
-                  {copiedKey === `table-${item.label}` ? 'Copied' : 'Copy'}
-                </Button>
-              )}
-            </Inline>
-          </CardBody>
-        </Card>
-      ))}
-    </Stack>
-  );
-
-  const queryParams =
-    parsed.searchParams.length > 0 ? (
-      <Stack gap="2">
-        {parsed.searchParams.map(([key, value], index) => (
-          <Card key={`${key}-${index}`}>
-            <CardBody>
-              <Inline justify="between" align="center" gap="3" wrap>
-                <Stack gap="1">
-                  <Text size="sm" weight="semibold">
-                    {key}
-                  </Text>
-                  <Code block>{value}</Code>
-                </Stack>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={
-                    copiedKey === `param-${key}` ? (
-                      <IconCheckCheck size="sm" />
-                    ) : (
-                      <IconCopy size="sm" />
-                    )
-                  }
-                  onClick={() => handleCopy(value, `param-${key}`)}
-                >
-                  {copiedKey === `param-${key}` ? 'Copied' : 'Copy'}
-                </Button>
-              </Inline>
-            </CardBody>
-          </Card>
-        ))}
-      </Stack>
-    ) : (
-      <EmptyState>
-        <EmptyStateTitle>No query parameters</EmptyStateTitle>
-        <EmptyStateDescription>
-          This URL doesn&apos;t contain any query parameters.
-        </EmptyStateDescription>
-      </EmptyState>
-    );
+  useToolCommands('url-parser', [
+    {
+      id: 'copy',
+      label: 'Copy URL',
+      shortcut: 'Mod+Shift+C',
+      run: () => void copy(text, 'url'),
+    },
+    {
+      id: 'clear',
+      label: 'Clear',
+      shortcut: 'Mod+Shift+X',
+      run: () => fromText(''),
+    },
+    { id: 'sample', label: 'Load sample', run: () => fromText(SAMPLE) },
+    {
+      id: 'share',
+      label: 'Copy share link',
+      shortcut: 'Mod+Shift+S',
+      enabled: share.canShare && !!model,
+      run: () => void share.share(),
+    },
+  ]);
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="6">
-          {urlInput}
-          <Tabs value={activeTab} onValueChange={setActiveTab} variant="line">
-            <TabsList aria-label="URL view">
-              <TabsTrigger value="visualization">Visual breakdown</TabsTrigger>
-              <TabsTrigger value="components">URL components</TabsTrigger>
-              <TabsTrigger value="queryParams">Query parameters</TabsTrigger>
-            </TabsList>
-            <TabsContent value="visualization">{visualBreakdown}</TabsContent>
-            <TabsContent value="components">{componentsTable}</TabsContent>
-            <TabsContent value="queryParams">{queryParams}</TabsContent>
-          </Tabs>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+    <Stack gap="4">
+      <Card>
+        <CardBody>
+          <Stack gap="3">
+            <Label htmlFor="url-input">URL</Label>
+            <Input
+              id="url-input"
+              value={text}
+              onChange={(v) => fromText(v)}
+              invalid={!!parsed.error}
+              spellCheck={false}
+              className="font-mono"
+              placeholder="https://example.com/path?query=value"
+              aria-describedby={parsed.error ? 'url-error' : undefined}
+            />
+            {parsed.error && (
+              <Alert status="danger" id="url-error">
+                <AlertDescription>{parsed.error.message}</AlertDescription>
+              </Alert>
+            )}
+            <Stack gap="1">
+              <Label htmlFor="url-base">
+                Base URL for relative input (optional)
+              </Label>
+              <Input
+                id="url-base"
+                value={settings.base}
+                onChange={(v) => {
+                  update({ base: v });
+                  setParsed((p) => parse(text, v, p.model));
+                }}
+                spellCheck={false}
+                placeholder="https://example.com/docs/"
+              />
+            </Stack>
+            <Inline gap="2" wrap>
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<IconClipboard size="sm" />}
+                onClick={() => void paste()}
+              >
+                Paste
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={
+                  copiedKey === 'url' ? (
+                    <IconCheck size="sm" />
+                  ) : (
+                    <IconCopy size="sm" />
+                  )
+                }
+                onClick={() => void copy(text, 'url')}
+                disabled={!text}
+              >
+                Copy URL
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<IconSend size="sm" />}
+                disabled={!model || !/^https?:$/.test(model.protocol)}
+                onClick={() =>
+                  model && sendTo(navigate, 'api-request', toHttpClient(model))
+                }
+              >
+                Send to HTTP Client
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<IconQrCode size="sm" />}
+                disabled={!model}
+                onClick={() =>
+                  sendTo(navigate, 'qr-code-generator', asUriList(text))
+                }
+              >
+                Make QR
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<IconType size="sm" />}
+                disabled={!text}
+                onClick={() =>
+                  sendTo(navigate, 'url-encoder-decoder', {
+                    kind: 'text',
+                    mime: 'text/plain',
+                    sourceTool: 'url-parser',
+                    text,
+                  })
+                }
+              >
+                Open in Text Encoder
+              </Button>
+              <ShareButton share={share} label="Share link" size="sm" />
+            </Inline>
+            {secrets.length > 0 && (
+              <Alert status="warning">
+                <AlertTitle>This URL may hold secrets</AlertTitle>
+                <AlertDescription>
+                  Query keys that look secret: {secrets.join(', ')}. Check
+                  before sharing the link; any password in the user info is
+                  removed from shared links.
+                </AlertDescription>
+              </Alert>
+            )}
+          </Stack>
+        </CardBody>
+      </Card>
 
-export default URLParser;
+      {model && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle as="h2">Anatomy</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <AnatomyStrip segments={segments} />
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Tabs value={tab} onValueChange={setTab} variant="soft">
+                <TabsList aria-label="URL sections">
+                  <TabsTrigger value="parts">Parts</TabsTrigger>
+                  <TabsTrigger value="params">
+                    Query ({model.params.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="domain">Domain</TabsTrigger>
+                  <TabsTrigger value="clean">Clean URL</TabsTrigger>
+                </TabsList>
+                <TabsContent value="parts">
+                  <PartsEditor model={model} onChange={fromModel} />
+                </TabsContent>
+                <TabsContent value="params">
+                  <ParamsEditor
+                    rows={model.params}
+                    onChange={(params) => fromModel({ ...model, params })}
+                  />
+                </TabsContent>
+                <TabsContent value="domain">
+                  <DomainPanel hostname={model.hostnamePunycode} />
+                </TabsContent>
+                <TabsContent value="clean">
+                  <CleanPanel
+                    url={text}
+                    patterns={settings.tracking}
+                    onPatternsChange={(tracking) => update({ tracking })}
+                    onApply={(url) => fromText(url)}
+                  />
+                </TabsContent>
+              </Tabs>
+            </CardBody>
+          </Card>
+        </>
+      )}
+    </Stack>
+  );
+}

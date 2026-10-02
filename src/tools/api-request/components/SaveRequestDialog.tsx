@@ -11,7 +11,9 @@ import {
   Select,
   Stack,
 } from '@/shared/ui';
-import type { CollectionType } from '../types';
+import type { Folder } from '../lib/collections-migrate';
+
+type CollectionType = Folder;
 
 interface SaveRequestDialogProps {
   open: boolean;

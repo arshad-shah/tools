@@ -5,16 +5,22 @@ import {
   DEFAULT_COLLECTIONS,
   deleteNode,
 } from './collections';
-import type { CollectionType, RequestItemType } from '../types';
+import {
+  migrateCollections,
+  toStoredRequest,
+  type Folder,
+  type SavedRequest,
+} from './collections-migrate';
+import { findRequest, replaceRequest } from './collections';
+import { emptyRequest } from './model';
 
-const req = (id: string): RequestItemType => ({
+const req = (id: string): SavedRequest => ({
   id,
   type: 'request',
   name: id,
-  method: 'GET',
-  url: '',
+  request: toStoredRequest(emptyRequest()),
 });
-const tree = (): CollectionType[] => [
+const tree = (): Folder[] => [
   {
     id: 'f1',
     type: 'folder',
@@ -72,7 +78,14 @@ describe('collections', () => {
     });
   });
   it('seeds one default collection', () => {
-    expect(DEFAULT_COLLECTIONS[0].name).toBe('My Collection');
-    expect(DEFAULT_COLLECTIONS[0].children).toHaveLength(2);
+    const [first] = migrateCollections(DEFAULT_COLLECTIONS);
+    expect(first.name).toBe('My Collection');
+    expect(first.children).toHaveLength(2);
+  });
+  it('finds and replaces a saved request at any depth', () => {
+    const renamed = { ...req('r2'), name: 'Renamed' };
+    const after = replaceRequest(tree(), renamed);
+    expect(findRequest(after, 'r2')?.name).toBe('Renamed');
+    expect(findRequest(after, 'nope')).toBeNull();
   });
 });

@@ -45,4 +45,16 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/JetBrains/JetBrainsMono',
     note: 'Monospace font',
   },
+  {
+    name: 'zxing-wasm',
+    licence: 'MIT',
+    url: 'https://github.com/Sec-ant/zxing-wasm',
+    note: 'Barcode decoding fallback (zxing-cpp, Apache-2.0); wasm served from this site',
+  },
+  {
+    name: 'tldts',
+    licence: 'MIT',
+    url: 'https://github.com/remusao/tldts',
+    note: 'Registrable domain split; embeds the Public Suffix List (MPL-2.0, unmodified, https://publicsuffix.org)',
+  },
 ];
