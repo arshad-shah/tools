@@ -32,7 +32,11 @@ export const widthOf = (c: GridColumn<unknown>): number =>
   clampWidth(c, c.width ?? DEFAULT_WIDTH);
 
 export const clampWidth = (c: GridColumn<unknown>, w: number): number =>
-  Math.round(Math.min(MAX_WIDTH, Math.max(c.minWidth ?? MIN_WIDTH, w)));
+  clampTo(w, c.minWidth ?? MIN_WIDTH);
+
+/** `w` kept between `min` and MAX_WIDTH, in whole px. */
+export const clampTo = (w: number, min: number): number =>
+  Math.round(Math.min(MAX_WIDTH, Math.max(min, w)));
 
 /** Shown columns, pinned ones first, otherwise in the given order. */
 export function visibleColumns<R>(columns: readonly GridColumn<R>[]) {
@@ -47,31 +51,46 @@ export interface ColumnLayout {
   /** Left edge of each visible column in px. */
   offsets: number[];
   widths: number[];
+  /** The narrowest each column may be resized to. */
+  mins: number[];
   /** Number of leading pinned columns. */
   pinned: number;
   pinnedWidth: number;
   total: number;
 }
 
-export function columnLayout<R>(cols: readonly GridColumn<R>[]): ColumnLayout {
+/**
+ * Offsets of `cols`. `sized` gives the final widths and minimums (from
+ * `fitWidths`); without it each column takes its own width, clamped.
+ */
+export function columnLayout<R>(
+  cols: readonly GridColumn<R>[],
+  sized?: { widths: readonly number[]; mins: readonly number[] },
+): ColumnLayout {
   const offsets: number[] = [];
   const widths: number[] = [];
+  const mins: number[] = [];
   let x = 0;
   let pinned = 0;
-  for (const c of cols) {
+  cols.forEach((c, i) => {
     offsets.push(x);
-    const w = widthOf(c as GridColumn<unknown>);
+    const w = sized ? sized.widths[i] : widthOf(c as GridColumn<unknown>);
     widths.push(w);
+    mins.push(sized ? sized.mins[i] : (c.minWidth ?? MIN_WIDTH));
     x += w;
     if (c.pinned === 'start') pinned++;
-  }
+  });
   const pinnedWidth = pinned > 0 ? offsets[pinned - 1] + widths[pinned - 1] : 0;
-  return { offsets, widths, pinned, pinnedWidth, total: x };
+  return { offsets, widths, mins, pinned, pinnedWidth, total: x };
 }
+
+/** Grids with this many columns or fewer mount them all (no windowing). */
+export const MOUNT_ALL_COLUMNS = 16;
 
 /**
  * Indices of the visible columns to mount: every pinned column, then the
- * scrollable columns under the viewport plus `overscan` on each side.
+ * scrollable columns under the viewport plus `overscan` on each side. Small
+ * grids mount every column, so all their text stays in the page.
  */
 export function columnWindow(
   layout: ColumnLayout,
@@ -80,6 +99,7 @@ export function columnWindow(
   overscan = 2,
 ): number[] {
   const n = layout.widths.length;
+  if (n <= MOUNT_ALL_COLUMNS) return Array.from({ length: n }, (_, i) => i);
   const out: number[] = [];
   for (let i = 0; i < layout.pinned; i++) out.push(i);
   if (n === layout.pinned) return out;

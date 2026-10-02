@@ -55,44 +55,38 @@ const COLUMNS: GridColumn<Order>[] = [
     header: 'Order',
     accessor: (r) => r.id,
     pinned: 'start',
-    width: 120,
   },
   {
     id: 'customer',
     header: 'Customer',
     accessor: (r) => r.customer,
-    width: 180,
   },
-  { id: 'country', header: 'Country', accessor: (r) => r.country, width: 140 },
+  { id: 'country', header: 'Country', accessor: (r) => r.country },
   {
     id: 'placed',
     header: 'Placed',
     accessor: (r) => isoDay(r.placed),
     type: 'date',
-    width: 170,
   },
   {
     id: 'items',
     header: 'Items',
     accessor: (r) => r.items,
     type: 'number',
-    width: 130,
   },
   {
     id: 'total',
     header: 'Total',
     accessor: (r) => r.total,
     type: 'number',
-    width: 140,
   },
   {
     id: 'paid',
     header: 'Paid',
     accessor: (r) => r.paid,
     type: 'boolean',
-    width: 130,
   },
-  { id: 'note', header: 'Note', accessor: (r) => r.note, width: 200 },
+  { id: 'note', header: 'Note', accessor: (r) => r.note },
 ];
 
 const BAD_FILTERS: GridFilters = {
@@ -139,7 +133,6 @@ export function GridSection() {
               <dd>{isoDay(r.placed)}</dd>
             </dl>
           )}
-          height={320}
           className="w-full"
         />
       </Row>
@@ -159,7 +152,6 @@ export function GridSection() {
           rowKey={(r) => r.id}
           ariaLabel="Orders with no match"
           emptyLabel="No orders match these filters"
-          height={140}
           className="w-full"
         />
       </Row>

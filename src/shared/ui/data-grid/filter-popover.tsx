@@ -8,6 +8,7 @@ import { Popover } from '../popover';
 import { SegmentedControl, type SegmentedOption } from '../segmented-control';
 import type { ColumnType } from './columns';
 import { compileRegex, isFilterActive, type ColumnFilter } from './filters';
+import { REVEAL } from './reveal';
 
 type Kind = ColumnFilter['kind'];
 
@@ -82,7 +83,7 @@ export function FilterPopover({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={cn('size-7 shrink-0', active && 'bg-accent-soft')}
+        className={cn('size-7 shrink-0', active ? 'bg-accent-soft' : REVEAL)}
       />
       <Popover
         open={open}

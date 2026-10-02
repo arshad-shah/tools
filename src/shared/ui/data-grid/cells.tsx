@@ -73,7 +73,9 @@ export function RowCells<R>(p: RowCellsProps<R>) {
             onCancel={p.onCancel}
           />
         ) : (
-          <span className="truncate">{highlight(text, p.search)}</span>
+          <span className="truncate" onPointerEnter={titleIfClipped(text)}>
+            {highlight(text, p.search)}
+          </span>
         )}
       </div>
     );
@@ -87,6 +89,13 @@ export function RowCells<R>(p: RowCellsProps<R>) {
     );
   });
 }
+
+/** Shows the full text as a tooltip only when the ellipsis cuts it. */
+const titleIfClipped =
+  (text: string) => (e: React.PointerEvent<HTMLSpanElement>) => {
+    const el = e.currentTarget;
+    el.title = el.scrollWidth > el.clientWidth ? text : '';
+  };
 
 function CellEditor({
   label,
