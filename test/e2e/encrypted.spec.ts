@@ -14,7 +14,6 @@ const TOOLS = [
   'pdf-sign',
   'pdf-fill-form',
   'pdf-compressor',
-  'pdf-metadata',
   'pdf-protect',
 ];
 
@@ -24,10 +23,6 @@ const PROCESSED: Record<string, (page: Page) => Promise<void>> = {
     expect(
       page.getByText('This PDF has no fillable form fields.'),
     ).toBeVisible(),
-  'pdf-metadata': (page) =>
-    expect(page.getByLabel('Title', { exact: true })).toHaveValue(
-      'Locked fixture',
-    ),
 };
 const rendered = (page: Page) =>
   expect(page.locator('canvas[data-rendered="true"]').first()).toBeAttached();

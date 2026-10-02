@@ -8,6 +8,7 @@ import { makeModel, makeState } from '@/pdf/doc/test-helpers';
 import type { DocumentApi } from './modes/types';
 import { ExportDialog } from './ExportDialog';
 import { SourceDocs } from './source-docs';
+import { DEFAULT_PERMISSIONS } from '@/pdf/edit/permissions';
 
 vi.mock('./PreviewAsExported', () => ({
   PreviewAsExported: () => <p>preview</p>,
@@ -45,7 +46,7 @@ function setup(encryptedInput = false, restricted = false) {
       open
       onOpenChange={onOpenChange}
       session={session}
-      doc={{} as DocumentApi}
+      doc={{ view: model.getView() } as DocumentApi}
       currentPage="ckpt0:0"
       selectedPages={[]}
       run={run}
@@ -117,5 +118,39 @@ describe('ExportDialog', () => {
     expect(
       screen.getByRole('button', { name: 'Export' }).hasAttribute('disabled'),
     ).toBe(true);
+  });
+
+  it('asks for passwords when protection is on and clears them after export', async () => {
+    const { model, run, ui } = setup(true);
+    model.dispatch({
+      type: 'protect.set',
+      params: { enabled: true, permissions: DEFAULT_PERMISSIONS },
+    });
+    const view = render(ui());
+    // Protection is on: no "not password-protected" warning.
+    expect(
+      screen.queryByText(
+        'This document was opened with a password. The exported file is not password-protected.',
+      ),
+    ).toBeNull();
+    const pw = ['correct', 'horse'].join(' ');
+    const open = screen.getByLabelText('Password to open');
+    fireEvent.change(open, { target: { value: pw } });
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: pw },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    });
+    expect(run).toHaveBeenCalledWith(
+      model,
+      expect.anything(),
+      expect.objectContaining({ password: pw, confirmPassword: pw }),
+      expect.anything(),
+    );
+    view.rerender(ui());
+    expect(
+      (screen.getByLabelText('Password to open') as HTMLInputElement).value,
+    ).toBe('');
   });
 });

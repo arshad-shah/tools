@@ -2,6 +2,8 @@ import type { ComponentType } from 'react';
 import type { ExportOptions } from '@/pdf/doc/export-stages';
 import type { DocumentApi } from './modes/types';
 import { MetadataOption, PagesOption } from './ExportOptionFields';
+import { PROTECT_EXPORT_SECTION } from './modes/protect/export-section';
+import { LinearizeOption } from './modes/optimize/LinearizeOption';
 
 export interface ExportOptionSection {
   id: string;
@@ -13,6 +15,8 @@ export interface ExportOptionSection {
     options: ExportOptions;
     set(patch: Partial<ExportOptions>): void;
   }>;
+  /** Option keys cleared once an export succeeds (passwords, G25). */
+  secret?: string[];
 }
 
 /**
@@ -33,5 +37,13 @@ export const EXPORT_OPTION_SECTIONS: ExportOptionSection[] = [
     title: 'Document properties',
     visible: () => true,
     Component: MetadataOption,
+  },
+  PROTECT_EXPORT_SECTION,
+  {
+    id: 'linearize',
+    order: 30,
+    title: 'Fast web view',
+    visible: () => true,
+    Component: LinearizeOption,
   },
 ];

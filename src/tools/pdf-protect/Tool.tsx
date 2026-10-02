@@ -31,7 +31,7 @@ import {
   validatePasswords,
   type PasswordInput,
   type PermissionChoices,
-} from './lib/permissions';
+} from '@/pdf/edit/permissions';
 import { usePermissionSettings } from './store';
 import { useHandoff } from '@/shared/lib/handoff';
 

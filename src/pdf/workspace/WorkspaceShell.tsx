@@ -280,6 +280,10 @@ export function WorkspaceShell({
   const actions: WorkspaceActions = {
     session,
     runJob: job.run,
+    unlock: onUnlock,
+    goToPage: (id) => {
+      if (pageIds.includes(id)) goTo(pageIds.indexOf(id));
+    },
     async openAsNew(next) {
       const saved = !!session.db && saving.status !== 'off';
       if (

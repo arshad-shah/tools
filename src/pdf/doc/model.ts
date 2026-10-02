@@ -13,6 +13,9 @@ import type {
 } from './types';
 import { foldView } from './view';
 
+/** Structure ops that bring their own source file (dropped with them). */
+const SOURCE_OPS = new Set(['page.mergeIn', 'page.insertImages']);
+
 export interface DocumentState {
   id: string;
   name: string;
@@ -280,7 +283,7 @@ export class DocumentModel {
     );
     const dropped = this.state.checkpoints.filter((c) => ids.has(c.id));
     const mergedInTail = tail
-      .filter((o) => o.type === 'page.mergeIn')
+      .filter((o) => SOURCE_OPS.has(o.type))
       .map((o) => (o.params as { sourceId: SourceId }).sourceId);
     const droppedSources = [
       ...new Set([...dropped.map((c) => c.sourceId), ...mergedInTail]),

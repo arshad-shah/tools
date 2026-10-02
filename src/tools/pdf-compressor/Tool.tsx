@@ -42,7 +42,7 @@ import {
   type CompressSettings,
   type PresetId,
 } from '@/pdf/compress';
-import { CompressReportView } from './components/CompressReportView';
+import { CompressReportView } from '@/pdf/components/CompressReport';
 import { fromAdvanced, type AdvancedSettings } from './lib/settings';
 import { useCompressorSettings } from './store';
 import { useHandoff } from '@/shared/lib/handoff';
@@ -255,6 +255,7 @@ const PdfCompressorTool: React.FC<ToolProps> = () => {
                   </Alert>
                 ) : (
                   <ResultFiles
+                    openInWorkspace
                     note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
                     files={[
                       {

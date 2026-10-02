@@ -1,4 +1,5 @@
 import { openHandlers } from './open';
+import { redactRenderHandlers } from './redact';
 import { renderHandlers as pageRenderHandlers } from './render';
 import { textHandlers } from './text';
 
@@ -10,6 +11,7 @@ export const renderHandlers = {
   ...openHandlers,
   ...pageRenderHandlers,
   ...textHandlers,
+  ...redactRenderHandlers,
 };
 
 export type RenderHandlers = typeof renderHandlers;

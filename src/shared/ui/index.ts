@@ -170,6 +170,8 @@ export {
 } from './shape-layer';
 export { SelectionFrame, type SelectionFrameProps } from './selection-frame';
 export { HitArea, type HitAreaProps } from './hit-area';
+export { DrawRectLayer, type DrawRectLayerProps } from './draw-rect-layer';
+export { Highlight, type HighlightProps } from './highlight';
 export { ProgressOverlay, type ProgressOverlayProps } from './progress-overlay';
 export { SidePanel, type SidePanelProps } from './side-panel';
 export {

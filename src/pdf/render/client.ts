@@ -4,6 +4,7 @@ import { createRpcClient, type RpcClient } from '@/shared/lib/worker-rpc';
 import type { RenderHandlers } from './handlers';
 import { createPriorityLimiter, type Priority } from './priority';
 import type { PageImageOptions } from './types';
+import type { RedactMark } from '@/pdf/redact/mark-style';
 
 const workerLost = () =>
   new ToolError(
@@ -217,6 +218,52 @@ export function createPdfRender(
       assertAlive(docId);
       return track(sourceOf.get(docId), () =>
         client.call('textItems', [docId, pageIndex], { signal }),
+      );
+    },
+    /** PNG of a page, unrotated, marks burned in (redaction rasterise fallback). */
+    renderBurned(
+      docId: string,
+      pageIndex: number,
+      dpi: number,
+      marks: RedactMark[],
+      signal?: AbortSignal,
+    ) {
+      return withSlot(async () => {
+        assertAlive(docId);
+        return track(sourceOf.get(docId), () =>
+          client.call('renderBurned', [docId, pageIndex, dpi, marks], {
+            signal,
+          }),
+        );
+      }, signal);
+    },
+    /** Per mark, the share of its pixels in the fill colour. */
+    markCoverage(
+      docId: string,
+      pageIndex: number,
+      dpi: number,
+      marks: RedactMark[],
+      signal?: AbortSignal,
+    ) {
+      return withSlot(async () => {
+        assertAlive(docId);
+        return track(sourceOf.get(docId), () =>
+          client.call('markCoverage', [docId, pageIndex, dpi, marks], {
+            signal,
+          }),
+        );
+      }, signal);
+    },
+    /** Whether the document is tagged (has /MarkInfo /Marked true). */
+    async isTagged(docId: string, signal?: AbortSignal) {
+      assertAlive(docId);
+      return client.call('isTagged', [docId], { signal });
+    },
+    /** Every reader-visible string of the document, by where it lives. */
+    async docTexts(docId: string, signal?: AbortSignal) {
+      assertAlive(docId);
+      return track(sourceOf.get(docId), () =>
+        client.call('docTexts', [docId], { signal }),
       );
     },
     close(docId: string) {

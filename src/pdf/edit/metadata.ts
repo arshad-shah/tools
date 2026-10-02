@@ -172,18 +172,18 @@ export async function getMetadata(bytes: Uint8Array): Promise<PdfMetadata> {
 }
 
 /**
- * Applies `patch` to the Info dictionary and stamps ModDate. An existing XMP
- * packet is rewritten from these fields, keeping its PDF/A and PDF/UA
- * identification; its other properties are not kept (the UI says so). XMP is
- * never added to a file that had none. A PDF/A-1 file is saved without
- * object streams, which PDF/A-1 forbids.
+ * Applies `patch` to the Info dictionary of a loaded document and stamps
+ * ModDate. An existing XMP packet is rewritten from these fields, keeping its
+ * PDF/A and PDF/UA identification; its other properties are not kept (the UI
+ * says so). XMP is never added to a file that had none. Returns that
+ * identification (a PDF/A-1 file must be saved without object streams).
+ * Used by `setMetadata` and the workspace's `meta.set` writer.
  */
-export async function setMetadata(
-  bytes: Uint8Array,
+export function applyMetadataPatch(
+  doc: PDFDocument,
   patch: MetadataPatch,
   now = new Date(),
-): Promise<Uint8Array> {
-  const doc = await loadPdf(bytes);
+): XmpIdentity {
   for (const field of METADATA_FIELDS) {
     const raw = patch[field];
     if (raw === undefined) continue;
@@ -212,7 +212,45 @@ export async function setMetadata(
       }),
     );
   }
+  return identity;
+}
+
+/**
+ * `applyMetadataPatch` on bytes. A PDF/A-1 file is saved without object
+ * streams, which PDF/A-1 forbids.
+ */
+export async function setMetadata(
+  bytes: Uint8Array,
+  patch: MetadataPatch,
+  now = new Date(),
+): Promise<Uint8Array> {
+  const doc = await loadPdf(bytes);
+  const identity = applyMetadataPatch(doc, patch, now);
   return doc.save({ useObjectStreams: identity.part !== '1' });
+}
+
+/**
+ * Rewrites an existing XMP packet from the Info fields (keeping its PDF/A
+ * and PDF/UA identity), so nothing removed from Info survives in XMP.
+ * Returns false when the document has no XMP.
+ */
+export function rebuildXmpFromInfo(doc: PDFDocument): boolean {
+  const ref = xmpRef(doc);
+  if (!ref) {
+    // A direct (unreferenced) packet cannot be rewritten in place: dropped.
+    if (!doc.catalog.get(PDFName.of('Metadata'))) return false;
+    doc.catalog.delete(PDFName.of('Metadata'));
+    return true;
+  }
+  const xml = buildXmp(readMeta(doc), xmpIdentity(readXmp(doc, ref)));
+  doc.context.assign(
+    ref,
+    doc.context.stream(new TextEncoder().encode(xml), {
+      Type: 'Metadata',
+      Subtype: 'XML',
+    }),
+  );
+  return true;
 }
 
 /** Removes the Info dictionary and the document-level XMP (catalog /Metadata). */

@@ -115,7 +115,9 @@ const UnlockTool: React.FC<ToolProps> = () => {
           )}
           {!wrongPassword && (
             <JobPanel job={job} onCancel={job.cancel} runningLabel="Unlocking">
-              {job.result && <ResultFiles files={[job.result]} />}
+              {job.result && (
+                <ResultFiles openInWorkspace files={[job.result]} />
+              )}
             </JobPanel>
           )}
         </Stack>

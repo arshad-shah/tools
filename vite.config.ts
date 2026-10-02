@@ -25,6 +25,9 @@ export default defineConfig({
   // Worker bundles have their own plugin list: third-party glyph literals
   // (fontkit in the edit worker) are escaped there too.
   worker: { format: 'es', plugins: () => [escapeVendorGlyphs()] },
+  // Worker-only dependencies are invisible to the dep scanner; pre-bundle
+  // them so the first edit-worker load cannot trigger a re-optimise reload.
+  optimizeDeps: { include: ['@pdf-lib/standard-fonts'] },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
