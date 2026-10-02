@@ -18,6 +18,8 @@ export default defineTool({
     'utm',
     'punycode',
   ],
+  // URLs from the HTTP Client, Text Encoder and QR Scanner (spec 10).
+  accepts: [{ mimes: ['text/uri-list'] }],
   version: '1.0.0',
   enabled: true,
   load: () => import('./Tool'),

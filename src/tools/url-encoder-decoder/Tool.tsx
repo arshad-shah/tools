@@ -168,6 +168,10 @@ const TextEncoderTool: React.FC = () => {
         wrap
         markers={result.markers}
         minHeight={140}
+        handoff={(p) =>
+          p.kind === 'text' &&
+          (p.mime === 'text/plain' || p.mime === 'text/uri-list')
+        }
       />
 
       <Inline gap="2" align="center" wrap justify="center">

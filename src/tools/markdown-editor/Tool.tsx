@@ -1,3 +1,4 @@
+import { useHandoff } from '@/shared/lib/handoff';
 import {
   useDeferredValue,
   useEffect,
@@ -66,6 +67,18 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   const pendingJump = useRef<number | null>(null);
   const wrapId = useId();
   const remoteNoteId = useId();
+
+  // Text handed over from another tool (Text Toolkit, Send to) opens once.
+  const handed = useHandoff(
+    (p) =>
+      p.kind === 'text' &&
+      (p.mime === 'text/markdown' || p.mime === 'text/plain'),
+  );
+  const [takenHandoff, setTakenHandoff] = useState<typeof handed>(null);
+  if (handed !== takenHandoff) {
+    setTakenHandoff(handed);
+    if (handed?.kind === 'text') setTextState(handed.text);
+  }
 
   const rendered = useRendered(text);
   const baseCss = useMemo(() => markdownCss(tokens), [tokens]);

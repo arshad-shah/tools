@@ -6,6 +6,7 @@ import {
 } from '@/shared/lib/commands';
 import { TOOLS } from '../registry';
 import {
+  curlCommand,
   favouriteCommands,
   routeCommands,
   themeCommands,
@@ -61,5 +62,35 @@ describe('app command sources', () => {
     expect(cmd.label).toBe('Use light theme');
     await cmd.run();
     expect(setPreference).toHaveBeenCalledWith('light');
+  });
+});
+
+describe('global Import cURL (spec 10)', () => {
+  const run = async (clipboard: Promise<string>) => {
+    const navigate = vi.fn();
+    const onError = vi.fn();
+    registerCommandSource(curlCommand(navigate, () => clipboard, onError));
+    const cmd = queryCommands('curl')
+      .flatMap((g) => g.commands)
+      .find((c) => c.label === 'Import cURL into HTTP Client');
+    expect(cmd).toBeDefined();
+    await cmd!.run();
+    return { navigate, onError };
+  };
+
+  it('hands the clipboard cURL to the HTTP Client from anywhere', async () => {
+    const { navigate, onError } = await run(
+      Promise.resolve('curl https://example.com'),
+    );
+    expect(onError).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/web\/http-client\?handoff=/),
+    );
+  });
+
+  it('reports a clipboard that holds no cURL command', async () => {
+    const { navigate, onError } = await run(Promise.resolve('hello'));
+    expect(navigate).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalled();
   });
 });

@@ -21,6 +21,8 @@ export default defineTool({
     'punycode',
     'quoted printable',
   ],
+  // Text and URLs from other tools (URL Inspector, QR Scanner, Text Toolkit).
+  accepts: [{ mimes: ['text/plain', 'text/uri-list'] }],
   version: '1.0.0',
   enabled: true,
   load: () => import('./Tool'),

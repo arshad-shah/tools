@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { routeDrop } from '@/app/drop-routing';
 import { getEnabledTools, toolsAccepting } from '@/app/registry';
@@ -6,6 +6,8 @@ import type { ToolManifest } from '@/app/tool';
 import { ToolError } from '@/shared/lib/errors';
 import { sendTo, type HandoffPayload } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
+import { SEND_GROUP } from '@/shared/lib/send-commands';
+import { useToolCommands } from '@/shared/lib/tool-commands';
 import { Button } from './button';
 import { IconChevronDown, IconSendTo } from './icons';
 import {
@@ -69,6 +71,18 @@ export const SendToMenu: React.FC<SendToMenuProps> = ({
   const current = useRef<HandoffPayload | null>(null);
   const seq = useRef(0);
   const [targets, setTargets] = useState<Targets>({ state: 'loading' });
+  const menuKey = useId();
+
+  // The palette opens this menu too (spec 10: "Send result to" commands).
+  useToolCommands(sourceTool, [
+    {
+      id: `send-menu-${menuKey}`,
+      label: label === 'Send to' ? 'Send result to…' : `${label}…`,
+      group: SEND_GROUP,
+      // After the palette closes and hands focus back.
+      run: () => requestAnimationFrame(() => trigger.current?.click()),
+    },
+  ]);
 
   useEffect(() => {
     if (targets.state === 'ready') items(trigger.current)[0]?.focus();
