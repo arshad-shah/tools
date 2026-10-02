@@ -149,6 +149,30 @@ const CONTENT = [
   },
 ];
 
+/*
+ * A cold dev server optimises the modes' dependencies on first use and
+ * reloads the page, which drops a file chosen before the reload. Open both
+ * modes once before the shots so that reload happens here, not mid-test.
+ */
+test.beforeAll(async ({ browser }, info) => {
+  test.setTimeout(180_000);
+  const page = await browser.newPage({ baseURL: info.project.use.baseURL });
+  try {
+    for (const mode of [/Annotate/, /Edit/]) {
+      await page.goto('/pdf/edit', { waitUntil: 'networkidle' });
+      await page
+        .locator('input[type=file]')
+        .first()
+        .setInputFiles(await pdf('warm.pdf', makeTextPdf({ pages: 1 })));
+      await expect(rendered(page)).toBeAttached({ timeout: 90_000 });
+      await page.getByRole('tab', { name: mode }).click();
+      await page.waitForLoadState('networkidle');
+    }
+  } finally {
+    await page.close();
+  }
+});
+
 for (const theme of ['light', 'dark'] as const) {
   test.describe(`annotate and edit ${theme}`, () => {
     // Room for the first-render budget on a cold dev server.
