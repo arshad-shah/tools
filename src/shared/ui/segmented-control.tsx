@@ -103,7 +103,7 @@ export function SegmentedControl<V extends string>({
               'inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-medium transition-colors duration-fast ease-out-soft',
               'disabled:pointer-events-none disabled:opacity-50',
               size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-sm',
-              'pointer-coarse:h-11',
+              'pointer-coarse:h-11 pointer-coarse:min-w-11',
               checked
                 ? 'bg-surface text-fg shadow-e1'
                 : 'text-fg-muted hover:text-fg',

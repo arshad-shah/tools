@@ -243,8 +243,17 @@ export function CodeSurface({
 
   return (
     <div
+      onPointerDown={(e) => {
+        // A tap above or below the line of a one-line field still focuses it.
+        if (singleLine && e.target === e.currentTarget) {
+          e.preventDefault();
+          taRef.current?.focus();
+        }
+      }}
       className={cn(
         'flex min-w-0 flex-col overflow-hidden rounded-md border border-line-strong bg-surface-2',
+        // A one-line field is a 44px touch target; the line sits centred.
+        singleLine && 'justify-center pointer-coarse:min-h-11',
         'has-[[data-cs-input]:focus-visible]:outline-2 has-[[data-cs-input]:focus-visible]:outline-offset-2 has-[[data-cs-input]:focus-visible]:outline-focus',
         className,
       )}
@@ -262,7 +271,8 @@ export function CodeSurface({
         ref={attach}
         onScroll={onScroll}
         className={cn(
-          'relative min-h-0 flex-1 overscroll-contain',
+          'relative min-h-0 overscroll-contain',
+          singleLine ? 'flex-none' : 'flex-1',
           singleLine ? 'overflow-x-auto overflow-y-hidden' : 'overflow-auto',
         )}
         style={{

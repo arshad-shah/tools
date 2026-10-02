@@ -14,7 +14,7 @@ import { formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
 const AUTHOR = 'Arshad Shah';
 
 const linkClass =
-  'inline-flex items-center gap-1.5 rounded-sm text-fg-muted transition-colors duration-fast hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
+  'inline-flex items-center gap-1.5 rounded-sm text-fg-muted transition-colors duration-fast hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus pointer-coarse:min-h-11 pointer-coarse:min-w-11';
 
 /** Version and build info, privacy note, theme switch (spec §5.2). */
 export default function Footer({ tool }: { tool?: ToolDefinition }) {

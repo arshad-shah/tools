@@ -56,9 +56,10 @@ function Frame() {
                   onClick={openPalette}
                   leftIcon={<IconSearch size="sm" />}
                   rightIcon={<ShortcutHint keys="Mod+K" />}
-                  className="text-fg-muted"
+                  className="text-fg-muted max-sm:min-w-11 max-sm:px-0"
                 >
-                  Search
+                  {/* Icon only on phones; the name stays for screen readers. */}
+                  <span className="max-sm:sr-only">Search</span>
                 </Button>
                 <ThemeMenu />
               </>

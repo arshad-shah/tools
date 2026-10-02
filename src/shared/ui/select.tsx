@@ -45,7 +45,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         className={cn(
-          'h-9 w-full appearance-none rounded-md border bg-surface-2 pl-3 pr-9 text-base text-fg',
+          'h-9 w-full appearance-none rounded-md border bg-surface-2 pl-3 pr-9 text-base text-fg pointer-coarse:h-11 pointer-coarse:text-md',
           'transition-colors duration-fast focus-visible:outline-2 focus-visible:outline-offset-2',
           invalid
             ? 'border-danger focus-visible:outline-danger'

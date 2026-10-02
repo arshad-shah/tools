@@ -33,7 +33,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     <div
       className={cn(
         'flex items-center gap-2 rounded-md border border-line-strong bg-surface-2 transition-colors duration-fast focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
-        size === 'lg' ? 'h-11 px-4' : 'h-9 px-3',
+        size === 'lg' ? 'h-11 px-4' : 'h-9 px-3 pointer-coarse:h-11',
         className,
       )}
     >
@@ -53,6 +53,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           'min-w-0 flex-1 bg-transparent font-mono text-fg caret-accent',
           'placeholder:text-fg-subtle focus:outline-none',
           size === 'lg' ? 'text-base' : 'text-sm',
+          'self-stretch pointer-coarse:text-md',
           '[&::-webkit-search-cancel-button]:appearance-none',
         )}
         {...props}

@@ -18,9 +18,10 @@ export const buttonVariants = cva(
         danger:
           'border border-danger/40 bg-danger-soft text-danger hover:border-danger/70',
       },
+      // Touch (coarse pointer): every size reaches the 44px target.
       size: {
-        sm: 'h-8 px-3 text-sm',
-        md: 'h-9 px-4 text-base',
+        sm: 'h-8 px-3 text-sm pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+        md: 'h-9 px-4 text-base pointer-coarse:min-h-11 pointer-coarse:min-w-11',
         lg: 'h-11 px-5 text-md',
       },
       fullWidth: { true: 'w-full', false: '' },

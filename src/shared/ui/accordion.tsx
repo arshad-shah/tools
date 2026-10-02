@@ -79,7 +79,7 @@ export const AccordionTrigger: React.FC<
       aria-expanded={isOpen}
       onClick={() => ctx.toggle(value)}
       className={cn(
-        'flex w-full items-center justify-between gap-3 bg-surface px-4 py-3 text-left text-sm font-semibold text-fg transition-colors duration-fast hover:bg-surface-2',
+        'flex min-h-11 w-full items-center justify-between gap-3 bg-surface px-4 py-3 text-left text-sm font-semibold text-fg transition-colors duration-fast hover:bg-surface-2',
         className,
       )}
       {...props}

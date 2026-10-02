@@ -40,6 +40,9 @@ export function RequestBar({
       )}
       <Input
         aria-label="Request URL"
+        inputMode="url"
+        autoCapitalize="none"
+        autoCorrect="off"
         value={request.url}
         onChange={(url) => {
           if (/^\s*curl\s/i.test(url) && onCurl(url)) return;

@@ -38,7 +38,7 @@ export function ColorInput({
   const invalid = !HEX.test(draft);
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span className="relative inline-flex size-9 shrink-0 overflow-hidden rounded-md border border-line-strong focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
+      <span className="relative inline-flex size-9 shrink-0 overflow-hidden pointer-coarse:size-11 rounded-md border border-line-strong focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
         <input
           type="color"
           aria-label={`${label} picker`}

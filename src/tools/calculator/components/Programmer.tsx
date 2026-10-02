@@ -206,6 +206,7 @@ export const Programmer: React.FC<ProgrammerProps> = ({
               invalid={draft?.base === f.base && fieldError !== null}
               className="font-mono"
               spellCheck={false}
+              inputMode={f.base === 2 || f.base === 8 ? 'numeric' : 'text'}
             />
             {draft?.base === f.base && fieldError && (
               <Text size="xs" className="text-danger" role="alert">

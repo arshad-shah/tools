@@ -105,7 +105,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
       tabIndex={selected ? 0 : -1}
       onClick={() => setValue(value)}
       className={cn(
-        'shrink-0 whitespace-nowrap text-sm font-medium transition-[color,background-color,border-color] duration-base ease-out-soft pointer-coarse:min-h-11',
+        'shrink-0 whitespace-nowrap text-sm font-medium transition-[color,background-color,border-color] duration-base ease-out-soft pointer-coarse:min-h-11 pointer-coarse:min-w-11',
         fullWidth && 'flex-1',
         variant === 'soft'
           ? cn(

@@ -50,7 +50,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           value={value}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           className={cn(
-            'min-w-0 flex-1 bg-transparent text-sm text-fg pointer-coarse:text-md',
+            'min-w-0 flex-1 self-stretch bg-transparent text-sm text-fg pointer-coarse:text-md',
             'placeholder:text-fg-subtle focus:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-50',
             className,

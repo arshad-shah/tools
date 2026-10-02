@@ -12,7 +12,13 @@ export function ShortcutHint({
   className?: string;
 }) {
   return (
-    <span className={cn('inline-flex items-center', className)}>
+    <span
+      // Keyboard hints mean nothing on touch screens.
+      className={cn(
+        'inline-flex items-center pointer-coarse:hidden',
+        className,
+      )}
+    >
       <span className="sr-only">{hotkeyLabel(keys, isMac())}</span>
       <Kbd keys={keys} />
     </span>

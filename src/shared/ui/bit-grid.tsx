@@ -70,7 +70,7 @@ export const BitGrid: React.FC<BitGridProps> = ({
             if (!inert) onToggle?.(i);
           }}
           className={cn(
-            'flex size-8 items-center justify-center rounded-md border font-mono text-sm transition-colors duration-fast',
+            'flex size-8 items-center justify-center rounded-md border font-mono text-sm transition-colors duration-fast pointer-coarse:size-11',
             'outline-none focus-visible:ring-2 focus-visible:ring-focus',
             on
               ? 'border-accent-indicator bg-accent text-accent-ink'

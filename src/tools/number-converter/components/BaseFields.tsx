@@ -81,6 +81,10 @@ export const BaseFields: React.FC<BaseFieldsProps> = ({
                 aria-describedby={err ? `${id}-error` : `${id}-hint`}
                 spellCheck={false}
                 autoComplete="off"
+                // Digit-only bases get the number pad on phones.
+                inputMode={
+                  f.key === 'bin' || f.key === 'oct' ? 'numeric' : 'text'
+                }
                 className="font-mono"
                 placeholder="None"
                 trailingSlot={

@@ -263,7 +263,7 @@ const TextDiff: React.FC = () => {
           <ShareButton share={share} />
         </Inline>
       </Inline>
-      <Grid cols={2} gap="3" className="min-w-0">
+      <Grid cols={{ base: 1, md: 2 }} gap="3" className="min-w-0">
         {side('left')}
         {side('right')}
       </Grid>

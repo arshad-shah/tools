@@ -147,6 +147,9 @@ export default function UrlInspector() {
             <Label htmlFor="url-input">URL</Label>
             <Input
               id="url-input"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
               value={text}
               onChange={(v) => fromText(v)}
               invalid={!!parsed.error}
@@ -166,6 +169,9 @@ export default function UrlInspector() {
               </Label>
               <Input
                 id="url-base"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
                 value={settings.base}
                 onChange={(v) => {
                   update({ base: v });
