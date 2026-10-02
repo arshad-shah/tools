@@ -46,6 +46,7 @@ export const IconBrain = fromLucide('IconBrain', L.Brain);
 export const IconBuilding2 = fromLucide('IconBuilding2', L.Building2);
 export const IconCalculator = fromLucide('IconCalculator', L.Calculator);
 export const IconCalendar = fromLucide('IconCalendar', L.Calendar);
+export const IconCamera = fromLucide('IconCamera', L.Camera);
 export const IconCheck = fromLucide('IconCheck', L.Check);
 export const IconCheckCheck = fromLucide('IconCheckCheck', L.CheckCheck);
 export const IconCheckCircle = fromLucide('IconCheckCircle', L.CircleCheckBig);
