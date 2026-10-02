@@ -5,7 +5,7 @@ import { vi } from 'vitest';
  * jsdom has no layout: every element reports this box (as in the
  * VirtualList tests), so the grid sees a `width` by `height` viewport.
  */
-export function mockViewport(width = 300, height = 200) {
+export function mockViewport(width = 800, height = 200) {
   vi.stubGlobal(
     'ResizeObserver',
     class {

@@ -113,7 +113,6 @@ export function GridView({
         search={search}
         selection="cell-range"
         rowHeight={compact ? 26 : 32}
-        height="min(70vh, 640px)"
         editable={() => true}
         onCellEdit={(i, col, value) => onCellEdit(indices[i], col, value)}
         renderDetails={(r) => (

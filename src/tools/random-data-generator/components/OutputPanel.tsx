@@ -175,7 +175,6 @@ export function OutputPanel({ tables }: OutputPanelProps) {
               columns={columns}
               rowKey={(_, i) => i}
               ariaLabel="Generated data"
-              height="min(60vh, 520px)"
             />
           </div>
         </TabsContent>

@@ -4,28 +4,23 @@ import { Badge } from '../badge';
 import { IconArrowDown, IconArrowUp } from '../icons';
 import { ColumnMenu } from './column-menu';
 import {
-  clampWidth,
+  clampTo,
   WIDTH_STEP,
   type ColumnLayout,
-  type ColumnType,
   type GridColumn,
   type SortKey,
 } from './columns';
 import { FilterPopover } from './filter-popover';
 import type { ColumnFilter } from './filters';
-
-const TYPE_BADGE: Record<ColumnType, [short: string, long: string]> = {
-  text: ['abc', 'text'],
-  number: ['num', 'number'],
-  date: ['date', 'date'],
-  boolean: ['bool', 'true or false'],
-};
+import { TYPE_BADGE } from './sizing';
 
 export interface HeaderActions<R> {
   sort(id: string, additive: boolean): void;
   setSortDir(id: string, dir: 'asc' | 'desc' | null): void;
   /** `commit` false while a pointer drag is in progress. */
   resize(id: string, width: number, commit: boolean): void;
+  /** Fits the column to its content (double-click on the resize handle). */
+  autofit(id: string): void;
   move(id: string, delta: -1 | 1): void;
   hide(id: string): void;
   show(id: string): void;
@@ -88,6 +83,7 @@ export function HeaderRow<R>({
               column={c}
               index={i}
               width={layout.widths[i]}
+              minWidth={layout.mins[i]}
               left={i < layout.pinned ? layout.offsets[i] : undefined}
               sortDir={at >= 0 ? sort[at].dir : undefined}
               priority={sort.length > 1 && at >= 0 ? at + 1 : undefined}
@@ -117,6 +113,8 @@ interface HeaderCellProps<R> {
   column: GridColumn<R>;
   index: number;
   width: number;
+  /** Fits the full label and icons; resizing stops here. */
+  minWidth: number;
   left?: number;
   sortDir?: 'asc' | 'desc';
   priority?: number;
@@ -132,6 +130,7 @@ function HeaderCell<R>({
   column: c,
   index,
   width,
+  minWidth,
   left,
   sortDir,
   priority,
@@ -143,7 +142,7 @@ function HeaderCell<R>({
   actions,
 }: HeaderCellProps<R>) {
   const drag = useRef<{ x: number; w: number; last: number } | null>(null);
-  const clamp = (w: number) => clampWidth(c as GridColumn<unknown>, w);
+  const clamp = (w: number) => clampTo(w, minWidth);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -183,7 +182,7 @@ function HeaderCell<R>({
             : undefined
       }
       className={cn(
-        'relative flex h-10 shrink-0 items-center gap-0.5 border-r border-line bg-surface-2 pr-2 pl-1',
+        'group relative flex h-10 shrink-0 items-center gap-0.5 border-r border-line bg-surface-2 pr-2 pl-1',
         left !== undefined && 'sticky z-[2]',
       )}
       style={{ width, left }}
@@ -197,7 +196,9 @@ function HeaderCell<R>({
           c.type === 'number' && 'flex-row-reverse text-right',
         )}
       >
-        <span className="truncate">{c.header}</span>
+        <span className="truncate" data-grid-header-label>
+          {c.header}
+        </span>
         {sortDir && (
           <span className="flex shrink-0 items-center text-accent-fg">
             <SortIcon size="xs" />
@@ -245,7 +246,12 @@ function HeaderCell<R>({
         role="separator"
         aria-orientation="vertical"
         aria-label={`Resize ${c.header}`}
+        title="Drag to resize, double-click to fit"
         onPointerDown={onPointerDown}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          actions.autofit(c.id);
+        }}
         className="absolute inset-y-0 -right-1 z-[3] w-2 cursor-col-resize touch-none hover:bg-accent/40"
       />
     </div>

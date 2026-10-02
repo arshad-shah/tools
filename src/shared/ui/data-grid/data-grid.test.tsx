@@ -19,15 +19,15 @@ afterEach(() => {
 });
 
 const personColumns: GridColumn<Person>[] = [
-  { id: 'name', header: 'Name', accessor: (r) => r.name, width: 100 },
+  { id: 'name', header: 'Name', accessor: (r) => r.name, width: 200 },
   {
     id: 'age',
     header: 'Age',
     accessor: (r) => r.age,
     type: 'number',
-    width: 80,
+    width: 180,
   },
-  { id: 'city', header: 'City', accessor: (r) => r.city, width: 100 },
+  { id: 'city', header: 'City', accessor: (r) => r.city, width: 200 },
 ];
 
 function People({
@@ -147,18 +147,18 @@ describe('DataGrid core', () => {
     const handle = screen.getByRole('separator', { name: 'Resize Name' });
     fireEvent.pointerDown(handle, { button: 0, clientX: 100 });
     fireEvent.pointerMove(handle, { clientX: 150 });
-    expect(header('Name').style.width).toBe('150px');
+    expect(header('Name').style.width).toBe('250px');
     expect(onColumns).not.toHaveBeenCalled();
     fireEvent.pointerMove(handle, { clientX: 160 });
     fireEvent.pointerUp(handle, { clientX: 160 });
-    expect(header('Name').style.width).toBe('160px');
+    expect(header('Name').style.width).toBe('260px');
     expect(onColumns).toHaveBeenCalledTimes(1);
     expect(onColumns.mock.calls[0][0][0]).toMatchObject({
       id: 'name',
-      width: 160,
+      width: 260,
     });
     const cell = screen.getAllByRole('gridcell')[0];
-    expect(cell.style.width).toBe('160px');
+    expect(cell.style.width).toBe('260px');
   });
 
   it('the header menu resizes from the keyboard with Wider and Narrower', () => {
@@ -167,10 +167,10 @@ describe('DataGrid core', () => {
     const menu = screen.getByRole('dialog', { name: 'Age column options' });
     expect(menu).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Wider' }));
-    expect(header('Age').style.width).toBe('96px');
+    expect(header('Age').style.width).toBe('196px');
     fireEvent.click(screen.getByRole('button', { name: 'Wider' }));
     fireEvent.click(screen.getByRole('button', { name: 'Narrower' }));
-    expect(header('Age').style.width).toBe('96px');
+    expect(header('Age').style.width).toBe('196px');
   });
 
   it('hides, shows and moves columns from the header menu', () => {
@@ -232,7 +232,8 @@ describe('DataGrid core', () => {
 
     // Scrolling sideways mounts the columns under the viewport and keeps the
     // pinned first column.
-    g.scrollLeft = 160 * 20;
+    const width = parseFloat(header('Column 1').style.width);
+    g.scrollLeft = width * 20;
     fireEvent.scroll(g);
     const firstRow = screen.getAllByRole('row')[1];
     const colIndexes = [...firstRow.querySelectorAll('[role="gridcell"]')].map(

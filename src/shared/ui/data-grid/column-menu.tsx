@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { cn } from '@/shared/lib/cn';
 import { Button, IconButton } from '../button';
 import {
   IconArrowDown,
@@ -13,6 +14,7 @@ import {
   IconX,
 } from '../icons';
 import { Popover } from '../popover';
+import { REVEAL } from './reveal';
 
 export interface ColumnMenuProps {
   header: string;
@@ -54,7 +56,7 @@ export function ColumnMenu(p: ColumnMenuProps) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="size-7 shrink-0"
+        className={cn('size-7 shrink-0', REVEAL)}
       />
       <Popover
         open={open}

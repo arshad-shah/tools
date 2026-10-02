@@ -48,10 +48,9 @@ const COLUMNS: GridColumn<ExifEntry>[] = [
     id: 'name',
     header: 'Name',
     accessor: (e) => e.file.name,
-    width: 200,
     pinned: 'start',
   },
-  { id: 'status', header: 'Status', accessor: statusText, width: 220 },
+  { id: 'status', header: 'Status', accessor: statusText },
   {
     id: 'risks',
     header: 'Risks',
@@ -61,19 +60,16 @@ const COLUMNS: GridColumn<ExifEntry>[] = [
         : e.readError
           ? 'Unreadable'
           : 'Reading',
-    width: 260,
   },
   {
     id: 'before',
     header: 'Size before',
     accessor: (e) => formatBytes(e.file.size),
-    width: 120,
   },
   {
     id: 'after',
     header: 'Size after',
     accessor: (e) => (e.output ? formatBytes(e.output.byteLength) : ''),
-    width: 120,
   },
 ];
 
@@ -136,7 +132,6 @@ export function StripPanel({
             rowKey={(e) => e.id}
             ariaLabel="Files to clean"
             emptyLabel="No files yet"
-            height={Math.min(320, 40 + entries.length * 32)}
           />
 
           {failures.length > 0 ? (
