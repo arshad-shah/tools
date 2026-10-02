@@ -153,3 +153,46 @@ export {
   type RadioGroupProps,
   type RadioOption,
 } from './radio-group';
+export {
+  OverlayLayer,
+  PageBox,
+  type OverlayLayerProps,
+  type PageBoxProps,
+  type OverlayTransform,
+  type PageSpaceBox,
+} from './overlay-layer';
+export {
+  ShapeLayer,
+  type ShapeLayerProps,
+  type Shape,
+  type Paint,
+  type PaintToken,
+} from './shape-layer';
+export { SelectionFrame, type SelectionFrameProps } from './selection-frame';
+export { HitArea, type HitAreaProps } from './hit-area';
+export { ProgressOverlay, type ProgressOverlayProps } from './progress-overlay';
+export { SidePanel, type SidePanelProps } from './side-panel';
+export {
+  Inspector,
+  InspectorSection,
+  type InspectorProps,
+  type InspectorSectionProps,
+} from './inspector';
+export { resolvePaint } from './shape-paint';
+export { ModeTabs, type ModeTabItem, type ModeTabsProps } from './mode-tabs';
+export { FloatingDock, type FloatingDockProps } from './floating-dock';
+export {
+  Toolbar,
+  type ToolItem,
+  type ToolGroup,
+  type ToolbarProps,
+  type ToolbarSize,
+} from './toolbar';
+export { FloatingPalette, type FloatingPaletteProps } from './floating-palette';
+export { visibleRange, cumulativeOffsets } from './virtual';
+export { PageRail, type RailPage, type PageRailProps } from './page-rail';
+export {
+  DocumentViewport,
+  type DocumentViewportProps,
+  type ZoomSetting,
+} from './document-viewport';

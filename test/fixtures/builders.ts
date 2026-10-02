@@ -44,6 +44,24 @@ export async function makeTextPdf({
 }
 
 /**
+ * A ~20 MB document for the workspace perf budgets (spec §14): each page has
+ * its number as text and its own copy of a 1200x1600 noisy JPEG.
+ */
+export async function makeLargePdf(pages = 300): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const jpeg = encodeJpeg(1200, 1600, noiseImage(1200, 1600, 4, 300), 15);
+  for (let i = 1; i <= pages; i++) {
+    const page = doc.addPage([612, 792]);
+    // Embedded per page: each page carries its own image object, as scans do.
+    const image = await doc.embedJpg(jpeg);
+    page.drawImage(image, { x: 36, y: 36, width: 540, height: 720 });
+    page.drawText(`Large ${i}`, { x: 72, y: 740, size: 24, font });
+  }
+  return doc.save({ useObjectStreams: true });
+}
+
+/**
  * Text pages ("S 1", "S 2", ...) plus document-level structure that page
  * edits must keep: Info fields, a bookmark per page (one via a named
  * destination), a text field on the first and last page, page labels,

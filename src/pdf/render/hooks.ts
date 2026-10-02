@@ -8,10 +8,18 @@ import {
   type PageBitmap,
 } from './bitmap-state';
 import { pdfRender } from './client';
+import type { Priority } from './priority';
 import { createJobPool } from './scheduling';
 import type { DocInfo } from './types';
 
-const cache = new BitmapCache(150);
+const cache = new BitmapCache();
+/** The one pixel budget for page bitmaps and zoom tiles. */
+export const bitmapCache = cache;
+
+/** Frees every cached bitmap of a document being closed. */
+export function purgeDocBitmaps(docId: string): void {
+  cache.deleteDoc(docId);
+}
 const renders = createJobPool<ImageBitmap>();
 /**
  * Docs being closed by usePdfDocument; late bitmaps for them are discarded.
@@ -104,9 +112,10 @@ function startRender(
   pageIndex: number,
   widthPx: number,
   signal: AbortSignal,
+  priority: Priority,
 ) {
   return pdfRender
-    .renderPage(docId, pageIndex, widthPx, signal)
+    .renderPage(docId, pageIndex, widthPx, signal, priority)
     .then((bitmap) => {
       if (closedDocs.has(docId)) {
         bitmap.close();
@@ -127,6 +136,8 @@ export function usePageBitmap(
   pageIndex: number,
   widthPx: number,
   enabled: boolean,
+  /** Render queue lane: 0 canvas (default), 1 rail, 2 background. */
+  priority: Priority = 0,
 ): PageBitmap {
   const [state, setState] = useState<KeyedPageBitmap | null>(null);
   const key = docId ? bitmapKey(docId, pageIndex, widthPx) : null;
@@ -136,9 +147,10 @@ export function usePageBitmap(
     const k = bitmapKey(docId, pageIndex, widthPx);
     if (cache.get(docId, pageIndex, widthPx)) return; // shown via render path
     // Invalid widths are rejected by the worker (INVALID_INPUT) like any
-    // other render error.
+    // other render error. A render shared by several components keeps the
+    // priority of the one that started it.
     const job = renders.acquire(k, (signal) =>
-      startRender(docId, pageIndex, widthPx, signal),
+      startRender(docId, pageIndex, widthPx, signal, priority),
     );
     let alive = true;
     job.promise.then(
@@ -157,7 +169,7 @@ export function usePageBitmap(
       alive = false;
       job.release();
     };
-  }, [docId, pageIndex, widthPx, enabled]);
+  }, [docId, pageIndex, widthPx, enabled, priority]);
 
   return pickPageBitmap(
     key,

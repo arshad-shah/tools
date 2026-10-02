@@ -16,7 +16,12 @@ class NoopObserver {
 const doc: DocInfo = {
   docId: 'd1',
   pageCount: 3,
-  pages: [0, 1, 2].map(() => ({ width: 600, height: 800 })),
+  pages: [0, 1, 2].map(() => ({
+    width: 600,
+    height: 800,
+    view: [0, 0, 600, 800] as [number, number, number, number],
+    rotate: 0 as const,
+  })),
 };
 const tiles: PageTile[] = [0, 1, 2].map((i) => ({
   key: `k${i}`,

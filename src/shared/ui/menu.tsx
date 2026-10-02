@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
+import { useEscapeLayer } from './escape-stack';
 
 interface MenuCtx {
   open: boolean;
@@ -14,19 +15,16 @@ export const DropdownMenu: React.FC<{
 }> = ({ children, className }) => {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  // Esc closes the menu, not a dialog it sits in.
+  useEscapeLayer(open, () => setOpen(false));
   React.useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node))
         setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
     document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
   return (
     <Ctx.Provider value={{ open, setOpen }}>

@@ -2,25 +2,25 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { IconX } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
+import { useEscapeLayer } from './escape-stack';
 
-/** Locks scroll, closes on Esc, restores focus. Shared by Dialog + Drawer. */
+/**
+ * Locks scroll, closes on Esc (when it is the topmost overlay), restores
+ * focus.
+ */
 function useOverlay(open: boolean, onClose: () => void) {
   const prevFocus = React.useRef<HTMLElement | null>(null);
+  useEscapeLayer(open, onClose);
   React.useEffect(() => {
     if (!open) return;
     prevFocus.current = document.activeElement as HTMLElement;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
       prevFocus.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 }
 
 interface DialogProps {
@@ -28,6 +28,8 @@ interface DialogProps {
   onOpenChange: (open: boolean) => void;
   /** Accessible name when the dialog has no DialogTitle. */
   label?: string;
+  /** lg: wide content (side-by-side previews); default md. */
+  size?: 'md' | 'lg';
   children: React.ReactNode;
 }
 const DialogCtx = React.createContext<{
@@ -48,6 +50,7 @@ export const Dialog: React.FC<DialogProps> = ({
   open,
   onOpenChange,
   label,
+  size = 'md',
   children,
 }) => {
   const close = React.useCallback(() => onOpenChange(false), [onOpenChange]);
@@ -84,7 +87,10 @@ export const Dialog: React.FC<DialogProps> = ({
           aria-label={hasTitle ? undefined : label}
           aria-describedby={hasDesc ? descId : undefined}
           tabIndex={-1}
-          className="relative z-10 w-full max-w-lg rounded-xl bg-surface shadow-e3 outline-none"
+          className={cn(
+            'relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-xl bg-surface shadow-e3 outline-none',
+            size === 'lg' ? 'max-w-3xl' : 'max-w-lg',
+          )}
         >
           {children}
         </div>
@@ -158,7 +164,9 @@ export const DialogDescription: React.FC<
 export const DialogBody: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   ...props
-}) => <div className={cn('p-4', className)} {...props} />;
+}) => (
+  <div className={cn('min-h-0 overflow-y-auto p-4', className)} {...props} />
+);
 
 export const DialogFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,

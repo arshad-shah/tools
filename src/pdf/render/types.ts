@@ -2,6 +2,10 @@ export interface PageInfo {
   /** CSS px at scale 1, with the page's own /Rotate applied. */
   width: number;
   height: number;
+  /** pdf.js `page.view`: the CropBox in user space, unrotated. */
+  view: [number, number, number, number];
+  /** The page's own /Rotate, normalised to 0, 90, 180 or 270. */
+  rotate: 0 | 90 | 180 | 270;
 }
 
 export interface DocInfo {

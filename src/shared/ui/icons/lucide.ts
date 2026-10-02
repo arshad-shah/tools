@@ -139,6 +139,7 @@ export const IconRotateCcw = fromLucide('IconRotateCcw', L.RotateCcw);
 export const IconRotateCw = fromLucide('IconRotateCw', L.RotateCw);
 export const IconRuler = fromLucide('IconRuler', L.Ruler);
 export const IconSave = fromLucide('IconSave', L.Save);
+export const IconScaling = fromLucide('IconScaling', L.Scaling);
 export const IconScale = fromLucide('IconScale', L.Scale);
 export const IconScissors = fromLucide('IconScissors', L.Scissors);
 export const IconSearch = fromLucide('IconSearch', L.Search);

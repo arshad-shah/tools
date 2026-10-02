@@ -1,5 +1,7 @@
 import type { VisualRect } from '@/pdf/edit';
-import type { PageInfo } from '@/pdf/render';
+import type { PageInfo as FullPageInfo } from '@/pdf/render';
+
+type PageInfo = Pick<FullPageInfo, 'width' | 'height'>;
 
 export const MIN_SIZE_PT = 12;
 const MARGIN = 36;

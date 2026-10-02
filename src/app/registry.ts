@@ -16,7 +16,8 @@ function validateRouting(path: string, m: ToolManifest) {
   };
   if (!getCategory(m.category)) fail(`has unknown category "${m.category}"`);
   if (!SLUG_RE.test(m.slug)) fail(`slug "${m.slug}" must be kebab-case`);
-  if (RESERVED_SLUGS[m.category].includes(m.slug))
+  // Only the workspace may take a reserved slug: its route is /pdf/edit/:mode?.
+  if (RESERVED_SLUGS[m.category].includes(m.slug) && m.kind !== 'workspace')
     fail(`slug "${m.slug}" is reserved under /${m.category}`);
   if (!KINDS.has(m.kind)) fail(`has invalid kind "${String(m.kind)}"`);
   if (
@@ -97,6 +98,9 @@ export const TOOLS = buildRegistry(
 );
 
 export const getEnabledTools = () => TOOLS.filter((t) => t.enabled);
+/** The workspace tool (route /pdf/edit/:mode?), if registered. */
+export const getWorkspaceTool = () =>
+  TOOLS.find((t) => t.kind === 'workspace' && t.enabled);
 export const getTool = (id: string) => TOOLS.find((t) => t.id === id);
 
 /** Enabled tools that take a text hand-off of `mime` (spec §4.3). */

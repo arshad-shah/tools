@@ -9,12 +9,14 @@ import {
 } from '@/shared/ui';
 import { CATEGORIES, getCategory } from '../categories';
 import { useFavorites } from '../favorites';
-import { getEnabledTools } from '../registry';
+import { getEnabledTools, TOOLS } from '../registry';
 import { categoryPath, toolPath } from '../routes';
 import { useOpenPalette } from '../shell/palette';
 import { routerLink } from '../shell/router-link';
 import type { ToolManifest } from '../tool';
+import { routePdfHubDrop } from '../drop-routing';
 import { HubDropZone } from './hub/HubDropZone';
+import { RecentDocuments } from './home/RecentDocuments';
 
 function Section({
   title,
@@ -95,9 +97,15 @@ export default function Home() {
               <p className="text-sm text-fg-muted">{pdf.blurb}</p>
             </div>
           </div>
-          <HubDropZone category={pdf} title="Drop a PDF to start" />
+          <HubDropZone
+            category={pdf}
+            title="Drop a PDF to start"
+            route={(files) => routePdfHubDrop(files, TOOLS)}
+          />
         </section>
       ) : null}
+
+      <RecentDocuments />
 
       {favourites.length ? (
         <Section title="Favourites">

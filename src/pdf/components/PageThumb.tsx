@@ -47,6 +47,7 @@ export const PageThumb: React.FC<PageThumbProps> = ({
     pageIndex,
     pixelWidth,
     visible,
+    1, // rail priority: the canvas renders first
   );
   const key = `${docId}:${pageIndex}:${pixelWidth}`;
   const drawable = visible && bitmap !== null && bitmap.width > 0;

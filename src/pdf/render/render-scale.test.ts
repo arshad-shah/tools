@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canvasPx,
+  checkTile,
   exportScale,
   MAX_CANVAS_PIXELS,
   renderScale,
@@ -72,5 +73,35 @@ describe('canvasPx', () => {
   it('still rounds real fractions up', () => {
     expect(canvasPx(100.2)).toBe(101);
     expect(canvasPx(0.5)).toBe(1);
+  });
+});
+
+describe('checkTile', () => {
+  const tile = { x: 512, y: 0, width: 512, height: 512 };
+  it('accepts a positive whole-pixel tile at a positive scale', () => {
+    expect(() => checkTile(2, tile)).not.toThrow();
+  });
+  it.each([
+    ['zero width', 2, { ...tile, width: 0 }],
+    ['negative height', 2, { ...tile, height: -5 }],
+    ['fractional size', 2, { ...tile, width: 10.5 }],
+    ['non-finite offset', 2, { ...tile, x: Number.NaN }],
+    ['zero scale', 0, tile],
+    ['infinite scale', Number.POSITIVE_INFINITY, tile],
+    ['over the canvas cap', 2, { ...tile, width: 8192, height: 8192 }],
+  ])('rejects %s with INVALID_INPUT', (_name, scale, t) => {
+    expect(() => checkTile(scale, t)).toThrow(
+      expect.objectContaining({ code: 'INVALID_INPUT' }),
+    );
+  });
+  it('allows the largest tile within the canvas cap', () => {
+    expect(() =>
+      checkTile(1, {
+        x: 0,
+        y: 0,
+        width: 4096,
+        height: MAX_CANVAS_PIXELS / 4096,
+      }),
+    ).not.toThrow();
   });
 });

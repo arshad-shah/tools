@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import {
+  AES_FIXTURE_OWNER_PASSWORD,
   makeAesEncryptedPdf,
+  makeOwnerOnlyEncryptedPdf,
   makeTextPdf,
 } from '../../../test/fixtures/builders';
 import { qpdfToToolError } from './errors';
@@ -81,5 +83,14 @@ describe('qpdf handlers (real wasm in Node)', () => {
       message: 'raw',
     });
     expect(qpdfToToolError(new Error('plain')).code).toBe('UNKNOWN');
+  });
+
+  it('tells the owner password from the user password', async () => {
+    const owner = await makeOwnerOnlyEncryptedPdf();
+    expect(
+      await qpdfHandlers.passwordRole(ctx, owner, AES_FIXTURE_OWNER_PASSWORD),
+    ).toBe('owner');
+    expect(await qpdfHandlers.passwordRole(ctx, owner, '')).toBe('user');
+    expect(await qpdfHandlers.passwordRole(ctx, owner, 'nope')).toBe('none');
   });
 });

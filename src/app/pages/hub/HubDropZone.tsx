@@ -1,18 +1,32 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { putHandoff, HANDOFF_PARAM } from '@/shared/lib/handoff';
-import type { ToolError } from '@/shared/lib/errors';
+import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { IconX } from '@/shared/ui/icons';
-import { Alert, AlertDescription, DropZone, IconButton } from '@/shared/ui';
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DropZone,
+  IconButton,
+} from '@/shared/ui';
 import type { CategoryDef } from '../../categories';
 import { routeDrop, type DropDecision } from '../../drop-routing';
 import { TOOLS } from '../../registry';
+import { imagesAsPdfs } from './images-as-pdfs';
 import { ToolChooser } from './ToolChooser';
 
 export interface HubDropZoneProps {
   category: CategoryDef;
   title?: string;
   hint?: string;
+  /** Hub-specific routing (the PDF hub); default: match tools' accepts rules. */
+  route?: (files: File[]) => Promise<DropDecision>;
 }
 
 /**
@@ -23,6 +37,7 @@ export function HubDropZone({
   category,
   title = 'Drop files to pick a tool',
   hint,
+  route = (files) => routeDrop(files, TOOLS, category.id),
 }: HubDropZoneProps) {
   const navigate = useNavigate();
   const anchor = useRef<HTMLDivElement>(null);
@@ -31,6 +46,11 @@ export function HubDropZone({
     DropDecision,
     { type: 'choose' }
   > | null>(null);
+  const [merge, setMerge] = useState<Extract<
+    DropDecision,
+    { type: 'confirm-merge' }
+  > | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const go = (path: string, files: File[]) =>
     navigate(`${path}?${HANDOFF_PARAM}=${putHandoff(files)}`);
@@ -38,10 +58,24 @@ export function HubDropZone({
   const onFiles = async (files: File[]) => {
     setError(null);
     setChoice(null);
-    const decision = await routeDrop(files, TOOLS, category.id);
+    const decision = await route(files);
     if (decision.type === 'navigate') go(decision.path, decision.files);
     else if (decision.type === 'choose') setChoice(decision);
+    else if (decision.type === 'confirm-merge') setMerge(decision);
     else setError(decision.error);
+  };
+
+  const convertAndMerge = async () => {
+    if (!merge) return;
+    setBusy(true);
+    try {
+      go(merge.path, await imagesAsPdfs(merge.files));
+    } catch (e) {
+      setError(toToolError(e));
+    } finally {
+      setBusy(false);
+      setMerge(null);
+    }
   };
 
   return (
@@ -61,6 +95,20 @@ export function HubDropZone({
         options={choice?.options ?? []}
         onChoose={(path) => choice && go(path, choice.files)}
       />
+      <Dialog open={merge !== null} onOpenChange={(o) => !o && setMerge(null)}>
+        <DialogHeader>
+          <DialogTitle>PDFs and images</DialogTitle>
+          <DialogDescription>{merge?.message}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setMerge(null)}>
+            Cancel
+          </Button>
+          <Button loading={busy} onClick={() => void convertAndMerge()}>
+            Convert and merge
+          </Button>
+        </DialogFooter>
+      </Dialog>
       {error ? (
         <Alert status="danger">
           <div className="flex items-start justify-between gap-3">

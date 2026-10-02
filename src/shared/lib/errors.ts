@@ -8,6 +8,9 @@ export type ToolErrorCode =
   | 'WORKER_CRASHED'
   | 'CANCELLED'
   | 'TIMEOUT'
+  | 'STORAGE_FULL'
+  | 'VERIFICATION_FAILED'
+  | 'NETWORK'
   | 'UNKNOWN';
 
 /** The one error type tools surface to users. `message` is user-facing. */

@@ -35,10 +35,10 @@ for (const [id, label] of Object.entries(CATEGORY_LABELS)) {
   });
 }
 
-test('/pdf/edit is not a route yet', async ({ page }) => {
+test('/pdf/edit is the PDF workspace', async ({ page }) => {
   await page.goto('/pdf/edit');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'No page at /pdf/edit',
+    'PDF workspace',
   );
   expect(new URL(page.url()).pathname).toBe('/pdf/edit');
 });

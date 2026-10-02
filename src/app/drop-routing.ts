@@ -15,7 +15,9 @@ export type DropDecision =
       options: { tool: ToolManifest; path: string }[];
       files: File[];
     }
-  | { type: 'error'; error: ToolError };
+  | { type: 'error'; error: ToolError }
+  /** PDFs and images together: convert the images and merge (asks first). */
+  | { type: 'confirm-merge'; message: string; path: string; files: File[] };
 
 const KIND_LABEL: Record<AcceptKind, string> = {
   pdf: 'PDF',
@@ -102,6 +104,46 @@ export async function routeDrop(
   return {
     type: 'choose',
     options: matches.map((tool) => ({ tool, path: toolPath(tool) })),
+    files,
+  };
+}
+
+const IMAGE_KINDS = new Set<SniffedKind>(['png', 'jpeg', 'webp', 'gif']);
+
+/**
+ * PDF hub drops (spec §5.3): one PDF opens the workspace, several merge,
+ * images become a PDF, and PDFs mixed with images merge after the images are
+ * converted, which the hub asks about first.
+ */
+export async function routePdfHubDrop(
+  files: File[],
+  tools: readonly ToolManifest[],
+): Promise<DropDecision> {
+  const tool = (id: string) => tools.find((t) => t.id === id && t.enabled);
+  const none = () => ({
+    type: 'error' as const,
+    error: new ToolError(
+      'INVALID_FILE',
+      `No tool here accepts these files. Accepted: ${describeAcceptKinds(['pdf', 'png', 'jpeg', 'webp', 'gif'])}`,
+    ),
+  });
+  if (files.length === 0) return none();
+  const kinds = await Promise.all(files.map((f) => sniffAcceptKind(f)));
+  const pdfs = kinds.filter((k) => k === 'pdf').length;
+  const images = kinds.filter((k) => k !== null && IMAGE_KINDS.has(k)).length;
+  const go = (id: string): DropDecision => {
+    const t = tool(id);
+    return t ? { type: 'navigate', path: toolPath(t), tool: t, files } : none();
+  };
+  if (pdfs + images !== files.length) return none();
+  if (images === 0) return go(pdfs === 1 ? 'pdf-edit' : 'pdf-merger');
+  if (pdfs === 0) return go('images-to-pdf');
+  const merger = tool('pdf-merger');
+  if (!merger) return none();
+  return {
+    type: 'confirm-merge',
+    message: 'Convert the images and merge everything?',
+    path: toolPath(merger),
     files,
   };
 }

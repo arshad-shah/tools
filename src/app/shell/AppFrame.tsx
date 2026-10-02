@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useCommands } from '@/shared/lib/commands';
-import { useTheme } from '@/shared/lib/theme';
+import { Outlet, useLocation } from 'react-router-dom';
 import { IconSearch } from '@/shared/ui/icons';
 import {
   AppShell,
@@ -13,13 +11,6 @@ import {
   TopBar,
   useCommandPaletteHotkey,
 } from '@/shared/ui';
-import {
-  favouriteCommands,
-  routeCommands,
-  themeCommands,
-  toolCommands,
-} from '../commands/app-commands';
-import { useFavoritesStore } from '../favorites';
 import Footer from '../Footer';
 import { TOOLS } from '../registry';
 import { toolPath } from '../routes';
@@ -28,24 +19,16 @@ import { BreadcrumbProvider } from './breadcrumb-context';
 import { PaletteContext } from './palette';
 import { routerLink } from './router-link';
 import { ThemeMenu } from './ThemeMenu';
+import { useAppCommands } from './use-app-commands';
 
 function Frame() {
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const segments = useBreadcrumbSegments();
-  const { setPreference } = useTheme();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   useCommandPaletteHotkey(setPaletteOpen);
 
-  // Registration order is the empty-query group order: favourites first.
-  useCommands(
-    favouriteCommands(navigate, () => useFavoritesStore.getState().ids, TOOLS),
-    [navigate],
-  );
-  useCommands(routeCommands(navigate), [navigate]);
-  useCommands(toolCommands(navigate, TOOLS), [navigate]);
-  useCommands(themeCommands(setPreference), [setPreference]);
+  useAppCommands();
 
   // A new page starts at the top.
   // Braces: newer browsers return a Promise from scrollTo, which React

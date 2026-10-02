@@ -76,7 +76,7 @@ test('footer causes no horizontal scroll at 375px', async ({ page }) => {
 });
 
 test('every enabled tool is discovered', () => {
-  // 21 legacy tools + pdf-merger, pdf-splitter, pdf-organize (+ phase-3 tools).
+  // 21 legacy tools + pdf-merger, pdf-splitter, the PDF workspace (+ phase-3 tools).
   expect(ENABLED.length).toBeGreaterThanOrEqual(24);
 });
 

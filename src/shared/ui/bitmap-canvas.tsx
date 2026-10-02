@@ -21,6 +21,8 @@ export interface BitmapCanvasProps {
   label: string;
   /** Previewed rotation, applied as a CSS transform. */
   rotation?: 0 | 90 | 180 | 270;
+  /** Part of the bitmap to show, as fractions (0..1) of its size (a previewed crop). */
+  crop?: { x: number; y: number; width: number; height: number };
   /** Free the backing store (pixels and data-rendered) until it is false. */
   release?: boolean;
   className?: string;
@@ -42,6 +44,7 @@ export function BitmapCanvas({
   aspect,
   label,
   rotation = 0,
+  crop,
   release,
   className,
   onDrawn,
@@ -49,6 +52,8 @@ export function BitmapCanvas({
   'data-testid': testId,
 }: BitmapCanvasProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  // Primitive deps: a new crop object with the same numbers is no change.
+  const { x: cropX, y: cropY, width: cropW, height: cropH } = crop ?? {};
   const drawn = useRef<(() => void) | undefined>(onDrawn);
   useEffect(() => {
     drawn.current = onDrawn;
@@ -64,12 +69,16 @@ export function BitmapCanvas({
       return;
     }
     if (!bitmap || bitmap.width === 0) return;
-    c.width = bitmap.width;
-    c.height = bitmap.height;
-    c.getContext('2d')?.drawImage(bitmap, 0, 0);
+    const sx = Math.round((cropX ?? 0) * bitmap.width);
+    const sy = Math.round((cropY ?? 0) * bitmap.height);
+    const sw = Math.max(1, Math.round((cropW ?? 1) * bitmap.width));
+    const sh = Math.max(1, Math.round((cropH ?? 1) * bitmap.height));
+    c.width = sw;
+    c.height = sh;
+    c.getContext('2d')?.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sw, sh);
     c.dataset.rendered = 'true';
     drawn.current?.();
-  }, [bitmap, release]);
+  }, [bitmap, release, cropX, cropY, cropW, cropH]);
 
   return (
     <div

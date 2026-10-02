@@ -34,6 +34,7 @@ export const CATEGORIES = [
     order: 1,
     fileBased: true,
     groups: [
+      { id: 'workspace', label: 'Workspace', toolIds: ['pdf-edit'] },
       {
         id: 'quick-tasks',
         label: 'Quick tasks',
@@ -53,7 +54,6 @@ export const CATEGORIES = [
         id: 'more',
         label: 'More PDF tools',
         toolIds: [
-          'pdf-organize',
           'pdf-sign',
           'pdf-fill-form',
           'pdf-watermark',

@@ -12,6 +12,10 @@ import { KeysSection } from './sections/KeysSection';
 import { MediaSection } from './sections/MediaSection';
 import { NavigationSection } from './sections/NavigationSection';
 import { OverlaysSection } from './sections/OverlaysSection';
+import { PageOverlaysSection } from './sections/PageOverlaysSection';
+import { PanelsSection } from './sections/PanelsSection';
+import { WorkspaceBarsSection } from './sections/WorkspaceBarsSection';
+import { DocumentSection } from './sections/DocumentSection';
 import { ShellSection } from './sections/ShellSection';
 import { StatesSection } from './sections/StatesSection';
 
@@ -54,6 +58,10 @@ export default function KitGallery() {
       <StatesSection />
       <MediaSection />
       <KeysSection />
+      <PageOverlaysSection />
+      <PanelsSection />
+      <WorkspaceBarsSection />
+      <DocumentSection />
       <IconsSection />
     </div>
   );

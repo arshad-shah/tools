@@ -180,7 +180,26 @@ export interface ShortcutDef {
    * keys (native undo, select all, typing). Escape is always allowed.
    */
   allowInFields?: boolean;
+  /**
+   * Fire while a modal (an `aria-modal="true"` element) is open. Default
+   * false: page and workspace shortcuts sleep behind a modal dialog; set it
+   * for shortcuts the modal itself registers. Escape is always allowed.
+   */
+  allowInModal?: boolean;
   run: (e: KeyboardEvent) => void;
+}
+
+/** A modal is open: the event came from inside one, or one is in the page. */
+function modalOpen(target: EventTarget | null): boolean {
+  if (typeof document === 'undefined') return false;
+  const el = target as Element | null;
+  if (
+    el &&
+    typeof el.closest === 'function' &&
+    el.closest('[aria-modal="true"]')
+  )
+    return true;
+  return document.querySelector('[aria-modal="true"]') !== null;
 }
 
 /** One registration; its defs can be replaced in place (stable priority). */
@@ -196,17 +215,15 @@ function onKeyDown(e: KeyboardEvent): void {
   // An IME is composing: the key belongs to the composition.
   if (e.isComposing || e.key === 'Process') return;
   const typing = isTypingTarget(e.target);
+  const modal = modalOpen(e.target);
   for (let r = stack.length - 1; r >= 0; r--) {
     const defs = stack[r].defs;
     for (let i = defs.length - 1; i >= 0; i--) {
       const def = defs[i];
       if (!matchesHotkey(e, def.combo)) continue;
-      if (
-        typing &&
-        !def.allowInFields &&
-        parseHotkey(def.combo).key !== 'Escape'
-      )
-        continue;
+      const escape = parseHotkey(def.combo).key === 'Escape';
+      if (typing && !def.allowInFields && !escape) continue;
+      if (modal && !def.allowInModal && !escape) continue;
       if (def.when && !def.when()) continue;
       e.preventDefault();
       def.run(e);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ToolError } from '@/shared/lib/errors';
-import { routeDrop } from './drop-routing';
+import { routeDrop, routePdfHubDrop } from './drop-routing';
 import { TOOLS } from './registry';
 
 const f = (content: BlobPart, name = 'f') => new File([content], name);
@@ -67,5 +67,38 @@ describe('routeDrop', () => {
   });
   it('rejects an empty drop', async () => {
     expect((await routeDrop([], TOOLS, 'data')).type).toBe('error');
+  });
+});
+
+describe('routePdfHubDrop', () => {
+  const route = (files: File[]) => routePdfHubDrop(files, TOOLS);
+  it('opens one PDF in the workspace', async () => {
+    expect(await route([pdf()])).toMatchObject({
+      type: 'navigate',
+      path: '/pdf/edit',
+    });
+  });
+  it('merges several PDFs', async () => {
+    expect(await route([pdf(), pdf()])).toMatchObject({
+      type: 'navigate',
+      path: '/pdf/merge',
+    });
+  });
+  it('turns images into a PDF', async () => {
+    expect(await route([f(PNG), f(PNG)])).toMatchObject({
+      type: 'navigate',
+      path: '/pdf/images-to-pdf',
+    });
+  });
+  it('asks before converting images to merge them with PDFs', async () => {
+    expect(await route([pdf(), f(PNG)])).toEqual({
+      type: 'confirm-merge',
+      message: 'Convert the images and merge everything?',
+      path: '/pdf/merge',
+      files: expect.any(Array),
+    });
+  });
+  it('refuses other files', async () => {
+    expect((await route([csv()])).type).toBe('error');
   });
 });

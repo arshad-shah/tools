@@ -1,8 +1,8 @@
 import { ToolError } from '@/shared/lib/errors';
 import { newId } from '@/shared/lib/id';
 import { createRpcClient, type RpcClient } from '@/shared/lib/worker-rpc';
-import type { RenderHandlers } from './render.worker';
-import { createSlotLimiter } from './scheduling';
+import type { RenderHandlers } from './handlers';
+import { createPriorityLimiter, type Priority } from './priority';
 import type { PageImageOptions } from './types';
 
 const workerLost = () =>
@@ -39,8 +39,9 @@ export function createPdfRender(
     now = Date.now,
   }: ReopenPolicy = {},
 ) {
-  // Bound concurrent page renders so a scrolled grid can't queue hundreds at once.
-  const withSlot = createSlotLimiter(4);
+  // Bound concurrent page renders so a scrolled grid can't queue hundreds at
+  // once; the canvas (0) goes before the rail (1) and background work (2).
+  const withSlot = createPriorityLimiter(4);
   const openedIn = new Map<string, number>();
   /**
    * Per source bytes: the generation it was last opened in, and when it was
@@ -152,14 +153,44 @@ export function createPdfRender(
       pageIndex: number,
       widthPx: number,
       signal?: AbortSignal,
+      priority: Priority = 0,
     ) {
-      return withSlot(async () => {
-        // Checked once the slot is ours: a crash may happen while queued.
-        assertAlive(docId);
-        return track(sourceOf.get(docId), () =>
-          client.call('renderPage', [docId, pageIndex, widthPx], { signal }),
-        );
-      }, signal);
+      return withSlot(
+        async () => {
+          // Checked once the slot is ours: a crash may happen while queued.
+          assertAlive(docId);
+          return track(sourceOf.get(docId), () =>
+            client.call('renderPage', [docId, pageIndex, widthPx], { signal }),
+          );
+        },
+        signal,
+        priority,
+      );
+    },
+    /**
+     * One tile of a page at `scale`: `tile` is in viewport px at that scale
+     * (the page's own /Rotate applied).
+     */
+    renderTile(
+      docId: string,
+      pageIndex: number,
+      scale: number,
+      tile: { x: number; y: number; width: number; height: number },
+      signal?: AbortSignal,
+      priority: Priority = 0,
+    ) {
+      return withSlot(
+        async () => {
+          assertAlive(docId);
+          return track(sourceOf.get(docId), () =>
+            client.call('renderTile', [docId, pageIndex, scale, tile], {
+              signal,
+            }),
+          );
+        },
+        signal,
+        priority,
+      );
     },
     /** Encoded PNG/JPEG of one page at `opts.dpi` (capped to the canvas limit). */
     renderPageImage(
@@ -179,6 +210,13 @@ export function createPdfRender(
       assertAlive(docId);
       return track(sourceOf.get(docId), () =>
         client.call('extractText', [docId, pageIndex], { signal }),
+      );
+    },
+    /** Positioned text items of one page, in page space. */
+    async textItems(docId: string, pageIndex: number, signal?: AbortSignal) {
+      assertAlive(docId);
+      return track(sourceOf.get(docId), () =>
+        client.call('textItems', [docId, pageIndex], { signal }),
       );
     },
     close(docId: string) {

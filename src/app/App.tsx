@@ -2,11 +2,12 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { LoadingState, Toaster } from '@/shared/ui';
 import ErrorBoundary from './ErrorBoundary';
-import { getEnabledTools } from './registry';
+import { getEnabledTools, getWorkspaceTool } from './registry';
 import { toolPath } from './routes';
 import { ToolPage } from './pages/ToolPage';
 
 const AppFrame = lazy(() => import('./shell/AppFrame'));
+const WorkspaceFrame = lazy(() => import('./shell/WorkspaceFrame'));
 const Home = lazy(() => import('./pages/Home'));
 const HubRoute = lazy(() => import('./pages/HubRoute'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -17,11 +18,13 @@ const KitGallery = import.meta.env.DEV
   : null;
 
 // Built once at module scope: one lazy component per tool, stable across
-// renders. Disabled tools get no route (clean break, spec §3).
-const toolRoutes = getEnabledTools().map((manifest) => ({
-  manifest,
-  Component: lazy(manifest.load),
-}));
+// renders. Disabled tools get no route (clean break, spec §3). The
+// workspace has its own route and frame.
+const toolRoutes = getEnabledTools()
+  .filter((t) => t.kind !== 'workspace')
+  .map((manifest) => ({ manifest, Component: lazy(manifest.load) }));
+const workspace = getWorkspaceTool();
+const Workspace = workspace ? lazy(workspace.load) : null;
 
 const App: React.FC = () => (
   <ErrorBoundary>
@@ -38,6 +41,14 @@ const App: React.FC = () => (
                 </>
               }
             />
+          ) : null}
+          {workspace && Workspace ? (
+            <Route element={<WorkspaceFrame />}>
+              <Route
+                path="/pdf/edit/:mode?"
+                element={<Workspace definition={workspace} />}
+              />
+            </Route>
           ) : null}
           <Route element={<AppFrame />}>
             <Route path="/" element={<Home />} />
