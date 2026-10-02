@@ -81,27 +81,29 @@ export function autoWidths<R>(
   return widths;
 }
 
-let canvas: CanvasRenderingContext2D | null | undefined;
+type Ctx2D = { font: string; measureText(t: string): { width: number } };
+let ctx: Ctx2D | null | undefined;
 const FONTS = { header: '600 12px', cell: '400 13px' } as const;
 
 /**
- * Canvas text measurement in the page's sans font; a character-count
- * estimate where there is no canvas (jsdom).
+ * Text measurement in the page's sans font through an OffscreenCanvas (as
+ * the diagram engine measures); a character-count estimate where there is
+ * none (jsdom), so tests stay deterministic and quiet.
  */
 export const measureText: Measure = (text, role) => {
-  if (canvas === undefined) {
+  if (ctx === undefined) {
     try {
-      canvas =
-        typeof document === 'undefined'
+      ctx =
+        typeof OffscreenCanvas === 'undefined'
           ? null
-          : document.createElement('canvas').getContext('2d');
+          : (new OffscreenCanvas(1, 1).getContext('2d') as Ctx2D | null);
     } catch {
-      canvas = null;
+      ctx = null;
     }
   }
-  if (!canvas) return text.length * (role === 'header' ? 7.5 : 7.2);
+  if (!ctx) return text.length * (role === 'header' ? 7.5 : 7.2);
   const family =
     getComputedStyle(document.body).fontFamily || 'ui-sans-serif, sans-serif';
-  canvas.font = `${FONTS[role]} ${family}`;
-  return canvas.measureText(text).width;
+  ctx.font = `${FONTS[role]} ${family}`;
+  return ctx.measureText(text).width;
 };

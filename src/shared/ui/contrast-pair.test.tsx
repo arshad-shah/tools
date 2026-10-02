@@ -26,3 +26,18 @@ describe('ContrastPair', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/not a colour/);
   });
 });
+
+describe('ContrastPair preview (6-A2 minor)', () => {
+  it('draws the sample as decorative generated content, so a failing pair does not trip axe', () => {
+    const { container } = render(
+      <ContrastPair fg="#999999" bg="#aaaaaa" sample="Sample words" />,
+    );
+    const preview = container.querySelector('[data-contrast-preview]')!;
+    expect(preview.getAttribute('aria-hidden')).toBe('true');
+    // No text nodes for axe's colour-contrast rule to measure.
+    expect(preview.textContent).toBe('');
+    expect(
+      preview.querySelector('[data-sample]')?.getAttribute('data-sample'),
+    ).toBe('Sample words');
+  });
+});

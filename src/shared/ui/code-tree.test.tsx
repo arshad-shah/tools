@@ -290,3 +290,18 @@ describe('CodeTree', () => {
     ).toBe(true);
   }, 20_000);
 });
+
+describe('CodeTree unnamed root (6-A2 minor)', () => {
+  it('names a root row that has no label', () => {
+    render(
+      <CodeTree
+        ariaLabel="Doc"
+        roots={[{ id: 'r', label: '', summary: '2 keys', childCount: 0 }]}
+        expanded={new Set()}
+        onExpandedChange={() => {}}
+        height={200}
+      />,
+    );
+    expect(screen.getByRole('treeitem', { name: 'root, 2 keys' })).toBeTruthy();
+  });
+});
