@@ -361,6 +361,38 @@ describe('WorkspaceShell', () => {
     expect(model.getState().name).toBe('a.pdf');
   });
 
+  it('workspace shortcuts sleep while a dialog is open', async () => {
+    const { ui, model } = setup();
+    render(ui);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Rotate right' }),
+    );
+    key('s', { ctrlKey: true });
+    const dialog = await screen.findByRole('dialog', { name: /Export/ });
+    key('f', {}, dialog);
+    key('z', { ctrlKey: true }, dialog);
+    expect(useWorkspaceSettings.getState().layout).toBe('standard');
+    expect(model.getView().pages[0].rotate).toBe(90);
+  });
+
+  it('Esc closes the top overlay first, then clears the selection', async () => {
+    const { ui } = setup();
+    render(ui);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Select page 2' }),
+    );
+    const rail = screen.getByRole('listbox', { name: 'Pages' });
+    const second = () =>
+      within(rail).getByRole('option', { name: /^Page 2 of/ });
+    key('s', { ctrlKey: true });
+    const dialog = await screen.findByRole('dialog', { name: /Export/ });
+    key('Escape', {}, dialog);
+    expect(screen.queryByRole('dialog', { name: /Export/ })).toBeNull();
+    expect(second().getAttribute('aria-selected')).toBe('true');
+    key('Escape');
+    expect(second().getAttribute('aria-selected')).toBe('false');
+  });
+
   it('skip links lead to the document and to the tools', async () => {
     const { ui } = setup();
     const { container } = render(ui);

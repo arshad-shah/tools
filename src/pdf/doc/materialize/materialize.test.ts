@@ -76,6 +76,28 @@ describe('materialize', () => {
     expect(doc.getPages()[2].getSize()).toEqual({ width: 300, height: 400 });
   });
 
+  it('repeats a merged page with its own rotation each time', async () => {
+    const out = await materialize(
+      plan({
+        pages: [
+          ref('m1', 's2', 0),
+          ref('c:0', 's0', 0),
+          ref('m1b', 's2', 0, 270),
+        ],
+      }),
+      ctx(),
+    );
+    expect(await pdfPageTexts(out.bytes)).toEqual([
+      'Merged 1',
+      'Alpha 1',
+      'Merged 1',
+    ]);
+    const doc = await PDFDocument.load(out.bytes);
+    expect(doc.getPages().map((p) => p.getRotation().angle)).toEqual([
+      0, 0, 270,
+    ]);
+  });
+
   it('copies pages with one copyPages call per source document', async () => {
     const copy = vi.spyOn(PDFDocument.prototype, 'copyPages');
     try {
