@@ -4,6 +4,7 @@ import { useTheme, type ThemePreference } from '@/shared/lib/theme';
 import { ButtonsSection } from './sections/ButtonsSection';
 import { CardsSection } from './sections/CardsSection';
 import { DataSection } from './sections/DataSection';
+import { DiagramSection } from './sections/DiagramSection';
 import { DialogsSection } from './sections/DialogsSection';
 import { IconsSection } from './sections/IconsSection';
 import { InputsSection } from './sections/InputsSection';
@@ -48,6 +49,7 @@ export default function KitGallery() {
       <ShellSection />
       <CardsSection />
       <DataSection />
+      <DiagramSection />
       <StatesSection />
       <KeysSection />
       <IconsSection />

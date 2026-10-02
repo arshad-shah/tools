@@ -10,6 +10,7 @@ const SECTIONS = [
   'shell',
   'cards',
   'data',
+  'diagram',
   'states',
   'keys',
 ];
