@@ -64,7 +64,12 @@ function inflateCapped(data: Uint8Array, max: number): Uint8Array {
       throw damaged(new Error('Decompressed share data too large'));
     chunks.push(chunk);
   });
-  inflate.push(data, true);
+  // Small input slices bound each step's output (DEFLATE expands at most
+  // about 1032x), so the cap trips within ~130 KB, not after a whole bomb.
+  const STEP = 128;
+  for (let i = 0; i < data.length; i += STEP)
+    inflate.push(data.subarray(i, i + STEP), i + STEP >= data.length);
+  if (data.length === 0) inflate.push(data, true);
   const out = new Uint8Array(size);
   let at = 0;
   for (const c of chunks) {
