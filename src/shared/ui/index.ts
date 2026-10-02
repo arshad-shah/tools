@@ -51,7 +51,14 @@ export {
 export { ButtonGroup } from './button-group';
 export { Tooltip, type TooltipProps } from './tooltip';
 export { Popover, type PopoverProps } from './popover';
-export { placeFloating, type Side, type Align, type Rect } from './position';
+export {
+  useAnchoredFloating,
+  type Side,
+  type Align,
+  type Rect,
+  type Anchor,
+} from './position';
+export { HoverCard, type HoverCardProps } from './hover-card';
 export {
   SegmentedControl,
   type SegmentedControlProps,

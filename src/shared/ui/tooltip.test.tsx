@@ -48,27 +48,43 @@ describe('Tooltip', () => {
 
 describe('Tooltip, WCAG 1.4.13 (review M16)', () => {
   const setup = () => {
-    const utils = render(
+    render(
       <Tooltip content="Undo">
         <button type="button">u</button>
       </Tooltip>,
     );
     const button = screen.getByRole('button');
     const wrapper = button.parentElement!;
-    const bubble = () => utils.container.querySelector('[data-tooltip-bubble]');
+    // The bubble is portaled to body.
+    const bubble = () => document.querySelector('[data-tooltip-bubble]');
     return { button, wrapper, bubble };
   };
 
   it('shows on hover and stays while the pointer is over the bubble', () => {
+    vi.useFakeTimers();
     const { wrapper, bubble } = setup();
     expect(bubble()).toBeNull();
     fireEvent.pointerEnter(wrapper);
     expect(bubble()).not.toBeNull();
-    // The bubble is inside the wrapper and accepts the pointer.
-    expect(wrapper.contains(bubble())).toBe(true);
+    // Portaled out of any clipping ancestor, and it accepts the pointer.
+    expect(bubble()!.parentElement).toBe(document.body);
     expect(bubble()!.className).not.toContain('pointer-events-none');
+    // Crossing the gap from the trigger onto the bubble keeps it open.
     fireEvent.pointerLeave(wrapper);
+    fireEvent.pointerEnter(bubble()!);
+    act(() => vi.advanceTimersByTime(500));
+    expect(bubble()).not.toBeNull();
+    fireEvent.pointerLeave(bubble()!);
+    act(() => vi.advanceTimersByTime(500));
     expect(bubble()).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('carries an arrow and is placed with a fixed strategy', () => {
+    const { wrapper, bubble } = setup();
+    fireEvent.pointerEnter(wrapper);
+    expect(bubble()!.querySelector('[data-tooltip-arrow]')).not.toBeNull();
+    expect((bubble() as HTMLElement).style.position).toBe('fixed');
   });
 
   it('shows on focus and Escape dismisses it without moving focus', () => {

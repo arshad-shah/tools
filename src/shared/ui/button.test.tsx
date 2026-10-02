@@ -44,6 +44,34 @@ describe('IconButton', () => {
     expect(container.querySelector('svg')?.getAttribute('width')).toBe('20');
   });
 
+  it('sm and md take their box and glyph from the size tokens', () => {
+    render(
+      <>
+        <IconButton label="Small" icon={IconSearch} size="sm" />
+        <IconButton label="Medium" icon={IconSearch} />
+      </>,
+    );
+    const sm = screen.getByRole('button', { name: 'Small' });
+    const md = screen.getByRole('button', { name: 'Medium' });
+    expect(sm.className).toContain('size-(--icon-button-sm)');
+    expect(md.className).toContain('size-(--icon-button-md)');
+    expect(sm.querySelector('svg')?.getAttribute('class')).toContain(
+      'size-(--icon-glyph-sm)',
+    );
+    expect(md.querySelector('svg')?.getAttribute('class')).toContain(
+      'size-(--icon-glyph-md)',
+    );
+  });
+
+  it('a rendered icon node keeps its own size', () => {
+    const { container } = render(
+      <IconButton label="More" icon={<IconSearch size="xs" />} size="sm" />,
+    );
+    expect(container.querySelector('svg')?.getAttribute('class')).not.toContain(
+      'icon-glyph',
+    );
+  });
+
   it('lg is a 44px touch target', () => {
     render(<IconButton label="Search" icon={IconSearch} size="lg" />);
     expect(screen.getByRole('button').className).toContain('size-11');

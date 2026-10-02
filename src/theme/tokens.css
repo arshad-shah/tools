@@ -162,6 +162,34 @@
   --animate-caret: caret-blink 1.1s step-end infinite;
 }
 
+/*
+ * Icon button sizes (box and glyph). The base suits an unknown pointer; a
+ * fine pointer (mouse, trackpad) gets one step up, and a coarse pointer
+ * (touch) gets a 44px target. lg is the 44px touch size everywhere.
+ */
+:root {
+  --icon-button-sm: 32px;
+  --icon-button-md: 36px;
+  --icon-glyph-sm: 14px;
+  --icon-glyph-md: 18px;
+}
+@media (pointer: fine) {
+  :root {
+    --icon-button-sm: 36px;
+    --icon-button-md: 40px;
+    --icon-glyph-sm: 16px;
+    --icon-glyph-md: 20px;
+  }
+}
+@media (pointer: coarse) {
+  :root {
+    --icon-button-sm: 44px;
+    --icon-button-md: 44px;
+    --icon-glyph-sm: 16px;
+    --icon-glyph-md: 20px;
+  }
+}
+
 @utility duration-fast {
   transition-duration: 120ms;
 }
@@ -191,6 +219,11 @@
 }
 @utility z-palette {
   z-index: 70;
+}
+/* Anchored surfaces (tooltip, menu, popover, hover card) portal to body and
+   may open from inside any layer, a dialog or the palette included. */
+@utility z-floating {
+  z-index: 80;
 }
 @utility font-mono-meta {
   font-family: var(--font-mono);
