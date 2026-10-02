@@ -1,0 +1,95 @@
+import React from 'react';
+import { IconFileText, IconRefreshCw, IconTrash2 } from '@/shared/ui/icons';
+
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Inline,
+  Label,
+  Select,
+  Stack,
+  Textarea,
+} from '@/shared/ui';
+import type { LogType } from '../types';
+
+const LOG_TYPE_OPTIONS = [
+  { value: 'auto', label: 'Auto-detect' },
+  { value: 'spring', label: 'Spring Boot' },
+  { value: 'django', label: 'Django' },
+  { value: 'node', label: 'Node.js' },
+  { value: 'log4j', label: 'Log4j' },
+  { value: 'sql', label: 'SQL' },
+  { value: 'webpack', label: 'Webpack' },
+  { value: 'generic', label: 'Generic' },
+];
+
+interface InputPanelProps {
+  logText: string;
+  setLogText: (text: string) => void;
+  logType: LogType;
+  setLogType: (type: LogType) => void;
+  loadSampleLogs: () => void;
+  clearLogs: () => void;
+}
+
+export const InputPanel: React.FC<InputPanelProps> = ({
+  logText,
+  setLogText,
+  logType,
+  setLogType,
+  loadSampleLogs,
+  clearLogs,
+}) => (
+  <Card>
+    <CardHeader>
+      <Inline justify="between" align="center" wrap gap="2">
+        <Inline align="center" gap="2">
+          <IconFileText size="md" />
+          <CardTitle as="h3">Log input</CardTitle>
+        </Inline>
+        <Inline gap="2" wrap>
+          <Button
+            variant="soft"
+            size="sm"
+            leftIcon={<IconRefreshCw size="sm" />}
+            onClick={loadSampleLogs}
+          >
+            Load sample
+          </Button>
+          <Button
+            variant="soft"
+            size="sm"
+            leftIcon={<IconTrash2 size="sm" />}
+            disabled={!logText}
+            onClick={clearLogs}
+          >
+            Clear
+          </Button>
+        </Inline>
+      </Inline>
+    </CardHeader>
+    <CardBody>
+      <Stack gap="3">
+        <Stack gap="2">
+          <Label>Log type</Label>
+          <Select
+            value={logType}
+            onValueChange={(v) => setLogType(v as LogType)}
+            items={LOG_TYPE_OPTIONS}
+            aria-label="Log type"
+          />
+        </Stack>
+        <Textarea
+          value={logText}
+          onChange={setLogText}
+          placeholder="Paste log lines here…"
+          rows={12}
+          aria-label="Log text"
+        />
+      </Stack>
+    </CardBody>
+  </Card>
+);

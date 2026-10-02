@@ -36,6 +36,10 @@ test('calculator expression mode honours degrees and radians', async ({
 test('calculator standard mode works from the keyboard', async ({ page }) => {
   await page.goto('/calculator');
   const display = page.locator('main h3.tabular-nums');
+  // The route is lazy: on a cold dev server its first compile can outlast the
+  // 5 s expect timeout. Wait for it like the other tests' first click does
+  // (bounded by the test timeout), then assert.
+  await display.waitFor();
   await expect(display).toHaveText('0');
   await page.keyboard.type('12+3');
   await page.keyboard.press('Enter');

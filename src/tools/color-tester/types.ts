@@ -28,3 +28,9 @@ interface ColorHarmony {
 type TabType = 'harmony' | 'psychology' | 'preview' | 'accessibility';
 
 export type { ColorInfo, HarmonyColor, ColorHarmony, TabType };
+
+interface ColorLike {
+  toString: (format: 'hex') => string;
+}
+
+export type { ColorLike };

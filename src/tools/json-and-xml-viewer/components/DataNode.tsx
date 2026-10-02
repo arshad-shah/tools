@@ -100,7 +100,7 @@ const renderSummary = (data: any, kind: ValueKind, isExpanded: boolean) => {
   );
 };
 
-const DataNode: React.FC<{
+export const DataNode: React.FC<{
   name: string;
   data: any;
   depth: number;
@@ -190,5 +190,3 @@ const DataNode: React.FC<{
     </div>
   );
 };
-
-export default DataNode;

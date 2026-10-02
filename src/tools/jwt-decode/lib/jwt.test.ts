@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bytesToBase64, utf8Encode } from '@/shared/lib/encoding';
 import { ToolError } from '@/shared/lib/errors';
-import { decodeJwt, isExpired, timeClaimsStatus } from './jwt';
+import { decodeJwt, isExpired, timeClaimsStatus, tryDecodeJwt } from './jwt';
 
 const b64url = (v: unknown) =>
   bytesToBase64(utf8Encode(JSON.stringify(v)), { urlSafe: true });
@@ -116,5 +116,34 @@ describe('strict segments', () => {
     const header = b64url({ alg: 'HS256' });
     expect(() => decodeJwt(`${header}.e30=.sig`)).toThrow(/Base64url/);
     expect(() => decodeJwt(`${header}.e30.a+b/`)).toThrow(/signature/);
+  });
+});
+
+describe('tryDecodeJwt', () => {
+  it('gives no result and no error for empty input', () => {
+    expect(tryDecodeJwt('')).toEqual({ decoded: null, error: '' });
+    expect(tryDecodeJwt('   ')).toEqual({ decoded: null, error: '' });
+  });
+
+  it('returns the decoded token', () => {
+    const t = token({ sub: '1' });
+    const r = tryDecodeJwt(t);
+    expect(r.error).toBe('');
+    expect(r.decoded).toMatchObject({
+      header: { alg: 'HS256' },
+      payload: { sub: '1' },
+      signature: 'c2ln',
+    });
+  });
+
+  it('turns a decode failure into its message', () => {
+    expect(tryDecodeJwt('a.b')).toEqual({
+      decoded: null,
+      error: 'Invalid JWT format. Expected 3 parts separated by dots.',
+    });
+    expect(tryDecodeJwt('!.e30.sig')).toEqual({
+      decoded: null,
+      error: 'The header is not valid Base64url',
+    });
   });
 });

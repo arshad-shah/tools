@@ -1,17 +1,3 @@
-import {
-  IconAlertCircle,
-  IconCalendar,
-  IconClock,
-  IconGlobe,
-  IconHash,
-  IconInfo,
-  IconKey,
-  IconMail,
-  IconShield,
-  IconTarget,
-  IconUser,
-  IconZap,
-} from '@/shared/ui/icons';
 import { ExpiryInfo } from '../types';
 import { isExpired } from './jwt';
 
@@ -38,31 +24,12 @@ const getExpiryInfo = (
   const hours = Math.floor((timeLeft % 86400) / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);
 
-  let timeString = '';
+  let timeString: string;
   if (days > 0) timeString = `${days}d ${hours}h`;
   else if (hours > 0) timeString = `${hours}h ${minutes}m`;
   else timeString = `${minutes}m`;
 
   return { isExpired: false, timeLeft: timeString, expiryDate };
-};
-
-const getClaimIcon = (key: string) => {
-  const icons: Record<string, React.ReactNode> = {
-    sub: <IconUser size="sm" />,
-    name: <IconUser size="sm" />,
-    email: <IconMail size="sm" />,
-    role: <IconShield size="sm" />,
-    roles: <IconShield size="sm" />,
-    permissions: <IconKey size="sm" />,
-    iat: <IconCalendar size="sm" />,
-    exp: <IconClock size="sm" />,
-    nbf: <IconAlertCircle size="sm" />,
-    iss: <IconGlobe size="sm" />,
-    aud: <IconTarget size="sm" />,
-    scope: <IconZap size="sm" />,
-    jti: <IconHash size="sm" />,
-  };
-  return icons[key] || <IconInfo size="sm" />;
 };
 
 const getClaimLabel = (key: string): string => {
@@ -82,4 +49,4 @@ const getClaimLabel = (key: string): string => {
   );
 };
 
-export { formatTime, getExpiryInfo, getClaimIcon, getClaimLabel };
+export { formatTime, getExpiryInfo, getClaimLabel };

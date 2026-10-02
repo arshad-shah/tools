@@ -2,7 +2,6 @@ export enum PlayerState {
   Idle,
   Loading,
   Active,
-  Error,
 }
 
 export enum PlayerError {
@@ -20,10 +19,9 @@ export type Status = {
 export type RiveAnimations = { animations: string[]; active: string };
 export type RiveStateMachines = { stateMachines: string[]; active: string };
 export type RiveController = { active: 'animations' | 'state-machines' };
+/** What the runtime reports about the loaded file (artboards from `contents`). */
 export type RiveInfo = {
-  version: string;
   fileSize: number;
-  fps: number | string;
   artboardCount: number;
 };
 export type DebugLog = {

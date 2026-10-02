@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadDiffFile } from './textFile';
+import { loadDiffFile } from './text-file';
 
 const file = (name: string, type: string, text = 'x') =>
   new File([text], name, { type });

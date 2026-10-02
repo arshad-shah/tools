@@ -1,34 +1,20 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
-  IconArrowLeft,
-  IconBarChart4,
   IconCalculator,
   IconClock,
-  IconDivide,
-  IconEqual,
   IconHistory,
-  IconMinus,
-  IconPercent,
-  IconPlus,
-  IconPower,
   IconRotateCcw,
   IconStar,
-  IconTrash2,
-  IconX,
 } from '@/shared/ui/icons';
+
 import {
-  Alert,
-  AlertDescription,
   Badge,
-  Box,
   Button,
   ButtonGroup,
   Card,
   CardBody,
   CardHeader,
-  CardTitle,
   Container,
-  Grid,
   Heading,
   IconButton,
   Inline,
@@ -37,39 +23,13 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-  Textarea,
 } from '@/shared/ui';
 import { useCalculator } from './hooks/useCalculator';
-import PlotlyGraphDisplay from './components/GraphDisplay';
-
-type KeyColorScheme = 'accent' | 'neutral' | 'danger' | 'success' | 'warning';
-type KeyVariant = 'solid' | 'soft' | 'outline' | 'ghost';
-
-interface CalcKeyProps {
-  onClick?: () => void;
-  variant?: KeyVariant;
-  colorScheme?: KeyColorScheme;
-  icon?: React.ReactNode;
-  children?: React.ReactNode;
-}
-
-const CalcKey: React.FC<CalcKeyProps> = ({
-  onClick,
-  variant = 'soft',
-  colorScheme = 'neutral',
-  icon,
-  children,
-}) => (
-  <Button
-    variant={colorScheme === 'danger' ? 'danger' : variant}
-    size="lg"
-    leftIcon={icon}
-    onClick={onClick}
-    fullWidth
-  >
-    {children}
-  </Button>
-);
+import { formatDisplay } from './lib/display';
+import { ScientificKeypad, StandardKeypad } from './components/Keypad';
+import { ExpressionPanel } from './components/ExpressionPanel';
+import { MemoryPanel } from './components/MemoryPanel';
+import { FavoritesPanel, HistoryPanel } from './components/HistoryPanel';
 
 const Calculator: React.FC = () => {
   const calc = useCalculator();
@@ -82,8 +42,8 @@ const Calculator: React.FC = () => {
     pendingOperator,
     calculationValue,
     previousCalculation,
-    formatDisplay,
     toggleHistory,
+    showHistory,
     toggleFavorites,
     showFavorites,
     toggleMemoryPanel,
@@ -91,251 +51,30 @@ const Calculator: React.FC = () => {
     toggleTimestamps,
     showTimestamp,
     calculationHistory,
-    savedCalculations,
     memories,
-    memoryClearAll,
-    memoryAdd,
-    memorySubtract,
-    memoryRecall,
-    memoryClear,
-
-    inputDigit,
-    inputDecimal,
-    clear,
-    clearEntry,
-    backspace,
-    toggleSign,
-    percentage,
-    performOperation,
-    calculate,
-
-    squareRoot,
-    square,
-    reciprocal,
-    factorial,
-    sin,
-    cos,
-    tan,
-    asin,
-    acos,
-    atan,
-    sinh,
-    cosh,
-    tanh,
-
-    evaluateExpression,
-    checkParenthesesBalance,
-    saveCalculation,
-    toggleGraph,
-    showGraph,
     setDisplay,
-    setCalculationHistory,
-    setSavedCalculations,
   } = calc;
 
   const handleUseResult = (value: string) => setDisplay(value);
 
   const hasMemory = memories.some((m) => m.value !== null);
-  const isBalanced = useMemo(
-    () => checkParenthesesBalance(display),
-    [display, checkParenthesesBalance],
-  );
 
-  const renderStandardKeypad = () => (
-    <Grid cols={4} gap="2">
-      <CalcKey variant="solid" colorScheme="danger" onClick={clear}>
-        C
-      </CalcKey>
-      <CalcKey onClick={clearEntry}>CE</CalcKey>
-      <CalcKey onClick={backspace} icon={<IconArrowLeft size="sm" />} />
-      <CalcKey
-        variant="solid"
-        colorScheme="accent"
-        onClick={() => performOperation('÷')}
-        icon={<IconDivide size="sm" />}
-      />
-
-      <CalcKey onClick={() => inputDigit(7)}>7</CalcKey>
-      <CalcKey onClick={() => inputDigit(8)}>8</CalcKey>
-      <CalcKey onClick={() => inputDigit(9)}>9</CalcKey>
-      <CalcKey
-        variant="solid"
-        colorScheme="accent"
-        onClick={() => performOperation('×')}
-        icon={<IconX size="sm" />}
-      />
-
-      <CalcKey onClick={() => inputDigit(4)}>4</CalcKey>
-      <CalcKey onClick={() => inputDigit(5)}>5</CalcKey>
-      <CalcKey onClick={() => inputDigit(6)}>6</CalcKey>
-      <CalcKey
-        variant="solid"
-        colorScheme="accent"
-        onClick={() => performOperation('-')}
-        icon={<IconMinus size="sm" />}
-      />
-
-      <CalcKey onClick={() => inputDigit(1)}>1</CalcKey>
-      <CalcKey onClick={() => inputDigit(2)}>2</CalcKey>
-      <CalcKey onClick={() => inputDigit(3)}>3</CalcKey>
-      <CalcKey
-        variant="solid"
-        colorScheme="accent"
-        onClick={() => performOperation('+')}
-        icon={<IconPlus size="sm" />}
-      />
-
-      <CalcKey onClick={toggleSign}>±</CalcKey>
-      <CalcKey onClick={() => inputDigit(0)}>0</CalcKey>
-      <CalcKey onClick={inputDecimal}>.</CalcKey>
-      <CalcKey
-        variant="solid"
-        colorScheme="success"
-        onClick={calculate}
-        icon={<IconEqual size="sm" />}
-      />
-
-      <CalcKey onClick={percentage} icon={<IconPercent size="sm" />} />
-      <CalcKey onClick={squareRoot}>√</CalcKey>
-      <CalcKey onClick={square}>x²</CalcKey>
-      <CalcKey onClick={reciprocal}>1/x</CalcKey>
-    </Grid>
-  );
-
-  const renderScientificExtras = () => (
-    <Grid cols={4} gap="2">
-      <CalcKey variant="soft" colorScheme="accent" onClick={factorial}>
-        x!
-      </CalcKey>
-      <CalcKey
-        variant="soft"
-        colorScheme="accent"
-        onClick={() => performOperation('pow')}
-        icon={<IconPower size="sm" />}
-      />
-      <CalcKey variant="soft" colorScheme="accent" onClick={sin}>
-        sin
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={cos}>
-        cos
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={tan}>
-        tan
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={asin}>
-        asin
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={acos}>
-        acos
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={atan}>
-        atan
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={sinh}>
-        sinh
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={cosh}>
-        cosh
-      </CalcKey>
-      <CalcKey variant="soft" colorScheme="accent" onClick={tanh}>
-        tanh
-      </CalcKey>
-      <CalcKey
-        variant="soft"
-        colorScheme="accent"
-        onClick={() => performOperation('mod')}
-      >
-        mod
-      </CalcKey>
-    </Grid>
-  );
-
-  const renderExpressionMode = () => (
-    <Stack gap="3">
-      <Alert status="info">
-        <AlertDescription>
-          Use expressions like 2+3*4, sin(30), or x^2+1. Trig functions use the
-          DEG or RAD setting above. Parentheses balanced:{' '}
-          <Badge
-            variant="soft"
-            tone={isBalanced ? 'success' : 'danger'}
-            size="xs"
-          >
-            {isBalanced ? 'Yes' : 'No'}
-          </Badge>
-        </AlertDescription>
-      </Alert>
-
-      <Inline gap="2" wrap>
-        <Box className="flex-1">
-          <Button
-            variant="solid"
-            onClick={evaluateExpression}
-            leftIcon={<IconEqual size="sm" />}
-            fullWidth
-          >
-            Evaluate
-          </Button>
-        </Box>
-        <IconButton
-          variant="soft"
-          label="Save calculation"
-          icon={<IconStar size="sm" />}
-          onClick={saveCalculation}
-        />
-        <IconButton
-          variant={showGraph ? 'solid' : 'soft'}
-          label="Plot expression"
-          icon={<IconBarChart4 size="sm" />}
-          onClick={toggleGraph}
-        />
-      </Inline>
-
-      {showGraph && (
-        <Card>
-          <CardBody>
-            <PlotlyGraphDisplay expression={display} angleUnit={angleUnit} />
-          </CardBody>
-        </Card>
-      )}
-
-      <Textarea
-        value={display}
-        onChange={setDisplay}
-        rows={4}
-        placeholder="Enter mathematical expression (use 'x' for plotting)…"
-        aria-label="Expression"
-      />
-
-      <Grid cols={4} gap="2">
-        <CalcKey onClick={() => setDisplay(display + '(')}>(</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + ')')}>)</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + '^')}>^</CalcKey>
-        <CalcKey variant="solid" colorScheme="danger" onClick={clear}>
-          C
-        </CalcKey>
-
-        <CalcKey onClick={() => setDisplay(display + 'sin(')}>sin</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + 'cos(')}>cos</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + 'tan(')}>tan</CalcKey>
-        <CalcKey onClick={backspace} icon={<IconArrowLeft size="sm" />} />
-
-        <CalcKey onClick={() => setDisplay(display + 'sqrt(')}>sqrt</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + 'log(')}>log</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + 'ln(')}>ln</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + '!')}>!</CalcKey>
-
-        <CalcKey onClick={() => setDisplay(display + 'x')}>x</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + 'pi')}>π</CalcKey>
-        <CalcKey onClick={() => setDisplay(display + 'e')}>e</CalcKey>
-        <CalcKey
-          variant="solid"
-          colorScheme="success"
-          onClick={evaluateExpression}
-          icon={<IconEqual size="sm" />}
-        />
-      </Grid>
-    </Stack>
+  // Shown on its own in Standard mode and under the scientific keys.
+  const standardKeypad = (
+    <StandardKeypad
+      clear={calc.clear}
+      clearEntry={calc.clearEntry}
+      backspace={calc.backspace}
+      performOperation={calc.performOperation}
+      inputDigit={calc.inputDigit}
+      toggleSign={calc.toggleSign}
+      inputDecimal={calc.inputDecimal}
+      calculate={calc.calculate}
+      percentage={calc.percentage}
+      squareRoot={calc.squareRoot}
+      square={calc.square}
+      reciprocal={calc.reciprocal}
+    />
   );
 
   return (
@@ -369,7 +108,7 @@ const Calculator: React.FC = () => {
                   onClick={toggleMemoryPanel}
                 />
                 <IconButton
-                  variant="soft"
+                  variant={showHistory ? 'solid' : 'soft'}
                   size="sm"
                   label="History"
                   icon={<IconHistory size="sm" />}
@@ -449,204 +188,68 @@ const Calculator: React.FC = () => {
                 </Card>
               )}
 
-              {mode === 'standard' && renderStandardKeypad()}
+              {mode === 'standard' && standardKeypad}
               {mode === 'scientific' && (
                 <Stack gap="3">
-                  {renderScientificExtras()}
-                  {renderStandardKeypad()}
+                  <ScientificKeypad
+                    factorial={calc.factorial}
+                    performOperation={calc.performOperation}
+                    sin={calc.sin}
+                    cos={calc.cos}
+                    tan={calc.tan}
+                    asin={calc.asin}
+                    acos={calc.acos}
+                    atan={calc.atan}
+                    sinh={calc.sinh}
+                    cosh={calc.cosh}
+                    tanh={calc.tanh}
+                  />
+                  {standardKeypad}
                 </Stack>
               )}
-              {mode === 'expression' && renderExpressionMode()}
+              {mode === 'expression' && (
+                <ExpressionPanel
+                  display={display}
+                  setDisplay={setDisplay}
+                  angleUnit={angleUnit}
+                  evaluateExpression={calc.evaluateExpression}
+                  saveCalculation={calc.saveCalculation}
+                  showGraph={calc.showGraph}
+                  toggleGraph={calc.toggleGraph}
+                  clear={calc.clear}
+                  backspace={calc.backspace}
+                />
+              )}
             </Stack>
           </CardBody>
         </Card>
 
         {showMemoryPanel && (
-          <Card>
-            <CardHeader>
-              <Inline justify="between" align="center">
-                <CardTitle as="h3">Memory registers</CardTitle>
-                <Button variant="danger" size="sm" onClick={memoryClearAll}>
-                  Clear all
-                </Button>
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              <Stack gap="2">
-                {memories.map((mem, i) => (
-                  <Card key={mem.label}>
-                    <CardBody>
-                      <Inline justify="between" align="center" gap="2" wrap>
-                        <Text size="sm" weight="medium">
-                          {mem.label}:{' '}
-                          {mem.value === null ? '—' : String(mem.value)}
-                        </Text>
-                        <ButtonGroup>
-                          <Button
-                            variant="soft"
-                            size="sm"
-                            onClick={() => memoryRecall(i)}
-                          >
-                            MR
-                          </Button>
-                          <Button
-                            variant="soft"
-                            size="sm"
-                            onClick={() => memoryAdd(i)}
-                          >
-                            M+
-                          </Button>
-                          <Button
-                            variant="soft"
-                            size="sm"
-                            onClick={() => memorySubtract(i)}
-                          >
-                            M-
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => memoryClear(i)}
-                          >
-                            MC
-                          </Button>
-                        </ButtonGroup>
-                      </Inline>
-                    </CardBody>
-                  </Card>
-                ))}
-              </Stack>
-            </CardBody>
-          </Card>
+          <MemoryPanel
+            memories={memories}
+            memoryClearAll={calc.memoryClearAll}
+            memoryRecall={calc.memoryRecall}
+            memoryAdd={calc.memoryAdd}
+            memorySubtract={calc.memorySubtract}
+            memoryClear={calc.memoryClear}
+          />
         )}
 
-        {calculationHistory.length > 0 && (
-          <Card>
-            <CardHeader>
-              <Inline justify="between" align="center">
-                <CardTitle as="h3">History</CardTitle>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setCalculationHistory([])}
-                >
-                  Clear
-                </Button>
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              <Box className="overflow-auto max-h-96">
-                <Stack gap="2">
-                  {calculationHistory.map((item, idx) => {
-                    const text =
-                      typeof item === 'string' ? item : item.calculation;
-                    const timestamp =
-                      typeof item === 'string' ? undefined : item.timestamp;
-                    return (
-                      <Card key={idx}>
-                        <CardBody>
-                          <Stack gap="1">
-                            <Text size="sm">{text}</Text>
-                            {showTimestamp && timestamp && (
-                              <Text size="xs" tone="subtle">
-                                {timestamp}
-                              </Text>
-                            )}
-                            <Inline>
-                              <Button
-                                variant="soft"
-                                size="sm"
-                                onClick={() => {
-                                  const parts = text.split(' = ');
-                                  if (parts.length === 2)
-                                    handleUseResult(parts[1]);
-                                }}
-                              >
-                                Use result
-                              </Button>
-                            </Inline>
-                          </Stack>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              </Box>
-            </CardBody>
-          </Card>
+        {showHistory && (
+          <HistoryPanel
+            calculationHistory={calculationHistory}
+            setCalculationHistory={calc.setCalculationHistory}
+            showTimestamp={showTimestamp}
+            onUseResult={handleUseResult}
+          />
         )}
 
         {showFavorites && (
-          <Card>
-            <CardHeader>
-              <Inline justify="between" align="center">
-                <CardTitle as="h3">Saved calculations</CardTitle>
-                {savedCalculations.length > 0 && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => setSavedCalculations([])}
-                  >
-                    Clear all
-                  </Button>
-                )}
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              {savedCalculations.length === 0 ? (
-                <Text size="sm" tone="subtle" className="text-center">
-                  No saved calculations yet
-                </Text>
-              ) : (
-                <Box className="overflow-auto max-h-96">
-                  <Stack gap="2">
-                    {savedCalculations.map((item, idx) => (
-                      <Card key={idx}>
-                        <CardBody>
-                          <Stack gap="1">
-                            <Inline justify="between" align="start" gap="2">
-                              <Stack gap="1">
-                                <Text size="sm">{item.calculation}</Text>
-                                {item.timestamp && (
-                                  <Text size="xs" tone="subtle">
-                                    {item.timestamp}
-                                  </Text>
-                                )}
-                              </Stack>
-                              <IconButton
-                                variant="ghost"
-                                size="sm"
-                                label="Remove"
-                                icon={<IconTrash2 size="sm" />}
-                                onClick={() => {
-                                  const next = [...savedCalculations];
-                                  next.splice(idx, 1);
-                                  setSavedCalculations(next);
-                                }}
-                              />
-                            </Inline>
-                            <Inline>
-                              <Button
-                                variant="soft"
-                                size="sm"
-                                onClick={() => {
-                                  const parts = item.calculation.split(' = ');
-                                  if (parts.length === 2)
-                                    handleUseResult(parts[1]);
-                                }}
-                              >
-                                Use result
-                              </Button>
-                            </Inline>
-                          </Stack>
-                        </CardBody>
-                      </Card>
-                    ))}
-                  </Stack>
-                </Box>
-              )}
-            </CardBody>
-          </Card>
+          <FavoritesPanel
+            savedCalculations={calc.savedCalculations}
+            setSavedCalculations={calc.setSavedCalculations}
+            onUseResult={handleUseResult}
+          />
         )}
       </Stack>
     </Container>

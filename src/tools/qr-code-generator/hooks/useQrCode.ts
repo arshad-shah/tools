@@ -1,5 +1,4 @@
-// hooks/useQRCode.ts
-import { useState, useEffect, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   QRCodeState,
   QRCodeType,
@@ -11,11 +10,7 @@ import {
   WifiData,
   CryptoData,
 } from '../types';
-import {
-  generateQRContent,
-  encryptContent,
-  generateRandomString,
-} from '../lib/qr-content';
+import { buildFinalData, generateRandomString } from '../lib/qr-content';
 import { qrFilename, qrToBlob } from '../lib/qr-export';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
@@ -62,8 +57,6 @@ const initialState: QRCodeState = {
   },
   maskPattern: -1,
   version: 0,
-  finalData: '',
-  isProcessing: false,
 };
 
 export const useQRCode = () => {
@@ -71,38 +64,21 @@ export const useQRCode = () => {
   const [state, setState] = useState<QRCodeState>(initialState);
   const qrRef = useRef<HTMLDivElement>(null!);
 
-  // Update the final data based on the selected type and encryption
-  useEffect(() => {
-    setState((prevState) => ({
-      ...prevState,
-      isProcessing: true,
-    }));
-
-    // Generate content based on QR type
-    const content = generateQRContent(
-      state.qrType,
-      state.text,
-      state.contactData,
-      state.wifiData,
-      state.cryptoData,
-    );
-
-    // Apply encryption if enabled
-    const finalData = encryptContent(content, state.encryptionConfig);
-
-    setState((prevState) => ({
-      ...prevState,
-      finalData,
-      isProcessing: false,
-    }));
-  }, [
-    state.text,
-    state.qrType,
-    state.contactData,
-    state.wifiData,
-    state.cryptoData,
-    state.encryptionConfig,
-  ]);
+  // The encoded string is derived from the content inputs, never stored.
+  const { qrType, text, contactData, wifiData, cryptoData, encryptionConfig } =
+    state;
+  const { data: finalData, error: encryptionError } = useMemo(
+    () =>
+      buildFinalData({
+        qrType,
+        text,
+        contactData,
+        wifiData,
+        cryptoData,
+        encryptionConfig,
+      }),
+    [qrType, text, contactData, wifiData, cryptoData, encryptionConfig],
+  );
 
   // Function to update text
   const setText = (text: string) => {
@@ -273,6 +249,8 @@ export const useQRCode = () => {
 
   return {
     state,
+    finalData,
+    encryptionError,
     qrRef,
     setText,
     setSize,

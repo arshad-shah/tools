@@ -49,9 +49,7 @@ const hslToRgb = (
   h /= 360;
   s /= 100;
   l /= 100;
-  let r = 0,
-    g = 0,
-    b = 0;
+  let r: number, g: number, b: number;
 
   if (s === 0) {
     r = g = b = l; // achromatic

@@ -1,16 +1,18 @@
-// -----------------------
-// useCalculator.ts
-// Example custom hook to keep all the logic in one place
-// Reusable across Standard, Scientific, or Expression modes
-// -----------------------
-import { useState, useEffect, useRef } from 'react';
-import * as math from 'mathjs';
+import { useState } from 'react';
 import { Mode, AngleUnit, PendingOperator } from '../types';
 import { useCalculatorStore } from '../store';
 import { evaluateExpression as evaluateLib } from '../lib/evaluate';
-import { keyToAction, type CalcKeyAction } from '../lib/keys';
+import { applyOperator, operatorSymbol } from '../lib/display';
+import { applyUnary, type UnaryOp } from '../lib/scientific';
+import { adjustRegister, clearRegister, clearRegisters } from '../lib/memory';
+import { useCalculatorKeyboard } from './useCalculatorKeyboard';
+import { useCalculatorPanels } from './useCalculatorPanels';
 import { toToolError } from '@/shared/lib/errors';
 
+/**
+ * The calculator state machine, shared by Standard, Scientific and
+ * Expression modes. The arithmetic lives in ../lib.
+ */
 export function useCalculator() {
   // Core State
   const [display, setDisplay] = useState<string>('0');
@@ -30,34 +32,13 @@ export function useCalculator() {
   const setCalculationHistory = useCalculatorStore.getState().setHistory;
   const savedCalculations = useCalculatorStore((s) => s.saved);
   const setSavedCalculations = useCalculatorStore.getState().setSaved;
-  const [showHistory, setShowHistory] = useState<boolean>(false);
-  const [showFavorites, setShowFavorites] = useState<boolean>(false);
-  const [showTimestamp, setShowTimestamp] = useState<boolean>(false);
 
   // Multiple Memory Registers
   const memories = useCalculatorStore((s) => s.memories);
   const setMemories = useCalculatorStore.getState().setMemories;
-  const [showMemoryPanel, setShowMemoryPanel] = useState<boolean>(false);
-
-  // Graphing (only used in Expression mode)
-  const [showGraph, setShowGraph] = useState<boolean>(false);
-
-  // Keyboard handling: one stable listener; the latest actions are read
-  // through a ref so it never acts on stale state.
-  const dispatchRef = useRef<(a: CalcKeyAction) => void>(() => {});
-  const modeRef = useRef<Mode>(mode);
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      // Expression mode is typed in its own text box.
-      if (modeRef.current === 'expression') return;
-      const action = keyToAction(event);
-      if (!action) return;
-      event.preventDefault();
-      dispatchRef.current(action);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  // The History card starts open when there is saved history to show.
+  const panels = useCalculatorPanels(calculationHistory.length > 0);
+  const { showTimestamp } = panels;
 
   // Helpers
   const animateButton = () => {
@@ -69,25 +50,12 @@ export function useCalculator() {
     setDisplay(`Error: ${msg}`);
   };
 
-  const formatDisplay = (value: string): string => {
-    if (value.startsWith('Error')) return value; // pass error message as-is
-
-    const floatVal = parseFloat(value);
-    if (!isNaN(floatVal)) {
-      // If there's a decimal, keep it
-      if (value.includes('.')) {
-        const [intPart, decimalPart] = value.split('.');
-        const parsedInt = parseInt(intPart, 10);
-        if (!isNaN(parsedInt)) {
-          return `${parsedInt.toLocaleString()}.${decimalPart}`;
-        }
-        return value;
-      }
-      // Otherwise, format integer
-      return floatVal.toLocaleString();
-    }
-    // If not parseable as number, return raw
-    return value;
+  /** Show a result, remember its history line and wait for a new operand. */
+  const showResult = (text: string, expr: string) => {
+    setDisplay(text);
+    setPreviousCalculation(expr);
+    setCalculationHistory([...calculationHistory, expr]);
+    setWaitingForOperand(true);
   };
 
   // Core actions
@@ -164,51 +132,17 @@ export function useCalculator() {
       setCalculationValue(operand);
     } else if (pendingOperator) {
       const currentValue = calculationValue;
-      let newValue: number;
-
-      switch (pendingOperator) {
-        case '+':
-          newValue = currentValue + operand;
-          break;
-        case '-':
-          newValue = currentValue - operand;
-          break;
-        case '×':
-          newValue = currentValue * operand;
-          break;
-        case '÷':
-          if (operand === 0) {
-            setDisplayError('Divide by zero');
-            return;
-          }
-          newValue = currentValue / operand;
-          break;
-        case 'pow':
-          newValue = Math.pow(currentValue, operand);
-          break;
-        case 'mod':
-          if (operand === 0) {
-            setDisplayError('Mod by zero');
-            return;
-          }
-          newValue = currentValue % operand;
-          break;
-        default:
-          newValue = operand;
+      const result = applyOperator(currentValue, operand, pendingOperator);
+      if ('error' in result) {
+        setDisplayError(result.error);
+        return;
       }
-
-      if (Math.abs(newValue) < 1e-10) newValue = 0;
+      const newValue = result.value;
 
       setCalculationValue(newValue);
       setDisplay(String(newValue));
 
-      const displayOp =
-        pendingOperator === 'pow'
-          ? '^'
-          : pendingOperator === 'mod'
-            ? 'mod'
-            : pendingOperator;
-
+      const displayOp = operatorSymbol(pendingOperator);
       const calculation = `${currentValue} ${displayOp} ${operand} = ${newValue}`;
       setPreviousCalculation(calculation);
     }
@@ -232,344 +166,58 @@ export function useCalculator() {
   };
 
   // Scientific operations
-  const square = () => {
+  const unary = (op: UnaryOp) => () => {
     animateButton();
-    const value = parseFloat(display);
-    if (isNaN(value)) {
-      setDisplayError('Invalid number');
+    const result = applyUnary(op, parseFloat(display), angleUnit);
+    if ('error' in result) {
+      setDisplayError(result.error);
       return;
     }
-    const result = value * value;
-    setDisplay(String(result));
-    const expr = `sqr(${value}) = ${result}`;
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const squareRoot = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    if (value < 0) {
-      setDisplayError('Square root of negative');
-      return;
-    }
-    const result = Math.sqrt(value);
-    setDisplay(String(result));
-    const expr = `√(${value}) = ${result}`;
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const reciprocal = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    if (value === 0) {
-      setDisplayError('Divide by zero');
-      return;
-    }
-    const result = 1 / value;
-    setDisplay(String(result));
-    const expr = `1/(${value}) = ${result}`;
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const factorial = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value) || !Number.isInteger(value) || value < 0) {
-      setDisplayError('Factorial domain error');
-      return;
-    }
-    let result = 1;
-    for (let i = 2; i <= value; i++) {
-      result *= i;
-    }
-    setDisplay(String(result));
-    const expr = `${value}! = ${result}`;
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  // Trig
-  const sin = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    const radians = angleUnit === 'deg' ? (value * Math.PI) / 180 : value;
-    const result = Math.sin(radians);
-    const expr = `sin(${value}${angleUnit}) = ${result}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const cos = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    const radians = angleUnit === 'deg' ? (value * Math.PI) / 180 : value;
-    const result = Math.cos(radians);
-    const expr = `cos(${value}${angleUnit}) = ${result}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const tan = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    const radians = angleUnit === 'deg' ? (value * Math.PI) / 180 : value;
-    const result = Math.tan(radians);
-    const expr = `tan(${value}${angleUnit}) = ${result}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const asin = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value) || value < -1 || value > 1) {
-      setDisplayError('arcsin domain error');
-      return;
-    }
-    const asined = Math.asin(value);
-    const result = angleUnit === 'deg' ? (asined * 180) / Math.PI : asined;
-    const expr = `asin(${value}) = ${result} ${angleUnit}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const acos = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value) || value < -1 || value > 1) {
-      setDisplayError('arccos domain error');
-      return;
-    }
-    const acosed = Math.acos(value);
-    const result = angleUnit === 'deg' ? (acosed * 180) / Math.PI : acosed;
-    const expr = `acos(${value}) = ${result} ${angleUnit}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const atan = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    const ataned = Math.atan(value);
-    const result = angleUnit === 'deg' ? (ataned * 180) / Math.PI : ataned;
-    const expr = `atan(${value}) = ${result} ${angleUnit}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const sinh = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    const result = math.sinh(value);
-    const expr = `sinh(${value}) = ${result}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const cosh = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    const result = math.cosh(value);
-    const expr = `cosh(${value}) = ${result}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
-  };
-
-  const tanh = () => {
-    animateButton();
-    const value = parseFloat(display);
-    if (Number.isNaN(value)) {
-      setDisplayError('Invalid number');
-      return;
-    }
-    const result = math.tanh(value);
-    const expr = `tanh(${value}) = ${result}`;
-    setDisplay(String(result));
-    setPreviousCalculation(expr);
-    setCalculationHistory([...calculationHistory, expr]);
-    setWaitingForOperand(true);
+    showResult(String(result.value), result.expr);
   };
 
   // Expression mode
-  const checkParenthesesBalance = (expr: string): boolean => {
-    let balance = 0;
-    for (const char of expr) {
-      if (char === '(') balance++;
-      if (char === ')') balance--;
-      if (balance < 0) return false;
-    }
-    return balance === 0;
-  };
-
   const evaluateExpression = () => {
     animateButton();
     try {
       const { text } = evaluateLib(display, angleUnit);
-      setDisplay(text);
-      const expr = `${display} = ${text}`;
-      setPreviousCalculation(expr);
-      setCalculationHistory([...calculationHistory, expr]);
-      setWaitingForOperand(true);
+      showResult(text, `${display} = ${text}`);
     } catch (e) {
       setDisplayError(toToolError(e, 'Bad expression').message);
     }
   };
 
-  // Latest state for the keyboard listener (assigned after every render).
-  useEffect(() => {
-    modeRef.current = mode;
-    dispatchRef.current = (a: CalcKeyAction) => {
-      switch (a.type) {
-        case 'digit':
-          return inputDigit(a.digit);
-        case 'decimal':
-          return inputDecimal();
-        case 'operator':
-          return performOperation(a.op);
-        case 'equals':
-          return calculate();
-        case 'backspace':
-          return backspace();
-        case 'clear-entry':
-          return clearEntry();
-        case 'clear':
-          return clear();
-        case 'percent':
-          return percentage();
-      }
-    };
+  useCalculatorKeyboard(mode, {
+    inputDigit,
+    inputDecimal,
+    performOperation,
+    calculate,
+    backspace,
+    clearEntry,
+    clear,
+    percentage,
   });
 
   // Saving calculations
   const saveCalculation = () => {
     if (previousCalculation) {
-      const calcToSave = showTimestamp
-        ? {
-            calculation: previousCalculation,
-            timestamp: new Date().toLocaleTimeString(),
-            isFavorite: true,
-          }
-        : {
-            calculation: previousCalculation,
-            isFavorite: true,
-          };
+      const calcToSave = {
+        calculation: previousCalculation,
+        ...(showTimestamp && { timestamp: new Date().toLocaleTimeString() }),
+        isFavorite: true,
+      };
       setSavedCalculations([...savedCalculations, calcToSave]);
     }
   };
 
-  // Panels toggles
-  const toggleHistory = () => {
-    setShowHistory(!showHistory);
-    setShowFavorites(false);
-    setShowMemoryPanel(false);
-  };
-
-  const toggleFavorites = () => {
-    setShowFavorites(!showFavorites);
-    setShowHistory(false);
-    setShowMemoryPanel(false);
-  };
-
-  const toggleMemoryPanel = () => {
-    setShowMemoryPanel(!showMemoryPanel);
-    setShowHistory(false);
-    setShowFavorites(false);
-  };
-
-  const toggleTimestamps = () => {
-    setShowTimestamp(!showTimestamp);
-  };
-
-  const toggleGraph = () => {
-    setShowGraph(!showGraph);
-  };
-
   // Memory
-  const memoryClearAll = () => {
-    const cleared = memories.map((m) => ({ ...m, value: null }));
-    setMemories(cleared);
-  };
+  const memoryClearAll = () => setMemories(clearRegisters(memories));
 
-  const memoryAdd = (index: number) => {
+  /** Adds (sign 1) or subtracts (sign -1) the displayed number. */
+  const memoryAdjust = (index: number, sign: 1 | -1) => {
     const operand = parseFloat(display);
     if (!Number.isNaN(operand)) {
-      setMemories((prev) => {
-        const updated = [...prev];
-        updated[index] = {
-          ...updated[index],
-          value: (updated[index].value ?? 0) + operand,
-        };
-        return updated;
-      });
-    }
-  };
-
-  const memorySubtract = (index: number) => {
-    const operand = parseFloat(display);
-    if (!Number.isNaN(operand)) {
-      setMemories((prev) => {
-        const updated = [...prev];
-        updated[index] = {
-          ...updated[index],
-          value: (updated[index].value ?? 0) - operand,
-        };
-        return updated;
-      });
+      setMemories((prev) => adjustRegister(prev, index, sign * operand));
     }
   };
 
@@ -581,11 +229,7 @@ export function useCalculator() {
   };
 
   const memoryClear = (index: number) => {
-    setMemories((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], value: null };
-      return updated;
-    });
+    setMemories((prev) => clearRegister(prev, index));
   };
 
   return {
@@ -600,19 +244,12 @@ export function useCalculator() {
     animation,
     calculationHistory,
     savedCalculations,
-    showHistory,
-    showFavorites,
-    showTimestamp,
     memories,
-    showMemoryPanel,
-    showGraph,
 
     // Setters & toggles
     setMode,
     setAngleUnit,
     setDisplay,
-    setShowGraph,
-    checkParenthesesBalance,
 
     // Actions
     inputDigit,
@@ -626,19 +263,19 @@ export function useCalculator() {
     calculate,
 
     // Scientific
-    square,
-    squareRoot,
-    reciprocal,
-    factorial,
-    sin,
-    cos,
-    tan,
-    asin,
-    acos,
-    atan,
-    sinh,
-    cosh,
-    tanh,
+    square: unary('square'),
+    squareRoot: unary('squareRoot'),
+    reciprocal: unary('reciprocal'),
+    factorial: unary('factorial'),
+    sin: unary('sin'),
+    cos: unary('cos'),
+    tan: unary('tan'),
+    asin: unary('asin'),
+    acos: unary('acos'),
+    atan: unary('atan'),
+    sinh: unary('sinh'),
+    cosh: unary('cosh'),
+    tanh: unary('tanh'),
 
     // Expression
     evaluateExpression,
@@ -647,20 +284,15 @@ export function useCalculator() {
     setSavedCalculations,
 
     // Panels
-    toggleHistory,
-    toggleFavorites,
-    toggleMemoryPanel,
-    toggleTimestamps,
-    toggleGraph,
+    ...panels,
 
     // Memory
     memoryClearAll,
-    memoryAdd,
-    memorySubtract,
+    memoryAdd: (index: number) => memoryAdjust(index, 1),
+    memorySubtract: (index: number) => memoryAdjust(index, -1),
     memoryRecall,
     memoryClear,
-
-    // Helpers
-    formatDisplay,
   };
 }
+
+export type CalculatorState = ReturnType<typeof useCalculator>;

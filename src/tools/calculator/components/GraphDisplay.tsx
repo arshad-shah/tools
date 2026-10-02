@@ -37,7 +37,7 @@ interface GraphDisplayProps {
  * (no text substitution of x, so exp or max keep working) and sampled at
  * 400 even points; undefined points leave gaps.
  */
-const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
+export const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
   expression,
   angleUnit,
   defaultMinX = -10,
@@ -126,5 +126,3 @@ const PlotlyGraphDisplay: FC<GraphDisplayProps> = ({
     </Box>
   );
 };
-
-export default PlotlyGraphDisplay;

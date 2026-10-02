@@ -1,5 +1,5 @@
 import { ColorHarmony } from '../types';
-import { hslToRgb } from './color-convert';
+import { calculateHSL, hslToRgb } from './color-convert';
 
 // Calculate contrast ratio according to WCAG
 const calculateContrastRatio = (color1: number[], color2: number[]): number => {
@@ -24,24 +24,9 @@ const calculateContrastRatio = (color1: number[], color2: number[]): number => {
   return parseFloat(ratio.toFixed(2));
 };
 
-// Get accessibility level based on contrast ratio
-const getAccessibilityLevel = (
-  ratio: number,
-): { level: string; color: string; passes: boolean } => {
-  if (ratio >= 7) {
-    return { level: 'AAA', color: 'text-green-600', passes: true };
-  } else if (ratio >= 4.5) {
-    return { level: 'AA', color: 'text-green-600', passes: true };
-  } else if (ratio >= 3) {
-    return { level: 'AA Large', color: 'text-yellow-600', passes: true };
-  } else {
-    return { level: 'Fails', color: 'text-red-600', passes: false };
-  }
-};
-
 // Determine a name for the color
 const determineColorName = (h: number, s: number, l: number): string => {
-  let name = '';
+  let name: string;
   let modifier = '';
 
   // Name based on hue
@@ -60,10 +45,11 @@ const determineColorName = (h: number, s: number, l: number): string => {
   else name = 'Red';
 
   // Add modifiers based on saturation and lightness
+  // A near-grey colour has no meaningful hue: name it by lightness alone.
   if (s < 10) {
-    if (l > 90) modifier = 'White';
-    else if (l < 10) modifier = 'Black';
-    else modifier = `Gray (${Math.round(l)}%)`;
+    if (l > 90) return 'White';
+    if (l < 10) return 'Black';
+    return `Gray (${Math.round(l)}%)`;
   } else {
     if (s < 40) modifier = 'Muted ';
     else if (s > 80) modifier = 'Vibrant ';
@@ -77,7 +63,7 @@ const determineColorName = (h: number, s: number, l: number): string => {
 
 // Determine mood/psychology of color
 const determineColorMood = (h: number, s: number, l: number): string => {
-  let mood = '';
+  let mood: string;
 
   // Analyze hue
   if (h >= 0 && h < 30) {
@@ -184,8 +170,32 @@ const generateHarmonyColors = (
 
 export {
   calculateContrastRatio,
-  getAccessibilityLevel,
   determineColorName,
   determineColorMood,
   generateHarmonyColors,
+};
+
+export interface ColorAnalysis {
+  harmony: ColorHarmony;
+  name: string;
+  mood: string;
+  contrast: { white: number; black: number };
+}
+
+/** Everything the tester shows about a colour, derived from its channels. */
+export const analyzeColor = (
+  red: number,
+  green: number,
+  blue: number,
+): ColorAnalysis => {
+  const hsl = calculateHSL(red, green, blue);
+  return {
+    harmony: generateHarmonyColors(hsl.h, hsl.s, hsl.l),
+    name: determineColorName(hsl.h, hsl.s, hsl.l),
+    mood: determineColorMood(hsl.h, hsl.s, hsl.l),
+    contrast: {
+      white: calculateContrastRatio([red, green, blue], [255, 255, 255]),
+      black: calculateContrastRatio([red, green, blue], [0, 0, 0]),
+    },
+  };
 };

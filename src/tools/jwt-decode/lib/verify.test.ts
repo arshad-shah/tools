@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { bytesToBase64, utf8Encode } from '@/shared/lib/encoding';
 import { decodeJwt } from './jwt';
-import { verifyJwt, type KeyInput } from './verify';
+import type { KeyInput } from '../types';
+import { verifyJwt } from './verify';
 
 const b64url = (b: Uint8Array) => bytesToBase64(b, { urlSafe: true });
 const json = (v: unknown) => b64url(utf8Encode(JSON.stringify(v)));

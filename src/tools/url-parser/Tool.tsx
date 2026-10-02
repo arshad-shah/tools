@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   IconCheckCheck,
   IconClipboard,
   IconCopy,
   IconExternalLink,
 } from '@/shared/ui/icons';
+
 import {
   Alert,
   AlertDescription,
@@ -33,20 +34,7 @@ import {
 import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
-
-interface ParsedUrl {
-  protocol: string;
-  username: string;
-  password: string;
-  hostname: string;
-  port: string;
-  pathname: string;
-  search: string;
-  hash: string;
-  origin: string;
-  host: string;
-  searchParams: [string, string][];
-}
+import { parseUrl } from './lib/parse-url';
 
 type FieldColor =
   | 'accent'
@@ -60,33 +48,9 @@ const URLParser: React.FC = () => {
   const [url, setUrl] = useState(
     'https://user:pass@www.example.com:8080/path/to/page.html?query=string&foo=bar#hash',
   );
-  const [parsed, setParsed] = useState<ParsedUrl | null>(null);
-  const [isValid, setIsValid] = useState(true);
+  const { parsed, isValid } = useMemo(() => parseUrl(url), [url]);
   const { copiedKey, copy } = useClipboard();
   const [activeTab, setActiveTab] = useState('visualization');
-
-  useEffect(() => {
-    try {
-      const u = new URL(url);
-      setParsed({
-        protocol: u.protocol,
-        username: u.username,
-        password: u.password,
-        hostname: u.hostname,
-        port: u.port,
-        pathname: u.pathname,
-        search: u.search,
-        hash: u.hash,
-        origin: u.origin,
-        host: u.host,
-        searchParams: Array.from(u.searchParams.entries()),
-      });
-      setIsValid(true);
-    } catch {
-      setParsed(null);
-      setIsValid(false);
-    }
-  }, [url]);
 
   const handleCopy = (text: string, key: string) => {
     if (text) void copy(text, key);
