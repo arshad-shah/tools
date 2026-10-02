@@ -1,32 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconClock, IconColumns } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Badge,
   Box,
-  Button,
   Card,
   CardBody,
-  Inline,
+  EmptyState,
+  ErrorState,
+  PaneTabs,
   PrivacyNote,
-  SendToMenu,
   Stack,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  usePaneTab,
 } from '@/shared/ui';
-import { toolsAccepting } from '@/app/registry';
-import {
-  copyText,
-  readClipboardText,
-  useClipboard,
-} from '@/shared/lib/clipboard';
-import { toToolError } from '@/shared/lib/errors';
-import { sendTo } from '@/shared/lib/handoff';
+import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
+import { ToolError, toToolError } from '@/shared/lib/errors';
+import { sendTo, useHandoff } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -34,10 +26,11 @@ import { ExpiryInfo, JwtTab } from './types';
 import { getExpiryInfo } from './lib/claims';
 import { categorizeClaims } from './lib/categorize';
 import { SAMPLE_JWT } from './lib/constants';
-import { claimToEpoch, comparePayloads, payloadToJson } from './lib/handoffs';
+import { claimToEpoch, comparePayloads, isTokenHandoff } from './lib/handoffs';
 import { useJwtDecoder } from './hooks/useJwtDecoder';
 import { useSignatureVerification } from './hooks/useSignatureVerification';
 import { timeClaimsStatus, tryDecodeJwt, type TimeStatus } from './lib/jwt';
+import { DecodeActions } from './components/DecodeActions';
 import { TokenInput } from './components/TokenInput';
 import { TokenStatus } from './components/TokenStatus';
 import { HeaderSection } from './components/HeaderSection';
@@ -46,14 +39,23 @@ import { SignatureSection } from './components/SignatureSection';
 import { BuilderTab } from './components/BuilderTab';
 import { jwtSettings } from './settings';
 
-const DIFF_PAIR = 'application/vnd.tools.diff-pair+json';
-const accepts = (toolId: string, mime: string) =>
-  toolsAccepting(mime).some((t) => t.id === toolId);
-
 const JWTDecoder: React.FC = () => {
   const navigate = useNavigate();
   const { jwt, setJwt, decoded, error } = useJwtDecoder();
-  const { copiedKey, copy } = useClipboard();
+  const { copy } = useClipboard();
+  // R41: token and decoded view are tabs; the decoded sample is shown first.
+  const pane = usePaneTab('jwt-decode', 'output');
+  // A token handed over (Send to) fills the input and shows the result.
+  const handedOff = useHandoff(isTokenHandoff);
+  const { show } = pane;
+  const [taken, setTaken] = useState<typeof handedOff>(null);
+  if (handedOff !== taken) {
+    setTaken(handedOff);
+    if (handedOff?.kind === 'text') setJwt(handedOff.text);
+  }
+  useEffect(() => {
+    if (handedOff) show('output');
+  }, [handedOff, show]);
   const [settings, update] = jwtSettings.useSettings();
   const skewSec = settings.skew;
   const [mode, setMode] = useState<'decode' | 'build'>('decode');
@@ -96,6 +98,7 @@ const JWTDecoder: React.FC = () => {
 
   const focusVerify = () => {
     setMode('decode');
+    show('output');
     setActiveTab('signature');
     setTimeout(() => document.getElementById('jwt-verify-key')?.focus(), 0);
   };
@@ -109,6 +112,7 @@ const JWTDecoder: React.FC = () => {
           (t) => {
             setMode('decode');
             setJwt(t);
+            show('output');
           },
           (e) => notify.error(toToolError(e).message),
         ),
@@ -117,10 +121,11 @@ const JWTDecoder: React.FC = () => {
       id: 'copy-payload',
       label: 'Copy payload',
       enabled: !!decoded,
+      // useClipboard toasts a failure; success says so here.
       run: () =>
         decoded &&
-        void copyText(JSON.stringify(decoded.payload, null, 2)).then(() =>
-          notify.success('Payload copied'),
+        void copy(JSON.stringify(decoded.payload, null, 2)).then(
+          (ok) => ok && notify.success('Payload copied'),
         ),
     },
     {
@@ -132,14 +137,11 @@ const JWTDecoder: React.FC = () => {
     },
   ]);
 
-  const canCompare = accepts('text-diff-checker', DIFF_PAIR);
-  const epochTarget = accepts('epoch-converter', 'text/plain');
   const decoding = mode === 'decode' && !!decoded;
   // The palette mirrors the first epoch button shown (exp, else iat).
-  const epochPayload =
-    decoded && epochTarget
-      ? (claimToEpoch(decoded, 'exp') ?? claimToEpoch(decoded, 'iat'))
-      : null;
+  const epochPayload = decoded
+    ? (claimToEpoch(decoded, 'exp') ?? claimToEpoch(decoded, 'iat'))
+    : null;
   const comparePayloadsInDiff = () =>
     decoded &&
     otherDecoded &&
@@ -159,9 +161,98 @@ const JWTDecoder: React.FC = () => {
     {
       target: 'text-diff-checker',
       run: comparePayloadsInDiff,
-      enabled: decoding && compareOpen && !!otherDecoded && canCompare,
+      enabled: decoding && compareOpen && !!otherDecoded,
     },
   ]);
+
+  const output = error ? (
+    <ErrorState
+      error={new ToolError('INVALID_INPUT', error)}
+      title="Decoding error"
+    />
+  ) : !decoded ? (
+    <EmptyState
+      size="sm"
+      title="No token yet"
+      description="Paste a JWT in the Input tab to decode it."
+    />
+  ) : (
+    <Stack gap="4">
+      <DecodeActions
+        decoded={decoded}
+        compareOpen={compareOpen}
+        onCompareOpen={setCompareOpen}
+        other={other}
+        onOther={setOther}
+        canCompare={!!otherDecoded}
+        onCompare={comparePayloadsInDiff}
+        onEpoch={(p) => sendTo(navigate, 'epoch-converter', p)}
+      />
+      {timeStatus && (
+        <TokenStatus
+          timeStatus={timeStatus}
+          skewSec={skewSec}
+          setSkewSec={(s) => update({ skew: s })}
+          sigStatus={verify.sigStatus}
+          nowSec={nowSec}
+        />
+      )}
+      <Card>
+        <CardBody>
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as JwtTab)}
+            variant="soft"
+            fullWidth
+          >
+            <TabsList aria-label="JWT sections">
+              <TabsTrigger value="header">
+                <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span>Header</span>
+                  <Badge variant="soft" tone="accent" size="xs">
+                    {decoded.header.alg}
+                  </Badge>
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="payload">
+                <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span>Payload</span>
+                  <Badge variant="soft" tone="accent" size="xs">
+                    {Object.keys(decoded.payload).length}
+                  </Badge>
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="signature">Signature</TabsTrigger>
+            </TabsList>
+            <TabsContent value="header">
+              <Box className="pt-4">
+                <HeaderSection header={decoded.header} />
+              </Box>
+            </TabsContent>
+            <TabsContent value="payload">
+              <Box className="pt-4">
+                <PayloadSection
+                  payload={decoded.payload}
+                  categorizedClaims={categorizedClaims}
+                  expiryInfo={expiryInfo}
+                />
+              </Box>
+            </TabsContent>
+            <TabsContent value="signature">
+              <Box className="pt-4">
+                <SignatureSection
+                  signature={decoded.signature}
+                  algorithm={decoded.header.alg}
+                  jwt={jwt}
+                  {...verify}
+                />
+              </Box>
+            </TabsContent>
+          </Tabs>
+        </CardBody>
+      </Card>
+    </Stack>
+  );
 
   return (
     <Stack gap="4">
@@ -180,158 +271,39 @@ const JWTDecoder: React.FC = () => {
               onOpen={(token) => {
                 setJwt(token);
                 setMode('decode');
+                show('output');
               }}
             />
           </Box>
         </TabsContent>
         <TabsContent value="decode">
-          <Stack gap="4" className="pt-4">
-            <TokenInput jwt={jwt} setJwt={setJwt} />
-
-            {error && (
-              <Alert status="danger">
-                <AlertTitle>Decoding error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {decoded && (
-              <Inline gap="2" wrap>
-                <SendToMenu
-                  payload={() => payloadToJson(decoded)}
-                  sourceTool="jwt-decode"
-                  label="Send payload to"
-                  size="sm"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<IconColumns size="sm" />}
-                  onClick={() => setCompareOpen((o) => !o)}
-                  aria-expanded={compareOpen}
-                >
-                  Compare with another token
-                </Button>
-                {epochTarget &&
-                  (['exp', 'iat'] as const).map((c) => {
-                    const p = claimToEpoch(decoded, c);
-                    return p ? (
-                      <Button
-                        key={c}
-                        variant="ghost"
-                        size="sm"
-                        leftIcon={<IconClock size="sm" />}
-                        onClick={() => sendTo(navigate, 'epoch-converter', p)}
-                      >
-                        Open {c} in Epoch Converter
-                      </Button>
-                    ) : null;
-                  })}
-              </Inline>
-            )}
-
-            {decoded && compareOpen && (
-              <Stack gap="2">
-                <TokenInput
-                  jwt={other}
-                  setJwt={setOther}
-                  label="Token to compare"
-                  acceptHandoff={false}
-                />
-                <Inline gap="2" align="center" wrap>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={!otherDecoded || !canCompare}
-                    onClick={comparePayloadsInDiff}
-                  >
-                    Compare payloads in Text Diff
-                  </Button>
-                  {!canCompare && (
-                    <Badge variant="soft" tone="neutral" size="sm">
-                      Text Diff cannot take a pair yet
-                    </Badge>
-                  )}
-                </Inline>
-              </Stack>
-            )}
-
-            {decoded && timeStatus && (
-              <TokenStatus
-                timeStatus={timeStatus}
-                skewSec={skewSec}
-                setSkewSec={(s) => update({ skew: s })}
-                sigStatus={verify.sigStatus}
-                nowSec={nowSec}
-              />
-            )}
-
-            {decoded && (
-              <Card>
-                <CardBody>
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={(v) => setActiveTab(v as JwtTab)}
-                    variant="soft"
-                    fullWidth
-                  >
-                    <TabsList aria-label="JWT sections">
-                      <TabsTrigger value="header">
-                        <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                          <span>Header</span>
-                          <Badge variant="soft" tone="accent" size="xs">
-                            {decoded.header.alg}
-                          </Badge>
-                        </span>
-                      </TabsTrigger>
-                      <TabsTrigger value="payload">
-                        <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                          <span>Payload</span>
-                          <Badge variant="soft" tone="accent" size="xs">
-                            {Object.keys(decoded.payload).length}
-                          </Badge>
-                        </span>
-                      </TabsTrigger>
-                      <TabsTrigger value="signature">Signature</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="header">
-                      <Box className="pt-4">
-                        <HeaderSection
-                          header={decoded.header}
-                          copiedKey={copiedKey}
-                          copy={copy}
-                        />
-                      </Box>
-                    </TabsContent>
-                    <TabsContent value="payload">
-                      <Box className="pt-4">
-                        <PayloadSection
-                          payload={decoded.payload}
-                          categorizedClaims={categorizedClaims}
-                          expiryInfo={expiryInfo}
-                          copiedKey={copiedKey}
-                          copy={copy}
-                        />
-                      </Box>
-                    </TabsContent>
-                    <TabsContent value="signature">
-                      <Box className="pt-4">
-                        <SignatureSection
-                          signature={decoded.signature}
-                          algorithm={decoded.header.alg}
-                          jwt={jwt}
-                          copiedKey={copiedKey}
-                          copy={copy}
-                          {...verify}
-                        />
-                      </Box>
-                    </TabsContent>
-                  </Tabs>
-                </CardBody>
-              </Card>
-            )}
-          </Stack>
+          <Box className="pt-4">
+            <PaneTabs
+              id="jwt-decode"
+              label="Token panes"
+              value={pane.value}
+              onValueChange={pane.show}
+              panes={[
+                {
+                  id: 'input',
+                  label: 'Input',
+                  content: (
+                    <TokenInput
+                      jwt={jwt}
+                      setJwt={setJwt}
+                      acceptHandoff={false}
+                    />
+                  ),
+                },
+                {
+                  id: 'output',
+                  label: 'Output',
+                  content: output,
+                  changeKey: error ?? jwt,
+                },
+              ]}
+            />
+          </Box>
         </TabsContent>
       </Tabs>
       <PrivacyNote variant="local">

@@ -7,7 +7,7 @@ import {
   perLine,
   type CodecId,
 } from './index';
-import { punycodeDecode, punycodeEncode } from './punycode';
+import { punycodeDecode, punycodeEncode } from '@/shared/lib/punycode';
 
 const cp = (...points: number[]) => String.fromCodePoint(...points);
 const BS = String.fromCharCode(92);

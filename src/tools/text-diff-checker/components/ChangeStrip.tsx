@@ -13,7 +13,8 @@ interface ChangeStripProps {
 
 /**
  * Where the changes are (spec §8.1): a kit Chart heat strip of change
- * counts along the document; brushing a stretch jumps to its first change.
+ * counts along the document; clicking a bar or brushing a stretch jumps to
+ * its first change.
  */
 export function ChangeStrip({ anchors, rows, onJump }: ChangeStripProps) {
   const series = useMemo(() => {
@@ -30,6 +31,8 @@ export function ChangeStrip({ anchors, rows, onJump }: ChangeStripProps) {
     ];
   }, [anchors, rows]);
   if (anchors.length === 0) return null;
+  const jumpFrom = (line: number) =>
+    onJump(anchors.find((a) => a >= line) ?? anchors[anchors.length - 1]);
   return (
     <Chart
       kind="bar"
@@ -40,11 +43,9 @@ export function ChangeStrip({ anchors, rows, onJump }: ChangeStripProps) {
       ariaSummary={`${anchors.length} changes across ${rows} lines`}
       xLabel="Line"
       formatX={(x) => `line ${String(x)}`}
+      onPointClick={(p) => jumpFrom(Number(p.x))}
       brush={(range) => {
-        if (!range) return;
-        const target =
-          anchors.find((a) => a >= range[0]) ?? anchors[anchors.length - 1];
-        onJump(target);
+        if (range) jumpFrom(range[0]);
       }}
     />
   );

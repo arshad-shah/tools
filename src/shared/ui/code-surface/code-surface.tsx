@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useEffectEvent,
   useId,
@@ -9,24 +9,25 @@ import React, {
   useState,
 } from 'react';
 import { cn } from '@/shared/lib/cn';
-import { matchesHotkey } from '@/shared/lib/hotkeys';
 import { applyEdit, handleEditorKey } from './editor-keys';
 import { FindBar } from './find-bar';
 import { describeMarker } from './decor';
 import {
   alignWrappedRows,
+  gutterDigits,
   LINE_HEIGHT,
   PAD_Y,
   rowTop,
   type RowWindow,
 } from './layout';
-import { FoldRows, GutterRows, HighlightRows } from './line-view';
+import { FoldRows, GutterColumn, HighlightRows } from './line-view';
 import { buildRowMap, lineIndexAt, project, splitLines } from './text-model';
 import type { CodeSurfaceProps } from './types';
 import { useFind } from './use-find';
 import { useHighlight } from './use-highlight';
 import { useLineData } from './use-line-data';
 import { useViewport } from './use-viewport';
+import { useViewSelectAll } from './use-view-select';
 
 /** Up to this many rows everything renders; past it only the visible window. */
 export const VIRTUAL_THRESHOLD = 2_000;
@@ -61,6 +62,8 @@ export function CodeSurface({
   readOnly = false,
   wrap = false,
   lineNumbers = true,
+  lineLabels,
+  onScroll: onScrollChange,
   tabSize = 2,
   placeholder,
   onSelectionChange,
@@ -136,7 +139,6 @@ export function CodeSurface({
   const innerRef = useRef<HTMLDivElement>(null);
   const findInputRef = useRef<HTMLInputElement>(null);
   const memory = useRef({ pairAt: -1, tabEscapes: false });
-  const [selectAll, setSelectAll] = useState(false);
   const [findFocus, setFindFocus] = useState(0);
   const hintId = useId();
 
@@ -176,6 +178,11 @@ export function CodeSurface({
       if (opts?.scroll !== false) scrollToRow(rowOfOffset(s));
     },
     scrollToLine: (n) => scrollToRow(rows.rowOfLine(n - 1)),
+    scrollToPosition({ top, left }) {
+      const el = scrollerRef.current;
+      if (el && left !== undefined) el.scrollLeft = left;
+      if (top !== undefined) scrollTo(top);
+    },
   }));
 
   const openFind = () => {
@@ -221,22 +228,8 @@ export function CodeSurface({
     return () => ro.disconnect();
   }, [wrapOn]);
 
-  const onViewKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (matchesHotkey(e, 'Mod+F')) {
-      e.preventDefault();
-      openFind();
-    } else if (matchesHotkey(e, 'Mod+A')) {
-      e.preventDefault();
-      setSelectAll(true);
-    } else if (e.key === 'Escape') setSelectAll(false);
-  };
-  const onViewCopy = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    if (!selectAll) return;
-    e.preventDefault();
-    e.clipboardData.setData('text/plain', source?.text?.() ?? value);
-  };
-
-  const digits = String(lineCount).length;
+  const viewKeys = useViewSelectAll(openFind, () => source?.text?.() ?? value);
+  const digits = gutterDigits(lineCount, lineLabels);
   const maxLength = source ? (source.maxLength ?? 80) : model!.maxLength;
   const contentHeight = PAD_Y * 2 + rows.count * LINE_HEIGHT;
   const textClass = 'font-mono text-sm [font-variant-ligatures:none]';
@@ -269,7 +262,12 @@ export function CodeSurface({
       ) : null}
       <div
         ref={attach}
-        onScroll={onScroll}
+        data-cs-scroller=""
+        onScroll={(e) => {
+          onScroll(e);
+          const { scrollTop: top, scrollLeft: left } = e.currentTarget;
+          onScrollChange?.({ top, left });
+        }}
         className={cn(
           'relative min-h-0 overscroll-contain',
           singleLine ? 'flex-none' : 'flex-1',
@@ -286,23 +284,21 @@ export function CodeSurface({
           style={{ minHeight }}
         >
           {showGutter ? (
-            <div
-              data-cs-gutter=""
-              className={cn(
-                'sticky left-0 z-20 shrink-0 select-none border-r border-line bg-surface-2 text-fg-subtle',
-                textClass,
-              )}
-              style={{ width: lineNumbers ? `calc(${digits}ch + 28px)` : 24 }}
-            >
-              <GutterRows w={w} data={data} showNumbers={lineNumbers} />
-            </div>
+            <GutterColumn
+              w={w}
+              data={data}
+              lineNumbers={lineNumbers}
+              labels={lineLabels}
+              digits={digits}
+              className={textClass}
+            />
           ) : null}
           <div
             ref={viewMode ? viewRef : undefined}
             className={cn(
               'relative min-w-0 flex-1 text-fg',
               textClass,
-              selectAll && 'bg-accent-soft',
+              viewKeys.selectAll && 'bg-accent-soft',
               viewMode &&
                 'outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
             )}
@@ -319,9 +315,9 @@ export function CodeSurface({
                   'aria-label': label,
                   'aria-describedby': describedBy,
                   tabIndex: 0,
-                  onKeyDown: onViewKey,
-                  onCopy: onViewCopy,
-                  onPointerDown: () => setSelectAll(false),
+                  onKeyDown: viewKeys.onKeyDown,
+                  onCopy: viewKeys.onCopy,
+                  onPointerDown: viewKeys.reset,
                 }
               : {})}
           >

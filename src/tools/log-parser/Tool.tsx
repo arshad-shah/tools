@@ -5,8 +5,12 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  Inline,
+  PaneTabs,
   Stack,
+  Text,
   TextInputPanel,
+  usePaneTab,
   type VirtualListHandle,
 } from '@/shared/ui';
 import { formatBytes } from '@/shared/lib/format';
@@ -70,7 +74,13 @@ const LogViewer = () => {
     () => toFormatRef(settings.format, settings.customFormats),
     [settings.format, settings.customFormats],
   );
-  const { input, setInput, openFile } = useLogInput(source, formatRef);
+  const { input, setInput, openFile: open } = useLogInput(source, formatRef);
+  // R41: the log source and the viewer are tabs; opening a file shows it.
+  const tab = usePaneTab('log-parser', 'input');
+  const openFile = (file: File) => {
+    open(file);
+    tab.show('output');
+  };
 
   const [filter, setFilter] = useState<LogFilter>(EMPTY_FILTER);
   const checked = useMemo(() => effectiveFilter(filter), [filter]);
@@ -158,6 +168,7 @@ const LogViewer = () => {
     onSample: () => setInput({ kind: 'text', text: LOG_SAMPLE }),
     onNewFormat: () => setDialog({ open: true }),
     onClearFilters: () => setFilter(EMPTY_FILTER),
+    fileName: input?.kind === 'file' ? input.file.name : undefined,
   });
 
   useHandoffFiles((files) => openFile(files[0]));
@@ -166,8 +177,8 @@ const LogViewer = () => {
   const total = source.info?.total ?? 0;
   const shown = view.filteredTotal;
 
-  return (
-    <Stack gap="4">
+  const inputPane = (
+    <Stack gap="3">
       <TextInputPanel
         label="Log"
         language="log"
@@ -183,31 +194,40 @@ const LogViewer = () => {
         placeholder="Paste a log, or open or drop a log file"
         wrap={settings.wrap}
         minHeight={120}
-        maxHeight={240}
+        maxHeight={480}
       />
       <FileLine input={input} onClose={clearAll} />
+    </Stack>
+  );
+
+  const outputPane = (
+    <Stack gap="4">
       <OpenStatus source={source} />
       {source.status === 'error' && source.error ? (
         <ErrorState title="Could not open this log" error={source.error} />
       ) : null}
+      {source.status === 'empty' ? (
+        <EmptyState
+          size="sm"
+          title="No log yet"
+          description="Paste a log or open a log file in the Input tab."
+        />
+      ) : null}
       {hasLog ? (
         <>
-          <div
-            role="status"
-            className="flex flex-wrap items-center gap-2 text-sm text-fg-muted"
-          >
-            <span>
+          <Inline gap="2" wrap role="status">
+            <Text as="span" size="sm" tone="muted">
               {shown === null
                 ? `Filtering ${entryCount(total)}`
                 : `${shown.toLocaleString('en-US')} of ${entryCount(total)}`}
-            </span>
+            </Text>
             {source.info ? (
               <Badge variant="soft" tone="neutral" size="sm">
                 {settings.format === 'auto' ? 'Detected: ' : 'Format: '}
                 {formatName(source.info.format)}
               </Badge>
             ) : null}
-          </div>
+          </Inline>
           <ViewToolbar
             format={settings.format}
             onFormat={(format) => update({ format })}
@@ -215,6 +235,8 @@ const LogViewer = () => {
             onNewFormat={() => setDialog({ open: true })}
             wrap={settings.wrap}
             onWrap={(wrap) => update({ wrap })}
+            columns={settings.columns}
+            onColumns={(columns) => update({ columns })}
             hasLog={hasLog}
             onNextError={actions.nextError}
             onExport={actions.exportAs}
@@ -264,10 +286,31 @@ const LogViewer = () => {
               onActiveChange={actions.setCursor}
               wrap={settings.wrap}
               search={applied.text}
+              columns={settings.columns}
             />
           ) : null}
         </>
       ) : null}
+    </Stack>
+  );
+
+  return (
+    <Stack gap="4">
+      <PaneTabs
+        id="log-parser"
+        label="Log panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          { id: 'input', label: 'Input', content: inputPane },
+          {
+            id: 'output',
+            label: 'Output',
+            content: outputPane,
+            changeKey: `${source.version}:${source.status}`,
+          },
+        ]}
+      />
       <CustomFormatDialog
         open={dialogOpen}
         onOpenChange={(open) => {
@@ -296,15 +339,15 @@ function FileLine({
 }) {
   if (input?.kind !== 'file') return null;
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">
-      <span>
+    <Inline gap="2" wrap>
+      <Text as="span" size="sm" tone="muted">
         File: <span className="font-mono text-fg">{input.file.name}</span> (
         {formatBytes(input.file.size)})
-      </span>
+      </Text>
       <Button size="sm" variant="ghost" onClick={onClose}>
         Close file
       </Button>
-    </div>
+    </Inline>
   );
 }
 

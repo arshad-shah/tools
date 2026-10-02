@@ -72,6 +72,8 @@ export interface CodeSurfaceHandle {
   setSelection(start: number, end: number, opts?: { scroll?: boolean }): void;
   /** Scrolls 1-based line `n` into view. */
   scrollToLine(n: number): void;
+  /** Sets the scroll offsets in px (a synced twin surface). */
+  scrollToPosition(pos: { top?: number; left?: number }): void;
 }
 
 export interface CodeSurfaceProps {
@@ -84,6 +86,13 @@ export interface CodeSurfaceProps {
   /** Soft wrap; applies up to 2,000 lines (longer text stays unwrapped). */
   wrap?: boolean;
   lineNumbers?: boolean;
+  /**
+   * Gutter text per line (index 0 is line 1) shown instead of the line
+   * number; null leaves the cell blank (a diff's original line numbers).
+   */
+  lineLabels?: readonly (number | string | null)[];
+  /** The scroll offsets changed (to sync a twin surface). */
+  onScroll?(pos: { top: number; left: number }): void;
   tabSize?: number;
   placeholder?: string;
   onSelectionChange?(start: number, end: number): void;

@@ -1,5 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+
+/** R41: "Test text" and "Results" are tabs. */
+const show = (page: Page, name: 'Test text' | 'Results') =>
+  page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
 
 test('regex-tester survives catastrophic backtracking', async ({ page }) => {
   test.setTimeout(30_000);
@@ -8,6 +12,7 @@ test('regex-tester survives catastrophic backtracking', async ({ page }) => {
     .getByRole('textbox', { name: 'Test string' })
     .fill('a'.repeat(40) + 'b');
   await page.getByLabel('Regex pattern').fill('(a+)+$');
+  await show(page, 'Results');
 
   await expect(page.getByText(/Pattern took too long/)).toBeVisible({
     timeout: 5000,
@@ -29,6 +34,7 @@ test('regex-tester copies working JavaScript for a pattern with a slash', async 
     .getByRole('textbox', { name: 'Test string' })
     .fill("it's a/b\nand a/b");
   await page.getByLabel('Regex pattern').fill('a/b');
+  await show(page, 'Results');
   await expect(page.getByText('2 matches').first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Actions' }).click();
@@ -59,6 +65,7 @@ test('regex-tester replaces with group references', async ({ page }) => {
   await page.goto(pathOf('regex-tester'));
   await page.getByRole('textbox', { name: 'Test string' }).fill('a1 b22');
   await page.getByLabel('Regex pattern').fill('(\\d+)');
+  await show(page, 'Results');
   await page.getByRole('tab', { name: 'Replace' }).click();
   await page.getByRole('textbox', { name: 'Replacement' }).fill('<$1>$$');
   await expect(
@@ -72,6 +79,7 @@ test('regex-tester Tests tab shows pass and fail per case', async ({
 }) => {
   await page.goto(pathOf('regex-tester'));
   await page.getByLabel('Regex pattern').fill('^\\d+$');
+  await show(page, 'Results');
   await page.getByRole('tab', { name: 'Tests' }).click();
   await page.getByRole('textbox', { name: 'Should match' }).fill('123\nabc');
   await page.getByRole('textbox', { name: 'Should not match' }).fill('xyz');
@@ -103,6 +111,7 @@ test('regex-tester share link restores pattern and text', async ({
   await page.goto(pathOf('regex-tester'));
   await page.getByRole('textbox', { name: 'Test string' }).fill('id=42, id=7');
   await page.getByLabel('Regex pattern').fill('id=(?<n>\\d+)');
+  await show(page, 'Results');
   await expect(page.getByText('2 matches').first()).toBeVisible();
   await page.getByRole('button', { name: 'Share' }).click();
   await expect(page.getByText('Share link copied')).toBeVisible();
@@ -114,9 +123,11 @@ test('regex-tester share link restores pattern and text', async ({
   await expect(
     other.getByRole('textbox', { name: 'Regex pattern' }),
   ).toHaveValue('id=(?<n>\\d+)');
+  await show(other, 'Test text');
   await expect(other.getByRole('textbox', { name: 'Test string' })).toHaveValue(
     'id=42, id=7',
   );
+  await show(other, 'Results');
   await expect(other.getByText('2 matches').first()).toBeVisible();
 });
 
@@ -133,5 +144,6 @@ test('regex-tester explains a capture group and highlights it', async ({
   await expect(tree.getByRole('treeitem', { selected: true })).toContainText(
     'Capture group 1',
   );
+  await show(page, 'Results');
   await expect(page.getByText('Showing group 1')).toBeVisible();
 });

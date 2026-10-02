@@ -1,6 +1,16 @@
 import { useEffect, useId, useState } from 'react';
 import { toToolError } from '@/shared/lib/errors';
-import { Alert, Button, Input, Label, Switch } from '@/shared/ui';
+import {
+  Alert,
+  Button,
+  Heading,
+  Inline,
+  Input,
+  Label,
+  Stack,
+  SwitchField,
+  Text,
+} from '@/shared/ui';
 import type { RegexRunner } from '@/tools/regex-tester/lib/runner';
 import {
   buildFindPattern,
@@ -26,24 +36,6 @@ const COUNT_DELAY_MS = 200;
 
 const plural = (n: number, word: string) =>
   `${n.toLocaleString('en-US')} ${word}${n === 1 ? '' : 'es'}`;
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange(on: boolean): void;
-}) {
-  const id = useId();
-  return (
-    <div className="flex items-center gap-2">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-      <Label htmlFor={id}>{label}</Label>
-    </div>
-  );
-}
 
 /**
  * Find and replace (spec §9.1). Matching runs in the killable regex worker,
@@ -124,11 +116,11 @@ export function ReplacePanel({
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-md font-semibold text-fg">
+      <Heading level={2} size="md" id={headingId}>
         Find and replace
-      </h2>
-      <div className="flex flex-wrap gap-3">
-        <div className="flex min-w-40 flex-1 flex-col gap-1">
+      </Heading>
+      <Inline gap="3" wrap align="start">
+        <Stack gap="1" className="min-w-40 flex-1">
           <Label htmlFor={findId}>Find</Label>
           <Input
             id={findId}
@@ -137,8 +129,8 @@ export function ReplacePanel({
             spellCheck={false}
             autoComplete="off"
           />
-        </div>
-        <div className="flex min-w-40 flex-1 flex-col gap-1">
+        </Stack>
+        <Stack gap="1" className="min-w-40 flex-1">
           <Label htmlFor={replaceId}>Replace with</Label>
           <Input
             id={replaceId}
@@ -147,26 +139,26 @@ export function ReplacePanel({
             spellCheck={false}
             autoComplete="off"
           />
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-4">
-        <Toggle
+        </Stack>
+      </Inline>
+      <Inline gap="4" wrap>
+        <SwitchField
           label="Regular expression"
           checked={options.regex}
-          onChange={(v) => onOptions({ regex: v })}
+          onCheckedChange={(v) => onOptions({ regex: v })}
         />
-        <Toggle
+        <SwitchField
           label="Match case"
           checked={options.caseSensitive}
-          onChange={(v) => onOptions({ caseSensitive: v })}
+          onCheckedChange={(v) => onOptions({ caseSensitive: v })}
         />
-        <Toggle
+        <SwitchField
           label="Whole word"
           checked={options.wholeWord}
-          onChange={(v) => onOptions({ wholeWord: v })}
+          onCheckedChange={(v) => onOptions({ wholeWord: v })}
         />
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
+      </Inline>
+      <Inline gap="3" wrap>
         <Button
           type="button"
           size="sm"
@@ -177,16 +169,16 @@ export function ReplacePanel({
         >
           Replace all
         </Button>
-        <p aria-live="polite" className="text-sm text-fg-muted">
+        <Text size="sm" tone="muted" aria-live="polite">
           {current && 'count' in current
             ? current.count === 0
               ? 'No matches'
               : plural(current.count, 'match')
             : ''}
-        </p>
-      </div>
+        </Text>
+      </Inline>
       {shownError ? (
-        <Alert status="danger" className="p-3 text-sm" role="alert">
+        <Alert status="danger" size="sm">
           {shownError}
         </Alert>
       ) : null}

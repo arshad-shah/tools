@@ -8,8 +8,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Grid,
   Input,
   Label,
+  Stack,
   StatusDot,
   Table,
   TableBody,
@@ -73,16 +75,16 @@ function DialogForm({
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="flex flex-col gap-3">
-        <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-          <div className="flex flex-col gap-1">
+        <Grid cols={{ base: 1, sm: 2 }} gap="3">
+          <Stack gap="1">
             <Label htmlFor={ids.name}>Name</Label>
             <Input
               id={ids.name}
               value={def.name}
               onChange={(name) => set({ name })}
             />
-          </div>
-          <div className="flex flex-col gap-1">
+          </Stack>
+          <Stack gap="1">
             <Label htmlFor={ids.flags}>Flags</Label>
             <Input
               id={ids.flags}
@@ -92,9 +94,9 @@ function DialogForm({
                 set({ flags: flags.replace(/[^dimsuv]/g, '') })
               }
             />
-          </div>
-        </div>
-        <div className="flex flex-col gap-1">
+          </Stack>
+        </Grid>
+        <Stack gap="1">
           <Label htmlFor={ids.pattern}>Pattern</Label>
           <Input
             id={ids.pattern}
@@ -104,13 +106,9 @@ function DialogForm({
             value={def.pattern}
             onChange={(pattern) => set({ pattern })}
           />
-        </div>
+        </Stack>
         {error ? (
-          <Alert
-            status="danger"
-            className="p-3 text-sm"
-            data-error-code={error.code}
-          >
+          <Alert status="danger" size="sm" data-error-code={error.code}>
             {error.code === 'TIMEOUT' ? 'Pattern took too long' : error.message}
           </Alert>
         ) : null}

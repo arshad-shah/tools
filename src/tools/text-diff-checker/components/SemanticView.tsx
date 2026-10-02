@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
+  ErrorState,
   Inline,
   Label,
   Select,
   Stack,
-  Switch,
+  SwitchField,
 } from '@/shared/ui';
 import { toToolError } from '@/shared/lib/errors';
 import {
@@ -28,14 +27,6 @@ interface SemanticViewProps {
   right: string;
   sortKeys: boolean;
   onSortKeys(v: boolean): void;
-}
-
-function Failure({ message }: { message: string }) {
-  return (
-    <Alert status="danger" role="alert">
-      <AlertDescription>{message}</AlertDescription>
-    </Alert>
-  );
 }
 
 /** JSON, CSV-by-key and ignore-order comparisons (spec §8.1). */
@@ -61,21 +52,18 @@ export function SemanticView({
         return key ? { csv: diffCsv(left, right, { key }) } : null;
       return { lines: diffIgnoreOrder(left, right) };
     } catch (e) {
-      return { error: toToolError(e).message };
+      return { error: toToolError(e) };
     }
   }, [mode, left, right, sortKeys, key]);
 
   return (
     <Stack gap="3">
       {mode === 'json' && (
-        <Inline gap="2">
-          <Switch
-            id="diff-sort-keys"
-            checked={sortKeys}
-            onCheckedChange={onSortKeys}
-          />
-          <Label htmlFor="diff-sort-keys">Sort keys</Label>
-        </Inline>
+        <SwitchField
+          label="Sort keys"
+          checked={sortKeys}
+          onCheckedChange={onSortKeys}
+        />
       )}
       {mode === 'csv' && columns.length > 0 && (
         <Inline gap="2">
@@ -89,7 +77,10 @@ export function SemanticView({
         </Inline>
       )}
       {outcome && 'error' in outcome && outcome.error && (
-        <Failure message={outcome.error} />
+        <ErrorState
+          error={outcome.error}
+          title={`Could not compare as ${mode === 'json' ? 'JSON' : mode === 'csv' ? 'CSV' : 'lines'}`}
+        />
       )}
       {outcome && 'json' in outcome && outcome.json && (
         <JsonChangesTable changes={outcome.json} />

@@ -3,6 +3,7 @@ import { VirtualList, type VirtualListHandle } from '@/shared/ui';
 import type { FieldFilter } from '../lib/filter';
 import type { LogEntry } from '../lib/model';
 import type { SearchSpec } from '../lib/search-ranges';
+import type { LogColumn } from '../settings';
 import { EntryRow } from './EntryRow';
 
 export interface LogListProps {
@@ -17,6 +18,7 @@ export interface LogListProps {
   onActiveChange(position: number): void;
   wrap: boolean;
   search?: SearchSpec;
+  columns: readonly LogColumn[];
   listRef: React.Ref<VirtualListHandle>;
 }
 
@@ -38,6 +40,7 @@ export function LogList({
   onActiveChange,
   wrap,
   search,
+  columns,
   listRef,
 }: LogListProps) {
   // A sparse array: the list renders by position and asks entryAt.
@@ -73,7 +76,7 @@ export function LogList({
       rowProps={rowProps}
       onRangeChange={onRangeChange}
       onActiveIndexChange={onActiveChange}
-      className="h-[60vh] min-h-64 rounded-lg border border-line bg-surface"
+      className="h-150 min-h-64 rounded-lg border border-line bg-surface"
       renderItem={(_, i) => {
         const e = entryAt(i);
         return (
@@ -87,6 +90,7 @@ export function LogList({
             onFieldFilter={onFieldFilter}
             wrap={wrap}
             search={search}
+            columns={columns}
           />
         );
       }}

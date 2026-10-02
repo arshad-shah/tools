@@ -2,16 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { IconClock, IconExternalLink, IconKeyRound } from '@/shared/ui/icons';
 import {
   Alert,
-  AlertDescription,
   Button,
-  CodeSurface,
   Inline,
   Input,
   Label,
+  PaneTabs,
   Select,
   Stack,
   Text,
   TextInputPanel,
+  usePaneTab,
   type CodeMarker,
 } from '@/shared/ui';
 import { JsonLocateError } from '@/shared/lib/data-formats/json-locate';
@@ -64,6 +64,7 @@ interface BuilderTabProps {
  * helpers, an HS secret or a generated key pair kept in memory only.
  */
 export const BuilderTab: React.FC<BuilderTabProps> = ({ onOpen }) => {
+  const tab = usePaneTab('jwt-decode-build', 'input');
   const [alg, setAlg] = useState<SignAlg>('HS256');
   const [header, setHeader] = useState(() => pretty({ typ: 'JWT' }));
   const [payload, setPayload] = useState(() =>
@@ -122,43 +123,18 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({ onOpen }) => {
     }
   };
 
-  return (
+  const inputPane = (
     <Stack gap="4">
-      <Inline gap="3" align="end" wrap>
-        <Stack gap="1">
-          <Label htmlFor="jwt-build-alg">Algorithm</Label>
-          <div className="w-40">
-            <Select
-              id="jwt-build-alg"
-              value={alg}
-              onValueChange={(v) => setAlg(v as SignAlg)}
-              items={SIGN_ALGS.map((a) => ({ value: a, label: a }))}
-            />
-          </div>
-        </Stack>
-        <Text size="sm" tone="subtle">
-          The header alg is always set to the algorithm chosen here.
-        </Text>
-      </Inline>
-
+      <TextInputPanel
+        label="Header JSON"
+        value={header}
+        onChange={setHeader}
+        language="json"
+        markers={h.markers}
+        minHeight={80}
+      />
       <Stack gap="1">
-        <Text size="sm" weight="semibold">
-          Header
-        </Text>
-        <CodeSurface
-          label="Header JSON"
-          value={header}
-          onChange={setHeader}
-          language="json"
-          markers={h.markers}
-          minHeight={80}
-        />
-      </Stack>
-      <Stack gap="1">
-        <Inline justify="between" align="center" wrap gap="2">
-          <Text size="sm" weight="semibold">
-            Payload
-          </Text>
+        <Inline justify="end" align="center" wrap gap="2">
           <Inline gap="1" wrap>
             <Button
               variant="ghost"
@@ -182,7 +158,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({ onOpen }) => {
             ))}
           </Inline>
         </Inline>
-        <CodeSurface
+        <TextInputPanel
           label="Payload JSON"
           value={payload}
           onChange={setPayload}
@@ -192,8 +168,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({ onOpen }) => {
         />
       </Stack>
       {(h.error || p.error) && (
-        <Alert status="danger">
-          <AlertDescription>{h.error ?? p.error}</AlertDescription>
+        <Alert status="danger" size="sm">
+          {h.error ?? p.error}
         </Alert>
       )}
 
@@ -239,8 +215,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({ onOpen }) => {
             </Text>
           </Inline>
           {pairError && (
-            <Alert status="danger">
-              <AlertDescription>{pairError}</AlertDescription>
+            <Alert status="danger" size="sm">
+              {pairError}
             </Alert>
           )}
           {usablePair && (
@@ -265,10 +241,14 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({ onOpen }) => {
           )}
         </Stack>
       )}
+    </Stack>
+  );
 
+  const outputPane = (
+    <Stack gap="4">
       {current?.error && (
-        <Alert status="danger">
-          <AlertDescription>{current.error}</AlertDescription>
+        <Alert status="danger" size="sm">
+          {current.error}
         </Alert>
       )}
       <TextInputPanel
@@ -293,6 +273,42 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({ onOpen }) => {
           Open in decoder
         </Button>
       </Inline>
+    </Stack>
+  );
+
+  return (
+    <Stack gap="4">
+      <Inline gap="3" align="end" wrap>
+        <Stack gap="1">
+          <Label htmlFor="jwt-build-alg">Algorithm</Label>
+          <div className="w-40">
+            <Select
+              id="jwt-build-alg"
+              value={alg}
+              onValueChange={(v) => setAlg(v as SignAlg)}
+              items={SIGN_ALGS.map((a) => ({ value: a, label: a }))}
+            />
+          </div>
+        </Stack>
+        <Text size="sm" tone="subtle">
+          The header alg is always set to the algorithm chosen here.
+        </Text>
+      </Inline>
+      <PaneTabs
+        id="jwt-decode-build"
+        label="Token builder panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          { id: 'input', label: 'Input', content: inputPane },
+          {
+            id: 'output',
+            label: 'Output',
+            content: outputPane,
+            changeKey: current?.token ?? current?.error,
+          },
+        ]}
+      />
     </Stack>
   );
 };

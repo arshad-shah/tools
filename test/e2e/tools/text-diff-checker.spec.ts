@@ -6,13 +6,22 @@ import { pathOf } from '../tool-routes';
 const lines = (n: number, f: (i: number) => string = (i) => `line ${i}`) =>
   Array.from({ length: n }, (_, i) => f(i + 1)).join('\n');
 
+/** R41: the two inputs are tabs; shows the side's tab first. */
+async function show(page: Page, side: 'Original text' | 'Changed text') {
+  await page
+    .getByRole('tab', {
+      name: side === 'Original text' ? /^Original/ : /^Changed/,
+    })
+    .click();
+}
+
 async function fill(
   page: Page,
   side: 'Original text' | 'Changed text',
   text: string,
 ) {
-  const box = page.getByRole('textbox', { name: side });
-  await box.fill(text);
+  await show(page, side);
+  await page.getByRole('textbox', { name: side }).fill(text);
 }
 
 test('text-diff-checker loads a file into the left pane', async ({ page }) => {
@@ -42,6 +51,7 @@ test('text-diff-checker accepts a text/plain file of any extension', async ({
       mimeType: 'text/plain',
       buffer: Buffer.from('print("right")'),
     });
+  await show(page, 'Changed text');
   await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
     'print("right")',
   );
@@ -97,7 +107,7 @@ test('text-diff-checker merges a change from the right and downloads it', async 
   ).toHaveValue('a\nB\nc\nd');
   const download = page.waitForEvent('download');
   await page
-    .getByRole('group', { name: 'Merged result' })
+    .getByRole('group', { name: 'Merged result panel' })
     .getByRole('button', { name: /Download/ })
     .click();
   const file = await (await download).path();
@@ -118,7 +128,42 @@ test('text-diff-checker downloads a patch that applies', async ({ page }) => {
   expect(applyPatch(left, patch)).toBe(right);
 });
 
-test.skip('text-diff-checker takes a pair hand-off from the Code Formatter', () => {
-  // The Code Formatter arrives with Part 6-D; the pair hand-off is covered
-  // by the component test until then.
+test('text-diff-checker takes a pair hand-off from the HTTP Client', async ({
+  page,
+}) => {
+  // The payload "Compare with previous response" sends (application/
+  // vnd.tools.diff-pair+json), stored in the app's hand-off store and
+  // opened by an in-app navigation, as sendTo does.
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await page.evaluate(async (path) => {
+    // The app's own instance of the module (Vite may add ?t= after HMR).
+    const mod =
+      performance
+        .getEntriesByType('resource')
+        .map((e) => e.name)
+        .find((n) => n.includes('/src/shared/lib/handoff.ts')) ??
+      '/src/shared/lib/handoff.ts';
+    const { putHandoff } = (await import(/* @vite-ignore */ mod)) as {
+      putHandoff(payload: object): string;
+    };
+    const id = putHandoff({
+      kind: 'text',
+      mime: 'application/vnd.tools.diff-pair+json',
+      sourceTool: 'api-request',
+      text: JSON.stringify({ left: '{"v":1}', right: '{"v":2}' }),
+      meta: { pair: true },
+    });
+    window.history.pushState(null, '', `${path}?handoff=${id}`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, pathOf('text-diff-checker'));
+  await expect(page.getByText('0 added, 0 removed, 1 changed')).toBeVisible();
+  await show(page, 'Original text');
+  await expect(
+    page.getByRole('textbox', { name: 'Original text' }),
+  ).toHaveValue('{"v":1}');
+  await show(page, 'Changed text');
+  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+    '{"v":2}',
+  );
 });

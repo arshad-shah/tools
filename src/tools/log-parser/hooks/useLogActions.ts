@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useClipboard } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
@@ -31,6 +31,8 @@ export interface LogActionsOptions {
   onSample(): void;
   onNewFormat(): void;
   onClearFilters(): void;
+  /** The opened file's name, for export names (default "log"). */
+  fileName?: string;
 }
 
 /**
@@ -47,6 +49,7 @@ export function useLogActions({
   onSample,
   onNewFormat,
   onClearFilters,
+  fileName,
 }: LogActionsOptions) {
   const cursor = useRef(-1);
   const { copy } = useClipboard();
@@ -78,13 +81,16 @@ export function useLogActions({
       try {
         const text = await exportText(filter, fmt);
         const { ext, mime, label } = EXPORT[fmt];
-        saveBlob(new Blob([text], { type: mime }), `log-export.${ext}`);
+        saveBlob(
+          new Blob([text], { type: mime }),
+          deriveFilename(fileName ?? 'log', 'export', ext),
+        );
         notify.success(`Exported as ${label}`);
       } catch (e) {
         notify.error(toToolError(e));
       }
     },
-    [exportText, filter],
+    [exportText, filter, fileName],
   );
 
   const copyShown = useCallback(async () => {

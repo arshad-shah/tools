@@ -8,12 +8,29 @@ const ABC_SHA256 =
 
 beforeEach(() => localStorage.clear());
 
-const typeMessage = (text: string) =>
+const tab = (name: string) =>
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
+/** Types in the Input pane, then shows the Output pane (R41 tabs). */
+const typeMessage = (text: string) => {
+  tab('Input');
   fireEvent.change(screen.getByRole('textbox', { name: 'Text to hash' }), {
     target: { value: text },
   });
+  tab('Output');
+};
 
 describe('HashGenerator', () => {
+  it('shows the text input and the hashes as tabs (R41)', async () => {
+    render(<HashGenerator />);
+    tab('Input');
+    expect(screen.queryByRole('list', { name: 'Hash results' })).toBeNull();
+    tab('Output');
+    expect(screen.getByText('No hashes yet')).toBeTruthy();
+    typeMessage('abc');
+    await screen.findByTestId('hash-sha256');
+    expect(screen.getByRole('button', { name: 'Copy SHA-256' })).toBeTruthy();
+  });
+
   it('selecting algorithms updates the results', async () => {
     render(<HashGenerator />);
     typeMessage('abc');

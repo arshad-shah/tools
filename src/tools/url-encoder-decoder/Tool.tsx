@@ -5,26 +5,27 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Alert,
-  AlertDescription,
   Badge,
   Button,
   Card,
   CardBody,
+  ErrorState,
   Inline,
   Label,
+  PaneTabs,
   PrivacyNote,
   SegmentedControl,
   Select,
   SendToMenu,
   Stack,
-  Switch,
+  SwitchField,
   Text,
   TextInputPanel,
+  usePaneTab,
   type CodeMarker,
 } from '@/shared/ui';
 import { offsetToLineCol } from '@/shared/lib/data-formats/json-locate';
-import { toToolError } from '@/shared/lib/errors';
+import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { asUrl } from './lib/as-url';
 import {
@@ -41,7 +42,7 @@ type Direction = TextEncoderSettings['direction'];
 
 interface Result {
   output: string;
-  error?: string;
+  error?: ToolError;
   markers?: CodeMarker[];
 }
 
@@ -50,6 +51,7 @@ const TextEncoderTool: React.FC = () => {
   const { direction, perLine: lines } = settings;
   const codec = getCodec(settings.codec);
   const [input, setInput] = useState('');
+  const tab = usePaneTab('url-encoder-decoder', 'input');
   // "Decode until stable": the round count for the input it was run on.
   const [stable, setStable] = useState<{
     input: string;
@@ -70,11 +72,11 @@ const TextEncoderTool: React.FC = () => {
           : err.cause instanceof CodecError
             ? err.cause.position
             : null;
-      if (at === null || lines) return { output: '', error: err.message };
+      if (at === null || lines) return { output: '', error: err };
       const { line, column } = offsetToLineCol(input, at);
       return {
         output: '',
-        error: err.message,
+        error: err,
         markers: [{ line, column, message: err.message, severity: 'error' }],
       };
     }
@@ -93,6 +95,7 @@ const TextEncoderTool: React.FC = () => {
     try {
       const r = decodeUntilStable(codec, input);
       setStable({ input, ...r });
+      tab.show('output');
     } catch {
       setStable(null);
     }
@@ -113,111 +116,44 @@ const TextEncoderTool: React.FC = () => {
     },
   ]);
 
-  return (
-    <Stack gap="4">
-      <Card>
-        <CardBody>
-          <Inline gap="4" align="end" wrap>
-            <Stack gap="1">
-              <Label htmlFor="text-codec">Codec</Label>
-              <div className="w-64">
-                <Select
-                  id="text-codec"
-                  value={codec.id}
-                  onValueChange={(v) => {
-                    setStable(null);
-                    update({ codec: v as CodecId });
-                  }}
-                  items={CODECS.map((c) => ({ value: c.id, label: c.label }))}
-                />
-              </div>
-            </Stack>
-            <SegmentedControl<Direction>
-              label="Direction"
-              value={direction}
-              onChange={(d) => {
-                setStable(null);
-                update({ direction: d });
-              }}
-              options={[
-                { value: 'encode', label: 'Encode' },
-                { value: 'decode', label: 'Decode' },
-              ]}
-            />
-            <Inline gap="2" align="center">
-              <Switch
-                id="text-per-line"
-                checked={lines}
-                onCheckedChange={(v) => update({ perLine: v })}
-                aria-label="Each line separately"
-              />
-              <Label htmlFor="text-per-line">Each line separately</Label>
-            </Inline>
-          </Inline>
-        </CardBody>
-      </Card>
+  const inputPane = (
+    <TextInputPanel
+      label={direction === 'encode' ? 'Text to encode' : 'Text to decode'}
+      value={input}
+      onChange={(v) => {
+        setInput(v);
+        setStable(null);
+      }}
+      language="plain"
+      wrap
+      markers={result.markers}
+      minHeight={140}
+      handoff={(p) =>
+        p.kind === 'text' &&
+        (p.mime === 'text/plain' || p.mime === 'text/uri-list')
+      }
+    />
+  );
 
-      <TextInputPanel
-        label={direction === 'encode' ? 'Text to encode' : 'Text to decode'}
-        value={input}
-        onChange={(v) => {
-          setInput(v);
-          setStable(null);
-        }}
-        language="plain"
-        wrap
-        markers={result.markers}
-        minHeight={140}
-        handoff={(p) =>
-          p.kind === 'text' &&
-          (p.mime === 'text/plain' || p.mime === 'text/uri-list')
-        }
-      />
-
-      <Inline gap="2" align="center" wrap justify="center">
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={<IconArrowRightLeft size="sm" />}
-          onClick={swap}
-          disabled={!output}
-        >
-          Swap
-        </Button>
-        {direction === 'decode' && (
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<IconRefreshCw size="sm" />}
-            onClick={runStable}
-            disabled={!input || !!result.error}
-          >
-            Decode until stable
-          </Button>
-        )}
-        {shownStable && (
-          <Badge variant="soft" tone="accent" size="sm">
-            {`Decoded in ${shownStable.rounds} round${shownStable.rounds === 1 ? '' : 's'}`}
-          </Badge>
-        )}
-      </Inline>
-
-      {result.error && (
-        <Alert status="danger">
-          <AlertDescription>{result.error}</AlertDescription>
-        </Alert>
+  const outputPane = (
+    <Stack gap="3">
+      {result.error ? (
+        <ErrorState
+          error={result.error}
+          title={`Could not ${direction} with ${codec.label}`}
+        />
+      ) : (
+        <TextInputPanel
+          label="Output"
+          value={output}
+          onChange={() => {}}
+          language="plain"
+          readOnly
+          wrap
+          downloadName={direction === 'encode' ? 'encoded.txt' : 'decoded.txt'}
+          minHeight={140}
+        />
       )}
-
-      <TextInputPanel
-        label="Output"
-        value={output}
-        onChange={() => {}}
-        language="plain"
-        readOnly
-        wrap
-        downloadName={direction === 'encode' ? 'encoded.txt' : 'decoded.txt'}
-        minHeight={140}
-      />
       {url && (
         <Inline gap="2" align="center">
           <Text size="sm" tone="subtle">
@@ -236,6 +172,93 @@ const TextEncoderTool: React.FC = () => {
           />
         </Inline>
       )}
+    </Stack>
+  );
+
+  return (
+    <Stack gap="4">
+      <Card>
+        <CardBody>
+          <Stack gap="4">
+            <Inline gap="4" align="end" wrap>
+              <Stack gap="1">
+                <Label htmlFor="text-codec">Codec</Label>
+                <div className="w-64">
+                  <Select
+                    id="text-codec"
+                    value={codec.id}
+                    onValueChange={(v) => {
+                      setStable(null);
+                      update({ codec: v as CodecId });
+                    }}
+                    items={CODECS.map((c) => ({ value: c.id, label: c.label }))}
+                  />
+                </div>
+              </Stack>
+              <SegmentedControl<Direction>
+                label="Direction"
+                value={direction}
+                onChange={(d) => {
+                  setStable(null);
+                  update({ direction: d });
+                }}
+                options={[
+                  { value: 'encode', label: 'Encode' },
+                  { value: 'decode', label: 'Decode' },
+                ]}
+              />
+              <SwitchField
+                label="Each line separately"
+                checked={lines}
+                onCheckedChange={(v) => update({ perLine: v })}
+              />
+            </Inline>
+            <Inline gap="2" align="center" wrap>
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<IconArrowRightLeft size="sm" />}
+                onClick={swap}
+                disabled={!output}
+              >
+                Swap
+              </Button>
+              {direction === 'decode' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<IconRefreshCw size="sm" />}
+                  onClick={runStable}
+                  disabled={!input || !!result.error}
+                >
+                  Decode until stable
+                </Button>
+              )}
+              {shownStable && (
+                <Badge variant="soft" tone="accent" size="sm">
+                  {`Decoded in ${shownStable.rounds} round${shownStable.rounds === 1 ? '' : 's'}`}
+                </Badge>
+              )}
+            </Inline>
+          </Stack>
+        </CardBody>
+      </Card>
+
+      <PaneTabs
+        id="url-encoder-decoder"
+        label="Text encoder panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          { id: 'input', label: 'Input', content: inputPane },
+          {
+            id: 'output',
+            label: 'Output',
+            content: outputPane,
+            changeKey: result.error?.message ?? output,
+          },
+        ]}
+      />
 
       <Accordion type="single">
         <AccordionItem value="about">

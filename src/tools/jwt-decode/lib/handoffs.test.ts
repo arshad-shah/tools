@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { toolsAccepting } from '@/app/registry';
+import { readDiffHandoff } from '@/tools/text-diff-checker/lib/handoff';
 import { decodeJwt } from './jwt';
 import {
   claimToEpoch,
@@ -46,5 +48,21 @@ describe('jwt hand-offs', () => {
         sourceTool: 'a',
       }),
     ).toBe(true);
+  });
+
+  it('Text Diff takes the compare pair and Epoch takes the time claims', () => {
+    const p = comparePayloads(token({ a: 1 }), token({ a: 2 }));
+    const accepting = (mime: string) => toolsAccepting(mime).map((t) => t.id);
+    expect(accepting(p.kind === 'text' ? p.mime : '')).toContain(
+      'text-diff-checker',
+    );
+    expect(readDiffHandoff(p)).toMatchObject({
+      left: '{\n  "a": 1\n}',
+      right: '{\n  "a": 2\n}',
+    });
+    const epoch = claimToEpoch(token({ exp: 1700000000 }), 'exp')!;
+    expect(accepting(epoch.kind === 'text' ? epoch.mime : '')).toContain(
+      'epoch-converter',
+    );
   });
 });

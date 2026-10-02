@@ -18,6 +18,8 @@ interface DiffViewProps {
   ref?: React.Ref<DiffViewHandle>;
 }
 
+type ScrollPos = { top: number; left: number };
+
 const foldsOf = (folds: Fold[]) =>
   folds.map((f) => ({ fromLine: f.fromLine, toLine: f.toLine, label: '' }));
 
@@ -29,6 +31,7 @@ function SurfaceView({
   wrap,
   onUnfold,
   handle,
+  onScroll,
 }: {
   surface: Surface;
   label: string;
@@ -37,6 +40,7 @@ function SurfaceView({
   wrap: boolean;
   onUnfold(i: number): void;
   handle: React.Ref<CodeSurfaceHandle>;
+  onScroll?(pos: ScrollPos): void;
 }) {
   return (
     <CodeSurface
@@ -46,6 +50,8 @@ function SurfaceView({
       label={label}
       readOnly
       wrap={wrap}
+      lineLabels={surface.numbers}
+      onScroll={onScroll}
       lineDecorations={surface.decorations}
       ranges={surface.ranges}
       folds={foldsOf(folds)}
@@ -57,7 +63,9 @@ function SurfaceView({
 
 /**
  * Split (two aligned read-only surfaces), unified and inline views
- * (spec §8.1) with diff decorations, intraline ranges and folds.
+ * (spec §8.1) with diff decorations, intraline ranges and folds. The gutter
+ * shows original line numbers (blank on alignment padding) and the split
+ * sides scroll together, rows being aligned one for one.
  */
 export function DiffView({
   vm,
@@ -69,6 +77,20 @@ export function DiffView({
 }: DiffViewProps) {
   const left = useRef<CodeSurfaceHandle>(null);
   const right = useRef<CodeSurfaceHandle>(null);
+  // The position last pushed to each side, so its echo is not pushed back.
+  const pushed = useRef<{ left?: ScrollPos; right?: ScrollPos }>({});
+  const onLeftScroll = (pos: ScrollPos) => {
+    const echo = pushed.current.left;
+    if (echo && echo.top === pos.top && echo.left === pos.left) return;
+    pushed.current.right = pos;
+    right.current?.scrollToPosition(pos);
+  };
+  const onRightScroll = (pos: ScrollPos) => {
+    const echo = pushed.current.right;
+    if (echo && echo.top === pos.top && echo.left === pos.left) return;
+    pushed.current.left = pos;
+    left.current?.scrollToPosition(pos);
+  };
   useImperativeHandle(ref, () => ({
     scrollToRow(n) {
       left.current?.scrollToLine(n);
@@ -97,6 +119,7 @@ export function DiffView({
         wrap={wrap}
         onUnfold={onUnfold}
         handle={left}
+        onScroll={onLeftScroll}
       />
       <SurfaceView
         surface={vm.right}
@@ -106,6 +129,7 @@ export function DiffView({
         wrap={wrap}
         onUnfold={onUnfold}
         handle={right}
+        onScroll={onRightScroll}
       />
     </Grid>
   );

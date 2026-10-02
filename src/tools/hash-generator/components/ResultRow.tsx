@@ -1,7 +1,5 @@
 import React from 'react';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
-import { Badge, Button, Code, Heading, Inline, Stack } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
+import { Badge, Code, CopyButton, Heading, Inline, Stack } from '@/shared/ui';
 import type { DigestInfo } from '@/shared/lib/crypto/digest';
 
 /** "Broken for security" and "Not cryptographic", honestly labelled. */
@@ -37,8 +35,6 @@ export const ResultRow: React.FC<ResultRowProps> = ({
   value,
   match,
 }) => {
-  const { copiedKey, copy } = useClipboard();
-  const copied = copiedKey === id;
   return (
     <Stack gap="1" className="border-b border-line py-2 last:border-b-0">
       <Inline justify="between" align="center" gap="2" wrap>
@@ -57,15 +53,7 @@ export const ResultRow: React.FC<ResultRowProps> = ({
             </Badge>
           )}
         </Inline>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Copy ${name}`}
-          leftIcon={copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />}
-          onClick={() => void copy(value, id)}
-        >
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
+        <CopyButton label={name} value={value} variant="text" />
       </Inline>
       <Code block data-testid={`hash-${id}`} className="break-all">
         {value}

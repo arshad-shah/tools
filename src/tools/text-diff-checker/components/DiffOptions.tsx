@@ -1,4 +1,10 @@
-import { Inline, Label, SegmentedControl, Select, Switch } from '@/shared/ui';
+import {
+  Inline,
+  Label,
+  SegmentedControl,
+  Select,
+  SwitchField,
+} from '@/shared/ui';
 import type { DiffContext, DiffSettings, DiffView } from '../settings';
 
 interface DiffOptionsProps {
@@ -8,29 +14,10 @@ interface DiffOptionsProps {
 
 const CONTEXTS: DiffContext[] = [0, 3, 5, 10, 'all'];
 
-function Toggle({
-  id,
-  label,
-  checked,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange(v: boolean): void;
-}) {
-  return (
-    <Inline gap="2">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-      <Label htmlFor={id}>{label}</Label>
-    </Inline>
-  );
-}
-
 /** View, granularity, context and normalisation options (persisted). */
 export function DiffOptions({ settings: s, update }: DiffOptionsProps) {
   return (
-    <Inline gap="4" className="flex-wrap items-center">
+    <Inline gap="4" wrap align="center">
       <SegmentedControl<DiffView>
         size="sm"
         label="View"
@@ -73,35 +60,30 @@ export function DiffOptions({ settings: s, update }: DiffOptionsProps) {
           }))}
         />
       </Inline>
-      <Toggle
-        id="diff-ws"
+      <SwitchField
         label="Ignore whitespace"
         checked={s.ignoreWhitespace}
-        onChange={(ignoreWhitespace) => update({ ignoreWhitespace })}
+        onCheckedChange={(ignoreWhitespace) => update({ ignoreWhitespace })}
       />
-      <Toggle
-        id="diff-case"
+      <SwitchField
         label="Ignore case"
         checked={s.ignoreCase}
-        onChange={(ignoreCase) => update({ ignoreCase })}
+        onCheckedChange={(ignoreCase) => update({ ignoreCase })}
       />
-      <Toggle
-        id="diff-blank"
+      <SwitchField
         label="Ignore blank lines"
         checked={s.ignoreBlankLines}
-        onChange={(ignoreBlankLines) => update({ ignoreBlankLines })}
+        onCheckedChange={(ignoreBlankLines) => update({ ignoreBlankLines })}
       />
-      <Toggle
-        id="diff-trailing"
+      <SwitchField
         label="Trim trailing whitespace"
         checked={s.trimTrailing}
-        onChange={(trimTrailing) => update({ trimTrailing })}
+        onCheckedChange={(trimTrailing) => update({ trimTrailing })}
       />
-      <Toggle
-        id="diff-syntax"
+      <SwitchField
         label="Syntax colours"
         checked={s.syntaxHighlighting}
-        onChange={(syntaxHighlighting) => update({ syntaxHighlighting })}
+        onCheckedChange={(syntaxHighlighting) => update({ syntaxHighlighting })}
       />
     </Inline>
   );

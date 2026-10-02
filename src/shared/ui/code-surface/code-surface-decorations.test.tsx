@@ -1,8 +1,8 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CodeSurface } from './code-surface';
-import type { CodeMarker } from './types';
+import type { CodeMarker, CodeSurfaceHandle } from './types';
 
 const lines = (n: number) =>
   Array.from({ length: n }, (_, i) => `row ${i + 1}`).join('\n');
@@ -80,6 +80,45 @@ describe('CodeSurface decorations', () => {
     expect(
       container.querySelector('[data-cs-gutter-row="1"]')?.className,
     ).toContain('bg-diff-add-soft');
+  });
+
+  it('lineLabels replace the gutter numbers; null leaves a blank cell', () => {
+    const { container } = render(
+      <CodeSurface
+        label="Source"
+        language="plain"
+        value={'a\nb\nc'}
+        readOnly
+        lineLabels={[7, null, 120]}
+      />,
+    );
+    const cell = (r: number) =>
+      container.querySelector(`[data-cs-gutter-row="${r}"]`)?.textContent;
+    expect([cell(0), cell(1), cell(2)]).toEqual(['7', '', '120']);
+  });
+
+  it('reports scrolls and scrolls to a position from the handle', () => {
+    const onScroll = vi.fn();
+    const ref = { current: null as CodeSurfaceHandle | null };
+    const { container } = render(
+      <CodeSurface
+        ref={ref}
+        label="Source"
+        language="plain"
+        value={lines(50)}
+        readOnly
+        onScroll={onScroll}
+      />,
+    );
+    const scroller = container.querySelector(
+      '[data-cs-scroller]',
+    ) as HTMLDivElement;
+    scroller.scrollTop = 40;
+    scroller.scrollLeft = 12;
+    fireEvent.scroll(scroller);
+    expect(onScroll).toHaveBeenLastCalledWith({ top: 40, left: 12 });
+    act(() => ref.current!.scrollToPosition({ top: 90, left: 3 }));
+    expect([scroller.scrollTop, scroller.scrollLeft]).toEqual([90, 3]);
   });
 
   it('a fold of lines 10 to 129 shows one button and hides lines 11 to 128', () => {

@@ -139,6 +139,31 @@ describe('interaction and export', () => {
     expect(onBrush).toHaveBeenLastCalledWith(null);
   });
 
+  it('reports the clicked point; a drag is not a click', () => {
+    const onClick = vi.fn();
+    const onBrush = vi.fn();
+    render(
+      <Chart
+        kind="bar"
+        series={LINES.slice(0, 1)}
+        brush={onBrush}
+        onPointClick={onClick}
+        ariaLabel="Sales"
+      />,
+    );
+    const el = canvas('Sales');
+    fireEvent.pointerDown(el, { clientX: 300, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(el, { clientX: 301, clientY: 100, pointerId: 1 });
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onClick).toHaveBeenCalledWith(
+      expect.objectContaining({ seriesId: 'a' }),
+    );
+    fireEvent.pointerDown(el, { clientX: 200, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(el, { clientX: 400, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(el, { clientX: 400, clientY: 100, pointerId: 1 });
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
   it('exports SVG with a path per line series', () => {
     const ref = React.createRef<ChartHandle>();
     render(<Chart ref={ref} kind="line" series={LINES} ariaLabel="Sales" />);

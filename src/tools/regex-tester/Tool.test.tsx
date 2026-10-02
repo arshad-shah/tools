@@ -48,6 +48,9 @@ const renderTool = () =>
   );
 const textbox = (name: string) =>
   screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
+/** R41: "Test text" and "Results" are tabs. */
+const pane = (name: 'Test text' | 'Results') =>
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
 
 describe('RegexTester', () => {
   beforeEach(() => {
@@ -69,7 +72,9 @@ describe('RegexTester', () => {
     renderTool();
 
     expect(textbox('Regex pattern').value).toBe('(\\d+)');
+    pane('Test text');
     expect(textbox('Test string').value).toBe('a1 b22');
+    pane('Results');
     await waitFor(() =>
       expect(
         screen
@@ -92,8 +97,28 @@ describe('RegexTester', () => {
     });
   });
 
+  it('test text and results are tabs; flags toggle without primary', async () => {
+    renderTool();
+    pane('Test text');
+    fireEvent.change(textbox('Test string'), { target: { value: 'a1 b2' } });
+    fireEvent.change(textbox('Regex pattern'), { target: { value: '\\d' } });
+    expect(screen.queryByRole('tab', { name: 'Match' })).toBeNull();
+    pane('Results');
+    expect(screen.queryByRole('textbox', { name: 'Test string' })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Match' }));
+    expect(await screen.findAllByText('2 matches')).not.toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Copy match 1' })).toBeTruthy();
+    const flag = screen.getByRole('button', { name: 'Global (g)' });
+    expect(flag.getAttribute('aria-pressed')).toBe('true');
+    expect(flag.className).not.toMatch(/bg-accent(\s|$)/);
+    expect(
+      screen.getByRole('button', { name: 'Copy regex with flags' }),
+    ).toBeTruthy();
+  });
+
   it('shows pass and fail for each test case with a summary', async () => {
     renderTool();
+    pane('Results');
     fireEvent.click(screen.getByRole('tab', { name: 'Tests' }));
     fireEvent.change(textbox('Regex pattern'), {
       target: { value: '^\\d+$' },
