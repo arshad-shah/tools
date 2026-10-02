@@ -37,10 +37,28 @@ export type KdfParams =
 
 export const DEFAULT_KDF: KdfParams = { kind: 'pbkdf2', iterations: 600_000 };
 
-/** Bounds a crafted file cannot push a decrypt past (memory and time). */
-const LIMITS = {
+/**
+ * What `open` will derive from a header (a crafted file cannot cost more
+ * memory or time than this): PBKDF2 up to 10 million iterations; Argon2id up
+ * to 256 MiB, 10 passes and 1 GiB-passes in total, parallelism 1 to 16.
+ */
+const READ_LIMITS = {
   pbkdf2Iterations: 10_000_000,
-  argonMemoryKiB: 1_048_576, // 1 GiB
+  argonMemoryKiB: 262_144,
+  argonPasses: 10,
+  argonMemoryPasses: 1_048_576,
+  argonParallelism: 16,
+};
+
+/**
+ * What `seal` will use at least. PBKDF2-SHA-256: 600,000 iterations (OWASP
+ * 2023). Argon2id: the OWASP table (19 MiB x 2, 12 MiB x 3, 9 MiB x 4,
+ * 7 MiB x 5), as at least 7 MiB and 35,840 KiB-passes.
+ */
+const SEAL_FLOOR = {
+  pbkdf2Iterations: 600_000,
+  argonMemoryKiB: 7168,
+  argonMemoryPasses: 35_840,
 };
 
 const MAGIC = utf8Encode(ENVELOPE_MAGIC);
@@ -50,6 +68,12 @@ const wrong = (cause?: unknown) =>
   new ToolError('WRONG_PASSWORD', 'Wrong passphrase, or the data was changed', {
     cause,
   });
+const cancelled = () => new ToolError('CANCELLED', 'Cancelled');
+
+export interface AeadOptions {
+  /** Stops key derivation (Argon2id between blocks) with CANCELLED. */
+  signal?: AbortSignal;
+}
 
 function kdfHeader(kdf: KdfParams): Uint8Array {
   if (kdf.kind === 'pbkdf2') {
@@ -67,55 +91,99 @@ function kdfHeader(kdf: KdfParams): Uint8Array {
   return out;
 }
 
-function checkKdf(kdf: KdfParams): void {
-  const whole = (n: number, min: number, max: number) =>
-    Number.isInteger(n) && n >= min && n <= max;
+const whole = (n: number, min: number, max: number) =>
+  Number.isInteger(n) && n >= min && n <= max;
+
+/** Throws INVALID_INPUT unless `open` may derive with these settings. */
+function checkReadable(kdf: KdfParams): void {
+  const L = READ_LIMITS;
   const ok =
     kdf.kind === 'pbkdf2'
-      ? whole(kdf.iterations, 1, LIMITS.pbkdf2Iterations)
-      : whole(kdf.memoryKiB, 8 * kdf.parallelism, LIMITS.argonMemoryKiB) &&
-        whole(kdf.iterations, 1, 255) &&
-        whole(kdf.parallelism, 1, 255);
-  if (!ok) throw invalid('The key derivation settings are out of range');
+      ? whole(kdf.iterations, 1, L.pbkdf2Iterations)
+      : whole(kdf.parallelism, 1, L.argonParallelism) &&
+        whole(kdf.memoryKiB, 8 * kdf.parallelism, L.argonMemoryKiB) &&
+        whole(kdf.iterations, 1, L.argonPasses) &&
+        kdf.memoryKiB * kdf.iterations <= L.argonMemoryPasses;
+  if (!ok)
+    throw invalid(
+      'The key derivation settings are out of range (too costly to try)',
+    );
+}
+
+/** Throws INVALID_INPUT for settings too weak (or too costly) to seal with. */
+function checkSealable(kdf: KdfParams): void {
+  const F = SEAL_FLOOR;
+  const strong =
+    kdf.kind === 'pbkdf2'
+      ? kdf.iterations >= F.pbkdf2Iterations
+      : kdf.memoryKiB >= F.argonMemoryKiB &&
+        kdf.memoryKiB * kdf.iterations >= F.argonMemoryPasses;
+  if (!strong)
+    throw invalid(
+      kdf.kind === 'pbkdf2'
+        ? 'PBKDF2 needs at least 600,000 iterations'
+        : 'Argon2id needs at least 7 MiB and the OWASP memory and pass minimums',
+    );
+  checkReadable(kdf);
 }
 
 async function deriveKey(
   passphrase: string,
   salt: Uint8Array<ArrayBuffer>,
   kdf: KdfParams,
+  signal?: AbortSignal,
 ): Promise<CryptoKey> {
+  if (signal?.aborted) throw cancelled();
   const secret = utf8Encode(passphrase.normalize('NFC'));
   if (kdf.kind === 'pbkdf2') {
     const base = await crypto.subtle.importKey('raw', secret, 'PBKDF2', false, [
       'deriveKey',
     ]);
-    return crypto.subtle.deriveKey(
+    const key = await crypto.subtle.deriveKey(
       { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: kdf.iterations },
       base,
       { name: 'AES-GCM', length: 256 },
       false,
       ['encrypt', 'decrypt'],
     );
+    if (signal?.aborted) throw cancelled();
+    return key;
   }
-  const raw = await argon2idAsync(secret, salt, {
-    m: kdf.memoryKiB,
-    t: kdf.iterations,
-    p: kdf.parallelism,
-    dkLen: 32,
-  });
+  let raw: Uint8Array;
+  try {
+    raw = await argon2idAsync(secret, salt, {
+      m: kdf.memoryKiB,
+      t: kdf.iterations,
+      p: kdf.parallelism,
+      dkLen: 32,
+      maxmem: (kdf.memoryKiB + 1024) * 1024,
+      // Throwing here stops the derivation between blocks.
+      onProgress: () => {
+        if (signal?.aborted) throw cancelled();
+      },
+    });
+  } catch (e) {
+    if (signal?.aborted) throw cancelled();
+    throw e;
+  }
+  if (signal?.aborted) throw cancelled();
   return crypto.subtle.importKey('raw', new Uint8Array(raw), 'AES-GCM', false, [
     'encrypt',
     'decrypt',
   ]);
 }
 
-/** Encrypts `plain` under `passphrase` into a self-describing envelope. */
+/**
+ * Encrypts `plain` under `passphrase` into a self-describing envelope.
+ * Refuses KDF settings below the OWASP minimums (INVALID_INPUT).
+ */
 export async function seal(
   plain: Uint8Array,
   passphrase: string,
   kdf: KdfParams = DEFAULT_KDF,
+  { signal }: AeadOptions = {},
 ): Promise<Uint8Array> {
-  checkKdf(kdf);
+  checkSealable(kdf);
   const salt = randomBytes(SALT);
   const iv = randomBytes(IV);
   const params = kdfHeader(kdf);
@@ -126,7 +194,7 @@ export async function seal(
   header.set(params, (o += 1));
   header.set(salt, (o += params.length));
   header.set(iv, o + SALT);
-  const key = await deriveKey(passphrase, salt, kdf);
+  const key = await deriveKey(passphrase, salt, kdf, signal);
   const ct = new Uint8Array(
     await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv, additionalData: header },
@@ -176,7 +244,7 @@ function parseHeader(sealed: Uint8Array): {
       `Unknown key derivation (id ${id})`,
     );
   } else throw notOurs();
-  checkKdf(kdf);
+  checkReadable(kdf);
   if (sealed.length < o + SALT + IV + TAG) throw notOurs();
   return {
     kdf,
@@ -189,14 +257,16 @@ function parseHeader(sealed: Uint8Array): {
 /**
  * Decrypts an envelope. Throws WRONG_PASSWORD for a wrong passphrase or any
  * tampering, UNSUPPORTED_FEATURE for an unknown version, and INVALID_INPUT
- * for data that is not an envelope.
+ * for data that is not an envelope or whose KDF settings are too costly to
+ * try (checked before any derivation).
  */
 export async function open(
   sealed: Uint8Array,
   passphrase: string,
+  { signal }: AeadOptions = {},
 ): Promise<Uint8Array> {
   const { kdf, salt, iv, headerLength } = parseHeader(sealed);
-  const key = await deriveKey(passphrase, salt, kdf);
+  const key = await deriveKey(passphrase, salt, kdf, signal);
   try {
     return new Uint8Array(
       await crypto.subtle.decrypt(
