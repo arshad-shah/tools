@@ -1,5 +1,5 @@
-import { deflateSync } from 'fflate';
-import { describe, expect, it } from 'vitest';
+import { deflateSync, Inflate } from 'fflate';
+import { describe, expect, it, vi } from 'vitest';
 import { bytesToBase64, utf8Encode } from './encoding';
 import { decodeShare, encodeShare } from './share-state';
 
@@ -57,6 +57,38 @@ describe('share codec', () => {
     });
     expect(() => decodeShare(`s=1.${raw}`)).toThrow(/damaged/);
     expect(() => decodeShare('nothing')).toThrow(/damaged/);
+  });
+  it('enforces the zip-bomb cap while inflating, not after', () => {
+    // A maximal-ratio bomb that fits under the fragment limit.
+    const bomb = bytesToBase64(
+      deflateSync(utf8Encode('a'.repeat(11_000_000)), { level: 9 }),
+      { urlSafe: true, padding: false },
+    );
+    expect(bomb.length).toBeLessThan(16_000);
+    // Count what the decoder inflates before it gives up.
+    const real = Inflate.prototype.push;
+    let produced = 0;
+    let pushes = 0;
+    const spy = vi
+      .spyOn(Inflate.prototype, 'push')
+      .mockImplementation(function (this: Inflate, chunk, final) {
+        pushes++;
+        const ondata = this.ondata;
+        this.ondata = (data, last) => {
+          produced += data.length;
+          ondata.call(this, data, last);
+        };
+        try {
+          real.call(this, chunk, final);
+        } finally {
+          this.ondata = ondata;
+        }
+      });
+    expect(() => decodeShare(`s=1.${bomb}`)).toThrow(/damaged/);
+    spy.mockRestore();
+    expect(pushes).toBeGreaterThan(1);
+    // At most one small input chunk's output past the 256 KB cap.
+    expect(produced).toBeLessThan(262_144 + 140_000);
   });
   it('rejects unknown codec versions', () => {
     expect(() => decodeShare('s=9.abc')).toThrow(/newer version/);
