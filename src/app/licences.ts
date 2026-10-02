@@ -28,6 +28,12 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/squirrelchat/smol-toml',
   },
   {
+    name: 'fflate',
+    licence: 'MIT',
+    url: 'https://github.com/101arrowz/fflate',
+    note: 'DEFLATE and ZIP: share links, XLSX export',
+  },
+  {
     name: 'Inter',
     licence: 'OFL-1.1',
     url: 'https://github.com/rsms/inter',

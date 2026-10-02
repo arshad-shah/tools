@@ -208,4 +208,8 @@ describe('bytesToBinary', () => {
     expect(bytesToBinary(Uint8Array.of(0xf0), 4)).toBe('1111 0000');
     expect(bytesToBinary(new Uint8Array(0))).toBe('');
   });
+  it('refuses a group size that is not a positive whole number', () => {
+    for (const g of [0, -1, 1.5, Number.NaN])
+      expect(() => bytesToBinary(Uint8Array.of(1), g)).toThrow(RangeError);
+  });
 });
