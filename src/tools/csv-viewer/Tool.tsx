@@ -7,6 +7,7 @@ import {
   toCsv,
 } from '@/shared/lib/data-formats';
 import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
   Alert,
@@ -146,6 +147,21 @@ export default function CsvViewer() {
       for (const c of visibleColumns) o[c] = r[c] ?? null;
       return o;
     });
+  const generateMore = () =>
+    sendTo(navigate, 'random-data-generator', {
+      kind: 'text',
+      mime: MOCK_SCHEMA_MIME,
+      text: JSON.stringify(inferMockSchema(projected().slice(0, 1000))),
+      sourceTool: TOOL_ID,
+    });
+
+  useSendCommands(TOOL_ID, [
+    {
+      target: 'random-data-generator',
+      run: generateMore,
+      enabled: Boolean(table && loaded),
+    },
+  ]);
 
   useToolCommands(TOOL_ID, [
     {
@@ -287,16 +303,7 @@ export default function CsvViewer() {
             size="sm"
             variant="secondary"
             leftIcon={<IconSparkles size="sm" />}
-            onClick={() =>
-              sendTo(navigate, 'random-data-generator', {
-                kind: 'text',
-                mime: MOCK_SCHEMA_MIME,
-                text: JSON.stringify(
-                  inferMockSchema(projected().slice(0, 1000)),
-                ),
-                sourceTool: TOOL_ID,
-              })
-            }
+            onClick={generateMore}
           >
             Generate more like this
           </Button>

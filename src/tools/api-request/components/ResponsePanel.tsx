@@ -4,6 +4,7 @@ import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import {
   Badge,
   Button,
@@ -75,6 +76,45 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
   const t = sent.timing;
   const src = 'api-request';
 
+  const canCompare = sent.previousText !== undefined && res.text !== undefined;
+  const openJson = () =>
+    sendTo(navigate, 'json-and-xml-viewer', {
+      kind: 'text',
+      mime: 'application/json',
+      sourceTool: src,
+      text: res.text ?? '',
+    });
+  const comparePrevious = () =>
+    sendTo(navigate, 'text-diff-checker', {
+      kind: 'text',
+      mime: 'application/vnd.tools.diff-pair+json',
+      sourceTool: src,
+      text: JSON.stringify({ left: sent.previousText, right: res.text }),
+      meta: { pair: true },
+    });
+  const decodeToken = () =>
+    tokens[0] &&
+    sendTo(navigate, 'jwt-decode', {
+      kind: 'text',
+      mime: 'application/jwt',
+      sourceTool: src,
+      text: tokens[0],
+    });
+  const inspectUrl = () =>
+    sendTo(navigate, 'url-parser', {
+      kind: 'text',
+      mime: 'text/uri-list',
+      sourceTool: src,
+      text: sent.url,
+    });
+
+  useSendCommands(src, [
+    { target: 'json-and-xml-viewer', run: openJson, enabled: view === 'json' },
+    { target: 'text-diff-checker', run: comparePrevious, enabled: canCompare },
+    { target: 'jwt-decode', run: decodeToken, enabled: !!tokens[0] },
+    { target: 'url-parser', run: inspectUrl },
+  ]);
+
   return (
     <Card>
       <CardHeader>
@@ -129,35 +169,17 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconFileJson size="sm" />}
-                onClick={() =>
-                  sendTo(navigate, 'json-and-xml-viewer', {
-                    kind: 'text',
-                    mime: 'application/json',
-                    sourceTool: src,
-                    text: res.text ?? '',
-                  })
-                }
+                onClick={openJson}
               >
                 Open in JSON Viewer
               </Button>
             )}
-            {sent.previousText !== undefined && res.text !== undefined && (
+            {canCompare && (
               <Button
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconSplit size="sm" />}
-                onClick={() =>
-                  sendTo(navigate, 'text-diff-checker', {
-                    kind: 'text',
-                    mime: 'application/vnd.tools.diff-pair+json',
-                    sourceTool: src,
-                    text: JSON.stringify({
-                      left: sent.previousText,
-                      right: res.text,
-                    }),
-                    meta: { pair: true },
-                  })
-                }
+                onClick={comparePrevious}
               >
                 Compare with previous response
               </Button>
@@ -167,14 +189,7 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconKey size="sm" />}
-                onClick={() =>
-                  sendTo(navigate, 'jwt-decode', {
-                    kind: 'text',
-                    mime: 'application/jwt',
-                    sourceTool: src,
-                    text: tokens[0],
-                  })
-                }
+                onClick={decodeToken}
               >
                 Decode token
               </Button>
@@ -183,14 +198,7 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
               size="sm"
               variant="ghost"
               leftIcon={<IconLink size="sm" />}
-              onClick={() =>
-                sendTo(navigate, 'url-parser', {
-                  kind: 'text',
-                  mime: 'text/uri-list',
-                  sourceTool: src,
-                  text: sent.url,
-                })
-              }
+              onClick={inspectUrl}
             >
               Inspect URL
             </Button>

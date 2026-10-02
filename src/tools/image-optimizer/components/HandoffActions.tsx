@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTool } from '@/app/registry';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import {
   Button,
   DropdownMenu,
@@ -51,6 +52,16 @@ export const HandoffActions: React.FC<HandoffActionsProps> = ({
       files: () => originals.slice(0, 1),
     },
   ].filter((t) => getTool(t.id)?.enabled);
+  const open = (t: Target) =>
+    sendTo(navigate, t.id, {
+      kind: 'files',
+      files: t.files(),
+      sourceTool: TOOL_ID,
+    });
+  useSendCommands(
+    TOOL_ID,
+    targets.map((t) => ({ target: t.id, run: () => open(t) })),
+  );
 
   return (
     <Inline gap="2" wrap>
@@ -68,16 +79,7 @@ export const HandoffActions: React.FC<HandoffActionsProps> = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent aria-label="Open in" className="min-w-56">
             {targets.map((t) => (
-              <DropdownMenuItem
-                key={t.id}
-                onClick={() =>
-                  sendTo(navigate, t.id, {
-                    kind: 'files',
-                    files: t.files(),
-                    sourceTool: TOOL_ID,
-                  })
-                }
-              >
+              <DropdownMenuItem key={t.id} onClick={() => open(t)}>
                 {t.label}
               </DropdownMenuItem>
             ))}

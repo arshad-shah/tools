@@ -4,6 +4,7 @@ import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { sendTo, useHandoff } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
@@ -116,6 +117,24 @@ export default function UrlInspector() {
     }
   };
 
+  const canSendHttp = !!model && /^https?:$/.test(model.protocol);
+  const sendHttp = () =>
+    model && sendTo(navigate, 'api-request', toHttpClient(model));
+  const makeQr = () => sendTo(navigate, 'qr-code-generator', asUriList(text));
+  const openEncoder = () =>
+    sendTo(navigate, 'url-encoder-decoder', {
+      kind: 'text',
+      mime: 'text/plain',
+      sourceTool: 'url-parser',
+      text,
+    });
+
+  useSendCommands('url-parser', [
+    { target: 'api-request', run: sendHttp, enabled: canSendHttp },
+    { target: 'qr-code-generator', run: makeQr, enabled: !!model },
+    { target: 'url-encoder-decoder', run: openEncoder, enabled: !!text },
+  ]);
+
   useToolCommands('url-parser', [
     {
       id: 'copy',
@@ -209,10 +228,8 @@ export default function UrlInspector() {
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconSend size="sm" />}
-                disabled={!model || !/^https?:$/.test(model.protocol)}
-                onClick={() =>
-                  model && sendTo(navigate, 'api-request', toHttpClient(model))
-                }
+                disabled={!canSendHttp}
+                onClick={sendHttp}
               >
                 Send to HTTP Client
               </Button>
@@ -221,9 +238,7 @@ export default function UrlInspector() {
                 variant="secondary"
                 leftIcon={<IconQrCode size="sm" />}
                 disabled={!model}
-                onClick={() =>
-                  sendTo(navigate, 'qr-code-generator', asUriList(text))
-                }
+                onClick={makeQr}
               >
                 Make QR
               </Button>
@@ -232,14 +247,7 @@ export default function UrlInspector() {
                 variant="secondary"
                 leftIcon={<IconType size="sm" />}
                 disabled={!text}
-                onClick={() =>
-                  sendTo(navigate, 'url-encoder-decoder', {
-                    kind: 'text',
-                    mime: 'text/plain',
-                    sourceTool: 'url-parser',
-                    text,
-                  })
-                }
+                onClick={openEncoder}
               >
                 Open in Text Encoder
               </Button>

@@ -28,6 +28,7 @@ import {
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { ExpiryInfo, JwtTab } from './types';
 import { getExpiryInfo } from './lib/claims';
@@ -133,6 +134,34 @@ const JWTDecoder: React.FC = () => {
 
   const canCompare = accepts('text-diff-checker', DIFF_PAIR);
   const epochTarget = accepts('epoch-converter', 'text/plain');
+  const decoding = mode === 'decode' && !!decoded;
+  // The palette mirrors the first epoch button shown (exp, else iat).
+  const epochPayload =
+    decoded && epochTarget
+      ? (claimToEpoch(decoded, 'exp') ?? claimToEpoch(decoded, 'iat'))
+      : null;
+  const comparePayloadsInDiff = () =>
+    decoded &&
+    otherDecoded &&
+    sendTo(
+      navigate,
+      'text-diff-checker',
+      comparePayloads(decoded, otherDecoded),
+    );
+
+  useSendCommands('jwt-decode', [
+    {
+      target: 'epoch-converter',
+      run: () =>
+        epochPayload && sendTo(navigate, 'epoch-converter', epochPayload),
+      enabled: decoding && !!epochPayload,
+    },
+    {
+      target: 'text-diff-checker',
+      run: comparePayloadsInDiff,
+      enabled: decoding && compareOpen && !!otherDecoded && canCompare,
+    },
+  ]);
 
   return (
     <Stack gap="4">
@@ -214,14 +243,7 @@ const JWTDecoder: React.FC = () => {
                     variant="primary"
                     size="sm"
                     disabled={!otherDecoded || !canCompare}
-                    onClick={() =>
-                      otherDecoded &&
-                      sendTo(
-                        navigate,
-                        'text-diff-checker',
-                        comparePayloads(decoded, otherDecoded),
-                      )
-                    }
+                    onClick={comparePayloadsInDiff}
                   >
                     Compare payloads in Text Diff
                   </Button>

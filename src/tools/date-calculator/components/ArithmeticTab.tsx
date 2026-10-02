@@ -19,6 +19,7 @@ import {
 } from '@/shared/ui';
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { applyOps, type DateOp, type OpUnit } from '../lib/arith';
 import { OP_UNITS } from '../lib/ops';
 import { dateOutputs } from '../lib/outputs';
@@ -66,6 +67,19 @@ export const ArithmeticTab: React.FC<ArithmeticTabProps> = ({
   }
   const setOp = (i: number, patch: Partial<DateOp>) =>
     onOps(ops.map((o, j) => (j === i ? { ...o, ...patch } : o)));
+  const epochMs = result && 'epochMs' in result ? result.epochMs : null;
+  const compareZones = () =>
+    epochMs !== null &&
+    sendTo(navigate, 'epoch-converter', {
+      kind: 'text',
+      mime: 'text/plain',
+      text: String(Math.floor(epochMs / 1000)),
+      sourceTool: 'date-calculator',
+    });
+
+  useSendCommands('date-calculator', [
+    { target: 'epoch-converter', run: compareZones, enabled: epochMs !== null },
+  ]);
 
   return (
     <Stack gap="6">
@@ -151,14 +165,7 @@ export const ArithmeticTab: React.FC<ArithmeticTabProps> = ({
                     variant="secondary"
                     size="sm"
                     leftIcon={<IconGlobe size="sm" />}
-                    onClick={() =>
-                      sendTo(navigate, 'epoch-converter', {
-                        kind: 'text',
-                        mime: 'text/plain',
-                        text: String(Math.floor(result.epochMs / 1000)),
-                        sourceTool: 'date-calculator',
-                      })
-                    }
+                    onClick={compareZones}
                   >
                     Compare across zones
                   </Button>

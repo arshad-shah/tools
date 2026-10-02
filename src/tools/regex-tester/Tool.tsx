@@ -8,6 +8,7 @@ import React, {
 import { useNavigate } from 'react-router-dom';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
   Grid,
@@ -123,6 +124,8 @@ const RegexTester: React.FC = () => {
     setFlagsTo(toggleFlag(flags, letter));
   const setMode = (m: RegexMode) => updateSettings({ mode: m });
   const logPayload = valid ? logFormatPayload(pattern, flags) : null;
+  const sendLogFormat = () =>
+    logPayload && sendTo(navigate, 'log-parser', logPayload);
 
   const pickTemplate = (t: RegexTemplate) => {
     setPattern(t.pattern);
@@ -153,6 +156,9 @@ const RegexTester: React.FC = () => {
     loadSample,
     focusExplain: () => treeRef.current?.focusId('r'),
   });
+  useSendCommands('regex-tester', [
+    { target: 'log-parser', run: sendLogFormat, enabled: logPayload !== null },
+  ]);
 
   return (
     <Stack gap="4">
@@ -167,9 +173,7 @@ const RegexTester: React.FC = () => {
         onCopyAsJs={() => copyText(toJsSnippet(pattern, flags, text))}
         onLoadSample={loadSample}
         canUseAsLogFormat={logPayload !== null}
-        onUseAsLogFormat={() =>
-          logPayload && sendTo(navigate, 'log-parser', logPayload)
-        }
+        onUseAsLogFormat={sendLogFormat}
         onClearAll={clearAll}
       />
       <PatternBar

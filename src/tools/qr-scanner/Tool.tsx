@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ToolError, toToolError } from '@/shared/lib/errors';
-import { useHandoffFiles } from '@/shared/lib/handoff';
+import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { decodeBarcodes, type DecodedBarcode } from '@/shared/lib/qr-decode';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
   Alert,
@@ -26,6 +28,7 @@ import {
 import { IconPlay } from '@/shared/ui/icons';
 import { ResultCard } from './components/ResultCard';
 import { ScanSources, type SourceMode } from './components/ScanSources';
+import { resultHandoffs, type ResultTarget } from './lib/handoffs';
 
 const MAX_PREVIEW = 640;
 const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
@@ -47,6 +50,7 @@ async function readClipboardImage(): Promise<Blob> {
 }
 
 export default function QrScanner() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<SourceMode>('image');
   const [camera, setCamera] = useState(false);
   const [scanned, setScanned] = useState<Scanned | null>(null);
@@ -132,6 +136,23 @@ export default function QrScanner() {
         setError(null);
       },
     },
+  ]);
+
+  // The palette mirrors the first code's hand-off buttons (one id per target).
+  const first = scanned && !busy ? scanned.results[0] : undefined;
+  const firstHandoffs = first ? resultHandoffs(first) : {};
+  const send = (target: ResultTarget) => ({
+    target,
+    run: () => {
+      const payload = firstHandoffs[target];
+      if (payload) sendTo(navigate, target, payload);
+    },
+    enabled: !!firstHandoffs[target],
+  });
+  useSendCommands('qr-scanner', [
+    send('url-parser'),
+    send('qr-code-generator'),
+    send('url-encoder-decoder'),
   ]);
 
   const scale = scanned ? Math.min(1, MAX_PREVIEW / scanned.width) : 1;

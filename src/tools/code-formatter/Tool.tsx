@@ -5,6 +5,7 @@ import { copyText } from '@/shared/lib/clipboard';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
   Alert,
@@ -168,6 +169,10 @@ export default function CodeFormatter() {
       meta: { pair: true },
     });
   };
+
+  useSendCommands(TOOL_ID, [
+    { target: 'text-diff-checker', run: showChanges, enabled: !!result },
+  ]);
 
   useToolCommands(TOOL_ID, [
     {
