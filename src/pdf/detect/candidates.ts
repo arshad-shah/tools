@@ -33,6 +33,8 @@ export interface Candidate {
   cells?: number;
   /** Comb fields laid out as dd/mm/yyyy boxes. */
   date?: boolean;
+  /** Comb fields: cell centres as shares of the width, when uneven. */
+  cellCentres?: number[];
 }
 
 const CELL_INSET = 1.5;
@@ -268,6 +270,34 @@ const DATE_GROUPS = [2, 2, 4];
 /** A date comb's cells: dd/mm/yyyy with its separators. */
 const DATE_CELLS = 10;
 
+/** Off even spacing by more than this (points), cells keep their own centres. */
+const UNEVEN_TOL = 0.5;
+
+/**
+ * Cell centres of a comb as shares of its width: each box's centre, plus,
+ * for a date, the middle of each separator gap between its groups. Null
+ * when the cells are evenly spaced (or the boxes do not give every cell).
+ */
+function combCentres(c: Comb, date: boolean): number[] | null {
+  const mid = (b: Box) => b.x + b.width / 2;
+  const xs: number[] = [];
+  let k = 0;
+  c.groups.forEach((n, g) => {
+    if (g > 0 && date) {
+      const prev = c.boxes[k - 1];
+      xs.push((prev.x + prev.width + c.boxes[k].x) / 2);
+    }
+    for (let i = 0; i < n; i++) xs.push(mid(c.boxes[k++]));
+  });
+  const count = date ? DATE_CELLS : c.count;
+  if (xs.length !== count || c.w <= 0) return null;
+  const pitch = c.w / count;
+  const uneven = xs.some(
+    (x, i) => Math.abs(x - (c.x + pitch * (i + 0.5))) > UNEVEN_TOL,
+  );
+  return uneven ? xs.map((x) => (x - c.x) / c.w) : null;
+}
+
 /**
  * One comb text field per run of empty character boxes, spanning the run
  * (inset vertically). Runs with text printed in any box are not fields.
@@ -282,6 +312,7 @@ export function combCandidates(combs: Comb[], glyphs: GlyphBox[]): Candidate[] {
     const date =
       c.groups.length === DATE_GROUPS.length &&
       c.groups.every((n, i) => n === DATE_GROUPS[i]);
+    const centres = combCentres(c, date);
     out.push({
       source: 'comb',
       rect: {
@@ -294,6 +325,7 @@ export function combCandidates(combs: Comb[], glyphs: GlyphBox[]): Candidate[] {
       cell: c.cell,
       cells: date ? DATE_CELLS : c.count,
       ...(date ? { date } : {}),
+      ...(centres ? { cellCentres: centres } : {}),
     });
   }
   return out;

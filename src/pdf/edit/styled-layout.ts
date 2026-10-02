@@ -34,6 +34,12 @@ export interface StyledLayoutStyle {
   size: number;
   spacing?: number;
   comb?: number;
+  /**
+   * Comb cell centres as fractions of the box width, one per cell (detected
+   * character boxes whose gaps are uneven). Even cells when absent or when
+   * the count differs from `comb`.
+   */
+  cells?: readonly number[];
   /** Wrap at the box width (and at line breaks), top down. */
   multiline?: boolean;
 }
@@ -49,8 +55,19 @@ function combChars(chars: string[], cells: number): string[] {
   return bare.length < chars.length ? bare : chars;
 }
 
-const combX = (widthOf: WidthOf, chars: string[], cell: number, size: number) =>
-  chars.map((ch, i) => cell * i + (cell - widthOf(ch, size)) / 2);
+function combX(
+  widthOf: WidthOf,
+  chars: string[],
+  width: number,
+  comb: number,
+  size: number,
+  cells?: readonly number[],
+) {
+  const cell = width / comb;
+  const centre = (i: number) =>
+    cells && cells.length === comb ? cells[i] * width : cell * (i + 0.5);
+  return chars.map((ch, i) => centre(i) - widthOf(ch, size) / 2);
+}
 
 function spacedX(
   widthOf: WidthOf,
@@ -153,7 +170,7 @@ function multilineLayout(
   const lines: StyledLine[] = rows.map((chars, i) => ({
     chars,
     x: comb
-      ? combX(widthOf, chars, box.width / comb, size)
+      ? combX(widthOf, chars, box.width, comb, size, style.cells)
       : spacedX(widthOf, chars, size, spacing),
     baseline: box.height - i * lineH - (lineH - glyphH) / 2 - ascent,
   }));
@@ -189,7 +206,7 @@ export function layoutStyled(
       chars = chars.slice(0, style.comb);
       truncated = true;
     }
-    x = combX(widthOf, chars, box.width / style.comb, size);
+    x = combX(widthOf, chars, box.width, style.comb, size, style.cells);
   } else {
     while (
       size > MIN_SIZE &&

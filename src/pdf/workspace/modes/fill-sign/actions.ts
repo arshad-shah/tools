@@ -64,6 +64,8 @@ export function styleParams(
     ...(s.color !== undefined ? { color: s.color } : {}),
     ...(s.spacing ? { spacing: s.spacing } : {}),
     ...(s.comb ? { comb: s.comb } : {}),
+    // Cell positions belong to one cell count; a changed count is even.
+    ...(s.comb && s.cells?.length === s.comb ? { cells: [...s.cells] } : {}),
   };
 }
 
@@ -168,11 +170,19 @@ export const retypeField = (ctx: ModeProps, f: ViewField, type: FieldType) =>
 export const resizeField = (ctx: ModeProps, f: ViewField, rect: Box) =>
   correction(ctx, { action: 'resize', fieldIds: [f.key], rect });
 
-/** A character-box field's cell count for a new width, at the same cell pitch. */
+/**
+ * A character-box field's cell count for a new width, at the same cell
+ * pitch. Detected cell positions stay only while the count does (they are
+ * shares of the width); otherwise the cells are even.
+ */
 export function combCells(d: DetectedField, rect: Box): Partial<DetectedField> {
   if (!d.cellCount) return {};
   const pitch = d.rect.width / d.cellCount;
-  return { cellCount: Math.max(1, Math.round(rect.width / pitch)) };
+  const cellCount = Math.max(1, Math.round(rect.width / pitch));
+  return {
+    cellCount,
+    cellCentres: cellCount === d.cellCount ? d.cellCentres : undefined,
+  };
 }
 
 /** Two equal halves along the long axis (spec §8.5). */

@@ -53,6 +53,40 @@ describe('layoutStyled', () => {
   });
 });
 
+describe('layoutStyled comb cells at detected positions', () => {
+  it('centres each character on its own cell centre', () => {
+    // A date whose separator gaps are narrower than a box.
+    const cells = [0.05, 0.15, 0.24, 0.33, 0.43, 0.52, 0.61, 0.71, 0.81, 0.9];
+    const l = layoutStyled(
+      mono,
+      heights,
+      '01/02/2025',
+      { width: 200, height: 20 },
+      { size: 10, comb: 10, cells },
+    );
+    // 5pt glyphs centred on each cell centre.
+    l.x.forEach((x, i) => expect(x).toBeCloseTo(cells[i] * 200 - 2.5));
+  });
+
+  it('falls back to even cells when the positions do not match the count', () => {
+    const even = layoutStyled(
+      mono,
+      heights,
+      'ABCD',
+      { width: 80, height: 20 },
+      { size: 10, comb: 4 },
+    );
+    const odd = layoutStyled(
+      mono,
+      heights,
+      'ABCD',
+      { width: 80, height: 20 },
+      { size: 10, comb: 4, cells: [0.1, 0.2] },
+    );
+    expect(odd.x).toEqual(even.x);
+  });
+});
+
 describe('layoutStyled separators and wrapped lines', () => {
   it('drops date separators when a comb has no cells for them', () => {
     const l = layoutStyled(

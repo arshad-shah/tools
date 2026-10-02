@@ -100,7 +100,11 @@ function fieldType(
   if (c.source === 'checkbox-vector' || c.source === 'checkbox-glyph')
     return 'tick';
   // Character boxes: a date only when laid out as dd/mm/yyyy (the cells fit it).
-  if (c.source === 'comb') return c.date ? 'date' : 'text';
+  // Eight boxes under a date label take dd/mm/yyyy without its separators.
+  if (c.source === 'comb')
+    return c.date || (c.cells === 8 && label && DATE_LABEL.test(label))
+      ? 'date'
+      : 'text';
   if (c.source === 'date' || (label && DATE_LABEL.test(label))) return 'date';
   if (label && SIGN_LABEL.test(label)) return 'signature';
   if (c.rect.height >= MULTILINE * lineSpacing) return 'multiline';
@@ -258,6 +262,7 @@ export function classify(
     };
     if (c.prechecked) f.prechecked = true;
     if (c.cells) f.cellCount = c.cells;
+    if (c.cellCentres) f.cellCentres = c.cellCentres;
     if (c.cell) {
       f.table = c.cell.table;
       f.row = c.cell.row;

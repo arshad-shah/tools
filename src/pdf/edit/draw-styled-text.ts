@@ -31,6 +31,8 @@ export interface StyledText {
   spacing?: number;
   /** Character boxes: one character centred in each of this many equal cells. */
   comb?: number;
+  /** Comb cell centres as fractions of the box width (see styled-layout). */
+  cells?: readonly number[];
   /** Degrees counterclockwise about the box centre. */
   rotate?: number;
   /** Wrap from the top of the box (letter spacing and combs apply per line). */

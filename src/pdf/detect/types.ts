@@ -39,6 +39,11 @@ export interface DetectedField {
   prechecked?: boolean;
   /** Comb text: one character per cell across the rect (character boxes). */
   cellCount?: number;
+  /**
+   * Comb text: each cell's centre as a share of the rect width, when the
+   * boxes are not evenly spaced (a date's separator gaps).
+   */
+  cellCentres?: number[];
   table?: number;
   row?: number;
   col?: number;

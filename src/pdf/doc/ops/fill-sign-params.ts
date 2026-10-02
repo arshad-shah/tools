@@ -38,6 +38,8 @@ export interface FlatFillParams {
   spacing?: number;
   /** Character boxes: this many equal cells, one character in each. */
   comb?: number;
+  /** Detected character boxes: each cell's centre as a share of the width. */
+  cells?: number[];
   /** Only the text settings changed (the undo label says so). */
   restyle?: true;
 }
@@ -116,6 +118,27 @@ const optStr = (v: unknown, what: string): string | undefined => {
   if (typeof v !== 'string') throw bad(`${what}: expected text`);
   return v;
 };
+/** Cell centres: `count` increasing shares of the width, 0 to 1. */
+function cellCentres(
+  v: unknown,
+  count: number | undefined,
+  what: string,
+): number[] | undefined {
+  if (v === undefined) return undefined;
+  const ok =
+    Array.isArray(v) &&
+    v.length === count &&
+    v.every(
+      (c, i) =>
+        typeof c === 'number' &&
+        c >= 0 &&
+        c <= 1 &&
+        (i === 0 || c > (v[i - 1] as number)),
+    );
+  if (!ok) throw bad(`${what}: bad character box positions`);
+  return [...(v as number[])];
+}
+
 const num = (v: unknown, what: string): number => {
   if (typeof v !== 'number' || !Number.isFinite(v))
     throw bad(`${what}: expected a number`);
@@ -135,6 +158,13 @@ export function detectedField(v: unknown, what: string): DetectedField {
   if (label === undefined) throw bad(`${what}: expected a label or none`);
   const autofill = o.autofill === null ? null : optStr(o.autofill, what);
   if (autofill === undefined) throw bad(`${what}: expected a key or none`);
+  const cellCount =
+    Number.isInteger(o.cellCount) &&
+    (o.cellCount as number) >= 1 &&
+    (o.cellCount as number) <= 100
+      ? (o.cellCount as number)
+      : undefined;
+  const centres = cellCentres(o.cellCentres, cellCount, what);
   return {
     id: str(o.id, what),
     pageIndex: num(o.pageIndex, what),
@@ -148,11 +178,8 @@ export function detectedField(v: unknown, what: string): DetectedField {
     ...(o.prechecked !== undefined
       ? { prechecked: o.prechecked === true }
       : {}),
-    ...(Number.isInteger(o.cellCount) &&
-    (o.cellCount as number) >= 1 &&
-    (o.cellCount as number) <= 100
-      ? { cellCount: o.cellCount as number }
-      : {}),
+    ...(cellCount ? { cellCount } : {}),
+    ...(centres ? { cellCentres: centres } : {}),
     ...(typeof o.table === 'number' ? { table: o.table } : {}),
     ...(typeof o.row === 'number' ? { row: o.row } : {}),
     ...(typeof o.col === 'number' ? { col: o.col } : {}),
@@ -199,6 +226,7 @@ export function flatFillParams(p: unknown): FlatFillParams {
     )
   )
     throw bad(`${what}: character boxes must be between 1 and 100`);
+  const cells = cellCentres(o.cells, o.comb as number | undefined, what);
   return {
     id: str(o.id, what),
     pageId: str(o.pageId, what),
@@ -212,6 +240,7 @@ export function flatFillParams(p: unknown): FlatFillParams {
     ...(o.color !== undefined ? { color: o.color as string } : {}),
     ...(o.spacing !== undefined ? { spacing: o.spacing as number } : {}),
     ...(o.comb !== undefined ? { comb: o.comb as number } : {}),
+    ...(cells ? { cells } : {}),
     ...(o.restyle === true ? { restyle: true as const } : {}),
   };
 }
