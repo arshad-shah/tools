@@ -53,14 +53,13 @@ export function FontPreview({
         className,
       )}
     >
+      {/* Previews sit on paper (white in both themes), so the placeholder
+          keeps the ink: theme text tokens would fail contrast on it. */}
       <span
-        className={cn(
-          'inline-block whitespace-nowrap',
-          !shown && 'text-fg-muted',
-        )}
+        className="inline-block whitespace-nowrap"
         style={{
           fontFamily: `"${family}"`,
-          color: shown ? color : undefined,
+          color,
           fontSize: size,
           transform: deg ? `skewX(${-deg}deg)` : undefined,
         }}
