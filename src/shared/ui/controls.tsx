@@ -11,6 +11,7 @@ interface SwitchProps {
   disabled?: boolean;
   id?: string;
   'aria-label'?: string;
+  'aria-describedby'?: string;
 }
 export const Switch: React.FC<SwitchProps> = ({
   checked,

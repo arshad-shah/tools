@@ -12,6 +12,8 @@ export interface EmptyStateProps extends Omit<
   actions?: React.ReactNode;
   /** Heading level of the title; default 3. */
   headingLevel?: 2 | 3 | 4;
+  /** sm: a compact inline empty (lists, side panels). Default md. */
+  size?: 'sm' | 'md';
 }
 
 /**
@@ -25,26 +27,41 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   actions,
   headingLevel,
+  size = 'md',
   children,
   ...props
 }) => (
   <div
     className={cn(
-      'flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line-strong px-6 py-12 text-center',
+      'flex flex-col items-center justify-center text-center',
+      size === 'sm'
+        ? 'gap-1 rounded-md px-4 py-4'
+        : 'gap-3 rounded-lg border border-dashed border-line-strong px-6 py-12',
       className,
     )}
     {...props}
   >
     {Icon ? (
-      <EmptyStateIcon>
-        <Icon size="lg" />
-      </EmptyStateIcon>
+      size === 'sm' ? (
+        <Icon size="md" className="text-fg-subtle" />
+      ) : (
+        <EmptyStateIcon>
+          <Icon size="lg" />
+        </EmptyStateIcon>
+      )
     ) : null}
     {title ? (
-      <EmptyStateTitle level={headingLevel}>{title}</EmptyStateTitle>
+      <EmptyStateTitle
+        level={headingLevel}
+        className={size === 'sm' ? 'text-sm font-medium' : undefined}
+      >
+        {title}
+      </EmptyStateTitle>
     ) : null}
     {description ? (
-      <EmptyStateDescription>{description}</EmptyStateDescription>
+      <EmptyStateDescription className={size === 'sm' ? 'text-xs' : undefined}>
+        {description}
+      </EmptyStateDescription>
     ) : null}
     {actions ? <EmptyStateActions>{actions}</EmptyStateActions> : null}
     {children}

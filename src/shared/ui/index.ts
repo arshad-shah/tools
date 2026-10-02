@@ -258,3 +258,5 @@ export * from './bytes-view';
 export * from './key-value-editor';
 export * from './key-value-bulk';
 export { renderFaviconImage, useFavicon } from './use-favicon';
+export * from './copy-button';
+export * from './switch-field';

@@ -14,11 +14,13 @@ export interface SelectGroup {
 
 interface SelectProps extends Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
-  'onChange' | 'value'
+  'onChange' | 'value' | 'size'
 > {
   value: string;
   onValueChange: (value: string) => void;
   items: SelectItem[];
+  /** sm: 32px (toolbars). Default md (36px). Touch is 44px either way. */
+  size?: 'sm' | 'md';
   /** Labelled option groups, rendered after `items`. */
   groups?: SelectGroup[];
   invalid?: boolean;
@@ -36,7 +38,16 @@ const renderOption = (item: SelectItem) => (
  */
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   (
-    { className, value, onValueChange, items, groups, invalid, ...props },
+    {
+      className,
+      value,
+      onValueChange,
+      items,
+      groups,
+      invalid,
+      size = 'md',
+      ...props
+    },
     ref,
   ) => (
     <div className="relative">
@@ -45,7 +56,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         className={cn(
-          'h-9 w-full appearance-none rounded-md border bg-surface-2 pl-3 pr-9 text-base text-fg pointer-coarse:h-11 pointer-coarse:text-md',
+          'w-full appearance-none rounded-md border bg-surface-2 pl-3 pr-9 text-fg pointer-coarse:h-11 pointer-coarse:text-md',
+          size === 'sm' ? 'h-8 text-sm' : 'h-9 text-base',
           'transition-colors duration-fast focus-visible:outline-2 focus-visible:outline-offset-2',
           invalid
             ? 'border-danger focus-visible:outline-danger'

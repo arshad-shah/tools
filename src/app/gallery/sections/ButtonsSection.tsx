@@ -1,4 +1,10 @@
-import { Button, ButtonGroup, IconButton, Tooltip } from '@/shared/ui';
+import {
+  Button,
+  ButtonGroup,
+  CopyButton,
+  IconButton,
+  Tooltip,
+} from '@/shared/ui';
 import {
   IconDownload,
   IconPlus,
@@ -49,6 +55,11 @@ export function ButtonsSection() {
           icon={IconTrash2}
         />
         <IconButton label="Disabled" icon={IconSearch} disabled />
+      </Row>
+      <Row label="CopyButton icon and text">
+        <CopyButton label="hex" value="#3b82f6" />
+        <CopyButton variant="text" label="snippet" value="<link>" />
+        <CopyButton label="nothing" value="" />
       </Row>
       <Row label="ButtonGroup">
         <ButtonGroup>

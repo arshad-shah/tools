@@ -11,14 +11,20 @@ const statusStyles = {
 interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
   status?: keyof typeof statusStyles;
   icon?: React.ReactNode;
+  /** sm: compact padding and small text (inline notes). Default md. */
+  size?: 'sm' | 'md';
 }
 export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, status = 'info', icon, children, ...props }, ref) => (
+  (
+    { className, status = 'info', icon, size = 'md', children, ...props },
+    ref,
+  ) => (
     <div
       ref={ref}
       role="alert"
       className={cn(
-        'flex gap-3 rounded-lg border p-4',
+        'flex rounded-lg border',
+        size === 'sm' ? 'gap-2 p-3 text-sm' : 'gap-3 p-4',
         statusStyles[status],
         className,
       )}
@@ -38,9 +44,13 @@ export const AlertTitle: React.FC<
 );
 AlertTitle.displayName = 'AlertTitle';
 
+/** A div, so lists and stacks inside it are valid; paragraphs are spaced. */
 export const AlertDescription: React.FC<
-  React.HTMLAttributes<HTMLParagraphElement>
+  React.HTMLAttributes<HTMLDivElement>
 > = ({ className, ...props }) => (
-  <p className={cn('mt-1 text-sm text-fg-muted', className)} {...props} />
+  <div
+    className={cn('mt-1 text-sm text-fg-muted [&>p+p]:mt-2', className)}
+    {...props}
+  />
 );
 AlertDescription.displayName = 'AlertDescription';
