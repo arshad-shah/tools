@@ -1,6 +1,5 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
-import type { Token } from '@/shared/lib/syntax/tokenize';
 import {
   markerSpan,
   RANGE_CLASS,
@@ -9,7 +8,8 @@ import {
   TOKEN_CLASS,
   UNDERLINE,
 } from './decor';
-import type { CodeMarker, CodeRange } from './types';
+import { sameLine, type LineProps } from './same-line';
+import type { CodeRange } from './types';
 
 function topAt<T>(
   items: readonly T[],
@@ -23,32 +23,6 @@ function topAt<T>(
     if (a <= i && i < b && (!best || rank(it) > rank(best))) best = it;
   }
   return best;
-}
-
-interface LineProps {
-  text: string;
-  tokens: readonly Token[];
-  ranges: readonly CodeRange[];
-  markers: readonly CodeMarker[];
-}
-
-/**
- * Props equality for the line memo: tokens and markers are cached per line
- * (same array while unchanged); ranges are rebuilt per render, so compare
- * them by value.
- */
-export function sameLine(a: LineProps, b: LineProps): boolean {
-  if (
-    a.text !== b.text ||
-    a.tokens !== b.tokens ||
-    a.markers !== b.markers ||
-    a.ranges.length !== b.ranges.length
-  )
-    return false;
-  return a.ranges.every((r, i) => {
-    const s = b.ranges[i];
-    return r.start === s.start && r.end === s.end && r.kind === s.kind;
-  });
 }
 
 /**

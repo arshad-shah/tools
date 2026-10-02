@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { LineContent, sameLine } from './render-line';
+import { LineContent } from './render-line';
+import { sameLine } from './same-line';
 import type { Token } from '@/shared/lib/syntax/tokenize';
 
 const tokens: Token[] = [];
