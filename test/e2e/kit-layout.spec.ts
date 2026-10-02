@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 /*
  * Kit layout guarantees (6-H): bars of tools stay one row that scrolls on
- * phones, and floating surfaces (tooltips) never leave the viewport.
+ * phones (floating surfaces are covered by kit-floating.spec.ts).
  */
 
 const PDF = 'test/fixtures/generated/text-3.pdf';
@@ -79,53 +79,4 @@ test.describe('phone workspace toolbar', () => {
     await page.keyboard.press('Home');
     await expect(first).toBeFocused();
   });
-});
-
-test.describe('tooltip collision handling', () => {
-  const corners = [
-    { name: 'top left', left: 0, top: 0 },
-    { name: 'top right', left: -1, top: 0 },
-    { name: 'bottom left', left: 0, top: -1 },
-    { name: 'bottom right', left: -1, top: -1 },
-  ];
-
-  for (const corner of corners) {
-    test(`stays inside the viewport at the ${corner.name} corner`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 800, height: 600 });
-      await page.goto('/__kit');
-      // Any kit tooltip trigger: its wrapper holds the always-mounted
-      // description (role=tooltip).
-      const wrapper = page
-        .locator('span.relative.inline-flex:has(> [role="tooltip"])')
-        .first();
-      await wrapper.scrollIntoViewIfNeeded();
-      // Pin the trigger to the corner (test-only DOM change).
-      await wrapper.evaluate((el, c) => {
-        const box = el as HTMLElement;
-        box.style.position = 'fixed';
-        box.style.zIndex = '9999';
-        box.style.left = c.left < 0 ? 'auto' : '0px';
-        box.style.right = c.left < 0 ? '0px' : 'auto';
-        box.style.top = c.top < 0 ? 'auto' : '0px';
-        box.style.bottom = c.top < 0 ? '0px' : 'auto';
-      }, corner);
-      await wrapper.hover();
-      const bubble = page.locator('[data-tooltip-bubble]');
-      await expect(bubble).toBeVisible();
-      await expect(bubble).toHaveCSS('opacity', '1');
-      const r = (await bubble.boundingBox())!;
-      expect(r.x).toBeGreaterThanOrEqual(7.5);
-      expect(r.y).toBeGreaterThanOrEqual(7.5);
-      expect(r.x + r.width).toBeLessThanOrEqual(800 - 7.5);
-      expect(r.y + r.height).toBeLessThanOrEqual(600 - 7.5);
-      // The arrow still points at the trigger after the shift.
-      const t = (await wrapper.boundingBox())!;
-      const a = (await bubble.locator('[data-tooltip-arrow]').boundingBox())!;
-      const arrowCentre = a.x + a.width / 2;
-      expect(arrowCentre).toBeGreaterThanOrEqual(t.x - 1);
-      expect(arrowCentre).toBeLessThanOrEqual(t.x + t.width + 1);
-    });
-  }
 });
