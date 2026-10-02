@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  base32ToBytes,
+  base58ToBytes,
   base64ToBytes,
+  bytesToBase32,
+  bytesToBase58,
+  bytesToBinary,
   base64UrlToBytes,
   bytesToBase64,
   parseDataUri,
@@ -143,5 +148,64 @@ describe('bytesToBase64 with the native encoder', () => {
       if (original) proto.toBase64 = original;
       else delete proto.toBase64;
     }
+  });
+});
+
+describe('Base32 (RFC 4648)', () => {
+  const vectors: [string, string][] = [
+    ['', ''],
+    ['f', 'MY======'],
+    ['fo', 'MZXQ===='],
+    ['foo', 'MZXW6==='],
+    ['foob', 'MZXW6YQ='],
+    ['fooba', 'MZXW6YTB'],
+    ['foobar', 'MZXW6YTBOI======'],
+  ];
+  it.each(vectors)('encodes %j as %s', (text, b32) => {
+    expect(bytesToBase32(utf8Encode(text))).toBe(b32);
+    expect(utf8Decode(base32ToBytes(b32))).toBe(text);
+  });
+  it('omits padding on request, decodes without padding and in any case', () => {
+    expect(bytesToBase32(utf8Encode('foobar'), { padding: false })).toBe(
+      'MZXW6YTBOI',
+    );
+    expect(utf8Decode(base32ToBytes('mzxw6ytboi'))).toBe('foobar');
+  });
+  it('names the position of a bad character', () => {
+    expect(() => base32ToBytes('MZ1W')).toThrow(/character 3/);
+    expect(() => base32ToBytes('MZ1W')).toThrow(
+      expect.objectContaining({ code: 'INVALID_INPUT' }),
+    );
+  });
+  it('refuses an impossible length', () => {
+    expect(() => base32ToBytes('MZX')).toThrow(/length/);
+  });
+});
+
+describe('Base58 (Bitcoin alphabet)', () => {
+  it('keeps leading zeros', () => {
+    expect(bytesToBase58(Uint8Array.of(0, 0, 1))).toBe('112');
+    expect([...base58ToBytes('112')]).toEqual([0, 0, 1]);
+    expect(bytesToBase58(new Uint8Array(0))).toBe('');
+  });
+  it('encodes known text and round-trips random bytes', () => {
+    expect(bytesToBase58(utf8Encode('hello world'))).toBe('StV1DL6CwTryKyV');
+    for (let n = 0; n < 50; n++) {
+      const bytes = crypto.getRandomValues(new Uint8Array(n));
+      if (n % 5 === 0 && n > 0) bytes[0] = 0;
+      expect([...base58ToBytes(bytesToBase58(bytes))]).toEqual([...bytes]);
+    }
+  });
+  it('refuses characters outside the alphabet with a position', () => {
+    expect(() => base58ToBytes('0OIl')).toThrow(/character 1/);
+    expect(() => base58ToBytes('1l')).toThrow(/character 2/);
+  });
+});
+
+describe('bytesToBinary', () => {
+  it('writes bits in groups', () => {
+    expect(bytesToBinary(utf8Encode('fo'))).toBe('01100110 01101111');
+    expect(bytesToBinary(Uint8Array.of(0xf0), 4)).toBe('1111 0000');
+    expect(bytesToBinary(new Uint8Array(0))).toBe('');
   });
 });

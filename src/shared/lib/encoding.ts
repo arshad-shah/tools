@@ -132,3 +132,132 @@ function percentDecode(s: string): Uint8Array {
   }
   return new Uint8Array(out);
 }
+
+const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+/** RFC 4648 Base32 (upper case; `=` padding unless `padding: false`). */
+export function bytesToBase32(
+  bytes: Uint8Array,
+  { padding = true }: { padding?: boolean } = {},
+): string {
+  let out = '';
+  let buffer = 0;
+  let bits = 0;
+  for (const b of bytes) {
+    buffer = (buffer << 8) | b;
+    bits += 8;
+    while (bits >= 5) {
+      out += BASE32[(buffer >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+    buffer &= (1 << bits) - 1;
+  }
+  if (bits > 0) out += BASE32[(buffer << (5 - bits)) & 31];
+  if (padding) out += '='.repeat((8 - (out.length % 8)) % 8);
+  return out;
+}
+
+/**
+ * Decodes RFC 4648 Base32 in any case, with or without padding; spaces and
+ * line breaks are ignored. Errors name the character position (1-based).
+ */
+export function base32ToBytes(input: string): Uint8Array<ArrayBuffer> {
+  const body = input.replace(/=+\s*$/, '');
+  const out: number[] = [];
+  let buffer = 0;
+  let bits = 0;
+  let count = 0;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (/\s/.test(ch)) continue;
+    const v = BASE32.indexOf(ch.toUpperCase());
+    if (v < 0)
+      throw new ToolError(
+        'INVALID_INPUT',
+        `Not valid Base32: unexpected "${ch}" at character ${i + 1}`,
+      );
+    buffer = ((buffer << 5) | v) & 0xffff;
+    bits += 5;
+    count++;
+    if (bits >= 8) {
+      out.push((buffer >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  // 1, 3 and 6 characters in a final group cannot come from whole bytes.
+  if ([1, 3, 6].includes(count % 8))
+    throw new ToolError(
+      'INVALID_INPUT',
+      'Not valid Base32: the length is not possible for encoded bytes',
+    );
+  return new Uint8Array(out);
+}
+
+const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+/** Base58 with the Bitcoin alphabet; each leading zero byte becomes "1". */
+export function bytesToBase58(bytes: Uint8Array): string {
+  let zeros = 0;
+  while (zeros < bytes.length && bytes[zeros] === 0) zeros++;
+  // Repeated long division of the big-endian number by 58.
+  const digits: number[] = [];
+  const num = Array.from(bytes.subarray(zeros));
+  let start = 0;
+  while (start < num.length) {
+    let rem = 0;
+    for (let i = start; i < num.length; i++) {
+      const acc = rem * 256 + num[i];
+      num[i] = Math.floor(acc / 58);
+      rem = acc % 58;
+    }
+    digits.push(rem);
+    while (start < num.length && num[start] === 0) start++;
+  }
+  return (
+    '1'.repeat(zeros) +
+    digits
+      .reverse()
+      .map((d) => BASE58[d])
+      .join('')
+  );
+}
+
+/** Decodes Bitcoin-alphabet Base58; errors name the character position. */
+export function base58ToBytes(input: string): Uint8Array<ArrayBuffer> {
+  const text = input.trim();
+  let zeros = 0;
+  while (zeros < text.length && text[zeros] === '1') zeros++;
+  // Little-endian base-256 digits, multiplied by 58 per character.
+  const bytes: number[] = [];
+  for (let i = zeros; i < text.length; i++) {
+    const v = BASE58.indexOf(text[i]);
+    if (v < 0)
+      throw new ToolError(
+        'INVALID_INPUT',
+        `Not valid Base58: unexpected "${text[i]}" at character ${i + 1}`,
+      );
+    let carry = v;
+    for (let j = 0; j < bytes.length; j++) {
+      carry += bytes[j] * 58;
+      bytes[j] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry > 0) {
+      bytes.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+  const out = new Uint8Array(zeros + bytes.length);
+  bytes.reverse().forEach((b, i) => (out[zeros + i] = b));
+  return out;
+}
+
+/** Bits as 0 and 1, `groupBy` bits per space-separated group. */
+export function bytesToBinary(bytes: Uint8Array, groupBy = 8): string {
+  let bits = '';
+  for (const b of bytes) bits += b.toString(2).padStart(8, '0');
+  const groups: string[] = [];
+  for (let i = 0; i < bits.length; i += groupBy)
+    groups.push(bits.slice(i, i + groupBy));
+  return groups.join(' ');
+}

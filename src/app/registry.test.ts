@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { IconFileText } from '@/shared/ui/icons';
-import { buildRegistry, TOOLS } from './registry';
+import { buildRegistry, TOOLS, toolsAccepting } from './registry';
 import { defineTool, type ToolManifest } from './tool';
 
 const fake = (
@@ -173,6 +173,20 @@ describe('buildRegistry: routes and search fields', () => {
       ]),
     ).toThrow(/accepts/);
   });
+  it('rejects malformed accepts mimes', () => {
+    expect(() =>
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', { accepts: [{ mimes: ['not a mime'] }] }),
+      ]),
+    ).toThrow(/mime/);
+    expect(
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', { accepts: [{ mimes: ['application/vnd.api+json'] }] }),
+      ]),
+    ).toHaveLength(1);
+  });
   it('accepts a valid manifest', () => {
     expect(
       build([
@@ -240,5 +254,25 @@ describe('TOOLS', () => {
       ].sort(),
     );
     for (const t of TOOLS) expect(typeof t.load).toBe('function');
+  });
+});
+
+describe('toolsAccepting', () => {
+  it('lists enabled tools whose accepts name the mime', () => {
+    const tools = [
+      fake('j', 'J', { accepts: [{ mimes: ['application/json'] }] }),
+      fake('k', 'K', {
+        accepts: [{ kinds: ['csv'] }, { mimes: ['text/csv'] }],
+      }),
+      fake('off', 'Off', {
+        enabled: false,
+        accepts: [{ mimes: ['application/json'] }],
+      }),
+      fake('none', 'None'),
+    ];
+    expect(toolsAccepting('application/json', tools).map((t) => t.id)).toEqual([
+      'j',
+    ]);
+    expect(toolsAccepting('text/csv', tools).map((t) => t.id)).toEqual(['k']);
   });
 });

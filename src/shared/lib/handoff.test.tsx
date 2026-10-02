@@ -1,8 +1,16 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StrictMode, useEffect } from 'react';
-import { render } from '@testing-library/react';
-import { putHandoff, takeHandoff, useHandoffFiles } from './handoff';
+import { render, renderHook } from '@testing-library/react';
+import {
+  HANDOFF_MAX,
+  putHandoff,
+  sendTo,
+  takeHandoff,
+  useHandoff,
+  useHandoffFiles,
+  type HandoffPayload,
+} from './handoff';
 
 const f = (name: string) => new File(['x'], name);
 
@@ -11,13 +19,16 @@ function Probe({ onFiles }: { onFiles: (files: File[]) => void }) {
   return null;
 }
 
-afterEach(() => window.history.replaceState(null, '', '/'));
+afterEach(() => {
+  window.history.replaceState(null, '', '/');
+  vi.useRealTimers();
+});
 
 describe('handoff', () => {
   it('hands files over once', () => {
     const files = [f('a.csv')];
     const id = putHandoff(files);
-    expect(takeHandoff(id)).toBe(files);
+    expect(takeHandoff(id)).toEqual({ kind: 'files', files });
     expect(takeHandoff(id)).toBeNull();
   });
   it('returns null for an unknown id', () => {
@@ -78,5 +89,71 @@ describe('handoff', () => {
     render(<Probe onFiles={onFiles} />);
     expect(onFiles).not.toHaveBeenCalled();
     expect(window.location.search).toBe('');
+  });
+});
+
+describe('handoff (text payloads)', () => {
+  const text = {
+    kind: 'text' as const,
+    mime: 'application/json',
+    text: '{}',
+    sourceTool: 'csv-viewer',
+  };
+  it('is one-time', () => {
+    const id = putHandoff(text);
+    expect(takeHandoff(id)).toEqual(text);
+    expect(takeHandoff(id)).toBeNull();
+  });
+  it('expires after five minutes', () => {
+    vi.useFakeTimers();
+    const id = putHandoff(text);
+    vi.advanceTimersByTime(300_001);
+    expect(takeHandoff(id)).toBeNull();
+  });
+  it('keeps at most HANDOFF_MAX entries (oldest evicted)', () => {
+    const ids = Array.from({ length: HANDOFF_MAX + 1 }, () => putHandoff(text));
+    expect(takeHandoff(ids[0])).toBeNull();
+    expect(takeHandoff(ids[HANDOFF_MAX])).not.toBeNull();
+  });
+  it('refuses oversized text', () => {
+    expect(() =>
+      putHandoff({ ...text, text: 'x'.repeat(50 * 1024 * 1024 + 1) }),
+    ).toThrow(expect.objectContaining({ code: 'TOO_LARGE' }));
+  });
+  it('still carries files', () => {
+    const f = new File(['a'], 'a.txt');
+    const id = putHandoff({ kind: 'files', files: [f] });
+    expect(takeHandoff(id)).toMatchObject({ kind: 'files', files: [f] });
+  });
+
+  it('useHandoff(match) takes a matching payload once and strips the param', () => {
+    const id = putHandoff({ ...text, meta: { side: 'left' } });
+    window.history.replaceState(null, '', `/text/diff?handoff=${id}&a=1`);
+    const isLeft = (p: HandoffPayload) =>
+      p.kind === 'text' && p.meta?.side === 'left';
+    const isRight = (p: HandoffPayload) =>
+      p.kind === 'text' && p.meta?.side === 'right';
+    // A reader that does not match leaves the payload for the one that does.
+    const right = renderHook(() => useHandoff(isRight));
+    expect(right.result.current).toBeNull();
+    expect(window.location.search).toContain('handoff=');
+    const left = renderHook(() => useHandoff(isLeft), {
+      wrapper: StrictMode,
+    });
+    expect(left.result.current).toMatchObject({ text: '{}' });
+    expect(window.location.search).toBe('?a=1');
+    expect(takeHandoff(id)).toBeNull();
+  });
+
+  it('sendTo puts the payload and navigates to the tool route', () => {
+    const navigate = vi.fn();
+    sendTo(navigate, 'text-diff-checker', text);
+    const [to] = navigate.mock.calls[0] as [string];
+    const m = /^\/text\/diff\?handoff=(.+)$/.exec(to);
+    expect(m).not.toBeNull();
+    expect(takeHandoff(m![1])).toEqual(text);
+    expect(() => sendTo(navigate, 'no-such-tool', text)).toThrow(
+      /no-such-tool/,
+    );
   });
 });
