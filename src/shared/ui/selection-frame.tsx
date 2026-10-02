@@ -10,8 +10,8 @@ import {
   angleTo,
   moveByPointer,
   nudge,
-  resizeByHandle,
   resizeByKey,
+  resizeRotated,
   type HandleName,
 } from './selection-math';
 
@@ -28,7 +28,7 @@ export interface SelectionFrameProps {
   snap?: (box: Box) => Box;
   /** During a drag or key repeat (preview). */
   onChange(box: Box, rotate: number): void;
-  /** Pointer up / key up / Enter: one undo step. */
+  /** Pointer up, key up or Enter: one undo step. */
   onCommit(box: Box, rotate: number): void;
   /** e.g. "Text box: Hello". */
   label: string;
@@ -68,7 +68,10 @@ interface Live {
  * owns the geometry (page space); pointer gestures use pointer capture and
  * the keyboard model follows R13 (no library keyboard mode):
  * arrows nudge 1pt (Shift 10pt), Alt+arrows resize 1pt (Shift 10pt),
- * [ and ] rotate 15 degrees, Enter commits, Esc cancels to the start box.
+ * [ and ] rotate 15 degrees. Each key press is one undo step, committed
+ * on key-up (or Enter while the key is held); Esc while a key is held or
+ * during a drag cancels back to the start box. Resize handles follow the
+ * frame's rotation.
  */
 export function SelectionFrame({
   transform,
@@ -179,13 +182,14 @@ export function SelectionFrame({
       );
     else if (g.kind === 'resize')
       change(
-        resizeByHandle(
+        resizeRotated(
           transform,
           b0,
           g.handle,
           e.clientX - g.x,
           e.clientY - g.y,
           keepAspect || e.shiftKey,
+          r0,
         ),
         r0,
       );

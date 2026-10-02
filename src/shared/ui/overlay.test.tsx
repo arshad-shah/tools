@@ -10,6 +10,7 @@ import {
 import { ShapeLayer } from './shape-layer';
 import { resolvePaint } from './shape-paint';
 import { SelectionFrame } from './selection-frame';
+import { resizeRotated } from './selection-math';
 import { HitArea } from './hit-area';
 import { Positioned } from './positioned';
 
@@ -190,6 +191,25 @@ function frame(
     el: screen.getByRole('group', { name: 'Text box: Hello' }),
   };
 }
+
+describe('SelectionFrame pointer resize', () => {
+  it('reads handle travel along the axes of a rotated frame', () => {
+    const { el, onChange } = frame({ rotate: 90 });
+    const east = el.querySelector('[data-handle="e"]')!;
+    fireEvent.pointerDown(east, {
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+      pointerId: 1,
+    });
+    // Turned 90 degrees, the east handle points down the screen.
+    fireEvent.pointerMove(east, { clientX: 0, clientY: 10, pointerId: 1 });
+    const [b] = onChange.mock.lastCall!;
+    expect(b.width).toBeCloseTo(60);
+    expect(b.height).toBeCloseTo(20);
+    expect(b).toEqual(resizeRotated(PDF, BOX, 'e', 0, 10, false, 90));
+  });
+});
 
 describe('SelectionFrame keyboard', () => {
   it('ArrowRight nudges 1pt: onChange on keydown, onCommit on keyup', () => {
