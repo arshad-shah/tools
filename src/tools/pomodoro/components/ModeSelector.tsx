@@ -1,29 +1,24 @@
 import React from 'react';
-import { Button, Grid } from '@/shared/ui';
+import { SegmentedControl } from '@/shared/ui';
 import type { TimerMode } from '../types';
 import { MODE_INFO } from '../lib/modes';
 
+const OPTIONS = (Object.keys(MODE_INFO) as TimerMode[]).map((mode) => ({
+  value: mode,
+  label: MODE_INFO[mode].label,
+  icon: MODE_INFO[mode].icon,
+}));
+
+/** The timer mode: a selection, so a segmented control, never primary buttons. */
 export const ModeSelector: React.FC<{
   currentMode: TimerMode;
   onChange: (mode: TimerMode) => void;
 }> = ({ currentMode, onChange }) => (
-  <Grid max={3} gap="2">
-    {(Object.keys(MODE_INFO) as TimerMode[]).map((mode) => {
-      const info = MODE_INFO[mode];
-      const Icon = info.icon;
-      const isActive = currentMode === mode;
-      return (
-        <Button
-          key={mode}
-          variant={isActive ? 'primary' : 'secondary'}
-          size="md"
-          leftIcon={<Icon size="sm" />}
-          onClick={() => onChange(mode)}
-          fullWidth
-        >
-          {info.label}
-        </Button>
-      );
-    })}
-  </Grid>
+  <SegmentedControl<TimerMode>
+    label="Timer mode"
+    value={currentMode}
+    onChange={onChange}
+    options={OPTIONS}
+    className="self-center"
+  />
 );

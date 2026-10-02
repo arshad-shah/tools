@@ -3,9 +3,8 @@ import { StateMachineInput } from '@rive-app/react-canvas';
 import { IconPause, IconPlay } from '@/shared/ui/icons';
 
 import {
-  Alert,
-  AlertDescription,
   Button,
+  EmptyState,
   Grid,
   Label,
   Select,
@@ -100,11 +99,11 @@ export function ControlsTab({
                 {animationList.animations.map((animation) => (
                   <Button
                     key={animation}
+                    // The playing animation is a selection: pressed, not primary.
                     variant={
-                      animationList.active === animation
-                        ? 'primary'
-                        : 'secondary'
+                      animationList.active === animation ? 'secondary' : 'ghost'
                     }
+                    aria-pressed={animationList.active === animation}
                     size="sm"
                     onClick={() => setActiveAnimation(animation)}
                     fullWidth
@@ -114,9 +113,11 @@ export function ControlsTab({
                 ))}
               </Grid>
             ) : (
-              <Alert status="info">
-                <AlertDescription>No animations available.</AlertDescription>
-              </Alert>
+              <EmptyState
+                size="sm"
+                title="No animations"
+                description="This artboard has no timeline animations."
+              />
             )}
           </Stack>
         </TabsContent>
@@ -137,11 +138,11 @@ export function ControlsTab({
                 />
               </Stack>
             ) : (
-              <Alert status="info">
-                <AlertDescription>
-                  No state machines available.
-                </AlertDescription>
-              </Alert>
+              <EmptyState
+                size="sm"
+                title="No state machines"
+                description="This artboard has no state machines."
+              />
             )}
 
             <InputsPanel

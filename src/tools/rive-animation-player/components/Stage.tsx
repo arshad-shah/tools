@@ -113,9 +113,10 @@ export function Stage({
     <Card className={status.hovering ? 'border-accent' : undefined}>
       <CardBody>
         {device === 'none' ? (
-          <div ref={slot} className="h-[60vh] min-h-[400px] w-full" />
+          // A 16:9 stage, never shorter than 400 px (min-h-100) on phones.
+          <div ref={slot} className="aspect-video min-h-100 w-full" />
         ) : (
-          <div className="max-h-[70vh] overflow-auto">
+          <div className="max-h-180 overflow-auto">
             <DeviceFrame preset={device}>
               <div ref={slot} className="size-full" />
             </DeviceFrame>

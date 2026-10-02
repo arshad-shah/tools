@@ -9,8 +9,14 @@ import {
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { jpegWithMetadata } from '../../../test/fixtures/exif';
+import { saveBlob } from '@/shared/lib/download';
 import ExifTool from './Tool';
+import { exifSettings } from './settings';
 
+vi.mock('@/shared/lib/download', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/download')>()),
+  saveBlob: vi.fn(),
+}));
 vi.mock('@/shared/lib/notify', () => ({
   notify: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }));
@@ -95,9 +101,19 @@ describe('ExifTool', () => {
     expect(
       screen.getByRole('button', { name: 'Download ZIP' }),
     ).not.toHaveProperty('disabled', true);
-    expect(
-      screen.getByRole('button', { name: 'Download photo.jpg' }),
-    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Download photo.jpg' }));
+    expect(vi.mocked(saveBlob).mock.calls[0][1]).toBe('photo.clean.jpg');
+  });
+
+  it('remembers Keep ICC and Keep orientation as settings', async () => {
+    drop([toFile(jpegWithMetadata(), 'photo.jpg', 'image/jpeg')]);
+    await screen.findByRole('heading', { name: 'GPS' }, { timeout: 5000 });
+    fireEvent.click(screen.getByRole('switch', { name: 'Keep orientation' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'Keep ICC profile' }));
+    expect(exifSettings.getSettings()).toEqual({
+      keepIcc: false,
+      keepOrientation: true,
+    });
   });
 
   it('a HEIC file shows the unsupported message and is not downloadable', async () => {

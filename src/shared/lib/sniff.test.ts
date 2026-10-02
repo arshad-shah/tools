@@ -23,6 +23,20 @@ describe('sniffAcceptKind', () => {
     );
     expect(await sniffAcceptKind(file('<root><a/></root>'))).toBe('xml');
   });
+  it('detects SVG by its root element, before XML', async () => {
+    expect(
+      await sniffAcceptKind(file('<svg xmlns="http://www.w3.org/2000/svg"/>')),
+    ).toBe('svg');
+    expect(
+      await sniffAcceptKind(
+        file(
+          '<?xml version="1.0"?>\n<!-- logo -->\n<!DOCTYPE svg>\n<svg viewBox="0 0 1 1"></svg>',
+        ),
+      ),
+    ).toBe('svg');
+    expect(await sniffAcceptKind(file('<svgish/>'))).toBe('xml');
+    expect(await sniffAcceptKind(file('<root><svg/></root>'))).toBe('xml');
+  });
   it('detects CSV and TSV', async () => {
     expect(await sniffAcceptKind(file('a,b,c\n1,2,3\n4,5,6\n'))).toBe('csv');
     expect(await sniffAcceptKind(file('a\tb\n1\t2\n3\t4\n'))).toBe('tsv');

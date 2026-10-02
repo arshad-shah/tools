@@ -4,17 +4,16 @@ import {
   StateMachineInputType,
 } from '@rive-app/react-canvas';
 import {
-  Alert,
-  AlertDescription,
   Badge,
   Button,
+  EmptyState,
   Grid,
   Heading,
   Inline,
   Label,
   Slider,
   Stack,
-  Switch,
+  SwitchField,
 } from '@/shared/ui';
 import type { RiveStateMachines } from '../types';
 
@@ -45,7 +44,7 @@ export function InputsPanel({
         (i) => i.type === StateMachineInputType.Trigger,
       ) && (
         <Stack gap="2">
-          <Heading level={4} size="sm">
+          <Heading level={3} size="sm">
             Triggers
           </Heading>
           <Grid max={2} gap="2">
@@ -54,7 +53,7 @@ export function InputsPanel({
               .map((input) => (
                 <Button
                   key={input.name}
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   onClick={() => handleInputChange(input, true)}
                   fullWidth
@@ -70,28 +69,25 @@ export function InputsPanel({
         (i) => i.type === StateMachineInputType.Boolean,
       ) && (
         <Stack gap="2">
-          <Heading level={4} size="sm">
+          <Heading level={3} size="sm">
             Booleans
           </Heading>
           <Stack gap="2">
             {stateMachineInputs
               .filter((i) => i.type === StateMachineInputType.Boolean)
               .map((input) => (
-                <Inline key={input.name} align="center" gap="2">
-                  <Switch
-                    id={input.name}
-                    checked={booleanValues[input.name] ?? false}
-                    onCheckedChange={(v) => {
-                      setBooleanValues((prev) => ({
-                        ...prev,
-                        [input.name]: v,
-                      }));
-                      handleInputChange(input, v);
-                    }}
-                    aria-label={input.name}
-                  />
-                  <Label htmlFor={input.name}>{input.name}</Label>
-                </Inline>
+                <SwitchField
+                  key={input.name}
+                  label={input.name}
+                  checked={booleanValues[input.name] ?? false}
+                  onCheckedChange={(v) => {
+                    setBooleanValues((prev) => ({
+                      ...prev,
+                      [input.name]: v,
+                    }));
+                    handleInputChange(input, v);
+                  }}
+                />
               ))}
           </Stack>
         </Stack>
@@ -101,7 +97,7 @@ export function InputsPanel({
         (i) => i.type === StateMachineInputType.Number,
       ) && (
         <Stack gap="2">
-          <Heading level={4} size="sm">
+          <Heading level={3} size="sm">
             Numbers
           </Heading>
           <Stack gap="3">
@@ -129,11 +125,11 @@ export function InputsPanel({
       )}
 
       {stateMachineInputs.length === 0 && stateMachineList && (
-        <Alert status="info">
-          <AlertDescription>
-            No inputs available for this state machine.
-          </AlertDescription>
-        </Alert>
+        <EmptyState
+          size="sm"
+          title="No inputs"
+          description="This state machine has no inputs to change."
+        />
       )}
     </>
   );

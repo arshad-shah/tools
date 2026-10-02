@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Inline,
   ShareButton,
@@ -42,20 +42,26 @@ const DateCalculator: React.FC = () => {
   // Holidays are data: kept in memory (and in share links), never saved.
   const [holidays, setHolidays] = useState<string[]>([]);
 
+  // A stable object: useShareableState compares the selected state shallowly
+  // and updates during render whenever a top-level value changes identity.
+  const inputs = useMemo(
+    () => ({
+      diffStart: diffStart.text,
+      diffEnd: diffEnd.text,
+      base: base.text,
+      ops: serializeOps(ops),
+      bizStart: bizStart.text,
+      bizEnd: bizEnd.text,
+    }),
+    [diffStart.text, diffEnd.text, base.text, ops, bizStart.text, bizEnd.text],
+  );
   const shareState = useShareableState<DateShare>({
     toolId: 'date-calculator',
     version: DATE_SHARE_VERSION,
     parse: (state) => parseDateShare(state),
     select: () => ({
       tab,
-      inputs: {
-        diffStart: diffStart.text,
-        diffEnd: diffEnd.text,
-        base: base.text,
-        ops: serializeOps(ops),
-        bizStart: bizStart.text,
-        bizEnd: bizEnd.text,
-      },
+      inputs,
       zone: diffStart.zone,
       workweek: settings.workweek,
       holidays,

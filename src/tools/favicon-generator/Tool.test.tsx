@@ -2,6 +2,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FaviconGenerator from './Tool';
+import { HANDOFF_PARAM, putHandoff } from '@/shared/lib/handoff';
 import { htmlSnippet } from './lib/outputs';
 
 // jsdom has no OffscreenCanvas: every size renders to a tiny PNG blob.
@@ -24,6 +25,9 @@ vi.mock('@/shared/lib/notify', () => ({
 }));
 
 const writeText = vi.fn(async () => {});
+// The shown pane is remembered across renders (R41): pick it explicitly.
+const showPane = (name: string) =>
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
 
 beforeEach(() => {
   localStorage.clear();
@@ -39,6 +43,7 @@ afterEach(() => {
 describe('FaviconGenerator', () => {
   it('a text source of one letter enables the download', async () => {
     render(<FaviconGenerator />);
+    showPane('Source');
     const download = screen.getByRole('button', { name: 'Download ZIP' });
     expect(download).toHaveProperty('disabled', true);
     fireEvent.change(
@@ -49,6 +54,10 @@ describe('FaviconGenerator', () => {
       'disabled',
       false,
     );
+    // The preview is its own pane (R41); it gets a dot when the icon changes.
+    const preview = screen.getByRole('tab', { name: /^Preview/ });
+    expect(preview.textContent).toMatch(/updated/);
+    fireEvent.click(preview);
     expect(
       await screen.findByRole('img', { name: '16 px favicon' }),
     ).toBeTruthy();
@@ -67,6 +76,9 @@ describe('FaviconGenerator', () => {
     await waitFor(() =>
       expect(writeText).toHaveBeenCalledWith(htmlSnippet({ svg: false })),
     );
+    expect(
+      await screen.findByRole('button', { name: 'Copied snippet' }),
+    ).toBeTruthy();
     expect(screen.getByTestId('html-snippet').textContent).toBe(
       htmlSnippet({ svg: false }),
     );
@@ -74,16 +86,14 @@ describe('FaviconGenerator', () => {
 
   it('an SVG with a script lists what was removed', () => {
     render(<FaviconGenerator />);
+    showPane('Source');
     fireEvent.click(screen.getByRole('radio', { name: 'SVG' }));
-    fireEvent.change(
-      screen.getByRole('textbox', { name: 'Or paste SVG markup' }),
-      {
-        target: {
-          value:
-            '<svg xmlns="http://www.w3.org/2000/svg" onload="x()"><script>1</script><rect width="4" height="4"/></svg>',
-        },
+    fireEvent.change(screen.getByRole('textbox', { name: 'SVG markup' }), {
+      target: {
+        value:
+          '<svg xmlns="http://www.w3.org/2000/svg" onload="x()"><script>1</script><rect width="4" height="4"/></svg>',
       },
-    );
+    });
     const list = screen.getByRole('list', { name: 'Removed from the SVG' });
     expect(list.textContent).toMatch(/script/);
     expect(list.textContent).toMatch(/onload/);
@@ -91,5 +101,34 @@ describe('FaviconGenerator', () => {
       'disabled',
       false,
     );
+  });
+
+  it('a handed-off SVG file opens the SVG source', async () => {
+    const svg = new File(
+      [
+        '<svg xmlns="http://www.w3.org/2000/svg"><rect width="4" height="4"/></svg>',
+      ],
+      'logo.svg',
+      { type: 'image/svg+xml' },
+    );
+    const id = putHandoff([svg]);
+    window.history.replaceState(null, '', `/?${HANDOFF_PARAM}=${id}`);
+    render(<FaviconGenerator />);
+    showPane('Source');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('radio', { name: 'SVG' }).getAttribute('aria-checked'),
+      ).toBe('true'),
+    );
+    await waitFor(() =>
+      expect(
+        (
+          screen.getByRole('textbox', {
+            name: 'SVG markup',
+          }) as HTMLTextAreaElement
+        ).value,
+      ).toMatch(/^<svg/),
+    );
+    window.history.replaceState(null, '', '/');
   });
 });

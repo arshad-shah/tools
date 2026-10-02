@@ -34,6 +34,7 @@ const KIND_LABEL: Record<AcceptKind, string> = {
   xml: 'XML',
   log: 'log',
   riv: 'Rive',
+  svg: 'SVG',
   any: 'any file',
 };
 
@@ -51,7 +52,12 @@ function ruleMatches(rule: AcceptRule, kinds: (SniffedKind | null)[]): boolean {
   const accepted = rule.kinds ?? [];
   if (accepted.length === 0) return false; // a text hand-off rule only
   if (accepted.includes('any')) return true;
-  return kinds.every((k) => k !== null && accepted.includes(k));
+  // An SVG is also XML: an XML tool takes it when no SVG tool is closer.
+  return kinds.every(
+    (k) =>
+      k !== null &&
+      (accepted.includes(k) || (k === 'svg' && accepted.includes('xml'))),
+  );
 }
 
 /** Enabled tools listed on a hub: its own plus cross-listed ones. */

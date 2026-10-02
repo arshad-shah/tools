@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import {
   Badge,
+  EmptyState,
   Stack,
   Table,
   TableBody,
@@ -57,9 +58,11 @@ export function InfoPanel({
   const rows = useMemo(() => (loaded ? readRows(loaded) : []), [loaded]);
   if (!loaded)
     return (
-      <Text size="sm" tone="subtle">
-        Load a Rive file to see its artboards.
-      </Text>
+      <EmptyState
+        size="sm"
+        title="No file loaded"
+        description="Load a Rive file to see its artboards."
+      />
     );
   return (
     <Stack gap="3">

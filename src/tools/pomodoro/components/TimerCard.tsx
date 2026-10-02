@@ -144,17 +144,18 @@ export const TimerCard: React.FC = () => {
               )}
             </Inline>
 
-            <p
+            <Text
               role="timer"
               aria-label="Time left"
-              className="text-5xl font-bold tracking-tight text-fg tabular-nums"
+              weight="bold"
+              className="text-5xl tracking-tight tabular-nums"
             >
               {formatTime(timer.timeLeft)}
-            </p>
+            </Text>
             {/* Announces session changes only, never the per-second ticks. */}
-            <p className="sr-only" role="status" aria-live="polite">
+            <Text className="sr-only" role="status" aria-live="polite">
               {announcement}
-            </p>
+            </Text>
 
             <Inline align="center" gap="2">
               <IconClock size="sm" />
@@ -195,7 +196,8 @@ export const TimerCard: React.FC = () => {
 
             <Inline gap="3" wrap justify="center">
               <Button
-                variant={timer.isActive ? 'danger' : 'primary'}
+                // Pause is not destructive: the secondary style (6-H hierarchy).
+                variant={timer.isActive ? 'secondary' : 'primary'}
                 size="lg"
                 leftIcon={
                   timer.isActive ? (

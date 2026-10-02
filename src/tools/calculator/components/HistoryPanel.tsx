@@ -72,10 +72,16 @@ const Entry: React.FC<{
       </Button>
       <IconButton
         size="sm"
-        variant={starred ? 'primary' : 'ghost'}
+        variant="ghost"
         label={starred ? 'Remove from favourites' : 'Add to favourites'}
         aria-pressed={starred}
-        icon={IconStar}
+        // A favourite is a toggle state, never a primary action: a filled star.
+        icon={
+          <IconStar
+            size="sm"
+            className={starred ? 'fill-current text-accent-fg' : undefined}
+          />
+        }
         onClick={onStar}
       />
     </Inline>
@@ -118,7 +124,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
     <Card>
       <CardHeader>
         <Inline justify="between" align="center" gap="2" wrap>
-          <CardTitle as="h3">History</CardTitle>
+          <CardTitle as="h2">History</CardTitle>
           <Inline gap="1">
             <Button
               size="sm"

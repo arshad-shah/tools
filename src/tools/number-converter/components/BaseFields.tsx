@@ -1,15 +1,13 @@
 import React from 'react';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
 import {
+  CopyButton,
   Grid,
-  IconButton,
   Input,
   Label,
   NumberInput,
   Stack,
   Text,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
 import type { FieldKey } from '../lib/state';
 
 export interface BaseField {
@@ -33,22 +31,6 @@ interface BaseFieldsProps {
   base58: string;
 }
 
-const CopyButton: React.FC<{
-  label: string;
-  value: string;
-  copied: boolean;
-  onCopy(): void;
-}> = ({ label, value, copied, onCopy }) => (
-  <IconButton
-    variant="ghost"
-    size="sm"
-    label={copied ? `Copied ${label}` : `Copy ${label}`}
-    icon={copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />}
-    disabled={!value}
-    onClick={onCopy}
-  />
-);
-
 /**
  * The editable base fields (spec §8.5): typing in any of them updates the
  * rest; an error shows under the edited field while the others clear.
@@ -62,7 +44,6 @@ export const BaseFields: React.FC<BaseFieldsProps> = ({
   base32,
   base58,
 }) => {
-  const { copiedKey, copy } = useClipboard();
   return (
     <Stack gap="4">
       <Grid max={2} gap="4">
@@ -87,14 +68,7 @@ export const BaseFields: React.FC<BaseFieldsProps> = ({
                 }
                 className="font-mono"
                 placeholder="None"
-                trailingSlot={
-                  <CopyButton
-                    label={f.label}
-                    value={f.value}
-                    copied={copiedKey === f.key}
-                    onCopy={() => void copy(f.value, f.key)}
-                  />
-                }
+                trailingSlot={<CopyButton label={f.label} value={f.value} />}
               />
               {err ? (
                 <Text id={`${id}-error`} size="sm" className="text-danger">
@@ -138,14 +112,7 @@ export const BaseFields: React.FC<BaseFieldsProps> = ({
               readOnly
               placeholder="None"
               className="font-mono"
-              trailingSlot={
-                <CopyButton
-                  label={label}
-                  value={value}
-                  copied={copiedKey === key}
-                  onCopy={() => void copy(value, key)}
-                />
-              }
+              trailingSlot={<CopyButton label={label} value={value} />}
             />
           </Stack>
         ))}

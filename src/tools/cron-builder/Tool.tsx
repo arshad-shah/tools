@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
 import {
   Box,
-  Button,
   Card,
   CardBody,
+  CopyButton,
   Grid,
   Heading,
   Inline,
@@ -14,7 +13,6 @@ import {
   Text,
 } from '@/shared/ui';
 import { CodeSurface } from '@/shared/ui/code-surface';
-import { useClipboard } from '@/shared/lib/clipboard';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { FieldEditor } from './components/FieldEditor';
 import { NextRuns } from './components/NextRuns';
@@ -76,9 +74,6 @@ const CronBuilder: React.FC = () => {
   const [expr, setExpr] = useState(() =>
     fromUnix('0 9 * * 1-5', settings.flavour),
   );
-  // Next runs are listed from when the page opened.
-  const [from] = useState(() => Date.now());
-  const { copiedKey, copy } = useClipboard();
 
   const shareState = useShareableState<CronShare>({
     toolId: 'cron-builder',
@@ -149,21 +144,11 @@ const CronBuilder: React.FC = () => {
                   }
                 />
               </Stack>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                leftIcon={
-                  copiedKey === 'expr' ? (
-                    <IconCheck size="sm" />
-                  ) : (
-                    <IconCopy size="sm" />
-                  )
-                }
-                onClick={() => void copy(expr.trim(), 'expr')}
-              >
-                {copiedKey === 'expr' ? 'Copied' : 'Copy'}
-              </Button>
+              <CopyButton
+                variant="text"
+                label="expression"
+                value={expr.trim()}
+              />
             </Inline>
             <Box id="cron-status">
               {parsed.ok ? (
@@ -224,7 +209,6 @@ const CronBuilder: React.FC = () => {
               onZone={(z) => update({ zone: z })}
               count={count}
               onCount={(c) => update({ count: c })}
-              from={from}
             />
           </Stack>
         </CardBody>

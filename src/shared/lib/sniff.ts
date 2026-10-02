@@ -5,6 +5,9 @@ export type SniffedKind = Exclude<AcceptKind, 'any'>;
 
 const TEXT_WINDOW = 64 * 1024;
 const JSON_PARSE_LIMIT = 2 * 1024 * 1024;
+/** An SVG root after an optional XML declaration, comments and doctype. */
+const SVG_ROOT =
+  /^(?:<\?xml[^>]*\?>\s*|<!--[\s\S]*?-->\s*|<!DOCTYPE[^>]*>\s*)*<svg[\s>/]/i;
 const LOG_LINE =
   /^\[?\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}|^\[?(INFO|WARN|WARNING|ERROR|DEBUG)\b/;
 
@@ -18,7 +21,8 @@ function delimited(lines: string[], sep: string): boolean {
 /**
  * The kind of a dropped file from its content, never its name (spec §5.3).
  * Binary signatures first, then a UTF-8 text window: JSON, XML, CSV/TSV,
- * logs, else plain text. Undecodable binary is null.
+ * logs, else plain text. An SVG root is 'svg' (routing also lets it
+ * match XML rules). Undecodable binary is null.
  */
 export async function sniffAcceptKind(file: File): Promise<SniffedKind | null> {
   const head = await readBytes(file.slice(0, TEXT_WINDOW));
@@ -55,6 +59,7 @@ export async function sniffAcceptKind(file: File): Promise<SniffedKind | null> {
       // Not JSON after all: keep sniffing.
     }
   }
+  if (SVG_ROOT.test(trimmed)) return 'svg';
   if (trimmed.startsWith('<?xml') || /^<[A-Za-z]/.test(trimmed)) return 'xml';
 
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
