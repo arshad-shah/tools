@@ -2,7 +2,9 @@
  * Shared test fixtures for the diagram suites (imported by *.test.ts only).
  * Seeded, so every run builds the same graphs.
  */
-import type { Diagram, DiagramEdge, DiagramNode } from './model';
+import { diagramFonts } from './fonts';
+import type { Diagram, DiagramEdge, DiagramNode, RowKind } from './model';
+import type { DiagramTheme } from './theme-bridge';
 
 export function rng(seed: number): () => number {
   let s = seed >>> 0;
@@ -80,4 +82,46 @@ export function randomDag(n: number, seed = 2, extra = 1.5): Diagram {
     }
   }
   return { nodes, edges };
+}
+
+/** A theme whose colours are their role names, so draws are easy to find. */
+export function testTheme(): DiagramTheme {
+  const kinds: RowKind[] = [
+    'string',
+    'number',
+    'boolean',
+    'null',
+    'object',
+    'array',
+    'element',
+    'attribute',
+    'text',
+    'more',
+  ];
+  return {
+    ...diagramFonts('monospace'),
+    surface: 'surface',
+    grid: 'grid',
+    card: 'card',
+    cardHeader: 'cardHeader',
+    cardBorder: 'cardBorder',
+    cardBorderStrong: 'cardBorderStrong',
+    divider: 'divider',
+    title: 'title',
+    eyebrow: 'eyebrow',
+    key: 'key',
+    value: Object.fromEntries(kinds.map((k) => [k, `value-${k}`])) as Record<
+      RowKind,
+      string
+    >,
+    chip: 'chip',
+    chipText: 'chipText',
+    edge: 'edge',
+    edgeMuted: 'edgeMuted',
+    edgeActive: 'edgeActive',
+    select: 'select',
+    selectFill: 'selectFill',
+    hoverFill: 'hoverFill',
+    matchFill: 'matchFill',
+  };
 }
