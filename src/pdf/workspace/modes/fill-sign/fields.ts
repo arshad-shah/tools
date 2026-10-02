@@ -27,6 +27,7 @@ export const styleOf = (p: FlatFillParams): Partial<FieldStyle> => ({
   ...(p.color !== undefined ? { color: p.color } : {}),
   ...(p.spacing !== undefined ? { spacing: p.spacing } : {}),
   ...(p.comb !== undefined ? { comb: p.comb } : {}),
+  ...(p.cells !== undefined ? { cells: p.cells } : {}),
 });
 
 export type ViewFieldType = FieldType | 'radio' | 'choice';
@@ -284,7 +285,12 @@ export function viewFields(
       ...(fill
         ? { style: fill.style }
         : f.cellCount
-          ? { style: { comb: f.cellCount } }
+          ? {
+              style: {
+                comb: f.cellCount,
+                ...(f.cellCentres ? { cells: f.cellCentres } : {}),
+              },
+            }
           : {}),
     });
   }

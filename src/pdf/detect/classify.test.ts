@@ -372,14 +372,39 @@ describe('classify: character boxes', () => {
     });
   });
 
-  it('types eight plain boxes as text even under a date label', () => {
+  it('types eight plain boxes under a date label as an 8-cell date', () => {
+    // The date editor's dd/mm/yyyy drops its separators into 8 cells.
     const found = detect(
       geometry({
         segments: boxRowSegs(lefts(190, 8)),
         runs: [run('Date', 54, rowBaseline(600, 18))],
       }),
     );
-    expect(found[0]).toMatchObject({ type: 'text', cellCount: 8 });
+    expect(found[0]).toMatchObject({ type: 'date', cellCount: 8 });
+    const plain = detect(
+      geometry({
+        segments: boxRowSegs(lefts(190, 8)),
+        runs: [run('Postcode', 54, rowBaseline(600, 18))],
+      }),
+    );
+    expect(plain[0]).toMatchObject({ type: 'text', cellCount: 8 });
+  });
+
+  it('places date cells on the boxes when separator gaps are narrower than a box', () => {
+    // 14pt boxes, 8pt gaps: 190 204 | 226 240 | 262 276 290 304.
+    const boxes = [...lefts(190, 2), ...lefts(226, 2), ...lefts(262, 4)];
+    const found = detect(
+      geometry({
+        segments: boxRowSegs(boxes),
+        runs: [run('Date of birth', 54, rowBaseline(600, 18))],
+      }),
+    );
+    const f = found[0];
+    expect(f).toMatchObject({ type: 'date', cellCount: 10 });
+    const at = (x: number) => (x - f.rect.x) / f.rect.width;
+    const want = [197, 211, 222, 233, 247, 258, 269, 283, 297, 311].map(at);
+    expect(f.cellCentres).toHaveLength(10);
+    f.cellCentres!.forEach((c, i) => expect(c).toBeCloseTo(want[i], 3));
   });
 
   it('ignores boxes with text printed in them', () => {

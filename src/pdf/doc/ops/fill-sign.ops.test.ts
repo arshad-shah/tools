@@ -163,6 +163,49 @@ describe('fill-sign ops', () => {
     });
   });
 
+  it('keeps comb cell positions on fills and detected fields, refusing bad ones', () => {
+    const m = makeModel();
+    const cells = [0.1, 0.3, 0.5, 0.7];
+    const [fill] = m.dispatch({
+      type: 'flat.fill',
+      params: {
+        id: 'c',
+        pageId: 'ckpt0:0',
+        rect: RECT,
+        kind: 'text',
+        value: 'AB',
+        comb: 4,
+        cells,
+      },
+    });
+    expect(fill.params).toMatchObject({ comb: 4, cells });
+    const [add] = m.dispatch({
+      type: 'detect.correct',
+      params: {
+        action: 'add',
+        fieldIds: [],
+        field: { ...FIELD, source: 'comb', cellCount: 4, cellCentres: cells },
+        pageId: 'ckpt0:2',
+      },
+    });
+    expect(add.params).toMatchObject({ field: { cellCentres: cells } });
+    for (const bad of [[0.5, 0.2, 0.6, 0.8], [0.1, 0.2, 1.4, 1.5], [0.1]])
+      expect(() =>
+        m.dispatch({
+          type: 'flat.fill',
+          params: {
+            id: 'c',
+            pageId: 'ckpt0:0',
+            rect: RECT,
+            kind: 'text',
+            value: 'AB',
+            comb: 4,
+            cells: bad,
+          },
+        }),
+      ).toThrow(/character box positions/);
+  });
+
   it('refuses incomplete corrections and bad signatures', () => {
     const m = makeModel();
     expect(() =>

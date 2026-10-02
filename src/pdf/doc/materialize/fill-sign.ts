@@ -55,6 +55,7 @@ export const writeFlatFill = defineMaterializer<FlatFillParams>({
         color: p.color ?? INK,
         spacing: p.spacing,
         comb: p.comb,
+        cells: p.cells,
         rotate,
         multiline: p.multiline ?? false,
       });

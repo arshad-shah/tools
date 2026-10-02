@@ -15,6 +15,8 @@ export interface TextSettings {
 export interface FieldStyle extends TextSettings {
   /** Character boxes: cell count, 0 when off. */
   comb: number;
+  /** Detected character boxes: cell centres as shares of the width. */
+  cells?: readonly number[];
 }
 
 export const DEFAULT_TEXT: TextSettings = {
@@ -112,6 +114,7 @@ export function overlayLayout(
     size: style.size,
     spacing: style.spacing,
     comb: style.comb || undefined,
+    cells: style.cells,
     multiline,
   });
 }
@@ -127,6 +130,7 @@ export function effectiveStyle(
     color: f.style?.color ?? DEFAULT_TEXT.color,
     spacing: f.style?.spacing ?? 0,
     comb: f.style?.comb ?? 0,
+    ...(f.style?.cells ? { cells: f.style.cells } : {}),
   };
 }
 
