@@ -36,11 +36,3 @@ export function topFor(blocks: readonly BlockPos[], line: number): number {
   }
   return blocks[blocks.length - 1].top;
 }
-
-/** Reads block positions from a rendered document (`[data-line]` elements). */
-export function readBlocks(root: ParentNode): BlockPos[] {
-  return [...root.querySelectorAll<HTMLElement>('[data-line]')]
-    .map((el) => ({ line: Number(el.dataset.line), top: el.offsetTop }))
-    .filter((b) => Number.isFinite(b.line))
-    .sort((a, b) => a.top - b.top);
-}

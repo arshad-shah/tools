@@ -12,8 +12,3 @@ export const isMac = (): boolean => {
   const platform = uaData?.platform || navigator.platform || '';
   return /mac|iphone|ipad|ipod/i.test(platform);
 };
-
-export const prefersReducedMotion = (): boolean =>
-  typeof window !== 'undefined' &&
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;

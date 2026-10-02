@@ -68,8 +68,6 @@ export const HMAC_ALGORITHMS: HashAlgorithm[] = [
   { id: 'hmac-sha3-256', name: 'HMAC-SHA3-256', fn: sha3_256 },
 ];
 
-export const isHmac = (id: string) => id.startsWith('hmac-');
-
 export type KeyFormat = 'text' | 'hex' | 'base64';
 
 const find = (list: HashAlgorithm[], id: string): HashAlgorithm => {
@@ -138,9 +136,6 @@ export function bytesFrom(
 export function parseKey(key: string, format: KeyFormat): Uint8Array {
   return bytesFrom(key, format, 'The HMAC key');
 }
-
-/** `parseKey` under its phase-6 name. */
-export const decodeKey = parseKey;
 
 export type HashId =
   | 'md5'
