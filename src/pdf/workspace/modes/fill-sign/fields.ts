@@ -89,7 +89,8 @@ function widgetFields(
   for (const w of info.widgets) {
     const n = counts.get(w.fieldName) ?? 0;
     counts.set(w.fieldName, n + 1);
-    if (w.kind === 'unsupported') continue;
+    // Signature fields are places to sign (SignTargetsOverlay), not values.
+    if (w.kind === 'unsupported' || w.kind === 'signature') continue;
     const value = set.has(w.fieldName) ? set.get(w.fieldName)! : w.value;
     const shown = pages.filter((p) => p.index === w.pageIndex);
     for (const page of shown) {

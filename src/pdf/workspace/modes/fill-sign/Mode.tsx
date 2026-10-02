@@ -14,7 +14,9 @@ import { FillSignInspector } from './FillSignInspector';
 import { FillSignToolbar } from './FillSignToolbar';
 import { openMyDetails } from './my-details-flow';
 import { FillSignRailBadge } from './RailBadge';
+import { nextPlaceToSign } from './sign-places';
 import { fillSign } from './store';
+import { clearTrustedRootsCommand } from './trusted-roots-command';
 
 const GROUP = 'Fill & Sign';
 
@@ -29,6 +31,7 @@ function removeSelected(ctx: ModeContext): void {
 
 function commands(ctx: ModeContext): Command[] {
   return [
+    clearTrustedRootsCommand(),
     {
       id: 'fill-sign-next',
       label: 'Next empty field',
@@ -36,6 +39,13 @@ function commands(ctx: ModeContext): Command[] {
       run: () => {
         advance(ctx, currentFields(ctx.doc), fillSign.get().focusKey);
       },
+    },
+    {
+      id: 'fill-sign-next-sign-target',
+      label: 'Next place to sign',
+      group: GROUP,
+      keywords: ['signature', 'smart placement'],
+      run: () => void nextPlaceToSign(ctx),
     },
     {
       id: 'fill-sign-my-details',

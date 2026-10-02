@@ -13,6 +13,8 @@ import {
   Textarea,
   FontSample,
   RadioGroup,
+  ChoiceGrid,
+  FontPreview,
 } from '@/shared/ui';
 import { IconMonitor, IconMoon, IconSun } from '@/shared/ui/icons';
 import { Row, Section } from '../Section';
@@ -28,6 +30,7 @@ export function InputsSection() {
   const [level, setLevel] = useState(40);
   const [count, setCount] = useState(3);
   const [mode, setMode] = useState<'system' | 'light' | 'dark'>('light');
+  const [face, setFace] = useState<string | null>('caveat');
   return (
     <Section name="inputs" title="Inputs">
       <div className="grid gap-4 md:grid-cols-2">
@@ -98,7 +101,12 @@ export function InputsSection() {
           aria-label="Not agreed"
         />
         <div className="w-48">
-          <Slider value={level} onValueChange={setLevel} aria-label="Level" />
+          <Slider
+            value={level}
+            onValueChange={setLevel}
+            aria-label="Level"
+            aria-valuetext={`${level} percent`}
+          />
         </div>
         <NumberInput
           value={count}
@@ -147,6 +155,44 @@ export function InputsSection() {
         >
           Ada Lovelace
         </FontSample>
+      </Row>
+      <Row label="ChoiceGrid, FontPreview">
+        <ChoiceGrid
+          label="Font"
+          value={face}
+          onChange={setFace}
+          columns={3}
+          className="w-full max-w-lg"
+          options={[
+            {
+              value: 'caveat',
+              label: 'Caveat',
+              slant: 0,
+              text: 'Ada Lovelace',
+            },
+            {
+              value: 'slanted',
+              label: 'Slanted',
+              slant: 12,
+              text: 'Ada Lovelace',
+            },
+            { value: 'empty', label: 'Placeholder', slant: 0, text: '' },
+          ].map((o) => ({
+            value: o.value,
+            label: o.label,
+            render: () => (
+              <FontPreview
+                label={o.label}
+                family="Sign Caveat"
+                text={o.text}
+                slant={o.slant}
+                color="#1e3a8a"
+                size={22}
+                className="h-12"
+              />
+            ),
+          }))}
+        />
       </Row>
     </Section>
   );

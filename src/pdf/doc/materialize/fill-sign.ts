@@ -1,15 +1,12 @@
 import type { PDFPage } from 'pdf-lib';
-import { drawImage, drawText } from '@/pdf/edit/draw';
+import { drawText } from '@/pdf/edit/draw';
 import { drawCross, drawTick } from '@/pdf/edit/draw-shapes';
-import { drawSignatureText, uprightFrame } from '@/pdf/edit/draw-signature';
+import { uprightFrame } from '@/pdf/edit/draw-signature';
 import { drawStyledText } from '@/pdf/edit/draw-styled-text';
 import { unsupportedChars } from '@/pdf/edit/fonts';
 import { setFieldValue } from '@/pdf/edit/forms';
-import type {
-  FlatFillParams,
-  FormSetValueParams,
-  SignPlaceParams,
-} from '../ops/fill-sign';
+import type { FlatFillParams, FormSetValueParams } from '../ops/fill-sign';
+import { SIGN_MATERIALIZERS } from './fill-sign-signature';
 import {
   defineMaterializer,
   type MaterializeCtx,
@@ -82,40 +79,9 @@ export const writeFlatFill = defineMaterializer<FlatFillParams>({
   },
 });
 
-export const writeSignature = defineMaterializer<SignPlaceParams>({
-  type: 'sign.place',
-  phase: 'signature',
-  async apply(ctx, p) {
-    const page = ctx.page(p.pageId);
-    if (!page) return;
-    const { box, rotate } = uprightFrame(
-      p.rect,
-      page.getRotation().angle,
-      p.rotate,
-    );
-    const c = p.content;
-    if (c.kind === 'image')
-      return drawImage(ctx.draw, page, ctx.asset(c.assetId), c.mime, box, {
-        rotate,
-      });
-    await drawSignatureText(
-      ctx.draw,
-      page,
-      {
-        text: c.text,
-        fontKey: c.fontId,
-        fontBytes: ctx.asset(c.fontAsset),
-        color: c.color,
-      },
-      box,
-      rotate,
-    );
-  },
-});
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const FILL_SIGN_MATERIALIZERS: readonly Materializer<any>[] = [
   writeFormValue,
   writeFlatFill,
-  writeSignature,
+  ...SIGN_MATERIALIZERS,
 ];

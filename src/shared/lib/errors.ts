@@ -11,6 +11,8 @@ export type ToolErrorCode =
   | 'STORAGE_FULL'
   | 'VERIFICATION_FAILED'
   | 'NETWORK'
+  | 'CERTIFICATE_INVALID'
+  | 'SIGNATURE_INVALID'
   | 'UNKNOWN';
 
 /** The one error type tools surface to users. `message` is user-facing. */

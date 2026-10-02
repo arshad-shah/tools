@@ -19,6 +19,9 @@ export type PaintCanvasProps = PaintA11y & {
    */
   paint(ctx: CanvasRenderingContext2D, size: PaintSize): void;
   className?: string;
+  /** Fixed CSS px size; without it the className sizes the canvas. */
+  width?: number;
+  height?: number;
   'aria-describedby'?: string;
 } & Pick<
     React.HTMLAttributes<HTMLCanvasElement>,
@@ -34,22 +37,34 @@ export function PaintCanvas({
   className,
   label,
   decorative,
+  width,
+  height,
   ...events
 }: PaintCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [size, setSize] = useState({
+    width: width ?? 0,
+    height: height ?? 0,
+  });
 
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
-    const measure = () =>
-      setSize({ width: c.clientWidth, height: c.clientHeight });
+    const measure = () => {
+      const next = {
+        width: c.clientWidth || (width ?? 0),
+        height: c.clientHeight || (height ?? 0),
+      };
+      setSize((s) =>
+        s.width === next.width && s.height === next.height ? s : next,
+      );
+    };
     measure();
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measure);
     observer.observe(c);
     return () => observer.disconnect();
-  }, []);
+  }, [width, height]);
 
   useEffect(() => {
     const c = ref.current;
@@ -72,6 +87,7 @@ export function PaintCanvas({
       aria-label={decorative ? undefined : label}
       aria-hidden={decorative ? true : undefined}
       className={cn('block', className)}
+      style={width || height ? { width, height } : undefined}
       {...events}
     />
   );

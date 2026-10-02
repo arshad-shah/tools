@@ -69,9 +69,12 @@ export function useDetection(doc: DocumentApi, enabled: boolean): void {
     if (!next || !docId || !nextKey) return;
     const ac = new AbortController();
     doc.render.detect(docId, next.index, ac.signal).then(
-      ({ cells, ...result }) => {
+      ({ cells, signTargets, ...result }) => {
         const s = fillSign.get();
-        fillSign.set({ cells: { ...s.cells, [nextKey]: cells } });
+        fillSign.set({
+          cells: { ...s.cells, [nextKey]: cells },
+          signTargets: { ...s.signTargets, [nextKey]: signTargets },
+        });
         doc.setDetection(
           mergeDetection(
             asDetectionCache(doc.state.detection),
@@ -92,7 +95,7 @@ export function useDetection(doc: DocumentApi, enabled: boolean): void {
   }, [nextKey, docId]);
 }
 
-/** Cells of a restored page (not re-detected) are fetched on demand. */
+/** Cells and places to sign of a restored page (not re-detected) are fetched on demand. */
 export function useCells(
   doc: DocumentApi,
   pageKey: string,
@@ -104,8 +107,13 @@ export function useCells(
     if (have || !docId) return;
     const ac = new AbortController();
     doc.render.detect(docId, pageIndex, ac.signal).then(
-      ({ cells }) =>
-        fillSign.set({ cells: { ...fillSign.get().cells, [pageKey]: cells } }),
+      ({ cells, signTargets }) => {
+        const s = fillSign.get();
+        fillSign.set({
+          cells: { ...s.cells, [pageKey]: cells },
+          signTargets: { ...s.signTargets, [pageKey]: signTargets },
+        });
+      },
       () => {},
     );
     return () => ac.abort();

@@ -52,10 +52,13 @@ describe('detectPage', () => {
         'dedupeAgainstWidgets',
         'detectPage',
         'extractGeometry',
+        'findSignTargets',
         'isFlatForm',
         'medianLineHeight',
         'normaliseLines',
         'readingOrder',
+        'SIGN_LABELS',
+        'sigFieldTargets',
       ].sort(),
     );
   });

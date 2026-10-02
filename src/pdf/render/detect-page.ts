@@ -2,6 +2,7 @@ import {
   buildCells,
   detectPage,
   extractGeometry,
+  findSignTargets,
   isFlatForm,
   normaliseLines,
   type OperatorListLike,
@@ -9,14 +10,19 @@ import {
   type PageDetection,
   type PageGeometry,
   type Seg,
+  type SignTarget,
 } from '@/pdf/detect';
 import { imageCoverage, type ImageOpsTable } from '@/pdf/detect/raster';
 import type { PageTextItems } from './handlers/text';
 import { textItemsFrom } from './text';
 
-/** A page's detection plus its table cells (click-anywhere snaps to them). */
+/**
+ * A page's detection plus its table cells (click-anywhere snaps to them)
+ * and the places to sign (smart placement, plan H-8).
+ */
 export interface PageDetectionResult extends PageDetection {
   cells: { x: number; y: number; width: number; height: number }[];
+  signTargets: SignTarget[];
 }
 
 /** The parts of a pdf.js page detection reads (tests pass the legacy build's). */
@@ -101,15 +107,17 @@ export async function detectFromPage(
   if (raster && isScan(geom, list, raster.ops, page.view))
     geom = { ...geom, segments: await raster.segments() };
   const result = detectPage(geom, pageIndex);
-  const cells = geom.skipped
-    ? []
-    : buildCells(normaliseLines(geom.segments, geom.rects)).cells.map((c) => ({
-        x: c.x,
-        y: c.y,
-        width: c.w,
-        height: c.h,
-      }));
-  return { ...result, cells };
+  if (geom.skipped) return { ...result, cells: [], signTargets: [] };
+  const lines = normaliseLines(geom.segments, geom.rects);
+  const built = buildCells(lines).cells;
+  const cells = built.map((c) => ({
+    x: c.x,
+    y: c.y,
+    width: c.w,
+    height: c.h,
+  }));
+  const signTargets = findSignTargets(geom, lines, built, pageIndex);
+  return { ...result, cells, signTargets };
 }
 
 export interface DetectSummary {
