@@ -21,6 +21,25 @@ describe('createToolSettings', () => {
     act(() => result.current[2]());
     expect(s.getSettings()).toEqual({ indent: 2, wrap: false });
   });
+  it('re-renders a keyed subscriber only when its keys change', () => {
+    const s = createToolSettings(
+      'demo-keys',
+      { indent: 2, wrap: false as boolean, cap: 10 },
+      { version: 1 },
+    );
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders++;
+      return s.useSettings(['indent', 'wrap']);
+    });
+    expect(result.current[0]).toEqual({ indent: 2, wrap: false });
+    const before = renders;
+    act(() => result.current[1]({ cap: 20 }));
+    expect(renders).toBe(before);
+    act(() => result.current[1]({ wrap: true }));
+    expect(result.current[0]).toEqual({ indent: 2, wrap: true });
+  });
+
   it('migrates stored state from an older version', () => {
     localStorage.setItem(
       'kit:store:tool:old',

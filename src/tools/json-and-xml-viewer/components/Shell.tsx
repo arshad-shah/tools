@@ -64,7 +64,13 @@ const FORMATS: { value: DocFormat; label: string }[] = [
  * Query and Convert views as tabs, one pane at a time (ruling R41).
  */
 export function Shell() {
-  const [settings, update] = viewerSettings.useSettings();
+  // Only what the Shell reads: a Map or Query setting must not re-render
+  // the whole viewer (long-task gate).
+  const [settings, update] = viewerSettings.useSettings([
+    'tab',
+    'indent',
+    'wrap',
+  ]);
   const [text, setText] = useState('');
   const [fileName, setFileName] = useState('data');
   const [manual, setManual] = useState<DocFormat | null>(null);

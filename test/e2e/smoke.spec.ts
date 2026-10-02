@@ -14,7 +14,9 @@ test('home states the promise and lists the categories', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Free, private tools. Nothing leaves your browser.',
   );
-  await expect(page.getByRole('link', { name: 'PDF' })).toBeVisible();
+  await expect(
+    page.getByRole('main').getByRole('link', { name: 'PDF' }),
+  ).toBeVisible();
 });
 
 test('a tool lives at /<category>/<slug>', async ({ page }) => {

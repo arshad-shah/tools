@@ -19,6 +19,10 @@ export interface ToolSettingsOptions<S> {
 export interface ToolSettings<S> {
   /** `[settings, update(patch), reset()]` */
   useSettings(): [S, (patch: Partial<S>) => void, () => void];
+  /** Only `keys`: a change to any other setting does not re-render. */
+  useSettings<K extends keyof S>(
+    keys: readonly K[],
+  ): [Pick<S, K>, (patch: Partial<S>) => void, () => void];
   getSettings(): S;
 }
 
@@ -126,19 +130,19 @@ export function createToolSettings<S extends { [K in keyof S]: Json }>(
     },
   });
 
-  const pick = (s: S): S => {
+  const pick = (s: S, only: readonly (keyof S)[] = keys): S => {
     const out = {} as S;
-    for (const k of keys) out[k] = s[k];
+    for (const k of only) out[k] = s[k];
     return out;
   };
   const reset = () => store.reset();
 
   return {
-    useSettings() {
-      const settings = store(useShallow(pick));
+    useSettings: ((only?: readonly (keyof S)[]) => {
+      const settings = store(useShallow((s: S) => pick(s, only)));
       const update = store((s) => s.update);
       return [settings, update, reset];
-    },
+    }) as ToolSettings<S>['useSettings'],
     getSettings: () => pick(store.getState()),
   };
 }
