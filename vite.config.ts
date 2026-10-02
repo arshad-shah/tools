@@ -8,6 +8,7 @@ import { buildDefines } from './build-info';
 import { glyphReport } from './scripts/vite-glyph-report';
 import { escapeVendorGlyphs } from './scripts/vite-vendor-glyphs';
 import { SECURITY_HEADERS, cspHeaders } from './scripts/csp';
+import { chunkPackages } from './scripts/vite-chunk-packages';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,8 +19,12 @@ export default defineConfig({
     escapeVendorGlyphs(),
     glyphReport(),
     cspHeaders(),
+    chunkPackages(),
   ],
   define: buildDefines(),
+  // dist/.vite/manifest.json feeds test/bundle-budget.test.ts (spec 12.5);
+  // public/.assetsignore keeps it off the deployed site.
+  build: { manifest: true },
   // Module workers everywhere: qpdf-wasm's loader uses dynamic import(),
   // which the default IIFE worker format cannot code-split.
   // Worker bundles have their own plugin list: third-party glyph literals

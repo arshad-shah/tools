@@ -3,7 +3,7 @@
 Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Append one line per item: `- <Part>: <file:line> <finding> -> <fix>`.
 
 - Milestone e2e after P5-A2: confirm pdf-splitter (3) and encrypted (2) specs pass on a quiet machine (seen failing under load in P4-E)
-- P6-H dependency sweep: GitHub Dependabot reports 35 vulnerabilities on master (1 critical, 13 high, 15 moderate, 6 low); resolve or document each
+- ~~P6-H dependency sweep: GitHub Dependabot reports 35 vulnerabilities on master (1 critical, 13 high, 15 moderate, 6 low); resolve or document each~~ (6-H: `pnpm audit` 45 findings to 0: vite 8.3, react-router-dom 7.18.4, @cloudflare/vite-plugin 1.62, wrangler 4.147, overrides for brace-expansion, browserslist and baseline-browser-mapping)
 - P6-A3: src/shared/ui/menu.tsx DropdownMenuTrigger drops props such as aria-describedby, so a Tooltip cannot describe a menu trigger (DiagramCanvas Export uses aria-keyshortcuts instead) -> forward extra props from DropdownMenuTrigger to its child
 - P6-A3: src/shared/diagram/layout-client.ts cancels by terminating the worker itself because killable-client does not exist on master yet -> switch to killable-client once it lands
 - P6-A3: src/shared/ui/icons/custom/diagram.tsx defines IconLayoutLeftRight and IconLayoutTopBottom, which A2-16 also plans in custom/tools-p6.tsx -> whichever merges second drops its copy (same names, export \* would clash)
@@ -109,7 +109,7 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P6-D: src/tools/csv-viewer/components/EditToolbar.tsx has no "delete selected rows" action (applyEdit supports delete-rows; the grid exposes no row selection) -> add once DataGrid reports selected rows.
 - P6-D: src/tools/csv-viewer/Tool.tsx sends to JSON Viewer and Mock Data only; spec 8.2 also lists Text Diff -> add a text/plain Send to entry once Part C's Text Diff accepts it.
 - P6-D: test/e2e/tools/code-formatter.spec.ts and csv-viewer.spec.ts skip the Text Diff and JSON Viewer hand-off cases until Parts C and B merge -> H-1 removes the skips.
-- P6-D: `pnpm why lodash` still lists lodash through dagre -> clears when 6-B removes dagre.
+- ~~P6-D: `pnpm why lodash` still lists lodash through dagre -> clears when 6-B removes dagre.~~ (6-H: `pnpm why lodash` is empty; @types/lodash removed; test/removed-deps.test.ts guards it)
 - P6-D: Linux and win32 visual baselines for tool-code-formatter, tool-csv-viewer (desktop and phone), tool-random-data-generator and pages that list tools (home, hubs) were not generated in the cloud lane (no Docker, Chromium 1194) -> run the CI "Regenerate Linux visual baselines" dispatch and `pnpm test:visual --update-snapshots` on the controller.
 - P6-D: src/tools/code-formatter accepts kinds ['text'] and is cross-listed on the data hub, so a dropped .txt on /data now routes to the Formatter (drop-routing test updated) -> confirm this is wanted or drop `kinds` from its accepts rule.
 - P6-G1: src/shared/ui/alert.tsx AlertDescription renders a <p>, so lists and stacks inside it are invalid DOM (G1 moved them out) -> make it a div with paragraph spacing.
