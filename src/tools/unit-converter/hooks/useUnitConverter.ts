@@ -14,7 +14,9 @@ export function useUnitConverter() {
   const category =
     getCategory(settings.category, { basePx: settings.basePx }) ??
     CATEGORIES[0];
-  const [editing, setEditing] = useState(() => ({
+  // History records what the user entered, never the untouched default.
+  const [touched, setTouched] = useState(false);
+  const [editing, setEditingState] = useState(() => ({
     unit: category.units[0].id,
     text: '1',
   }));
@@ -53,8 +55,13 @@ export function useUnitConverter() {
     category.units.find((u) => u.id !== fromUnit.id) ??
     fromUnit;
 
+  const setEditing = (next: { unit: string; text: string }) => {
+    setTouched(true);
+    setEditingState(next);
+  };
+
   useEffect(() => {
-    if (amount === null) return;
+    if (!touched || amount === null) return;
     const entry: UnitHistoryEntry = {
       category: category.id,
       from: fromUnit.id,
@@ -67,13 +74,14 @@ export function useUnitConverter() {
       update({ history: addHistory(history, { ...entry, at: Date.now() }) });
     }, SETTLE_MS);
     return () => clearTimeout(id);
-  }, [amount, category.id, fromUnit.id, toUnit.id, update]);
+  }, [touched, amount, category.id, fromUnit.id, toUnit.id, update]);
 
   const setCategory = (id: string, edit?: { unit: string; text: string }) => {
     const next = getCategory(id, { basePx: settings.basePx });
     if (!next) return;
     if (id !== category.id) update({ category: id });
-    setEditing(edit ?? { unit: next.units[0].id, text: '1' });
+    if (edit) setEditing(edit);
+    else setEditingState({ unit: next.units[0].id, text: '1' });
   };
 
   const togglePin = (unit: string) => {

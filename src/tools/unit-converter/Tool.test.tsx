@@ -89,3 +89,18 @@ describe('UnitConverter', { timeout: 20_000 }, () => {
     expect(row('Miles').value).toBe('');
   });
 });
+
+describe('UnitConverter history', { timeout: 20_000 }, () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('does not record the untouched default value', async () => {
+    vi.useFakeTimers();
+    const settings = await setup();
+    act(() => vi.advanceTimersByTime(2000));
+    expect(settings.getSettings().history).toHaveLength(0);
+  });
+});
