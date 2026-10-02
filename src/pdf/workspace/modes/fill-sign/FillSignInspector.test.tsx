@@ -6,6 +6,7 @@ import { registerCoreOperations } from '@/pdf/doc/ops';
 import { makeModel } from '@/pdf/doc/test-helpers';
 import type { ModeProps } from '../types';
 import { FillSignInspector } from './FillSignInspector';
+import { FREE } from './fields';
 import { fillSign } from './store';
 
 beforeAll(() => registerCoreOperations());
@@ -45,6 +46,7 @@ function ctx(fields: number, filled = 0) {
     });
   const announce = vi.fn();
   return {
+    model,
     doc: {
       view: model.getView(),
       state: model.getState(),
@@ -54,7 +56,10 @@ function ctx(fields: number, filled = 0) {
     },
     selection: { objects: new Set<string>(), clear: vi.fn() },
     tool: { id: null, set: vi.fn() },
-  } as unknown as ModeProps & { doc: { announce: typeof announce } };
+  } as unknown as ModeProps & {
+    doc: { announce: typeof announce };
+    model: typeof model;
+  };
 }
 
 describe('FillSignInspector with nothing selected', () => {
@@ -84,5 +89,56 @@ describe('FillSignInspector with nothing selected', () => {
     render(<FillSignInspector {...c} />);
     expect(screen.getByText('No fields found yet')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add text box' })).toBeTruthy();
+  });
+});
+
+describe('FillSignInspector with a free box selected', () => {
+  function withFree(kind: 'text' | 'tick') {
+    const c = ctx(0);
+    const [op] = c.model.dispatch({
+      type: 'flat.fill',
+      params: {
+        id: 'free1',
+        pageId: 'ckpt0:0',
+        rect: { x: 50, y: 500, width: 120, height: 20 },
+        kind,
+        value: kind === 'text' ? 'Hello' : 'yes',
+        fieldId: `${FREE}free1`,
+      },
+    });
+    const dispatch = vi.fn(() => [{ id: 'removed' }]);
+    const props = {
+      ...c,
+      doc: {
+        ...c.doc,
+        view: c.model.getView(),
+        state: c.model.getState(),
+        dispatch,
+      },
+      selection: { objects: new Set([op.id]), clear: vi.fn() },
+    } as unknown as ModeProps;
+    return { props, dispatch, opId: op.id };
+  }
+
+  it('gives a text box its settings and Delete', () => {
+    const { props, dispatch, opId } = withFree('text');
+    render(<FillSignInspector {...props} />);
+    expect(screen.getByText('Text box')).toBeTruthy();
+    const before = fillSign.get().barFocus;
+    fireEvent.click(screen.getByRole('button', { name: 'Text settings' }));
+    expect(fillSign.get().barFocus).toBe(before + 1);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(dispatch).toHaveBeenCalledWith([
+      { type: 'object.remove', params: { targetId: opId } },
+    ]);
+    expect(props.selection.clear).toHaveBeenCalled();
+  });
+
+  it('gives a tick Delete only', () => {
+    const { props } = withFree('tick');
+    render(<FillSignInspector {...props} />);
+    expect(screen.getByText('Tick')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Text settings' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
   });
 });
