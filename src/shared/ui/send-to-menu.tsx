@@ -16,7 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './menu';
-import { menuOf } from './menu-dom';
 import { Spinner } from './spinner';
 
 export interface SendToMenuProps {
@@ -48,11 +47,12 @@ async function targetsFor(
   return [];
 }
 
-/** The open menu's items (the menu is portalled; the trigger controls it). */
-const items = (trigger: HTMLElement | null) => [
-  ...(menuOf(trigger)?.querySelectorAll<HTMLElement>('[role="menuitem"]') ??
-    []),
-];
+/** The open menu's items (the trigger names the portaled menu it controls). */
+const items = (trigger: HTMLElement | null) => {
+  const id = trigger?.getAttribute('aria-controls');
+  const menu = id ? document.getElementById(id) : null;
+  return [...(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+};
 
 /**
  * "Send to" menu button (spec §4.3): lists the other enabled tools that take

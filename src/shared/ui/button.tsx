@@ -93,18 +93,21 @@ Button.displayName = 'Button';
 /* ------------------------------------------------------------------ *
  * IconButton — square, icon-only, requires a label
  * ------------------------------------------------------------------ */
-/** Square sizes and glyph sizes from tokens (pointer and width aware). */
+/**
+ * Box size from the tokens in tokens.css: one step up on a fine pointer,
+ * 44px on touch. lg is the 44px touch size everywhere.
+ */
 const iconButtonSize = {
-  sm: 'size-(--control-icon-sm)',
-  md: 'size-(--control-icon-md)',
+  sm: 'size-(--icon-button-sm)',
+  md: 'size-(--icon-button-md)',
   lg: 'size-11',
 } as const;
-/** Glyph size for icon components (a rendered node keeps its own size). */
-const iconGlyphSize = {
-  sm: '[&>svg]:size-(--glyph-icon-sm)',
-  md: '[&>svg]:size-(--glyph-icon-md)',
-  lg: '[&>svg]:size-(--glyph-icon-lg)',
-} as const;
+/** Glyph size for an icon component; a rendered node keeps its own size. */
+const iconGlyph: Record<keyof typeof iconButtonSize, string | undefined> = {
+  sm: 'size-(--icon-glyph-sm)',
+  md: 'size-(--icon-glyph-md)',
+  lg: undefined,
+};
 const iconSizeFor: Record<keyof typeof iconButtonSize, IconSize> = {
   sm: 'sm',
   md: 'md',
@@ -135,10 +138,14 @@ export interface IconButtonProps extends Omit<
    */
   showLabel?: 'desktop';
 }
-function renderIcon(icon: IconComponent | React.ReactNode, size: IconSize) {
+function renderIcon(
+  icon: IconComponent | React.ReactNode,
+  size: IconSize,
+  className?: string,
+) {
   if (typeof icon === 'function') {
     const Icon = icon as IconComponent;
-    return <Icon size={size} />;
+    return <Icon size={size} className={className} />;
   }
   return icon;
 }
@@ -165,7 +172,6 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       buttonVariants({ variant }),
       'p-0',
       iconButtonSize[size],
-      typeof icon === 'function' && iconGlyphSize[size],
       showLabel && 'desk:w-auto desk:gap-1.5 desk:px-2.5',
       tone && iconButtonTone[tone],
       className,
@@ -189,7 +195,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         {loading ? (
           <Spinner size="sm" decorative />
         ) : (
-          renderIcon(icon, iconSizeFor[size])
+          renderIcon(icon, iconSizeFor[size], iconGlyph[size])
         )}
         {showLabel ? (
           <span aria-hidden className="hidden text-sm desk:inline">

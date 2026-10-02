@@ -22,26 +22,26 @@ import type { TruthField } from './flat-form';
  * (squares inset 1pt), from the layout constants below.
  */
 
-const SIZE = 10;
+export const SIZE = 10;
 const ASCENT = 0.718;
 const DESCENT = -0.207;
-const PAD = 5;
-const ROW = 24;
-const X0 = 56;
-const XM = 276;
-const X1 = 539;
-const TOP = 780;
+export const PAD = 5;
+export const ROW = 24;
+export const X0 = 56;
+export const XM = 276;
+export const X1 = 539;
+export const TOP = 780;
 const SQ = 14;
 const black = rgb(0, 0, 0);
 
-type Rect = { x: number; y: number; w: number; h: number };
+export type Rect = { x: number; y: number; w: number; h: number };
 
 const resolve = createRequire(import.meta.url).resolve;
-const SYMBOLS_WOFF = resolve(
+export const SYMBOLS_WOFF = resolve(
   '@fontsource/noto-sans-symbols-2/files/noto-sans-symbols-2-symbols-400-normal.woff',
 );
 
-interface Ctx {
+export interface Ctx {
   page: PDFPage;
   font: PDFFont;
   bold: PDFFont;
@@ -50,16 +50,17 @@ interface Ctx {
   jitter(): number;
 }
 
-const inset = (c: Rect, d: number): Box => ({
+export const inset = (c: Rect, d: number): Box => ({
   x: c.x + d,
   y: c.y + d,
   width: c.w - 2 * d,
   height: c.h - 2 * d,
 });
-const baseline = (c: Rect) => c.y + c.h / 2 - ((ASCENT + DESCENT) / 2) * SIZE;
+export const baseline = (c: Rect) =>
+  c.y + c.h / 2 - ((ASCENT + DESCENT) / 2) * SIZE;
 
 /** One 0.48pt border piece as a filled rectangle (one path op each). */
-function piece(ctx: Ctx, x: number, y: number, w: number, h: number) {
+export function piece(ctx: Ctx, x: number, y: number, w: number, h: number) {
   ctx.page.drawRectangle({ x, y, width: w, height: h, color: black });
 }
 
@@ -67,7 +68,7 @@ function piece(ctx: Ctx, x: number, y: number, w: number, h: number) {
  * Each cell draws its own four edges, every edge split in two pieces (as
  * Word does at column and row joins), each slightly offset.
  */
-function drawCells(ctx: Ctx, cells: Rect[]) {
+export function drawCells(ctx: Ctx, cells: Rect[]) {
   const t = 0.48;
   for (const c of cells) {
     for (const y of [c.y, c.y + c.h]) {
@@ -83,7 +84,7 @@ function drawCells(ctx: Ctx, cells: Rect[]) {
   }
 }
 
-function text(ctx: Ctx, str: string, c: Rect, font = ctx.font) {
+export function text(ctx: Ctx, str: string, c: Rect, font = ctx.font) {
   ctx.page.drawText(str, {
     x: c.x + PAD,
     y: c.h > 2 * ROW ? c.y + c.h - ROW + 8 : baseline(c),
@@ -93,7 +94,7 @@ function text(ctx: Ctx, str: string, c: Rect, font = ctx.font) {
 }
 
 /** A label cell left of an empty answer cell, one per row. */
-function labelledRows(
+export function labelledRows(
   ctx: Ctx,
   page: number,
   top: number,
@@ -142,7 +143,7 @@ function labelAbove(
  * A question in a full-width cell (ending in "( tick )" as the real form
  * marks it), then a row of [square][Yes label][square][No label] cells.
  */
-function yesNo(
+export function yesNo(
   ctx: Ctx,
   page: number,
   top: number,
@@ -204,7 +205,7 @@ function yesNo(
   };
 }
 
-function heading(ctx: Ctx, str: string, y: number) {
+export function heading(ctx: Ctx, str: string, y: number) {
   ctx.page.drawText(str, { x: X0, y, size: 12, font: ctx.bold });
 }
 

@@ -104,6 +104,7 @@ describe('buildCells', () => {
     expect(buildCells({ h: [{ y: 0, x1: 0, x2: 200 }], v: [] })).toEqual({
       cells: [],
       squares: [],
+      combs: [],
     });
   });
 
@@ -122,5 +123,51 @@ describe('cellSizeOk', () => {
     expect(cellSizeOk({ w: 100, h: 7 })).toBe(false);
     expect(cellSizeOk({ w: 100, h: 221 })).toBe(false);
     expect(cellSizeOk({ w: 100, h: 220 })).toBe(true);
+  });
+});
+
+/** A label cell 0..100, then boxes of `w` at the given left edges, all 0..18 high. */
+function boxRow(lefts: number[], w = 14, h = 18): Lines {
+  const parts = [grid([0, 100], [0, h])];
+  for (const x of lefts) parts.push(grid([x, x + w], [0, h]));
+  return join(...parts);
+}
+const run = (from: number, n: number, w = 14) =>
+  Array.from({ length: n }, (_, i) => from + i * w);
+
+describe('buildCells comb runs', () => {
+  it('groups adjacent equal boxes on one row into one comb', () => {
+    const { cells, squares, combs } = buildCells(boxRow(run(100, 12)));
+    expect(combs).toHaveLength(1);
+    expect(combs[0]).toMatchObject({ x: 100, y: 0, w: 168, h: 18, count: 12 });
+    expect(combs[0].groups).toEqual([12]);
+    // The boxes leave the cell and square lists; the label cell stays.
+    expect(cells.map((c) => c.x)).toEqual([0]);
+    expect(squares).toEqual([]);
+    // The comb's own cell sits in the label's table, right of it.
+    expect(combs[0].cell).toMatchObject({ table: cells[0].table, col: 1 });
+  });
+
+  it('splits a run at a gap wider than one box', () => {
+    const { combs } = buildCells(
+      boxRow([...run(100, 5), ...run(100 + 7 * 14, 6)]),
+    );
+    expect(combs.map((c) => c.count)).toEqual([5, 6]);
+  });
+
+  it('keeps one-box gaps inside the run and counts them as cells', () => {
+    const lefts = [...run(100, 2), ...run(142, 2), ...run(184, 4)];
+    const { combs } = buildCells(boxRow(lefts));
+    expect(combs).toHaveLength(1);
+    expect(combs[0].groups).toEqual([2, 2, 4]);
+    expect(combs[0].count).toBe(10);
+  });
+
+  it('leaves two boxes, unequal boxes and wide cells alone', () => {
+    expect(buildCells(boxRow(run(100, 2))).combs).toEqual([]);
+    expect(buildCells(join(grid([100, 114, 140, 154], [0, 18]))).combs).toEqual(
+      [],
+    );
+    expect(buildCells(grid([0, 60, 120, 180, 240], [0, 20])).combs).toEqual([]);
   });
 });

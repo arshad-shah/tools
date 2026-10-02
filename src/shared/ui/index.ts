@@ -51,7 +51,14 @@ export {
 export { ButtonGroup } from './button-group';
 export { Tooltip, type TooltipProps } from './tooltip';
 export { Popover, type PopoverProps } from './popover';
-export { placeFloating, type Side, type Align, type Rect } from './position';
+export {
+  useAnchoredFloating,
+  type Side,
+  type Align,
+  type Rect,
+  type Anchor,
+} from './position';
+export { HoverCard, type HoverCardProps } from './hover-card';
 export {
   SegmentedControl,
   type SegmentedControlProps,
@@ -170,6 +177,20 @@ export {
 } from './shape-layer';
 export { SelectionFrame, type SelectionFrameProps } from './selection-frame';
 export { HitArea, type HitAreaProps } from './hit-area';
+export {
+  ObjectLayer,
+  type LayerObject,
+  type ObjectChange,
+  type ChangeSource,
+  type ObjectLayerProps,
+  type ObjectOrder,
+  type SelectMode,
+} from './object-layer';
+export {
+  ContextMenu,
+  type ContextMenuEntry,
+  type ContextMenuProps,
+} from './context-menu';
 export { DrawRectLayer, type DrawRectLayerProps } from './draw-rect-layer';
 export { Highlight, type HighlightProps } from './highlight';
 export { FieldBox, type FieldBoxProps, type FieldBoxState } from './field-box';

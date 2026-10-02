@@ -88,9 +88,9 @@ export function ContrastPanel({
 
   return (
     <Stack gap="4">
-      <Inline gap="3" align="end" wrap>
+      {/* Both fields share the row and shrink with the column. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-3">
         <ColorField
-          className="min-w-48 flex-1"
           label="Foreground"
           value={fg}
           onChange={(css) => onFg(css)}
@@ -105,13 +105,12 @@ export function ContrastPanel({
           Swap
         </Button>
         <ColorField
-          className="min-w-48 flex-1"
           label="Background"
           value={bg}
           onChange={(css) => onBg(css)}
           alpha
         />
-      </Inline>
+      </div>
 
       {view ? (
         <>
@@ -124,7 +123,7 @@ export function ContrastPanel({
           <Text size="sm" tone="muted">
             {view.summary.apcaHint}
           </Text>
-          <Inline gap="2" wrap aria-label="WCAG 2.2 results" role="group">
+          <Inline gap="2" aria-label="WCAG 2.2 results" role="group" wrap>
             <Level name="AA normal" pass={view.summary.levels.normalAA} />
             <Level name="AAA normal" pass={view.summary.levels.normalAAA} />
             <Level name="AA large" pass={view.summary.levels.largeAA} />

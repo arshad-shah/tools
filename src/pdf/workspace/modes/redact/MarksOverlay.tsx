@@ -1,28 +1,45 @@
+import { useState } from 'react';
 import { newId } from '@/shared/lib/id';
 import {
   DrawRectLayer,
-  HitArea,
   OverlayLayer,
   ShapeLayer,
+  type ObjectChange,
   type Shape,
 } from '@/shared/ui';
+import { geometryBounds } from '@/pdf/doc/object-geometry';
+import type { RedactMarkParams } from '@/pdf/doc/ops/redact';
 import type { Box } from '@/pdf/doc/types';
 import type { PageOverlayProps } from '../types';
+import { ModeObjectLayer } from '../../objects/ModeObjectLayer';
+import { focusProperties, previewItem } from '../../objects/object-ops';
 import { AREA_TOOL, pageMarks } from './marks';
 import { snapToText } from './snap';
 import { getRedactUi } from './ui-store';
 
 /**
  * Marks on one page: redact-coloured outlines with a hatched preview (only
- * a preview: nothing is removed until Apply), an accessible hit area per
- * mark (Delete removes it) and, with "Mark area" on, a drawing surface.
+ * a preview: nothing is removed until Apply), each mark a placed object
+ * (move, resize, Delete, the object menu) and, with "Mark area" on, a
+ * drawing surface.
  */
 export function MarksOverlay(props: PageOverlayProps) {
   const { doc, selection, tool, page, pageNumber, viewport, width, height } =
     props;
   const [a, b, c, d, e, f] = viewport.transform;
   const transform = { a, b, c, d, e, f };
-  const marks = pageMarks(doc.view, page.id);
+  const [preview, setPreview] = useState<ReadonlyMap<
+    string,
+    ObjectChange
+  > | null>(null);
+  const placed = pageMarks(doc.view, page.id);
+  // Marks follow a drag live; the op lands on release.
+  const marks = placed.map(
+    (m) =>
+      previewItem(m, preview?.get(m.opId)) as typeof m & {
+        params: RedactMarkParams;
+      },
+  );
   const drawing = tool.id === AREA_TOOL;
   const shapes: Shape[] = marks.flatMap((m) =>
     m.params.rects.map(
@@ -70,13 +87,13 @@ export function MarksOverlay(props: PageOverlayProps) {
         transform={transform}
         shapes={shapes}
       />
-      <OverlayLayer
-        width={width}
-        height={height}
-        interactive={drawing}
-        label={`Redaction marks on page ${pageNumber}`}
-      >
-        {drawing ? (
+      {drawing ? (
+        <OverlayLayer
+          width={width}
+          height={height}
+          interactive
+          label={`Redaction marks on page ${pageNumber}`}
+        >
           <DrawRectLayer
             width={width}
             height={height}
@@ -84,31 +101,37 @@ export function MarksOverlay(props: PageOverlayProps) {
             label={`Draw a redaction area on page ${pageNumber}`}
             onDraw={(box) => void addArea(box)}
           />
-        ) : null}
-        {marks.flatMap((m) =>
-          m.params.rects.map((box, i) => (
-            <HitArea
-              key={`${m.opId}-${i}`}
-              transform={transform}
-              box={box}
-              label={`Redaction mark on page ${pageNumber}`}
-              pressed={selection.objects.has(m.opId)}
-              data-testid="redact-mark"
-              onActivate={() => selection.selectObjects([m.opId])}
-              onKeyDown={(e) => {
-                if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-                e.preventDefault();
-                e.stopPropagation();
-                doc.dispatch({
-                  type: 'object.remove',
-                  params: { targetId: m.opId },
-                });
-                selection.clear();
-              }}
-            />
-          )),
-        )}
-      </OverlayLayer>
+        </OverlayLayer>
+      ) : (
+        <ModeObjectLayer
+          doc={doc}
+          selection={selection}
+          pageNumber={pageNumber}
+          viewport={viewport}
+          width={width}
+          height={height}
+          marquee
+          orderable={false}
+          onPreview={setPreview}
+          objects={placed.flatMap((m) => {
+            const box = geometryBounds(m.params);
+            return box
+              ? [
+                  {
+                    id: m.opId,
+                    box,
+                    label: `Redaction mark on page ${pageNumber}`,
+                    testId: 'redact-mark',
+                  },
+                ]
+              : [];
+          })}
+          onProperties={(id) => {
+            selection.selectObjects([id]);
+            focusProperties();
+          }}
+        />
+      )}
     </>
   );
 }

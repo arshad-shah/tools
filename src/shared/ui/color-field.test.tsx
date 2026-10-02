@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ColorField } from './color-field';
 
 function Harness({ spy }: { spy?: (css: string) => void }) {
@@ -49,4 +49,41 @@ describe('ColorField', () => {
       (screen.getByRole('textbox', { name: 'Ink' }) as HTMLInputElement).value,
     ).toBe(css);
   });
+
+  it('on a phone the picker opens in a bottom sheet', () => {
+    stubPhone(true);
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Choose Ink' }));
+    const sheet = screen.getByRole('dialog', { name: 'Ink' });
+    expect(sheet.getAttribute('data-side')).toBe('bottom');
+    expect(sheet.getAttribute('aria-modal')).toBe('true');
+    expect(
+      sheet.contains(screen.getByRole('slider', { name: 'Saturation' })),
+    ).toBe(true);
+  });
+
+  it('on a desktop the picker opens in a scrollable popover', () => {
+    stubPhone(false);
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Choose Ink' }));
+    const pop = screen.getByRole('dialog', { name: 'Ink' });
+    expect(pop.getAttribute('aria-modal')).toBeNull();
+    const body = pop.querySelector('[data-color-field-body]') as HTMLElement;
+    expect(body.className).toContain('overflow-y-auto');
+    expect(body.style.maxHeight).toMatch(/px$/);
+  });
 });
+
+const realMatchMedia = window.matchMedia;
+afterEach(() => {
+  window.matchMedia = realMatchMedia;
+});
+
+function stubPhone(phone: boolean) {
+  window.matchMedia = ((q: string) => ({
+    matches: phone && q.includes('max-width'),
+    media: q,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  })) as unknown as typeof window.matchMedia;
+}

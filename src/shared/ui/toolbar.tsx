@@ -58,8 +58,8 @@ const BUTTON_SIZE = { md: 'sm', lg: 'lg' } as const;
 /** The split button's menu trigger: thin across the bar, full size along it. */
 const SPLIT_TRIGGER = {
   md: {
-    vertical: 'h-4 w-(--control-icon-sm)',
-    horizontal: 'h-(--control-icon-sm) w-4',
+    vertical: 'h-4 w-(--icon-button-sm)',
+    horizontal: 'h-(--icon-button-sm) w-4',
   },
   lg: { vertical: 'h-5 w-11', horizontal: 'h-11 w-5' },
 } as const;

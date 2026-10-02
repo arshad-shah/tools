@@ -103,6 +103,18 @@ export function commitValue(
   f: ViewField,
   value: string,
 ): boolean {
+  return writeValue(ctx, f, value).ok;
+}
+
+/**
+ * Writes a value: whether it applied and the op that now holds the field
+ * (null when nothing new was written).
+ */
+export function writeValue(
+  ctx: ModeProps,
+  f: ViewField,
+  value: string,
+): { ok: boolean; opId: string | null } {
   // Text settings still settling go in with the value.
   const pending = fillSign.get().styling;
   if (pending?.key === f.key) {
@@ -110,12 +122,13 @@ export function commitValue(
     f = { ...f, style: pending.style };
     if (value === f.value) {
       const kept = restyle(ctx, f, pending.style);
-      return kept !== null;
+      return { ok: kept !== null, opId: kept };
     }
   }
   const op = valueOp(f, value);
-  if (!op) return true;
-  return ctx.doc.dispatch(op).length > 0;
+  if (!op) return { ok: true, opId: null };
+  const done = ctx.doc.dispatch(op);
+  return { ok: done.length > 0, opId: done[0]?.id ?? null };
 }
 
 /** Tick fields and radio options toggle on activation. */
@@ -151,19 +164,30 @@ export const retypeField = (ctx: ModeProps, f: ViewField, type: FieldType) =>
 export const resizeField = (ctx: ModeProps, f: ViewField, rect: Box) =>
   correction(ctx, { action: 'resize', fieldIds: [f.key], rect });
 
+/** A character-box field's cell count for a new width, at the same cell pitch. */
+export function combCells(d: DetectedField, rect: Box): Partial<DetectedField> {
+  if (!d.cellCount) return {};
+  const pitch = d.rect.width / d.cellCount;
+  return { cellCount: Math.max(1, Math.round(rect.width / pitch)) };
+}
+
 /** Two equal halves along the long axis (spec §8.5). */
 export function splitField(ctx: ModeProps, f: ViewField): boolean {
   const d = f.detected!;
   const r = f.rect;
   const wide = r.width >= r.height;
-  const parts: DetectedField[] = [0, 1].map((i) => ({
-    ...d,
-    id: `${d.id}:split:${i}`,
-    status: 'field',
-    rect: wide
+  const parts: DetectedField[] = [0, 1].map((i) => {
+    const rect = wide
       ? { ...r, x: r.x + (i * r.width) / 2, width: r.width / 2 }
-      : { ...r, y: r.y + ((1 - i) * r.height) / 2, height: r.height / 2 },
-  }));
+      : { ...r, y: r.y + ((1 - i) * r.height) / 2, height: r.height / 2 };
+    return {
+      ...d,
+      id: `${d.id}:split:${i}`,
+      status: 'field',
+      rect,
+      ...combCells(d, rect),
+    };
+  });
   return correction(ctx, { action: 'split', fieldIds: [f.key], parts });
 }
 
@@ -202,6 +226,7 @@ export function mergeFields(ctx: ModeProps, a: ViewField, b: ViewField) {
     id: `${a.detected!.id}:merged`,
     status: 'field',
     rect,
+    ...combCells(a.detected!, rect),
   };
   return correction(ctx, {
     action: 'merge',

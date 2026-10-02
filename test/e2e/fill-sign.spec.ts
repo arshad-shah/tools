@@ -117,7 +117,10 @@ test('fills a flat form from My details, by hand and with a signature, then expo
   await sign.getByLabel('Your name').fill('Jane Doe');
   await sign.getByRole('button', { name: 'Place at page centre' }).click();
   await expect(sign).toHaveCount(0);
-  const frame = page.getByRole('group', { name: 'Signature on page 3' });
+  // Placed objects are buttons on the page's object layer.
+  const frame = page
+    .getByTestId('objects-page-3')
+    .getByRole('button', { name: 'Signature on page 3' });
   await expect(frame).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
@@ -422,7 +425,7 @@ test('a click-anywhere text box with 8 character boxes exports evenly spaced dig
   await input.fill('20261002');
   await input.press('Enter');
   await expect(
-    page.getByRole('group', { name: 'Text field: Text, filled' }),
+    page.getByRole('button', { name: 'Text field: Text, filled' }),
   ).toBeFocused();
 
   const bytes = await exportPdf(page);
@@ -455,7 +458,7 @@ test('a text box moves with the arrows, is deleted, and comes back with undo', a
   await expect(input).toBeFocused();
   await input.fill('Hello');
   await input.press('Enter');
-  const frame = page.getByRole('group', { name: 'Text field: Text, filled' });
+  const frame = page.getByRole('button', { name: 'Text field: Text, filled' });
   await expect(frame).toBeFocused();
   const before = (await frame.boundingBox())!;
   await page.keyboard.press('ArrowRight');
@@ -507,4 +510,135 @@ test('the text settings of a detected field export as letter spacing', async ({
   } finally {
     await task.destroy();
   }
+});
+
+// The owner's EUTR5 page 7: one box per character. Each run of boxes is
+// one comb field; dd/mm/yyyy boxes are one date field.
+const BOXES = 'test/fixtures/generated/char-box-form.pdf';
+const boxTruth: (TruthField & { cellCount?: number })[] = JSON.parse(
+  readFileSync('test/fixtures/generated/char-box-form.truth.json', 'utf8'),
+);
+const boxRect = (page: number, label: string) =>
+  boxTruth.find((t) => t.page === page && t.label === label)!;
+
+/** Each character shown after its own text matrix (comb text): PDF user space. */
+async function shownChars(bytes: Uint8Array, pageIndex: number) {
+  const task = getDocument({ data: bytes.slice(), verbosity: 0 });
+  try {
+    const page = await (await task.promise).getPage(pageIndex + 1);
+    const { fnArray, argsArray } = await page.getOperatorList();
+    const out: { ch: string; x: number; y: number }[] = [];
+    let at = { x: 0, y: 0 };
+    fnArray.forEach((f, i) => {
+      const args = argsArray[i] as unknown[];
+      if (f === OPS.setTextMatrix) {
+        const m = Array.from(
+          args.length === 1 ? (args[0] as number[]) : (args as number[]),
+        );
+        at = { x: m[4], y: m[5] };
+      } else if (f === OPS.showText) {
+        const glyphs = args[0] as ({ unicode?: string } | number)[];
+        const ch = glyphs
+          .map((g) => (typeof g === 'number' ? '' : (g.unicode ?? '')))
+          .join('');
+        if (ch) out.push({ ch, ...at });
+      }
+    });
+    return out;
+  } finally {
+    await task.destroy();
+  }
+}
+
+test('a character-box form: one comb field per box run, a Yes tick and a date, exported in the boxes', async ({
+  page,
+}) => {
+  await open(page, BOXES);
+  await expect
+    .poll(() => fields(page, 1).count(), { timeout: 10_000 })
+    .toBeGreaterThanOrEqual(5);
+  await progressDone(page);
+  const page2 = rail(page).getByRole('option', { name: /^Page 2 of 2/ });
+  await page2.click();
+  await page2.press('Enter');
+  // A field per run of boxes, not one per box.
+  await expect
+    .poll(() => fields(page, 2).count(), { timeout: 10_000 })
+    .toBe(boxTruth.filter((t) => t.page === 1).length);
+
+  await page
+    .getByRole('button', { name: 'Text field: Surname, empty' })
+    .click();
+  const surname = page.getByRole('textbox', { name: 'Surname' });
+  await surname.fill('DOE');
+  await surname.press('Enter');
+  await expect(
+    page.getByRole('button', { name: 'Text field: Surname, filled' }),
+  ).toBeAttached();
+
+  const slot2 = page.locator('[data-testid="page-slot-2"]');
+  await slot2
+    .getByRole('button', {
+      name: 'Tick field: Yes (give details below), empty',
+    })
+    .click();
+  await expect(
+    slot2.getByRole('button', {
+      name: 'Tick field: Yes (give details below), filled',
+    }),
+  ).toBeAttached();
+
+  await page
+    .getByRole('button', { name: 'Date field: Date of birth, empty' })
+    .click();
+  const dob = page.getByLabel('Date of birth');
+  await dob.fill('1990-07-15');
+  await dob.press('Enter');
+
+  const bytes = await exportPdf(page);
+  const original = new Uint8Array(readFileSync(BOXES));
+  // What the export added: the form's own print (the date's slashes) left out.
+  const printed = await shownChars(original, 1);
+  const shown = (await shownChars(bytes, 1)).filter(
+    (c) =>
+      !printed.some(
+        (p) =>
+          p.ch === c.ch &&
+          Math.abs(p.x - c.x) < 0.01 &&
+          Math.abs(p.y - c.y) < 0.01,
+      ),
+  );
+  /** Characters written into a truth rect, left to right. */
+  const written = (t: TruthField) =>
+    shown
+      .filter(
+        (c) =>
+          c.x >= t.rect.x &&
+          c.x <= t.rect.x + t.rect.width &&
+          c.y >= t.rect.y &&
+          c.y <= t.rect.y + t.rect.height,
+      )
+      .sort((a, b) => a.x - b.x);
+  /** Each character starts inside its own cell. */
+  const inCells = (t: TruthField, cells: number, value: string) => {
+    const chars = written(t);
+    expect(chars.map((c) => c.ch).join('')).toBe(value);
+    const pitch = t.rect.width / cells;
+    chars.forEach((c, i) => {
+      expect(c.x).toBeGreaterThan(t.rect.x + i * pitch);
+      expect(c.x).toBeLessThan(t.rect.x + (i + 1) * pitch);
+    });
+  };
+
+  // Surname: one letter in each of the first three of its 24 boxes.
+  const sn = boxRect(1, 'Surname');
+  expect(sn.cellCount).toBe(24);
+  inCells(sn, 24, 'DOE');
+  // Date of birth: dd/mm/yyyy across its ten cells.
+  inCells(boxRect(1, 'Date of birth'), 10, '15/07/1990');
+
+  // The Yes tick is drawn as strokes on page 2.
+  expect(await strokesIn(bytes, 1)).toBeGreaterThan(
+    await strokesIn(original, 1),
+  );
 });

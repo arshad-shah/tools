@@ -87,18 +87,15 @@ const ratioOnScreen = (r: ScreenRect, fallback: number) =>
 
 export type HandleName = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
-/** Screen-space resize of the start rect by a handle and pointer travel. */
-export function resizeByHandle(
-  t: OverlayTransform,
-  start: PageSpaceBox,
+/** A screen rect resized by a handle and pointer travel (no smaller than `min`). */
+function resizeRect(
+  r: ScreenRect,
   handle: HandleName,
   dx: number,
   dy: number,
   keepAspect: boolean,
-): PageSpaceBox {
-  const r = mapBox(t, start);
-  const scale = Math.abs(t.a * t.d - t.b * t.c) ** 0.5 || 1;
-  const min = MIN_SIDE * scale;
+  min: number,
+): ScreenRect {
   let { left, top, width, height } = r;
   if (handle.includes('e')) width = Math.max(min, r.width + dx);
   if (handle.includes('w')) {
@@ -117,8 +114,87 @@ export function resizeByHandle(
     if (handle.includes('w')) left = r.left + r.width - width;
     if (handle.includes('n')) top = r.top + r.height - height;
   }
-  return unmapRect(t, { left, top, width, height });
+  return { left, top, width, height };
 }
+
+const minOnScreen = (t: OverlayTransform) =>
+  MIN_SIDE * (Math.abs(t.a * t.d - t.b * t.c) ** 0.5 || 1);
+
+/** Screen-space resize of the start rect by a handle and pointer travel. */
+export function resizeByHandle(
+  t: OverlayTransform,
+  start: PageSpaceBox,
+  handle: HandleName,
+  dx: number,
+  dy: number,
+  keepAspect: boolean,
+): PageSpaceBox {
+  return unmapRect(
+    t,
+    resizeRect(mapBox(t, start), handle, dx, dy, keepAspect, minOnScreen(t)),
+  );
+}
+
+/**
+ * resizeByHandle for a box drawn turned `rotate` degrees clockwise about
+ * its centre: pointer travel is read along the box's own axes and the edge
+ * or corner opposite the handle stays put on screen.
+ */
+export function resizeRotated(
+  t: OverlayTransform,
+  start: PageSpaceBox,
+  handle: HandleName,
+  dx: number,
+  dy: number,
+  keepAspect: boolean,
+  rotate: number,
+): PageSpaceBox {
+  if (!rotate) return resizeByHandle(t, start, handle, dx, dy, keepAspect);
+  const rad = (rotate * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const r0 = mapBox(t, start);
+  const r1 = resizeRect(
+    r0,
+    handle,
+    dx * cos + dy * sin,
+    -dx * sin + dy * cos,
+    keepAspect,
+    minOnScreen(t),
+  );
+  // The fixed point: the opposite edge (or the middle on an untouched axis).
+  const anchor = (r: ScreenRect): [number, number] => {
+    const ax = handle.includes('e')
+      ? r.left
+      : handle.includes('w')
+        ? r.left + r.width
+        : r.left + r.width / 2;
+    const ay = handle.includes('s')
+      ? r.top
+      : handle.includes('n')
+        ? r.top + r.height
+        : r.top + r.height / 2;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const lx = ax - cx;
+    const ly = ay - cy;
+    return [cx + lx * cos - ly * sin, cy + lx * sin + ly * cos];
+  };
+  const [x0, y0] = anchor(r0);
+  const [x1, y1] = anchor(r1);
+  return unmapRect(t, {
+    ...r1,
+    left: r1.left + x0 - x1,
+    top: r1.top + y0 - y1,
+  });
+}
+
+/** Whether two screen rectangles overlap. */
+export const boxesIntersect = (a: ScreenRect, b: ScreenRect) =>
+  a.left < b.left + b.width &&
+  b.left < a.left + a.width &&
+  a.top < b.top + b.height &&
+  b.top < a.top + a.height;
 
 /** Pointer travel (screen px) as a page-space move of the start box. */
 export function moveByPointer(

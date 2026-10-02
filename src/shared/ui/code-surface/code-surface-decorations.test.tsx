@@ -25,6 +25,7 @@ describe('CodeSurface decorations', () => {
     expect(tip?.getAttribute('role')).toBe('tooltip');
     expect(tip?.textContent).toBe('Unexpected token');
     fireEvent.pointerEnter(icon.parentElement!);
+    // The bubble is portaled to body.
     expect(document.querySelector('[data-tooltip-bubble]')?.textContent).toBe(
       'Unexpected token',
     );

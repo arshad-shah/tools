@@ -198,3 +198,101 @@ export function alphaBackground(c: Color): string {
 export function pushRecent(list: readonly string[], css: string, max = 12) {
   return [css, ...list.filter((c) => c !== css)].slice(0, max);
 }
+
+/** A format edited channel by channel (hex keeps one text field). */
+export type ChannelFormat = Exclude<PickerFormat, 'hex'>;
+
+export interface Channel {
+  /** Accessible name, for example "Red". */
+  label: string;
+  /** Visible short label, for example "R". */
+  short: string;
+  min: number;
+  max: number;
+  step: number;
+  /** Rounded to `step`. */
+  value: number;
+}
+
+const round = (v: number, step: number) => {
+  const d = step < 1 ? Math.round(-Math.log10(step)) : 0;
+  return Number((Math.round(v / step) * step).toFixed(d));
+};
+
+const ch = (
+  label: string,
+  short: string,
+  max: number,
+  step: number,
+  value: number,
+): Channel => ({ label, short, min: 0, max, step, value: round(value, step) });
+
+/** The channels of `c` in `fmt`; `hue` stands in when `c` has no hue. */
+export function channelsOf(
+  c: Color,
+  fmt: ChannelFormat,
+  hue: number,
+): Channel[] {
+  const r = clamp01(c.r);
+  const g = clamp01(c.g);
+  const b = clamp01(c.b);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const h = colorToHsv(c, hue)[0];
+  switch (fmt) {
+    case 'rgb':
+      return [
+        ch('Red', 'R', 255, 1, r * 255),
+        ch('Green', 'G', 255, 1, g * 255),
+        ch('Blue', 'B', 255, 1, b * 255),
+      ];
+    case 'hsl': {
+      const l = (max + min) / 2;
+      const d = max - min;
+      const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+      return [
+        ch('Hue', 'H', 360, 1, h),
+        ch('Saturation', 'S', 100, 1, s * 100),
+        ch('Lightness', 'L', 100, 1, l * 100),
+      ];
+    }
+    case 'hwb':
+      return [
+        ch('Hue', 'H', 360, 1, h),
+        ch('Whiteness', 'W', 100, 1, min * 100),
+        ch('Blackness', 'B', 100, 1, (1 - max) * 100),
+      ];
+    case 'oklch': {
+      const o = toOklch(c);
+      return [
+        ch('Lightness', 'L', 100, 0.1, o.l * 100),
+        ch('Chroma', 'C', 0.4, 0.001, o.c),
+        ch('Hue', 'H', 360, 0.1, o.c < 1e-4 ? hue : o.h),
+      ];
+    }
+  }
+}
+
+/** The colour the channel values describe, with `alpha` (0 to 1). */
+export function colorFromChannels(
+  fmt: ChannelFormat,
+  [a, b, c]: readonly number[],
+  alpha: number,
+): Color {
+  const css =
+    fmt === 'rgb'
+      ? `rgb(${a} ${b} ${c})`
+      : fmt === 'oklch'
+        ? `oklch(${a}% ${b} ${c})`
+        : `${fmt}(${a} ${b}% ${c}%)`;
+  return { ...parseColor(css), alpha: clamp01(alpha) };
+}
+
+/** The hue rail thumb: the rail's own colour at the state's hue. */
+export function hueThumb(s: PickerState, mode: PickerMode): string {
+  return mode === 'srgb'
+    ? hexOf(hsvToColor(s.h, 1, 1))
+    : hexOf(
+        fromOklch(Math.max(0.6, s.y), Math.max(0.12, s.x * MAX_CHROMA), s.h),
+      );
+}

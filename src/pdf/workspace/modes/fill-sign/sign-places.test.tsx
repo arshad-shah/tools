@@ -161,10 +161,12 @@ describe('placed signatures', () => {
     fillSign.set({ signTargets: { 's0:0': [target({})] } });
     const id = placeOne(model, { x: 80, y: 582, width: 100, height: 25 });
     render(<Harness model={model} selected={[id]} />);
-    const frame = screen.getByTestId('selection-frame');
+    const frame = screen.getByRole('button', { name: 'Signature on page 1' });
     fireEvent.keyDown(frame, { key: ']' });
     fireEvent.keyUp(frame, { key: ']' });
-    expect(placed(model)[0].rotate).toBe(15);
+    // 15 degrees clockwise on screen: 345 counter-clockwise, as the writer
+    // turns it.
+    expect(placed(model)[0].rotate).toBe(345);
     fireEvent.keyDown(frame, { key: 'ArrowRight', shiftKey: true });
     fireEvent.keyUp(frame, { key: 'ArrowRight' });
     expect(placed(model)[0].rect).toMatchObject({ x: 90, y: 582 });
@@ -176,7 +178,7 @@ describe('placed signatures', () => {
     fillSign.set({ signTargets: { 's0:0': [target({})] } });
     const id = placeOne(model);
     render(<Harness model={model} selected={[id]} announce={announce} />);
-    const frame = screen.getByTestId('selection-frame');
+    const frame = screen.getByRole('button', { name: 'Signature on page 1' });
     // Page y 500 to about 585: the overlay's y axis points down.
     fireEvent.pointerDown(frame, { button: 0, clientX: 100, clientY: 100 });
     fireEvent.pointerMove(frame, { clientX: 110, clientY: 18 });

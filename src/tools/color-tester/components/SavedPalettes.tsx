@@ -51,7 +51,7 @@ export function SavedPalettes({
         Saved palettes
       </Heading>
       <Inline gap="2" align="end" wrap>
-        <Stack gap="1" className="min-w-48 flex-1">
+        <Stack gap="1">
           <Label htmlFor={`${id}-name`}>Palette name</Label>
           <Input
             id={`${id}-name`}
@@ -80,7 +80,7 @@ export function SavedPalettes({
       ) : (
         <Stack gap="2" role="list" aria-label="Saved palettes">
           {saved.map((p) => (
-            <Inline key={p.name} gap="2" align="center" role="listitem">
+            <Inline key={p.name} gap="2" align="center" role="listitem" wrap>
               <Text as="span" size="sm" weight="medium" className="min-w-24">
                 {p.name}
               </Text>

@@ -67,11 +67,12 @@ beforeEach(() => {
     'ResizeObserver',
     class {
       disconnect = vi.fn();
-      constructor(private cb: () => void) {
+      unobserve = vi.fn();
+      constructor(private cb: (entries: ResizeObserverEntry[]) => void) {
         observers.push(this);
       }
       observe() {
-        this.cb();
+        this.cb([]);
       }
     },
   );

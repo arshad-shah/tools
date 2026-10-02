@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type React from 'react';
 import { IconMoreHorizontal } from '@/shared/ui/icons';
 import {
@@ -6,11 +6,20 @@ import {
   OverlayLayer,
   PageBox,
   PointerLayer,
+  type LayerObject,
+  type ObjectChange,
   type OverlayTransform,
   type PagePoint,
 } from '@/shared/ui';
 import { detectionKey } from '@/pdf/doc/detection';
+import type {
+  SignInitialPagesParams,
+  SignPlaceParams,
+} from '@/pdf/doc/ops/fill-sign';
 import type { Box } from '@/pdf/doc/types';
+import { ModeObjectLayer } from '../../objects/ModeObjectLayer';
+import { focusObject, focusProperties } from '../../objects/object-ops';
+import { frameRotation } from '../../objects/useObjectSelection';
 import type { ModeProps, PageOverlayProps } from '../types';
 import {
   acceptField,
@@ -29,7 +38,7 @@ import { useCells, useViewFields } from './data';
 import { DraftBox } from './DraftBox';
 import { FieldItem } from './FieldItem';
 import { FieldOptions } from './FieldOptions';
-import type { ViewField } from './fields';
+import { fieldName, type ViewField } from './fields';
 import { FormNotice } from './FormNotice';
 import { NoFieldsHint } from './NoFieldsHint';
 import { OverlayTextBar } from './OverlayTextBar';
@@ -37,6 +46,12 @@ import { PlacedBlocks } from './PlacedBlocks';
 import { PlacedSignatures, SignatureLook } from './PlacedSignatures';
 import { snapNear, useSignTargets } from './sign-places';
 import { SignTargetsOverlay } from './SignTargetsOverlay';
+import {
+  initialsBox,
+  placedBlocks,
+  placedSignatures,
+  signatureName,
+} from './signatures';
 import { markBox, snapToCell } from './snap';
 import { fillSign, useFillSign } from './store';
 import { tabOrder } from './tab-order';
@@ -111,6 +126,72 @@ export function FieldsOverlay(props: PageOverlayProps) {
   const fields = pageOrder(all, page.id).filter(
     (x) => showDetected || x.origin !== 'detected',
   );
+  const [preview, setPreview] = useState<ReadonlyMap<
+    string,
+    ObjectChange
+  > | null>(null);
+  const justPlaced = useFillSign((s) => s.justPlaced);
+  const signatures = placedSignatures(ctx, page.id);
+  useEffect(() => {
+    if (!justPlaced || !signatures.some((o) => o.opId === justPlaced)) return;
+    focusObject(justPlaced);
+    fillSign.set({ justPlaced: null });
+  }, [justPlaced, signatures]);
+
+  // Free boxes and signatures are placed objects (the shared object model);
+  // a box being typed in leaves the layer to its editor.
+  const freeBoxes = fields.filter(
+    (x) => x.origin === 'free' && !!x.fillOpId && x.key !== editing,
+  );
+  const objects: LayerObject[] = [
+    ...freeBoxes.map((x) => ({
+      id: x.fillOpId!,
+      box: x.rect,
+      label: fieldName(x),
+      editable: x.type === 'text' || x.type === 'date',
+      keepAspect: x.type === 'tick',
+    })),
+    ...signatures.map((o) => {
+      const p = o.params as SignPlaceParams;
+      return {
+        id: o.opId,
+        box: p.rect,
+        rotate: frameRotation(p.rotate),
+        label: signatureName(p, pageNumber),
+        rotatable: true,
+        keepAspect: true,
+      };
+    }),
+    ...(() => {
+      const { blocks, initials } = placedBlocks(ctx, page);
+      return [
+        ...blocks.map((o) => ({
+          id: o.opId,
+          box: (o.params as { rect: Box }).rect,
+          label: `Signature block on page ${pageNumber}`,
+        })),
+        ...initials.flatMap((o) => {
+          const box = initialsBox(
+            ctx,
+            page,
+            o.params as SignInitialPagesParams,
+          );
+          return box
+            ? [
+                {
+                  id: o.opId,
+                  box,
+                  label: `Initials on page ${pageNumber}, on several pages`,
+                  movable: false,
+                },
+              ]
+            : [];
+        }),
+      ];
+    })(),
+  ];
+  const freeOf = (id: string) => freeBoxes.find((x) => x.fillOpId === id);
+  const isSignature = (id: string) => signatures.some((o) => o.opId === id);
 
   const activate = (x: ViewField) => {
     fillSign.set({ focusKey: x.key, menuFor: null, barClosed: null });
@@ -231,6 +312,7 @@ export function FieldsOverlay(props: PageOverlayProps) {
           transform={transform}
           quarter={quarter}
           snap={(box) => snapBox(box, cells)}
+          livePreview={x.fillOpId ? preview?.get(x.fillOpId)?.box : undefined}
           onActivate={() => activate(x)}
           onKeyDown={onFieldKey(x)}
           onContextMenu={
@@ -282,14 +364,14 @@ export function FieldsOverlay(props: PageOverlayProps) {
       <PlacedSignatures
         ctx={ctx}
         page={page}
-        pageNumber={pageNumber}
         transform={transform}
+        preview={preview}
       />
       <PlacedBlocks
         ctx={ctx}
         page={page}
-        pageNumber={pageNumber}
         transform={transform}
+        preview={preview}
       />
       <SignTargetsOverlay
         ctx={ctx}
@@ -298,6 +380,53 @@ export function FieldsOverlay(props: PageOverlayProps) {
         width={width}
         height={height}
       />
+      <div
+        className="contents"
+        onKeyDown={(e) => {
+          // Alt+T: from a selected text box to its text settings.
+          if (e.altKey && e.key.toLowerCase() === 't') {
+            e.preventDefault();
+            fillSign.set({
+              barClosed: null,
+              barFocus: fillSign.get().barFocus + 1,
+            });
+          }
+        }}
+      >
+        <ModeObjectLayer
+          doc={doc}
+          selection={ctx.selection}
+          pageNumber={pageNumber}
+          viewport={viewport}
+          width={width}
+          height={height}
+          objects={objects}
+          onPreview={setPreview}
+          adjust={(c, via) => {
+            // A signature dropped by pointer near a place to sign snaps to
+            // it; keyboard nudges stay exact.
+            if (via !== 'pointer' || !isSignature(c.id)) return c;
+            const snap = snapNear(targets, page, c.box);
+            if (!snap.target) return c;
+            doc.announce(`Snapped to ${snap.target.label}`);
+            return { ...c, box: snap.box };
+          }}
+          onEdit={(id) => {
+            const x = freeOf(id);
+            if (x) fillSign.set({ editing: x.key, focusKey: x.key });
+          }}
+          onProperties={(id) => {
+            ctx.selection.selectObjects([id]);
+            const x = freeOf(id);
+            if (x && (x.type === 'text' || x.type === 'date'))
+              fillSign.set({
+                barClosed: null,
+                barFocus: fillSign.get().barFocus + 1,
+              });
+            else focusProperties();
+          }}
+        />
+      </div>
       {placing && hover && ready[placing] ? (
         <PageBox
           transform={transform}

@@ -1,36 +1,12 @@
-import React, {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IconAlertTriangle } from '@/shared/ui/icons';
-import { Sized, Spinner } from '@/shared/ui';
+import { HoverCard, Sized, Spinner } from '@/shared/ui';
 import { usePdfDocument } from '@/pdf/render';
 import { PageThumb } from './PageThumb';
 
 const PREVIEW_WIDTH = 240;
-/** Gap between thumb and popover, and minimum distance to the viewport edge. */
+/** Gap between the thumb and its preview. */
 const GAP = 12;
-const EDGE = 8;
-
-/**
- * Places the popover beside the thumb: on the right when it fits, else on
- * the left, vertically centred on the thumb but clamped inside the viewport.
- * Measured imperatively in a layout effect when the popover opens.
- */
-function placePopover(panel: HTMLElement, anchor: HTMLElement) {
-  const a = anchor.getBoundingClientRect();
-  const pw = panel.offsetWidth;
-  const ph = panel.offsetHeight;
-  const fitsRight = a.right + GAP + pw + EDGE <= window.innerWidth;
-  panel.style.left = `${fitsRight ? a.width + GAP : -(pw + GAP)}px`;
-  const centred = a.top + a.height / 2 - ph / 2;
-  const maxTop = Math.max(EDGE, window.innerHeight - ph - EDGE);
-  const top = Math.min(maxTop, Math.max(EDGE, centred));
-  panel.style.top = `${top - a.top}px`;
-}
 /** A4 portrait, used for the box before the real page size is known. */
 const PLACEHOLDER_RATIO = Math.SQRT2;
 
@@ -54,7 +30,6 @@ export const FileThumb: React.FC<FileThumbProps> = ({
   width = 48,
 }) => {
   const wrapper = useRef<HTMLDivElement>(null);
-  const panel = useRef<HTMLDivElement>(null);
   // Open the worker document only once the row nears the viewport: a long
   // list must not parse every file up front.
   const [near, setNear] = useState(false);
@@ -96,11 +71,6 @@ export const FileThumb: React.FC<FileThumbProps> = ({
 
   const page = doc?.pages[0];
   const showPreview = (hovered || rowFocused) && doc !== null && !!page;
-
-  useLayoutEffect(() => {
-    if (showPreview && panel.current && wrapper.current)
-      placePopover(panel.current, wrapper.current);
-  }, [showPreview]);
 
   let thumb: React.ReactNode;
   if (doc && page) {
@@ -149,13 +119,15 @@ export const FileThumb: React.FC<FileThumbProps> = ({
       onPointerDown={() => setHovered(false)}
     >
       {thumb}
-      {showPreview && (
-        <div
-          ref={panel}
-          aria-hidden
-          aria-label={`Preview of ${name}`}
-          className="pointer-events-none absolute top-0 left-full z-50 hidden rounded-md border border-line-strong bg-surface-2 p-2 shadow-lg sm:block"
-        >
+      <HoverCard
+        open={showPreview}
+        anchor={wrapper}
+        side="right"
+        offset={GAP}
+        aria-label={`Preview of ${name}`}
+        className="hidden sm:block"
+      >
+        {showPreview && (
           <PageThumb
             docId={doc.docId}
             pageIndex={0}
@@ -163,8 +135,8 @@ export const FileThumb: React.FC<FileThumbProps> = ({
             width={PREVIEW_WIDTH}
             label={`${name}, page 1 preview`}
           />
-        </div>
-      )}
+        )}
+      </HoverCard>
     </div>
   );
 };

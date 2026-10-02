@@ -164,6 +164,34 @@
   --animate-caret: caret-blink 1.1s step-end infinite;
 }
 
+/*
+ * Icon button sizes (box and glyph). The base suits an unknown pointer; a
+ * fine pointer (mouse, trackpad) gets one step up, and a coarse pointer
+ * (touch) gets a 44px target. lg is the 44px touch size everywhere.
+ */
+:root {
+  --icon-button-sm: 32px;
+  --icon-button-md: 36px;
+  --icon-glyph-sm: 14px;
+  --icon-glyph-md: 18px;
+}
+@media (pointer: fine) {
+  :root {
+    --icon-button-sm: 36px;
+    --icon-button-md: 40px;
+    --icon-glyph-sm: 16px;
+    --icon-glyph-md: 20px;
+  }
+}
+@media (pointer: coarse) {
+  :root {
+    --icon-button-sm: 44px;
+    --icon-button-md: 44px;
+    --icon-glyph-sm: 16px;
+    --icon-glyph-md: 20px;
+  }
+}
+
 @utility duration-fast {
   transition-duration: 120ms;
 }
@@ -193,6 +221,11 @@
 }
 @utility z-palette {
   z-index: 70;
+}
+/* Anchored surfaces (tooltip, menu, popover, hover card) portal to body and
+   may open from inside any layer, a dialog or the palette included. */
+@utility z-floating {
+  z-index: 80;
 }
 @utility font-mono-meta {
   font-family: var(--font-mono);
@@ -406,29 +439,14 @@
 }
 
 /*
- * 6-H: control sizes in px (the root font is 14px, so Tailwind's size-11 is
- * only 38.5px). Icon buttons reach at least 44px with a coarse pointer
- * (touch and phones); the desktop size step belongs to another Part.
- * --control-touch is the 44px minimum every touch target meets.
+ * 6-H: the root font is 14px, so Tailwind's size-11 is only 38.5px; step 11
+ * is pinned to 44px. --control-touch is the 44px minimum every touch target
+ * meets (icon button sizes are the --icon-button-* tokens above).
  */
 :root {
   --control-touch: 44px;
-  --control-icon-sm: 28px;
-  --control-icon-md: 32px;
-  --control-icon-lg: 44px;
-  --glyph-icon-sm: 14px;
-  --glyph-icon-md: 18px;
-  --glyph-icon-lg: 20px;
 }
 /* Step 11 (h-11, size-11, min-h-11) is the 44px touch size everywhere. */
 @theme {
   --spacing-11: 44px;
-}
-@media (pointer: coarse) {
-  :root {
-    --control-icon-sm: 44px;
-    --control-icon-md: 44px;
-    --glyph-icon-sm: 18px;
-    --glyph-icon-md: 20px;
-  }
 }

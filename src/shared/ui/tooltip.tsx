@@ -1,42 +1,30 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/shared/lib/cn';
-import type { Side } from './position';
 import { ShortcutHint } from './shortcut-hint';
-import { useFloating } from './use-floating';
+import { useAnchoredFloating } from './position';
 
 export interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactNode;
-  /** Preferred side; flips when there is no room. */
-  side?: Side;
+  /** Preferred side; it flips when there is no room. */
+  side?: 'top' | 'bottom';
   /** Hotkey combo shown after the content, e.g. `Mod+Z`. */
   shortcut?: string;
   className?: string;
 }
 
-/** Grace period for the pointer to cross from the trigger to the bubble. */
-const LEAVE_MS = 120;
-const ARROW_PX = 8;
-
-/** The arrow's box: on the edge facing the trigger, at the layout's offset. */
-const arrowClass: Record<Side, string> = {
-  top: 'top-full -translate-x-1/2 -translate-y-1/2',
-  bottom: 'bottom-full -translate-x-1/2 translate-y-1/2',
-  left: 'left-full -translate-x-1/2 -translate-y-1/2',
-  right: 'right-full translate-x-1/2 -translate-y-1/2',
-};
+/** Grace period for the pointer to cross the gap from trigger to bubble. */
+const CLOSE_DELAY = 100;
 
 /**
  * Hover/focus tooltip meeting WCAG 1.4.13: it appears on pointer hover and
  * keyboard focus (the trigger must be focusable), stays while the pointer
  * is over the bubble, and Escape dismisses it without moving focus. The
  * trigger is described by an always-mounted, visually hidden copy, so the
- * description is available whether or not the bubble shows.
- *
- * The bubble is portalled and fixed, so scrolling toolbars and rails never
- * clip it; it flips, shifts inside an 8px viewport margin, wraps to the room
- * left, and its arrow keeps pointing at the trigger.
+ * description is available whether or not the bubble shows. The bubble is
+ * placed by the kit positioner, so it never clips at a viewport edge and
+ * its arrow keeps pointing at the trigger.
  */
 export const Tooltip: React.FC<TooltipProps> = ({
   content,
@@ -46,19 +34,28 @@ export const Tooltip: React.FC<TooltipProps> = ({
   className,
 }) => {
   const id = useId();
-  const wrapper = useRef<HTMLSpanElement>(null);
+  // Elements in state, not refs: the positioner reads them during render.
+  const [wrapper, setWrapper] = useState<HTMLSpanElement | null>(null);
+  const [arrow, setArrow] = useState<HTMLSpanElement | null>(null);
   const [hovered, setHovered] = useState(false);
-  const [overBubble, setOverBubble] = useState(false);
   const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const leave = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const open = (hovered || overBubble || focused) && !dismissed;
-  const { ref, layout, style } = useFloating<HTMLSpanElement>({
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const open = (hovered || focused) && !dismissed;
+  const {
+    setFloating,
+    side: placedSide,
+    style,
+    arrowStyle,
+  } = useAnchoredFloating({
     open,
     anchor: wrapper,
     side,
     align: 'center',
-    offset: ARROW_PX - 2,
+    offset: 8,
+    arrow,
   });
 
   useEffect(() => {
@@ -70,23 +67,19 @@ export const Tooltip: React.FC<TooltipProps> = ({
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  useEffect(
-    () => () => {
-      if (leave.current) clearTimeout(leave.current);
-    },
-    [],
-  );
+  useEffect(() => () => clearTimeout(leaveTimer.current), []);
 
-  const enter = () => {
-    if (leave.current) clearTimeout(leave.current);
-    leave.current = null;
+  // The bubble is portaled but stays in this React subtree, so pointer
+  // enter and leave cover it too; the delay bridges the gap between them.
+  const onPointerEnter = useCallback(() => {
+    clearTimeout(leaveTimer.current);
     setHovered(true);
     setDismissed(false);
-  };
-  const exit = () => {
-    if (leave.current) clearTimeout(leave.current);
-    leave.current = setTimeout(() => setHovered(false), LEAVE_MS);
-  };
+  }, []);
+  const onPointerLeave = useCallback(() => {
+    clearTimeout(leaveTimer.current);
+    leaveTimer.current = setTimeout(() => setHovered(false), CLOSE_DELAY);
+  }, []);
 
   const trigger = React.isValidElement<{ 'aria-describedby'?: string }>(
     children,
@@ -101,14 +94,12 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {shortcut ? <ShortcutHint keys={shortcut} /> : null}
     </>
   );
-  const placed = layout?.side ?? side;
-  const vertical = placed === 'top' || placed === 'bottom';
   return (
     <span
-      ref={wrapper}
+      ref={setWrapper}
       className="relative inline-flex"
-      onPointerEnter={enter}
-      onPointerLeave={exit}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
       onFocus={() => {
         setFocused(true);
         setDismissed(false);
@@ -125,39 +116,22 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {open && typeof document !== 'undefined'
         ? createPortal(
             <span
-              ref={ref}
+              ref={setFloating}
               aria-hidden="true"
               data-tooltip-bubble=""
-              data-side={placed}
-              onPointerEnter={() => {
-                if (leave.current) clearTimeout(leave.current);
-                setOverBubble(true);
-              }}
-              onPointerLeave={() => {
-                setOverBubble(false);
-                exit();
-              }}
+              data-side={placedSide}
               className={cn(
-                'fixed z-popover inline-flex w-max items-center gap-2 rounded-md bg-surface-3 px-2 py-1 text-xs text-fg shadow-e2',
+                'z-floating inline-flex w-max items-center gap-2 rounded-md bg-surface-3 px-2 py-1 text-xs text-fg shadow-e2',
                 className,
               )}
               style={style}
             >
               {body}
               <span
-                aria-hidden="true"
+                ref={setArrow}
                 data-tooltip-arrow=""
-                className={cn(
-                  'absolute size-2 rotate-45 bg-surface-3',
-                  arrowClass[placed],
-                )}
-                style={
-                  layout
-                    ? vertical
-                      ? { left: layout.arrow }
-                      : { top: layout.arrow }
-                    : undefined
-                }
+                className="absolute size-2 rotate-45 bg-surface-3"
+                style={arrowStyle}
               />
             </span>,
             document.body,

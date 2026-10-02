@@ -80,7 +80,7 @@ export function FloatingPalette({
         }}
         className={cn(
           'flex shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-fg-subtle outline-none transition-colors duration-fast hover:bg-surface-2 hover:text-fg focus-visible:ring-2 focus-visible:ring-focus active:cursor-grabbing',
-          size === 'lg' ? 'size-11' : 'h-5 w-(--control-icon-sm)',
+          size === 'lg' ? 'size-11' : 'h-5 w-(--icon-button-sm)',
         )}
       >
         <IconGripVertical size="sm" className="rotate-90" />

@@ -19,6 +19,35 @@ const SQUARE_TOL = 1.5;
 const SQUARE_MIN = 6;
 const SQUARE_MAX = 16;
 const TOUCH = 0.5;
+/** Character boxes (one per letter): at most this wide, 8..40pt high, not wider than 1.6 x high. */
+const BOX_MAX_W = 30;
+const BOX_MIN_W = 6;
+const BOX_MIN_H = 8;
+const BOX_MAX_H = 40;
+const BOX_ASPECT = 1.6;
+const BOX_ALIGN = 1;
+const BOX_SIZE_TOL = 1.5;
+/** A comb needs this many boxes in its run. */
+export const COMB_MIN = 3;
+/** Gaps up to this share of a box keep boxes in one group (spacing, not a separator). */
+const GROUP_GAP = 0.25;
+
+/**
+ * A run of equal character boxes on one row: one comb text field. `count`
+ * is the cells across the run's full span (a one-box gap is a cell too, so
+ * `dd / mm / yyyy` boxes make 10); `groups` the boxes between separators.
+ */
+export interface Comb {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  count: number;
+  groups: number[];
+  boxes: Box[];
+  /** The run as one cell of its table (labels and neighbours use it). */
+  cell: Cell;
+}
 
 /** Spec 8.3 cell size window: w >= 12, 8 <= h <= 220. */
 export function cellSizeOk(c: { w: number; h: number }): boolean {
@@ -35,12 +64,16 @@ type Region = { x: number; y: number; w: number; h: number };
  * candidates. Minimal by construction: a drawn line strictly inside a
  * region would have separated it.
  */
-export function buildCells(lines: Lines): { cells: Cell[]; squares: Box[] } {
+export function buildCells(lines: Lines): {
+  cells: Cell[];
+  squares: Box[];
+  combs: Comb[];
+} {
   const xs = [...new Set(lines.v.map((l) => l.x))].sort((a, b) => a - b);
   const ys = [...new Set(lines.h.map((l) => l.y))].sort((a, b) => a - b);
   const nx = xs.length - 1;
   const ny = ys.length - 1;
-  if (nx < 1 || ny < 1) return { cells: [], squares: [] };
+  if (nx < 1 || ny < 1) return { cells: [], squares: [], combs: [] };
   const vCov = (x: number, y1: number, y2: number) =>
     coverage(lines.v, x, y1, y2);
   const hCov = (y: number, x1: number, x2: number) =>
@@ -97,16 +130,133 @@ export function buildCells(lines: Lines): { cells: Cell[]; squares: Box[] } {
     if (sides.some((s) => s < SIDE_COVERAGE)) continue; // open region
     closed.push({ x: x1, y: y1, w: x2 - x1, h: y2 - y1 });
   }
+  const runs = combRuns(closed);
+  const inRun = new Set(runs.flat());
   const squares = closed
     .filter(
       (b) =>
+        !inRun.has(b) &&
         Math.abs(b.w - b.h) <= SQUARE_TOL &&
         b.w >= SQUARE_MIN &&
         b.w <= SQUARE_MAX,
     )
     .map(({ x, y, w, h }) => ({ x, y, width: w, height: h }));
-  return { cells: assignTables(closed.filter(cellSizeOk)), squares };
+  const { cells, byRegion } = assignTables(
+    closed.filter((r) => cellSizeOk(r) || inRun.has(r)),
+  );
+  const combs = runs.map((run) => toComb(run, byRegion));
+  return {
+    cells: cells.filter((c) => !inRun.has(c.region)).map(stripRegion),
+    squares,
+    combs,
+  };
 }
+
+const boxLike = (r: Region) =>
+  r.w >= BOX_MIN_W &&
+  r.w <= BOX_MAX_W &&
+  r.h >= BOX_MIN_H &&
+  r.h <= BOX_MAX_H &&
+  r.w <= BOX_ASPECT * r.h;
+
+/**
+ * Runs of equal character boxes: same row (bottom and height within 1pt),
+ * widths within 1.5pt, each gap at most one box wide. Linear after the sort.
+ */
+function combRuns(regions: Region[]): Region[][] {
+  const boxes = regions.filter(boxLike).sort((a, b) => a.y - b.y || a.x - b.x);
+  const rows: Region[][] = [];
+  for (const b of boxes) {
+    const row = rows.find(
+      (r) =>
+        Math.abs(r[0].y - b.y) <= BOX_ALIGN &&
+        Math.abs(r[0].h - b.h) <= BOX_ALIGN,
+    );
+    if (row) row.push(b);
+    else rows.push([b]);
+  }
+  const out: Region[][] = [];
+  for (const row of rows) {
+    row.sort((a, b) => a.x - b.x);
+    let run: Region[] = [row[0]];
+    const flush = () => {
+      if (run.length >= COMB_MIN) out.push(run);
+    };
+    for (const b of row.slice(1)) {
+      const prev = run[run.length - 1];
+      const gap = b.x - (prev.x + prev.w);
+      const same = Math.abs(b.w - run[0].w) <= BOX_SIZE_TOL;
+      if (same && gap >= -TOUCH && gap <= run[0].w + TOUCH) run.push(b);
+      else {
+        flush();
+        run = [b];
+      }
+    }
+    flush();
+  }
+  return out;
+}
+
+const median = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b);
+  return s[s.length >> 1];
+};
+
+function toComb(run: Region[], byRegion: Map<Region, Cell>): Comb {
+  const w = median(run.map((b) => b.w));
+  const groups: number[] = [1];
+  const steps: number[] = [];
+  for (let k = 1; k < run.length; k++) {
+    const gap = run[k].x - (run[k - 1].x + run[k - 1].w);
+    if (gap > GROUP_GAP * w) groups.push(1);
+    else {
+      groups[groups.length - 1]++;
+      steps.push(run[k].x - run[k - 1].x);
+    }
+  }
+  const first = run[0];
+  const last = run[run.length - 1];
+  const span = last.x + last.w - first.x;
+  const pitch = steps.length ? median(steps) : w;
+  const a = byRegion.get(first)!;
+  const z = byRegion.get(last)!;
+  const x = first.x;
+  const y = Math.min(...run.map((b) => b.y));
+  const h = Math.max(...run.map((b) => b.y + b.h)) - y;
+  return {
+    x,
+    y,
+    w: span,
+    h,
+    count: Math.max(run.length, Math.round(span / pitch)),
+    groups,
+    boxes: run.map((b) => ({ x: b.x, y: b.y, width: b.w, height: b.h })),
+    cell: {
+      x,
+      y,
+      w: span,
+      h,
+      table: a.table,
+      row: a.row,
+      col: a.col,
+      rowSpan: a.rowSpan,
+      colSpan: z.col + z.colSpan - a.col,
+    },
+  };
+}
+
+type Placed = Cell & { region: Region };
+const stripRegion = (p: Placed): Cell => ({
+  x: p.x,
+  y: p.y,
+  w: p.w,
+  h: p.h,
+  table: p.table,
+  row: p.row,
+  col: p.col,
+  rowSpan: p.rowSpan,
+  colSpan: p.colSpan,
+});
 
 const touches = (a: Region, b: Region): boolean => {
   const xOverlap = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
@@ -123,7 +273,10 @@ const touches = (a: Region, b: Region): boolean => {
  * (top to bottom, then left), and gives each cell its row and column among
  * the table's own boundaries (top row 0; PDF y is up).
  */
-function assignTables(regions: Region[]): Cell[] {
+function assignTables(regions: Region[]): {
+  cells: Placed[];
+  byRegion: Map<Region, Cell>;
+} {
   const n = regions.length;
   const parent = Array.from({ length: n }, (_, k) => k);
   const find = (k: number): number =>
@@ -153,7 +306,8 @@ function assignTables(regions: Region[]): Cell[] {
     if (topA !== topB) return topB - topA;
     return Math.min(...a.map((r) => r.x)) - Math.min(...b.map((r) => r.x));
   });
-  const cells: Cell[] = [];
+  const cells: Placed[] = [];
+  const byRegion = new Map<Region, Cell>();
   tables.forEach((members, table) => {
     const rowsDesc = [
       ...new Set(members.flatMap((r) => [r.y, r.y + r.h])),
@@ -164,15 +318,18 @@ function assignTables(regions: Region[]): Cell[] {
     for (const r of members) {
       const row = rowsDesc.indexOf(r.y + r.h);
       const col = colsAsc.indexOf(r.x);
-      cells.push({
+      const cell: Placed = {
         ...r,
         table,
         row,
         col,
         rowSpan: rowsDesc.indexOf(r.y) - row,
         colSpan: colsAsc.indexOf(r.x + r.w) - col,
-      });
+        region: r,
+      };
+      cells.push(cell);
+      byRegion.set(r, cell);
     }
   });
-  return cells;
+  return { cells, byRegion };
 }

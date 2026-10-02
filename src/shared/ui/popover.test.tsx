@@ -1,8 +1,28 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { useRef, useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Popover } from './popover';
+
+// jsdom lays nothing out: give the viewport the window's size, so the
+// positioner's clipping rect is not empty.
+beforeEach(() => {
+  const html = document.documentElement;
+  Object.defineProperty(html, 'clientWidth', {
+    configurable: true,
+    value: window.innerWidth,
+  });
+  Object.defineProperty(html, 'clientHeight', {
+    configurable: true,
+    value: window.innerHeight,
+  });
+});
 
 function Harness({
   modal = false,
@@ -41,11 +61,13 @@ const openIt = () =>
   fireEvent.click(screen.getByRole('button', { name: 'Anchor' }));
 
 describe('Popover', () => {
-  it('opens as a labelled dialog with focus inside', () => {
+  it('opens as a labelled dialog with focus inside once placed', async () => {
     render(<Harness />);
     openIt();
     const dialog = screen.getByRole('dialog', { name: 'Colour' });
-    expect(dialog.contains(document.activeElement)).toBe(true);
+    await waitFor(() =>
+      expect(dialog.contains(document.activeElement)).toBe(true),
+    );
     expect(document.activeElement?.textContent).toBe('First');
   });
 
@@ -79,7 +101,7 @@ describe('Popover', () => {
     expect(document.activeElement?.textContent).toBe('First');
   });
 
-  it('positions from the anchor rect and exposes the side', () => {
+  it('positions from the anchor rect and exposes the side', async () => {
     render(<Harness />);
     const anchor = screen.getByRole('button', { name: 'Anchor' });
     vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(
@@ -88,8 +110,28 @@ describe('Popover', () => {
     openIt();
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('data-side')).toBe('bottom');
-    expect(dialog.style.left).toBe('40px');
+    await waitFor(() => expect(dialog.style.left).toBe('40px'));
     expect(dialog.style.top).toBe('78px');
+    expect(dialog.style.position).toBe('fixed');
+  });
+
+  it('flips to the top when the anchor sits at the bottom edge', async () => {
+    render(<Harness />);
+    const anchor = screen.getByRole('button', { name: 'Anchor' });
+    vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({
+        x: 40,
+        y: window.innerHeight - 20,
+        width: 80,
+        height: 20,
+      }),
+    );
+    openIt();
+    const dialog = screen.getByRole('dialog');
+    vi.spyOn(dialog, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: 0, width: 200, height: 120 }),
+    );
+    await waitFor(() => expect(dialog.getAttribute('data-side')).toBe('top'));
   });
 });
 

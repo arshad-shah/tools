@@ -6,6 +6,7 @@ import {
   makeFlatFormWord,
   makeNegativeReport,
 } from '../../../test/fixtures/flat-form';
+import { makeCharBoxForm } from '../../../test/fixtures/char-box-form';
 import { detectFromPage, summarise, type DetectPageLike } from './detect-page';
 
 async function detect(bytes: Uint8Array, pageIndex = 0) {
@@ -36,6 +37,20 @@ describe('detectFromPage (render worker)', () => {
     ).toBeGreaterThanOrEqual(10);
     expect(d.cells.length).toBeGreaterThan(10);
     expect(d.fields.some((f) => f.label === 'Surname')).toBe(true);
+  });
+
+  it('offers a run of character boxes as one snap cell', async () => {
+    const { bytes, truth } = await makeCharBoxForm();
+    const d = await detect(bytes, 1);
+    const surname = truth.find((t) => t.label === 'Surname')!.rect;
+    const inRow = d.cells.filter(
+      (c) =>
+        c.y < surname.y + surname.height &&
+        c.y + c.height > surname.y &&
+        c.x >= surname.x - 1,
+    );
+    expect(inRow).toHaveLength(1);
+    expect(inRow[0].width).toBeCloseTo(surname.width, 0);
   });
 
   it('lists the places to sign with the page detection', async () => {

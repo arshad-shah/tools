@@ -1,14 +1,19 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/shared/lib/cn';
-import type { Align, Side } from './position';
-import { isAnchorRef, useFloating, type FloatingAnchor } from './use-floating';
+import {
+  isRefAnchor as isRef,
+  useAnchoredFloating,
+  type Align,
+  type Anchor,
+  type Side,
+} from './position';
 
 export interface PopoverProps {
   open: boolean;
   onOpenChange(open: boolean): void;
   /** An element ref, or a virtual anchor such as a selection rectangle. */
-  anchor: FloatingAnchor;
+  anchor: Anchor;
   side?: Side;
   align?: Align;
   offset?: number;
@@ -31,7 +36,6 @@ export interface PopoverProps {
   children: React.ReactNode;
 }
 
-const PADDING = 8;
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -55,19 +59,24 @@ export function Popover({
   className,
   children,
 }: PopoverProps) {
+  const surface = useRef<HTMLDivElement>(null);
   const focused = useRef(false);
-  const {
-    ref: surface,
-    layout: pos,
-    style,
-  } = useFloating({ open, anchor, side, align, offset, padding: PADDING });
+  const floating = useAnchoredFloating({ open, anchor, side, align, offset });
+  const { setFloating } = floating;
+  const setSurface = useCallback(
+    (el: HTMLDivElement | null) => {
+      surface.current = el;
+      setFloating(el);
+    },
+    [setFloating],
+  );
 
   const close = useCallback(() => {
     onOpenChange(false);
-    if (isAnchorRef(anchor)) anchor.current?.focus();
+    if (isRef(anchor)) anchor.current?.focus();
   }, [anchor, onOpenChange]);
 
-  // Closing forgets the focus marker, so the next open focuses again.
+  // Closing re-arms initial focus for the next open.
   useLayoutEffect(() => {
     if (!open) return;
     return () => {
@@ -77,7 +86,7 @@ export function Popover({
 
   // Initial focus once the surface is positioned (and therefore focusable
   // and visible), once per open.
-  const placed = pos !== null;
+  const placed = floating.placed;
   useEffect(() => {
     if (!open || !placed || focused.current || !autoFocus) return;
     const el = surface.current;
@@ -86,20 +95,20 @@ export function Popover({
     const target =
       initialFocus?.current ?? el.querySelector<HTMLElement>(FOCUSABLE) ?? el;
     target.focus();
-  }, [open, placed, initialFocus, autoFocus, surface]);
+  }, [open, placed, initialFocus, autoFocus]);
 
   useEffect(() => {
     if (!open || !dismissOnOutside) return;
     const onPointerDown = (e: PointerEvent) => {
       const t = e.target as Node;
       if (surface.current?.contains(t)) return;
-      if (isAnchorRef(anchor) && anchor.current?.contains(t)) return;
+      if (isRef(anchor) && anchor.current?.contains(t)) return;
       onOpenChange(false);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () =>
       document.removeEventListener('pointerdown', onPointerDown, true);
-  }, [open, anchor, onOpenChange, dismissOnOutside, surface]);
+  }, [open, anchor, onOpenChange, dismissOnOutside]);
 
   if (!open || typeof document === 'undefined') return null;
 
@@ -136,19 +145,19 @@ export function Popover({
 
   return createPortal(
     <div
-      ref={surface}
+      ref={setSurface}
       role="dialog"
       aria-label={label}
       aria-modal={modal || undefined}
       tabIndex={-1}
-      data-side={pos?.side ?? side}
+      data-side={floating.side}
       onKeyDown={onKeyDown}
       onBlur={onBlur}
       className={cn(
-        'fixed z-popover overflow-auto rounded-xl bg-surface p-3 text-fg shadow-e2 outline-none',
+        'z-floating overflow-auto rounded-xl bg-surface p-3 text-fg shadow-e2 outline-none',
         className,
       )}
-      style={style}
+      style={floating.style}
     >
       {children}
     </div>,
