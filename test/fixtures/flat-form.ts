@@ -10,7 +10,7 @@ import {
 } from 'pdf-lib';
 import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { textItemsFrom } from '../../src/pdf/render/text';
-import { fontAdvancesOf } from '../../src/pdf/render/detect-page';
+import { fontAdvancesOf } from '../../src/pdf/render/font-advances';
 import type { PageTextItems } from '../../src/pdf/render';
 import type { Box } from '../../src/pdf/doc/types';
 import type {
@@ -62,10 +62,7 @@ export async function loadPageInputs(bytes: Uint8Array): Promise<PageInputs[]> {
             ? String(font.name)
             : text.styles[id].fontFamily;
       }
-      const fonts = fontAdvancesOf(
-        page as unknown as Parameters<typeof fontAdvancesOf>[0],
-        Object.keys(text.styles),
-      );
+      const fonts = fontAdvancesOf(page, Object.keys(text.styles));
       out.push({ list, text, fontNames, fonts });
     }
     return out;
