@@ -37,8 +37,16 @@ export interface KillableClient<H extends RpcHandlers> {
  */
 export function createKillableClient<H extends RpcHandlers>(
   connect: () => RpcEndpoint,
-  defaults: { timeoutMs?: number } = {},
+  defaults: {
+    timeoutMs?: number;
+    /**
+     * false: a timeout or abort cancels only that call (the handler sees its
+     * signal) and the worker lives on, for a worker other jobs share.
+     */
+    kill?: boolean;
+  } = {},
 ): KillableClient<H> {
+  const kill = defaults.kill ?? true;
   let client: RpcClient<H> = createRpcClient<H>(connect);
   const replace = (owner: RpcClient<H>) => {
     if (client !== owner) return;
@@ -51,12 +59,17 @@ export function createKillableClient<H extends RpcHandlers>(
       const owner = client;
       const timeoutMs = opts.timeoutMs ?? defaults.timeoutMs;
       let settled = false;
+      // Without killing, a timeout cancels the call through its own signal.
+      const own = kill ? null : new AbortController();
       const onAbort = () => {
-        if (!settled) replace(owner);
+        if (settled) return;
+        if (own) own.abort();
+        else replace(owner);
       };
-      if (!opts.signal?.aborted)
-        opts.signal?.addEventListener('abort', onAbort, { once: true });
-      const work = owner.call(method, args as never, opts) as Promise<
+      if (opts.signal?.aborted) own?.abort();
+      else opts.signal?.addEventListener('abort', onAbort, { once: true });
+      const callOpts = own ? { ...opts, signal: own.signal } : opts;
+      const work = owner.call(method, args as never, callOpts) as Promise<
         Result<H[typeof method]>
       >;
       const timed =
@@ -65,7 +78,8 @@ export function createKillableClient<H extends RpcHandlers>(
           : new Promise<Result<H[typeof method]>>((resolve, reject) => {
               const timer = setTimeout(() => {
                 if (settled) return;
-                replace(owner);
+                if (own) own.abort();
+                else replace(owner);
                 reject(
                   new ToolError(
                     'TIMEOUT',
