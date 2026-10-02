@@ -91,7 +91,7 @@ export function ExtractPanel({ onAdd, cvd }: ExtractPanelProps) {
         </Text>
       )}
       {job.status === 'running' && (
-        <Inline gap="2" align="center">
+        <Inline gap="2" align="center" wrap>
           <Spinner size="sm" />
           <Text size="sm">Extracting colours</Text>
         </Inline>
@@ -103,7 +103,7 @@ export function ExtractPanel({ onAdd, cvd }: ExtractPanelProps) {
       )}
       {entries.length > 0 && (
         <Stack gap="3">
-          <Inline gap="3" role="list" aria-label="Extracted colours">
+          <Inline gap="3" role="list" aria-label="Extracted colours" wrap>
             {entries.map((e, i) => (
               <Inline key={hexes[i]} gap="1" align="center" role="listitem">
                 <Swatch
@@ -117,7 +117,7 @@ export function ExtractPanel({ onAdd, cvd }: ExtractPanelProps) {
               </Inline>
             ))}
           </Inline>
-          <Inline gap="2" align="center">
+          <Inline gap="2" align="center" wrap>
             <Button
               size="sm"
               leftIcon={<IconPlus size="sm" />}

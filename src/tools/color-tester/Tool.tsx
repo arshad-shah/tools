@@ -13,6 +13,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  ColorPicker,
   Grid,
   IconButton,
   Inline,
@@ -20,7 +21,6 @@ import {
   Stack,
 } from '@/shared/ui';
 import { IconX } from '@/shared/ui/icons';
-import { ColorInput } from './components/ColorInput';
 import { ContrastPanel } from './components/ContrastPanel';
 import { CvdToggle } from './components/CvdToggle';
 import { ExtractPanel } from './components/ExtractPanel';
@@ -134,7 +134,7 @@ const ColorTester = () => {
   return (
     <Box data-cvd={cvd} className="min-w-0">
       <Stack gap="4">
-        <Inline gap="3" justify="between" align="center">
+        <Inline gap="3" justify="between" align="center" wrap>
           <CvdToggle value={cvd} onChange={setCvd} />
           <ShareButton share={share} />
         </Inline>
@@ -155,43 +155,53 @@ const ColorTester = () => {
           </Alert>
         )}
 
-        <Grid cols={{ base: 1, lg: 2 }} gap="4">
+        {/* Desktop: the picker beside formats and contrast; phones stack. */}
+        <Grid
+          cols={{ base: 1, lg: 2 }}
+          gap="4"
+          className="items-start [&>*]:min-w-0"
+          data-testid="color-tester-columns"
+        >
           <Card>
             <CardHeader>
               <CardTitle>Colour</CardTitle>
             </CardHeader>
             <CardBody>
-              <ColorInput
+              <ColorPicker
+                label="Base colour"
                 value={colors.base}
                 onChange={(css) => setColors({ base: css })}
+                alpha
+                showEyeDropper
               />
             </CardBody>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Formats</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <FormatList color={base} />
-            </CardBody>
-          </Card>
+          <Stack gap="4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Formats</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <FormatList color={base} />
+              </CardBody>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Contrast</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <ContrastPanel
+                  fg={colors.fg}
+                  bg={colors.bg}
+                  onFg={(css) => setColors({ fg: css })}
+                  onBg={(css) => setColors({ bg: css })}
+                  onSwap={swap}
+                  cvd={cvd}
+                />
+              </CardBody>
+            </Card>
+          </Stack>
         </Grid>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Contrast</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <ContrastPanel
-              fg={colors.fg}
-              bg={colors.bg}
-              onFg={(css) => setColors({ fg: css })}
-              onBg={(css) => setColors({ bg: css })}
-              onSwap={swap}
-              cvd={cvd}
-            />
-          </CardBody>
-        </Card>
 
         <Card>
           <CardHeader>

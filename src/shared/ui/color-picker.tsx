@@ -7,21 +7,26 @@ import { createToolSettings } from '@/shared/lib/tool-settings';
 import { IconPipette } from '@/shared/ui/icons';
 import { IconButton } from './button';
 import { ColorArea } from './color-picker-area';
+import { ChannelFields } from './color-picker-channels';
 import {
   alphaBackground,
   axisText,
+  channelsOf,
+  colorFromChannels,
   colorToState,
   hueBackground,
+  hueThumb,
   pushRecent,
   stateToColor,
   tryParse,
+  type Channel,
   type PickerFormat,
   type PickerMode,
   type PickerState,
 } from './color-picker-model';
+import { ColorRail } from './color-picker-rail';
 import { SwatchRow } from './color-picker-swatches';
 import { ColorRamp } from './color-ramp';
-import { Slider } from './controls';
 import { Input } from './input';
 import { SegmentedControl } from './segmented-control';
 import { colourPaint } from './swatch-paint';
@@ -101,6 +106,9 @@ export function ColorPicker({
   const [state, setState] = useState<PickerState>(() =>
     initialState(value, mode),
   );
+  // The colour the picker opened with (the "old" half of the preview).
+  const [initial] = useState(value);
+  const initialColor = tryParse(initial).color;
   const [format, setFormat] = useState<PickerFormat>(defaultFormat);
   const [lastEmitted, setLastEmitted] = useState<string | null>(null);
   const [seen, setSeen] = useState({ value, mode });
@@ -182,64 +190,119 @@ export function ColorPicker({
     if (p.color) setFromColor(p.color);
   };
 
-  const hueText = { 'aria-valuetext': axisText('h', state, mode) };
-  const alphaText = { 'aria-valuetext': axisText('a', state, mode) };
+  const channels: Channel[] =
+    format === 'hex'
+      ? []
+      : [
+          ...channelsOf(color, format, state.h),
+          ...(alpha
+            ? [
+                {
+                  label: 'Alpha',
+                  short: 'A',
+                  min: 0,
+                  max: 100,
+                  step: 1,
+                  value: Math.round(color.alpha * 100),
+                },
+              ]
+            : []),
+        ];
+  const onChannel = (i: number, v: number) => {
+    if (format === 'hex') return;
+    if (alpha && i === 3) {
+      setFromColor({ ...color, alpha: v / 100 }, false);
+      return;
+    }
+    const values = channels.slice(0, 3).map((c) => c.value);
+    values[i] = v;
+    setFromColor(colorFromChannels(format, values, color.alpha), false);
+  };
+
+  const opaque = formatColor({ ...color, alpha: 1 }, 'hex');
+  const current = formatColor(color, 'rgb');
+  const unchanged =
+    !initialColor ||
+    formatColor(initialColor, 'rgb') ===
+      formatColor(
+        alpha ? color : { ...color, alpha: initialColor.alpha },
+        'rgb',
+      );
 
   return (
     <div
       role="group"
       aria-label={label}
-      className={cn('grid w-full max-w-72 gap-3', className)}
+      className={cn('grid w-full grid-cols-[minmax(0,1fr)] gap-3', className)}
     >
       <ColorArea
         state={state}
         mode={mode}
+        thumb={opaque}
         onChange={(s) => setFromState(s)}
         onCommit={(s) => setFromState(s, true)}
       />
       <div className="flex items-center gap-3">
-        <span
-          aria-hidden
-          className="size-9 shrink-0 rounded-md border border-line-control"
-          style={colourPaint(formatColor(color, 'rgb'))}
-        />
-        <div className="grid min-w-0 flex-1 gap-2">
+        <div
+          role="group"
+          aria-label="New and previous colour"
+          className="flex h-14 w-14 shrink-0 flex-col overflow-hidden rounded-lg border border-line-control"
+        >
           <span
             aria-hidden
-            className="h-2 rounded-full border border-line-control"
-            style={{ backgroundImage: hueBackground(state, mode) }}
+            title="New"
+            className="min-h-0 flex-1"
+            style={colourPaint(current)}
           />
-          <Slider
-            aria-label="Hue"
+          <button
+            type="button"
+            aria-label={`Restore previous colour ${initial}`}
+            title="Previous"
+            disabled={unchanged}
+            onClick={() => pick(initial)}
+            className="min-h-0 flex-1 enabled:cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+            style={colourPaint(
+              initialColor
+                ? formatColor(gamutMap(initialColor), 'rgb')
+                : current,
+            )}
+          />
+        </div>
+        <div className="grid min-w-0 flex-1 gap-3 py-1">
+          <ColorRail
+            label="Hue"
             min={0}
             max={359}
             value={Math.round(state.h)}
-            onValueChange={(h) => setFromState({ ...state, h })}
-            {...hueText}
+            valueText={axisText('h', state, mode)}
+            track={hueBackground(state, mode)}
+            thumb={hueThumb(state, mode)}
+            onChange={(h) => setFromState({ ...state, h })}
+            onCommit={(h) => setFromState({ ...state, h }, true)}
           />
           {alpha && (
-            <>
-              <span
-                aria-hidden
-                className="h-2 rounded-full border border-line-control"
-                style={colourPaint('transparent')}
-              >
-                <span
-                  className="block h-full rounded-full"
-                  style={{ backgroundImage: alphaBackground(color) }}
-                />
-              </span>
-              <Slider
-                aria-label="Alpha"
-                min={0}
-                max={100}
-                value={Math.round(state.a * 100)}
-                onValueChange={(a) => setFromState({ ...state, a: a / 100 })}
-                {...alphaText}
-              />
-            </>
+            <ColorRail
+              label="Alpha"
+              min={0}
+              max={100}
+              value={Math.round(state.a * 100)}
+              valueText={axisText('a', state, mode)}
+              track={alphaBackground(color)}
+              checker
+              thumb={current}
+              onChange={(a) => setFromState({ ...state, a: a / 100 })}
+              onCommit={(a) => setFromState({ ...state, a: a / 100 }, true)}
+            />
           )}
         </div>
+        {Dropper && (
+          <IconButton
+            label="Pick a colour from the screen"
+            icon={IconPipette}
+            variant="secondary"
+            onClick={() => void pickFromScreen()}
+          />
+        )}
       </div>
       <SegmentedControl
         label="Format"
@@ -251,12 +314,13 @@ export function ColorPicker({
           emit(color, f);
         }}
         options={FORMATS}
+        className="grid w-full grid-cols-5"
       />
-      <div className="grid gap-1">
-        <label htmlFor={`${id}-text`} className="text-xs text-fg-muted">
-          Colour value
-        </label>
-        <div className="flex items-center gap-2">
+      {format === 'hex' ? (
+        <div className="grid gap-1">
+          <label htmlFor={`${id}-text`} className="text-xs text-fg-muted">
+            Colour value
+          </label>
           <Input
             id={`${id}-text`}
             value={text}
@@ -267,26 +331,30 @@ export function ColorPicker({
             }}
             invalid={!!error}
             aria-invalid={!!error || undefined}
-            aria-describedby={error ? `${id}-error` : undefined}
+            aria-describedby={error ? `${id}-error` : `${id}-hint`}
+            placeholder="Hex, rgb(), oklch() or a name"
             spellCheck={false}
             autoComplete="off"
             className="font-mono"
           />
-          {Dropper && (
-            <IconButton
-              label="Pick a colour from the screen"
-              icon={IconPipette}
-              variant="ghost"
-              onClick={() => void pickFromScreen()}
-            />
+          {error ? (
+            <p id={`${id}-error`} className="text-xs text-danger">
+              {error}
+            </p>
+          ) : (
+            <p id={`${id}-hint`} className="text-xs text-fg-muted">
+              Takes any CSS colour: hex, rgb(), hsl(), oklch(), lab() or a name.
+            </p>
           )}
         </div>
-        {error && (
-          <p id={`${id}-error`} className="text-xs text-danger">
-            {error}
-          </p>
-        )}
-      </div>
+      ) : (
+        <ChannelFields
+          label={`${FORMATS.find((f) => f.value === format)?.label} channels`}
+          channels={channels}
+          onChannel={onChannel}
+          onCommit={() => remember(color)}
+        />
+      )}
       {palette && palette.length > 0 && (
         <SwatchRow
           label="Palette"

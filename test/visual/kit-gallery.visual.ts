@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page } from '@playwright/test';
 import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
 
 const SECTIONS = [
@@ -94,6 +95,65 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     test('axe', async ({ page }) => expectAxeClean(page));
+  });
+
+  // FIX-COLOUR: the picker inline, in its desktop popover and in the phone
+  // sheet; the floating surfaces sit wholly inside the viewport.
+  test.describe(`kit colour picker ${theme}`, () => {
+    const inViewport = async (page: Page, name: string) => {
+      const box = await page.getByRole('dialog', { name }).boundingBox();
+      const vp = page.viewportSize();
+      expect(box && vp).toBeTruthy();
+      if (!box || !vp) return;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(vp.width);
+      expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1);
+    };
+
+    test('inline', async ({ page }) => {
+      await page.goto('/__kit');
+      await setTheme(page, theme);
+      await stabilise(page);
+      const picker = page.getByRole('group', { name: 'Accent colour' });
+      await picker.scrollIntoViewIfNeeded();
+      await expect(picker).toHaveScreenshot(`picker-inline-${theme}.png`);
+    });
+
+    test('popover', async ({ page }) => {
+      await page.goto('/__kit');
+      await setTheme(page, theme);
+      await stabilise(page);
+      const trigger = page.getByRole('button', { name: 'Choose Link colour' });
+      // Room below the field for the whole picker.
+      await trigger.evaluate((e) => e.scrollIntoView({ block: 'start' }));
+      await trigger.click();
+      const dialog = page.getByRole('dialog', { name: 'Link colour' });
+      await expect(dialog).toBeVisible();
+      await inViewport(page, 'Link colour');
+      await expect(dialog).toHaveScreenshot(`picker-popover-${theme}.png`);
+      // Scoped to the picker: the page-wide gallery axe run covers the rest.
+      const axe = await new AxeBuilder({ page })
+        .include('[role="dialog"]')
+        .analyze();
+      expect(
+        axe.violations
+          .filter((v) => v.impact === 'serious' || v.impact === 'critical')
+          .map((v) => v.id),
+      ).toEqual([]);
+    });
+
+    test('phone sheet', async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.phone);
+      await page.goto('/__kit');
+      await setTheme(page, theme);
+      await stabilise(page);
+      await page.getByRole('button', { name: 'Choose Link colour' }).click();
+      const sheet = page.getByRole('dialog', { name: 'Link colour' });
+      await expect(sheet).toHaveAttribute('data-side', 'bottom');
+      await inViewport(page, 'Link colour');
+      await expect(page).toHaveScreenshot(`picker-sheet-phone-${theme}.png`);
+    });
   });
 
   test.describe(`kit gallery phone ${theme}`, () => {

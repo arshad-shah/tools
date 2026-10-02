@@ -9,10 +9,13 @@ import {
   type PickerMode,
   type PickerState,
 } from './color-picker-model';
+import { colourPaint } from './swatch-paint';
 
 export interface ColorAreaProps {
   state: PickerState;
   mode: PickerMode;
+  /** Any CSS colour filling the thumb (the current colour). */
+  thumb?: string;
   onChange(next: PickerState): void;
   /**
    * The value is settled (pointer released, or a key handled). A key calls
@@ -29,11 +32,13 @@ const BIG = 0.1;
  * The 2D field of the ColorPicker: a slider pair (x and y, each
  * role=slider with aria-valuetext). Both sliders take all four arrows
  * (Left and Right move x, Up and Down move y; Shift moves 10 steps), and a
- * pointer drag sets both. The kit paints it with CSS gradients.
+ * pointer drag sets both. The kit paints it with CSS gradients; it fills
+ * the width at 4:3 (at least 200px tall) with a ring thumb in the colour.
  */
 export function ColorArea({
   state,
   mode,
+  thumb,
   onChange,
   onCommit,
   className,
@@ -114,7 +119,7 @@ export function ColorArea({
         dragging.current = false;
       }}
       className={cn(
-        'group relative h-40 w-full cursor-crosshair touch-none rounded-md border border-line-control',
+        'group relative aspect-[4/3] min-h-[200px] w-full cursor-crosshair touch-none rounded-md border border-line-control',
         'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
         className,
       )}
@@ -125,8 +130,12 @@ export function ColorArea({
     >
       <span
         {...sliderProps('x')}
-        className="absolute size-4 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-surface shadow-e2 outline-none ring-1 ring-fg group-focus-within:ring-2"
-        style={{ left: `${state.x * 100}%`, bottom: `${state.y * 100}%` }}
+        className="absolute size-5 -translate-x-1/2 translate-y-1/2 rounded-full border-[3px] border-surface shadow-e2 outline-none ring-1 ring-fg group-focus-within:ring-2"
+        style={{
+          left: `${state.x * 100}%`,
+          bottom: `${state.y * 100}%`,
+          ...(thumb ? colourPaint(thumb) : null),
+        }}
       />
       <span
         {...sliderProps('y')}
