@@ -144,3 +144,5 @@ export async function imagesToPdf(
   }
   return doc.save({ useObjectStreams: true });
 }
+
+export { toEmbeddable } from './image-embeddable';

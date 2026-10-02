@@ -60,6 +60,8 @@ export interface PageBoxProps {
   box: PageSpaceBox;
   /** Degrees, clockwise about the box centre. */
   rotate?: number;
+  /** 0..1. */
+  opacity?: number;
   className?: string;
   children?: React.ReactNode;
   'data-testid'?: string;
@@ -70,6 +72,7 @@ export function PageBox({
   transform,
   box,
   rotate,
+  opacity,
   className,
   children,
   'data-testid': testId,
@@ -82,6 +85,7 @@ export function PageBox({
       width={r.width}
       height={r.height}
       rotate={rotate}
+      opacity={opacity}
       className={className}
       data-testid={testId}
     >

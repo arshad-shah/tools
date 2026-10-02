@@ -73,12 +73,13 @@ describe('Hub', () => {
     setup('math');
     expect(screen.queryByText(/Drop files/)).toBeNull();
   });
-  it('groups the PDF hub into quick tasks and more tools', () => {
+  it('groups the PDF hub into the workspace and quick tasks', () => {
     setup('pdf');
     expect(screen.getByRole('heading', { name: 'Quick tasks' })).toBeTruthy();
+    // Every interim tool (G19) now lives in a workspace mode.
     expect(
-      screen.getByRole('heading', { name: 'More PDF tools' }),
-    ).toBeTruthy();
+      screen.queryByRole('heading', { name: 'More PDF tools' }),
+    ).toBeNull();
   });
   it('hands two PDFs to merge', async () => {
     setup('pdf');

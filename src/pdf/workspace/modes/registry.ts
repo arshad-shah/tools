@@ -1,3 +1,5 @@
+import { annotateManifest } from './annotate';
+import { editManifest } from './edit';
 import { organizeManifest } from './organize';
 import { redactManifest } from './redact';
 import { convertManifest } from './convert';
@@ -14,6 +16,8 @@ export { MODE_ORDER, shortcutFor } from './registry-order';
  */
 export const MODES: readonly ModeManifest[] = [
   organizeManifest,
+  editManifest,
+  annotateManifest,
   fillSignManifest,
   redactManifest,
   convertManifest,

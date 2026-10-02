@@ -9,8 +9,6 @@ const TOOLS = [
   'pdf-splitter',
   'pdf-to-images',
   'pdf-to-text',
-  'pdf-watermark',
-  'pdf-page-numbers',
   'pdf-compressor',
   'pdf-protect',
 ];

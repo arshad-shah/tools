@@ -13,6 +13,7 @@ import {
   makeXfaPdf,
 } from '../test/fixtures/builders';
 import { largeCsv, windows1252Csv } from '../test/fixtures/csv';
+import { makeAnnotatedPdf } from '../test/fixtures/annotated';
 import {
   makeRedactAdversarial,
   makeType3FontPdf,
@@ -104,6 +105,7 @@ const files: Record<string, Uint8Array> = {
   'exif-text.png': pngWithMetadata(),
   'exif-xmp.webp': webpWithMetadata(),
   'text-3.pdf': await makeTextPdf({ pages: 3, label: 'Alpha' }),
+  'annotated.pdf': await makeAnnotatedPdf(),
   'text-12.pdf': await makeTextPdf({ pages: 12, label: 'Beta' }),
   'text-300.pdf': await makeTextPdf({ pages: 300, label: 'Big' }),
   'large-300.pdf': await makeLargePdf(300),

@@ -299,6 +299,45 @@ export function createPdfRender(
         client.call('formInfo', [docId], { signal }),
       );
     },
+    /** The page's existing annotations (Widgets and Popups left out). */
+    async annotations(docId: string, pageIndex: number, signal?: AbortSignal) {
+      assertAlive(docId);
+      return track(sourceOf.get(docId), () =>
+        client.call('annotations', [docId, pageIndex], { signal }),
+      );
+    },
+    /** A page-space box of the page with annotations left out (preview patches). */
+    renderWithoutAnnotations(
+      docId: string,
+      pageIndex: number,
+      scale: number,
+      extraRotate: number,
+      box: { x: number; y: number; width: number; height: number },
+      signal?: AbortSignal,
+    ) {
+      return withSlot(async () => {
+        assertAlive(docId);
+        return track(sourceOf.get(docId), () =>
+          client.call(
+            'renderWithoutAnnotations',
+            [docId, pageIndex, scale, extraRotate, box],
+            { signal },
+          ),
+        );
+      }, signal);
+    },
+    /** Median colour around a page-space box at 72 dpi ('#rrggbb'). */
+    async sampleColor(
+      docId: string,
+      pageIndex: number,
+      box: { x: number; y: number; width: number; height: number },
+      signal?: AbortSignal,
+    ) {
+      assertAlive(docId);
+      return track(sourceOf.get(docId), () =>
+        client.call('sampleColor', [docId, pageIndex, box], { signal }),
+      );
+    },
     close(docId: string) {
       const gen = openedIn.get(docId);
       openedIn.delete(docId);

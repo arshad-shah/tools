@@ -165,3 +165,5 @@ export async function drawImage(
   page.drawImage(image, { ...box, opacity: o.opacity });
   page.pushOperators(popGraphicsState());
 }
+
+export { arrowHead, drawArrow, drawTextBox } from './draw-extra';
