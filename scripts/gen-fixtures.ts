@@ -32,6 +32,8 @@ import {
   withExifOrientation,
 } from '../test/fixtures/images';
 
+import { syntheticPhoto } from '../src/pdf/sign/photo/test-images';
+
 const out = new URL('../test/fixtures/generated/', import.meta.url);
 await mkdir(out, { recursive: true });
 
@@ -129,6 +131,12 @@ const files: Record<string, Uint8Array> = {
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
   'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),
+  // A phone photo of a signature at 6 degrees on light paper (plan H-15).
+  'signature-photo.png': encodePng(
+    640,
+    320,
+    new Uint8Array(syntheticPhoto(640, 320, 6, 5).buffer),
+  ),
   // Stored 300x100, shown 100x300: a phone photo taken sideways (EXIF 6).
   'signature-exif6.jpg': withExifOrientation(
     encodeJpeg(300, 100, signatureRgba(300, 100), 92),

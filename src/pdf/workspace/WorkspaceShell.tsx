@@ -353,13 +353,7 @@ export function WorkspaceShell({
             onToggleSave={saving.setEnabled}
             restricted={state.restricted}
             onUnlock={onUnlock}
-            badges={
-              <SignedBadge
-                session={session}
-                compact={compact}
-                onOpen={() => changeMode('fill-sign')}
-              />
-            }
+            badges={<SignedBadge session={session} compact={compact} />}
             onSearch={onSearch}
             onExport={() => setExportOpen(true)}
           />
