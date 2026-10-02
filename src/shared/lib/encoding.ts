@@ -254,6 +254,10 @@ export function base58ToBytes(input: string): Uint8Array<ArrayBuffer> {
 
 /** Bits as 0 and 1, `groupBy` bits per space-separated group. */
 export function bytesToBinary(bytes: Uint8Array, groupBy = 8): string {
+  if (!Number.isInteger(groupBy) || groupBy < 1)
+    throw new RangeError(
+      `groupBy must be a whole number of bits, got ${groupBy}`,
+    );
   let bits = '';
   for (const b of bytes) bits += b.toString(2).padStart(8, '0');
   const groups: string[] = [];
