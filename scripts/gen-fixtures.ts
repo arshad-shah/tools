@@ -32,6 +32,11 @@ import {
   noiseImage,
   withExifOrientation,
 } from '../test/fixtures/images';
+import {
+  jpegWithMetadata,
+  pngWithMetadata,
+  webpWithMetadata,
+} from '../test/fixtures/exif';
 
 const out = new URL('../test/fixtures/generated/', import.meta.url);
 await mkdir(out, { recursive: true });
@@ -95,6 +100,9 @@ const flatFormWord = await makeFlatFormWord();
 const files: Record<string, Uint8Array> = {
   'large.json': largeJson(),
   'map-5000.json': map5000Json(),
+  'exif-gps.jpg': jpegWithMetadata(),
+  'exif-text.png': pngWithMetadata(),
+  'exif-xmp.webp': webpWithMetadata(),
   'text-3.pdf': await makeTextPdf({ pages: 3, label: 'Alpha' }),
   'text-12.pdf': await makeTextPdf({ pages: 12, label: 'Beta' }),
   'text-300.pdf': await makeTextPdf({ pages: 300, label: 'Big' }),

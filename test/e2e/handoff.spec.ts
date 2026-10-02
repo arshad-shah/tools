@@ -40,13 +40,21 @@ test('two PDFs on the PDF hub open in Merge with both files', async ({
   await expect(page.getByText('text-12.pdf')).toBeVisible();
 });
 
-test('a PNG on the media hub opens in the image optimizer', async ({
+test('a PNG on the media hub offers the image compressor or the EXIF viewer', async ({
   page,
 }) => {
   await page.goto('/media');
   await page.locator('input[type=file]').setInputFiles(`${GEN}/photo.png`);
+  const chooser = page.getByRole('dialog', {
+    name: 'Choose a tool for these files',
+  });
+  await chooser
+    .getByRole('button', { name: 'Image Compressor & Resizer' })
+    .click();
   await expect(page).toHaveURL(/\/media\/image-optimizer$/);
-  await expect(page.getByRole('img', { name: 'Preview' })).toBeVisible();
+  await expect(
+    page.getByRole('grid', { name: 'Files' }).getByText('photo.png'),
+  ).toBeVisible();
 });
 
 test('a PNG on the text hub is refused inline', async ({ page }) => {

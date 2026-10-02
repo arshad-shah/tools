@@ -111,4 +111,28 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/css/csso',
     note: 'Code Formatter (CSS minifier)',
   },
+  {
+    name: 'upng-js',
+    licence: 'MIT',
+    url: 'https://github.com/photopea/UPNG.js',
+    note: 'PNG (256 colours) quantisation in the Image Compressor',
+  },
+  {
+    name: 'pako',
+    licence: 'MIT AND Zlib',
+    url: 'https://github.com/nodeca/pako',
+    note: 'Deflate for upng-js',
+  },
+  {
+    name: '@jsquash/avif',
+    licence: 'Apache-2.0',
+    url: 'https://github.com/jamsinclair/jSquash',
+    note: 'AVIF encoder (libavif via Squoosh), served from this site',
+  },
+  {
+    name: 'exifr',
+    licence: 'MIT',
+    url: 'https://github.com/MikeKovarik/exifr',
+    note: 'Metadata reading in the EXIF Viewer',
+  },
 ];

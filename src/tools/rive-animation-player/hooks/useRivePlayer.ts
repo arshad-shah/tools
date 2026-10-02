@@ -12,10 +12,12 @@ import {
 } from '../lib/layout';
 import { disposeRive } from '../lib/dispose';
 import { assertRiveFile } from '../lib/rive-file';
+import { configureSameOriginRuntime } from '../lib/runtime';
 import {
   PlayerError,
   PlayerState,
   type AlignFitIndex,
+  type LoadedRive,
   type RiveAnimations,
   type RiveController,
   type RiveInfo,
@@ -27,7 +29,9 @@ import { useDebugLog } from './useDebugLog';
 import { useDropZone } from './useDropZone';
 import { useInputValues } from './useInputValues';
 
-export function useRivePlayer() {
+configureSameOriginRuntime();
+
+export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   // The Rive instance is imperative and never rendered, so it lives in a ref
@@ -59,7 +63,10 @@ export function useRivePlayer() {
   // otherwise see the controller of the render that created the instance.
   const controllerRef = useRef(controller);
   const [alignFitIndex, setAlignFitIndex] =
-    useState<AlignFitIndex>(DEFAULT_ALIGN_FIT);
+    useState<AlignFitIndex>(initialAlignFit);
+  const [loaded, setLoaded] = useState<LoadedRive | null>(null);
+  const markLoaded = (rive: Rive) =>
+    setLoaded((l) => ({ rive, revision: (l?.revision ?? 0) + 1 }));
   const { debugLogs, addDebugLog, clearDebugLogs } = useDebugLog();
   const {
     numberValues,
@@ -131,6 +138,7 @@ export function useRivePlayer() {
     setArtboards([]);
     setSelectedArtboard('');
     setRiveInfo(null);
+    setLoaded(null);
     resetInputValues();
     setStatus(nextStatus);
     // Stop while the instance is still current: its Stop event updates
@@ -216,8 +224,9 @@ export function useRivePlayer() {
     getArtboardList();
     setStatus({ current: PlayerState.Active, error: null });
     addDebugLog(`Switching controller to: ${controllerRef.current.active}`);
-    if (riveRef.current)
-      startController(riveRef.current, animations, stateMachines);
+    const rive = riveRef.current;
+    if (rive) startController(rive, animations, stateMachines);
+    if (rive) markLoaded(rive);
     addDebugLog('Rive animation loaded successfully', 'success');
   };
 
@@ -240,6 +249,7 @@ export function useRivePlayer() {
     }
     setSelectedArtboard(artboard);
     startController(rive, getAnimationList(), getStateMachineList());
+    markLoaded(rive);
   };
 
   /** False when the canvas is gone (the player unmounted during a read). */
@@ -364,6 +374,7 @@ export function useRivePlayer() {
     selectArtboard,
     isPlaying,
     controller,
+    loaded,
     alignFitIndex,
     setAlignFitIndex,
     numberValues,

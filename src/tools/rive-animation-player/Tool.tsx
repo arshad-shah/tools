@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { IconInfo } from '@/shared/ui/icons';
 
 import {
@@ -16,34 +16,115 @@ import {
   Container,
   Grid,
   Inline,
-  Label,
-  Select,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   Text,
 } from '@/shared/ui';
+import { useHandoffFiles } from '@/shared/lib/handoff';
+import { useClipboard } from '@/shared/lib/clipboard';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import { BindingPanel } from './components/BindingPanel';
 import { ControlsTab } from './components/ControlsTab';
 import { DebugLog } from './components/DebugLog';
+import { EmbedSnippet, type SnippetRuntime } from './components/EmbedSnippet';
+import { EventsLog } from './components/EventsLog';
+import { ExportPanel } from './components/ExportPanel';
 import { FileInfo } from './components/FileInfo';
+import { InfoPanel } from './components/InfoPanel';
 import { LayoutControls } from './components/LayoutControls';
 import { PlaybackControls } from './components/PlaybackControls';
+import { Section, SidePanel } from './components/SidePanel';
 import { Stage } from './components/Stage';
+import { StagePanel, type DeviceChoice } from './components/StagePanel';
+import { TextRunsPanel } from './components/TextRunsPanel';
+import { Timeline } from './components/Timeline';
+import { useRiveEvents } from './hooks/useRiveEvents';
 import { useRivePlayer } from './hooks/useRivePlayer';
-import { PlayerError, type BackgroundColor } from './types';
-import { useHandoffFiles } from '@/shared/lib/handoff';
+import { useSpeed } from './hooks/useSpeed';
+import { useTimeline } from './hooks/useTimeline';
+import { bindDefault } from './lib/binding';
+import { embedSnippet } from './lib/snippet';
+import { fromAlignFit, riveSettings, toAlignFit } from './settings';
+import { PlayerError, PlayerState, type AlignFitIndex } from './types';
+
+const TOOL_ID = 'rive-animation-player';
 
 export default function RiveAnimationPlayer() {
-  const player = useRivePlayer();
+  const [settings, updateSettings] = riveSettings.useSettings();
+  const player = useRivePlayer(toAlignFit(settings));
   // A .riv dropped on a hub loads like a picked one (spec §5.3).
   useHandoffFiles((files) => void player.load(files[0]));
-  const { status, filename, fileSize, riveInfo, isPlaying } = player;
+  const { status, filename, fileSize, riveInfo, isPlaying, loaded } = player;
+  const rive = loaded?.rive ?? null;
+  const active = status.current === PlayerState.Active && !!loaded;
 
-  const [background, setBackground] = useState<BackgroundColor>('transparent');
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState('controls');
+  const [device, setDevice] = useState<DeviceChoice>('none');
+  const [snippetRuntime, setSnippetRuntime] = useState<SnippetRuntime>('react');
+
+  const speedSupported = useSpeed(rive, settings.speed);
+  const linear =
+    player.controller.active === 'animations'
+      ? (player.animationList?.active ?? null)
+      : null;
+  const timeline = useTimeline(loaded, linear);
+  const { events, clear: clearEvents } = useRiveEvents(rive);
+  // Bind the default view-model instance on load, as the Rive editor shows it.
+  const viewModel = useMemo(
+    () => (loaded ? bindDefault(loaded.rive) : null),
+    [loaded],
+  );
+
+  const setAlignFit = (idx: AlignFitIndex) => {
+    player.setAlignFitIndex(idx);
+    updateSettings(fromAlignFit(idx));
+  };
+
+  const stateMachine =
+    player.stateMachineList?.active ||
+    player.stateMachineList?.stateMachines[0];
+  const snippet = embedSnippet({
+    runtime: snippetRuntime,
+    src: `/${filename ?? 'animation.riv'}`,
+    artboard: player.selectedArtboard || undefined,
+    stateMachine: stateMachine || undefined,
+  });
+  const { copy } = useClipboard();
+
+  useToolCommands(TOOL_ID, [
+    {
+      id: 'copy',
+      label: 'Copy embed snippet',
+      shortcut: 'Mod+Shift+C',
+      run: () => void copy(snippet),
+      enabled: !!filename,
+    },
+    {
+      id: 'clear',
+      label: 'Clear events log',
+      shortcut: 'Mod+Shift+X',
+      run: clearEvents,
+    },
+    {
+      id: 'prev-frame',
+      label: 'Previous frame',
+      shortcut: ',',
+      run: () => timeline.step(-1),
+      enabled: active && timeline.duration !== null,
+    },
+    {
+      id: 'next-frame',
+      label: 'Next frame',
+      shortcut: '.',
+      run: () => timeline.step(1),
+      enabled: active && timeline.duration !== null,
+    },
+    {
+      id: 'play',
+      label: isPlaying ? 'Pause' : 'Play',
+      run: player.togglePlayback,
+      enabled: active,
+    },
+  ]);
 
   return (
     <Container size="full">
@@ -91,7 +172,9 @@ export default function RiveAnimationPlayer() {
 
                 <Stage
                   status={status}
-                  background={background}
+                  background={settings.background}
+                  checkerboard={settings.checkerboard}
+                  device={device}
                   previewRef={player.previewRef}
                   canvasRef={player.canvasRef}
                   handleDrop={player.handleDrop}
@@ -100,6 +183,16 @@ export default function RiveAnimationPlayer() {
                   handleDragLeave={player.handleDragLeave}
                   load={player.load}
                 />
+
+                {active && (
+                  <Timeline
+                    timeline={timeline}
+                    speed={settings.speed}
+                    onSpeedChange={(speed) => updateSettings({ speed })}
+                    speedSupported={speedSupported}
+                    disabled={!active}
+                  />
+                )}
 
                 {status.error != null && (
                   <Alert status="danger">
@@ -133,73 +226,85 @@ export default function RiveAnimationPlayer() {
           </Card>
         </Box>
 
-        <Card>
-          <CardBody>
-            <Tabs
-              value={settingsTab}
-              onValueChange={setSettingsTab}
-              variant="line"
-            >
-              <TabsList aria-label="Settings">
-                <TabsTrigger value="controls">Controls</TabsTrigger>
-                <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                <TabsTrigger value="layout">Layout</TabsTrigger>
-              </TabsList>
-              <TabsContent value="controls">
-                <Box className="pt-3">
-                  <ControlsTab
-                    controller={player.controller}
-                    setControllerState={player.setControllerState}
-                    artboards={player.artboards}
-                    selectedArtboard={player.selectedArtboard}
-                    setSelectedArtboard={player.selectArtboard}
-                    animationList={player.animationList}
-                    setActiveAnimation={player.setActiveAnimation}
-                    stateMachineList={player.stateMachineList}
-                    setActiveStateMachine={player.setActiveStateMachine}
-                    stateMachineInputs={player.stateMachineInputs}
-                    booleanValues={player.booleanValues}
-                    setBooleanValues={player.setBooleanValues}
-                    numberValues={player.numberValues}
-                    handleInputChange={player.handleInputChange}
-                    status={status}
-                    isPlaying={isPlaying}
-                    togglePlayback={player.togglePlayback}
-                  />
-                </Box>
-              </TabsContent>
-              <TabsContent value="appearance">
-                <Box className="pt-3">
-                  <Stack gap="3">
-                    <Stack gap="2">
-                      <Label>Background colour</Label>
-                      <Select
-                        value={background}
-                        onValueChange={(v) =>
-                          setBackground(v as BackgroundColor)
-                        }
-                        items={[
-                          { value: 'transparent', label: 'Transparent' },
-                          { value: 'white', label: 'White' },
-                          { value: 'black', label: 'Black' },
-                        ]}
-                        aria-label="Background"
-                      />
-                    </Stack>
-                  </Stack>
-                </Box>
-              </TabsContent>
-              <TabsContent value="layout">
-                <Box className="pt-3">
-                  <LayoutControls
-                    alignFitIndex={player.alignFitIndex}
-                    setAlignFitIndex={player.setAlignFitIndex}
-                  />
-                </Box>
-              </TabsContent>
-            </Tabs>
-          </CardBody>
-        </Card>
+        <SidePanel
+          tabs={{
+            controls: [
+              <ControlsTab
+                key="controls"
+                controller={player.controller}
+                setControllerState={player.setControllerState}
+                artboards={player.artboards}
+                selectedArtboard={player.selectedArtboard}
+                setSelectedArtboard={player.selectArtboard}
+                animationList={player.animationList}
+                setActiveAnimation={player.setActiveAnimation}
+                stateMachineList={player.stateMachineList}
+                setActiveStateMachine={player.setActiveStateMachine}
+                stateMachineInputs={player.stateMachineInputs}
+                booleanValues={player.booleanValues}
+                setBooleanValues={player.setBooleanValues}
+                numberValues={player.numberValues}
+                handleInputChange={player.handleInputChange}
+                status={status}
+                isPlaying={isPlaying}
+                togglePlayback={player.togglePlayback}
+              />,
+            ],
+            stage: [
+              <Section key="stage" title="Stage">
+                <StagePanel
+                  background={settings.background}
+                  checkerboard={settings.checkerboard}
+                  device={device}
+                  onChange={updateSettings}
+                  onDeviceChange={setDevice}
+                />
+              </Section>,
+              <Section key="layout" title="Layout">
+                <LayoutControls
+                  alignFitIndex={player.alignFitIndex}
+                  setAlignFitIndex={setAlignFit}
+                />
+              </Section>,
+            ],
+            data: [
+              <Section key="text" title="Text runs">
+                <TextRunsPanel loaded={loaded} />
+              </Section>,
+              <Section key="binding" title="Data binding">
+                <BindingPanel vmi={viewModel} />
+              </Section>,
+            ],
+            info: [
+              <Section key="file" title="File">
+                <InfoPanel
+                  loaded={loaded}
+                  selectedArtboard={player.selectedArtboard}
+                  fps={timeline.fps}
+                />
+              </Section>,
+              <Section key="events" title="Events">
+                <EventsLog events={events} onClear={clearEvents} />
+              </Section>,
+            ],
+            export: [
+              <Section key="export" title="Export">
+                <ExportPanel
+                  canvasRef={player.canvasRef}
+                  filename={filename}
+                  disabled={!active}
+                />
+              </Section>,
+              <Section key="embed" title="Embed snippet">
+                <EmbedSnippet
+                  code={snippet}
+                  runtime={snippetRuntime}
+                  onRuntimeChange={setSnippetRuntime}
+                />
+              </Section>,
+            ],
+          }}
+        />
       </Grid>
     </Container>
   );
