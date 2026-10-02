@@ -51,6 +51,9 @@ export function useLogView(source: LogSource, filter: LogFilter) {
   });
   const current = data.key === key ? data : null;
   const inFlight = useRef(new Set<string>());
+  // Windows still pending for an older log or filter are cancelled (the
+  // worker and its log survive).
+  const pageAbort = useRef({ key: '', ctrl: new AbortController() });
   const range = useRef<[number, number]>([0, 0]);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const live = useRef({ key, filter, source, ready, data });
@@ -63,7 +66,11 @@ export function useLogView(source: LogSource, filter: LogFilter) {
     const flight = `${k}#${page}`;
     if (!ok || inFlight.current.has(flight)) return;
     inFlight.current.add(flight);
-    s.window(page * PAGE, PAGE, f)
+    if (pageAbort.current.key !== k) {
+      pageAbort.current.ctrl.abort();
+      pageAbort.current = { key: k, ctrl: new AbortController() };
+    }
+    s.window(page * PAGE, PAGE, f, pageAbort.current.ctrl.signal)
       .then(({ entries, filteredTotal }) => {
         setData((prev) => {
           if (k !== live.current.key) return prev;
@@ -136,8 +143,9 @@ export function useLogView(source: LogSource, filter: LogFilter) {
   useEffect(() => {
     if (!ready) return;
     let stale = false;
+    const ctrl = new AbortController();
     const { source: s, filter: f } = live.current;
-    s.histogram(HISTOGRAM_BUCKETS, { ...f, range: undefined })
+    s.histogram(HISTOGRAM_BUCKETS, { ...f, range: undefined }, ctrl.signal)
       .then((value) => {
         if (!stale) setHist({ key: histKey, value });
       })
@@ -146,6 +154,7 @@ export function useLogView(source: LogSource, filter: LogFilter) {
       });
     return () => {
       stale = true;
+      ctrl.abort();
     };
   }, [histKey, ready]);
 

@@ -33,18 +33,33 @@ export interface LogSource extends LogSourceState {
   open(source: OpenSource, format: FormatRef): Promise<void>;
   cancel(): void;
   reset(): void;
+  /**
+   * The queries below take an optional signal that cancels only the call
+   * (CANCELLED); the worker and its parsed log live on. A new open or a
+   * reset cancels every query still pending.
+   */
   window(
     start: number,
     count: number,
     filter: LogFilter,
+    signal?: AbortSignal,
   ): Promise<{ entries: LogEntry[]; filteredTotal: number }>;
-  histogram(buckets: number, filter: LogFilter): Promise<Histogram | null>;
+  histogram(
+    buckets: number,
+    filter: LogFilter,
+    signal?: AbortSignal,
+  ): Promise<Histogram | null>;
   nextMatch(
     from: number,
     filter: LogFilter,
     predicate: 'error' | { regex: string },
+    signal?: AbortSignal,
   ): Promise<{ position: number; index: number } | null>;
-  exportAs(filter: LogFilter, fmt: ExportFormat): Promise<string>;
+  exportAs(
+    filter: LogFilter,
+    fmt: ExportFormat,
+    signal?: AbortSignal,
+  ): Promise<string>;
 }
 
 const EMPTY: LogSourceState = {
@@ -61,7 +76,8 @@ const EMPTY: LogSourceState = {
  * holds the parsed log, opened from pasted text or streamed from a File.
  * The UI only ever asks it for windows, a histogram, the next match or an
  * export. Cancelling (or a newer open) kills the worker mid-parse; the
- * next call starts a fresh one.
+ * next call starts a fresh one. Queries on the parsed log are cancel-only
+ * (kill: false), so aborting one never loses the log.
  */
 export function useLogSource({
   connect,
@@ -71,6 +87,7 @@ export function useLogSource({
   // leave the remounted hook without a worker.
   const worker = useRef<KillableClient<TextHandlers> | null>(null);
   const opening = useRef<AbortController | null>(null);
+  const queries = useRef(new Set<AbortController>());
   const seq = useRef(0);
   const client = useCallback(
     () => (worker.current ??= createTextWorker({ connect })),
@@ -80,6 +97,7 @@ export function useLogSource({
   useEffect(
     () => () => {
       opening.current?.abort();
+      for (const q of queries.current) q.abort();
       worker.current?.terminate();
       worker.current = null;
     },
@@ -89,6 +107,7 @@ export function useLogSource({
   const open = useCallback(
     async (source: OpenSource, format: FormatRef) => {
       opening.current?.abort();
+      for (const q of queries.current) q.abort();
       const ctrl = new AbortController();
       opening.current = ctrl;
       const id = ++seq.current;
@@ -142,29 +161,64 @@ export function useLogSource({
   const reset = useCallback(() => {
     seq.current++;
     opening.current?.abort();
+    for (const q of queries.current) q.abort();
     setState((s) => ({ ...EMPTY, version: s.version + 1 }));
   }, []);
 
-  // Never pass a signal here: an abort would kill the worker and the log.
+  // A query on the parsed log: cancel-only (kill: false), so an abort from
+  // the caller, a new open or a reset never kills the worker and the log.
+  const query = useCallback(
+    <T>(
+      run: (opts: { signal: AbortSignal; kill: false }) => Promise<T>,
+      signal?: AbortSignal,
+    ): Promise<T> => {
+      const ctrl = new AbortController();
+      const forward = () => ctrl.abort();
+      if (signal?.aborted) ctrl.abort();
+      else signal?.addEventListener('abort', forward, { once: true });
+      queries.current.add(ctrl);
+      return run({ signal: ctrl.signal, kill: false }).finally(() => {
+        queries.current.delete(ctrl);
+        signal?.removeEventListener('abort', forward);
+      });
+    },
+    [],
+  );
+
   const window = useCallback(
-    (start: number, count: number, filter: LogFilter) =>
-      client().call('log.window', [start, count, filter]),
-    [client],
+    (start: number, count: number, filter: LogFilter, signal?: AbortSignal) =>
+      query(
+        (opts) => client().call('log.window', [start, count, filter], opts),
+        signal,
+      ),
+    [client, query],
   );
   const histogram = useCallback(
-    (buckets: number, filter: LogFilter) =>
-      client().call('log.histogram', [buckets, filter]),
-    [client],
+    (buckets: number, filter: LogFilter, signal?: AbortSignal) =>
+      query(
+        (opts) => client().call('log.histogram', [buckets, filter], opts),
+        signal,
+      ),
+    [client, query],
   );
   const nextMatch = useCallback(
-    (from: number, filter: LogFilter, predicate: 'error' | { regex: string }) =>
-      client().call('log.nextMatch', [from, filter, predicate]),
-    [client],
+    (
+      from: number,
+      filter: LogFilter,
+      predicate: 'error' | { regex: string },
+      signal?: AbortSignal,
+    ) =>
+      query(
+        (opts) =>
+          client().call('log.nextMatch', [from, filter, predicate], opts),
+        signal,
+      ),
+    [client, query],
   );
   const exportAs = useCallback(
-    (filter: LogFilter, fmt: ExportFormat) =>
-      client().call('log.export', [filter, fmt]),
-    [client],
+    (filter: LogFilter, fmt: ExportFormat, signal?: AbortSignal) =>
+      query((opts) => client().call('log.export', [filter, fmt], opts), signal),
+    [client, query],
   );
 
   return useMemo(

@@ -1,15 +1,12 @@
 /**
- * Diagram layout over a worker. Layout is synchronous inside the worker, so
- * an abort cannot interrupt it: a new request (or the caller's signal)
- * cancels the one in flight by terminating the worker, and the next request
- * starts a fresh one (the worker holds no state).
+ * Diagram layout over a killable worker. Layout is synchronous inside the
+ * worker, so an abort cannot interrupt it: a new request (or the caller's
+ * signal) cancels the one in flight by killing the worker, and the next
+ * request starts a fresh one (the worker holds no state).
  */
 import { ToolError } from '@/shared/lib/errors';
-import {
-  createRpcClient,
-  type RpcClient,
-  type RpcEndpoint,
-} from '@/shared/lib/worker-rpc';
+import { createKillableClient } from '@/shared/lib/killable-client';
+import type { RpcEndpoint } from '@/shared/lib/worker-rpc';
 import type { Diagram } from './model';
 import {
   unpackLayout,
@@ -30,35 +27,28 @@ export interface LayoutClient {
 }
 
 export function createLayoutClient(connect: () => RpcEndpoint): LayoutClient {
-  let client: RpcClient<LayoutHandlers> = createRpcClient(connect);
-  let inflight: (() => void) | null = null;
+  const client = createKillableClient<LayoutHandlers>(connect);
+  let inflight: AbortController | null = null;
 
   return {
     async layout(diagram, opts, metrics, signal) {
       // Newer input wins: kill the previous request first.
-      inflight?.();
+      inflight?.abort();
       if (signal?.aborted) throw new ToolError('CANCELLED', 'Cancelled');
-      const owner = client;
-      let settled = false;
-      const kill = () => {
-        if (settled || client !== owner) return;
-        owner.terminate();
-        client = createRpcClient(connect);
-      };
-      inflight = kill;
-      signal?.addEventListener('abort', kill, { once: true });
+      const ctrl = new AbortController();
+      inflight = ctrl;
+      const forward = () => ctrl.abort();
+      signal?.addEventListener('abort', forward, { once: true });
       try {
-        const packed = await owner.call('layoutDiagram', [
-          diagram.nodes,
-          diagram.edges,
-          opts,
-          metrics,
-        ]);
+        const packed = await client.call(
+          'layoutDiagram',
+          [diagram.nodes, diagram.edges, opts, metrics],
+          { signal: ctrl.signal },
+        );
         return unpackLayout(diagram, opts, packed);
       } finally {
-        settled = true;
-        if (inflight === kill) inflight = null;
-        signal?.removeEventListener('abort', kill);
+        if (inflight === ctrl) inflight = null;
+        signal?.removeEventListener('abort', forward);
       }
     },
     terminate() {
