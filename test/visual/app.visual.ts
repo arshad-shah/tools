@@ -61,6 +61,14 @@ for (const theme of ['light', 'dark'] as const) {
         });
     }
 
+    // Flagship data page at phone width (spec 12.5).
+    test('tool csv-viewer phone', async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.phone);
+      await open(page, '/data/csv', theme);
+      await expect(page).toHaveScreenshot(`tool-csv-viewer-phone-${theme}.png`);
+      await expectAxeClean(page);
+    });
+
     for (const tool of TOOLS)
       test(`tool ${tool.id}`, async ({ page }) => {
         await open(page, tool.path, theme);

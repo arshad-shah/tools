@@ -87,4 +87,28 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/zxcvbn-ts/zxcvbn',
     note: 'Password strength checker (loaded on first use)',
   },
+  {
+    name: 'prettier',
+    licence: 'MIT',
+    url: 'https://github.com/prettier/prettier',
+    note: 'Code Formatter (standalone build and plugins)',
+  },
+  {
+    name: 'sql-formatter',
+    licence: 'MIT',
+    url: 'https://github.com/sql-formatter-org/sql-formatter',
+    note: 'Code Formatter (SQL)',
+  },
+  {
+    name: 'terser',
+    licence: 'BSD-2-Clause',
+    url: 'https://github.com/terser/terser',
+    note: 'Code Formatter (JavaScript minifier)',
+  },
+  {
+    name: 'csso',
+    licence: 'MIT',
+    url: 'https://github.com/css/csso',
+    note: 'Code Formatter (CSS minifier)',
+  },
 ];

@@ -1,15 +1,7 @@
-export interface FieldSchema {
-  /** Stable identity for the editor (React keys, expand state); not part of the generated data. */
-  id?: string;
-  name: string;
-  type: string;
-  required?: boolean;
-  min?: number;
-  max?: number;
-  options?: string[];
-  arraySize?: number;
-  fields?: FieldSchema[];
-}
+import type { MockField } from '@/shared/lib/data-formats/mock-schema';
+
+/** One editor field: the shared mock-schema field (spec §8.2). */
+export type FieldSchema = MockField;
 
 export type GeneratedValue =
   | string

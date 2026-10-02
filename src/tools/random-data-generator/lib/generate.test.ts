@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSchema } from './field-types';
+import type { FieldSchema } from '../types';
 import {
   dataToJsonBlob,
   flattenData,
   generateData,
-  generateRandomValue,
   getAllHeaders,
 } from './generate';
+
+const generateRandomValue = (field: FieldSchema) =>
+  generateData([{ ...field, name: 'v' }], 1)[0].v;
 
 describe('generateData', () => {
   it('generates the requested count with every required top-level field', () => {
@@ -48,9 +51,12 @@ describe('generateRandomValue', () => {
       }),
     ).toHaveLength(4);
     expect(generateRandomValue({ name: 'o', type: 'object' })).toEqual({});
-    expect(generateRandomValue({ name: 'z', type: 'bogus' })).toBe(
-      'Unknown type',
-    );
+    expect(() =>
+      generateRandomValue({
+        name: 'z',
+        type: 'bogus',
+      } as unknown as FieldSchema),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_INPUT' }));
   });
 });
 

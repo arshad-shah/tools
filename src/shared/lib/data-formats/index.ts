@@ -36,10 +36,19 @@ export { toMarkdownTable } from './markdown-table';
 export { toNdjson } from './ndjson';
 export { columnName, toXlsx } from './xlsx-write';
 export {
-  MOCK_SCHEMA_MIME,
+  CARD_NETWORKS,
+  IBAN_COUNTRIES,
   inferMockSchema,
+  MOCK_FIELD_TYPES,
+  MOCK_LOCALES,
+  MOCK_SCHEMA_MIME,
   parseMockSchema,
+  type CardNetwork,
+  type FieldOptions,
+  type IbanCountry,
   type MockField,
   type MockFieldType,
+  type MockLocale,
   type MockSchema,
+  type MockTable,
 } from './mock-schema';

@@ -14,19 +14,19 @@ import {
   Button,
   Card,
   CardBody,
-  Checkbox,
   Grid,
   IconButton,
   Inline,
   Input,
   Label,
-  NumberInput,
   Select,
   Stack,
   Text,
 } from '@/shared/ui';
 import { fieldDescriptions, fieldTypes } from '../lib/field-types';
+import type { MockTable } from '@/shared/lib/data-formats/mock-schema';
 import type { FieldSchema } from '../types';
+import { FieldOptions } from './FieldOptions';
 
 interface FieldEditorProps {
   field: FieldSchema;
@@ -41,6 +41,8 @@ interface FieldEditorProps {
   onMoveField: (path: string, direction: 'up' | 'down') => void;
   onToggleExpanded: (path: string) => void;
   onAddField: (parentPath?: string) => void;
+  /** Every table of the schema (reference fields pick from them). */
+  tables: readonly MockTable[];
 }
 
 export const FieldEditor: React.FC<FieldEditorProps> = ({
@@ -56,6 +58,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
   onMoveField,
   onToggleExpanded,
   onAddField,
+  tables,
 }) => {
   const isObject = field.type === 'object';
   const isArray = field.type === 'array';
@@ -134,7 +137,9 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
               <Label>Data type</Label>
               <Select
                 value={field.type}
-                onValueChange={(v) => onUpdateField(fullPath, { type: v })}
+                onValueChange={(v) =>
+                  onUpdateField(fullPath, { type: v as FieldSchema['type'] })
+                }
                 items={fieldTypes.map((t) => ({
                   value: t.value,
                   label: t.label,
@@ -142,58 +147,12 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                 aria-label="Data type"
               />
             </Stack>
-
-            {field.type === 'number' && (
-              <Inline gap="2">
-                <Stack gap="2" className="flex-1">
-                  <Label>Min</Label>
-                  <NumberInput
-                    value={field.min ?? 0}
-                    onValueChange={(v) =>
-                      onUpdateField(fullPath, { min: v ?? 0 })
-                    }
-                    aria-label="Minimum value"
-                  />
-                </Stack>
-                <Stack gap="2" className="flex-1">
-                  <Label>Max</Label>
-                  <NumberInput
-                    value={field.max ?? 100}
-                    onValueChange={(v) =>
-                      onUpdateField(fullPath, { max: v ?? 100 })
-                    }
-                    aria-label="Maximum value"
-                  />
-                </Stack>
-              </Inline>
-            )}
-
-            {field.type === 'array' && (
-              <Stack gap="2">
-                <Label>Array size</Label>
-                <NumberInput
-                  value={field.arraySize ?? 3}
-                  onValueChange={(v) =>
-                    onUpdateField(fullPath, { arraySize: v ?? 3 })
-                  }
-                  min={1}
-                  max={20}
-                  aria-label="Array size"
-                />
-              </Stack>
-            )}
-
-            <Inline align="center" gap="2">
-              <Checkbox
-                checked={field.required || false}
-                onCheckedChange={(c) =>
-                  onUpdateField(fullPath, { required: Boolean(c) })
-                }
-                aria-label="Required field"
-              />
-              <Label>Required field</Label>
-            </Inline>
           </Grid>
+          <FieldOptions
+            field={field}
+            tables={tables}
+            onChange={(patch) => onUpdateField(fullPath, patch)}
+          />
 
           <Text size="xs" tone="subtle" className="italic">
             {fieldDescriptions[field.type] ||
@@ -216,6 +175,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                   onMoveField={onMoveField}
                   onToggleExpanded={onToggleExpanded}
                   onAddField={onAddField}
+                  tables={tables}
                 />
               ))}
               <Button
