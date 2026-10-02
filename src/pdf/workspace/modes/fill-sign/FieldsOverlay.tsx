@@ -27,6 +27,7 @@ import {
   commitValue,
   dismissField,
   fitAspect,
+  pageBounds,
   placeFree,
   placeSignature,
   quarterTurned,
@@ -52,7 +53,7 @@ import {
   placedSignatures,
   signatureName,
 } from './signatures';
-import { markBox, snapToCell } from './snap';
+import { clampToPage, markBox, snapToCell } from './snap';
 import { fillSign, useFillSign } from './store';
 import { tabOrder } from './tab-order';
 import { lastUsed } from './text-style';
@@ -138,11 +139,10 @@ export function FieldsOverlay(props: PageOverlayProps) {
     fillSign.set({ justPlaced: null });
   }, [justPlaced, signatures]);
 
-  // Free boxes and signatures are placed objects (the shared object model);
-  // a box being typed in leaves the layer to its editor.
-  const freeBoxes = fields.filter(
-    (x) => x.origin === 'free' && !!x.fillOpId && x.key !== editing,
-  );
+  // Free boxes and signatures are placed objects (the shared object model).
+  // A box being typed in keeps its selection frame and handles; its editor
+  // sits above the layer and takes the caret.
+  const freeBoxes = fields.filter((x) => x.origin === 'free' && !!x.fillOpId);
   const objects: LayerObject[] = [
     ...freeBoxes.map((x) => ({
       id: x.fillOpId!,
@@ -266,7 +266,7 @@ export function FieldsOverlay(props: PageOverlayProps) {
       fillSign.set({
         draft: {
           pageId: page.id,
-          rect: snapToCell(p, cells).box,
+          rect: clampToPage(snapToCell(p, cells).box, pageBounds(ctx, page)),
           kind: tool.id,
           style: { ...lastUsed(doc.state.id), comb: 0 },
         },

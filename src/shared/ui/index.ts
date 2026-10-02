@@ -57,6 +57,7 @@ export {
   type Align,
   type Rect,
   type Anchor,
+  type VirtualAnchor,
 } from './position';
 export { HoverCard, type HoverCardProps } from './hover-card';
 export {
@@ -194,7 +195,27 @@ export {
 export { DrawRectLayer, type DrawRectLayerProps } from './draw-rect-layer';
 export { Highlight, type HighlightProps } from './highlight';
 export { FieldBox, type FieldBoxProps, type FieldBoxState } from './field-box';
-export { PageText, type PageTextProps } from './page-text';
+export {
+  PageText,
+  PageTextInput,
+  type PageTextProps,
+  type PageTextInputProps,
+} from './page-text';
+export { Stepper, type StepperProps } from './stepper';
+export { useDockedBarOpen } from './docked-bar-state';
+export {
+  AnchoredToolbar,
+  DockedToolbar,
+  ToolbarDivider,
+  type AnchoredToolbarProps,
+  type DockedToolbarProps,
+} from './context-bar';
+export { revealRect, CONTEXT_GAP } from './reveal';
+export {
+  useVisibleViewport,
+  readVisibleViewport,
+  type VisibleViewport,
+} from './use-visual-viewport';
 export {
   PointerLayer,
   type PointerLayerProps,

@@ -39,8 +39,10 @@ const FRAME: Record<FieldBoxState, string> = {
   suggested:
     'border-[1.5px] border-dotted border-info bg-info-soft forced-colors:border-[CanvasText]',
   filled: 'border-[1.5px] border-accent-fg forced-colors:border-[CanvasText]',
+  // The box being typed in: a thin accent outline over the page (no fill,
+  // the page shows through), above any object layer so it takes the caret.
   focused:
-    'border-2 border-focus ring-2 ring-focus forced-colors:border-[Highlight]',
+    'z-10 bg-transparent outline outline-[1.5px] outline-accent-indicator forced-colors:outline-[Highlight]',
   error:
     'border-[1.5px] border-danger bg-danger-soft forced-colors:border-[CanvasText]',
 };

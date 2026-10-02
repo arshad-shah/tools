@@ -50,3 +50,24 @@ export const markBox = (point: { x: number; y: number }): Box => ({
   width: MARK_SIZE,
   height: MARK_SIZE,
 });
+
+/**
+ * A new text box kept on its page: it is narrowed to the room right of
+ * where it starts, and only moved left (or down) when even `minWidth`
+ * would not fit.
+ */
+export function clampToPage(box: Box, page: Box, minWidth = 40): Box {
+  const right = page.x + page.width;
+  const top = page.y + page.height;
+  const width = Math.min(
+    box.width,
+    Math.max(Math.min(minWidth, page.width), right - box.x),
+  );
+  const height = Math.min(box.height, page.height);
+  return {
+    x: Math.max(page.x, Math.min(box.x, right - width)),
+    y: Math.max(page.y, Math.min(box.y, top - height)),
+    width,
+    height,
+  };
+}

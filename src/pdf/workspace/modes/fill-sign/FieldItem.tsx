@@ -14,6 +14,7 @@ import { FieldValue } from './FieldValue';
 import { fieldName, type ViewField } from './fields';
 import { FocusOnMount } from './FocusOnMount';
 import { fillSign, useFillSign } from './store';
+import { caretMetrics, effectiveStyle } from './text-style';
 
 const stateOf = (f: ViewField, editing: boolean): FieldBoxState =>
   editing
@@ -66,6 +67,7 @@ export function FieldItem({
   const styling = useFillSign((s) =>
     s.styling?.key === x.key ? s.styling.style : null,
   );
+  const finish = useFillSign((s) => s.finish);
   const [preview, setPreview] = useState<Box | null>(null);
   const name = fieldName(x);
   const value = (
@@ -118,6 +120,25 @@ export function FieldItem({
         {editing ? (
           <FieldEditor
             field={x}
+            inline={
+              x.type === 'text'
+                ? caretMetrics(
+                    typing ?? x.value,
+                    x.rect,
+                    styling ?? effectiveStyle(x, quarter),
+                    Math.hypot(transform.a, transform.b) || 1,
+                    quarter,
+                  )
+                : undefined
+            }
+            escapeKeeps={x.origin === 'free'}
+            finishNonce={finish}
+            onFinish={(v) => {
+              // Done: keep the text, close the editor and the bar.
+              fillSign.set({ typing: null, editing: null });
+              writeValue(ctx, x, v);
+              ctx.selection.clear();
+            }}
             onDraft={(v) => fillSign.set({ typing: { key: x.key, value: v } })}
             onSettings={() =>
               fillSign.set({ barFocus: fillSign.get().barFocus + 1 })

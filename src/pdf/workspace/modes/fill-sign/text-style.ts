@@ -22,6 +22,14 @@ export const DEFAULT_TEXT: TextSettings = {
   color: '#000000',
   spacing: 0,
 };
+/** Quick text colours (the full picker is under More). */
+export const TEXT_COLORS: readonly { value: string; label: string }[] = [
+  { value: '#000000', label: 'Black' },
+  { value: '#1d4ed8', label: 'Blue' },
+  { value: '#1e3a8a', label: 'Dark blue' },
+  { value: '#b91c1c', label: 'Red' },
+  { value: '#15803d', label: 'Green' },
+];
 export const TEXT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 24, 36];
 export const MIN_SIZE = 6;
 export const MAX_SIZE = 72;
@@ -103,5 +111,24 @@ export function effectiveStyle(
     color: f.style?.color ?? DEFAULT_TEXT.color,
     spacing: f.style?.spacing ?? 0,
     comb: f.style?.comb ?? 0,
+  };
+}
+
+/**
+ * The inline editor's caret metrics on screen (CSS px): the size the
+ * overlay draws the text at, and its letter spacing (character boxes
+ * place each character themselves, so they get none).
+ */
+export function caretMetrics(
+  text: string,
+  rect: { width: number; height: number },
+  style: FieldStyle,
+  scale: number,
+  quarter = false,
+): { fontPx: number; spacingPx: number } {
+  const layout = overlayLayout(text || 'M', rect, style, quarter);
+  return {
+    fontPx: layout.size * scale,
+    spacingPx: style.comb ? 0 : style.spacing * scale,
   };
 }

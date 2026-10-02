@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
+  AnchoredToolbar,
   Button,
+  DockedToolbar,
+  IconButton,
+  Stepper,
+  ToolbarDivider,
   FloatingDock,
   FloatingPalette,
   ModeTabs,
@@ -9,6 +14,7 @@ import {
   type ToolGroup,
 } from '@/shared/ui';
 import {
+  IconCheck,
   IconFileDown,
   IconGauge,
   IconHighlighter,
@@ -42,6 +48,31 @@ export function WorkspaceBarsSection() {
   const [mode, setMode] = useState('organize');
   const [side, setSide] = useState<'left' | 'right'>('left');
   const [highlight, setHighlight] = useState(true);
+  const [size, setSize] = useState(10.5);
+  const [bar, setBar] = useState<'anchored' | 'docked' | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const contextControls = (
+    <>
+      <Stepper
+        value={size}
+        min={6}
+        max={72}
+        step={0.5}
+        label="Text size in points"
+        decrementLabel="Smaller text"
+        incrementLabel="Larger text"
+        onValueChange={setSize}
+      />
+      <ToolbarDivider />
+      <IconButton
+        label="Done"
+        icon={IconCheck}
+        variant="ghost"
+        size="sm"
+        onClick={() => setBar(null)}
+      />
+    </>
+  );
   const groups: ToolGroup[] = [
     {
       id: 'history',
@@ -138,6 +169,45 @@ export function WorkspaceBarsSection() {
             onChange={setMode}
           />
         </div>
+      </Row>
+      <Row label="Stepper, AnchoredToolbar (above its box), DockedToolbar (above the keyboard)">
+        <Stepper
+          value={size}
+          min={6}
+          max={72}
+          step={0.5}
+          label="Gallery size"
+          onValueChange={setSize}
+        />
+        <div
+          ref={box}
+          className="flex h-8 w-40 items-center rounded-sm px-1 text-sm outline outline-1 outline-accent-indicator"
+        >
+          Text box
+        </div>
+        <Button size="sm" onClick={() => setBar('anchored')}>
+          Anchored bar
+        </Button>
+        <Button size="sm" onClick={() => setBar('docked')}>
+          Docked bar
+        </Button>
+        {bar === 'anchored' ? (
+          <AnchoredToolbar
+            anchor={box}
+            label="Gallery text settings"
+            onEscape={() => setBar(null)}
+          >
+            {contextControls}
+          </AnchoredToolbar>
+        ) : null}
+        {bar === 'docked' ? (
+          <DockedToolbar
+            label="Gallery text settings"
+            onEscape={() => setBar(null)}
+          >
+            {contextControls}
+          </DockedToolbar>
+        ) : null}
       </Row>
     </Section>
   );

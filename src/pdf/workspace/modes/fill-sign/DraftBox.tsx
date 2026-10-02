@@ -6,7 +6,7 @@ import { FieldEditor } from './FieldEditor';
 import { FieldValue } from './FieldValue';
 import { fieldName, type ViewField } from './fields';
 import { fillSign, useFillSign } from './store';
-import { remember } from './text-style';
+import { caretMetrics, remember } from './text-style';
 
 /** The key of the click-anywhere box being typed (not in the document yet). */
 export const DRAFT_KEY = 'draft';
@@ -31,6 +31,7 @@ export function DraftBox({
   const typing = useFillSign((s) =>
     s.typing?.key === DRAFT_KEY ? s.typing.value : '',
   );
+  const finish = useFillSign((s) => s.finish);
   if (!draft) return null;
   const field: ViewField = {
     key: DRAFT_KEY,
@@ -81,6 +82,24 @@ export function DraftBox({
       >
         <FieldEditor
           field={field}
+          inline={
+            draft.kind === 'text'
+              ? caretMetrics(
+                  typing,
+                  draft.rect,
+                  draft.style,
+                  Math.hypot(transform.a, transform.b) || 1,
+                  quarter,
+                )
+              : undefined
+          }
+          escapeKeeps
+          finishNonce={finish}
+          onFinish={(v) => {
+            // Done: keep the text, close the editor and the bar.
+            commit(v);
+            ctx.selection.clear();
+          }}
           onDraft={(v) =>
             fillSign.set({ typing: { key: DRAFT_KEY, value: v } })
           }

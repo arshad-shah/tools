@@ -1,5 +1,11 @@
 import { useContext, type ReactNode } from 'react';
-import { FloatingPalette, Toolbar, type ToolGroup } from '@/shared/ui';
+import { cn } from '@/shared/lib/cn';
+import {
+  FloatingPalette,
+  Toolbar,
+  useDockedBarOpen,
+  type ToolGroup,
+} from '@/shared/ui';
 import { ModeToolbarContext } from './mode-toolbar-context';
 
 /**
@@ -16,6 +22,8 @@ export function ModeToolbar({
   trailing?: ReactNode;
 }) {
   const s = useContext(ModeToolbarContext);
+  // A contextual bar docked at the bottom (phone) takes this place.
+  const away = useDockedBarOpen();
   if (s.layout === 'focus')
     return (
       <FloatingPalette
@@ -28,7 +36,13 @@ export function ModeToolbar({
     );
   if (s.layout === 'phone')
     return (
-      <div className="fixed inset-x-2 bottom-20 z-toolbar flex justify-center">
+      <div
+        inert={away}
+        className={cn(
+          'fixed inset-x-2 bottom-20 z-toolbar flex justify-center',
+          away && 'invisible',
+        )}
+      >
         <div className="max-w-full overflow-x-auto rounded-xl bg-surface p-1 shadow-e3">
           <Toolbar
             label={s.label}

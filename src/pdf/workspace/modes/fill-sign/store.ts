@@ -71,6 +71,8 @@ export interface FillSignState {
   barClosed: string | null;
   /** Bumped by Alt+T: the text settings bar takes focus. */
   barFocus: number;
+  /** Bumped by the bar's Done: the open editor keeps its text and closes. */
+  finish: number;
   /** Previews of signatures made this session, by their asset id. */
   previews: Record<string, SignaturePreview>;
   dialog: FillSignDialog;
@@ -119,6 +121,7 @@ const initial: FillSignState = {
   styling: null,
   barClosed: null,
   barFocus: 0,
+  finish: 0,
   previews: {},
   dialog: null,
   autofillRows: [],
