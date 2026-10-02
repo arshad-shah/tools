@@ -102,6 +102,8 @@ async function warmUp(baseURL: string) {
 
 export default async function globalSetup(config: FullConfig) {
   execSync('pnpm fixtures', { stdio: 'inherit' });
+  // OCR engine and language data, same-origin (a reused dev server may predate them).
+  execSync('node scripts/copy-ocr-assets.mjs', { stdio: 'inherit' });
   const baseURL =
     config.projects[0]?.use.baseURL ?? config.webServer?.url ?? undefined;
   if (!baseURL)
