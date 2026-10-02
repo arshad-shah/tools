@@ -38,7 +38,7 @@ describe('FontPreview', () => {
     const sample = screen.getByRole('img', { name: 'Kristi' })
       .firstElementChild as HTMLElement;
     expect(sample.textContent).toBe('Your name');
-    expect(sample.className).toContain('text-fg-subtle');
+    expect(sample.className).toContain('text-fg-muted');
     expect(sample.style.color).toBe('');
   });
 

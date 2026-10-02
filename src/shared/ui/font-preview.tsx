@@ -56,7 +56,7 @@ export function FontPreview({
       <span
         className={cn(
           'inline-block whitespace-nowrap',
-          !shown && 'text-fg-subtle',
+          !shown && 'text-fg-muted',
         )}
         style={{
           fontFamily: `"${family}"`,
