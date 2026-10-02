@@ -35,6 +35,15 @@ async function prepare(
   ctx: ModeProps,
   source: SignatureSource,
 ): Promise<ReadySignature> {
+  if (source.kind === 'ink') {
+    // The vector travels in the op itself: nothing to store.
+    const { vector, color } = source;
+    return {
+      content: { kind: 'ink', vector, color },
+      aspect: vector.width / vector.height,
+      preview: { kind: 'ink', vector, color },
+    };
+  }
   if (source.kind === 'image') {
     const mime: 'image/png' | 'image/jpeg' =
       source.format === 'png' ? 'image/png' : 'image/jpeg';

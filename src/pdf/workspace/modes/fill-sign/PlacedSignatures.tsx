@@ -6,16 +6,19 @@ import {
   PageBox,
   SelectionFrame,
   Text,
+  VectorSample,
   type OverlayTransform,
 } from '@/shared/ui';
 import type { SignPlaceParams } from '@/pdf/doc/ops/fill-sign';
 import type { Box, OpId, PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { FocusOnMount } from './FocusOnMount';
-import { fillSign, useFillSign, type SignaturePreview } from './store';
-
-const assetOf = (p: SignPlaceParams) =>
-  p.content.kind === 'image' ? p.content.assetId : p.content.fontAsset;
+import {
+  fillSign,
+  previewOf,
+  useFillSign,
+  type SignaturePreview,
+} from './store';
 
 /** What a placed or ghosted signature looks like on the page. */
 export function SignatureLook({
@@ -32,6 +35,18 @@ export function SignatureLook({
         mime={preview.mime}
         decorative
         fit="contain"
+        className="size-full"
+      />
+    );
+  if (preview?.kind === 'ink')
+    return (
+      <VectorSample
+        decorative
+        d={preview.vector.d}
+        width={preview.vector.width}
+        height={preview.vector.height}
+        color={preview.color}
+        evenOdd={preview.evenOdd}
         className="size-full"
       />
     );
@@ -91,7 +106,10 @@ export function PlacedSignatures({
             onFocused={() => fillSign.set({ justPlaced: null })}
           >
             <PageBox transform={transform} box={box}>
-              <SignatureLook preview={previews[assetOf(p)]} role={p.role} />
+              <SignatureLook
+                preview={previewOf(p.content, previews)}
+                role={p.role}
+              />
             </PageBox>
             {selected ? (
               <SelectionFrame

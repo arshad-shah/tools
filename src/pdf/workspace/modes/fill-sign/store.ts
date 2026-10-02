@@ -3,12 +3,29 @@ import type { ToolError } from '@/shared/lib/errors';
 import type { Box, PageId } from '@/pdf/doc/types';
 import type { FormInfo } from '@/pdf/render/form-info';
 import type { SignatureContent } from '@/pdf/doc/ops/fill-sign';
+import type { InkVector } from '@/pdf/sign/ink';
 import type { AutofillRow } from './AutofillPreview';
 import type { FieldStyle } from './text-style';
 
 export type SignaturePreview =
   | { kind: 'image'; bytes: Uint8Array; mime: 'image/png' | 'image/jpeg' }
-  | { kind: 'text'; text: string; family: string; color: string };
+  | { kind: 'text'; text: string; family: string; color: string }
+  | { kind: 'ink'; vector: InkVector; color: string; evenOdd?: boolean };
+
+/** What a placed signature looks like: vectors carry their own preview. */
+export function previewOf(
+  c: SignatureContent,
+  previews: Record<string, SignaturePreview>,
+): SignaturePreview | undefined {
+  if (c.kind === 'ink' || c.kind === 'trace')
+    return {
+      kind: 'ink',
+      vector: c.vector,
+      color: c.color,
+      evenOdd: c.kind === 'trace',
+    };
+  return previews[c.kind === 'image' ? c.assetId : c.fontAsset];
+}
 
 /** A signature made in the panel, ready to place (aspect = width / height). */
 export interface ReadySignature {

@@ -1,4 +1,5 @@
 import type { SignatureFontId } from './fonts';
+import type { InkVector } from './ink';
 
 export type SignatureSource =
   | {
@@ -8,11 +9,14 @@ export type SignatureSource =
       width: number;
       height: number;
     }
-  | { kind: 'text'; text: string; fontId: SignatureFontId; color: string };
+  | { kind: 'text'; text: string; fontId: SignatureFontId; color: string }
+  /** Pen strokes as one filled vector path (pad px, y down). */
+  | { kind: 'ink'; vector: InkVector; color: string };
 
-export const INK_COLORS: { value: string; label: string }[] = [
+export const INK_COLORS: readonly { value: string; label: string }[] = [
   { value: '#111827', label: 'Black' },
-  { value: '#1e3a8a', label: 'Blue' },
+  { value: '#1d4ed8', label: 'Blue' },
+  { value: '#1e3a8a', label: 'Dark blue' },
 ];
 
 /** Props shared by the draw, upload and type sources. */

@@ -1,71 +1,52 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { IconEraser, IconUndo } from '@/shared/ui/icons';
-import { Button, Inline, SignaturePad, Stack, Text } from '@/shared/ui';
 import {
-  strokePath,
-  strokesBounds,
-  type Stroke,
-  canvasToPng,
+  Button,
+  Inline,
+  SegmentedControl,
+  SignaturePad,
+  Stack,
+  Text,
+} from '@/shared/ui';
+import {
+  inkToVector,
   INK_COLORS,
+  type InkStroke,
+  type InkWeight,
   type SignatureSourceProps,
 } from '@/pdf/sign';
 import { InkField } from './InkField';
 
-const LINE_WIDTH = 2.5;
-/** Export resolution relative to CSS px, so the stamp stays sharp in print. */
-const EXPORT_SCALE = 3;
+/** Pad size in CSS px: the frame the strokes are recorded in. */
+const PAD = { width: 448, height: 176 };
 
-/** Export painter: the same stroke geometry SignaturePad draws on screen. */
-function paint(
-  ctx: OffscreenCanvasRenderingContext2D,
-  strokes: Stroke[],
-  ink: string,
-) {
-  ctx.lineWidth = LINE_WIDTH;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = ink;
-  for (const s of strokes) ctx.stroke(new Path2D(strokePath(s)));
-}
+const WEIGHTS: { value: InkWeight; label: string }[] = [
+  { value: 'thin', label: 'Thin' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'bold', label: 'Bold' },
+];
 
-/** A signature pad: pointer strokes, exported as a tightly cropped transparent PNG. */
+/** An ink pen: pressure-sensitive strokes, kept as one vector path. */
 export const SignatureDraw: React.FC<SignatureSourceProps> = ({
   onChange,
   disabled,
 }) => {
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [strokes, setStrokes] = useState<InkStroke[]>([]);
   const [ink, setInk] = useState(INK_COLORS[0].value);
-  const exportRun = useRef(0);
+  const [weight, setWeight] = useState<InkWeight>('medium');
 
-  const publish = async (next: Stroke[], color: string) => {
-    const run = ++exportRun.current;
-    const bounds = strokesBounds(next, 6);
-    if (!bounds) {
-      onChange(null);
-      return;
-    }
-    const width = Math.ceil(bounds.width * EXPORT_SCALE);
-    const height = Math.ceil(bounds.height * EXPORT_SCALE);
-    const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.setTransform(
-      EXPORT_SCALE,
-      0,
-      0,
-      EXPORT_SCALE,
-      -bounds.x * EXPORT_SCALE,
-      -bounds.y * EXPORT_SCALE,
-    );
-    paint(ctx, next, color);
-    const bytes = await canvasToPng(canvas);
-    if (run !== exportRun.current) return; // a newer export superseded this one
-    onChange({ kind: 'image', bytes, format: 'png', width, height });
-  };
-
-  const commit = (next: Stroke[], color = ink) => {
+  const commit = (next: InkStroke[], color = ink, w = weight) => {
     setStrokes(next);
-    void publish(next, color);
+    try {
+      onChange(
+        next.length
+          ? { kind: 'ink', vector: inkToVector(next, w, PAD), color }
+          : null,
+      );
+    } catch {
+      // Strokes with nothing to fill (no ink yet): nothing to place.
+      onChange(null);
+    }
   };
 
   return (
@@ -76,9 +57,11 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
         label="Draw your signature"
         aria-describedby="sig-draw-hint"
         ink={ink}
-        strokeWidth={LINE_WIDTH}
+        weight={weight}
+        width={PAD.width}
+        height={PAD.height}
         disabled={disabled}
-        className="h-44 w-full rounded-md border border-line bg-white"
+        className="max-w-full rounded-md border border-line bg-white"
       />
       <Text id="sig-draw-hint" size="sm" tone="muted">
         Draw with a mouse, pen or finger. Using a keyboard? Use the Type tab.
@@ -90,6 +73,16 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
           onChange={(v) => {
             setInk(v);
             if (strokes.length > 0) commit(strokes, v);
+          }}
+        />
+        <SegmentedControl
+          label="Weight"
+          size="sm"
+          value={weight}
+          options={WEIGHTS.map((o) => ({ ...o, disabled }))}
+          onChange={(w) => {
+            setWeight(w);
+            if (strokes.length > 0) commit(strokes, ink, w);
           }}
         />
         <Button

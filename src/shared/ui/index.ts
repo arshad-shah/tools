@@ -258,3 +258,11 @@ export * from './bytes-view';
 export * from './key-value-editor';
 export * from './key-value-bulk';
 export { renderFaviconImage, useFavicon } from './use-favicon';
+export { type InkPoint, type InkStroke, type InkWeight } from './signature-pad';
+export { VectorSample, type VectorSampleProps } from './vector-sample';
+export {
+  ChoiceGrid,
+  type ChoiceGridProps,
+  type ChoiceOption,
+} from './choice-grid';
+export { FontPreview, type FontPreviewProps } from './font-preview';
