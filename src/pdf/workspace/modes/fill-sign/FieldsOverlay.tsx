@@ -33,6 +33,7 @@ import type { ViewField } from './fields';
 import { FormNotice } from './FormNotice';
 import { NoFieldsHint } from './NoFieldsHint';
 import { OverlayTextBar } from './OverlayTextBar';
+import { PlacedBlocks } from './PlacedBlocks';
 import { PlacedSignatures, SignatureLook } from './PlacedSignatures';
 import { markBox, snapToCell } from './snap';
 import { fillSign, useFillSign } from './store';
@@ -274,6 +275,12 @@ export function FieldsOverlay(props: PageOverlayProps) {
           </PageBox>
         ))}
       <PlacedSignatures
+        ctx={ctx}
+        page={page}
+        pageNumber={pageNumber}
+        transform={transform}
+      />
+      <PlacedBlocks
         ctx={ctx}
         page={page}
         pageNumber={pageNumber}

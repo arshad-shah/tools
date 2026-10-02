@@ -2,13 +2,14 @@ import { IconTrash } from '@/shared/ui/icons';
 import { Button, InspectorSection } from '@/shared/ui';
 import type { ModeProps } from '../types';
 
-/** The Fill & Sign inspector: the selected signature. */
+const SIGNING = new Set(['sign.place', 'sign.block', 'sign.initialPages']);
+
+/** The Fill & Sign inspector: the selected signature, block or initials. */
 export function FillSignInspector(ctx: ModeProps) {
   const { doc, selection } = ctx;
+  const all = [...doc.view.overlays.values(), doc.view.docOverlays].flat();
   const signatures = [...selection.objects].filter((id) =>
-    [...doc.view.overlays.values()].some((items) =>
-      items.some((o) => o.opId === id && o.type === 'sign.place'),
-    ),
+    all.some((o) => o.opId === id && SIGNING.has(o.type)),
   );
   if (!signatures.length) return null;
   return (
