@@ -10,9 +10,9 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        'flex flex-col rounded-lg border border-line bg-surface',
+        'flex flex-col rounded-lg bg-surface shadow-e1',
         interactive &&
-          'cursor-pointer transition-[transform,border-color] duration-150 hover:-translate-y-0.5 hover:border-accent',
+          'cursor-pointer transition-colors duration-fast ease-out-soft hover:bg-surface-2',
         className,
       )}
       {...props}

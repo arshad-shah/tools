@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-  CheckCircle,
-  Copy,
-  Eye,
-  EyeOff,
-  Lock,
-  RefreshCw,
-  Ruler,
-  Shield,
-} from 'lucide-react';
+  IconCheckCircle,
+  IconCopy,
+  IconEye,
+  IconEyeOff,
+  IconLock,
+  IconRefreshCw,
+  IconRuler,
+  IconShield,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -56,16 +56,21 @@ const HighlightedPassword: React.FC<HighlightedPasswordProps> = ({
   hidden,
 }) => (
   <Box className="min-w-0 overflow-hidden rounded-md border border-line bg-surface p-4 font-mono text-base leading-[1.6] break-all whitespace-pre-wrap [overflow-wrap:anywhere]">
-    {hidden
-      ? '•'.repeat(password.length)
-      : Array.from(password).map((ch, i) => {
-          const type = classifyChar(ch);
-          return (
-            <span key={i} className={cn('font-bold', CHAR_CLASS[type])}>
-              {ch}
-            </span>
-          );
-        })}
+    {hidden ? (
+      <>
+        <span aria-hidden="true">{'*'.repeat(password.length)}</span>
+        <span className="sr-only">Password hidden</span>
+      </>
+    ) : (
+      Array.from(password).map((ch, i) => {
+        const type = classifyChar(ch);
+        return (
+          <span key={i} className={cn('font-bold', CHAR_CLASS[type])}>
+            {ch}
+          </span>
+        );
+      })
+    )}
   </Box>
 );
 
@@ -162,7 +167,7 @@ const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
             variant="ghost"
             size="sm"
             label={hidden ? 'Show password' : 'Hide password'}
-            icon={hidden ? <Eye size={16} /> : <EyeOff size={16} />}
+            icon={hidden ? <IconEye size="sm" /> : <IconEyeOff size="sm" />}
             onClick={() => setHidden(!hidden)}
           />
         </Inline>
@@ -177,7 +182,11 @@ const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
                 variant={copied ? 'solid' : 'soft'}
                 size="md"
                 leftIcon={
-                  copied ? <CheckCircle size={18} /> : <Copy size={18} />
+                  copied ? (
+                    <IconCheckCircle size="md" />
+                  ) : (
+                    <IconCopy size="md" />
+                  )
                 }
                 onClick={onCopy}
               >
@@ -298,7 +307,7 @@ const SecurePasswordGenerator: React.FC = () => {
         <CardHeader>
           <Inline justify="between" align="center" wrap>
             <Inline align="center" gap="2">
-              <Ruler size={20} aria-hidden />
+              <IconRuler size="lg" />
               <CardTitle as="h2">Password length</CardTitle>
             </Inline>
             <Inline gap="2" align="center">
@@ -324,7 +333,7 @@ const SecurePasswordGenerator: React.FC = () => {
 
             <Stack gap="3">
               <Inline align="center" gap="2">
-                <Lock size={20} aria-hidden />
+                <IconLock size="lg" />
                 <CardTitle as="h2">Character types</CardTitle>
               </Inline>
               <CharacterTypeOption
@@ -362,7 +371,7 @@ const SecurePasswordGenerator: React.FC = () => {
 
       <Button
         onClick={generatePassword}
-        leftIcon={<RefreshCw size={20} />}
+        leftIcon={<IconRefreshCw size="lg" />}
         size="lg"
         variant="solid"
         className="w-full"
@@ -386,7 +395,7 @@ const SecurePasswordGenerator: React.FC = () => {
         />
       )}
 
-      <Alert status="info" icon={<Shield aria-hidden />}>
+      <Alert status="info" icon={<IconShield />}>
         <AlertDescription>
           <Text weight="medium" as="span">
             Secure generation.

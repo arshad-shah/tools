@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, ArrowLeft } from 'lucide-react';
+import { IconArrowLeft, IconHome } from '@/shared/ui/icons';
 import { Center, Container, Stack, Inline, Text, Button } from '@/shared/ui';
 
 const NotFound: React.FC = () => {
@@ -23,7 +23,7 @@ const NotFound: React.FC = () => {
           {/* Terminal error line */}
           <div className="w-full rounded-lg border border-line bg-surface p-6 font-mono">
             <Text mono size="sm" tone="faint">
-              <span className="text-accent">$</span> cd /tool
+              <span className="text-accent-fg">$</span> cd /tool
             </Text>
             <Text mono size="sm" tone="muted" className="mt-2">
               <span className="text-danger">error:</span> route not found{' '}
@@ -33,7 +33,7 @@ const NotFound: React.FC = () => {
               no such tool in this directory.
             </Text>
             <Text mono size="sm" tone="subtle" className="mt-4">
-              returning to <span className="text-accent">~/tools</span> in{' '}
+              returning to <span className="text-accent-fg">~/tools</span> in{' '}
               {count}s
               <span
                 aria-hidden
@@ -45,14 +45,14 @@ const NotFound: React.FC = () => {
           <Inline gap="3" wrap justify="center">
             <Button
               variant="soft"
-              leftIcon={<ArrowLeft size={16} />}
+              leftIcon={<IconArrowLeft size="sm" />}
               onClick={() => navigate(-1)}
             >
               Go back
             </Button>
             <Button
               variant="solid"
-              leftIcon={<Home size={16} />}
+              leftIcon={<IconHome size="sm" />}
               onClick={() => navigate('/')}
             >
               {count > 0 ? `Return home in ${count}s` : 'Return home'}

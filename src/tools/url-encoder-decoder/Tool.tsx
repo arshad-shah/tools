@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { IconCheck, IconCopy } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -129,7 +129,11 @@ const URLEncoderDecoder: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       leftIcon={
-                        copied ? <Check size={16} /> : <Copy size={16} />
+                        copied ? (
+                          <IconCheck size="sm" />
+                        ) : (
+                          <IconCopy size="sm" />
+                        )
                       }
                       onClick={handleCopy}
                     >

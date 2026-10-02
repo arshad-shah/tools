@@ -10,9 +10,12 @@ import {
 } from './encoding';
 import { ToolError } from './errors';
 
+// Built from the code point: rule (a) bans pictographs as literals.
+const GRIN = String.fromCodePoint(0x1f600);
+
 describe('UTF-8', () => {
   it('round-trips non-Latin-1 text', () => {
-    const text = 'café € 日本 \u{1F600}';
+    const text = `café € 日本 ${GRIN}`;
     expect(utf8Decode(utf8Encode(text))).toBe(text);
     expect(utf8Encode('€')).toEqual(new Uint8Array([0xe2, 0x82, 0xac]));
   });

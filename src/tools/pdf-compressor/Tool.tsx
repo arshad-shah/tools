@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Minimize2 } from 'lucide-react';
+import { IconMinimize2 } from '@/shared/ui/icons';
 import {
   Accordion,
   AccordionContent,
@@ -226,7 +226,7 @@ const PdfCompressorTool: React.FC<ToolProps> = () => {
               <div>
                 <Button
                   variant="solid"
-                  leftIcon={<Minimize2 size={16} />}
+                  leftIcon={<IconMinimize2 size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() => job.run(file, fromAdvanced(advanced))}
                 >
@@ -243,7 +243,7 @@ const PdfCompressorTool: React.FC<ToolProps> = () => {
                     <AlertTitle>Already optimised</AlertTitle>
                     <AlertDescription>
                       The compressed version was not smaller (
-                      {formatBytes(result.report.inputSize)} →{' '}
+                      {formatBytes(result.report.inputSize)} to{' '}
                       {formatBytes(lastStage?.after ?? result.report.inputSize)}
                       ), so your original is unchanged. There is nothing to
                       download.

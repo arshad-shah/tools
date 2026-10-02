@@ -1,18 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle,
-  BarChart3,
-  BookOpen,
-  Check,
-  Code2,
-  Copy,
-  Info,
-  PlayCircle,
-  Settings,
-  X,
-  Zap,
-} from 'lucide-react';
-import {
   Alert,
   AlertDescription,
   Badge,
@@ -38,7 +25,20 @@ import {
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
-import { ChevronDown } from 'lucide-react';
+import {
+  IconAlertCircle,
+  IconBarChart3,
+  IconBookOpen,
+  IconCheck,
+  IconChevronDown,
+  IconCodeXml,
+  IconCopy,
+  IconInfo,
+  IconPlayCircle,
+  IconSettings,
+  IconX,
+  IconZap,
+} from '@/shared/ui/icons';
 import { compile, type Match } from './lib/match';
 import { toJsSnippet, toRegexLiteral } from './lib/code';
 import { createRegexRunner, type RegexRunner } from './lib/runner';
@@ -245,7 +245,7 @@ const MatchItem: React.FC<{
               variant="ghost"
               size="sm"
               label="Copy match"
-              icon={<Copy size={14} />}
+              icon={<IconCopy size="sm" />}
               onClick={onCopy}
             />
             {hasGroups && (
@@ -253,7 +253,7 @@ const MatchItem: React.FC<{
                 variant="ghost"
                 size="sm"
                 label={expanded ? 'Hide details' : 'Show details'}
-                icon={expanded ? <X size={14} /> : <Info size={14} />}
+                icon={expanded ? <IconX size="sm" /> : <IconInfo size="sm" />}
                 onClick={() => setExpanded(!expanded)}
               />
             )}
@@ -509,9 +509,8 @@ const RegexStudio: React.FC = () => {
                     </optgroup>
                   ))}
                 </select>
-                <ChevronDown
-                  size={16}
-                  aria-hidden
+                <IconChevronDown
+                  size="sm"
                   className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle"
                 />
               </div>
@@ -545,8 +544,8 @@ const RegexStudio: React.FC = () => {
                 <Button
                   variant="soft"
                   size="sm"
-                  rightIcon={<ChevronDown size={14} />}
-                  leftIcon={<Settings size={14} />}
+                  rightIcon={<IconChevronDown size="sm" />}
+                  leftIcon={<IconSettings size="sm" />}
                 >
                   Actions
                 </Button>
@@ -557,14 +556,14 @@ const RegexStudio: React.FC = () => {
                   disabled={!pattern || !isValid}
                 >
                   <Inline align="center" gap="2">
-                    <Code2 size={14} aria-hidden />
+                    <IconCodeXml size="sm" />
                     <span>Copy as JavaScript</span>
                   </Inline>
                 </DropdownMenuItem>
                 {selectedTemplate && (
                   <DropdownMenuItem onClick={generateSample}>
                     <Inline align="center" gap="2">
-                      <Zap size={14} aria-hidden />
+                      <IconZap size="sm" />
                       <span>Generate sample text</span>
                     </Inline>
                   </DropdownMenuItem>
@@ -572,7 +571,7 @@ const RegexStudio: React.FC = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleClearAll}>
                   <Inline align="center" gap="2">
-                    <X size={14} aria-hidden />
+                    <IconX size="sm" />
                     <span>Clear all</span>
                   </Inline>
                 </DropdownMenuItem>
@@ -597,7 +596,7 @@ const RegexStudio: React.FC = () => {
         <Card>
           <CardHeader>
             <Inline gap="2" align="center">
-              <Code2 size={20} aria-hidden />
+              <IconCodeXml size="lg" />
               <CardTitle as="h2">Regular expression</CardTitle>
             </Inline>
           </CardHeader>
@@ -634,7 +633,9 @@ const RegexStudio: React.FC = () => {
                     }
                     label="Copy regex with flags"
                     disabled={!pattern || !isValid}
-                    icon={copied ? <Check size={16} /> : <Copy size={16} />}
+                    icon={
+                      copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />
+                    }
                     onClick={copyPattern}
                   />
                 </Inline>
@@ -644,7 +645,7 @@ const RegexStudio: React.FC = () => {
                   </Alert>
                 )}
                 {runError && (
-                  <Alert status="danger" icon={<AlertCircle aria-hidden />}>
+                  <Alert status="danger" icon={<IconAlertCircle />}>
                     <AlertDescription>{runError}</AlertDescription>
                   </Alert>
                 )}
@@ -652,7 +653,7 @@ const RegexStudio: React.FC = () => {
 
               <Stack gap="2">
                 <Inline gap="2" align="center">
-                  <Settings size={16} aria-hidden />
+                  <IconSettings size="sm" />
                   <Label>Flags</Label>
                 </Inline>
                 <Inline gap="2" wrap>
@@ -679,14 +680,14 @@ const RegexStudio: React.FC = () => {
           <CardHeader>
             <Inline justify="between" align="center" wrap gap="2">
               <Inline gap="2" align="center">
-                <BookOpen size={20} aria-hidden />
+                <IconBookOpen size="lg" />
                 <CardTitle as="h2">Test string</CardTitle>
               </Inline>
               {selectedTemplate && !testString && (
                 <Button
                   variant="soft"
                   size="sm"
-                  leftIcon={<Zap size={14} />}
+                  leftIcon={<IconZap size="sm" />}
                   onClick={generateSample}
                 >
                   Generate sample
@@ -710,7 +711,7 @@ const RegexStudio: React.FC = () => {
             <CardHeader>
               <Inline justify="between" align="center" wrap gap="2">
                 <Inline gap="2" align="center">
-                  <PlayCircle size={20} aria-hidden />
+                  <IconPlayCircle size="lg" />
                   <CardTitle as="h2">Live preview</CardTitle>
                 </Inline>
                 <Inline gap="2">
@@ -745,7 +746,7 @@ const RegexStudio: React.FC = () => {
               )}
               {matches.length === 0 && current && !runError && (
                 <Inline className="pt-3">
-                  <Alert status="warning" icon={<AlertCircle aria-hidden />}>
+                  <Alert status="warning" icon={<IconAlertCircle />}>
                     <AlertDescription>
                       No matches found — try adjusting your pattern or test
                       string.
@@ -762,7 +763,7 @@ const RegexStudio: React.FC = () => {
         <Card>
           <CardHeader>
             <Inline gap="2" align="center">
-              <BarChart3 size={18} aria-hidden />
+              <IconBarChart3 size="md" />
               <CardTitle as="h2">Matches ({matches.length})</CardTitle>
             </Inline>
           </CardHeader>

@@ -2,15 +2,17 @@ import React, { useMemo, useState } from 'react';
 import Papa from 'papaparse';
 import _ from 'lodash';
 import {
-  BarChart3,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  RefreshCw,
-  Table as TableIcon,
-  TrendingUp,
-  Upload,
-} from 'lucide-react';
+  IconArrowDown,
+  IconArrowUp,
+  IconBarChart3,
+  IconChevronLeft,
+  IconChevronRight,
+  IconDownload,
+  IconRefreshCw,
+  IconTable,
+  IconTrendingUp,
+  IconUpload,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -467,7 +469,7 @@ const CSVTSVViewer: React.FC = () => {
             {delimiterControl}
             <Button
               variant="soft"
-              leftIcon={<Upload size={16} />}
+              leftIcon={<IconUpload size="sm" />}
               onClick={loadSample}
               disabled={loading}
             >
@@ -513,7 +515,7 @@ const CSVTSVViewer: React.FC = () => {
           <Button
             variant="danger"
             size="sm"
-            leftIcon={<RefreshCw size={14} />}
+            leftIcon={<IconRefreshCw size="sm" />}
             onClick={reset}
           >
             New file
@@ -557,19 +559,19 @@ const CSVTSVViewer: React.FC = () => {
         <TabsList aria-label="Viewer tabs">
           <TabsTrigger value="data">
             <Inline gap="2" align="center" wrap={false}>
-              <TableIcon size={14} aria-hidden />
+              <IconTable size="sm" />
               <span>Data table</span>
             </Inline>
           </TabsTrigger>
           <TabsTrigger value="stats">
             <Inline gap="2" align="center" wrap={false}>
-              <BarChart3 size={14} aria-hidden />
+              <IconBarChart3 size="sm" />
               <span>Statistics</span>
             </Inline>
           </TabsTrigger>
           <TabsTrigger value="chart" disabled={numericColumns.length === 0}>
             <Inline gap="2" align="center" wrap={false}>
-              <TrendingUp size={14} aria-hidden />
+              <IconTrendingUp size="sm" />
               <span>Chart</span>
             </Inline>
           </TabsTrigger>
@@ -635,7 +637,7 @@ const CSVTSVViewer: React.FC = () => {
                       <Button
                         variant="solid"
                         size="sm"
-                        leftIcon={<Download size={14} />}
+                        leftIcon={<IconDownload size="sm" />}
                         disabled={filteredData.length === 0}
                         onClick={exportData}
                       >
@@ -685,11 +687,18 @@ const CSVTSVViewer: React.FC = () => {
                           >
                             <Inline gap="1" align="center" wrap={false}>
                               <span>{col}</span>
-                              {sortColumn === col && (
-                                <span>
-                                  {sortDirection === 'asc' ? '↑' : '↓'}
-                                </span>
-                              )}
+                              {sortColumn === col &&
+                                (sortDirection === 'asc' ? (
+                                  <IconArrowUp
+                                    size="xs"
+                                    label="Sorted ascending"
+                                  />
+                                ) : (
+                                  <IconArrowDown
+                                    size="xs"
+                                    label="Sorted descending"
+                                  />
+                                ))}
                             </Inline>
                           </TableHead>
                         ))}
@@ -741,7 +750,7 @@ const CSVTSVViewer: React.FC = () => {
                     <Button
                       variant="soft"
                       size="sm"
-                      leftIcon={<ChevronLeft size={14} />}
+                      leftIcon={<IconChevronLeft size="sm" />}
                       disabled={page === 1}
                       onClick={() => setPage(Math.max(1, page - 1))}
                     >
@@ -750,7 +759,7 @@ const CSVTSVViewer: React.FC = () => {
                     <Button
                       variant="soft"
                       size="sm"
-                      rightIcon={<ChevronRight size={14} />}
+                      rightIcon={<IconChevronRight size="sm" />}
                       disabled={page >= totalPages}
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                     >
@@ -774,7 +783,7 @@ const CSVTSVViewer: React.FC = () => {
             ) : (
               <EmptyState>
                 <EmptyStateIcon>
-                  <BarChart3 size={36} aria-hidden />
+                  <IconBarChart3 size="2xl" />
                 </EmptyStateIcon>
                 <EmptyStateTitle>No numeric columns found</EmptyStateTitle>
                 <EmptyStateDescription>
@@ -819,7 +828,7 @@ const CSVTSVViewer: React.FC = () => {
             ) : (
               <EmptyState>
                 <EmptyStateIcon>
-                  <TrendingUp size={36} aria-hidden />
+                  <IconTrendingUp size="2xl" />
                 </EmptyStateIcon>
                 <EmptyStateTitle>No numeric columns available</EmptyStateTitle>
                 <EmptyStateDescription>

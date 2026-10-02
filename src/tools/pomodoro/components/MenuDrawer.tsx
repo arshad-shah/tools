@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart2, ListTodo, Settings2 } from 'lucide-react';
+import { IconBarChart2, IconListTodo, IconSettings2 } from '@/shared/ui/icons';
 import {
   Box,
   Drawer,
@@ -34,19 +34,19 @@ export const MenuDrawer: React.FC<{ open: boolean; onClose: () => void }> = ({
         <TabsList aria-label="Menu sections">
           <TabsTrigger value="tasks">
             <Inline gap="2" align="center" wrap={false}>
-              <ListTodo size={14} aria-hidden />
+              <IconListTodo size="sm" />
               <span>Tasks</span>
             </Inline>
           </TabsTrigger>
           <TabsTrigger value="stats">
             <Inline gap="2" align="center" wrap={false}>
-              <BarChart2 size={14} aria-hidden />
+              <IconBarChart2 size="sm" />
               <span>Stats</span>
             </Inline>
           </TabsTrigger>
           <TabsTrigger value="settings">
             <Inline gap="2" align="center" wrap={false}>
-              <Settings2 size={14} aria-hidden />
+              <IconSettings2 size="sm" />
               <span>Settings</span>
             </Inline>
           </TabsTrigger>

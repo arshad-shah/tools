@@ -1,6 +1,6 @@
 import React from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Braces, Brackets, Hash } from 'lucide-react';
+import { IconBraces, IconBrackets, IconHash } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 import { MainNode, NodeType } from './types';
 
@@ -56,7 +56,7 @@ const classifyValue = (raw: string): string => {
 const CustomNode: React.FC<NodeProps<MainNode>> = ({ data }) => {
   const isPrimitive = data.type === 'primitive';
   const isArray = data.type === 'array';
-  const Icon = isArray ? Brackets : isPrimitive ? Hash : Braces;
+  const Icon = isArray ? IconBrackets : isPrimitive ? IconHash : IconBraces;
   const kindLabel = isArray ? 'Array' : isPrimitive ? 'Value' : 'Object';
 
   const pairs =
@@ -70,7 +70,7 @@ const CustomNode: React.FC<NodeProps<MainNode>> = ({ data }) => {
         className={styles.handle}
       />
       <div className={styles.header}>
-        <Icon size={12} aria-hidden />
+        <Icon size="xs" />
         <span>{kindLabel}</span>
         <span className={styles.label}>{data.label}</span>
       </div>

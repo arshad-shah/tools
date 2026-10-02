@@ -1,21 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowRightLeft,
-  Battery,
-  Clock,
-  Droplet,
-  Gauge,
-  HardDrive,
-  History,
-  RefreshCw,
-  Ruler,
-  Scale,
-  Square,
-  Thermometer,
-  Timer,
-  X,
-  Zap,
-} from 'lucide-react';
+  IconArrowRight,
+  IconArrowRightLeft,
+  IconBattery,
+  IconClock,
+  IconDroplet,
+  IconGauge,
+  IconHardDrive,
+  IconHistory,
+  IconRefreshCw,
+  IconRuler,
+  IconScale,
+  IconSquare,
+  IconThermometer,
+  IconTimer,
+  IconX,
+  IconZap,
+} from '@/shared/ui/icons';
 import {
   Badge,
   Button,
@@ -47,7 +48,7 @@ import { Category, Conversion, Unit } from './types';
 const CATEGORIES: Category[] = [
   {
     name: 'Length',
-    icon: <Ruler size={18} aria-hidden />,
+    icon: <IconRuler size="md" />,
     baseUnit: 'meters',
     units: [
       { name: 'Kilometers', symbol: 'km', factor: 1000 },
@@ -62,7 +63,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Weight',
-    icon: <Scale size={18} aria-hidden />,
+    icon: <IconScale size="md" />,
     baseUnit: 'grams',
     units: [
       { name: 'Tonnes', symbol: 't', factor: 1000000 },
@@ -75,7 +76,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Volume',
-    icon: <Droplet size={18} aria-hidden />,
+    icon: <IconDroplet size="md" />,
     baseUnit: 'liters',
     units: [
       { name: 'Cubic Meters', symbol: 'm³', factor: 1000 },
@@ -90,7 +91,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Temperature',
-    icon: <Thermometer size={18} aria-hidden />,
+    icon: <IconThermometer size="md" />,
     baseUnit: 'kelvin',
     units: [
       { name: 'Kelvin', symbol: 'K', factor: 1 },
@@ -100,7 +101,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Area',
-    icon: <Square size={18} aria-hidden />,
+    icon: <IconSquare size="md" />,
     baseUnit: 'square meters',
     units: [
       { name: 'Square Kilometers', symbol: 'km²', factor: 1000000 },
@@ -114,7 +115,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Speed',
-    icon: <Zap size={18} aria-hidden />,
+    icon: <IconZap size="md" />,
     baseUnit: 'meters per second',
     units: [
       { name: 'Meters per Second', symbol: 'm/s', factor: 1 },
@@ -126,7 +127,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Time',
-    icon: <Timer size={18} aria-hidden />,
+    icon: <IconTimer size="md" />,
     baseUnit: 'seconds',
     units: [
       { name: 'Years', symbol: 'yr', factor: 31536000 },
@@ -141,7 +142,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Data',
-    icon: <HardDrive size={18} aria-hidden />,
+    icon: <IconHardDrive size="md" />,
     baseUnit: 'bytes',
     units: [
       { name: 'Terabytes', symbol: 'TB', factor: 1099511627776 },
@@ -154,7 +155,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Pressure',
-    icon: <Gauge size={18} aria-hidden />,
+    icon: <IconGauge size="md" />,
     baseUnit: 'pascals',
     units: [
       { name: 'Gigapascals', symbol: 'GPa', factor: 1000000000 },
@@ -168,7 +169,7 @@ const CATEGORIES: Category[] = [
   },
   {
     name: 'Energy',
-    icon: <Battery size={18} aria-hidden />,
+    icon: <IconBattery size="md" />,
     baseUnit: 'joules',
     units: [
       { name: 'Kilojoules', symbol: 'kJ', factor: 1000 },
@@ -305,13 +306,13 @@ const UnitConverter: React.FC = () => {
           <TabsList aria-label="Unit converter view">
             <TabsTrigger value="converter">
               <Inline gap="2" align="center" wrap={false}>
-                <Zap size={16} aria-hidden />
+                <IconZap size="sm" />
                 <span>Converter</span>
               </Inline>
             </TabsTrigger>
             <TabsTrigger value="saved">
               <Inline gap="2" align="center" wrap={false}>
-                <History size={16} aria-hidden />
+                <IconHistory size="sm" />
                 <span>History</span>
                 {history.length > 0 && (
                   <Badge variant="solid" tone="accent" size="xs">
@@ -456,7 +457,7 @@ const UnitConverter: React.FC = () => {
                       variant="solid"
                       className="rounded-full"
                       label="Swap units"
-                      icon={<ArrowRightLeft size={20} />}
+                      icon={<IconArrowRightLeft size="lg" />}
                       onClick={swapUnits}
                     />
                   </Inline>
@@ -491,14 +492,14 @@ const UnitConverter: React.FC = () => {
                   <Inline justify="between" align="center" wrap>
                     <Heading level={2} size="md">
                       <Inline gap="2" align="center">
-                        <Clock size={20} aria-hidden />
+                        <IconClock size="lg" />
                         Conversion history
                       </Inline>
                     </Heading>
                     <Button
                       variant="soft"
                       size="sm"
-                      leftIcon={<X size={16} />}
+                      leftIcon={<IconX size="sm" />}
                       onClick={() => setHistory([])}
                     >
                       Clear all
@@ -532,9 +533,11 @@ const UnitConverter: React.FC = () => {
                                   <Text size="sm" weight="semibold">
                                     {c.from}
                                   </Text>
-                                  <Text size="sm" tone="subtle">
-                                    →
-                                  </Text>
+                                  <IconArrowRight
+                                    size="xs"
+                                    label="converts to"
+                                    className="text-fg-subtle"
+                                  />
                                   <Badge variant="soft" tone="accent" size="sm">
                                     {c.to}
                                   </Badge>
@@ -546,7 +549,7 @@ const UnitConverter: React.FC = () => {
                                 variant="ghost"
                                 size="sm"
                                 label="Reuse conversion"
-                                icon={<RefreshCw size={16} />}
+                                icon={<IconRefreshCw size="sm" />}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   reuseConversion(c);
@@ -557,7 +560,7 @@ const UnitConverter: React.FC = () => {
                                 size="sm"
                                 tone="danger"
                                 label="Remove conversion"
-                                icon={<X size={16} />}
+                                icon={<IconX size="sm" />}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setHistory((prev) =>
@@ -575,7 +578,7 @@ const UnitConverter: React.FC = () => {
               ) : (
                 <EmptyState>
                   <EmptyStateIcon>
-                    <History size={48} aria-hidden />
+                    <IconHistory size="3xl" />
                   </EmptyStateIcon>
                   <EmptyStateTitle>No conversion history yet</EmptyStateTitle>
                   <EmptyStateDescription>

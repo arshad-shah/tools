@@ -1,13 +1,16 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import { Center, Spinner, Stack, Text } from '@/shared/ui';
+import { Center, Spinner, Stack, Text, Toaster } from '@/shared/ui';
 import ErrorBoundary from './ErrorBoundary';
 import { TOOLS } from './registry';
 
 const Dashboard = lazy(() => import('./Dashboard'));
 const ToolLayout = lazy(() => import('./ToolLayout'));
 const NotFound = lazy(() => import('./NotFound'));
+// Dev-only kit gallery (decision G18): absent from production builds.
+const KitGallery = import.meta.env.DEV
+  ? lazy(() => import('./gallery/KitGallery'))
+  : null;
 
 // Built once at module scope: one lazy component per tool, stable across renders.
 const toolRoutes = TOOLS.map((manifest) => ({
@@ -29,10 +32,11 @@ const GlobalLoadingFallback = () => (
 const App: React.FC = () => (
   <ErrorBoundary>
     <BrowserRouter>
-      <Toaster theme="dark" richColors position="bottom-right" />
+      <Toaster />
       <Suspense fallback={<GlobalLoadingFallback />}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          {KitGallery ? <Route path="/__kit" element={<KitGallery />} /> : null}
           {toolRoutes.map(({ manifest, Component }) => (
             <Route
               key={manifest.id}

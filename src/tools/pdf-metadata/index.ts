@@ -1,4 +1,4 @@
-import { Tags } from 'lucide-react';
+import { IconTags } from '@/shared/ui/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'PDF Metadata',
   description:
     "View, edit or remove a PDF's title, author and other document properties",
-  icon: Tags,
+  icon: IconTags,
   category: 'pdf',
   version: '1.0.0',
   isNew: true,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FormInput } from 'lucide-react';
+import { IconFormInput } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -153,7 +153,7 @@ const PdfFillFormTool: React.FC<ToolProps> = () => {
                   </Inline>
                   <Button
                     variant="solid"
-                    leftIcon={<FormInput size={16} />}
+                    leftIcon={<IconFormInput size="sm" />}
                     disabled={job.status === 'running'}
                     onClick={() =>
                       job.run(

@@ -103,7 +103,7 @@ const Footer: React.FC<{ tool?: ToolDefinition }> = ({ tool }) => {
 
           <Inline gap="3" wrap>
             <span>
-              © {year} {AUTHOR}
+              Copyright {year} {AUTHOR}
             </span>
             <Item>
               <a

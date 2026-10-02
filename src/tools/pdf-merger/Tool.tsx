@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Merge } from 'lucide-react';
+import { IconMerge } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -171,7 +171,7 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="solid"
-                  leftIcon={<Merge size={16} />}
+                  leftIcon={<IconMerge size="sm" />}
                   disabled={items.length < 2 || busy || reading > 0}
                   onClick={() => job.run(items)}
                 >

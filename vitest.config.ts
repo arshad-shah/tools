@@ -12,7 +12,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.ts'],
+    include: [
+      'src/**/*.test.{ts,tsx}',
+      'test/**/*.test.ts',
+      'eslint-rules/**/*.test.js',
+    ],
     exclude: ['test/e2e/**', 'node_modules/**'],
     setupFiles: ['./test/setup.ts'],
     restoreMocks: true,

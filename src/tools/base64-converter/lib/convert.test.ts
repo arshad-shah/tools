@@ -11,16 +11,19 @@ import {
   preview,
 } from './convert';
 
+// Built from the code point: rule (a) bans pictographs as literals.
+const GRIN = String.fromCodePoint(0x1f600);
+
 describe('encodeText', () => {
   it('encodes any Unicode text', () => {
     expect(encodeText('€', { urlSafe: false })).toBe('4oKs');
-    expect(encodeText('café \u{1F600}', { urlSafe: false })).toBe(
+    expect(encodeText(`café ${GRIN}`, { urlSafe: false })).toBe(
       'Y2Fmw6kg8J+YgA==',
     );
   });
 
   it('uses the URL-safe alphabet without padding when asked', () => {
-    expect(encodeText('café \u{1F600}', { urlSafe: true })).toBe(
+    expect(encodeText(`café ${GRIN}`, { urlSafe: true })).toBe(
       'Y2Fmw6kg8J-YgA',
     );
   });
@@ -41,11 +44,11 @@ describe('encodeBytes', () => {
 describe('decodeInput', () => {
   it('decodes UTF-8 text', () => {
     const out = decodeInput('Y2Fmw6kg8J+YgA==');
-    expect(out.text).toBe('café \u{1F600}');
+    expect(out.text).toBe(`café ${GRIN}`);
   });
 
   it('decodes URL-safe Base64 without padding', () => {
-    expect(decodeInput('Y2Fmw6kg8J-YgA').text).toBe('café \u{1F600}');
+    expect(decodeInput('Y2Fmw6kg8J-YgA').text).toBe(`café ${GRIN}`);
   });
 
   it('reports binary data as bytes with no text', () => {

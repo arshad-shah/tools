@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ListOrdered } from 'lucide-react';
+import { IconListOrdered } from '@/shared/ui/icons';
 import {
   Button,
   Card,
@@ -190,7 +190,7 @@ const PdfPageNumbersTool: React.FC<ToolProps> = () => {
                 />
                 <Button
                   variant="solid"
-                  leftIcon={<ListOrdered size={16} />}
+                  leftIcon={<IconListOrdered size="sm" />}
                   disabled={
                     job.status === 'running' || selection.error !== null
                   }

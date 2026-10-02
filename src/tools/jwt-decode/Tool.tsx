@@ -1,25 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle,
-  Braces,
-  Brackets,
-  CheckCircle,
-  Clock,
-  Copy,
-  FileJson,
-  Globe,
-  Info,
-  Key,
-  Lock,
-  RefreshCw,
-  Settings,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
-  ShieldX,
-  Trash2,
-  User,
-} from 'lucide-react';
+  IconAlertCircle,
+  IconBraces,
+  IconBrackets,
+  IconCheckCircle,
+  IconClock,
+  IconCopy,
+  IconFileJson,
+  IconGlobe,
+  IconInfo,
+  IconKey,
+  IconLock,
+  IconRefreshCw,
+  IconSettings,
+  IconShield,
+  IconShieldAlert,
+  IconShieldCheck,
+  IconShieldX,
+  IconTrash2,
+  IconUser,
+} from '@/shared/ui/icons';
 import {
   Accordion,
   AccordionContent,
@@ -122,7 +122,7 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
     if (depth >= maxDepth) {
       return (
         <Inline gap="1" align="center">
-          <Brackets size={12} aria-hidden />
+          <IconBrackets size="xs" />
           <Text size="sm" tone="subtle">
             Array[{data.length}]
           </Text>
@@ -132,7 +132,7 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
     return (
       <Stack gap="1">
         <Inline gap="1" align="center">
-          <Brackets size={14} aria-hidden />
+          <IconBrackets size="sm" />
           <Text size="sm" weight="medium">
             Array ({data.length} items)
           </Text>
@@ -159,7 +159,7 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
     if (depth >= maxDepth) {
       return (
         <Inline gap="1" align="center">
-          <Braces size={12} aria-hidden />
+          <IconBraces size="xs" />
           <Text size="sm" tone="subtle">
             Object[{entries.length} keys]
           </Text>
@@ -169,7 +169,7 @@ const ValueRenderer: React.FC<ValueRendererProps> = ({
     return (
       <Stack gap="1">
         <Inline gap="1" align="center">
-          <Braces size={14} aria-hidden />
+          <IconBraces size="sm" />
           <Text size="sm" weight="medium">
             Object ({entries.length} properties)
           </Text>
@@ -476,7 +476,7 @@ const JWTDecoder: React.FC = () => {
           <ClaimCard
             label="Algorithm"
             value={header.alg}
-            icon={<Shield size={16} aria-hidden />}
+            icon={<IconShield size="sm" />}
             colorScheme="warning"
           />
         )}
@@ -484,14 +484,14 @@ const JWTDecoder: React.FC = () => {
           <ClaimCard
             label="Type"
             value={header.typ}
-            icon={<FileJson size={16} aria-hidden />}
+            icon={<IconFileJson size="sm" />}
           />
         )}
         {header.kid && (
           <ClaimCard
             label="Key ID"
             value={header.kid}
-            icon={<Key size={16} aria-hidden />}
+            icon={<IconKey size="sm" />}
           />
         )}
       </Grid>
@@ -501,7 +501,7 @@ const JWTDecoder: React.FC = () => {
           <AccordionItem value="extra">
             <AccordionTrigger>
               <span className="inline-flex items-center gap-2">
-                <Settings size={16} aria-hidden />
+                <IconSettings size="sm" />
                 <Text as="span" weight="medium">
                   Additional header claims
                 </Text>
@@ -528,7 +528,7 @@ const JWTDecoder: React.FC = () => {
         <AccordionItem value="raw">
           <AccordionTrigger>
             <span className="inline-flex items-center gap-2">
-              <Braces size={16} aria-hidden />
+              <IconBraces size="sm" />
               <Text as="span" weight="medium">
                 Raw JSON
               </Text>
@@ -545,9 +545,9 @@ const JWTDecoder: React.FC = () => {
                   size="sm"
                   leftIcon={
                     copiedKey === 'header' ? (
-                      <CheckCircle size={14} />
+                      <IconCheckCircle size="sm" />
                     ) : (
-                      <Copy size={14} />
+                      <IconCopy size="sm" />
                     )
                   }
                   onClick={() =>
@@ -572,7 +572,7 @@ const JWTDecoder: React.FC = () => {
           <AccordionItem value="identity">
             <AccordionTrigger>
               <span className="inline-flex items-center gap-2">
-                <User size={16} aria-hidden />
+                <IconUser size="sm" />
                 <Text as="span" weight="medium">
                   Identity claims
                 </Text>
@@ -601,7 +601,7 @@ const JWTDecoder: React.FC = () => {
           <AccordionItem value="access">
             <AccordionTrigger>
               <span className="inline-flex items-center gap-2">
-                <Shield size={16} aria-hidden />
+                <IconShield size="sm" />
                 <Text as="span" weight="medium">
                   Access &amp; permissions
                 </Text>
@@ -631,7 +631,7 @@ const JWTDecoder: React.FC = () => {
           <AccordionItem value="timing">
             <AccordionTrigger>
               <span className="inline-flex items-center gap-2">
-                <Clock size={16} aria-hidden />
+                <IconClock size="sm" />
                 <Text as="span" weight="medium">
                   Timestamps
                 </Text>
@@ -651,9 +651,9 @@ const JWTDecoder: React.FC = () => {
                         <Inline justify="between" align="center" gap="3" wrap>
                           <Inline align="center" gap="3">
                             {isExpired ? (
-                              <AlertCircle size={20} aria-hidden />
+                              <IconAlertCircle size="lg" />
                             ) : isExp ? (
-                              <CheckCircle size={20} aria-hidden />
+                              <IconCheckCircle size="lg" />
                             ) : (
                               getClaimIcon(k)
                             )}
@@ -691,7 +691,7 @@ const JWTDecoder: React.FC = () => {
           <AccordionItem value="issuer">
             <AccordionTrigger>
               <span className="inline-flex items-center gap-2">
-                <Globe size={16} aria-hidden />
+                <IconGlobe size="sm" />
                 <Text as="span" weight="medium">
                   Issuer information
                 </Text>
@@ -720,7 +720,7 @@ const JWTDecoder: React.FC = () => {
           <AccordionItem value="custom">
             <AccordionTrigger>
               <span className="inline-flex items-center gap-2">
-                <Settings size={16} aria-hidden />
+                <IconSettings size="sm" />
                 <Text as="span" weight="medium">
                   Custom claims
                 </Text>
@@ -748,7 +748,7 @@ const JWTDecoder: React.FC = () => {
         <AccordionItem value="raw">
           <AccordionTrigger>
             <span className="inline-flex items-center gap-2">
-              <Braces size={16} aria-hidden />
+              <IconBraces size="sm" />
               <Text as="span" weight="medium">
                 Raw JSON
               </Text>
@@ -765,9 +765,9 @@ const JWTDecoder: React.FC = () => {
                   size="sm"
                   leftIcon={
                     copiedKey === 'payload' ? (
-                      <CheckCircle size={14} />
+                      <IconCheckCircle size="sm" />
                     ) : (
-                      <Copy size={14} />
+                      <IconCopy size="sm" />
                     )
                   }
                   onClick={() =>
@@ -787,7 +787,7 @@ const JWTDecoder: React.FC = () => {
 
   const renderSignatureSection = (signature: string, algorithm?: string) => (
     <Stack gap="4">
-      <Alert status="info" icon={<Info aria-hidden />}>
+      <Alert status="info" icon={<IconInfo />}>
         <AlertTitle>About signatures</AlertTitle>
         <AlertDescription>
           The signature proves the token was issued by the key holder and not
@@ -809,12 +809,12 @@ const JWTDecoder: React.FC = () => {
                     ? 'ECDSA (elliptic curve)'
                     : 'Other algorithm'
           }`}
-          icon={<Lock size={16} aria-hidden />}
+          icon={<IconLock size="sm" />}
           colorScheme="warning"
         />
       )}
       {unsigned ? (
-        <Alert status="warning" icon={<ShieldAlert aria-hidden />}>
+        <Alert status="warning" icon={<IconShieldAlert />}>
           <AlertTitle>Unsigned token (alg: none)</AlertTitle>
           <AlertDescription>
             There is no signature to verify. Do not trust the claims of an
@@ -877,7 +877,7 @@ const JWTDecoder: React.FC = () => {
                 </Text>
                 <Button
                   variant="solid"
-                  leftIcon={<ShieldCheck size={16} />}
+                  leftIcon={<IconShieldCheck size="sm" />}
                   onClick={() => void handleVerify()}
                   disabled={!keyText.trim() || sigStatus.state === 'checking'}
                 >
@@ -902,7 +902,7 @@ const JWTDecoder: React.FC = () => {
         <AccordionItem value="signature-value">
           <AccordionTrigger>
             <span className="inline-flex items-center gap-2">
-              <Key size={16} aria-hidden />
+              <IconKey size="sm" />
               <Text as="span" weight="medium">
                 Signature value
               </Text>
@@ -919,9 +919,9 @@ const JWTDecoder: React.FC = () => {
                   size="sm"
                   leftIcon={
                     copiedKey === 'signature' ? (
-                      <CheckCircle size={14} />
+                      <IconCheckCircle size="sm" />
                     ) : (
-                      <Copy size={14} />
+                      <IconCopy size="sm" />
                     )
                   }
                   onClick={() => void copy(signature, 'signature')}
@@ -943,14 +943,14 @@ const JWTDecoder: React.FC = () => {
         <CardHeader>
           <Inline justify="between" align="center" gap="2" wrap>
             <Inline gap="2" align="center">
-              <Lock size={20} aria-hidden />
+              <IconLock size="lg" />
               <Label>JWT token</Label>
             </Inline>
             <Inline gap="2" wrap>
               <Button
                 variant="ghost"
                 size="sm"
-                leftIcon={<FileJson size={14} />}
+                leftIcon={<IconFileJson size="sm" />}
                 onClick={handleSample}
               >
                 Sample
@@ -960,9 +960,9 @@ const JWTDecoder: React.FC = () => {
                 size="sm"
                 leftIcon={
                   copiedKey === 'jwt' ? (
-                    <CheckCircle size={14} />
+                    <IconCheckCircle size="sm" />
                   ) : (
-                    <Copy size={14} />
+                    <IconCopy size="sm" />
                   )
                 }
                 onClick={handleCopyJwt}
@@ -985,7 +985,7 @@ const JWTDecoder: React.FC = () => {
               <Box className="flex-1">
                 <Button
                   variant="solid"
-                  leftIcon={<RefreshCw size={16} />}
+                  leftIcon={<IconRefreshCw size="sm" />}
                   onClick={() => decode(jwt)}
                   className="w-full"
                 >
@@ -994,7 +994,7 @@ const JWTDecoder: React.FC = () => {
               </Box>
               <Button
                 variant="soft"
-                leftIcon={<Trash2 size={16} />}
+                leftIcon={<IconTrash2 size="sm" />}
                 onClick={clear}
               >
                 Clear
@@ -1020,12 +1020,12 @@ const JWTDecoder: React.FC = () => {
                 title="Header and payload decoded"
                 detail=""
                 tone="neutral"
-                icon={<FileJson size={18} aria-hidden />}
+                icon={<IconFileJson size="md" />}
               />
               <StatusRow
                 label="Time claims"
                 {...timeText(timeStatus)}
-                icon={<Clock size={18} aria-hidden />}
+                icon={<IconClock size="md" />}
               />
               <Inline gap="2" align="center" wrap className="pl-8">
                 <Label htmlFor="jwt-clock-skew">Clock skew (seconds)</Label>
@@ -1061,12 +1061,12 @@ const JWTDecoder: React.FC = () => {
                 tone={SIGNATURE_TEXT[sigStatus.state].tone}
                 icon={
                   sigStatus.state === 'verified' ? (
-                    <ShieldCheck size={18} aria-hidden />
+                    <IconShieldCheck size="md" />
                   ) : sigStatus.state === 'invalid' ||
                     sigStatus.state === 'error' ? (
-                    <ShieldX size={18} aria-hidden />
+                    <IconShieldX size="md" />
                   ) : (
-                    <ShieldAlert size={18} aria-hidden />
+                    <IconShieldAlert size="md" />
                   )
                 }
               />
@@ -1130,7 +1130,7 @@ const JWTDecoder: React.FC = () => {
       )}
 
       <Inline justify="center" align="center" gap="2" wrap>
-        <Lock size={14} aria-hidden />
+        <IconLock size="sm" />
         <Text size="sm" tone="subtle">
           All processing happens in your browser — no data is sent to any server
         </Text>

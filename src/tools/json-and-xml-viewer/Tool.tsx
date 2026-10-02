@@ -4,19 +4,19 @@ import CodeEditor from '@uiw/react-textarea-code-editor';
 import rehypePrism from 'rehype-prism-plus';
 import rehypeRewrite from 'rehype-rewrite';
 import {
-  ChevronDown,
-  Code2,
-  Columns,
-  Download,
-  FileJson,
-  List as ListIcon,
-  MonitorIcon,
-  MoreHorizontal,
-  Network,
-  PanelLeft,
-  PanelRight,
-  Wand2,
-} from 'lucide-react';
+  IconChevronDown,
+  IconCodeXml,
+  IconColumns,
+  IconDownload,
+  IconFileJson,
+  IconList,
+  IconMonitor,
+  IconMoreHorizontal,
+  IconNetwork,
+  IconPanelLeft,
+  IconPanelRight,
+  IconWand2,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -245,9 +245,9 @@ const DataViewer = () => {
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
             {format === 'json' ? (
-              <FileJson size={16} aria-hidden />
+              <IconFileJson size="sm" />
             ) : (
-              <Code2 size={16} aria-hidden />
+              <IconCodeXml size="sm" />
             )}
             <Heading level={3} size="md">
               {format.toUpperCase()} editor
@@ -273,9 +273,9 @@ const DataViewer = () => {
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
             {viewMode === 'tree' ? (
-              <ListIcon size={16} aria-hidden />
+              <IconList size="sm" />
             ) : (
-              <Network size={16} aria-hidden />
+              <IconNetwork size="sm" />
             )}
             <Heading level={3} size="md">
               {viewMode === 'tree' ? 'Tree view' : 'Network view'}
@@ -322,7 +322,7 @@ const DataViewer = () => {
                     <Tooltip content="Tree view">
                       <IconButton
                         label="Tree view"
-                        icon={<ListIcon size={14} />}
+                        icon={<IconList size="sm" />}
                         size="sm"
                         variant={viewMode === 'tree' ? 'solid' : 'ghost'}
                         onClick={() => setViewMode('tree')}
@@ -331,7 +331,7 @@ const DataViewer = () => {
                     <Tooltip content="Network graph">
                       <IconButton
                         label="Network view"
-                        icon={<Network size={14} />}
+                        icon={<IconNetwork size="sm" />}
                         size="sm"
                         variant={viewMode === 'network' ? 'solid' : 'ghost'}
                         onClick={() => setViewMode('network')}
@@ -343,7 +343,7 @@ const DataViewer = () => {
                     <Tooltip content="Split panels">
                       <IconButton
                         label="Split layout"
-                        icon={<Columns size={14} />}
+                        icon={<IconColumns size="sm" />}
                         size="sm"
                         variant={layout === 'split' ? 'solid' : 'ghost'}
                         onClick={() => setLayout('split')}
@@ -352,7 +352,7 @@ const DataViewer = () => {
                     <Tooltip content="Single panel">
                       <IconButton
                         label="Single layout"
-                        icon={<MonitorIcon size={14} />}
+                        icon={<IconMonitor size="sm" />}
                         size="sm"
                         variant={layout === 'single' ? 'solid' : 'ghost'}
                         onClick={() => setLayout('single')}
@@ -365,7 +365,7 @@ const DataViewer = () => {
                       <Tooltip content="Editor">
                         <IconButton
                           label="Editor pane"
-                          icon={<PanelLeft size={14} />}
+                          icon={<IconPanelLeft size="sm" />}
                           size="sm"
                           variant={activePane === 'editor' ? 'solid' : 'ghost'}
                           onClick={() => setActivePane('editor')}
@@ -374,7 +374,7 @@ const DataViewer = () => {
                       <Tooltip content="Viewer">
                         <IconButton
                           label="Viewer pane"
-                          icon={<PanelRight size={14} />}
+                          icon={<IconPanelRight size="sm" />}
                           size="sm"
                           variant={activePane === 'view' ? 'solid' : 'ghost'}
                           onClick={() => setActivePane('view')}
@@ -388,7 +388,7 @@ const DataViewer = () => {
                   <Button
                     variant="solid"
                     size="sm"
-                    leftIcon={<Wand2 size={14} />}
+                    leftIcon={<IconWand2 size="sm" />}
                     onClick={handleParse}
                   >
                     Parse
@@ -398,8 +398,8 @@ const DataViewer = () => {
                       <Button
                         variant="soft"
                         size="sm"
-                        rightIcon={<ChevronDown size={12} />}
-                        leftIcon={<MoreHorizontal size={14} />}
+                        rightIcon={<IconChevronDown size="xs" />}
+                        leftIcon={<IconMoreHorizontal size="sm" />}
                         aria-label="More actions"
                       >
                         More
@@ -408,14 +408,14 @@ const DataViewer = () => {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={formatCode}>
                         <Inline align="center" gap="2">
-                          <Code2 size={14} aria-hidden />
+                          <IconCodeXml size="sm" />
                           <span>Format code</span>
                         </Inline>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleDownload}>
                         <Inline align="center" gap="2">
-                          <Download size={14} aria-hidden />
+                          <IconDownload size="sm" />
                           <span>Download as .{format}</span>
                         </Inline>
                       </DropdownMenuItem>

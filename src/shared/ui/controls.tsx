@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Minus, Plus } from 'lucide-react';
+import { IconCheck, IconMinus, IconPlus } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 
 /* ------------------------------------------------------------------ *
@@ -27,15 +27,17 @@ export const Switch: React.FC<SwitchProps> = ({
     disabled={disabled}
     onClick={() => onCheckedChange(!checked)}
     className={cn(
-      'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors',
+      'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-fast',
       'disabled:cursor-not-allowed disabled:opacity-50',
-      checked ? 'border-accent bg-accent' : 'border-line bg-surface-subtle',
+      checked
+        ? 'border-accent-indicator bg-accent'
+        : 'border-line-control bg-surface-3',
     )}
     {...aria}
   >
     <span
       className={cn(
-        'inline-block size-4 rounded-full transition-transform',
+        'inline-block size-4 rounded-full transition-transform duration-fast',
         checked ? 'translate-x-6 bg-accent-ink' : 'translate-x-1 bg-fg-muted',
       )}
     />
@@ -68,15 +70,15 @@ export const Checkbox: React.FC<CheckboxProps> = ({
     disabled={disabled}
     onClick={() => onCheckedChange(!checked)}
     className={cn(
-      'inline-flex size-5 shrink-0 items-center justify-center rounded border transition-colors',
+      'inline-flex size-5 shrink-0 items-center justify-center rounded-sm border transition-colors duration-fast',
       'disabled:cursor-not-allowed disabled:opacity-50',
       checked
-        ? 'border-accent bg-accent text-accent-ink'
-        : 'border-line-strong bg-surface',
+        ? 'border-accent-indicator bg-accent text-accent-ink'
+        : 'border-line-control bg-surface-2',
     )}
     {...aria}
   >
-    {checked && <Check size={14} strokeWidth={3} />}
+    {checked && <IconCheck size="sm" strokeWidth={2} />}
   </button>
 );
 Checkbox.displayName = 'Checkbox';
@@ -116,7 +118,7 @@ export const Slider: React.FC<SliderProps> = ({
     disabled={disabled}
     onChange={(e) => onValueChange(Number(e.target.value))}
     className={cn(
-      'h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-strong accent-accent',
+      'h-1.5 w-full cursor-pointer appearance-none rounded-full bg-line-control accent-accent-indicator',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className,
     )}
@@ -155,7 +157,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   return (
     <div
       className={cn(
-        'flex h-10 items-center rounded-md border border-line bg-surface focus-within:border-accent',
+        'flex h-9 items-center rounded-md border border-line-strong bg-surface-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
         disabled && 'opacity-50',
         className,
       )}
@@ -167,7 +169,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         onClick={() => onValueChange(clamp(value - step))}
         className="flex h-full w-9 items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed"
       >
-        <Minus size={14} />
+        <IconMinus size="sm" />
       </button>
       <input
         type="number"
@@ -188,7 +190,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         onClick={() => onValueChange(clamp(value + step))}
         className="flex h-full w-9 items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed"
       >
-        <Plus size={14} />
+        <IconPlus size="sm" />
       </button>
     </div>
   );
@@ -201,27 +203,31 @@ NumberInput.displayName = 'NumberInput';
 interface ProgressProps {
   value: number;
   max?: number;
+  /** Accessible name; default 'Progress'. */
+  label?: string;
   className?: string;
 }
 export const Progress: React.FC<ProgressProps> = ({
   value,
   max = 100,
+  label = 'Progress',
   className,
 }) => {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
     <div
       role="progressbar"
+      aria-label={label}
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={max}
       className={cn(
-        'h-2 w-full overflow-hidden rounded-full bg-surface-strong',
+        'h-2 w-full overflow-hidden rounded-full bg-surface-3',
         className,
       )}
     >
       <div
-        className="h-full rounded-full bg-accent transition-[width]"
+        className="h-full rounded-full bg-accent-indicator transition-[width]"
         style={{ width: `${pct}%` }}
       />
     </div>

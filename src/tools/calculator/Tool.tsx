@@ -1,21 +1,21 @@
 import React, { useMemo } from 'react';
 import {
-  ArrowLeft,
-  BarChart4,
-  Calculator as CalcIcon,
-  Clock,
-  Divide,
-  Equal,
-  History,
-  Minus,
-  Percent,
-  Plus,
-  Power,
-  RotateCcw,
-  Star,
-  Trash2,
-  X,
-} from 'lucide-react';
+  IconArrowLeft,
+  IconBarChart4,
+  IconCalculator,
+  IconClock,
+  IconDivide,
+  IconEqual,
+  IconHistory,
+  IconMinus,
+  IconPercent,
+  IconPlus,
+  IconPower,
+  IconRotateCcw,
+  IconStar,
+  IconTrash2,
+  IconX,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -147,12 +147,12 @@ const Calculator: React.FC = () => {
         C
       </CalcKey>
       <CalcKey onClick={clearEntry}>CE</CalcKey>
-      <CalcKey onClick={backspace} icon={<ArrowLeft size={16} />} />
+      <CalcKey onClick={backspace} icon={<IconArrowLeft size="sm" />} />
       <CalcKey
         variant="solid"
         colorScheme="accent"
         onClick={() => performOperation('÷')}
-        icon={<Divide size={16} />}
+        icon={<IconDivide size="sm" />}
       />
 
       <CalcKey onClick={() => inputDigit(7)}>7</CalcKey>
@@ -162,7 +162,7 @@ const Calculator: React.FC = () => {
         variant="solid"
         colorScheme="accent"
         onClick={() => performOperation('×')}
-        icon={<X size={16} />}
+        icon={<IconX size="sm" />}
       />
 
       <CalcKey onClick={() => inputDigit(4)}>4</CalcKey>
@@ -172,7 +172,7 @@ const Calculator: React.FC = () => {
         variant="solid"
         colorScheme="accent"
         onClick={() => performOperation('-')}
-        icon={<Minus size={16} />}
+        icon={<IconMinus size="sm" />}
       />
 
       <CalcKey onClick={() => inputDigit(1)}>1</CalcKey>
@@ -182,7 +182,7 @@ const Calculator: React.FC = () => {
         variant="solid"
         colorScheme="accent"
         onClick={() => performOperation('+')}
-        icon={<Plus size={16} />}
+        icon={<IconPlus size="sm" />}
       />
 
       <CalcKey onClick={toggleSign}>±</CalcKey>
@@ -192,10 +192,10 @@ const Calculator: React.FC = () => {
         variant="solid"
         colorScheme="success"
         onClick={calculate}
-        icon={<Equal size={16} />}
+        icon={<IconEqual size="sm" />}
       />
 
-      <CalcKey onClick={percentage} icon={<Percent size={16} />} />
+      <CalcKey onClick={percentage} icon={<IconPercent size="sm" />} />
       <CalcKey onClick={squareRoot}>√</CalcKey>
       <CalcKey onClick={square}>x²</CalcKey>
       <CalcKey onClick={reciprocal}>1/x</CalcKey>
@@ -211,7 +211,7 @@ const Calculator: React.FC = () => {
         variant="soft"
         colorScheme="accent"
         onClick={() => performOperation('pow')}
-        icon={<Power size={16} />}
+        icon={<IconPower size="sm" />}
       />
       <CalcKey variant="soft" colorScheme="accent" onClick={sin}>
         sin
@@ -271,7 +271,7 @@ const Calculator: React.FC = () => {
           <Button
             variant="solid"
             onClick={evaluateExpression}
-            leftIcon={<Equal size={16} />}
+            leftIcon={<IconEqual size="sm" />}
             fullWidth
           >
             Evaluate
@@ -280,13 +280,13 @@ const Calculator: React.FC = () => {
         <IconButton
           variant="soft"
           label="Save calculation"
-          icon={<Star size={16} />}
+          icon={<IconStar size="sm" />}
           onClick={saveCalculation}
         />
         <IconButton
           variant={showGraph ? 'solid' : 'soft'}
           label="Plot expression"
-          icon={<BarChart4 size={16} />}
+          icon={<IconBarChart4 size="sm" />}
           onClick={toggleGraph}
         />
       </Inline>
@@ -318,7 +318,7 @@ const Calculator: React.FC = () => {
         <CalcKey onClick={() => setDisplay(display + 'sin(')}>sin</CalcKey>
         <CalcKey onClick={() => setDisplay(display + 'cos(')}>cos</CalcKey>
         <CalcKey onClick={() => setDisplay(display + 'tan(')}>tan</CalcKey>
-        <CalcKey onClick={backspace} icon={<ArrowLeft size={16} />} />
+        <CalcKey onClick={backspace} icon={<IconArrowLeft size="sm" />} />
 
         <CalcKey onClick={() => setDisplay(display + 'sqrt(')}>sqrt</CalcKey>
         <CalcKey onClick={() => setDisplay(display + 'log(')}>log</CalcKey>
@@ -332,7 +332,7 @@ const Calculator: React.FC = () => {
           variant="solid"
           colorScheme="success"
           onClick={evaluateExpression}
-          icon={<Equal size={16} />}
+          icon={<IconEqual size="sm" />}
         />
       </Grid>
     </Stack>
@@ -345,7 +345,7 @@ const Calculator: React.FC = () => {
           <CardHeader>
             <Inline justify="between" align="center" wrap gap="2">
               <Inline align="center" gap="2">
-                <CalcIcon size={20} aria-hidden />
+                <IconCalculator size="lg" />
                 <Heading level={2} size="lg">
                   ProCalc
                   {mode === 'scientific'
@@ -365,21 +365,21 @@ const Calculator: React.FC = () => {
                   variant={showMemoryPanel ? 'solid' : 'soft'}
                   size="sm"
                   label="Memory"
-                  icon={<RotateCcw size={14} />}
+                  icon={<IconRotateCcw size="sm" />}
                   onClick={toggleMemoryPanel}
                 />
                 <IconButton
                   variant="soft"
                   size="sm"
                   label="History"
-                  icon={<History size={14} />}
+                  icon={<IconHistory size="sm" />}
                   onClick={toggleHistory}
                 />
                 <IconButton
                   variant={showFavorites ? 'solid' : 'soft'}
                   size="sm"
                   label="Saved calculations"
-                  icon={<Star size={14} />}
+                  icon={<IconStar size="sm" />}
                   onClick={toggleFavorites}
                 />
               </Inline>
@@ -422,7 +422,7 @@ const Calculator: React.FC = () => {
                     variant={showTimestamp ? 'solid' : 'soft'}
                     size="sm"
                     label="Toggle timestamps"
-                    icon={<Clock size={14} />}
+                    icon={<IconClock size="sm" />}
                     onClick={toggleTimestamps}
                   />
                 </Inline>
@@ -617,7 +617,7 @@ const Calculator: React.FC = () => {
                                 variant="ghost"
                                 size="sm"
                                 label="Remove"
-                                icon={<Trash2 size={14} />}
+                                icon={<IconTrash2 size="sm" />}
                                 onClick={() => {
                                   const next = [...savedCalculations];
                                   next.splice(idx, 1);

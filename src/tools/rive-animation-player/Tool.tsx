@@ -11,23 +11,23 @@ import {
   StateMachineInputType,
 } from '@rive-app/react-canvas';
 import {
-  AlertCircle,
-  ArrowDown,
-  ArrowDownLeft,
-  ArrowDownRight,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  ArrowUpLeft,
-  ArrowUpRight,
-  CheckCircle2,
-  Circle as CircleIcon,
-  Info,
-  Pause,
-  Play,
-  RotateCcw,
-  X,
-} from 'lucide-react';
+  IconAlertCircle,
+  IconArrowDown,
+  IconArrowDownLeft,
+  IconArrowDownRight,
+  IconArrowLeft,
+  IconArrowRight,
+  IconArrowUp,
+  IconArrowUpLeft,
+  IconArrowUpRight,
+  IconCheckCircle2,
+  IconCircle,
+  IconInfo,
+  IconPause,
+  IconPlay,
+  IconRotateCcw,
+  IconX,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -102,15 +102,15 @@ const alignValues: (keyof typeof Alignment)[] = [
 ];
 
 const alignmentIcon: Record<string, React.ReactNode> = {
-  TopLeft: <ArrowUpLeft size={14} aria-hidden />,
-  TopCenter: <ArrowUp size={14} aria-hidden />,
-  TopRight: <ArrowUpRight size={14} aria-hidden />,
-  CenterLeft: <ArrowLeft size={14} aria-hidden />,
-  Center: <CircleIcon size={14} aria-hidden />,
-  CenterRight: <ArrowRight size={14} aria-hidden />,
-  BottomLeft: <ArrowDownLeft size={14} aria-hidden />,
-  BottomCenter: <ArrowDown size={14} aria-hidden />,
-  BottomRight: <ArrowDownRight size={14} aria-hidden />,
+  TopLeft: <IconArrowUpLeft size="sm" />,
+  TopCenter: <IconArrowUp size="sm" />,
+  TopRight: <IconArrowUpRight size="sm" />,
+  CenterLeft: <IconArrowLeft size="sm" />,
+  Center: <IconCircle size="sm" />,
+  CenterRight: <IconArrowRight size="sm" />,
+  BottomLeft: <IconArrowDownLeft size="sm" />,
+  BottomCenter: <IconArrowDown size="sm" />,
+  BottomRight: <IconArrowDownRight size="sm" />,
 };
 
 export default function RiveAnimationPlayer() {
@@ -490,13 +490,13 @@ export default function RiveAnimationPlayer() {
   const logIcon = (type: DebugLog['type']) => {
     switch (type) {
       case 'error':
-        return <AlertCircle size={14} aria-hidden />;
+        return <IconAlertCircle size="sm" />;
       case 'warning':
-        return <AlertCircle size={14} aria-hidden />;
+        return <IconAlertCircle size="sm" />;
       case 'success':
-        return <CheckCircle2 size={14} aria-hidden />;
+        return <IconCheckCircle2 size="sm" />;
       default:
-        return <Info size={14} aria-hidden />;
+        return <IconInfo size="sm" />;
     }
   };
 
@@ -678,7 +678,9 @@ export default function RiveAnimationPlayer() {
           variant="soft"
           fullWidth
           disabled={status.current !== PlayerState.Active}
-          leftIcon={isPlaying ? <Pause size={16} /> : <Play size={16} />}
+          leftIcon={
+            isPlaying ? <IconPause size="sm" /> : <IconPlay size="sm" />
+          }
           onClick={togglePlayback}
         >
           {status.current !== PlayerState.Active
@@ -754,7 +756,7 @@ export default function RiveAnimationPlayer() {
             <Button
               variant="ghost"
               size="sm"
-              leftIcon={<X size={14} />}
+              leftIcon={<IconX size="sm" />}
               onClick={() => setDebugLogs([])}
             >
               Clear
@@ -826,7 +828,11 @@ export default function RiveAnimationPlayer() {
                       variant="soft"
                       size="sm"
                       leftIcon={
-                        isPlaying ? <Pause size={14} /> : <Play size={14} />
+                        isPlaying ? (
+                          <IconPause size="sm" />
+                        ) : (
+                          <IconPlay size="sm" />
+                        )
                       }
                       disabled={status.current !== PlayerState.Active}
                       onClick={togglePlayback}
@@ -836,7 +842,7 @@ export default function RiveAnimationPlayer() {
                     <Button
                       variant="soft"
                       size="sm"
-                      leftIcon={<RotateCcw size={14} />}
+                      leftIcon={<IconRotateCcw size="sm" />}
                       onClick={reset}
                     >
                       Reset
@@ -936,7 +942,7 @@ export default function RiveAnimationPlayer() {
                 <Button
                   variant="soft"
                   size="sm"
-                  leftIcon={<Info size={14} />}
+                  leftIcon={<IconInfo size="sm" />}
                   onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)}
                   fullWidth
                 >

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageOff } from 'lucide-react';
+import { IconImageOff } from '@/shared/ui/icons';
 import { Spinner } from '@/shared/ui';
 import { useObjectUrl } from '@/shared/lib/object-url';
 
@@ -26,7 +26,7 @@ export const ImageThumb: React.FC<ImageThumbProps> = ({
   if (failedUrl === url)
     return (
       <span title={`${name} cannot be previewed`}>
-        <ImageOff size={20} className="text-danger" aria-hidden />
+        <IconImageOff size="lg" className="text-danger" />
         <span className="sr-only">{`${name} cannot be previewed`}</span>
       </span>
     );

@@ -48,7 +48,7 @@ describe('deriveFilename', () => {
     ['my.scan.v2.pdf', 'pages-1-3', 'pdf', 'my.scan.v2.pages-1-3.pdf'],
     ['report.pdf', '', '.zip', 'report.zip'],
     ['.pdf', 'x', 'pdf', 'file.x.pdf'],
-  ])('%s + %s + %s → %s', (input, suffix, ext, expected) => {
+  ])('%s + %s + %s to %s', (input, suffix, ext, expected) => {
     expect(deriveFilename(input, suffix, ext)).toBe(expected);
   });
 });

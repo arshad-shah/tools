@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { RotateCcw, RotateCw, Trash2, Undo2, Download } from 'lucide-react';
+import {
+  IconDownload,
+  IconRotateCcw,
+  IconRotateCw,
+  IconTrash2,
+  IconUndo,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -107,7 +113,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 </Text>
                 <Button
                   size="sm"
-                  leftIcon={<RotateCcw size={14} />}
+                  leftIcon={<IconRotateCcw size="sm" />}
                   disabled={busy || !selected.size}
                   onClick={() => commit(rotateTiles(tiles, selected, -90))}
                 >
@@ -115,7 +121,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 </Button>
                 <Button
                   size="sm"
-                  leftIcon={<RotateCw size={14} />}
+                  leftIcon={<IconRotateCw size="sm" />}
                   disabled={busy || !selected.size}
                   onClick={() => commit(rotateTiles(tiles, selected, 90))}
                 >
@@ -124,7 +130,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 <Button
                   size="sm"
                   variant="danger"
-                  leftIcon={<Trash2 size={14} />}
+                  leftIcon={<IconTrash2 size="sm" />}
                   disabled={
                     busy || !selected.size || selected.size >= tiles.length
                   }
@@ -135,7 +141,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                 <Button
                   size="sm"
                   variant="ghost"
-                  leftIcon={<Undo2 size={14} />}
+                  leftIcon={<IconUndo size="sm" />}
                   disabled={busy || !dirty}
                   onClick={() => {
                     commit(initialTiles(doc.pageCount));
@@ -156,7 +162,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                     <IconButton
                       tabIndex={tabIndex}
                       label={`Rotate page ${tile.pageIndex + 1} left`}
-                      icon={<RotateCcw size={12} />}
+                      icon={<IconRotateCcw size="xs" />}
                       size="xs"
                       variant="ghost"
                       disabled={busy}
@@ -167,7 +173,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                     <IconButton
                       tabIndex={tabIndex}
                       label={`Rotate page ${tile.pageIndex + 1} right`}
-                      icon={<RotateCw size={12} />}
+                      icon={<IconRotateCw size="xs" />}
                       size="xs"
                       variant="ghost"
                       disabled={busy}
@@ -178,7 +184,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
                     <IconButton
                       tabIndex={tabIndex}
                       label={`Delete page ${tile.pageIndex + 1}`}
-                      icon={<Trash2 size={12} />}
+                      icon={<IconTrash2 size="xs" />}
                       size="xs"
                       variant="ghost"
                       disabled={busy || tiles.length === 1}
@@ -189,7 +195,7 @@ const OrganizeTool: React.FC<ToolProps> = () => {
               />
               <Button
                 variant="solid"
-                leftIcon={<Download size={16} />}
+                leftIcon={<IconDownload size="sm" />}
                 disabled={busy}
                 onClick={() => job.run(file, tiles)}
               >

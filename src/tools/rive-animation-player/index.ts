@@ -1,4 +1,4 @@
-import { Play } from 'lucide-react';
+import { IconPlay } from '@/shared/ui/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Rive Animation Player',
   description:
     'Preview and control Rive animations with state machines and artboards',
-  icon: Play,
+  icon: IconPlay,
   category: 'media',
   version: '1.0.0',
   enabled: true,

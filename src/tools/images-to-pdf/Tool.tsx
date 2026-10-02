@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileStack } from 'lucide-react';
+import { IconFileStack } from '@/shared/ui/icons';
 import {
   Badge,
   Button,
@@ -208,7 +208,7 @@ const ImagesToPdfTool: React.FC<ToolProps> = () => {
           <div className="flex flex-wrap gap-3">
             <Button
               variant="solid"
-              leftIcon={<FileStack size={16} />}
+              leftIcon={<IconFileStack size="sm" />}
               disabled={items.length === 0 || running}
               onClick={() =>
                 job.run(items, {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Eraser, Save } from 'lucide-react';
+import { IconEraser, IconSave } from '@/shared/ui/icons';
 import {
   Badge,
   Button,
@@ -170,7 +170,7 @@ const PdfMetadataTool: React.FC<ToolProps> = () => {
               <Inline gap="3" wrap>
                 <Button
                   variant="solid"
-                  leftIcon={<Save size={16} />}
+                  leftIcon={<IconSave size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() =>
                     job.run(file, { kind: 'save', patch: changed() })
@@ -180,7 +180,7 @@ const PdfMetadataTool: React.FC<ToolProps> = () => {
                 </Button>
                 <Button
                   variant="danger"
-                  leftIcon={<Eraser size={16} />}
+                  leftIcon={<IconEraser size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() => job.run(file, { kind: 'strip' })}
                 >

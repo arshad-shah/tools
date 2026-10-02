@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Scissors } from 'lucide-react';
+import { IconScissors } from '@/shared/ui/icons';
 import {
   Button,
   ButtonGroup,
@@ -224,7 +224,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
               />
               <Button
                 variant="solid"
-                leftIcon={<Scissors size={16} />}
+                leftIcon={<IconScissors size="sm" />}
                 disabled={job.status === 'running'}
                 onClick={() =>
                   job.run(file, doc.pageCount, {

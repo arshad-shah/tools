@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { IconX } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 
 interface SearchInputProps extends Omit<
@@ -32,12 +32,15 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
   ) => (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-md border border-line bg-surface transition-colors focus-within:border-accent',
-        size === 'lg' ? 'h-12 px-4' : 'h-10 px-3',
+        'flex items-center gap-2 rounded-md border border-line-strong bg-surface-2 transition-colors duration-fast focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+        size === 'lg' ? 'h-11 px-4' : 'h-9 px-3',
         className,
       )}
     >
-      <span aria-hidden className="select-none font-mono font-bold text-accent">
+      <span
+        aria-hidden
+        className="select-none font-mono font-bold text-accent-fg"
+      >
         {prompt}
       </span>
       <input
@@ -48,7 +51,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         placeholder={placeholder}
         className={cn(
           'min-w-0 flex-1 bg-transparent font-mono text-fg caret-accent',
-          'placeholder:text-fg-faint focus:outline-none',
+          'placeholder:text-fg-subtle focus:outline-none',
           size === 'lg' ? 'text-base' : 'text-sm',
           '[&::-webkit-search-cancel-button]:appearance-none',
         )}
@@ -59,14 +62,14 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           type="button"
           aria-label="Clear search"
           onClick={() => onChange('')}
-          className="shrink-0 text-fg-faint transition-colors hover:text-fg"
+          className="shrink-0 text-fg-subtle transition-colors hover:text-fg"
         >
-          <X size={size === 'lg' ? 18 : 16} />
+          <IconX size={size === 'lg' ? 'md' : 'sm'} />
         </button>
       ) : (
         <span
           aria-hidden
-          className="h-4 w-2 shrink-0 animate-caret bg-accent"
+          className="h-4 w-2 shrink-0 motion-safe:animate-caret bg-accent"
         />
       )}
     </div>

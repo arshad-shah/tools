@@ -5,6 +5,12 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      update:
+        description: Regenerate Linux visual baselines
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -64,3 +70,28 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report
+
+  visual:
+    name: Visual (kit gallery, Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Linux baselines are produced with workflow_dispatch (update) first;
+    # until they exist this job reports without blocking (decision G8).
+    continue-on-error: true
+    container: mcr.microsoft.com/playwright:v1.63.0-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:visual ${{ github.event.inputs.update == 'true' && '--update-snapshots' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-linux
+          path: |
+            test/visual/__screenshots__/linux
+            playwright-report

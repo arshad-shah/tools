@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, Settings } from 'lucide-react';
+import { IconSave, IconSettings } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -225,7 +225,7 @@ const ImageOptimiser: React.FC = () => {
           <Card>
             <CardHeader>
               <Inline align="center" gap="2">
-                <Settings size={18} aria-hidden />
+                <IconSettings size="md" />
                 <CardTitle as="h3">Conversion settings</CardTitle>
               </Inline>
             </CardHeader>
@@ -365,7 +365,7 @@ const ImageOptimiser: React.FC = () => {
                   variant="solid"
                   size="lg"
                   fullWidth
-                  leftIcon={<Save size={20} />}
+                  leftIcon={<IconSave size="lg" />}
                   onClick={downloadImage}
                 >
                   Download image

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Copy, X } from 'lucide-react';
+import { IconCheck, IconCopy, IconX } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -111,7 +111,7 @@ const HashGenerator: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    leftIcon={<X size={14} />}
+                    leftIcon={<IconX size="sm" />}
                     onClick={() => setInput('')}
                   >
                     Clear
@@ -218,7 +218,11 @@ const HashGenerator: React.FC = () => {
                       disabled={value === undefined}
                       aria-label={`Copy ${name}`}
                       leftIcon={
-                        isCopied ? <Check size={16} /> : <Copy size={16} />
+                        isCopied ? (
+                          <IconCheck size="sm" />
+                        ) : (
+                          <IconCopy size="sm" />
+                        )
                       }
                       onClick={() => value && void copy(value, id)}
                     >

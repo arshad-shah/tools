@@ -182,6 +182,37 @@ describe('PdfDropzone', () => {
     expect(onFiles).toHaveBeenCalledOnce();
   });
 
+  it('a decryption finishing in the same tick as the replacing drop is still dropped (review M24)', async () => {
+    vi.mocked(qpdf.inspect).mockResolvedValue(lockedInfo);
+    let finish: (v: {
+      bytes: Uint8Array;
+      warnings: string[];
+    }) => void = () => {};
+    vi.mocked(qpdf.decrypt).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    // Deterministic worst case: the old unlock completes inside the very
+    // call that hands the replacing file over, before React re-renders.
+    const onFiles = vi.fn((files: { name: string }[]) => {
+      if (files[0].name === 'new.pdf')
+        finish({ bytes: new Uint8Array([7]), warnings: [] });
+    });
+    const { container } = render(<PdfDropzone onFiles={onFiles} />);
+    const input = container.querySelector('input[type=file]')!;
+    fireEvent.change(input, { target: { files: [locked('old.pdf')] } });
+    fireEvent.change(await screen.findByLabelText('Password for old.pdf'), {
+      target: { value: 'pw' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+    fireEvent.change(input, { target: { files: [pdf('new.pdf')] } });
+    await waitFor(() => expect(onFiles).toHaveBeenCalledOnce());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onFiles).toHaveBeenCalledOnce();
+    expect(onFiles.mock.calls[0][0][0].name).toBe('new.pdf');
+  });
+
   it('numbers files in drop order, locked or not (review M3)', async () => {
     vi.mocked(qpdf.inspect).mockResolvedValue(lockedInfo);
     vi.mocked(qpdf.decrypt).mockResolvedValueOnce({

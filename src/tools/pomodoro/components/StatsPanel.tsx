@@ -1,14 +1,14 @@
 import React from 'react';
 import {
-  Award,
-  BarChart2,
-  Calendar,
-  Clock,
-  Flame,
-  Sparkles,
-  Target,
-  TrendingUp,
-} from 'lucide-react';
+  IconAward,
+  IconBarChart2,
+  IconCalendar,
+  IconClock,
+  IconFlame,
+  IconSparkles,
+  IconTarget,
+  IconTrendingUp,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -74,7 +74,7 @@ export const StatsPanel: React.FC = () => {
     <Stack gap="6">
       <Inline justify="between" align="center" wrap>
         <Inline align="center" gap="2">
-          <BarChart2 size={20} aria-hidden />
+          <IconBarChart2 size="lg" />
           <Heading level={3} size="md">
             Statistics
           </Heading>
@@ -83,7 +83,7 @@ export const StatsPanel: React.FC = () => {
           variant="soft"
           tone="accent"
           size="sm"
-          icon={<Sparkles size={12} aria-hidden />}
+          icon={<IconSparkles size="xs" />}
         >
           Good {period}!
         </Badge>
@@ -93,7 +93,7 @@ export const StatsPanel: React.FC = () => {
         <CardHeader>
           <Inline justify="between" align="center" wrap>
             <Inline align="center" gap="2">
-              <Target size={18} aria-hidden />
+              <IconTarget size="md" />
               <CardTitle as="h4">Daily progress</CardTitle>
             </Inline>
             <Badge variant="soft" tone="accent" size="sm">
@@ -115,24 +115,24 @@ export const StatsPanel: React.FC = () => {
 
       <Grid max={2} gap="3">
         <StatTile
-          icon={<Target size={16} aria-hidden />}
+          icon={<IconTarget size="sm" />}
           label="Today's focus"
           value={stats.dailyPomodoros}
           subtext={`${workDuration * stats.dailyPomodoros} mins focused`}
         />
         <StatTile
-          icon={<Calendar size={16} aria-hidden />}
+          icon={<IconCalendar size="sm" />}
           label="Weekly progress"
           value={stats.weeklyPomodoros}
           subtext={`${averageDaily(stats)} daily average`}
         />
         <StatTile
-          icon={<Clock size={16} aria-hidden />}
+          icon={<IconClock size="sm" />}
           label="Total focus time"
           value={`${totalHours}h ${totalMinutes}m`}
         />
         <StatTile
-          icon={<Flame size={16} aria-hidden />}
+          icon={<IconFlame size="sm" />}
           label="Current streak"
           value={`${stats.currentStreak} days`}
         />
@@ -142,7 +142,7 @@ export const StatsPanel: React.FC = () => {
         <CardBody>
           <Inline justify="between" align="center" wrap>
             <Inline align="center" gap="2">
-              <Award size={20} aria-hidden />
+              <IconAward size="lg" />
               <Heading level={4} size="md">
                 Focus score
               </Heading>
@@ -158,7 +158,7 @@ export const StatsPanel: React.FC = () => {
       </Card>
 
       {stats.weeklyPomodoros > 0 && (
-        <Alert status="info" icon={<TrendingUp aria-hidden />}>
+        <Alert status="info" icon={<IconTrendingUp />}>
           <AlertDescription>
             {stats.weeklyPomodoros > stats.dailyPomodoros * 7
               ? "You're ahead of last week's pace!"

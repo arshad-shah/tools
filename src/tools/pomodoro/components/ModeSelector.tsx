@@ -17,7 +17,7 @@ export const ModeSelector: React.FC<{
           key={mode}
           variant={isActive ? 'solid' : 'soft'}
           size="md"
-          leftIcon={<Icon size={16} />}
+          leftIcon={<Icon size="sm" />}
           onClick={() => onChange(mode)}
           fullWidth
         >

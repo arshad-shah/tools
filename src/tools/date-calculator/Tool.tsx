@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Plus } from 'lucide-react';
+import { IconCalendar, IconPlus } from '@/shared/ui/icons';
 import {
   CalendarDateTime,
   type DateValue,
@@ -154,13 +154,13 @@ const DateCalculator: React.FC = () => {
           <TabsList aria-label="Date calculator mode">
             <TabsTrigger value="difference">
               <Inline gap="2" align="center" wrap={false}>
-                <Calendar size={16} aria-hidden />
+                <IconCalendar size="sm" />
                 <span>Date Difference</span>
               </Inline>
             </TabsTrigger>
             <TabsTrigger value="modify">
               <Inline gap="2" align="center" wrap={false}>
-                <Plus size={16} aria-hidden />
+                <IconPlus size="sm" />
                 <span>Add / Subtract Time</span>
               </Inline>
             </TabsTrigger>

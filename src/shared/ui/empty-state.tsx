@@ -1,17 +1,54 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
+import type { IconComponent } from './icons';
 
-export const EmptyState: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+export interface EmptyStateProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'title'
+> {
+  icon?: IconComponent;
+  title?: string;
+  description?: React.ReactNode;
+  actions?: React.ReactNode;
+  /** Heading level of the title; default 3. */
+  headingLevel?: 2 | 3 | 4;
+}
+
+/**
+ * Empty state. Either the compound form (EmptyStateIcon, EmptyStateTitle,
+ * ... as children) or the prop form (icon, title, description, actions).
+ */
+export const EmptyState: React.FC<EmptyStateProps> = ({
   className,
+  icon: Icon,
+  title,
+  description,
+  actions,
+  headingLevel,
+  children,
   ...props
 }) => (
   <div
     className={cn(
-      'flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line px-6 py-12 text-center',
+      'flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-line-strong px-6 py-12 text-center',
       className,
     )}
     {...props}
-  />
+  >
+    {Icon ? (
+      <EmptyStateIcon>
+        <Icon size="lg" />
+      </EmptyStateIcon>
+    ) : null}
+    {title ? (
+      <EmptyStateTitle level={headingLevel}>{title}</EmptyStateTitle>
+    ) : null}
+    {description ? (
+      <EmptyStateDescription>{description}</EmptyStateDescription>
+    ) : null}
+    {actions ? <EmptyStateActions>{actions}</EmptyStateActions> : null}
+    {children}
+  </div>
 );
 EmptyState.displayName = 'EmptyState';
 
@@ -21,7 +58,7 @@ export const EmptyStateIcon: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 }) => (
   <div
     className={cn(
-      'flex size-12 items-center justify-center rounded-lg border border-line bg-surface text-accent',
+      'flex size-12 items-center justify-center rounded-lg bg-surface-2 text-accent-fg',
       className,
     )}
     aria-hidden
@@ -31,10 +68,16 @@ export const EmptyStateIcon: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 EmptyStateIcon.displayName = 'EmptyStateIcon';
 
 export const EmptyStateTitle: React.FC<
-  React.HTMLAttributes<HTMLHeadingElement>
-> = ({ className, ...props }) => (
-  <h3 className={cn('text-lg font-semibold text-fg', className)} {...props} />
-);
+  React.HTMLAttributes<HTMLHeadingElement> & { level?: 2 | 3 | 4 }
+> = ({ className, level = 3, ...props }) => {
+  const Tag = `h${level}` as const;
+  return (
+    <Tag
+      className={cn('text-lg font-semibold text-fg', className)}
+      {...props}
+    />
+  );
+};
 EmptyStateTitle.displayName = 'EmptyStateTitle';
 
 export const EmptyStateDescription: React.FC<

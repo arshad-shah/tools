@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Droplets } from 'lucide-react';
+import { IconDroplets } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -328,7 +328,7 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
                 />
                 <Button
                   variant="solid"
-                  leftIcon={<Droplets size={16} />}
+                  leftIcon={<IconDroplets size="sm" />}
                   disabled={
                     job.status === 'running' ||
                     content === null ||

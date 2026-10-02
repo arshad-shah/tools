@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { IconChevronDown } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 
 export interface SelectItem {
@@ -29,11 +29,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         className={cn(
-          'h-10 w-full appearance-none rounded-md border bg-surface pl-3 pr-9 text-sm text-fg',
-          'transition-colors focus:outline-none',
+          'h-9 w-full appearance-none rounded-md border bg-surface-2 pl-3 pr-9 text-base text-fg',
+          'transition-colors duration-fast focus-visible:outline-2 focus-visible:outline-offset-2',
           invalid
-            ? 'border-danger focus:border-danger'
-            : 'border-line focus:border-accent',
+            ? 'border-danger focus-visible:outline-danger'
+            : 'border-line-strong focus-visible:outline-focus',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className,
         )}
@@ -49,9 +49,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           </option>
         ))}
       </select>
-      <ChevronDown
-        size={16}
-        aria-hidden
+      <IconChevronDown
+        size="sm"
         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle"
       />
     </div>

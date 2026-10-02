@@ -67,7 +67,7 @@ export const DropdownMenuContent: React.FC<ContentProps> = ({
     <div
       role="menu"
       className={cn(
-        'absolute top-full z-50 mt-1 min-w-40 overflow-hidden rounded-md border border-line-strong bg-surface py-1 shadow-xl',
+        'absolute top-full z-popover mt-1 min-w-40 overflow-hidden rounded-lg bg-surface py-1 shadow-e2',
         align === 'end' ? 'right-0' : 'left-0',
         className,
       )}
@@ -97,7 +97,7 @@ export const DropdownMenuItem: React.FC<ItemProps> = ({
         ctx.setOpen(false);
       }}
       className={cn(
-        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-subtle',
+        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors duration-fast hover:bg-surface-2 focus-visible:bg-surface-2',
         destructive ? 'text-danger' : 'text-fg',
         className,
       )}

@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Box } from 'lucide-react';
+import { IconBox } from '@/shared/ui/icons';
 import Footer from './Footer';
 import { formatBuildStamp } from './footerUtils';
 import { getEnabledTools } from './registry';
@@ -13,7 +13,7 @@ const tool: ToolDefinition = {
   id: 'pdf-merger',
   name: 'PDF Merger',
   description: 'Merge PDFs',
-  icon: Box,
+  icon: IconBox,
   enabled: true,
   category: 'pdf',
 };

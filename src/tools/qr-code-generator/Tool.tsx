@@ -1,30 +1,30 @@
 import React, { useState } from 'react';
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import {
-  AlertTriangle,
-  Bitcoin,
-  Building2,
-  Coins,
-  Download,
-  FileImage,
-  FileText,
-  Hash,
-  Info,
-  Key,
-  KeyRound,
-  Layers,
-  Link as LinkIcon,
-  Mail,
-  Palette,
-  Phone,
-  RefreshCw,
-  Settings as SettingsIcon,
-  Shield,
-  ShieldOff,
-  User,
-  Wallet,
-  Wifi,
-} from 'lucide-react';
+  IconAlertTriangle,
+  IconBitcoin,
+  IconBuilding2,
+  IconCoins,
+  IconDownload,
+  IconFileImage,
+  IconFileText,
+  IconHash,
+  IconInfo,
+  IconKey,
+  IconKeyRound,
+  IconLayers,
+  IconLink,
+  IconMail,
+  IconPalette,
+  IconPhone,
+  IconRefreshCw,
+  IconSettings,
+  IconShield,
+  IconShieldOff,
+  IconUser,
+  IconWallet,
+  IconWifi,
+} from '@/shared/ui/icons';
 import {
   Accordion,
   AccordionContent,
@@ -48,6 +48,8 @@ import {
   Inline,
   Input,
   Label,
+  List,
+  ListItem,
   NumberInput,
   Select,
   Slider,
@@ -77,15 +79,15 @@ const QR_TYPE_OPTIONS: Array<{
   label: string;
   icon: React.ReactNode;
 }> = [
-  { value: 'url', label: 'URL', icon: <LinkIcon size={16} aria-hidden /> },
-  { value: 'text', label: 'Text', icon: <FileText size={16} aria-hidden /> },
-  { value: 'contact', label: 'Contact', icon: <User size={16} aria-hidden /> },
-  { value: 'wifi', label: 'WiFi', icon: <Wifi size={16} aria-hidden /> },
-  { value: 'crypto', label: 'Crypto', icon: <Coins size={16} aria-hidden /> },
+  { value: 'url', label: 'URL', icon: <IconLink size="sm" /> },
+  { value: 'text', label: 'Text', icon: <IconFileText size="sm" /> },
+  { value: 'contact', label: 'Contact', icon: <IconUser size="sm" /> },
+  { value: 'wifi', label: 'WiFi', icon: <IconWifi size="sm" /> },
+  { value: 'crypto', label: 'Crypto', icon: <IconCoins size="sm" /> },
   {
     value: 'custom',
     label: 'Custom',
-    icon: <SettingsIcon size={16} aria-hidden />,
+    icon: <IconSettings size="sm" />,
   },
 ];
 
@@ -192,7 +194,7 @@ const ContactForm: React.FC<{
         value={contactData.name}
         onChange={(v) => setContactData({ name: v })}
         placeholder="Enter full name"
-        leadingSlot={<User size={16} aria-hidden />}
+        leadingSlot={<IconUser size="sm" />}
       />
     </Stack>
     <Stack gap="2">
@@ -203,7 +205,7 @@ const ContactForm: React.FC<{
         value={contactData.phone}
         onChange={(v) => setContactData({ phone: v })}
         placeholder="+1 (123) 456-7890"
-        leadingSlot={<Phone size={16} aria-hidden />}
+        leadingSlot={<IconPhone size="sm" />}
       />
     </Stack>
     <Stack gap="2">
@@ -214,7 +216,7 @@ const ContactForm: React.FC<{
         value={contactData.email}
         onChange={(v) => setContactData({ email: v })}
         placeholder="name@example.com"
-        leadingSlot={<Mail size={16} aria-hidden />}
+        leadingSlot={<IconMail size="sm" />}
       />
     </Stack>
     <Stack gap="2">
@@ -224,7 +226,7 @@ const ContactForm: React.FC<{
         value={contactData.company}
         onChange={(v) => setContactData({ company: v })}
         placeholder="Company or organisation (optional)"
-        leadingSlot={<Building2 size={16} aria-hidden />}
+        leadingSlot={<IconBuilding2 size="sm" />}
       />
     </Stack>
   </Stack>
@@ -243,7 +245,7 @@ const WifiFormPanel: React.FC<{
           value={wifiData.ssid}
           onChange={(v) => setWifiData({ ssid: v })}
           placeholder="Enter network name"
-          leadingSlot={<Wifi size={16} aria-hidden />}
+          leadingSlot={<IconWifi size="sm" />}
         />
       </Stack>
       <Stack gap="2">
@@ -254,7 +256,7 @@ const WifiFormPanel: React.FC<{
           value={wifiData.password}
           onChange={(v) => setWifiData({ password: v })}
           placeholder="Enter network password"
-          leadingSlot={<KeyRound size={16} aria-hidden />}
+          leadingSlot={<IconKeyRound size="sm" />}
         />
       </Stack>
       <Stack gap="2">
@@ -309,7 +311,7 @@ const CryptoFormPanel: React.FC<{
         value={cryptoData.publicKey}
         onChange={(v) => setCryptoData({ publicKey: v })}
         placeholder={`Enter your ${cryptoData.currency} wallet address`}
-        leadingSlot={<Wallet size={16} aria-hidden />}
+        leadingSlot={<IconWallet size="sm" />}
       />
     </Stack>
     <Stack gap="2">
@@ -319,7 +321,7 @@ const CryptoFormPanel: React.FC<{
         value={cryptoData.amount}
         onChange={(v) => setCryptoData({ amount: v })}
         placeholder="0.00"
-        leadingSlot={<Bitcoin size={16} aria-hidden />}
+        leadingSlot={<IconBitcoin size="sm" />}
       />
     </Stack>
     {cryptoData.publicKey && <Code block>{cryptoData.publicKey}</Code>}
@@ -414,19 +416,19 @@ const QRCodeGenerator: React.FC = () => {
               <TabsList aria-label="QR sections">
                 <TabsTrigger value="content">
                   <Inline gap="2" align="center" wrap={false}>
-                    <Layers size={14} aria-hidden />
+                    <IconLayers size="sm" />
                     <span>Content</span>
                   </Inline>
                 </TabsTrigger>
                 <TabsTrigger value="appearance">
                   <Inline gap="2" align="center" wrap={false}>
-                    <Palette size={14} aria-hidden />
+                    <IconPalette size="sm" />
                     <span>Appearance</span>
                   </Inline>
                 </TabsTrigger>
                 <TabsTrigger value="encryption">
                   <Inline gap="2" align="center" wrap={false}>
-                    <Shield size={14} aria-hidden />
+                    <IconShield size="sm" />
                     <span>Encryption</span>
                   </Inline>
                 </TabsTrigger>
@@ -609,7 +611,7 @@ const QRCodeGenerator: React.FC = () => {
                         <Stack gap="3">
                           <Inline justify="between" align="center">
                             <Inline align="center" gap="2">
-                              <FileImage size={16} aria-hidden />
+                              <IconFileImage size="sm" />
                               <Label htmlFor="use-image">Logo / image</Label>
                             </Inline>
                             <Switch
@@ -693,7 +695,7 @@ const QRCodeGenerator: React.FC = () => {
                       <AccordionItem value="advanced">
                         <AccordionTrigger>
                           <Inline align="center" gap="2">
-                            <SettingsIcon size={16} aria-hidden />
+                            <IconSettings size="sm" />
                             <Text weight="medium">
                               Advanced technical settings
                             </Text>
@@ -742,7 +744,7 @@ const QRCodeGenerator: React.FC = () => {
                       <CardBody>
                         <Stack gap="3">
                           <Inline align="center" gap="2">
-                            <Shield size={18} aria-hidden />
+                            <IconShield size="md" />
                             <Label>Encryption method</Label>
                           </Inline>
                           <Select
@@ -758,7 +760,7 @@ const QRCodeGenerator: React.FC = () => {
                     </Card>
 
                     {state.encryptionConfig.type === 'none' ? (
-                      <Alert status="info" icon={<ShieldOff aria-hidden />}>
+                      <Alert status="info" icon={<IconShieldOff />}>
                         <AlertDescription>
                           Your QR code data will not be encrypted. Anyone who
                           scans it will be able to read its contents.
@@ -770,7 +772,7 @@ const QRCodeGenerator: React.FC = () => {
                           <CardBody>
                             <Stack gap="3">
                               <Inline align="center" gap="2">
-                                <Key size={18} aria-hidden />
+                                <IconKey size="md" />
                                 <Label htmlFor="enc-key">Encryption key</Label>
                               </Inline>
                               <Input
@@ -807,7 +809,7 @@ const QRCodeGenerator: React.FC = () => {
                                       </Box>
                                       <Button
                                         variant="soft"
-                                        leftIcon={<RefreshCw size={14} />}
+                                        leftIcon={<IconRefreshCw size="sm" />}
                                         onClick={generateRandomIV}
                                       >
                                         Generate
@@ -817,7 +819,7 @@ const QRCodeGenerator: React.FC = () => {
                                   {state.encryptionConfig.type === 'aes' && (
                                     <Stack gap="2">
                                       <Inline align="center" gap="2">
-                                        <Hash size={14} aria-hidden />
+                                        <IconHash size="sm" />
                                         <Label htmlFor="enc-salt">
                                           Salt (optional)
                                         </Label>
@@ -837,7 +839,7 @@ const QRCodeGenerator: React.FC = () => {
                                         </Box>
                                         <Button
                                           variant="soft"
-                                          leftIcon={<RefreshCw size={14} />}
+                                          leftIcon={<IconRefreshCw size="sm" />}
                                           onClick={generateRandomSalt}
                                         >
                                           Generate
@@ -851,10 +853,7 @@ const QRCodeGenerator: React.FC = () => {
                           </CardBody>
                         </Card>
 
-                        <Alert
-                          status="warning"
-                          icon={<AlertTriangle aria-hidden />}
-                        >
+                        <Alert status="warning" icon={<IconAlertTriangle />}>
                           <AlertTitle>Important</AlertTitle>
                           <AlertDescription>
                             The recipient needs the same encryption method and
@@ -863,24 +862,26 @@ const QRCodeGenerator: React.FC = () => {
                           </AlertDescription>
                         </Alert>
 
-                        <Alert status="info" icon={<Shield aria-hidden />}>
+                        <Alert status="info" icon={<IconShield />}>
                           {/* Not AlertDescription: a <p> can't hold block content. */}
                           <Stack gap="1" className="mt-1 text-fg-muted">
                             <Text size="sm" weight="semibold">
                               Encryption details
                             </Text>
-                            <Text size="xs">
-                              • AES-256 offers strongest security
-                            </Text>
-                            <Text size="xs">
-                              • Triple DES is widely supported but slower
-                            </Text>
-                            <Text size="xs">
-                              • RC4 is fast but has known vulnerabilities
-                            </Text>
-                            <Text size="xs">
-                              • Rabbit balances speed and security
-                            </Text>
+                            <List className="gap-1">
+                              <ListItem className="text-xs">
+                                AES-256 offers strongest security
+                              </ListItem>
+                              <ListItem className="text-xs">
+                                Triple DES is widely supported but slower
+                              </ListItem>
+                              <ListItem className="text-xs">
+                                RC4 is fast but has known vulnerabilities
+                              </ListItem>
+                              <ListItem className="text-xs">
+                                Rabbit balances speed and security
+                              </ListItem>
+                            </List>
                           </Stack>
                         </Alert>
                       </>
@@ -956,11 +957,11 @@ const QRCodeGenerator: React.FC = () => {
                 variant="solid"
                 size="md"
                 fullWidth
-                leftIcon={<Download size={18} />}
+                leftIcon={<IconDownload size="md" />}
               >
                 Download QR code
               </Button>
-              <Alert status="info" icon={<Info aria-hidden />}>
+              <Alert status="info" icon={<IconInfo />}>
                 {/* Not AlertDescription: a <p> can't hold block content. */}
                 <Stack gap="1" className="mt-1 text-fg-muted">
                   <Text size="sm">
@@ -986,15 +987,17 @@ const QRCodeGenerator: React.FC = () => {
                 </CardHeader>
                 <CardBody>
                   <Stack gap="1">
-                    <Text size="xs">
-                      • Higher error correction improves scan reliability
-                    </Text>
-                    <Text size="xs">
-                      • Ensure good contrast between foreground and background
-                    </Text>
-                    <Text size="xs">
-                      • Test your QR code on multiple devices
-                    </Text>
+                    <List className="gap-1">
+                      <ListItem className="text-xs">
+                        Higher error correction improves scan reliability
+                      </ListItem>
+                      <ListItem className="text-xs">
+                        Ensure good contrast between foreground and background
+                      </ListItem>
+                      <ListItem className="text-xs">
+                        Test your QR code on multiple devices
+                      </ListItem>
+                    </List>
                   </Stack>
                 </CardBody>
               </Card>

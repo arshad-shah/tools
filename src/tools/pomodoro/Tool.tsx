@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu } from 'lucide-react';
+import { IconMenu } from '@/shared/ui/icons';
 import { Box, Button, Center, Container, Inline, Stack } from '@/shared/ui';
 import { MenuDrawer } from './components/MenuDrawer';
 import { TimerCard } from './components/TimerCard';
@@ -14,7 +14,7 @@ const Pomodoro: React.FC = () => {
           <Button
             variant="soft"
             size="sm"
-            leftIcon={<Menu size={16} />}
+            leftIcon={<IconMenu size="sm" />}
             onClick={() => setMenuOpen(true)}
           >
             Menu

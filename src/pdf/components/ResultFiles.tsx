@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, FileDown } from 'lucide-react';
+import { IconDownload, IconFileDown } from '@/shared/ui/icons';
 import { Button, Text } from '@/shared/ui';
 import { saveBlob, saveZip } from '@/shared/lib/download';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
@@ -65,7 +65,7 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
           <Button
             size="sm"
             variant="solid"
-            leftIcon={<Download size={14} />}
+            leftIcon={<IconDownload size="sm" />}
             loading={zipping}
             onClick={() => void downloadZip(zipName)}
           >
@@ -88,7 +88,7 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
             <Button
               size="sm"
               variant={files.length === 1 ? 'solid' : 'soft'}
-              leftIcon={<FileDown size={14} />}
+              leftIcon={<IconFileDown size="sm" />}
               aria-label={`Download ${f.name}`}
               onClick={() =>
                 saveBlob(f.bytes, f.name, f.mime ?? 'application/pdf')

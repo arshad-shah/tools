@@ -1,20 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  AlertTriangle,
-  ArrowRightLeft,
-  BarChart2,
-  Check,
-  Code as CodeIcon,
-  Copy,
-  Download,
-  FileUp,
-  MoveRight,
-  Play,
-  RotateCcw,
-  Sparkles,
-  Split,
-  Trash,
-} from 'lucide-react';
+  IconAlertTriangle,
+  IconArrowRightLeft,
+  IconBarChart2,
+  IconCheck,
+  IconCode,
+  IconCopy,
+  IconDownload,
+  IconFileUp,
+  IconMoveRight,
+  IconPlay,
+  IconRotateCcw,
+  IconSparkles,
+  IconSplit,
+  IconTrash,
+} from '@/shared/ui/icons';
 import * as Diff from 'diff';
 import {
   Alert,
@@ -48,9 +48,9 @@ import useDiffSettings from './hooks/useDiffSettings';
 import useIntelligentDiff from './hooks/useIntelligentDiff';
 
 const VIEW_MODES: DiffViewMode[] = [
-  { id: 'split', name: 'Split', icon: <Split size={14} aria-hidden /> },
-  { id: 'unified', name: 'Unified', icon: <MoveRight size={14} aria-hidden /> },
-  { id: 'inline', name: 'Inline', icon: <CodeIcon size={14} aria-hidden /> },
+  { id: 'split', name: 'Split', icon: <IconSplit size="sm" /> },
+  { id: 'unified', name: 'Unified', icon: <IconMoveRight size="sm" /> },
+  { id: 'inline', name: 'Inline', icon: <IconCode size="sm" /> },
 ];
 
 interface DiffTextAreaProps {
@@ -78,7 +78,7 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
     <CardHeader>
       <Inline justify="between" align="center" wrap gap="2">
         <Inline align="center" gap="2">
-          <Sparkles size={16} aria-hidden />
+          <IconSparkles size="sm" />
           <CardTitle as="h3">{label}</CardTitle>
         </Inline>
         <Inline gap="1">
@@ -88,7 +88,7 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
               size="sm"
               label="Upload file"
               disabled={disabled}
-              icon={<FileUp size={14} />}
+              icon={<IconFileUp size="sm" />}
               onClick={onFileUpload}
             />
           )}
@@ -98,7 +98,7 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
               size="sm"
               label="Copy"
               disabled={!value || disabled}
-              icon={<Copy size={14} />}
+              icon={<IconCopy size="sm" />}
               onClick={onCopy}
             />
           )}
@@ -108,7 +108,7 @@ const DiffTextArea: React.FC<DiffTextAreaProps> = ({
               size="sm"
               label="Clear"
               disabled={!value || disabled}
-              icon={<RotateCcw size={14} />}
+              icon={<IconRotateCcw size="sm" />}
               onClick={onClear}
             />
           )}
@@ -394,7 +394,7 @@ const TextDiffChecker: React.FC = () => {
         return (
           <Center className="py-8">
             <Stack gap="2" align="center">
-              <Check size={32} aria-hidden />
+              <IconCheck size="2xl" />
               <Text size="md" weight="semibold">
                 No differences found
               </Text>
@@ -408,7 +408,7 @@ const TextDiffChecker: React.FC = () => {
       return (
         <Center className="py-8">
           <Stack gap="2" align="center">
-            <Sparkles size={32} aria-hidden />
+            <IconSparkles size="2xl" />
             <Text size="md" weight="semibold">
               Ready to compare
             </Text>
@@ -491,7 +491,7 @@ const TextDiffChecker: React.FC = () => {
           <Stack gap="4">
             <Inline justify="between" align="center" wrap gap="3">
               <Inline align="center" gap="2">
-                <Split size={20} aria-hidden />
+                <IconSplit size="lg" />
                 <Heading level={2} size="lg">
                   Text Diff Checker
                 </Heading>
@@ -500,7 +500,7 @@ const TextDiffChecker: React.FC = () => {
                 <Button
                   variant={showStats ? 'solid' : 'soft'}
                   size="sm"
-                  leftIcon={<BarChart2 size={14} />}
+                  leftIcon={<IconBarChart2 size="sm" />}
                   onClick={() => setShowStats(!showStats)}
                 >
                   Stats
@@ -508,7 +508,7 @@ const TextDiffChecker: React.FC = () => {
                 <Button
                   variant={autoRefresh ? 'solid' : 'soft'}
                   size="sm"
-                  leftIcon={<Play size={14} />}
+                  leftIcon={<IconPlay size="sm" />}
                   onClick={() => setAutoRefresh(!autoRefresh)}
                 >
                   {autoRefresh ? 'Auto' : 'Manual'}
@@ -517,7 +517,7 @@ const TextDiffChecker: React.FC = () => {
                   <Button
                     variant="soft"
                     size="sm"
-                    leftIcon={<RotateCcw size={14} />}
+                    leftIcon={<IconRotateCcw size="sm" />}
                     disabled={isDiffing}
                     onClick={manualRefresh}
                   >
@@ -527,7 +527,7 @@ const TextDiffChecker: React.FC = () => {
                 <Button
                   variant="soft"
                   size="sm"
-                  leftIcon={<ArrowRightLeft size={14} />}
+                  leftIcon={<IconArrowRightLeft size="sm" />}
                   disabled={isDiffing}
                   onClick={swapTexts}
                 >
@@ -536,7 +536,7 @@ const TextDiffChecker: React.FC = () => {
                 <Button
                   variant="soft"
                   size="sm"
-                  leftIcon={<Download size={14} />}
+                  leftIcon={<IconDownload size="sm" />}
                   disabled={!diffSegments.length}
                   onClick={exportResults}
                 >
@@ -545,7 +545,7 @@ const TextDiffChecker: React.FC = () => {
                 <Button
                   variant="danger"
                   size="sm"
-                  leftIcon={<Trash size={14} />}
+                  leftIcon={<IconTrash size="sm" />}
                   disabled={isDiffing}
                   onClick={clearAll}
                 >
@@ -627,7 +627,7 @@ const TextDiffChecker: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                leftIcon={<RotateCcw size={14} />}
+                leftIcon={<IconRotateCcw size="sm" />}
                 onClick={resetSettings}
               >
                 Reset
@@ -731,7 +731,7 @@ const TextDiffChecker: React.FC = () => {
       )}
 
       {performanceWarning && (
-        <Alert status="warning" icon={<AlertTriangle aria-hidden />}>
+        <Alert status="warning" icon={<IconAlertTriangle />}>
           <AlertDescription>
             Large text detected. Performance may be affected.
           </AlertDescription>
@@ -779,7 +779,7 @@ const TextDiffChecker: React.FC = () => {
         <CardHeader>
           <Inline justify="between" align="center" wrap gap="2">
             <Inline align="center" gap="2">
-              <BarChart2 size={18} aria-hidden />
+              <IconBarChart2 size="md" />
               <CardTitle as="h3">Diff results</CardTitle>
             </Inline>
             {diffSegments.length > 0 && (

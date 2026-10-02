@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronRight,
-  Code as CodeIcon,
-  Download,
-  Plus,
-  PlusCircle,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react';
+  IconArrowDown,
+  IconArrowUp,
+  IconChevronDown,
+  IconChevronRight,
+  IconCode,
+  IconDownload,
+  IconPlus,
+  IconPlusCircle,
+  IconRefreshCw,
+  IconTrash2,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -96,9 +96,9 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                   label={isExpanded ? 'Collapse field' : 'Expand field'}
                   icon={
                     isExpanded ? (
-                      <ChevronDown size={14} />
+                      <IconChevronDown size="sm" />
                     ) : (
-                      <ChevronRight size={14} />
+                      <IconChevronRight size="sm" />
                     )
                   }
                   onClick={() => onToggleExpanded(path)}
@@ -123,7 +123,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                     variant="ghost"
                     size="sm"
                     label="Move up"
-                    icon={<ArrowUp size={14} />}
+                    icon={<IconArrowUp size="sm" />}
                     disabled={index === 0}
                     onClick={() => onMoveField(`${index}`, 'up')}
                   />
@@ -131,7 +131,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                     variant="ghost"
                     size="sm"
                     label="Move down"
-                    icon={<ArrowDown size={14} />}
+                    icon={<IconArrowDown size="sm" />}
                     disabled={index === totalFields - 1}
                     onClick={() => onMoveField(`${index}`, 'down')}
                   />
@@ -141,7 +141,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
                 variant="danger"
                 size="sm"
                 label="Remove field"
-                icon={<Trash2 size={14} />}
+                icon={<IconTrash2 size="sm" />}
                 onClick={() => onRemoveField(fullPath)}
               />
             </Inline>
@@ -239,7 +239,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({
               ))}
               <Button
                 variant="soft"
-                leftIcon={<Plus size={14} />}
+                leftIcon={<IconPlus size="sm" />}
                 onClick={() => onAddField(path)}
                 fullWidth
               >
@@ -321,7 +321,7 @@ const RandomDataGenerator: React.FC = () => {
                 ))}
                 <Button
                   variant="soft"
-                  leftIcon={<PlusCircle size={16} />}
+                  leftIcon={<IconPlusCircle size="sm" />}
                   onClick={() => handleAddField()}
                   fullWidth
                 >
@@ -346,7 +346,7 @@ const RandomDataGenerator: React.FC = () => {
                     </Stack>
                     <Button
                       variant="solid"
-                      leftIcon={<RefreshCw size={16} />}
+                      leftIcon={<IconRefreshCw size="sm" />}
                       onClick={handleGenerate}
                       fullWidth
                     >
@@ -368,14 +368,14 @@ const RandomDataGenerator: React.FC = () => {
                   variant={view === 'json' ? 'solid' : 'soft'}
                   size="sm"
                   label="Toggle JSON view"
-                  icon={<CodeIcon size={14} />}
+                  icon={<IconCode size="sm" />}
                   onClick={() => setView(view === 'json' ? 'table' : 'json')}
                 />
                 <IconButton
                   variant="soft"
                   size="sm"
                   label="Download JSON"
-                  icon={<Download size={14} />}
+                  icon={<IconDownload size="sm" />}
                   disabled={!generatedData}
                   onClick={handleDownload}
                 />
@@ -386,7 +386,7 @@ const RandomDataGenerator: React.FC = () => {
             {!generatedData ? (
               <Center className="py-10">
                 <Stack gap="2" align="center">
-                  <Download size={32} aria-hidden />
+                  <IconDownload size="2xl" />
                   <Text size="sm" tone="subtle" className="text-center">
                     No data generated yet. Define your schema and click
                     Generate.

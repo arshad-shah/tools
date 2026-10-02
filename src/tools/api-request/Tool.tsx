@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import {
-  ChevronDown,
-  ChevronRight,
-  FilePlus,
-  Folder,
-  FolderPlus,
-  Globe,
-  Plus,
-  Save,
-  Send,
-  Trash2,
-} from 'lucide-react';
+  IconChevronDown,
+  IconChevronRight,
+  IconFilePlus,
+  IconFolder,
+  IconFolderPlus,
+  IconGlobe,
+  IconPlus,
+  IconSave,
+  IconSend,
+  IconTrash2,
+} from '@/shared/ui/icons';
 import {
   Badge,
   Box,
@@ -139,10 +139,16 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
             variant="ghost"
             size="sm"
             label={open ? 'Collapse' : 'Expand'}
-            icon={open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            icon={
+              open ? (
+                <IconChevronDown size="sm" />
+              ) : (
+                <IconChevronRight size="sm" />
+              )
+            }
             onClick={() => setOpen(!open)}
           />
-          <Folder size={14} aria-hidden />
+          <IconFolder size="sm" />
           <Text size="sm" weight="medium">
             {item.name}
           </Text>
@@ -151,7 +157,7 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
             variant="ghost"
             size="sm"
             label="Delete folder"
-            icon={<Trash2 size={12} />}
+            icon={<IconTrash2 size="xs" />}
             onClick={() => onDelete(item.id, 'folder')}
           />
         </Inline>
@@ -197,7 +203,7 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
             variant="ghost"
             size="sm"
             label="Delete request"
-            icon={<Trash2 size={12} />}
+            icon={<IconTrash2 size="xs" />}
             onClick={(e) => {
               e.stopPropagation();
               onDelete(req.id, 'request');
@@ -412,7 +418,7 @@ const ApiTester: React.FC = () => {
       return (
         <EmptyState>
           <EmptyStateIcon>
-            <Send size={36} aria-hidden />
+            <IconSend size="2xl" />
           </EmptyStateIcon>
           <EmptyStateTitle>No response yet</EmptyStateTitle>
           <EmptyStateDescription>
@@ -497,14 +503,14 @@ const ApiTester: React.FC = () => {
             value={url}
             onChange={setUrl}
             placeholder="https://api.example.com/endpoint"
-            leadingSlot={<Globe size={14} aria-hidden />}
+            leadingSlot={<IconGlobe size="sm" />}
             aria-label="Request URL"
           />
         </Box>
         <Button
           variant="solid"
           loading={isLoading}
-          leftIcon={<Send size={14} />}
+          leftIcon={<IconSend size="sm" />}
           onClick={() => void handleSend()}
         >
           Send
@@ -559,7 +565,7 @@ const ApiTester: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     label="Remove parameter"
-                    icon={<Trash2 size={14} />}
+                    icon={<IconTrash2 size="sm" />}
                     onClick={() => removeParam(idx)}
                   />
                 </Inline>
@@ -567,7 +573,7 @@ const ApiTester: React.FC = () => {
               <Button
                 variant="soft"
                 size="sm"
-                leftIcon={<Plus size={14} />}
+                leftIcon={<IconPlus size="sm" />}
                 onClick={addParam}
               >
                 Add parameter
@@ -599,7 +605,7 @@ const ApiTester: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     label="Remove header"
-                    icon={<Trash2 size={14} />}
+                    icon={<IconTrash2 size="sm" />}
                     onClick={() => removeHeader(idx)}
                   />
                 </Inline>
@@ -607,7 +613,7 @@ const ApiTester: React.FC = () => {
               <Button
                 variant="soft"
                 size="sm"
-                leftIcon={<Plus size={14} />}
+                leftIcon={<IconPlus size="sm" />}
                 onClick={addHeader}
               >
                 Add header
@@ -696,14 +702,14 @@ const ApiTester: React.FC = () => {
                       variant="soft"
                       size="sm"
                       label="New request"
-                      icon={<FilePlus size={14} />}
+                      icon={<IconFilePlus size="sm" />}
                       onClick={handleCreateNewRequest}
                     />
                     <IconButton
                       variant="soft"
                       size="sm"
                       label="New collection"
-                      icon={<FolderPlus size={14} />}
+                      icon={<IconFolderPlus size="sm" />}
                       onClick={() => setNewCollectionModalOpen(true)}
                     />
                   </Inline>
@@ -756,7 +762,7 @@ const ApiTester: React.FC = () => {
                 <Button
                   variant="soft"
                   size="sm"
-                  leftIcon={<Save size={14} />}
+                  leftIcon={<IconSave size="sm" />}
                   onClick={() => setSaveModalOpen(true)}
                 >
                   Save
@@ -791,7 +797,7 @@ const ApiTester: React.FC = () => {
                 <CardBody>
                   <EmptyState>
                     <EmptyStateIcon>
-                      <Globe size={48} aria-hidden />
+                      <IconGlobe size="3xl" />
                     </EmptyStateIcon>
                     <EmptyStateTitle>No request selected</EmptyStateTitle>
                     <EmptyStateDescription>
@@ -801,7 +807,7 @@ const ApiTester: React.FC = () => {
                     <EmptyStateActions>
                       <Button
                         variant="solid"
-                        leftIcon={<FilePlus size={14} />}
+                        leftIcon={<IconFilePlus size="sm" />}
                         onClick={handleCreateNewRequest}
                       >
                         New request

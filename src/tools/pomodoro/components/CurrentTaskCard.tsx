@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Circle, ListTodo } from 'lucide-react';
+import { IconCheckCircle2, IconCircle, IconListTodo } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -22,7 +22,7 @@ export const CurrentTaskCard: React.FC = () => {
     const nextTask = tasks.find((t) => !t.completed);
     if (!nextTask) {
       return (
-        <Alert status="info" icon={<ListTodo aria-hidden />}>
+        <Alert status="info" icon={<IconListTodo />}>
           <AlertDescription>
             No active task. Add tasks from the menu to get started.
           </AlertDescription>
@@ -34,7 +34,7 @@ export const CurrentTaskCard: React.FC = () => {
         <CardBody>
           <Inline justify="between" align="center" gap="3" wrap>
             <Inline align="center" gap="2">
-              <ListTodo size={18} aria-hidden />
+              <IconListTodo size="md" />
               <Stack gap="0">
                 <Text size="xs" tone="subtle">
                   Start working on:
@@ -65,9 +65,9 @@ export const CurrentTaskCard: React.FC = () => {
         <Inline justify="between" align="center" gap="3" wrap>
           <Inline align="center" gap="2">
             {currentTask.completed ? (
-              <CheckCircle2 size={20} aria-hidden />
+              <IconCheckCircle2 size="lg" />
             ) : (
-              <Circle size={20} aria-hidden />
+              <IconCircle size="lg" />
             )}
             <Text size="sm" weight="medium">
               {currentTask.title}

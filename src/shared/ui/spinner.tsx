@@ -12,15 +12,19 @@ interface SpinnerProps {
   size?: keyof typeof spinnerSize;
   className?: string;
   label?: string;
+  /** Inside something that already announces (a status region, a busy button). */
+  decorative?: boolean;
 }
 export const Spinner: React.FC<SpinnerProps> = ({
   size = 'md',
   className,
   label = 'Loading',
+  decorative,
 }) => (
   <span
-    role="status"
-    aria-label={label}
+    {...(decorative
+      ? { 'aria-hidden': true }
+      : { role: 'status', 'aria-label': label })}
     className={cn(
       'inline-block animate-spin rounded-full border-line border-t-accent',
       spinnerSize[size],
