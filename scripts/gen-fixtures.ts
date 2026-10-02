@@ -13,6 +13,10 @@ import {
   makeXfaPdf,
 } from '../test/fixtures/builders';
 import {
+  makeRedactAdversarial,
+  makeType3FontPdf,
+} from '../test/fixtures/redact';
+import {
   encodeGif,
   encodeJpeg,
   encodePng,
@@ -60,6 +64,8 @@ const files: Record<string, Uint8Array> = {
   'images-heavy.pdf': await makeImageHeavyPdf(),
   'exif-photos.pdf': await makeExifPhotoPdf(),
   'metadata.pdf': await makeMetadataPdf(),
+  'redact-adversarial.pdf': await makeRedactAdversarial(),
+  'type3-font.pdf': await makeType3FontPdf(),
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
   'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),

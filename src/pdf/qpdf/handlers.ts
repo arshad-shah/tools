@@ -64,6 +64,17 @@ export const qpdfHandlers = {
     guard(async () => out(await encrypt(bytes, options))),
   decrypt: (_ctx: RpcContext, bytes: Uint8Array, password: string) =>
     guard(async () => out(await decrypt(bytes, password))),
+  /** Uncompressed QDF form without object streams (redaction raw-byte check). */
+  qdf: (_ctx: RpcContext, bytes: Uint8Array) =>
+    guard(async () => {
+      const r = await run(
+        ['--qdf', '--object-streams=disable', 'in.pdf', 'out.pdf'],
+        { 'in.pdf': bytes },
+      );
+      const outBytes = r.files?.['out.pdf'];
+      if (!outBytes) throw new Error('qpdf produced no output');
+      return out({ bytes: outBytes, warnings: [] });
+    }),
   /**
    * Which password of an encrypted file `password` is: the owner password
    * lifts its restrictions (spec §12), the user password only opens it.

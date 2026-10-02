@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { IconDownload, IconFileDown } from '@/shared/ui/icons';
+import { useNavigate } from 'react-router-dom';
+import { IconArrowRight, IconDownload, IconFileDown } from '@/shared/ui/icons';
 import { Button, Text } from '@/shared/ui';
 import { saveBlob, saveZip } from '@/shared/lib/download';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
 import { logToolError, toToolError } from '@/shared/lib/errors';
+import { stageDocument } from '@/pdf/workspace/workspace-store';
 
 export interface ResultFile {
   name: string;
@@ -22,6 +24,30 @@ interface ResultFilesProps {
   zipName?: string;
   /** A line under the header, e.g. UNENCRYPTED_NOTE. */
   note?: React.ReactNode;
+  /** Offer "Open result in workspace" when the result is one PDF (spec §5.3). */
+  openInWorkspace?: boolean;
+}
+
+/** Hands one PDF to the workspace through the in-memory document store. */
+function OpenInWorkspace({ file }: { file: ResultFile }) {
+  const navigate = useNavigate();
+  return (
+    <Button
+      size="sm"
+      variant="secondary"
+      rightIcon={<IconArrowRight size="sm" />}
+      onClick={() => {
+        const id = stageDocument({
+          name: file.name,
+          bytes: file.bytes,
+          wasEncrypted: false,
+        });
+        navigate(`/pdf/edit?open=${id}`);
+      }}
+    >
+      Open result in workspace
+    </Button>
+  );
 }
 
 export const ResultFiles: React.FC<ResultFilesProps> = ({
@@ -29,6 +55,7 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
   inputSize,
   zipName,
   note,
+  openInWorkspace,
 }) => {
   const [zipping, setZipping] = useState(false);
   const downloadZip = async (name: string) => {
@@ -74,6 +101,13 @@ export const ResultFiles: React.FC<ResultFilesProps> = ({
         )}
       </div>
       {note && <p className="text-sm text-fg-muted">{note}</p>}
+      {openInWorkspace &&
+        files.length === 1 &&
+        (files[0].mime ?? 'application/pdf') === 'application/pdf' && (
+          <div className="flex justify-end">
+            <OpenInWorkspace file={files[0]} />
+          </div>
+        )}
       <ul className="flex flex-col gap-2">
         {files.map((f, i) => (
           // Names may repeat; position is the stable identity here.

@@ -1,5 +1,9 @@
 import { Transferred, type RpcContext } from '@/shared/lib/worker-rpc';
 import { stripMetadata } from '@/pdf/edit/metadata';
+import { redactHandlers } from './redact';
+import { convertHandlers } from './convert';
+import { protectHandlers } from './protect';
+import { optimizeHandlers } from './optimize';
 import {
   materialize,
   type MaterializePlan,
@@ -36,6 +40,10 @@ export const editHandlers = {
   ...materializeHandlers,
   ...metadataHandlers,
   ...ocrHandlers,
+  ...redactHandlers,
+  ...convertHandlers,
+  ...protectHandlers,
+  ...optimizeHandlers,
 };
 
 export type EditHandlers = typeof editHandlers;

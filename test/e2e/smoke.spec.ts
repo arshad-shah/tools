@@ -32,6 +32,15 @@ test('old tool URLs show NotFound, with no redirect', async ({ page }) => {
   expect(new URL(page.url()).pathname).toBe('/regex-tester');
 });
 
+test('folded PDF tools are gone: /pdf/metadata shows NotFound', async ({
+  page,
+}) => {
+  await page.goto('/pdf/metadata');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'No page at /pdf/metadata',
+  );
+});
+
 test('an unknown path offers search over the tools', async ({ page }) => {
   await page.goto('/nope/thing');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(

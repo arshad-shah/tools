@@ -130,6 +130,16 @@ function ExportDialogBody({
         },
       );
       if (c.signal.aborted) return;
+      // Passwords do not outlive the export that used them (G25).
+      const secrets = EXPORT_OPTION_SECTIONS.flatMap((s) => s.secret ?? []);
+      if (secrets.length)
+        setOptions(
+          (o) =>
+            ({
+              ...o,
+              ...Object.fromEntries(secrets.map((k) => [k, ''])),
+            }) as ExportOptions,
+        );
       save(out.bytes, filename, 'application/pdf');
       notify.success(`Exported ${filename}`);
       const told = [...out.warnings, ...out.notes];

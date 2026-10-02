@@ -233,7 +233,7 @@ const ImagesToPdfTool: React.FC<ToolProps> = () => {
             </Button>
           </div>
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Building PDF">
-            {job.result && <ResultFiles files={[job.result]} />}
+            {job.result && <ResultFiles openInWorkspace files={[job.result]} />}
           </JobPanel>
         </Stack>
       </CardBody>

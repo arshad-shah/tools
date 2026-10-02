@@ -45,6 +45,10 @@ export interface CheckpointReport {
   lines: string[];
   warnings: string[];
   rasterisedPages?: number[];
+  /** 0-based pages of the checkpoint's source a redaction changed. */
+  redactedPages?: number[];
+  /** Runner-specific structured report (JSON-serialisable), e.g. the compress report. */
+  details?: unknown;
 }
 
 export interface CheckpointMeta {

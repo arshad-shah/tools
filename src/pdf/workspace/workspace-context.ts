@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { JobContext } from '@/shared/state/useJob';
+import type { PageId } from '@/pdf/doc/types';
 import type { WorkspaceSession } from './session';
 
 /** Workspace services for mode UI beyond DocumentApi (new files, jobs). */
@@ -12,6 +13,10 @@ export interface WorkspaceActions {
   ): Promise<R | null>;
   /** Opens new bytes as a separate document (asks first when unsaved). */
   openAsNew(doc: { name: string; bytes: Uint8Array }): void;
+  /** Restricted documents: asks for the owner password (spec §12). */
+  unlock?(): void;
+  /** Makes the page current and scrolls the canvas to it. */
+  goToPage(id: PageId): void;
 }
 
 export const WorkspaceContext = createContext<WorkspaceActions | null>(null);

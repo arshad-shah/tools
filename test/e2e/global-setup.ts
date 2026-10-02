@@ -45,12 +45,6 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
     fixture: 'test/fixtures/generated/form.pdf',
     ready: 'label[for="field-0"]',
   },
-  // Metadata shows the document's properties, not its pages.
-  {
-    route: '/pdf/metadata',
-    fixture: 'test/fixtures/generated/metadata.pdf',
-    ready: '#meta-title',
-  },
   // Unlock takes the encrypted file as it is and asks for its password.
   {
     route: '/pdf/unlock',

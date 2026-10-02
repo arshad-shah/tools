@@ -2,6 +2,8 @@ import type { JobProgress } from '@/shared/state/useJob';
 import type { DocumentModel } from './model';
 import type { Services } from './services';
 import type { DocView, PageId } from './types';
+import { encryptStage } from './export-stages/encrypt';
+import { linearizeStage } from './export-stages/linearize';
 
 /** Export choices; Parts add keys (flatten, linearize, password, signature). */
 export interface ExportOptions {
@@ -65,4 +67,6 @@ export const EXPORT_STAGES: ExportStage[] = [
       return out.bytes;
     },
   },
+  encryptStage,
+  linearizeStage,
 ];

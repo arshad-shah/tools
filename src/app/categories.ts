@@ -58,7 +58,6 @@ export const CATEGORIES = [
           'pdf-fill-form',
           'pdf-watermark',
           'pdf-page-numbers',
-          'pdf-metadata',
         ],
       },
     ],

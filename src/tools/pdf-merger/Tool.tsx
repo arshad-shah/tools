@@ -206,6 +206,7 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Merging">
             {job.result && (
               <ResultFiles
+                openInWorkspace
                 files={[job.result]}
                 note={
                   items.some((i) => i.wasEncrypted)

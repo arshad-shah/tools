@@ -66,6 +66,11 @@ export function createQpdf(connect: () => RpcEndpoint) {
       const { copy, transfer } = send(bytes);
       return call('decrypt', [copy, password], transfer, signal);
     },
+    /** QDF (uncompressed, no object streams) for raw-byte inspection. */
+    qdf(bytes: Uint8Array, signal?: AbortSignal) {
+      const { copy, transfer } = send(bytes);
+      return call('qdf', [copy], transfer, signal);
+    },
     passwordRole(bytes: Uint8Array, password: string, signal?: AbortSignal) {
       const { copy, transfer } = send(bytes);
       return call('passwordRole', [copy, password], transfer, signal);

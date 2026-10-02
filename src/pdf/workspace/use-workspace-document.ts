@@ -3,6 +3,7 @@ import { loadFile, type LoadedFile } from '@/shared/lib/files';
 import { logToolError, ToolError, toToolError } from '@/shared/lib/errors';
 import { DocumentModel } from '@/pdf/doc/model';
 import { registerCoreOperations } from '@/pdf/doc/ops';
+import { registerCoreRunners } from '@/pdf/doc/checkpoints';
 import { restoreDocument } from '@/pdf/doc/recent';
 import type { LogRecord } from '@/pdf/doc/serialize';
 import { getServices } from '@/pdf/doc/services';
@@ -17,6 +18,7 @@ import type { PendingOpen } from './workspace-store';
 
 // Restored logs validate against every known op before any mode loads.
 registerCoreOperations();
+registerCoreRunners();
 
 type OpenSource = LoadedFile | PendingOpen;
 

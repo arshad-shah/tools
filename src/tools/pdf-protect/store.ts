@@ -1,5 +1,8 @@
 import { createToolStore } from '@/shared/state/createToolStore';
-import { DEFAULT_PERMISSIONS, type PermissionChoices } from './lib/permissions';
+import {
+  DEFAULT_PERMISSIONS,
+  type PermissionChoices,
+} from '@/pdf/edit/permissions';
 
 /** Permission choices only. Passwords are never stored. */
 export const usePermissionSettings = createToolStore({

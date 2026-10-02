@@ -7,6 +7,7 @@ import {
 } from 'pdf-lib';
 import { makeMetadataPdf, makeTextPdf } from '../../../test/fixtures/builders';
 import {
+  applyMetadataPatch,
   buildXmp,
   getMetadata,
   setMetadata,
@@ -61,6 +62,23 @@ describe('metadata', () => {
     );
     expect(xmp).toContain('<pdfaid:part>2</pdfaid:part>');
     expect(xmp).toContain('<pdfaid:conformance>B</pdfaid:conformance>');
+  });
+
+  it('applies a patch to an already loaded document and reports its PDF/A part', async () => {
+    const doc = await PDFDocument.load(await makeMetadataPdf(), {
+      updateMetadata: false,
+    });
+    const now = new Date('2026-10-02T08:00:00Z');
+    expect(applyMetadataPatch(doc, { subject: 'Plans' }, now)).toMatchObject({
+      part: '2',
+    });
+    const out = await doc.save();
+    expect(await getMetadata(out)).toMatchObject({
+      title: 'Quarterly report',
+      subject: 'Plans',
+      modificationDate: now,
+    });
+    expect((await xmpOf(out))!).toContain('Plans');
   });
 
   it('does not invent XMP for files without it', async () => {

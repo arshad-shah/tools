@@ -1,4 +1,5 @@
 import type { DocumentState } from '@/pdf/doc/model';
+import { protectionOf } from '@/pdf/doc/ops/protect';
 import type { DocView } from '@/pdf/doc/types';
 
 const pagesList = (pages: number[]) =>
@@ -26,9 +27,7 @@ export function exportWarnings(state: DocumentState, view: DocView): string[] {
       );
     out.push(...report.warnings);
   }
-  const protectedOnExport = view.docOverlays.some(
-    (o) => o.type === 'protect.set' && !view.hidden.has(o.opId),
-  );
+  const protectedOnExport = !!protectionOf(view)?.enabled;
   if (state.encryptedInput && !protectedOnExport)
     out.push(
       'This document was opened with a password. The exported file is not password-protected.',

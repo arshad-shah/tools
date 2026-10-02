@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import {
+  DrawRectLayer,
+  Highlight,
   HitArea,
   OverlayLayer,
   PageBox,
@@ -101,6 +103,7 @@ export function PageOverlaysSection() {
   });
   const [rotate, setRotate] = useState(0);
   const [pressed, setPressed] = useState(false);
+  const [drawn, setDrawn] = useState<PageSpaceBox[]>([]);
   return (
     <Section name="page-overlays" title="Page overlays">
       <Row label="ShapeLayer, HitArea, SelectionFrame">
@@ -151,6 +154,41 @@ export function PageOverlaysSection() {
         <Text size="sm" tone="muted" className="max-w-xs">
           Focus the frame: arrows move it, Alt with arrows resizes it, the
           bracket keys rotate it, Enter commits and Esc cancels.
+        </Text>
+      </Row>
+      <Row label="DrawRectLayer (drag on the page), Highlight">
+        <Sized
+          width={PAGE.width}
+          height={PAGE.height}
+          className="relative rounded-sm bg-surface shadow-page"
+        >
+          <ShapeLayer
+            width={PAGE.width}
+            height={PAGE.height}
+            transform={T}
+            shapes={drawn.map((b) => ({
+              kind: 'rect' as const,
+              box: b,
+              stroke: { token: 'redact' as const },
+              hatch: true,
+            }))}
+          />
+          <OverlayLayer width={PAGE.width} height={PAGE.height} interactive>
+            <DrawRectLayer
+              width={PAGE.width}
+              height={PAGE.height}
+              transform={T}
+              label="Draw an area on page 1"
+              onDraw={(b) => setDrawn((d) => [...d, b])}
+            />
+          </OverlayLayer>
+        </Sized>
+        <Text size="sm" className="max-w-xs">
+          <Highlight
+            text="Account TOPSECRET-42 was closed"
+            start={8}
+            length={12}
+          />
         </Text>
       </Row>
     </Section>

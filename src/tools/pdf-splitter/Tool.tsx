@@ -246,6 +246,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
           <JobPanel job={job} onCancel={job.cancel} runningLabel="Splitting">
             {job.result && (
               <ResultFiles
+                openInWorkspace
                 note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
                 files={job.result}
                 zipName={

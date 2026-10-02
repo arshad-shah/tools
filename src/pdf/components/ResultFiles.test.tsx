@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { saveBlob, saveZip } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { takeStagedDocument } from '@/pdf/workspace/workspace-store';
 import { ResultFiles } from './ResultFiles';
 
 vi.mock('@/shared/lib/download', () => ({
@@ -67,5 +69,50 @@ describe('ResultFiles note', () => {
         'The original was password-protected. This file is not.',
       ),
     ).toBeTruthy();
+  });
+});
+
+function Where() {
+  const l = useLocation();
+  return <p data-testid="where">{l.pathname + l.search}</p>;
+}
+
+describe('ResultFiles open in workspace', () => {
+  const one = [{ name: 'merged.pdf', bytes: new Uint8Array([1, 2, 3]) }];
+  const inRouter = (ui: React.ReactNode) =>
+    render(
+      <MemoryRouter initialEntries={['/pdf/merge']}>
+        <Routes>
+          <Route path="/pdf/merge" element={ui} />
+          <Route path="/pdf/edit" element={<Where />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+  it('stages the single PDF and opens the workspace', () => {
+    inRouter(<ResultFiles files={one} openInWorkspace />);
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open result in workspace' }),
+    );
+    const where = screen.getByTestId('where').textContent!;
+    const id = /\?open=(.+)$/.exec(where)![1];
+    expect(where.startsWith('/pdf/edit?open=')).toBe(true);
+    const staged = takeStagedDocument(id);
+    expect(staged?.name).toBe('merged.pdf');
+    expect([...staged!.bytes]).toEqual([1, 2, 3]);
+  });
+
+  it('is offered only for one PDF and only when asked', () => {
+    inRouter(<ResultFiles files={files} openInWorkspace />);
+    expect(
+      screen.queryByRole('button', { name: 'Open result in workspace' }),
+    ).toBeNull();
+  });
+
+  it('is not offered without the flag', () => {
+    inRouter(<ResultFiles files={one} />);
+    expect(
+      screen.queryByRole('button', { name: 'Open result in workspace' }),
+    ).toBeNull();
   });
 });
