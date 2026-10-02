@@ -35,3 +35,20 @@ export interface OcrManifest {
   core: { simd: OcrCore; plain: OcrCore };
   languages: Record<OcrLanguage, OcrAsset & { label: string }>;
 }
+
+/** Display names (the manifest carries the same labels). */
+export const OCR_LANGUAGE_LABELS: Record<OcrLanguage, string> = {
+  eng: 'English',
+  fra: 'French',
+  deu: 'German',
+  spa: 'Spanish',
+  ita: 'Italian',
+  por: 'Portuguese',
+  nld: 'Dutch',
+  gle: 'Irish',
+  pol: 'Polish',
+  swe: 'Swedish',
+};
+
+/** Languages recognised together at most (joined with '+'). */
+export const MAX_OCR_LANGUAGES = 3;

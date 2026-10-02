@@ -1,11 +1,17 @@
-import { Alert, AlertTitle, Stack, Text } from '@/shared/ui';
-import { IconRasterised, IconRedactVerified } from '@/shared/ui/icons';
+import { Alert, AlertTitle, Button, Stack, Text } from '@/shared/ui';
+import {
+  IconOcrScan,
+  IconRasterised,
+  IconRedactVerified,
+} from '@/shared/ui/icons';
+import { useGoToMode } from '../../workspace-context';
 import type { DocumentApi } from '../types';
 import { latestRedaction } from './marks';
 
 /** Inspector view of the last apply: lines, pages turned into images, scrubbed items. */
 export function RedactReport({ doc }: { doc: DocumentApi }) {
   const latest = latestRedaction(doc);
+  const goToMode = useGoToMode();
   if (!latest) return null;
   const { report } = latest;
   return (
@@ -27,6 +33,21 @@ export function RedactReport({ doc }: { doc: DocumentApi }) {
           <Text size="sm">{w}</Text>
         </Alert>
       ))}
+      {report.rasterisedPages?.length && goToMode ? (
+        <div>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconOcrScan size="sm" />}
+            onClick={() => goToMode('ocr')}
+          >
+            Run OCR
+          </Button>
+          <Text size="sm" tone="muted" className="mt-1">
+            Pages turned into images have no text to search or select.
+          </Text>
+        </div>
+      ) : null}
     </Stack>
   );
 }

@@ -359,7 +359,9 @@ export function WorkspaceShell({
           />
         );
         return (
-          <WorkspaceContext.Provider value={actions}>
+          <WorkspaceContext.Provider
+            value={{ ...actions, goToMode: (id) => request(id) }}
+          >
             <ModeToolbarContext.Provider
               value={{
                 layout,

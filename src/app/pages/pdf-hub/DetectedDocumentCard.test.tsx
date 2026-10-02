@@ -73,6 +73,24 @@ describe('DetectedDocumentCard', () => {
     expect(staged?.name).toBe('form.pdf');
   });
 
+  it('offers Run OCR for a document without a text layer', async () => {
+    const { resolve, onNavigate, render_ } = setup();
+    await waitFor(() => expect(render_.detectSummary).toHaveBeenCalled());
+    await act(async () => resolve(SUMMARY));
+    expect(screen.queryByRole('button', { name: 'Run OCR' })).toBeNull();
+    const second = setup();
+    await waitFor(() =>
+      expect(second.render_.detectSummary).toHaveBeenCalled(),
+    );
+    await act(async () =>
+      second.resolve({ ...SUMMARY, hasTextLayer: false, flatForm: false }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Run OCR' }));
+    const path = second.onNavigate.mock.calls[0][0] as string;
+    expect(path).toMatch(/^\/pdf\/edit\/ocr\?open=/);
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('closes the worker document when it goes away', async () => {
     const { resolve, render_, view } = setup();
     await waitFor(() => expect(render_.detectSummary).toHaveBeenCalled());

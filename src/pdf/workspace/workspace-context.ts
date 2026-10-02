@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { JobContext } from '@/shared/state/useJob';
-import type { PageId } from '@/pdf/doc/types';
+import type { ModeId, PageId } from '@/pdf/doc/types';
 import type { WorkspaceSession } from './session';
 
 /** Workspace services for mode UI beyond DocumentApi (new files, jobs). */
@@ -17,9 +17,16 @@ export interface WorkspaceActions {
   unlock?(): void;
   /** Makes the page current and scrolls the canvas to it. */
   goToPage(id: PageId): void;
+  /** Switches mode (asking the current mode first, like the tabs). */
+  goToMode?(id: ModeId): void;
 }
 
 export const WorkspaceContext = createContext<WorkspaceActions | null>(null);
+
+/** Mode switching for mode UI; null outside a workspace (isolated tests). */
+export function useGoToMode(): ((id: ModeId) => void) | null {
+  return useContext(WorkspaceContext)?.goToMode ?? null;
+}
 
 export function useWorkspace(): WorkspaceActions {
   const ctx = useContext(WorkspaceContext);
