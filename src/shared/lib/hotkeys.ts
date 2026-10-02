@@ -82,13 +82,16 @@ export function matchesHotkey(
   const wanted = hk.key === 'Space' ? ' ' : hk.key;
   const pressed = normaliseKey(e.key);
   const isLetter = /^[a-z]$/.test(wanted);
-  // Printable non-letters ('?', '/', '+') imply their own shift state on
-  // every layout, so shift is not compared for them.
-  const printable = wanted.length === 1 && !isLetter;
+  const isDigit = /^[0-9]$/.test(wanted);
+  // Printable symbols ('?', '/', '+') imply their own shift state on every
+  // layout, so shift is not compared for them.
+  const printable = wanted.length === 1 && !isLetter && !isDigit;
   if (!printable && e.shiftKey !== hk.shift) return false;
   if (pressed === wanted) return true;
-  // Option on macOS changes e.key (Option+P is a symbol): fall back to code.
-  return isLetter && e.code === `Key${wanted.toUpperCase()}`;
+  // Option on macOS changes e.key (Option+P is a symbol) and Shift changes a
+  // digit's key (Shift+7 is '&' on US layouts): fall back to the physical key.
+  if (isLetter) return e.code === `Key${wanted.toUpperCase()}`;
+  return isDigit && e.code === `Digit${wanted}`;
 }
 
 /**

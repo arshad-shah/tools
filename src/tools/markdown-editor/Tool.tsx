@@ -6,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
 } from 'react';
 import type { ToolProps } from '@/app/tool';
 import { copyText } from '@/shared/lib/clipboard';
@@ -239,20 +238,6 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   ];
   useToolCommands(definition.id, commands);
 
-  // Shift+7 types '&' on many layouts, so match the physical key as well.
-  const onEditorKeyDown = (e: KeyboardEvent) => {
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      e.shiftKey &&
-      !e.altKey &&
-      e.code === 'Digit7' &&
-      e.key !== '7'
-    ) {
-      e.preventDefault();
-      format('ol');
-    }
-  };
-
   const remote = rendered.remoteImages;
 
   const editPane = (
@@ -265,24 +250,22 @@ export default function MarkdownEditor({ definition }: ToolProps) {
           onCheckedChange={(wrap) => update({ wrap })}
         />
       </Inline>
-      <div onKeyDown={onEditorKeyDown}>
-        <TextInputPanel
-          editorRef={editor}
-          value={text}
-          onChange={setText}
-          language="markdown"
-          label="Markdown"
-          accept=".md,.markdown,.txt,text/markdown,text/plain"
-          samples={[{ label: 'Sample document', value: SAMPLE_MARKDOWN }]}
-          wrap={settings.wrap}
-          placeholder="Type Markdown here"
-          onSelectionChange={(start, end) => {
-            selection.current = { start, end };
-          }}
-          minHeight={384}
-          maxHeight={720}
-        />
-      </div>
+      <TextInputPanel
+        editorRef={editor}
+        value={text}
+        onChange={setText}
+        language="markdown"
+        label="Markdown"
+        accept=".md,.markdown,.txt,text/markdown,text/plain"
+        samples={[{ label: 'Sample document', value: SAMPLE_MARKDOWN }]}
+        wrap={settings.wrap}
+        placeholder="Type Markdown here"
+        onSelectionChange={(start, end) => {
+          selection.current = { start, end };
+        }}
+        minHeight={384}
+        maxHeight={720}
+      />
     </Stack>
   );
 

@@ -69,6 +69,21 @@ describe('matchesHotkey', () => {
     );
   });
 
+  it('digit shortcuts match the physical key (Shift+7 types & on US layouts)', () => {
+    const ev = (o: Partial<KeyboardEventInit>) =>
+      key({ ctrlKey: true, shiftKey: true, code: 'Digit7', ...o });
+    expect(matchesHotkey(ev({ key: '&' }), 'Mod+Shift+7', false)).toBe(true);
+    expect(matchesHotkey(ev({ key: '/' }), 'Mod+Shift+7', false)).toBe(true);
+    // Shift is compared for digits: Mod+7 is not Mod+Shift+7.
+    expect(
+      matchesHotkey(ev({ key: '7', shiftKey: false }), 'Mod+Shift+7', false),
+    ).toBe(false);
+    expect(matchesHotkey(ev({ key: '&' }), 'Mod+7', false)).toBe(false);
+    expect(
+      matchesHotkey(ev({ key: '&', code: 'Digit8' }), 'Mod+Shift+7', false),
+    ).toBe(false);
+  });
+
   it('Option-modified letters match by code on macOS', () => {
     expect(
       matchesHotkey(
