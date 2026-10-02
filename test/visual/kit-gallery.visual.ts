@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectAxeClean, setTheme, stabilise } from './helpers';
+import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
 
 const SECTIONS = [
   'icons',
@@ -14,6 +14,24 @@ const SECTIONS = [
   'states',
   'media',
   'keys',
+  'editor',
+  'lists',
+  'grid',
+  'chart',
+  'colour',
+  'panes',
+  'widgets',
+];
+
+/** Phase-6 sections whose layout changes at phone width. */
+const PHONE_SECTIONS = [
+  'editor',
+  'lists',
+  'grid',
+  'chart',
+  'colour',
+  'panes',
+  'widgets',
 ];
 
 for (const theme of ['light', 'dark'] as const) {
@@ -37,6 +55,7 @@ for (const theme of ['light', 'dark'] as const) {
     for (const [name, button] of [
       ['dialog', 'Open dialog'],
       ['drawer', 'Open drawer'],
+      ['focus-overlay', 'Open focus view'],
     ] as const) {
       test(name, async ({ page }) => {
         await page.getByRole('button', { name: button }).click();
@@ -73,5 +92,24 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     test('axe', async ({ page }) => expectAxeClean(page));
+  });
+
+  test.describe(`kit gallery phone ${theme}`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.phone);
+      await page.goto('/__kit');
+      await expect(
+        page.getByRole('heading', { name: 'Kit gallery' }),
+      ).toBeVisible();
+      await setTheme(page, theme);
+      await stabilise(page);
+    });
+
+    for (const section of PHONE_SECTIONS) {
+      test(section, async ({ page }) => {
+        const el = page.getByTestId(`kit-section-${section}`);
+        await expect(el).toHaveScreenshot(`${section}-phone-${theme}.png`);
+      });
+    }
   });
 }

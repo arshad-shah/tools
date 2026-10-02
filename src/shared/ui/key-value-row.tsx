@@ -152,7 +152,7 @@ export function KeyValueRowView({
         )}
       </TableCell>
       {types.length > 0 && (
-        <TableCell className="w-28">
+        <TableCell className="w-32">
           <Select
             value={type}
             onValueChange={(v) => setType(v as KeyValueType)}

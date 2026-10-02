@@ -78,7 +78,9 @@ export function GutterRows({
         data-cs-gutter-row={r}
         className={cn(
           'absolute inset-x-0 flex items-start gap-1 pl-1 pr-2',
-          deco && LINE_CLASS[deco],
+          // A tinted row darkens the gutter: fg-subtle drops below 4.5:1 on
+          // the light diff tints, so decorated numbers use fg-muted.
+          deco && [LINE_CLASS[deco], 'text-fg-muted'],
         )}
         style={fixed(w, r) ?? { height: LINE_HEIGHT }}
       >

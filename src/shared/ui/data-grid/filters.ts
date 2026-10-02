@@ -48,7 +48,8 @@ export function compileRegex(source: string): RegExp | string {
     return new RegExp(source, 'i');
   } catch (e) {
     const detail = e instanceof Error ? e.message : String(e);
-    return `Invalid regular expression: ${detail}`;
+    // V8 already starts its message with the same words.
+    return `Invalid regular expression: ${detail.replace(/^Invalid regular expression:\s*/i, '')}`;
   }
 }
 

@@ -3,12 +3,17 @@ import { IconMonitor, IconMoon, IconSun } from '@/shared/ui/icons';
 import { useTheme, type ThemePreference } from '@/shared/lib/theme';
 import { ButtonsSection } from './sections/ButtonsSection';
 import { CardsSection } from './sections/CardsSection';
+import { ChartSection } from './sections/ChartSection';
+import { ColourSection } from './sections/ColourSection';
 import { DataSection } from './sections/DataSection';
 import { DiagramSection } from './sections/DiagramSection';
 import { DialogsSection } from './sections/DialogsSection';
+import { EditorSection } from './sections/EditorSection';
+import { GridSection } from './sections/GridSection';
 import { IconsSection } from './sections/IconsSection';
 import { InputsSection } from './sections/InputsSection';
 import { KeysSection } from './sections/KeysSection';
+import { ListsTreesSection } from './sections/ListsTreesSection';
 import { MediaSection } from './sections/MediaSection';
 import { NavigationSection } from './sections/NavigationSection';
 import { OverlaysSection } from './sections/OverlaysSection';
@@ -16,8 +21,10 @@ import { PageOverlaysSection } from './sections/PageOverlaysSection';
 import { PanelsSection } from './sections/PanelsSection';
 import { WorkspaceBarsSection } from './sections/WorkspaceBarsSection';
 import { DocumentSection } from './sections/DocumentSection';
+import { PanesSection } from './sections/PanesSection';
 import { ShellSection } from './sections/ShellSection';
 import { StatesSection } from './sections/StatesSection';
+import { WidgetsSection } from './sections/WidgetsSection';
 
 /**
  * Dev-only kit gallery (decision G18): every kit primitive in its states,
@@ -62,6 +69,13 @@ export default function KitGallery() {
       <PanelsSection />
       <WorkspaceBarsSection />
       <DocumentSection />
+      <EditorSection />
+      <ListsTreesSection />
+      <GridSection />
+      <ChartSection />
+      <ColourSection />
+      <PanesSection />
+      <WidgetsSection />
       <IconsSection />
     </div>
   );
