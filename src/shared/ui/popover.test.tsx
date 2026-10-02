@@ -92,3 +92,30 @@ describe('Popover', () => {
     expect(dialog.style.top).toBe('78px');
   });
 });
+
+describe('Popover accompanying an editor', () => {
+  it('can open without taking focus and stay open on outside pointer-downs', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <>
+        <input aria-label="Editor" autoFocus />
+        <Popover
+          open
+          onOpenChange={onOpenChange}
+          anchor={{ getBoundingClientRect: () => new DOMRect(0, 0, 10, 10) }}
+          label="Settings"
+          autoFocus={false}
+          dismissOnOutside={false}
+        >
+          <button type="button">Bold</button>
+        </Popover>
+      </>,
+    );
+    const editor = screen.getByRole('textbox', { name: 'Editor' });
+    expect(document.activeElement).toBe(editor);
+    fireEvent.pointerDown(editor);
+    const bold = screen.getByRole('button', { name: 'Bold' });
+    fireEvent.blur(bold, { relatedTarget: editor });
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+});

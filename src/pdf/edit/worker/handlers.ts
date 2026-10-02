@@ -10,6 +10,7 @@ import {
   type MaterializeResult,
 } from '@/pdf/doc/materialize/materialize';
 import { ocrHandlers } from './ocr';
+import { formHandlers } from './forms';
 
 const materializeHandlers = {
   async materialize(
@@ -44,6 +45,7 @@ export const editHandlers = {
   ...convertHandlers,
   ...protectHandlers,
   ...optimizeHandlers,
+  ...formHandlers,
 };
 
 export type EditHandlers = typeof editHandlers;

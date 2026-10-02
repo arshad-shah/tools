@@ -16,6 +16,7 @@ export * from './custom/modes';
 export * from './custom/organize';
 export * from './custom/redact';
 export * from './custom/optimize';
+export * from './custom/fill-sign';
 // Later Parts append one line per custom group: modes, organize, edit, annotate,
 // fill-sign, redact, ocr, optimize, signing.
 export * from './custom/tools-p6';

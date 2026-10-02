@@ -105,6 +105,8 @@ export function createDocumentApi(d: DocumentApiDeps): DocumentApi {
       blobs.addAsset(id, bytes);
       return id;
     },
+    undo: () => void model.undo(),
+    setDetection: (detection) => model.setDetection(detection),
     async addSource(bytes, name) {
       guard();
       const info = await services.render.open(bytes);

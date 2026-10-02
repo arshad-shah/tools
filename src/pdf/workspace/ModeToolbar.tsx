@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { FloatingPalette, Toolbar, type ToolGroup } from '@/shared/ui';
 import { ModeToolbarContext } from './mode-toolbar-context';
 
@@ -7,7 +7,14 @@ import { ModeToolbarContext } from './mode-toolbar-context';
  * Standard toolbar, the Focus floating palette, or the phone's bar above
  * the dock (spec §6.1).
  */
-export function ModeToolbar({ groups }: { groups: ToolGroup[] }) {
+export function ModeToolbar({
+  groups,
+  trailing,
+}: {
+  groups: ToolGroup[];
+  /** Status after the tools (Standard and phone toolbars only). */
+  trailing?: ReactNode;
+}) {
   const s = useContext(ModeToolbarContext);
   if (s.layout === 'focus')
     return (
@@ -23,9 +30,14 @@ export function ModeToolbar({ groups }: { groups: ToolGroup[] }) {
     return (
       <div className="fixed inset-x-2 bottom-20 z-toolbar flex justify-center">
         <div className="max-w-full overflow-x-auto rounded-xl bg-surface p-1 shadow-e3">
-          <Toolbar label={s.label} groups={groups} size="lg" />
+          <Toolbar
+            label={s.label}
+            groups={groups}
+            size="lg"
+            trailing={trailing}
+          />
         </div>
       </div>
     );
-  return <Toolbar label={s.label} groups={groups} />;
+  return <Toolbar label={s.label} groups={groups} trailing={trailing} />;
 }

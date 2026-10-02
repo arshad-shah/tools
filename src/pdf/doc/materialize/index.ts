@@ -1,5 +1,6 @@
 import { ORGANIZE_MATERIALIZERS } from './organize';
 import { PROTECT_MATERIALIZERS } from './protect';
+import { FILL_SIGN_MATERIALIZERS } from './fill-sign';
 import type { Materializer } from './registry';
 
 /** Every overlay writer. Append-only: later Parts add one spread each. */
@@ -7,4 +8,5 @@ import type { Materializer } from './registry';
 export const ALL_MATERIALIZERS: readonly Materializer<any>[] = [
   ...ORGANIZE_MATERIALIZERS,
   ...PROTECT_MATERIALIZERS,
+  ...FILL_SIGN_MATERIALIZERS,
 ];

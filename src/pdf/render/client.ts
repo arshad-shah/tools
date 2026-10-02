@@ -266,6 +266,39 @@ export function createPdfRender(
         client.call('docTexts', [docId], { signal }),
       );
     },
+    /** Flat-form detection of one page; queued after canvas and rail renders. */
+    detect(docId: string, pageIndex: number, signal?: AbortSignal) {
+      return withSlot(
+        async () => {
+          assertAlive(docId);
+          return track(sourceOf.get(docId), () =>
+            client.call('detect', [docId, pageIndex], { signal }),
+          );
+        },
+        signal,
+        2,
+      );
+    },
+    /** Detection summary of a few pages, for the PDF hub card. */
+    detectSummary(docId: string, pages: number[], signal?: AbortSignal) {
+      return withSlot(
+        async () => {
+          assertAlive(docId);
+          return track(sourceOf.get(docId), () =>
+            client.call('detectSummary', [docId, pages], { signal }),
+          );
+        },
+        signal,
+        2,
+      );
+    },
+    /** AcroForm widgets with values, and the AcroForm and XFA flags. */
+    async formInfo(docId: string, signal?: AbortSignal) {
+      assertAlive(docId);
+      return track(sourceOf.get(docId), () =>
+        client.call('formInfo', [docId], { signal }),
+      );
+    },
     close(docId: string) {
       const gen = openedIn.get(docId);
       openedIn.delete(docId);

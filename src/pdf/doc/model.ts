@@ -374,6 +374,12 @@ export class DocumentModel {
     this.emit({ kind: 'changed' });
   }
 
+  /** Flat-form detection results (P5-C); not an undo step. */
+  setDetection(detection: unknown): void {
+    this.set({ detection });
+    this.emit({ kind: 'changed' });
+  }
+
   rename(name: string): void {
     const trimmed = name.trim();
     if (!trimmed || trimmed === this.state.name) return;

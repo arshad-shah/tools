@@ -24,6 +24,16 @@ export interface PopoverProps {
   /** false: non-modal (Tab out closes). true: focus is trapped inside. */
   modal?: boolean;
   initialFocus?: React.RefObject<HTMLElement | null>;
+  /**
+   * false: opening leaves focus where it is (a toolbar that accompanies an
+   * editor; reach it with a shortcut). Default true.
+   */
+  autoFocus?: boolean;
+  /**
+   * false: pointer-downs and focus moving outside do not close it (it
+   * follows its anchor; Esc inside still closes it). Default true.
+   */
+  dismissOnOutside?: boolean;
   className?: string;
   children: React.ReactNode;
 }
@@ -56,6 +66,8 @@ export function Popover({
   label,
   modal = false,
   initialFocus,
+  autoFocus = true,
+  dismissOnOutside = true,
   className,
   children,
 }: PopoverProps) {
@@ -122,17 +134,17 @@ export function Popover({
   // and visible), once per open.
   const placed = pos !== null;
   useEffect(() => {
-    if (!open || !placed || focused.current) return;
+    if (!open || !placed || focused.current || !autoFocus) return;
     const el = surface.current;
     if (!el) return;
     focused.current = true;
     const target =
       initialFocus?.current ?? el.querySelector<HTMLElement>(FOCUSABLE) ?? el;
     target.focus();
-  }, [open, placed, initialFocus]);
+  }, [open, placed, initialFocus, autoFocus]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !dismissOnOutside) return;
     const onPointerDown = (e: PointerEvent) => {
       const t = e.target as Node;
       if (surface.current?.contains(t)) return;
@@ -142,7 +154,7 @@ export function Popover({
     document.addEventListener('pointerdown', onPointerDown, true);
     return () =>
       document.removeEventListener('pointerdown', onPointerDown, true);
-  }, [open, anchor, onOpenChange]);
+  }, [open, anchor, onOpenChange, dismissOnOutside]);
 
   if (!open || typeof document === 'undefined') return null;
 
@@ -172,7 +184,7 @@ export function Popover({
   };
 
   const onBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (modal) return;
+    if (modal || !dismissOnOutside) return;
     const next = e.relatedTarget as Node | null;
     if (next && !surface.current?.contains(next)) onOpenChange(false);
   };

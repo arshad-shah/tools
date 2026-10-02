@@ -6,7 +6,7 @@ import {
   makeXfaPdf,
   pdfPageTexts,
 } from '../../../test/fixtures/builders';
-import { fillForm, listFormFields } from './forms';
+import { fillForm, listFormFields, listFormWidgets } from './forms';
 
 describe('listFormFields', () => {
   it('describes every AcroForm field', async () => {
@@ -121,6 +121,58 @@ describe('fillForm with fields that rely on NeedAppearances', () => {
     ).rejects.toMatchObject({
       code: 'INVALID_INPUT',
       message: `"legacy": the form font can't draw its current value, so the form can't be flattened`,
+    });
+  });
+});
+
+describe('listFormWidgets', () => {
+  it('lists one entry per widget with its page and /Rect', async () => {
+    const widgets = await listFormWidgets(await makeFormPdf());
+    expect(widgets.map((w) => w.fieldName)).toEqual([
+      'name',
+      'notes',
+      'zip',
+      'agree',
+      'size',
+      'size',
+      'size',
+      'country',
+      'toppings',
+      'ref',
+    ]);
+    expect(widgets.every((w) => w.pageIndex === 0)).toBe(true);
+    // pdf-lib's addToPage widens the /Rect by half the 1pt border.
+    expect(widgets[0]).toMatchObject({
+      kind: 'text',
+      rect: { x: 71.5, y: 699.5, width: 241, height: 25 },
+      readOnly: false,
+    });
+    expect(
+      widgets.filter((w) => w.kind === 'radio').map((w) => w.onValue),
+    ).toEqual(['S', 'M', 'L']);
+    expect(widgets[5].rect).toEqual({
+      x: 111.5,
+      y: 479.5,
+      width: 17,
+      height: 17,
+    });
+    expect(widgets.at(-1)).toMatchObject({ fieldName: 'ref', readOnly: true });
+  });
+  it('finds the page through /Annots when a widget has no /P', async () => {
+    const doc = await PDFDocument.create();
+    doc.addPage([300, 300]);
+    const page = doc.addPage([300, 300]);
+    const field = doc.getForm().createTextField('late');
+    field.addToPage(page, { x: 10, y: 20, width: 100, height: 20 });
+    field.acroField.getWidgets()[0].dict.delete(PDFName.of('P'));
+    const widgets = await listFormWidgets(await doc.save());
+    expect(widgets).toEqual([
+      expect.objectContaining({ fieldName: 'late', pageIndex: 1 }),
+    ]);
+  });
+  it('rejects XFA forms as unsupported', async () => {
+    await expect(listFormWidgets(await makeXfaPdf())).rejects.toMatchObject({
+      code: 'UNSUPPORTED_FEATURE',
     });
   });
 });

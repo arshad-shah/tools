@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { queryCommands } from '@/shared/lib/commands';
@@ -60,14 +66,17 @@ describe('ModeHost', () => {
     expect(await screen.findByText('Organize toolbar')).toBeTruthy();
     const labels = () =>
       queryCommands('command').flatMap((g) => g.commands.map((c) => c.label));
-    expect(labels()).toContain('Organize command');
+    // Commands register in an effect after the toolbar renders, so wait for them.
+    await waitFor(() => expect(labels()).toContain('Organize command'));
     expect(a.module.onEnter).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('to edit'));
     expect(await screen.findByText('Edit toolbar')).toBeTruthy();
     expect(a.module.onLeave).toHaveBeenCalledTimes(1);
     expect(b.module.onEnter).toHaveBeenCalledTimes(1);
-    expect(labels()).toContain('Edit command');
-    expect(labels()).not.toContain('Organize command');
+    await waitFor(() => {
+      expect(labels()).toContain('Edit command');
+      expect(labels()).not.toContain('Organize command');
+    });
   });
 
   it('asks before leaving when canExit gives a reason', async () => {

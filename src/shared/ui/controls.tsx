@@ -152,6 +152,8 @@ interface NumberInputProps {
   id?: string;
   className?: string;
   'aria-label'?: string;
+  /** lg: 44px tall with 44px steppers (Focus and phone layouts). */
+  size?: 'md' | 'lg';
 }
 export const NumberInput: React.FC<NumberInputProps> = ({
   value,
@@ -162,14 +164,17 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   disabled,
   id,
   className,
+  size = 'md',
   ...aria
 }) => {
+  const lg = size === 'lg';
   const clamp = (n: number) =>
     Math.min(max ?? Infinity, Math.max(min ?? -Infinity, n));
   return (
     <div
       className={cn(
-        'flex h-9 items-center rounded-md border border-line-strong bg-surface-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+        'flex items-center rounded-md border border-line-strong bg-surface-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+        lg ? 'h-11' : 'h-9',
         disabled && 'opacity-50',
         className,
       )}
@@ -179,7 +184,10 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         aria-label="Decrement"
         disabled={disabled}
         onClick={() => onValueChange(clamp(value - step))}
-        className="flex h-full w-9 items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed"
+        className={cn(
+          'flex h-full items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed',
+          lg ? 'w-11' : 'w-9',
+        )}
       >
         <IconMinus size="sm" />
       </button>
@@ -200,7 +208,10 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         aria-label="Increment"
         disabled={disabled}
         onClick={() => onValueChange(clamp(value + step))}
-        className="flex h-full w-9 items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed"
+        className={cn(
+          'flex h-full items-center justify-center text-fg-subtle hover:text-fg disabled:cursor-not-allowed',
+          lg ? 'w-11' : 'w-9',
+        )}
       >
         <IconPlus size="sm" />
       </button>

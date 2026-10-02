@@ -6,6 +6,7 @@ import { REDACT_OPS } from './redact';
 import { CONVERT_OPS } from './convert';
 import { PROTECT_OPS } from './protect';
 import { OPTIMIZE_OPS } from './optimize';
+import { FILL_SIGN_OPS } from './fill-sign';
 
 export { ORGANIZE_OPS } from './organize';
 export { OBJECT_OPS } from './objects';
@@ -13,6 +14,7 @@ export { REDACT_OPS } from './redact';
 export { CONVERT_OPS } from './convert';
 export { PROTECT_OPS } from './protect';
 export { OPTIMIZE_OPS } from './optimize';
+export { FILL_SIGN_OPS } from './fill-sign';
 
 /**
  * Registers every op definition, main thread and edit worker alike, so a
@@ -27,6 +29,7 @@ export function registerCoreOperations(): void {
     ...PROTECT_OPS,
     ...OPTIMIZE_OPS,
     ...OCR_OPS,
+    ...FILL_SIGN_OPS,
   ]);
   registerOperations(CONVERT_OPS);
 }

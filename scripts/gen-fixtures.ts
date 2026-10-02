@@ -17,6 +17,14 @@ import {
   makeType3FontPdf,
 } from '../test/fixtures/redact';
 import {
+  makeFlatFormStroked,
+  makeFlatFormWord,
+  makeMixedAcroform,
+  makeNegativeReport,
+  makeScanForm,
+} from '../test/fixtures/flat-form';
+import { makeWordTableForm } from '../test/fixtures/word-table-form';
+import {
   encodeGif,
   encodeJpeg,
   encodePng,
@@ -80,6 +88,8 @@ function map5000Json(): Uint8Array {
   }));
   return new TextEncoder().encode(JSON.stringify({ items }));
 }
+const wordTableForm = await makeWordTableForm();
+const flatFormWord = await makeFlatFormWord();
 
 const files: Record<string, Uint8Array> = {
   'large.json': largeJson(),
@@ -104,6 +114,18 @@ const files: Record<string, Uint8Array> = {
   'metadata.pdf': await makeMetadataPdf(),
   'redact-adversarial.pdf': await makeRedactAdversarial(),
   'type3-font.pdf': await makeType3FontPdf(),
+  'flat-form-word.pdf': flatFormWord.bytes,
+  'flat-form-word.truth.json': new TextEncoder().encode(
+    JSON.stringify(flatFormWord.truth, null, 2),
+  ),
+  'flat-form-stroked.pdf': (await makeFlatFormStroked()).bytes,
+  'negative-report.pdf': await makeNegativeReport(),
+  'mixed-acroform.pdf': (await makeMixedAcroform()).bytes,
+  'scan-form.pdf': await makeScanForm(),
+  'word-table-form.pdf': wordTableForm.bytes,
+  'word-table-form.truth.json': new TextEncoder().encode(
+    JSON.stringify(wordTableForm.truth, null, 2),
+  ),
   'photo.png': encodePng(320, 200, photoRgba(320, 200)),
   'photo.jpg': encodeJpeg(400, 300, noiseImage(400, 300, 4, 8)),
   'signature.jpg': encodeJpeg(300, 100, signatureRgba(300, 100), 92),

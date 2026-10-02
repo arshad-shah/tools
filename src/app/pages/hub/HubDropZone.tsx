@@ -62,6 +62,7 @@ export function HubDropZone({
     if (decision.type === 'navigate') go(decision.path, decision.files);
     else if (decision.type === 'choose') setChoice(decision);
     else if (decision.type === 'confirm-merge') setMerge(decision);
+    else if (decision.type === 'handled') return;
     else setError(decision.error);
   };
 
