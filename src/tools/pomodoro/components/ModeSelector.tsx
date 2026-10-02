@@ -15,7 +15,7 @@ export const ModeSelector: React.FC<{
       return (
         <Button
           key={mode}
-          variant={isActive ? 'solid' : 'soft'}
+          variant={isActive ? 'primary' : 'secondary'}
           size="md"
           leftIcon={<Icon size="sm" />}
           onClick={() => onChange(mode)}

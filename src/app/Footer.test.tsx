@@ -16,13 +16,20 @@ const tool: ToolDefinition = {
   icon: IconBox,
   enabled: true,
   category: 'pdf',
+  slug: 'merge',
+  kind: 'quick-task',
+  keywords: ['combine', 'join', 'pdf'],
 };
 
 describe('Footer', () => {
   it('shows tool count and the local-processing note', () => {
     render(<Footer />);
     expect(screen.getByText(`${getEnabledTools().length} tools`)).toBeTruthy();
-    expect(screen.getByText(/runs locally, no uploads/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Your files are processed on this device and never uploaded/,
+      ),
+    ).toBeTruthy();
   });
 
   it('links issues without a tool context, name starting with the visible text', () => {
@@ -59,17 +66,22 @@ describe('Footer', () => {
       });
       expect(link.getAttribute('href')).toBe(`${REPO}/commit/a1b2c3d`);
       expect(screen.getByText(/v2026\.10\.01/)).toBeTruthy();
-      for (const dot of screen.getAllByText('·'))
-        expect(dot.getAttribute('aria-hidden')).toBe('true');
     });
   });
 
-  it('starts every non-first item with its separator, on one line', () => {
+  it('separates items with decorative elements, never characters', () => {
     const { container } = render(<Footer />);
-    const items = container.querySelectorAll('.whitespace-nowrap');
-    expect(items.length).toBeGreaterThanOrEqual(5);
-    for (const item of items)
-      expect(item.firstElementChild?.textContent).toBe('·');
+    const seps = container.querySelectorAll('[data-separator]');
+    expect(seps.length).toBeGreaterThanOrEqual(3);
+    for (const sep of seps) {
+      expect(sep.getAttribute('aria-hidden')).toBe('true');
+      expect(sep.textContent).toBe('');
+    }
+  });
+
+  it('offers the theme switch', () => {
+    render(<Footer />);
+    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeTruthy();
   });
 
   it('links the source to the repo', () => {

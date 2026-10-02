@@ -12,6 +12,7 @@ import {
   Card,
   CardBody,
   IconButton,
+  Image,
   Inline,
   Stack,
   Tabs,
@@ -49,6 +50,7 @@ import { TypedSignaturePreview } from './components/TypedSignaturePreview';
 import { fetchFontBytes, inkAspect, loadSignatureFont } from './lib/fonts';
 import { clampRect, defaultRect, rectToPixels } from './lib/placement';
 import type { SignatureSource } from './lib/signature';
+import { useHandoff } from '@/shared/lib/handoff';
 
 type SourceTab = 'draw' | 'upload' | 'type';
 
@@ -69,6 +71,8 @@ function fitRect(
 }
 
 const PdfSignTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [source, setSource] = useState<SignatureSource | null>(null);
   const [tab, setTab] = useState<SourceTab>('draw');
@@ -180,12 +184,15 @@ const PdfSignTool: React.FC<ToolProps> = () => {
   const page = doc?.pages[pageIndex];
   const preview =
     source?.kind === 'image' ? (
-      <img
-        src={imageUrl ?? undefined}
-        alt=""
-        draggable={false}
-        className="pointer-events-none size-full object-contain"
-      />
+      imageUrl ? (
+        <Image
+          src={imageUrl}
+          decorative
+          draggable={false}
+          fit="contain"
+          className="pointer-events-none size-full"
+        />
+      ) : null
     ) : source?.kind === 'text' && typed && rect && page ? (
       <TypedSignaturePreview
         layout={typed}
@@ -204,6 +211,7 @@ const PdfSignTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -285,7 +293,7 @@ const PdfSignTool: React.FC<ToolProps> = () => {
                 </Stack>
               </div>
               <Button
-                variant="solid"
+                variant="primary"
                 leftIcon={<IconSignature size="sm" />}
                 disabled={job.status === 'running' || !source || !rect}
                 onClick={() =>

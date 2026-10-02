@@ -43,6 +43,10 @@ import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { FilterBar } from './components/FilterBar';
 import { InputPanel } from './components/InputPanel';
+import { toToolError } from '@/shared/lib/errors';
+import { loadTextFile } from '@/shared/lib/files';
+import { useHandoffFiles } from '@/shared/lib/handoff';
+import { notify } from '@/shared/lib/notify';
 import { LogRow } from './components/LogRow';
 import { useLogParser } from './hooks/useLogParser';
 import { LEVEL_INFO } from './lib/level-info';
@@ -81,6 +85,17 @@ const LogParserTool: React.FC = () => {
   // Keyed so only the row whose button was pressed shows "Copied" (B10).
   const { copiedKey, copy } = useClipboard();
 
+  // A picked file and a file dropped on a hub load the same way.
+  const openFile = async (file: File) => {
+    try {
+      const { text } = await loadTextFile(file, { maxBytes: 50 * 1024 * 1024 });
+      setLogText(text);
+    } catch (e) {
+      notify.error(toToolError(e).message);
+    }
+  };
+  useHandoffFiles((files) => void openFile(files[0]));
+
   const downloadFiltered = () => {
     saveBlob(
       new Blob([filteredLogs.map((l) => l.raw).join('\n')], {
@@ -98,6 +113,7 @@ const LogParserTool: React.FC = () => {
       setLogType={setLogType}
       loadSampleLogs={loadSampleLogs}
       clearLogs={clearLogs}
+      openFile={(file) => void openFile(file)}
     />
   );
 
@@ -114,7 +130,7 @@ const LogParserTool: React.FC = () => {
           </Inline>
           {filteredLogs.length > 0 && (
             <Button
-              variant="soft"
+              variant="secondary"
               size="sm"
               leftIcon={<IconDownload size="sm" />}
               onClick={downloadFiltered}
@@ -137,7 +153,7 @@ const LogParserTool: React.FC = () => {
             </EmptyStateDescription>
             <EmptyStateActions>
               <Button
-                variant="solid"
+                variant="primary"
                 size="sm"
                 leftIcon={<IconRefreshCw size="sm" />}
                 onClick={loadSampleLogs}
@@ -156,7 +172,7 @@ const LogParserTool: React.FC = () => {
               No log lines match the active filters.
             </EmptyStateDescription>
             <EmptyStateActions>
-              <Button variant="soft" size="sm" onClick={resetFilters}>
+              <Button variant="secondary" size="sm" onClick={resetFilters}>
                 Reset filters
               </Button>
             </EmptyStateActions>
@@ -193,7 +209,7 @@ const LogParserTool: React.FC = () => {
           </Inline>
           <Inline gap="2" wrap>
             <Button
-              variant={showFilters ? 'solid' : 'soft'}
+              variant={showFilters ? 'primary' : 'secondary'}
               size="sm"
               leftIcon={<IconFilter size="sm" />}
               onClick={() => setShowFilters(!showFilters)}
@@ -211,13 +227,13 @@ const LogParserTool: React.FC = () => {
               variant="soft"
             >
               <TabsList aria-label="View mode">
-                <TabsTrigger value="input">
+                <TabsTrigger value="input" aria-label="Input only">
                   <IconPanelLeft size="sm" />
                 </TabsTrigger>
-                <TabsTrigger value="split">
+                <TabsTrigger value="split" aria-label="Input and output">
                   <IconLayoutGrid size="sm" />
                 </TabsTrigger>
-                <TabsTrigger value="output">
+                <TabsTrigger value="output" aria-label="Output only">
                   <IconPanelRight size="sm" />
                 </TabsTrigger>
               </TabsList>
@@ -237,7 +253,7 @@ const LogParserTool: React.FC = () => {
                   key={level}
                   interactive
                   className={
-                    isActive ? 'border-accent bg-surface-subtle' : undefined
+                    isActive ? 'border-accent bg-surface-2' : undefined
                   }
                   onClick={() => toggleLevelFilter(level)}
                 >

@@ -162,7 +162,7 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
                   : `${algorithm} is verified with a public key (PEM or JWK). A shared secret is refused.`}
               </Text>
               <Button
-                variant="solid"
+                variant="primary"
                 leftIcon={<IconShieldCheck size="sm" />}
                 onClick={() => void handleVerify()}
                 disabled={!keyText.trim() || sigStatus.state === 'checking'}

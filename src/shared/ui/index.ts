@@ -114,3 +114,42 @@ export {
   type DiagramCanvasHandle,
   type DiagramLayoutInfo,
 } from './diagram-canvas';
+export { BitmapCanvas, type BitmapCanvasProps } from './bitmap-canvas';
+export { Image, type ImageProps } from './image';
+export { ColorInput, type ColorInputProps } from './color-input';
+export { DateInput, type DateInputProps } from './date-input';
+export {
+  SignaturePad,
+  type SignaturePadProps,
+  type Stroke,
+  type Point,
+} from './signature-pad';
+export {
+  PaintCanvas,
+  type PaintCanvasProps,
+  type PaintSize,
+} from './paint-canvas';
+export {
+  Positioned,
+  type PositionedProps,
+  Sized,
+  type SizedProps,
+} from './positioned';
+// Adapters for heavy third-party libraries are imported from their own
+// files (e.g. '@/shared/ui/adapters/Chart') so a page that does not use
+// Plotly, React Flow, Rive, QR or the code editor never loads them.
+export {
+  tokenColor,
+  useTokenColors,
+  type TokenName,
+} from './adapters/theme-colors';
+export { ColorBlock, type ColorBlockProps } from './color-block';
+export { Indent, type IndentProps } from './indent';
+export { type SelectGroup } from './select';
+export { LineChart, type LineChartProps } from './line-chart';
+export { FontSample, type FontSampleProps } from './font-sample';
+export {
+  RadioGroup,
+  type RadioGroupProps,
+  type RadioOption,
+} from './radio-group';

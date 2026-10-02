@@ -19,7 +19,7 @@ const PREVIEW = {
   preview:
     'relative grid max-h-[420px] grid-cols-[auto_1fr] overflow-auto rounded-lg border border-line bg-surface font-mono text-sm leading-[1.7] text-fg shadow-[inset_3px_0_0_0_var(--color-accent)]',
   gutter:
-    'sticky left-0 select-none border-r border-line bg-surface-subtle py-3 pr-3 pl-[18px] text-right text-fg-subtle tabular-nums',
+    'sticky left-0 select-none border-r border-line bg-surface-2 py-3 pr-3 pl-[18px] text-right text-fg-subtle tabular-nums',
   gutterLine: 'block text-[0.85em] opacity-70',
   content:
     'min-w-0 px-4 py-3 whitespace-pre-wrap [word-break:break-word] [overflow-wrap:anywhere]',

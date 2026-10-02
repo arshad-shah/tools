@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   aspectRatio,
   convertImage,
@@ -72,5 +72,84 @@ describe('convertImage', () => {
         background: 'not-a-colour',
       }),
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+  });
+});
+
+describe('convertImage encoding', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const stub = (blob: Blob | null) => {
+    const ops: string[] = [];
+    const ctx = {
+      fillStyle: '',
+      fillRect: () => ops.push(`fill ${ctx.fillStyle}`),
+      drawImage: () => ops.push('draw'),
+    };
+    const convertToBlob = vi.fn(async () => {
+      if (!blob) throw new Error('unsupported');
+      return blob;
+    });
+    vi.stubGlobal(
+      'Image',
+      class {
+        src = '';
+        naturalWidth = 4;
+        naturalHeight = 2;
+        decode = async () => {};
+      },
+    );
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        constructor(
+          public width: number,
+          public height: number,
+        ) {
+          ops.push(`canvas ${width}x${height}`);
+        }
+        getContext = () => ctx;
+        convertToBlob = convertToBlob;
+      },
+    );
+    vi.stubGlobal('URL', {
+      createObjectURL: () => 'blob:x',
+      revokeObjectURL: () => {},
+    });
+    return { ops, convertToBlob };
+  };
+
+  it('flattens JPEG onto the background and encodes with quality', async () => {
+    const { ops, convertToBlob } = stub(
+      new Blob([new Uint8Array([1, 2])], { type: 'image/jpeg' }),
+    );
+    const out = await convertImage(new Blob(['x']), {
+      format: 'jpeg',
+      quality: 0.7,
+      background: '#123456',
+    });
+    expect(ops).toEqual(['canvas 4x2', 'fill #123456', 'draw']);
+    expect(convertToBlob).toHaveBeenCalledWith({
+      type: 'image/jpeg',
+      quality: 0.7,
+    });
+    expect(out).toMatchObject({ mime: 'image/jpeg', width: 4, height: 2 });
+    expect([...out.bytes]).toEqual([1, 2]);
+  });
+
+  it('encodes PNG without background or quality', async () => {
+    const { ops, convertToBlob } = stub(new Blob(['p'], { type: 'image/png' }));
+    await convertImage(new Blob(['x']), { format: 'png', quality: 0.5 });
+    expect(ops).toEqual(['canvas 4x2', 'draw']);
+    expect(convertToBlob).toHaveBeenCalledWith({
+      type: 'image/png',
+      quality: undefined,
+    });
+  });
+
+  it('reports a format the browser cannot encode', async () => {
+    stub(null);
+    await expect(
+      convertImage(new Blob(['x']), { format: 'webp', quality: 0.5 }),
+    ).rejects.toMatchObject({ code: 'UNSUPPORTED_FEATURE' });
   });
 });

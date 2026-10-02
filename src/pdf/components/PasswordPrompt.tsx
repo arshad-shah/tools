@@ -79,7 +79,7 @@ export const PasswordPrompt: React.FC<PasswordPromptProps> = ({
       <div className="flex gap-2">
         <Button
           type="submit"
-          variant="solid"
+          variant="primary"
           loading={busy}
           disabled={!password || busy || disabled}
         >

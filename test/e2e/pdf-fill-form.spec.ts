@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 import { pdfPageTexts } from '../fixtures/builders';
+import { pathOf } from './tool-routes';
 
 async function fill(page: Page) {
-  await page.goto('/pdf-fill-form');
+  await page.goto(pathOf('pdf-fill-form'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/form.pdf');
@@ -55,7 +56,7 @@ test('flattens the filled form', async ({ page }) => {
 });
 
 test('explains that XFA forms are not supported', async ({ page }) => {
-  await page.goto('/pdf-fill-form');
+  await page.goto(pathOf('pdf-fill-form'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/xfa-form.pdf');

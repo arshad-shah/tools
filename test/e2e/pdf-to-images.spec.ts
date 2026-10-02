@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
 import { pngDimensions } from '../fixtures/images';
+import { pathOf } from './tool-routes';
 
 test('exports selected pages as PNGs in a ZIP at the requested DPI', async ({
   page,
 }) => {
-  await page.goto('/pdf-to-images');
+  await page.goto(pathOf('pdf-to-images'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -34,7 +35,7 @@ test('exports selected pages as PNGs in a ZIP at the requested DPI', async ({
 });
 
 test('exports a single page as JPEG', async ({ page }) => {
-  await page.goto('/pdf-to-images');
+  await page.goto(pathOf('pdf-to-images'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -55,7 +56,7 @@ test('exports a single page as JPEG', async ({ page }) => {
 });
 
 test('reports an out-of-range page instead of exporting', async ({ page }) => {
-  await page.goto('/pdf-to-images');
+  await page.goto(pathOf('pdf-to-images'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -67,7 +68,7 @@ test('reports an out-of-range page instead of exporting', async ({ page }) => {
 test('renders a large page at 300 DPI within the canvas limit and says so', async ({
   page,
 }) => {
-  await page.goto('/pdf-to-images');
+  await page.goto(pathOf('pdf-to-images'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/a2-1.pdf');
@@ -92,7 +93,7 @@ test('renders a large page at 300 DPI within the canvas limit and says so', asyn
 test('warns before a very large export, and not for a small one', async ({
   page,
 }) => {
-  await page.goto('/pdf-to-images');
+  await page.goto(pathOf('pdf-to-images'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-300.pdf');

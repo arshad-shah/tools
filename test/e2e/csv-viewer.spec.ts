@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 const upload = (name: string, text: string) => ({
   name,
@@ -9,7 +10,7 @@ const upload = (name: string, text: string) => ({
 test('csv-viewer detects semicolons and keeps a ragged row', async ({
   page,
 }) => {
-  await page.goto('/csv-viewer');
+  await page.goto(pathOf('csv-viewer'));
   await page
     .locator('input[type=file]')
     .setInputFiles(
@@ -27,7 +28,7 @@ test('csv-viewer detects semicolons and keeps a ragged row', async ({
 });
 
 test('csv-viewer keeps leading zeros and long IDs exact', async ({ page }) => {
-  await page.goto('/csv-viewer');
+  await page.goto(pathOf('csv-viewer'));
   await page
     .locator('input[type=file]')
     .setInputFiles(
@@ -40,7 +41,7 @@ test('csv-viewer keeps leading zeros and long IDs exact', async ({ page }) => {
 });
 
 test('csv-viewer shows the columns of a header-only file', async ({ page }) => {
-  await page.goto('/csv-viewer');
+  await page.goto(pathOf('csv-viewer'));
   await page
     .locator('input[type=file]')
     .setInputFiles(upload('empty.csv', 'a,b,c\n'));
@@ -49,7 +50,7 @@ test('csv-viewer shows the columns of a header-only file', async ({ page }) => {
 });
 
 test('csv-viewer lets the user override the delimiter', async ({ page }) => {
-  await page.goto('/csv-viewer');
+  await page.goto(pathOf('csv-viewer'));
   await page
     .locator('input[type=file]')
     .setInputFiles(upload('data.csv', 'a|b\n1|2\n3|4\n'));

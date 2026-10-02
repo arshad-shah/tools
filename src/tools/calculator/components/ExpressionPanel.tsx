@@ -70,7 +70,7 @@ export const ExpressionPanel: React.FC<ExpressionPanelProps> = ({
       <Inline gap="2" wrap>
         <Box className="flex-1">
           <Button
-            variant="solid"
+            variant="primary"
             onClick={evaluateExpression}
             leftIcon={<IconEqual size="sm" />}
             fullWidth
@@ -79,13 +79,13 @@ export const ExpressionPanel: React.FC<ExpressionPanelProps> = ({
           </Button>
         </Box>
         <IconButton
-          variant="soft"
+          variant="secondary"
           label="Save calculation"
           icon={<IconStar size="sm" />}
           onClick={saveCalculation}
         />
         <IconButton
-          variant={showGraph ? 'solid' : 'soft'}
+          variant={showGraph ? 'primary' : 'secondary'}
           label="Plot expression"
           icon={<IconBarChart4 size="sm" />}
           onClick={toggleGraph}
@@ -112,14 +112,18 @@ export const ExpressionPanel: React.FC<ExpressionPanelProps> = ({
         <CalcKey onClick={() => setDisplay(display + '(')}>(</CalcKey>
         <CalcKey onClick={() => setDisplay(display + ')')}>)</CalcKey>
         <CalcKey onClick={() => setDisplay(display + '^')}>^</CalcKey>
-        <CalcKey variant="solid" colorScheme="danger" onClick={clear}>
+        <CalcKey variant="primary" colorScheme="danger" onClick={clear}>
           C
         </CalcKey>
 
         <CalcKey onClick={() => setDisplay(display + 'sin(')}>sin</CalcKey>
         <CalcKey onClick={() => setDisplay(display + 'cos(')}>cos</CalcKey>
         <CalcKey onClick={() => setDisplay(display + 'tan(')}>tan</CalcKey>
-        <CalcKey onClick={backspace} icon={<IconArrowLeft size="sm" />} />
+        <CalcKey
+          onClick={backspace}
+          icon={<IconArrowLeft size="sm" />}
+          label="Backspace"
+        />
 
         <CalcKey onClick={() => setDisplay(display + 'sqrt(')}>sqrt</CalcKey>
         <CalcKey onClick={() => setDisplay(display + 'log(')}>log</CalcKey>
@@ -130,10 +134,11 @@ export const ExpressionPanel: React.FC<ExpressionPanelProps> = ({
         <CalcKey onClick={() => setDisplay(display + 'pi')}>π</CalcKey>
         <CalcKey onClick={() => setDisplay(display + 'e')}>e</CalcKey>
         <CalcKey
-          variant="solid"
+          variant="primary"
           colorScheme="success"
           onClick={evaluateExpression}
           icon={<IconEqual size="sm" />}
+          label="Equals"
         />
       </Grid>
     </Stack>

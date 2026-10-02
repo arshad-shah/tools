@@ -1,0 +1,108 @@
+import type { CommandSource } from '@/shared/lib/commands';
+import type { ThemePreference } from '@/shared/lib/theme';
+import { IconHome, IconMonitor, IconMoon, IconSun } from '@/shared/ui/icons';
+import { CATEGORIES } from '../categories';
+import { categoryPath, toolPath } from '../routes';
+import type { ToolManifest } from '../tool';
+
+type Navigate = (path: string) => void;
+
+const words = (s: string) =>
+  s
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2);
+
+/** Home and every category hub ("Go to PDF"). */
+export function routeCommands(navigate: Navigate): CommandSource {
+  const commands = [
+    {
+      id: 'route:home',
+      label: 'Go to Home',
+      group: 'Pages',
+      keywords: ['home', 'start', 'categories'],
+      icon: IconHome,
+      run: () => navigate('/'),
+    },
+    ...CATEGORIES.map((c) => ({
+      id: `route:${c.id}`,
+      label: `Go to ${c.label}`,
+      group: 'Pages',
+      keywords: [c.id, ...words(c.blurb)],
+      icon: c.icon,
+      run: () => navigate(categoryPath(c.id)),
+    })),
+  ];
+  return { id: 'app-routes', commands: () => commands };
+}
+
+/** One command per enabled tool, searchable by name, keywords and description. */
+export function toolCommands(
+  navigate: Navigate,
+  tools: readonly ToolManifest[],
+): CommandSource {
+  const commands = tools
+    .filter((t) => t.enabled)
+    .map((t) => ({
+      id: `tool:${t.id}`,
+      label: t.name,
+      group: 'Tools',
+      keywords: [...t.keywords, t.category, ...words(t.description)],
+      icon: t.icon,
+      run: () => navigate(toolPath(t)),
+    }));
+  return { id: 'app-tools', commands: () => commands };
+}
+
+/** Starred tools, listed first when the query is empty. */
+export function favouriteCommands(
+  navigate: Navigate,
+  favs: () => string[],
+  tools: readonly ToolManifest[],
+): CommandSource {
+  return {
+    id: 'app-favourites',
+    commands: () =>
+      favs()
+        .map((id) => tools.find((t) => t.id === id && t.enabled))
+        .filter((t): t is ToolManifest => t !== undefined)
+        .map((t) => ({
+          id: `favourite:${t.id}`,
+          label: t.name,
+          group: 'Favourites',
+          keywords: ['favourite', ...t.keywords],
+          icon: t.icon,
+          run: () => navigate(toolPath(t)),
+        })),
+  };
+}
+
+export function themeCommands(
+  setPreference: (p: ThemePreference) => void,
+): CommandSource {
+  const commands = [
+    {
+      id: 'theme:light',
+      label: 'Use light theme',
+      icon: IconSun,
+      run: () => setPreference('light'),
+    },
+    {
+      id: 'theme:dark',
+      label: 'Use dark theme',
+      icon: IconMoon,
+      run: () => setPreference('dark'),
+    },
+    {
+      id: 'theme:system',
+      label: 'Use system theme',
+      icon: IconMonitor,
+      run: () => setPreference('system'),
+    },
+  ].map((c) => ({
+    ...c,
+    group: 'Settings',
+    keywords: ['theme', 'appearance', 'colour', 'mode'],
+  }));
+  return { id: 'app-theme', commands: () => commands };
+}

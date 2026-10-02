@@ -93,14 +93,14 @@ class ToolErrorBoundary extends Component<Props, State> {
           <CardFooter>
             <Inline gap="2" wrap justify="end">
               <Button
-                variant="soft"
+                variant="secondary"
                 leftIcon={<IconHome size="sm" />}
                 onClick={this.handleNavigateHome}
               >
                 Go to dashboard
               </Button>
               <Button
-                variant="solid"
+                variant="primary"
                 leftIcon={<IconRefreshCw size="sm" />}
                 onClick={this.handleRetry}
               >

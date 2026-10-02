@@ -94,7 +94,7 @@ const RandomDataGenerator: React.FC = () => {
                   />
                 ))}
                 <Button
-                  variant="soft"
+                  variant="secondary"
                   leftIcon={<IconPlusCircle size="sm" />}
                   onClick={() => handleAddField()}
                   fullWidth
@@ -119,7 +119,7 @@ const RandomDataGenerator: React.FC = () => {
                       />
                     </Stack>
                     <Button
-                      variant="solid"
+                      variant="primary"
                       leftIcon={<IconRefreshCw size="sm" />}
                       onClick={handleGenerate}
                       fullWidth

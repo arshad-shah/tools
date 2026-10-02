@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { IconCheck, IconCopy, IconX } from '@/shared/ui/icons';
+import { IconCheck, IconCopy, IconUpload, IconX } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   Code,
+  FilePicker,
   Heading,
   Inline,
   Input,
@@ -21,6 +22,9 @@ import {
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
+import { readBytes } from '@/shared/lib/files';
+import { formatBytes } from '@/shared/lib/format';
+import { useHandoffFiles } from '@/shared/lib/handoff';
 import {
   ALGORITHMS,
   HMAC_ALGORITHMS,
@@ -51,7 +55,24 @@ const HashGenerator: React.FC = () => {
   // An empty message is a valid input (SHA-256("") is well known), but
   // only hashed when asked, so the page does not open full of results.
   const [hashEmpty, setHashEmpty] = useState(false);
-  const hasInput = input !== '' || hashEmpty;
+  // A file replaces the text as the message while it is set.
+  const [file, setFile] = useState<{ name: string; bytes: Uint8Array } | null>(
+    null,
+  );
+  const [fileError, setFileError] = useState<string | null>(null);
+  const hasInput = file !== null || input !== '' || hashEmpty;
+  const message = file ? file.bytes : input;
+
+  const openFile = async (picked: File) => {
+    setFileError(null);
+    try {
+      setFile({ name: picked.name, bytes: await readBytes(picked) });
+    } catch (e) {
+      setFileError(toToolError(e).message);
+    }
+  };
+  // A file dropped on a hub is hashed like a picked one (spec §5.3).
+  useHandoffFiles((files) => void openFile(files[0]));
   const { copiedKey, copy } = useClipboard();
 
   const items = useMemo(
@@ -87,17 +108,17 @@ const HashGenerator: React.FC = () => {
     };
     for (const a of ALGORITHMS) {
       if (selected === 'all' || selected === a.id)
-        run(a.id, a.name, () => computeHash(a.id, input));
+        run(a.id, a.name, () => computeHash(a.id, message));
     }
     if (key.bytes) {
       const bytes = key.bytes;
       for (const a of HMAC_ALGORITHMS) {
         if (selected === 'all' || selected === a.id)
-          run(a.id, a.name, () => computeHmac(a.id, bytes, input));
+          run(a.id, a.name, () => computeHmac(a.id, bytes, message));
       }
     }
     return out;
-  }, [input, hasInput, selected, key.bytes]);
+  }, [message, hasInput, selected, key.bytes]);
 
   return (
     <Stack gap="6">
@@ -118,14 +139,56 @@ const HashGenerator: React.FC = () => {
                   </Button>
                 )}
               </Inline>
-              <Textarea
-                id="hash-input"
-                value={input}
-                onChange={setInput}
-                placeholder="Enter text to generate hashes…"
-                rows={4}
-              />
-              {!input && (
+              {file ? (
+                <Inline justify="between" align="center" gap="3" wrap>
+                  <Text size="sm">
+                    Hashing file{' '}
+                    <Text as="span" weight="semibold">
+                      {file.name}
+                    </Text>{' '}
+                    ({formatBytes(file.bytes.byteLength)})
+                  </Text>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<IconX size="sm" />}
+                    onClick={() => setFile(null)}
+                  >
+                    Clear file
+                  </Button>
+                </Inline>
+              ) : (
+                <Textarea
+                  id="hash-input"
+                  value={input}
+                  onChange={setInput}
+                  placeholder="Enter text to generate hashes…"
+                  rows={4}
+                />
+              )}
+              <Inline gap="2" align="center">
+                <FilePicker onFiles={(files) => void openFile(files[0])}>
+                  {(open) => (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={<IconUpload size="sm" />}
+                      onClick={open}
+                    >
+                      Hash a file
+                    </Button>
+                  )}
+                </FilePicker>
+                <Text size="xs" tone="muted">
+                  Files are hashed on this device.
+                </Text>
+              </Inline>
+              {fileError && (
+                <Alert status="danger">
+                  <AlertDescription>{fileError}</AlertDescription>
+                </Alert>
+              )}
+              {!input && !file && (
                 <Inline gap="2" align="center">
                   <Switch
                     id="hash-empty"
@@ -213,7 +276,7 @@ const HashGenerator: React.FC = () => {
                   <Inline justify="between" align="center">
                     <CardTitle as="h3">{name}</CardTitle>
                     <Button
-                      variant={isCopied ? 'solid' : 'soft'}
+                      variant={isCopied ? 'primary' : 'secondary'}
                       size="sm"
                       disabled={value === undefined}
                       aria-label={`Copy ${name}`}

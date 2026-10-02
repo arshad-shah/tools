@@ -64,10 +64,10 @@ export const SaveRequestDialog: React.FC<SaveRequestDialogProps> = ({
       </Stack>
     </DialogBody>
     <DialogFooter>
-      <Button variant="soft" onClick={() => onOpenChange(false)}>
+      <Button variant="secondary" onClick={() => onOpenChange(false)}>
         Cancel
       </Button>
-      <Button variant="solid" onClick={onSave}>
+      <Button variant="primary" onClick={onSave}>
         Save
       </Button>
     </DialogFooter>

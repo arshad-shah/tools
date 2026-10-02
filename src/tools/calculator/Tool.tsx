@@ -101,21 +101,21 @@ const Calculator: React.FC = () => {
               </Inline>
               <Inline gap="1">
                 <IconButton
-                  variant={showMemoryPanel ? 'solid' : 'soft'}
+                  variant={showMemoryPanel ? 'primary' : 'secondary'}
                   size="sm"
                   label="Memory"
                   icon={<IconRotateCcw size="sm" />}
                   onClick={toggleMemoryPanel}
                 />
                 <IconButton
-                  variant={showHistory ? 'solid' : 'soft'}
+                  variant={showHistory ? 'primary' : 'secondary'}
                   size="sm"
                   label="History"
                   icon={<IconHistory size="sm" />}
                   onClick={toggleHistory}
                 />
                 <IconButton
-                  variant={showFavorites ? 'solid' : 'soft'}
+                  variant={showFavorites ? 'primary' : 'secondary'}
                   size="sm"
                   label="Saved calculations"
                   icon={<IconStar size="sm" />}
@@ -143,14 +143,14 @@ const Calculator: React.FC = () => {
                 <Inline justify="between" align="center" gap="2" wrap>
                   <ButtonGroup>
                     <Button
-                      variant={angleUnit === 'deg' ? 'solid' : 'soft'}
+                      variant={angleUnit === 'deg' ? 'primary' : 'secondary'}
                       size="sm"
                       onClick={() => setAngleUnit('deg')}
                     >
                       DEG
                     </Button>
                     <Button
-                      variant={angleUnit === 'rad' ? 'solid' : 'soft'}
+                      variant={angleUnit === 'rad' ? 'primary' : 'secondary'}
                       size="sm"
                       onClick={() => setAngleUnit('rad')}
                     >
@@ -158,7 +158,7 @@ const Calculator: React.FC = () => {
                     </Button>
                   </ButtonGroup>
                   <IconButton
-                    variant={showTimestamp ? 'solid' : 'soft'}
+                    variant={showTimestamp ? 'primary' : 'secondary'}
                     size="sm"
                     label="Toggle timestamps"
                     icon={<IconClock size="sm" />}

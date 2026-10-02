@@ -175,14 +175,14 @@ describe('PageGrid selection semantics', () => {
     vi.stubGlobal('IntersectionObserver', NoopObserver);
   });
 
-  it('renders a real checkbox per tile instead of aria-selected', () => {
+  it('renders a kit checkbox per tile instead of aria-selected', () => {
     const onToggle = vi.fn();
     renderGrid({ onToggle, selected: new Set(['k1']) });
     const boxes = screen.getAllByRole('checkbox');
-    expect(boxes.map((b) => (b as HTMLInputElement).checked)).toEqual([
-      false,
-      true,
-      false,
+    expect(boxes.map((b) => b.getAttribute('aria-checked'))).toEqual([
+      'false',
+      'true',
+      'false',
     ]);
     expect(
       screen.getByRole('checkbox', { name: 'Select page 3' }),

@@ -6,22 +6,22 @@ import {
   IconCopy,
   IconLink2,
 } from '@/shared/ui/icons';
-import { Tooltip } from '@/shared/ui';
+import { IconButton, Indent, Tooltip } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 
 /** Tree-row classes (formerly a CSS module). */
 const styles = {
   row: 'group relative flex min-w-0 items-center gap-1.5 rounded py-0.5 pr-2 font-mono text-sm leading-[1.6]',
-  rowIdle: 'hover:bg-surface-subtle',
+  rowIdle: 'hover:bg-surface-2',
   rowMatched: 'bg-warning',
   indentGuide: 'ml-[7px] w-4 border-l border-line',
   chevron:
-    'inline-flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-[3px] border-0 bg-transparent p-0 text-fg-muted hover:bg-surface-strong hover:text-fg',
+    'size-[18px] shrink-0 rounded-[3px] text-fg-muted hover:bg-surface-3 hover:text-fg',
   chevronSpacer: 'w-[18px] shrink-0',
   key: 'font-medium whitespace-nowrap text-fg',
   colon: 'mr-0.5 text-fg-subtle',
   value: 'min-w-0 flex-auto truncate',
-  string: 'text-success',
+  string: 'text-accent-fg',
   number: 'text-info',
   boolean: 'font-semibold text-warning',
   null: 'italic text-fg-subtle',
@@ -30,7 +30,7 @@ const styles = {
   actions:
     'ml-auto flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-[120ms] ease-[ease] group-hover:opacity-100 group-focus-within:opacity-100',
   actionBtn:
-    'inline-flex size-[22px] cursor-pointer items-center justify-center rounded-[3px] border-0 bg-transparent p-0 text-fg-subtle hover:bg-surface-strong hover:text-fg',
+    'size-[22px] rounded-[3px] text-fg-subtle hover:bg-surface-3 hover:text-fg',
 } as const;
 
 type ValueKind =
@@ -124,28 +124,29 @@ export const DataNode: React.FC<{
   const isRoot = name === 'root';
 
   return (
-    <div
+    <Indent
+      level={depth}
+      base={4}
       className={cn(styles.row, isMatched ? styles.rowMatched : styles.rowIdle)}
-      // data-driven: indent by tree depth
-      style={{ paddingLeft: 4 + depth * 16 }}
     >
       {Array.from({ length: depth }).map((_, i) => (
         <span key={i} className={styles.indentGuide} aria-hidden />
       ))}
 
       {isExpandable ? (
-        <button
-          type="button"
+        <IconButton
+          variant="ghost"
           className={styles.chevron}
           onClick={onToggle}
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
-        >
-          {isExpanded ? (
-            <IconChevronDown size="sm" />
-          ) : (
-            <IconChevronRight size="sm" />
-          )}
-        </button>
+          label={isExpanded ? 'Collapse' : 'Expand'}
+          icon={
+            isExpanded ? (
+              <IconChevronDown size="sm" />
+            ) : (
+              <IconChevronRight size="sm" />
+            )
+          }
+        />
       ) : (
         <span className={styles.chevronSpacer} aria-hidden />
       )}
@@ -167,26 +168,24 @@ export const DataNode: React.FC<{
 
       <span className={styles.actions}>
         <Tooltip content="Copy path">
-          <button
-            type="button"
+          <IconButton
+            variant="ghost"
             className={styles.actionBtn}
-            aria-label="Copy path"
+            label="Copy path"
             onClick={onCopyPath}
-          >
-            <IconLink2 size="xs" />
-          </button>
+            icon={<IconLink2 size="sm" />}
+          />
         </Tooltip>
         <Tooltip content="Copy value">
-          <button
-            type="button"
+          <IconButton
+            variant="ghost"
             className={styles.actionBtn}
-            aria-label="Copy value"
+            label="Copy value"
             onClick={onCopyValue}
-          >
-            <IconCopy size="xs" />
-          </button>
+            icon={<IconCopy size="sm" />}
+          />
         </Tooltip>
       </span>
-    </div>
+    </Indent>
   );
 };

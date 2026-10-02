@@ -3,9 +3,10 @@ import { expect, test } from '@playwright/test';
 import { unzipSync } from 'fflate';
 import { PDFDocument } from 'pdf-lib';
 import { pdfPageTexts } from '../fixtures/builders';
+import { pathOf } from './tool-routes';
 
 test('splits by ranges into a zip of documents', async ({ page }) => {
-  await page.goto('/pdf-splitter');
+  await page.goto(pathOf('pdf-splitter'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');
@@ -28,7 +29,7 @@ test('splits by ranges into a zip of documents', async ({ page }) => {
 });
 
 test('extracts selected pages into one document', async ({ page }) => {
-  await page.goto('/pdf-splitter');
+  await page.goto(pathOf('pdf-splitter'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');
@@ -63,7 +64,7 @@ test('extracts selected pages into one document', async ({ page }) => {
 });
 
 test('shows a precise error for a bad range', async ({ page }) => {
-  await page.goto('/pdf-splitter');
+  await page.goto(pathOf('pdf-splitter'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -76,7 +77,7 @@ test('shows a precise error for a bad range', async ({ page }) => {
 });
 
 test('stale results disappear when settings change', async ({ page }) => {
-  await page.goto('/pdf-splitter');
+  await page.goto(pathOf('pdf-splitter'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');
@@ -90,7 +91,7 @@ test('stale results disappear when settings change', async ({ page }) => {
 });
 
 test('select all and clear selection', async ({ page }) => {
-  await page.goto('/pdf-splitter');
+  await page.goto(pathOf('pdf-splitter'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -102,7 +103,7 @@ test('select all and clear selection', async ({ page }) => {
 });
 
 test('shift-click selects a range of pages', async ({ page }) => {
-  await page.goto('/pdf-splitter');
+  await page.goto(pathOf('pdf-splitter'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');

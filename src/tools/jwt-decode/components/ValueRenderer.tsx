@@ -22,13 +22,13 @@ export const ValueRenderer: React.FC<ValueRendererProps> = ({
     );
   }
   if (typeof data === 'string') {
-    return <Code className="text-success">&quot;{data}&quot;</Code>;
+    return <Code className="text-accent-fg">&quot;{data}&quot;</Code>;
   }
   if (typeof data === 'number') {
-    return <Code className="text-accent">{data}</Code>;
+    return <Code className="text-accent-fg">{data}</Code>;
   }
   if (typeof data === 'boolean') {
-    return <Code className="text-accent">{data ? 'true' : 'false'}</Code>;
+    return <Code className="text-accent-fg">{data ? 'true' : 'false'}</Code>;
   }
   if (Array.isArray(data)) {
     if (depth >= maxDepth) {
@@ -89,7 +89,7 @@ export const ValueRenderer: React.FC<ValueRendererProps> = ({
         <Stack gap="1" className="pl-4">
           {entries.map(([key, value]) => (
             <Inline key={key} align="start" gap="2">
-              <Code className="text-accent">&quot;{key}&quot;:</Code>
+              <Code className="text-accent-fg">&quot;{key}&quot;:</Code>
               <ValueRenderer
                 data={value}
                 depth={depth + 1}

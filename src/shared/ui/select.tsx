@@ -7,6 +7,11 @@ export interface SelectItem {
   label: string;
 }
 
+export interface SelectGroup {
+  label: string;
+  items: SelectItem[];
+}
+
 interface SelectProps extends Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
   'onChange' | 'value'
@@ -14,15 +19,26 @@ interface SelectProps extends Omit<
   value: string;
   onValueChange: (value: string) => void;
   items: SelectItem[];
+  /** Labelled option groups, rendered after `items`. */
+  groups?: SelectGroup[];
   invalid?: boolean;
 }
+
+const renderOption = (item: SelectItem) => (
+  <option key={item.value} value={item.value} className="bg-surface text-fg">
+    {item.label}
+  </option>
+);
 
 /**
  * Styled wrapper over a native <select> — full keyboard/screen-reader
  * accessibility for free, no Radix needed.
  */
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, value, onValueChange, items, invalid, ...props }, ref) => (
+  (
+    { className, value, onValueChange, items, groups, invalid, ...props },
+    ref,
+  ) => (
     <div className="relative">
       <select
         ref={ref}
@@ -39,14 +55,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         )}
         {...props}
       >
-        {items.map((item) => (
-          <option
-            key={item.value}
-            value={item.value}
-            className="bg-surface text-fg"
-          >
-            {item.label}
-          </option>
+        {items.map(renderOption)}
+        {groups?.map((g) => (
+          <optgroup key={g.label} label={g.label}>
+            {g.items.map(renderOption)}
+          </optgroup>
         ))}
       </select>
       <IconChevronDown

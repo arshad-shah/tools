@@ -53,7 +53,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
             </Inline>
           </Heading>
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconX size="sm" />}
             onClick={onClear}
@@ -131,7 +131,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
           Your recent conversions will appear here.
         </EmptyStateDescription>
         <EmptyStateActions>
-          <Button variant="solid" onClick={onStart}>
+          <Button variant="primary" onClick={onStart}>
             Start converting
           </Button>
         </EmptyStateActions>

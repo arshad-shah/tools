@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { textPositions } from '../fixtures/builders';
+import { pathOf } from './tool-routes';
 
 test('numbers the selected pages as "n / total"', async ({ page }) => {
-  await page.goto('/pdf-page-numbers');
+  await page.goto(pathOf('pdf-page-numbers'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
@@ -11,7 +12,9 @@ test('numbers the selected pages as "n / total"', async ({ page }) => {
   await page.getByRole('tab', { name: 'Some pages' }).click();
   await page.getByLabel('Page ranges', { exact: true }).fill('2-3');
   await expect(page.getByText('Preview on page 2')).toBeVisible();
-  await page.getByRole('button', { name: 'Add page numbers' }).click();
+  await page
+    .getByRole('button', { name: 'Add page numbers', exact: true })
+    .click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download text-3.numbered.pdf' })

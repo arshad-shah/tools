@@ -5,6 +5,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  ColorInput,
   Grid,
   Inline,
   Label,
@@ -46,14 +47,10 @@ export const ColorEditor: React.FC<ColorEditorProps> = ({
     <CardBody>
       <Stack gap="4">
         <Inline align="center" gap="3" wrap>
-          <input
-            type="color"
+          <ColorInput
+            label="Colour"
             value={hexCode}
-            onChange={(e) =>
-              handleColorPicker({ toString: () => e.target.value })
-            }
-            aria-label="Colour picker"
-            className="h-10 w-16 cursor-pointer rounded-md border border-line bg-surface"
+            onChange={(hex) => handleColorPicker({ toString: () => hex })}
           />
           <Text size="sm" tone="subtle">
             Pick a colour or use the sliders below.

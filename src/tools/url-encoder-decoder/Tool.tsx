@@ -76,11 +76,15 @@ const URLEncoderDecoder: React.FC = () => {
             </Stack>
 
             <Inline gap="2" justify="end" wrap>
-              <Button variant="soft" size="sm" onClick={() => setInputText('')}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setInputText('')}
+              >
                 Clear
               </Button>
               <Button
-                variant="soft"
+                variant="secondary"
                 size="sm"
                 disabled={!outputText}
                 onClick={() => setInputText(outputText)}

@@ -30,6 +30,7 @@ import {
 } from '@/pdf/components';
 import { planSplit, selectionLabel, type SplitMode } from './lib/plan';
 import { useSplitterSettings } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const MODES: { value: SplitMode; label: string }[] = [
   { value: 'selection', label: 'Select pages' },
@@ -39,6 +40,8 @@ const MODES: { value: SplitMode; label: string }[] = [
 ];
 
 const PdfSplitterTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [rangeText, setRangeText] = useState('');
   const { mode, everyN, setMode, setEveryN } = useSplitterSettings();
@@ -143,6 +146,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -156,7 +160,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
                   <Button
                     key={m.value}
                     size="sm"
-                    variant={mode === m.value ? 'solid' : 'soft'}
+                    variant={mode === m.value ? 'primary' : 'secondary'}
                     aria-pressed={mode === m.value}
                     onClick={() => changeMode(m.value)}
                   >
@@ -203,7 +207,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
                     They are extracted into one new PDF ({selected.size}{' '}
                     selected).
                   </Text>
-                  <Button size="sm" variant="soft" onClick={selectAll}>
+                  <Button size="sm" variant="secondary" onClick={selectAll}>
                     Select all
                   </Button>
                   <Button
@@ -223,7 +227,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
                 onToggle={mode === 'selection' ? toggle : undefined}
               />
               <Button
-                variant="solid"
+                variant="primary"
                 leftIcon={<IconScissors size="sm" />}
                 disabled={job.status === 'running'}
                 onClick={() =>

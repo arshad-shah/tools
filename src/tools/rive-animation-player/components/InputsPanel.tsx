@@ -54,7 +54,7 @@ export function InputsPanel({
               .map((input) => (
                 <Button
                   key={input.name}
-                  variant="solid"
+                  variant="primary"
                   size="sm"
                   onClick={() => handleInputChange(input, true)}
                   fullWidth

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
 import { withExifOrientation } from '../fixtures/images';
+import { pathOf } from './tool-routes';
 
 const fixture = (name: string, mimeType: string) => ({
   name,
@@ -12,7 +13,7 @@ const fixture = (name: string, mimeType: string) => ({
 test('combines PNG, JPEG, WebP and GIF into one PDF in the chosen order', async ({
   page,
 }) => {
-  await page.goto('/images-to-pdf');
+  await page.goto(pathOf('images-to-pdf'));
   // Chromium can encode WebP; build a real one in the page.
   const webp = await page.evaluate(async () => {
     const c = new OffscreenCanvas(60, 40);
@@ -88,7 +89,7 @@ test('combines PNG, JPEG, WebP and GIF into one PDF in the chosen order', async 
 test('turns a sideways camera JPEG upright on an auto-oriented A4 page', async ({
   page,
 }) => {
-  await page.goto('/images-to-pdf');
+  await page.goto(pathOf('images-to-pdf'));
   // Stored 400×300 (landscape) with EXIF "rotate 90° clockwise".
   const jpg = withExifOrientation(
     readFileSync('test/fixtures/generated/photo.jpg'),
@@ -117,7 +118,7 @@ test('turns a sideways camera JPEG upright on an auto-oriented A4 page', async (
 });
 
 test('names an image the browser cannot decode', async ({ page }) => {
-  await page.goto('/images-to-pdf');
+  await page.goto(pathOf('images-to-pdf'));
   // A WebP signature followed by junk: accepted by type, fails to decode.
   const junk = Buffer.concat([
     Buffer.from('RIFF\x10\x00\x00\x00WEBPVP8 ', 'latin1'),

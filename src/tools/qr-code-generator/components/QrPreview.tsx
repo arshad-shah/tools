@@ -1,5 +1,4 @@
 import React from 'react';
-import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import { IconDownload, IconInfo } from '@/shared/ui/icons';
 
 import {
@@ -18,6 +17,7 @@ import {
   List,
   ListItem,
 } from '@/shared/ui';
+import { QrCode } from '@/shared/ui/adapters/QrCode';
 import { ERROR_LEVEL_PCT } from '../lib/options';
 import type { QRCodeState } from '../types';
 
@@ -48,27 +48,14 @@ export const QrPreview: React.FC<{
           <CardBody>
             <Center>
               <div ref={qrRef}>
-                {encryptionError ? null : state.renderAs === 'svg' ? (
-                  <QRCodeSVG
+                {encryptionError ? null : (
+                  <QrCode
+                    label="QR code preview"
+                    format={state.renderAs}
                     value={finalData || ' '}
                     size={state.size}
-                    bgColor={state.backgroundColor}
-                    fgColor={state.foregroundColor}
-                    level={state.errorCorrectionLevel}
-                    includeMargin={state.includeMargin}
-                    imageSettings={
-                      state.useImage && state.imageSettings.src
-                        ? state.imageSettings
-                        : undefined
-                    }
-                    minVersion={state.version > 0 ? state.version : 1}
-                  />
-                ) : (
-                  <QRCodeCanvas
-                    value={finalData || ' '}
-                    size={state.size}
-                    bgColor={state.backgroundColor}
-                    fgColor={state.foregroundColor}
+                    bg={state.backgroundColor}
+                    fg={state.foregroundColor}
                     level={state.errorCorrectionLevel}
                     includeMargin={state.includeMargin}
                     imageSettings={
@@ -89,7 +76,7 @@ export const QrPreview: React.FC<{
         <Button
           onClick={onDownload}
           disabled={encryptionError !== null}
-          variant="solid"
+          variant="primary"
           size="md"
           fullWidth
           leftIcon={<IconDownload size="md" />}

@@ -1,17 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { IconFileText } from '@/shared/ui/icons';
 import { buildRegistry, TOOLS } from './registry';
-import { defineTool } from './tool';
+import { defineTool, type ToolManifest } from './tool';
 
-const fake = (id: string, name = id) =>
+const fake = (
+  id: string,
+  name = id,
+  extra: Partial<ToolManifest> = {},
+): ToolManifest =>
   defineTool({
     id,
+    slug: id,
     name,
     description: 'd',
     icon: IconFileText,
     enabled: true,
     category: 'pdf',
+    kind: 'tool',
+    keywords: ['alpha', 'beta', 'gamma'],
     load: async () => ({ default: () => null }),
+    ...extra,
   });
 
 describe('buildRegistry', () => {
@@ -85,7 +93,106 @@ describe('buildRegistry', () => {
   });
 });
 
+describe('buildRegistry: routes and search fields', () => {
+  const build = (...entries: [string, ToolManifest][]) =>
+    buildRegistry(
+      Object.fromEntries(entries.map(([p, m]) => [p, { default: m }])),
+    );
+
+  it('rejects a duplicate (category, slug), naming both files', () => {
+    expect(() =>
+      build(
+        ['../tools/a/index.ts', fake('a', 'A', { slug: 'merge' })],
+        ['../tools/b/index.ts', fake('b', 'B', { slug: 'merge' })],
+      ),
+    ).toThrow(/\/pdf\/merge.*tools\/b\/index\.ts.*tools\/a\/index\.ts/);
+  });
+  it('allows the same slug in different categories', () => {
+    expect(
+      build(
+        ['../tools/a/index.ts', fake('a', 'A', { slug: 'x' })],
+        [
+          '../tools/b/index.ts',
+          fake('b', 'B', { slug: 'x', category: 'text' }),
+        ],
+      ),
+    ).toHaveLength(2);
+  });
+  it('requires a kebab-case slug', () => {
+    expect(() =>
+      build(['../tools/a/index.ts', fake('a', 'A', { slug: 'Merge' })]),
+    ).toThrow(/kebab-case/);
+  });
+  it('rejects a reserved slug', () => {
+    expect(() =>
+      build(['../tools/a/index.ts', fake('a', 'A', { slug: 'edit' })]),
+    ).toThrow(/reserved/);
+  });
+  it('rejects an unknown category', () => {
+    expect(() =>
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', { category: 'nope' as never }),
+      ]),
+    ).toThrow(/unknown category "nope"/);
+  });
+  it('rejects an unknown kind', () => {
+    expect(() =>
+      build(['../tools/a/index.ts', fake('a', 'A', { kind: 'app' as never })]),
+    ).toThrow(/kind/);
+  });
+  it('rejects empty keywords', () => {
+    expect(() =>
+      build(['../tools/a/index.ts', fake('a', 'A', { keywords: ['ok', ''] })]),
+    ).toThrow(/keywords/);
+    expect(() =>
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', { keywords: 'x' as never }),
+      ]),
+    ).toThrow(/keywords/);
+  });
+  it('rejects alsoIn naming its own category', () => {
+    expect(() =>
+      build(['../tools/a/index.ts', fake('a', 'A', { alsoIn: ['pdf'] })]),
+    ).toThrow(/alsoIn/);
+  });
+  it('rejects alsoIn naming an unknown category', () => {
+    expect(() =>
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', { alsoIn: ['nope' as never] }),
+      ]),
+    ).toThrow(/alsoIn/);
+  });
+  it('rejects an accepts rule without kinds', () => {
+    expect(() =>
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', { accepts: [{ kinds: [] }] }),
+      ]),
+    ).toThrow(/accepts/);
+  });
+  it('accepts a valid manifest', () => {
+    expect(
+      build([
+        '../tools/a/index.ts',
+        fake('a', 'A', {
+          slug: 'merge',
+          kind: 'quick-task',
+          accepts: [{ kinds: ['pdf'], multiple: true, min: 2 }],
+          alsoIn: ['security'],
+        }),
+      ]),
+    ).toHaveLength(1);
+  });
+});
+
 describe('TOOLS', () => {
+  it('gives every tool at least three keywords', () => {
+    for (const t of TOOLS) expect(t.keywords.length).toBeGreaterThanOrEqual(3);
+  });
+
   it('discovers every existing tool exactly once', () => {
     const ids = TOOLS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);

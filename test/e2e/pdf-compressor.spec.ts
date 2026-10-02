@@ -1,13 +1,14 @@
 import { readFileSync, statSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { PDFDict, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
+import { pathOf } from './tool-routes';
 
 const FIXTURE = 'test/fixtures/generated/images-heavy.pdf';
 
 test('Balanced compresses images for real and reports each stage', async ({
   page,
 }) => {
-  await page.goto('/pdf-compressor');
+  await page.goto(pathOf('pdf-compressor'));
   await page.locator('input[type=file]').setInputFiles(FIXTURE);
   await page.getByRole('tab', { name: 'Balanced' }).click();
   await page.getByRole('button', { name: 'Compress PDF' }).click();
@@ -49,7 +50,7 @@ test('Balanced compresses images for real and reports each stage', async ({
 test('changing an advanced setting switches the preset to Custom', async ({
   page,
 }) => {
-  await page.goto('/pdf-compressor');
+  await page.goto(pathOf('pdf-compressor'));
   await page.locator('input[type=file]').setInputFiles(FIXTURE);
   await page.getByRole('tab', { name: 'Balanced' }).click();
   await page.getByRole('button', { name: 'Advanced settings' }).click();
@@ -67,7 +68,7 @@ test('changing an advanced setting switches the preset to Custom', async ({
 test('JPEGs tagged with EXIF orientation keep their pixels, and gray images are processed (review I1)', async ({
   page,
 }) => {
-  await page.goto('/pdf-compressor');
+  await page.goto(pathOf('pdf-compressor'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/exif-photos.pdf');

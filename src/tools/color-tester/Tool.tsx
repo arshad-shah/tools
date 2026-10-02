@@ -130,6 +130,7 @@ const ColorTester: React.FC = () => {
             rgbString={rgbString}
             textColor={textColor}
             hexCode={hexCode}
+            alpha={alpha}
             colorNameSuggestion={colorNameSuggestion}
             generateRandomColor={generateRandomColor}
             saveColor={saveColor}
@@ -185,6 +186,8 @@ const ColorTester: React.FC = () => {
                   <Box className="pt-4">
                     <PsychologyTab
                       rgbString={rgbString}
+                      hexCode={hexCode}
+                      alpha={alpha}
                       colorNameSuggestion={colorNameSuggestion}
                       colorMood={colorMood}
                     />
@@ -192,13 +195,18 @@ const ColorTester: React.FC = () => {
                 </TabsContent>
                 <TabsContent value="preview">
                   <Box className="pt-4">
-                    <PreviewTab rgbString={rgbString} textColor={textColor} />
+                    <PreviewTab
+                      hexCode={hexCode}
+                      alpha={alpha}
+                      textColor={textColor}
+                    />
                   </Box>
                 </TabsContent>
                 <TabsContent value="accessibility">
                   <Box className="pt-4">
                     <AccessibilityTab
-                      rgbString={rgbString}
+                      hexCode={hexCode}
+                      alpha={alpha}
                       contrastRatios={contrastRatios}
                     />
                   </Box>

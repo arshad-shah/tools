@@ -46,10 +46,13 @@ import {
   UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { useWatermarkSettings, type WatermarkMode } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const MARGIN = 24;
 
 const PdfWatermarkTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [image, setImage] = useState<LoadedFile | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -171,6 +174,7 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -327,7 +331,7 @@ const PdfWatermarkTool: React.FC<ToolProps> = () => {
                   error={selection.error}
                 />
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconDroplets size="sm" />}
                   disabled={
                     job.status === 'running' ||

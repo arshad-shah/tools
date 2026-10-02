@@ -34,7 +34,7 @@ export const SavedPalette: React.FC<SavedPaletteProps> = ({
       <Inline justify="between" align="center" wrap>
         <CardTitle as="h3">Saved palette</CardTitle>
         <Button
-          variant="soft"
+          variant="secondary"
           size="sm"
           leftIcon={<IconDownload size="sm" />}
           disabled={savedColors.length === 0}
@@ -72,7 +72,7 @@ export const SavedPalette: React.FC<SavedPaletteProps> = ({
                     variant="danger"
                     size="sm"
                     label="Delete colour"
-                    icon={<IconTrash2 size="xs" />}
+                    icon={<IconTrash2 size="sm" />}
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteColor(idx);

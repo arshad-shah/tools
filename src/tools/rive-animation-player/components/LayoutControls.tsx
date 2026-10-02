@@ -58,7 +58,9 @@ export function LayoutControls({
           {alignValues.map((value, idx) => (
             <IconButton
               key={value}
-              variant={alignFitIndex.alignment === idx ? 'solid' : 'soft'}
+              variant={
+                alignFitIndex.alignment === idx ? 'primary' : 'secondary'
+              }
               size="md"
               label={value}
               icon={alignmentIcon[value]}

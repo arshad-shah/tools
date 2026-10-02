@@ -11,7 +11,7 @@ export const classifyChar = (ch: string): CharType => {
 export const CHAR_CLASS: Record<CharType, string> = {
   uppercase: 'text-warning',
   lowercase: 'text-fg',
-  number: 'text-success',
+  number: 'text-accent-fg',
   special: 'text-info',
 };
 

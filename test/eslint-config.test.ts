@@ -15,6 +15,7 @@ describe('eslint.config.js', { timeout: 60_000 }, () => {
     const config = await new ESLint().calculateConfigForFile('src/app/App.tsx');
     for (const rule of [
       'local/no-pictographic-text',
+      'local/no-raw-ui-outside-kit',
       'local/no-lucide-outside-icons',
       'local/no-disable-enforced',
     ])

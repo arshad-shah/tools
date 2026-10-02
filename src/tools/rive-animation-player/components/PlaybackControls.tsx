@@ -22,7 +22,7 @@ export function PlaybackControls({
       {filename && (
         <Inline gap="2">
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={
               isPlaying ? <IconPause size="sm" /> : <IconPlay size="sm" />
@@ -33,7 +33,7 @@ export function PlaybackControls({
             {isPlaying ? 'Pause' : 'Play'}
           </Button>
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconRotateCcw size="sm" />}
             onClick={reset}

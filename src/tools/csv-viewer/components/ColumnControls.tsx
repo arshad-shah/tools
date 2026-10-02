@@ -96,13 +96,17 @@ export const ColumnControls: React.FC<ColumnControlsProps> = ({
                   : `Showing ${filteredRows} of ${totalRows} rows`}
               </Text>
               <Inline gap="2" wrap>
-                <Button variant="soft" size="sm" onClick={onToggleAllColumns}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onToggleAllColumns}
+                >
                   {selectedColumns.length === columns.length
                     ? 'Hide all columns'
                     : 'Show all columns'}
                 </Button>
                 <Button
-                  variant="solid"
+                  variant="primary"
                   size="sm"
                   leftIcon={<IconDownload size="sm" />}
                   disabled={filteredRows === 0}
@@ -127,7 +131,7 @@ export const ColumnControls: React.FC<ColumnControlsProps> = ({
               return (
                 <Button
                   key={col}
-                  variant={selected ? 'solid' : 'soft'}
+                  variant={selected ? 'primary' : 'secondary'}
                   size="sm"
                   className="rounded-full"
                   onClick={() => onToggleColumn(col)}

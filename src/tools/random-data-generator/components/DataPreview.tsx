@@ -52,14 +52,14 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
           <CardTitle as="h3">Generated data</CardTitle>
           <Inline gap="2">
             <IconButton
-              variant={view === 'json' ? 'solid' : 'soft'}
+              variant={view === 'json' ? 'primary' : 'secondary'}
               size="sm"
               label="Toggle JSON view"
               icon={<IconCode size="sm" />}
               onClick={() => setView(view === 'json' ? 'table' : 'json')}
             />
             <IconButton
-              variant="soft"
+              variant="secondary"
               size="sm"
               label="Download JSON"
               icon={<IconDownload size="sm" />}

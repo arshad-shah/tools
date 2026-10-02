@@ -4,6 +4,7 @@ import {
   Inline,
   Input,
   Label,
+  RadioGroup,
   Select,
   Stack,
   Text,
@@ -116,32 +117,14 @@ export const FieldControl: React.FC<FieldControlProps> = ({
       ...field.options.map((o) => ({ value: o, label: o })),
     ];
     return (
-      <div
-        role="radiogroup"
-        aria-labelledby={`${id}-label`}
-        className="flex flex-col gap-2"
-      >
-        {groupHeading}
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {options.map((o, i) => (
-            <label
-              key={i}
-              className="flex items-center gap-2 text-sm text-fg has-[:disabled]:opacity-50"
-            >
-              <input
-                type="radio"
-                name={id}
-                value={o.value}
-                checked={choice === o.value}
-                disabled={off}
-                onChange={() => onChange(o.value)}
-                className="size-4 accent-accent"
-              />
-              {o.label}
-            </label>
-          ))}
-        </div>
-      </div>
+      <RadioGroup
+        labelledBy={`${id}-label`}
+        heading={groupHeading}
+        value={choice}
+        onValueChange={onChange}
+        options={options}
+        disabled={off}
+      />
     );
   }
 

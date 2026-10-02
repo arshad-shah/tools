@@ -84,8 +84,10 @@ export const PatternCard: React.FC<PatternCardProps> = ({
               />
             </Box>
             <IconButton
-              variant="soft"
-              className={copied ? 'border-success/40 text-success' : undefined}
+              variant="secondary"
+              className={
+                copied ? 'border-accent-fg/40 text-accent-fg' : undefined
+              }
               label="Copy regex with flags"
               disabled={!pattern || !isValid}
               icon={copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />}

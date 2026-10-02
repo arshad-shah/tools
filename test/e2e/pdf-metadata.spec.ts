@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { PDFDocument, PDFName } from 'pdf-lib';
+import { pathOf } from './tool-routes';
 
 const FIXTURE = 'test/fixtures/generated/metadata.pdf';
 
 test('edits the title and keeps XMP in sync', async ({ page }) => {
-  await page.goto('/pdf-metadata');
+  await page.goto(pathOf('pdf-metadata'));
   await page.locator('input[type=file]').setInputFiles(FIXTURE);
   const title = page.getByLabel('Title', { exact: true });
   await expect(title).toHaveValue('Quarterly report');
@@ -29,7 +30,7 @@ test('edits the title and keeps XMP in sync', async ({ page }) => {
 });
 
 test('removes all metadata', async ({ page }) => {
-  await page.goto('/pdf-metadata');
+  await page.goto(pathOf('pdf-metadata'));
   await page.locator('input[type=file]').setInputFiles(FIXTURE);
   await page.getByRole('button', { name: 'Remove all metadata' }).click();
   const promise = page.waitForEvent('download');

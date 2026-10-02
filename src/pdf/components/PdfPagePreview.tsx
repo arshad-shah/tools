@@ -1,5 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AlertDescription, Spinner } from '@/shared/ui';
+import React, { useMemo, useState } from 'react';
+import {
+  Alert,
+  AlertDescription,
+  BitmapCanvas,
+  Sized,
+  Spinner,
+} from '@/shared/ui';
 import type { ToolError } from '@/shared/lib/errors';
 import { usePageBitmap, usePdfDocument, type PageInfo } from '@/pdf/render';
 
@@ -17,7 +23,7 @@ interface PdfPagePreviewProps {
 /**
  * Renders page 1 of `bytes` (a real output preview, not a CSS mock-up).
  * Each settings change brings new bytes, which reopen the document; the
- * canvas keeps the last rendered page until the new one is drawn, so the
+ * BitmapCanvas keeps the last rendered page until the new one is drawn, so the
  * preview updates in place instead of flashing a spinner.
  */
 export const PdfPagePreview: React.FC<PdfPagePreviewProps> = ({
@@ -37,7 +43,6 @@ export const PdfPagePreview: React.FC<PdfPagePreviewProps> = ({
     pixelWidth,
     doc !== null,
   );
-  const canvas = useRef<HTMLCanvasElement>(null);
   // Last known page size and whether anything has been drawn yet; both
   // outlive a reopening document (adjusted during render, not in effects).
   const [page, setPage] = useState<PageInfo | null>(null);
@@ -47,15 +52,6 @@ export const PdfPagePreview: React.FC<PdfPagePreviewProps> = ({
     setPage(next);
   const drawable = bitmap !== null && bitmap.width > 0;
   if (drawable && !hasDrawn) setHasDrawn(true);
-
-  useEffect(() => {
-    const c = canvas.current;
-    if (!c || !bitmap || bitmap.width === 0) return;
-    c.width = bitmap.width;
-    c.height = bitmap.height;
-    c.getContext('2d')?.drawImage(bitmap, 0, 0);
-    c.dataset.rendered = 'true';
-  }, [bitmap, page]);
 
   const problem = error ?? openError ?? renderError;
   return (
@@ -68,29 +64,27 @@ export const PdfPagePreview: React.FC<PdfPagePreviewProps> = ({
           <AlertDescription>{problem.message}</AlertDescription>
         </Alert>
       ) : page ? (
-        <div
-          className="relative bg-white shadow-sm"
-          style={{ width, aspectRatio: `${page.width} / ${page.height}` }}
+        <BitmapCanvas
+          bitmap={drawable ? bitmap : null}
+          width={width}
+          aspect={page.width / page.height}
+          label={label}
+          className="bg-white shadow-sm"
         >
-          <canvas
-            ref={canvas}
-            role="img"
-            aria-label={label}
-            className="block size-full"
-          />
           {!hasDrawn && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Spinner size="sm" label="Rendering preview" />
             </div>
           )}
-        </div>
+        </BitmapCanvas>
       ) : (
-        <div
-          className="flex items-center justify-center rounded-sm border border-line bg-surface-subtle"
-          style={{ width, height: Math.round(width * Math.SQRT2) }}
+        <Sized
+          className="flex items-center justify-center rounded-sm border border-line bg-surface-2"
+          width={width}
+          height={Math.round(width * Math.SQRT2)}
         >
           <Spinner size="sm" label="Rendering preview" />
-        </div>
+        </Sized>
       )}
       <figcaption className="text-xs text-fg-muted">
         {pending ? 'Updating preview…' : caption}

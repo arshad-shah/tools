@@ -1,9 +1,10 @@
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { pathOf } from './tool-routes';
 
 test('base64-converter encodes and decodes Unicode text', async ({ page }) => {
-  await page.goto('/base64-converter');
+  await page.goto(pathOf('base64-converter'));
   await page.getByLabel('Text to encode').fill('€ café ✓');
   await expect(page.getByLabel('Result', { exact: true })).toHaveValue(
     '4oKsIGNhZsOpIOKckw==',
@@ -17,7 +18,7 @@ test('base64-converter encodes and decodes Unicode text', async ({ page }) => {
 });
 
 test('base64-converter has a URL-safe variant', async ({ page }) => {
-  await page.goto('/base64-converter');
+  await page.goto(pathOf('base64-converter'));
   await page.getByLabel('Text to encode').fill('\u{1F600}?>');
   await expect(page.getByLabel('Result', { exact: true })).toHaveValue(
     '8J+YgD8+',
@@ -31,7 +32,7 @@ test('base64-converter has a URL-safe variant', async ({ page }) => {
 test('base64-converter encodes a file to Base64 and a data URI', async ({
   page,
 }) => {
-  await page.goto('/base64-converter');
+  await page.goto(pathOf('base64-converter'));
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/tiny.gif');
@@ -50,7 +51,7 @@ test('base64-converter decodes Base64 to a downloadable file', async ({
   page,
 }) => {
   const gif = await readFile('test/fixtures/generated/tiny.gif');
-  await page.goto('/base64-converter');
+  await page.goto(pathOf('base64-converter'));
   await page.getByRole('tab', { name: 'Decode' }).click();
   await page
     .getByLabel('Base64 to decode')
@@ -67,7 +68,7 @@ test('base64-converter previews a large file but downloads all of it', async ({
   page,
 }) => {
   const big = randomBytes(2 * 1024 * 1024);
-  await page.goto('/base64-converter');
+  await page.goto(pathOf('base64-converter'));
   await page.locator('input[type=file]').setInputFiles({
     name: 'big.bin',
     mimeType: 'application/octet-stream',
@@ -88,7 +89,7 @@ test('base64-converter previews a large file but downloads all of it', async ({
 test('base64-converter decodes a percent-encoded binary data URI', async ({
   page,
 }) => {
-  await page.goto('/base64-converter');
+  await page.goto(pathOf('base64-converter'));
   await page.getByRole('tab', { name: 'Decode' }).click();
   await page
     .getByLabel('Base64 to decode')

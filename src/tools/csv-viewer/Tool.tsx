@@ -33,6 +33,7 @@ import { useCsvData } from './hooks/useCsvData';
 import { columnStatistics } from './lib/stats';
 import { chartPoints, filterRows, paginate, sortRows } from './lib/table';
 import { ParsedData, SortDirection, Statistics } from './types';
+import { useHandoffFiles } from '@/shared/lib/handoff';
 
 const CSVTSVViewer: React.FC = () => {
   // viewer state
@@ -58,6 +59,8 @@ const CSVTSVViewer: React.FC = () => {
     changeDelimiter,
     clear,
   } = useCsvData((next) => setSelectedColumns(next.columns));
+  // A file dropped on a hub opens like a picked one (spec §5.3).
+  useHandoffFiles((files) => void processFile(files[0]));
 
   const delimiterControl = (
     <DelimiterControl

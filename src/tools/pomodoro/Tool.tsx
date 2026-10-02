@@ -12,7 +12,7 @@ const Pomodoro: React.FC = () => {
       <Stack gap="4">
         <Inline justify="end">
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconMenu size="sm" />}
             onClick={() => setMenuOpen(true)}

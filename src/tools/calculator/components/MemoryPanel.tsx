@@ -51,17 +51,21 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
                 </Text>
                 <ButtonGroup>
                   <Button
-                    variant="soft"
+                    variant="secondary"
                     size="sm"
                     onClick={() => memoryRecall(i)}
                   >
                     MR
                   </Button>
-                  <Button variant="soft" size="sm" onClick={() => memoryAdd(i)}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => memoryAdd(i)}
+                  >
                     M+
                   </Button>
                   <Button
-                    variant="soft"
+                    variant="secondary"
                     size="sm"
                     onClick={() => memorySubtract(i)}
                   >

@@ -33,6 +33,7 @@ import {
   UNENCRYPTED_NOTE,
 } from '@/pdf/components';
 import { insertByOrder } from './lib/order';
+import { useHandoff } from '@/shared/lib/handoff';
 
 interface MergeItem extends PdfInputFile {
   pageCount: number;
@@ -41,6 +42,8 @@ interface MergeItem extends PdfInputFile {
 }
 
 const PdfMergerTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [items, setItems] = useState<MergeItem[]>([]);
   const [addErrors, setAddErrors] = useState<string[]>([]);
   /** Number of files being read after a drop (0 = idle). */
@@ -114,7 +117,12 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
     <Card>
       <CardBody>
         <Stack gap="5">
-          <PdfDropzone multiple onFiles={add} disabled={busy || reading > 0} />
+          <PdfDropzone
+            initialFiles={handed}
+            multiple
+            onFiles={add}
+            disabled={busy || reading > 0}
+          />
           {reading > 0 && (
             <Inline gap="2" align="center" aria-live="polite">
               <Spinner size="sm" />
@@ -170,7 +178,7 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
               />
               <div className="flex flex-wrap gap-3">
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconMerge size="sm" />}
                   disabled={items.length < 2 || busy || reading > 0}
                   onClick={() => job.run(items)}

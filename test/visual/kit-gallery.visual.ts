@@ -12,6 +12,7 @@ const SECTIONS = [
   'data',
   'diagram',
   'states',
+  'media',
   'keys',
 ];
 

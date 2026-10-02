@@ -1,5 +1,10 @@
 import React from 'react';
-import { IconFileText, IconRefreshCw, IconTrash2 } from '@/shared/ui/icons';
+import {
+  IconFileText,
+  IconFolderOpen,
+  IconRefreshCw,
+  IconTrash2,
+} from '@/shared/ui/icons';
 
 import {
   Button,
@@ -7,6 +12,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  FilePicker,
   Inline,
   Label,
   Select,
@@ -33,6 +39,8 @@ interface InputPanelProps {
   setLogType: (type: LogType) => void;
   loadSampleLogs: () => void;
   clearLogs: () => void;
+  /** Loads a log file into the text area (also used for hub handoffs). */
+  openFile: (file: File) => void;
 }
 
 export const InputPanel: React.FC<InputPanelProps> = ({
@@ -42,6 +50,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   setLogType,
   loadSampleLogs,
   clearLogs,
+  openFile,
 }) => (
   <Card>
     <CardHeader>
@@ -51,8 +60,23 @@ export const InputPanel: React.FC<InputPanelProps> = ({
           <CardTitle as="h3">Log input</CardTitle>
         </Inline>
         <Inline gap="2" wrap>
+          <FilePicker
+            accept=".log,.txt,text/plain"
+            onFiles={(files) => openFile(files[0])}
+          >
+            {(open) => (
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<IconFolderOpen size="sm" />}
+                onClick={open}
+              >
+                Open file
+              </Button>
+            )}
+          </FilePicker>
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconRefreshCw size="sm" />}
             onClick={loadSampleLogs}
@@ -60,7 +84,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             Load sample
           </Button>
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconTrash2 size="sm" />}
             disabled={!logText}

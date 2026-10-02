@@ -101,7 +101,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         </Text>
         <Inline gap="2">
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             leftIcon={<IconChevronLeft size="sm" />}
             disabled={page === 1}
@@ -110,7 +110,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             Previous
           </Button>
           <Button
-            variant="soft"
+            variant="secondary"
             size="sm"
             rightIcon={<IconChevronRight size="sm" />}
             disabled={page >= totalPages}

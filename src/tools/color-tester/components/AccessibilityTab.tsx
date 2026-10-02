@@ -6,8 +6,8 @@ import {
   AlertDescription,
   AlertTitle,
   Badge,
-  Card,
   CardBody,
+  ColorBlock,
   Inline,
   Stack,
   Text,
@@ -15,21 +15,24 @@ import {
 import { wcagLevel } from '../lib/palette';
 
 interface AccessibilityTabProps {
-  rgbString: string;
+  hexCode: string;
+  alpha: number;
   contrastRatios: { white: number; black: number };
 }
 
 export const AccessibilityTab: React.FC<AccessibilityTabProps> = ({
-  rgbString,
+  hexCode,
+  alpha,
   contrastRatios,
 }) => {
   const whiteLevel = wcagLevel(contrastRatios.white);
   const blackLevel = wcagLevel(contrastRatios.black);
   return (
     <Stack gap="3">
-      <Card
-        // data-driven: user colour
-        style={{ background: rgbString }}
+      <ColorBlock
+        color={hexCode}
+        alpha={alpha}
+        className="flex flex-col rounded-lg shadow-e1"
       >
         <CardBody>
           <Stack gap="2">
@@ -46,10 +49,11 @@ export const AccessibilityTab: React.FC<AccessibilityTabProps> = ({
             </Inline>
           </Stack>
         </CardBody>
-      </Card>
-      <Card
-        // data-driven: user colour
-        style={{ background: rgbString }}
+      </ColorBlock>
+      <ColorBlock
+        color={hexCode}
+        alpha={alpha}
+        className="flex flex-col rounded-lg shadow-e1"
       >
         <CardBody>
           <Stack gap="2">
@@ -66,7 +70,7 @@ export const AccessibilityTab: React.FC<AccessibilityTabProps> = ({
             </Inline>
           </Stack>
         </CardBody>
-      </Card>
+      </ColorBlock>
       {whiteLevel.colorScheme !== 'success' &&
         blackLevel.colorScheme !== 'success' && (
           <Alert status="warning" icon={<IconAlertTriangle />}>

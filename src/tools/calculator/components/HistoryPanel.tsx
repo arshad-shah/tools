@@ -67,7 +67,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                       )}
                       <Inline>
                         <Button
-                          variant="soft"
+                          variant="secondary"
                           size="sm"
                           onClick={() => {
                             const result = resultOf(text);
@@ -150,7 +150,7 @@ export const FavoritesPanel: React.FC<FavoritesPanelProps> = ({
                     </Inline>
                     <Inline>
                       <Button
-                        variant="soft"
+                        variant="secondary"
                         size="sm"
                         onClick={() => {
                           const result = resultOf(item.calculation);

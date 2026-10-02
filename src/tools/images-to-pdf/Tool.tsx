@@ -32,6 +32,7 @@ import {
 } from '@/pdf/components';
 import { ImageThumb } from './components/ImageThumb';
 import { useImagesToPdfSettings } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const MIME: Record<FileKind, string> = {
   pdf: 'application/pdf',
@@ -60,6 +61,8 @@ const clampMargin = (mm: number) =>
   Math.min(MAX_MARGIN_MM, Math.max(0, Number.isFinite(mm) ? mm : 0));
 
 const ImagesToPdfTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [items, setItems] = useState<LoadedFile[]>([]);
   const {
     pageSize,
@@ -137,6 +140,7 @@ const ImagesToPdfTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfDropzone
+            initialFiles={handed}
             multiple
             accept={ACCEPT}
             disabled={running}
@@ -207,7 +211,7 @@ const ImagesToPdfTool: React.FC<ToolProps> = () => {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button
-              variant="solid"
+              variant="primary"
               leftIcon={<IconFileStack size="sm" />}
               disabled={items.length === 0 || running}
               onClick={() =>

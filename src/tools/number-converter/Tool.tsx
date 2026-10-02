@@ -81,7 +81,9 @@ const NumberConverter: React.FC = () => {
                       {NUMBER_TYPES.map((t) => (
                         <Button
                           key={t.value}
-                          variant={inputType === t.value ? 'solid' : 'soft'}
+                          variant={
+                            inputType === t.value ? 'primary' : 'secondary'
+                          }
                           size="sm"
                           onClick={() => setInputType(t.value)}
                         >

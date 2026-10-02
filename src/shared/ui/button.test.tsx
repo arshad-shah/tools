@@ -19,17 +19,12 @@ describe('Button', () => {
     expect(screen.getByRole('button').className).toContain('bg-accent');
   });
 
-  it('deprecated aliases match their replacements', () => {
-    expect(buttonVariants({ variant: 'solid' })).toBe(
-      buttonVariants({ variant: 'primary' }),
-    );
-    expect(buttonVariants({ variant: 'soft' })).toBe(
-      buttonVariants({ variant: 'secondary' }),
-    );
-    expect(buttonVariants({ variant: 'outline' })).toBe(
-      buttonVariants({ variant: 'secondary' }),
-    );
-    expect(buttonVariants({ size: 'xs' })).toBe(buttonVariants({ size: 'sm' }));
+  it('has no deprecated aliases left (decision G20, removed in A2-12)', () => {
+    for (const alias of ['solid', 'soft', 'outline'])
+      expect(
+        buttonVariants({ variant: alias as 'primary' }).includes('bg-accent'),
+      ).toBe(false);
+    expect(buttonVariants({ size: 'xs' as 'sm' })).not.toContain('h-8');
   });
 
   it('disabled and loading disable the button', () => {

@@ -53,7 +53,7 @@ export const TaskList: React.FC = () => {
           </Box>
           <Button
             type="submit"
-            variant="solid"
+            variant="primary"
             disabled={!newTitle.trim()}
             leftIcon={<IconPlus size="sm" />}
           >

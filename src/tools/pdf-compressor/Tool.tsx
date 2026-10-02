@@ -45,6 +45,7 @@ import {
 import { CompressReportView } from './components/CompressReportView';
 import { fromAdvanced, type AdvancedSettings } from './lib/settings';
 import { useCompressorSettings } from './store';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const PRESET_LABELS: Record<PresetId, string> = {
   lossless: 'Lossless',
@@ -93,6 +94,8 @@ const SWITCHES: { key: SwitchKey; id: string; label: string }[] = [
 ];
 
 const PdfCompressorTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const { preset, advanced, choosePreset, updateAdvanced } =
     useCompressorSettings();
@@ -127,6 +130,7 @@ const PdfCompressorTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -225,7 +229,7 @@ const PdfCompressorTool: React.FC<ToolProps> = () => {
               </Accordion>
               <div>
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconMinimize2 size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() => job.run(file, fromAdvanced(advanced))}

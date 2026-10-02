@@ -38,7 +38,7 @@ export const UploadView: React.FC<UploadViewProps> = ({
       <Inline gap="4" wrap justify="center" align="center">
         {delimiterControl}
         <Button
-          variant="soft"
+          variant="secondary"
           leftIcon={<IconUpload size="sm" />}
           onClick={onLoadSample}
           disabled={loading}

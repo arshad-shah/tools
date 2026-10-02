@@ -101,7 +101,9 @@ export function ControlsTab({
                   <Button
                     key={animation}
                     variant={
-                      animationList.active === animation ? 'solid' : 'soft'
+                      animationList.active === animation
+                        ? 'primary'
+                        : 'secondary'
                     }
                     size="sm"
                     onClick={() => setActiveAnimation(animation)}
@@ -156,7 +158,7 @@ export function ControlsTab({
 
       {controller.active === 'animations' && (
         <Button
-          variant="soft"
+          variant="secondary"
           fullWidth
           disabled={status.current !== PlayerState.Active}
           leftIcon={

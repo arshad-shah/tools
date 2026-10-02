@@ -23,7 +23,7 @@ export const FlagToggles: React.FC<FlagTogglesProps> = ({
       {FLAG_INFO.map((f) => (
         <Button
           key={f.key}
-          variant={flags[f.key] ? 'solid' : 'soft'}
+          variant={flags[f.key] ? 'primary' : 'secondary'}
           size="sm"
           title={`${f.label}: ${f.description}`}
           onClick={() => onToggle(f.key)}

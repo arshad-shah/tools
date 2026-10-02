@@ -12,3 +12,8 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P6-A3: src/shared/diagram/theme-bridge.ts falls back to fg/info/warning/accent-fg tokens until A1 adds --color-syntax-\* and match-soft -> drop the fallbacks once A1's tokens merge
 - P6-A3: test/visual/kit-gallery.visual.ts adds the `diagram` section; its win32 baselines (light and dark) must be generated on the controller machine (pnpm test:visual --update-snapshots -g diagram)
 - P6-A3: src/shared/diagram/metrics.ts createMeasure falls back to a document canvas when OffscreenCanvas is missing, which jsdom reports as "Not implemented" noise in tests that do not stub getContext -> harmless; silence if it gets in the way
+- P5-A2: src/pdf/components/FileThumb.tsx:28 hover-preview panel is positioned with imperative `panel.style.left/top` (not caught by rule (b), which checks JSX style props) -> move the preview to the kit Popover or Positioned.
+- P5-A2: src/shared/ui/adapters/RivePlayer.tsx is a canvas host (the player tool drives Rive imperatively), not the declarative `buffer/stateMachines` API in plan A2-10 -> move useRivePlayer's runtime wiring behind the adapter when the Rive tool is upgraded in phase 6.
+- P5-A2: src/tools/image-optimizer/lib/convert.ts now needs OffscreenCanvas (Safari 16.4+); older browsers get UNSUPPORTED_FEATURE -> acceptable, or add a kit-owned canvas fallback.
+- P5-A2: src/tools/hash-generator/Tool.tsx "Text to hash" label points at the textarea, which is hidden while a file is being hashed -> relabel the section ("Message") or point the label at the file row.
+- P5-A2: rule (b) does not see imperative `element.style.*` writes or `setAttribute('style', ...)` -> extend the rule (MemberExpression on `.style` outside src/shared/ui).

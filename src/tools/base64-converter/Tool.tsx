@@ -41,6 +41,7 @@ import {
   guessFileType,
   preview,
 } from './lib/convert';
+import { useHandoffFiles } from '@/shared/lib/handoff';
 
 const previewNote = (total: number) =>
   `Showing the first ${formatBytes(PREVIEW_LENGTH, 0)} of ${total.toLocaleString()} characters. Copy and Download use the full result.`;
@@ -116,6 +117,8 @@ const Base64Converter: React.FC = () => {
       setFileError(toToolError(e, `Could not read ${f.name}`).message);
     }
   };
+  // A file dropped on a hub is encoded like a picked one (spec §5.3).
+  useHandoffFiles((files) => void loadFile(files));
 
   const swap = () => {
     if (!output.text) return;
@@ -194,7 +197,7 @@ const Base64Converter: React.FC = () => {
               <FilePicker onFiles={(f) => void loadFile(f)}>
                 {(open) => (
                   <Button
-                    variant="soft"
+                    variant="secondary"
                     size="sm"
                     leftIcon={<IconFileUp size="sm" />}
                     onClick={open}
@@ -252,7 +255,7 @@ const Base64Converter: React.FC = () => {
 
           <Center>
             <IconButton
-              variant="solid"
+              variant="primary"
               label="Swap input and output"
               icon={<IconArrowRightLeft size="md" />}
               onClick={swap}

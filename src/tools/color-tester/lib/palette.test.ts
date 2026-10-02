@@ -19,10 +19,12 @@ describe('palette helpers', () => {
 
   it('picks the text colour from luminance', () => {
     expect(luminance(255, 255, 255)).toBeCloseTo(1, 5);
-    expect(textColorFor(255, 255, 255)).toBe('#1a202c');
+    expect(textColorFor(255, 255, 255)).toBe('#000000');
     expect(textColorFor(0, 0, 0)).toBe('#ffffff');
-    expect(textColorFor(128, 128, 128)).toBe('#1a202c');
-    expect(textColorFor(127, 127, 127)).toBe('#ffffff');
+    // By WCAG ratio, not perceived brightness: steel blue reads better
+    // in black (5.1:1) than in white (4.1:1).
+    expect(textColorFor(70, 130, 180)).toBe('#000000');
+    expect(textColorFor(100, 100, 100)).toBe('#ffffff');
   });
 
   it('parses rgb() strings only', () => {

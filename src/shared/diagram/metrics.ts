@@ -44,12 +44,11 @@ type Ctx2D = {
 
 function measuringContext(): Ctx2D | null {
   try {
-    // OffscreenCanvas first: it exists in workers too, so the layout worker
-    // and the main thread measure with the same engine.
+    // OffscreenCanvas: it exists in workers too, so the layout worker and
+    // the main thread measure with the same engine. No DOM canvas fallback
+    // (rule (b)); without it the fixed advance below applies.
     if (typeof OffscreenCanvas !== 'undefined')
       return new OffscreenCanvas(1, 1).getContext('2d');
-    if (typeof document !== 'undefined')
-      return document.createElement('canvas').getContext('2d');
   } catch {
     // No 2D context (a headless test environment): use the fixed advance.
   }

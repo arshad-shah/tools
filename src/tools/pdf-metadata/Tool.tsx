@@ -32,6 +32,7 @@ import {
   type PdfInputFile,
   type ResultFile,
 } from '@/pdf/components';
+import { useHandoff } from '@/shared/lib/handoff';
 
 const LABELS: Record<MetadataField, string> = {
   title: 'Title',
@@ -57,6 +58,8 @@ const valuesOf = (m: PdfMetadata): Values =>
 const when = (d: Date | null) => (d ? d.toLocaleString() : '—');
 
 const PdfMetadataTool: React.FC<ToolProps> = () => {
+  // Files dropped on a hub land here once (spec §5.3).
+  const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [values, setValues] = useState<Values | null>(null);
@@ -130,6 +133,7 @@ const PdfMetadataTool: React.FC<ToolProps> = () => {
       <CardBody>
         <Stack gap="5">
           <PdfFileHeader
+            initialFiles={handed}
             file={file}
             onFile={pick}
             onClear={clearFile}
@@ -169,7 +173,7 @@ const PdfMetadataTool: React.FC<ToolProps> = () => {
               )}
               <Inline gap="3" wrap>
                 <Button
-                  variant="solid"
+                  variant="primary"
                   leftIcon={<IconSave size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() =>
