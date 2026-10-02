@@ -265,3 +265,40 @@ export async function makeChain(
     },
   };
 }
+
+export interface SignFixtureOptions {
+  placement?: import('../../src/pdf/sign/pades/sign-pdf').SignPlacement | null;
+  timestamp?: (signatureValue: ArrayBuffer) => Promise<ArrayBuffer>;
+  m?: Date;
+  caption?: boolean;
+}
+
+/** The whole PAdES pipeline in Node: prepare, CMS, finish, self-verify. */
+export async function signBytes(
+  bytes: Uint8Array,
+  identity: SigningIdentity,
+  o: SignFixtureOptions = {},
+): Promise<Uint8Array> {
+  const { prepareSignature } =
+    await import('../../src/pdf/sign/pades/sign-pdf');
+  const { signWithIdentity } =
+    await import('../../src/pdf/sign/pades/sign-flow');
+  const { verifyPdfSignatures } =
+    await import('../../src/pdf/sign/pades/verify');
+  return signWithIdentity({
+    request: {
+      bytes,
+      placement: o.placement ?? null,
+      m: o.m ?? new Date(),
+      caption: o.caption ?? true,
+      name: identity.info.subjectCN,
+      reason: 'Approval',
+      location: 'Dublin',
+      contentsBytes: o.timestamp ? 32768 : 16384,
+    },
+    identity,
+    prepare: prepareSignature,
+    verify: (b) => verifyPdfSignatures(b),
+    timestamp: o.timestamp,
+  });
+}
