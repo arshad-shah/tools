@@ -34,6 +34,7 @@ describe('parseLegacyPomodoro', () => {
         timeLeft: 1312,
         isActive: false,
         currentTask: '5f0c6a1e-8a3e-4c1b-9d55-0b6c2b8f9e21',
+        completedWork: 0,
       },
       settings: {
         workDuration: 25,
@@ -42,6 +43,11 @@ describe('parseLegacyPomodoro', () => {
         autoStartBreaks: true,
         autoStartPomodoros: false,
         soundEnabled: false,
+        longBreakEvery: 4,
+        notifications: false,
+        sound: 'chime',
+        volume: 80,
+        faviconRing: false,
       },
       tasks: [
         {
@@ -66,6 +72,7 @@ describe('parseLegacyPomodoro', () => {
         currentStreak: 0,
         lastUpdate: 1790846400000,
       },
+      history: [],
     });
   });
 
@@ -110,6 +117,7 @@ describe('parseLegacyPomodoro', () => {
       timeLeft: 120,
       isActive: false,
       currentTask: 't1',
+      completedWork: 0,
     });
     expect(r?.settings.workDuration).toBe(50);
     expect(r?.tasks[0].title).toBe('Write');
@@ -159,6 +167,7 @@ describe('parseLegacyPomodoro', () => {
       timeLeft: 3000,
       isActive: false,
       currentTask: null,
+      completedWork: 0,
     });
   });
 

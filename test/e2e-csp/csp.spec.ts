@@ -79,14 +79,14 @@ test('the workspace renders an open document under the policy', async ({
   expect(await violations()).toEqual([]);
 });
 
-test('the calculator plots under the policy (Plotly)', async ({ page }) => {
+test('the calculator plots under the policy (kit Chart)', async ({ page }) => {
   const violations = await watchPolicy(page);
   await page.goto(pathOf('calculator'));
-  await page.getByRole('tab', { name: 'Expression' }).click();
-  await page.getByRole('textbox', { name: 'Expression' }).fill('exp(x)');
-  await page.getByRole('button', { name: 'Plot expression' }).click();
-  await expect(page.getByText(/f\(x\) = exp\(x\)/).first()).toBeVisible();
-  await expect(page.locator('.main-svg').first()).toBeVisible();
+  await page.getByRole('radio', { name: 'Grapher' }).click();
+  await page.getByRole('textbox', { name: 'f1(x) =' }).fill('exp(x)');
+  await expect(
+    page.getByRole('img', { name: 'Graph of the functions' }),
+  ).toBeVisible();
   expect(await violations()).toEqual([]);
 });
 

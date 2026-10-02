@@ -99,22 +99,30 @@ describe('useTimerWorker', () => {
     expect(worker.posted.at(-1)).toEqual({ type: 'STOP' });
   });
 
-  it('skip counts once and plays once', async () => {
+  it('skip moves on without counting or a chime', async () => {
     const { st, hook } = await setup();
     act(() => hook.result.current.skip());
+    expect(st().stats.dailyPomodoros).toBe(0);
+    expect(st().timer.mode).toBe('shortBreak');
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it('a real end counts once and plays once', async () => {
+    const { st, worker } = await setup();
+    worker.emit({ type: 'COMPLETE' });
     expect(st().stats.dailyPomodoros).toBe(1);
     expect(play).toHaveBeenCalledTimes(1);
   });
 
   it('stays silent with sound off and survives a blocked play()', async () => {
-    const { st, hook, worker } = await setup();
+    const { st, worker } = await setup();
     act(() => st().updateSettings({ soundEnabled: false }));
     worker.emit({ type: 'COMPLETE' });
     expect(audioCtor).not.toHaveBeenCalled();
     act(() => st().updateSettings({ soundEnabled: true }));
     play.mockRejectedValueOnce(new DOMException('blocked', 'NotAllowedError'));
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
-    act(() => hook.result.current.skip());
+    worker.emit({ type: 'COMPLETE' });
     expect(play).toHaveBeenCalledTimes(1);
     // The rejection is handled and reported through logToolError (dev only).
     await vi.waitFor(() =>
@@ -209,5 +217,40 @@ describe('useTimerWorker', () => {
       expect.objectContaining({ type: 'START' }),
     );
     expect(audioCtor).not.toHaveBeenCalled();
+  });
+
+  it('notifies at a session end only when opted in and the tab is hidden', async () => {
+    const shown: string[] = [];
+    vi.stubGlobal(
+      'Notification',
+      class {
+        static permission = 'granted';
+        constructor(title: string) {
+          shown.push(title);
+        }
+      },
+    );
+    let hidden = false;
+    Object.defineProperty(document, 'hidden', {
+      configurable: true,
+      get: () => hidden,
+    });
+    const { st, worker } = await setup();
+    worker.emit({ type: 'COMPLETE' });
+    expect(shown).toEqual([]);
+    act(() => st().updateSettings({ notifications: true }));
+    worker.emit({ type: 'COMPLETE' });
+    expect(shown).toEqual([]);
+    hidden = true;
+    worker.emit({ type: 'COMPLETE' });
+    expect(shown).toEqual(['Focus Time finished']);
+    hidden = false;
+  });
+
+  it('plays the chosen sound at the chosen volume', async () => {
+    const { st, worker } = await setup();
+    act(() => st().updateSettings({ sound: 'bell', volume: 40 }));
+    worker.emit({ type: 'COMPLETE' });
+    expect(audioCtor).toHaveBeenCalledWith(expect.stringContaining('bell'));
   });
 });

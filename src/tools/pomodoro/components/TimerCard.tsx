@@ -7,6 +7,7 @@ import {
   IconRotateCcw,
   IconSkipForward,
   IconSparkles,
+  IconTarget,
 } from '@/shared/ui/icons';
 import {
   Badge,
@@ -19,13 +20,21 @@ import {
   Inline,
   Progress,
   Stack,
+  StatusDot,
   Text,
+  renderFaviconImage,
+  useFavicon,
 } from '@/shared/ui';
+import { readThemeTokens } from '@/shared/lib/theme-tokens';
+import { drawFaviconRing } from '../lib/favicon-ring';
+import { PresetBar } from './PresetBar';
+import { useToolCommands } from '@/shared/lib/tool-commands';
 import { usePomodoroStore } from '../store';
 import { useTimerWorker } from '../hooks/useTimerWorker';
-import { durationFor } from '../lib/session';
+import { cyclePosition, durationFor } from '../lib/session';
 import { formatTime } from '../lib/time';
 import { CurrentTaskCard } from './CurrentTaskCard';
+import { FocusView } from './FocusView';
 import { ModeSelector } from './ModeSelector';
 import { MODE_INFO } from '../lib/modes';
 
@@ -33,17 +42,83 @@ export const TimerCard: React.FC = () => {
   const timer = usePomodoroStore((s) => s.timer);
   const settings = usePomodoroStore((s) => s.settings);
   const dailyPomodoros = usePomodoroStore((s) => s.stats.dailyPomodoros);
+  const completedWork = usePomodoroStore((s) => s.timer.completedWork ?? 0);
   const { skip, prime, announcement } = useTimerWorker();
+  const [focusOpen, setFocusOpen] = React.useState(false);
+
+  const toggle = () => {
+    if (settings.soundEnabled) prime();
+    usePomodoroStore.getState().toggle();
+  };
+  useToolCommands('pomodoro', [
+    {
+      id: 'toggle',
+      label: timer.isActive ? 'Pause timer' : 'Start timer',
+      shortcut: 'Space',
+      run: () => {
+        // Space on a focused control keeps its own meaning (the shortcut
+        // layer prevents the native activation, so do it here).
+        const el = document.activeElement;
+        if (
+          el instanceof HTMLElement &&
+          el !== document.body &&
+          el.matches(
+            'button, a[href], [role="button"], [role="switch"], [role="tab"], [role="checkbox"], [role="menuitem"], [role="radio"]',
+          )
+        ) {
+          el.click();
+          return;
+        }
+        toggle();
+      },
+    },
+    { id: 'skip', label: 'Skip session', shortcut: 's', run: skip },
+    {
+      id: 'reset',
+      label: 'Reset timer',
+      shortcut: 'r',
+      run: () => usePomodoroStore.getState().resetTimer(),
+    },
+    {
+      id: 'focus',
+      label: focusOpen ? 'Exit focus view' : 'Focus view',
+      shortcut: 'f',
+      run: () => setFocusOpen((o) => !o),
+    },
+  ]);
 
   const info = MODE_INFO[timer.mode];
   const Icon = info.icon;
   const total = durationFor(timer.mode, settings);
   const progress = ((total - timer.timeLeft) / total) * 100;
+  const every = Math.max(1, settings.longBreakEvery || 4);
+  const position = cyclePosition(completedWork, settings);
+
+  // Tab-icon progress ring while a session runs (opt-in), in theme colours.
+  const ringStep = Math.round(progress);
+  const ring = React.useMemo(() => {
+    if (!settings.faviconRing || !timer.isActive) return null;
+    const t = readThemeTokens(['line-strong', 'accent-indicator']);
+    if (!t['line-strong'] || !t['accent-indicator']) return null;
+    return (
+      drawFaviconRing(
+        ringStep / 100,
+        {
+          track: t['line-strong'],
+          fill: t['accent-indicator'],
+        },
+        renderFaviconImage,
+      ) || null
+    );
+  }, [settings.faviconRing, timer.isActive, ringStep]);
+  useFavicon(ring);
 
   return (
     <Card>
       <CardBody>
         <Stack gap="6">
+          <PresetBar />
+
           <ModeSelector
             currentMode={timer.mode}
             onChange={(mode) => usePomodoroStore.getState().selectMode(mode)}
@@ -92,6 +167,23 @@ export const TimerCard: React.FC = () => {
               <Progress value={progress} max={100} />
             </Box>
 
+            <Inline align="center" gap="2">
+              <Inline gap="1" align="center">
+                {Array.from({ length: every }, (_, i) => (
+                  <StatusDot
+                    key={i}
+                    decorative
+                    tone={i < position ? 'accent' : 'muted'}
+                  />
+                ))}
+              </Inline>
+              <Text size="xs" tone="subtle">
+                {every - position === 1
+                  ? 'Long break after this session'
+                  : `Long break after ${every - position} more sessions`}
+              </Text>
+            </Inline>
+
             {progress >= 100 && (
               <Inline align="center" gap="2">
                 <IconSparkles size="sm" />
@@ -112,10 +204,7 @@ export const TimerCard: React.FC = () => {
                     <IconPlay size="lg" />
                   )
                 }
-                onClick={() => {
-                  if (settings.soundEnabled) prime();
-                  usePomodoroStore.getState().toggle();
-                }}
+                onClick={toggle}
               >
                 {timer.isActive ? 'Pause' : 'Start'}
               </Button>
@@ -133,10 +222,23 @@ export const TimerCard: React.FC = () => {
                 icon={<IconSkipForward size="lg" />}
                 onClick={skip}
               />
+              <Button
+                variant="ghost"
+                size="lg"
+                leftIcon={<IconTarget size="lg" />}
+                onClick={() => setFocusOpen(true)}
+              >
+                Focus view
+              </Button>
             </Inline>
           </Stack>
         </Stack>
       </CardBody>
+      <FocusView
+        open={focusOpen}
+        onClose={() => setFocusOpen(false)}
+        onToggle={toggle}
+      />
     </Card>
   );
 };

@@ -1,4 +1,4 @@
-import type { MemoryRegister } from '../types';
+import type { MemoryRegister } from '../settings';
 
 /** Register `index` plus `delta` (an empty register counts as 0). */
 export function adjustRegister(

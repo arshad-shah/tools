@@ -1,196 +1,188 @@
-import React, { useMemo, useState } from 'react';
-import { IconHistory, IconZap } from '@/shared/ui/icons';
-
+import React, { useRef, useState } from 'react';
 import {
-  Badge,
   Card,
   CardBody,
+  CardHeader,
+  CardTitle,
   Grid,
-  Heading,
+  Label,
+  NumberInput,
   Inline,
-  SearchInput,
+  SegmentedControl,
+  Select,
+  ShareButton,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Text,
 } from '@/shared/ui';
-import { newId } from '@/shared/lib/id';
-import { Category, Conversion, Unit } from './types';
-import { CATEGORIES } from './lib/categories';
-import { convertUnits } from './lib/convert';
-import { ConversionCard } from './components/ConversionCard';
+import { useClipboard } from '@/shared/lib/clipboard';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import { useShareableState } from '@/shared/lib/use-shareable-state';
+import { AllUnits } from './components/AllUnits';
+import { FreeText } from './components/FreeText';
 import { HistoryList } from './components/HistoryList';
+import { useUnitConverter } from './hooks/useUnitConverter';
+import { convert } from './lib/convert';
+import { formatNumber } from './lib/format';
+import { parseFreeText } from './lib/free-text';
+import { CATEGORIES, findUnit, getCategory } from './lib/units';
+import type { UnitSettings } from './settings';
+import { parseUnitShare, UNIT_SHARE_VERSION, type UnitShare } from './share';
 
 const UnitConverter: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<Category>(
-    CATEGORIES[0],
-  );
-  const [fromUnit, setFromUnit] = useState<Unit>(CATEGORIES[0].units[0]);
-  const [toUnit, setToUnit] = useState<Unit>(CATEGORIES[0].units[1]);
-  const [fromValue, setFromValue] = useState('1');
-  const [history, setHistory] = useState<Conversion[]>([]);
-  const [activeTab, setActiveTab] = useState<'converter' | 'saved'>(
-    'converter',
-  );
-  const [searchTerm, setSearchTerm] = useState('');
+  const s = useUnitConverter();
+  const { settings, update, category } = s;
+  const { copiedKey, copy } = useClipboard();
+  const [free, setFree] = useState('');
+  const [freeResult, setFreeResult] = useState<string | null>(null);
+  const freeRef = useRef<HTMLInputElement>(null);
 
-  const toValue = useMemo(
-    () => convertUnits(fromValue, fromUnit, toUnit, selectedCategory),
-    [fromValue, fromUnit, toUnit, selectedCategory],
-  );
+  const shareState = useShareableState<UnitShare>({
+    toolId: 'unit-converter',
+    version: UNIT_SHARE_VERSION,
+    parse: (state) => parseUnitShare(state),
+    select: () => ({
+      category: category.id,
+      value: s.amount ?? 0,
+      unit: s.editing.unit,
+    }),
+  });
+  // A shared link fills the converter once.
+  const [hydrated, setHydrated] = useState(false);
+  if (!hydrated && shareState.loaded) {
+    setHydrated(true);
+    const l = shareState.loaded;
+    s.setCategory(l.category, s.show(l.unit, l.value));
+  }
 
-  const filteredCategories = useMemo(
-    () =>
-      CATEGORIES.filter((c) =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    [searchTerm],
-  );
+  useToolCommands('unit-converter', [
+    {
+      id: 'convert',
+      label: 'Convert…',
+      run: () => freeRef.current?.focus(),
+    },
+  ]);
 
-  /** Picking a different category resets the units to its first two. */
-  const selectCategory = (c: Category) => {
-    if (c === selectedCategory) return;
-    setSelectedCategory(c);
-    setFromUnit(c.units[0]);
-    setToUnit(c.units[1]);
-  };
-
-  const addToHistory = () => {
-    if (!fromValue || !toValue) return;
-    setHistory((prev) => [
-      {
-        id: newId(),
-        category: selectedCategory.name,
-        categoryIcon: selectedCategory.icon,
-        from: `${fromValue} ${fromUnit.symbol}`,
-        to: `${toValue} ${toUnit.symbol}`,
-        fromUnit,
-        toUnit,
-        fromValue,
-        timestamp: new Date(),
-      },
-      ...prev.slice(0, 4),
-    ]);
-  };
-
-  const swapUnits = () => {
-    const tmp = fromUnit;
-    setFromUnit(toUnit);
-    setToUnit(tmp);
-    setFromValue(toValue);
-  };
-
-  const reuseConversion = (c: Conversion) => {
-    const cat = CATEGORIES.find((x) => x.name === c.category);
-    if (!cat) return;
-    setSelectedCategory(cat);
-    setFromUnit(c.fromUnit);
-    setToUnit(c.toUnit);
-    setFromValue(c.fromValue);
-    setActiveTab('converter');
+  const onFree = (text: string) => {
+    setFree(text);
+    const r = parseFreeText(text);
+    const c = r && getCategory(r.category, { basePx: settings.basePx });
+    const from = c && r && findUnit(c, r.from);
+    if (!r || !c || !from) {
+      setFreeResult(null);
+      return;
+    }
+    s.setCategory(r.category, s.show(r.from, r.value));
+    const to = r.to ? findUnit(c, r.to) : undefined;
+    setFreeResult(
+      to
+        ? `${formatNumber(convert(r.value, from, to), { significant: settings.precision, locale: s.tag })} ${to.symbol}`
+        : `${c.label}: see every unit below`,
+    );
   };
 
   return (
-    <Card>
-      <CardBody>
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as 'converter' | 'saved')}
-          variant="line"
-        >
-          <TabsList aria-label="Unit converter view">
-            <TabsTrigger value="converter">
-              <Inline gap="2" align="center" wrap={false}>
-                <IconZap size="sm" />
-                <span>Converter</span>
-              </Inline>
-            </TabsTrigger>
-            <TabsTrigger value="saved">
-              <Inline gap="2" align="center" wrap={false}>
-                <IconHistory size="sm" />
-                <span>History</span>
-                {history.length > 0 && (
-                  <Badge variant="solid" tone="accent" size="xs">
-                    {history.length}
-                  </Badge>
-                )}
-              </Inline>
-            </TabsTrigger>
-          </TabsList>
+    <Stack gap="6">
+      <Card>
+        <CardBody>
+          <FreeText
+            value={free}
+            onChange={onFree}
+            result={freeResult}
+            inputRef={freeRef}
+          />
+        </CardBody>
+      </Card>
 
-          <TabsContent value="converter">
-            <Stack gap="6" className="pt-4">
-              <Stack gap="3">
-                <Inline justify="between" align="center" wrap gap="3">
-                  <Heading level={2} size="md">
-                    Select category
-                  </Heading>
-                  <SearchInput
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                    placeholder="Search categories…"
-                  />
-                </Inline>
-                <Grid cols={{ base: 2, sm: 3, md: 5 }} gap="3">
-                  {filteredCategories.map((c) => (
-                    <Card
-                      key={c.name}
-                      interactive
-                      className={
-                        selectedCategory.name === c.name
-                          ? 'border-accent'
-                          : undefined
-                      }
-                      onClick={() => selectCategory(c)}
-                    >
-                      <CardBody>
-                        <Stack gap="2" align="center">
-                          {c.icon}
-                          <Text
-                            size="sm"
-                            weight="medium"
-                            className="text-center"
-                          >
-                            {c.name}
-                          </Text>
-                        </Stack>
-                      </CardBody>
-                    </Card>
-                  ))}
-                </Grid>
+      <Grid cols={{ base: 1, lg: 3 }} gap="6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <Stack gap="3">
+              <Inline justify="between" align="center">
+                <CardTitle as="h2">{category.label}</CardTitle>
+                <ShareButton share={shareState} />
+              </Inline>
+              <Stack gap="1">
+                <Label htmlFor="unit-category">Category</Label>
+                <Select
+                  id="unit-category"
+                  value={category.id}
+                  onValueChange={(id) => s.setCategory(id)}
+                  items={CATEGORIES.map((c) => ({
+                    value: c.id,
+                    label: c.label,
+                  }))}
+                />
               </Stack>
-
-              <ConversionCard
-                category={selectedCategory}
-                fromUnit={fromUnit}
-                toUnit={toUnit}
-                fromValue={fromValue}
-                toValue={toValue}
-                onFromUnitChange={setFromUnit}
-                onToUnitChange={setToUnit}
-                onFromValueChange={setFromValue}
-                onCommit={addToHistory}
-                onSwap={swapUnits}
-              />
             </Stack>
-          </TabsContent>
-
-          <TabsContent value="saved">
-            <HistoryList
-              history={history}
-              onReuse={reuseConversion}
-              onRemove={(id) =>
-                setHistory((prev) => prev.filter((x) => x.id !== id))
-              }
-              onClear={() => setHistory([])}
-              onStart={() => setActiveTab('converter')}
+          </CardHeader>
+          <CardBody>
+            <AllUnits
+              category={category}
+              values={s.values}
+              editing={s.editing}
+              invalid={s.invalid}
+              onEdit={(unit, text) => s.setEditing({ unit, text })}
+              pinned={s.pinned}
+              onTogglePin={s.togglePin}
+              copiedKey={copiedKey}
+              onCopy={(unit, text) => void copy(text, unit)}
             />
-          </TabsContent>
-        </Tabs>
-      </CardBody>
-    </Card>
+          </CardBody>
+        </Card>
+
+        <Stack gap="6">
+          <Card>
+            <CardHeader>
+              <CardTitle as="h2">Options</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <Stack gap="3">
+                <Stack gap="1">
+                  <Label htmlFor="unit-precision">Significant digits</Label>
+                  <NumberInput
+                    id="unit-precision"
+                    value={settings.precision}
+                    min={3}
+                    max={17}
+                    onValueChange={(precision) => update({ precision })}
+                  />
+                </Stack>
+                <SegmentedControl<UnitSettings['locale']>
+                  label="Decimal mark"
+                  size="sm"
+                  value={settings.locale}
+                  onChange={(locale) => update({ locale })}
+                  options={[
+                    { value: 'auto', label: 'Browser' },
+                    { value: 'dot', label: 'Point' },
+                    { value: 'comma', label: 'Comma' },
+                  ]}
+                />
+                {category.id === 'typography' && (
+                  <Stack gap="1">
+                    <Label htmlFor="unit-base-px">Base font size (px)</Label>
+                    <NumberInput
+                      id="unit-base-px"
+                      value={settings.basePx}
+                      min={1}
+                      max={200}
+                      onValueChange={(basePx) => update({ basePx })}
+                    />
+                  </Stack>
+                )}
+              </Stack>
+            </CardBody>
+          </Card>
+          <HistoryList
+            history={settings.history}
+            precision={settings.precision}
+            locale={s.tag}
+            basePx={settings.basePx}
+            onUse={(h) => s.setCategory(h.category, s.show(h.from, h.amount))}
+            onClear={() => update({ history: [] })}
+          />
+        </Stack>
+      </Grid>
+    </Stack>
   );
 };
 

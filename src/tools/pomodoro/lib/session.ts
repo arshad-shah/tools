@@ -6,6 +6,7 @@ import type {
   TimerMode,
   TimerState,
 } from '../types';
+import { localDate, recordSession } from './history';
 import { daysBetween, isSameDay, isSameWeek } from './time';
 
 /**
@@ -20,6 +21,11 @@ export const DEFAULT_SETTINGS: Settings = {
   autoStartBreaks: true,
   autoStartPomodoros: false,
   soundEnabled: true,
+  longBreakEvery: 4,
+  notifications: false,
+  sound: 'chime',
+  volume: 80,
+  faviconRing: false,
 };
 
 export const defaultState = (now: number): PomodoroState => ({
@@ -28,6 +34,7 @@ export const defaultState = (now: number): PomodoroState => ({
     timeLeft: 25 * 60,
     isActive: false,
     currentTask: null,
+    completedWork: 0,
   },
   settings: DEFAULT_SETTINGS,
   tasks: [],
@@ -38,6 +45,7 @@ export const defaultState = (now: number): PomodoroState => ({
     currentStreak: 0,
     lastUpdate: now,
   },
+  history: [],
 });
 
 /** Session length in seconds. */
@@ -48,9 +56,25 @@ export const durationFor = (mode: TimerMode, s: Settings): number =>
     longBreak: s.longBreakDuration,
   })[mode] * 60;
 
-/** Work needs a current task; breaks can always start. */
-export const canStart = (t: TimerState): boolean =>
-  !(t.mode === 'work' && !t.currentTask);
+export type SessionKind = 'work' | 'short' | 'long';
+
+const every = (s: Settings) =>
+  Math.max(1, Math.round(s.longBreakEvery || DEFAULT_SETTINGS.longBreakEvery));
+
+/**
+ * The session after the current one ends: a break goes back to work; work
+ * goes to a long break when the completed work count (this one included,
+ * as stored after completing) is a multiple of `longBreakEvery`.
+ */
+export function nextSession(s: PomodoroState): SessionKind {
+  if (s.timer.mode !== 'work') return 'work';
+  const done = s.timer.completedWork ?? 0;
+  return done > 0 && done % every(s.settings) === 0 ? 'long' : 'short';
+}
+
+/** How far through the current long-break cycle (0 to longBreakEvery - 1). */
+export const cyclePosition = (completedWork: number, settings: Settings) =>
+  completedWork % every(settings);
 
 export const nextIncompleteTaskId = (tasks: Task[]): string | null =>
   tasks.find((t) => !t.completed)?.id ?? null;
@@ -87,27 +111,54 @@ const run = (t: TimerState, active: boolean, now: number): TimerState => ({
   endsAt: active ? now + t.timeLeft * 1000 : undefined,
 });
 
-/** Start or pause. Starting work without a current task changes nothing. */
+/** Start or pause. A task is optional: without one it is "Just focus". */
 export function toggleTimer(
   s: PomodoroState,
   now: number,
 ): Pick<PomodoroState, 'timer'> {
-  if (!s.timer.isActive && !canStart(s.timer)) return { timer: s.timer };
   return { timer: run(s.timer, !s.timer.isActive, now) };
 }
 
 /**
- * The end of a session (timer reached zero or Skip). Work counts one
- * pomodoro and one task step, then moves to a short break; a break only moves
- * back to work.
+ * The end of a session. When the timer reaches zero, work counts one
+ * pomodoro and one task step, then moves to a short break, or a long one
+ * every `longBreakEvery` sessions; a break moves back to work. A skipped
+ * session (`skipped: true`) counts nothing: no stats, no task step, no
+ * cycle step, and work goes on to a short break.
  */
 export function completeSession(
   s: PomodoroState,
   now: number,
-): Pick<PomodoroState, 'timer' | 'stats' | 'tasks'> {
+  { skipped = false }: { skipped?: boolean } = {},
+): Pick<PomodoroState, 'timer' | 'stats' | 'tasks' | 'history'> {
   const day = rolloverDay(s.stats, now);
+  const history = s.history ?? [];
+  const logged = skipped
+    ? history
+    : recordSession(history, {
+        date: localDate(now),
+        kind: s.timer.mode === 'work' ? 'work' : 'break',
+        minutes: durationFor(s.timer.mode, s.settings) / 60,
+      });
+  if (skipped && s.timer.mode === 'work') {
+    return {
+      history: logged,
+      stats: day,
+      tasks: s.tasks,
+      timer: run(
+        {
+          ...s.timer,
+          mode: 'shortBreak',
+          timeLeft: durationFor('shortBreak', s.settings),
+        },
+        s.settings.autoStartBreaks,
+        now,
+      ),
+    };
+  }
   if (s.timer.mode !== 'work') {
     return {
+      history: logged,
       stats: day,
       tasks: s.tasks,
       timer: run(
@@ -137,15 +188,22 @@ export function completeSession(
     );
     if (completed) currentTask = nextIncompleteTaskId(tasks);
   }
+  const completedWork = (s.timer.completedWork ?? 0) + 1;
+  const mode: TimerMode =
+    nextSession({ ...s, timer: { ...s.timer, completedWork } }) === 'long'
+      ? 'longBreak'
+      : 'shortBreak';
   return {
+    history: logged,
     stats,
     tasks,
     timer: run(
       {
         ...s.timer,
         currentTask,
-        mode: 'shortBreak',
-        timeLeft: durationFor('shortBreak', s.settings),
+        completedWork,
+        mode,
+        timeLeft: durationFor(mode, s.settings),
       },
       s.settings.autoStartBreaks,
       now,
@@ -163,7 +221,7 @@ export function completeSession(
 export function resumeTimer(
   s: PomodoroState,
   now: number,
-): Partial<Pick<PomodoroState, 'timer' | 'stats' | 'tasks'>> {
+): Partial<Pick<PomodoroState, 'timer' | 'stats' | 'tasks' | 'history'>> {
   const { timer } = s;
   if (!timer.isActive) return {};
   if (timer.endsAt == null) return { timer: run(timer, false, now) };

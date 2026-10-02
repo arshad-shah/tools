@@ -4,18 +4,12 @@ import type { AngleUnit } from '../types';
 
 type Fn = (...args: never[]) => unknown;
 
-const DEG = Math.PI / 180;
+type MathInstance = math.MathJsInstance;
+
+const DEFAULT = math as unknown as MathInstance;
 
 const call = (fn: unknown, ...args: unknown[]) =>
   (fn as (...a: unknown[]) => unknown)(...args);
-
-// Plain numbers, matrices and complex numbers follow the switch. Units
-// (30 deg, 1 rad) carry their own angle and go to mathjs untouched.
-const isUnit = (x: unknown) => math.isUnit(x as never);
-const toRad = (x: unknown) =>
-  typeof x === 'number' ? x * DEG : isUnit(x) ? x : call(math.multiply, x, DEG);
-const toDeg = (x: unknown) =>
-  typeof x === 'number' ? x / DEG : call(math.multiply, x, 1 / DEG);
 
 /** Exact results at whole multiples, so sin(180) is 0, not 1.2e-16. */
 function exactDeg(name: 'sin' | 'cos' | 'tan', deg: number): number | null {
@@ -26,45 +20,71 @@ function exactDeg(name: 'sin' | 'cos' | 'tan', deg: number): number | null {
   return null;
 }
 
-const forward =
-  (name: 'sin' | 'cos' | 'tan' | 'sec' | 'csc' | 'cot') => (x: never) => {
-    if (
-      typeof x === 'number' &&
-      (name === 'sin' || name === 'cos' || name === 'tan')
-    ) {
-      const exact = exactDeg(name, x);
-      if (exact !== null) return exact;
-    }
-    return call(math[name], toRad(x));
-  };
-
-const inverse =
-  (name: 'asin' | 'acos' | 'atan' | 'asec' | 'acsc' | 'acot') => (x: never) =>
-    toDeg(call(math[name], x));
-
 /**
- * Trig functions that read and return degrees. Passed as the evaluation
- * scope, which mathjs resolves before its own functions, so the shared
- * mathjs instance is never modified.
+ * Trig functions that read and return degrees, for any mathjs instance
+ * (numbers or BigNumbers). Passed as the evaluation scope, which mathjs
+ * resolves before its own functions, so no instance is ever modified.
+ * Plain numbers, BigNumbers, matrices and complex numbers follow the
+ * switch; units (30 deg, 1 rad) carry their own angle and pass untouched.
  */
-const DEGREE_SCOPE: Record<string, Fn> = {
-  sin: forward('sin'),
-  cos: forward('cos'),
-  tan: forward('tan'),
-  sec: forward('sec'),
-  csc: forward('csc'),
-  cot: forward('cot'),
-  asin: inverse('asin'),
-  acos: inverse('acos'),
-  atan: inverse('atan'),
-  asec: inverse('asec'),
-  acsc: inverse('acsc'),
-  acot: inverse('acot'),
-  atan2: (y: never, x: never) => toDeg(call(math.atan2, y, x)),
-};
+function degreeScope(m: MathInstance): Record<string, Fn> {
+  const deg = m.divide(m.pi, 180);
+  const isUnit = (x: unknown) => m.isUnit(x as never);
+  const toRad = (x: unknown) =>
+    typeof x === 'number'
+      ? x * (Math.PI / 180)
+      : isUnit(x)
+        ? x
+        : call(m.multiply, x, deg);
+  const toDeg = (x: unknown) =>
+    typeof x === 'number' ? x / (Math.PI / 180) : call(m.divide, x, deg);
+  const plain = (x: unknown): number | null =>
+    typeof x === 'number'
+      ? x
+      : m.isBigNumber(x as never)
+        ? Number(String(x))
+        : null;
+  const zero = (x: unknown) => (typeof x === 'number' ? 0 : m.bignumber(0));
+  const forward =
+    (name: 'sin' | 'cos' | 'tan' | 'sec' | 'csc' | 'cot') => (x: never) => {
+      const n = plain(x);
+      if (n !== null && (name === 'sin' || name === 'cos' || name === 'tan')) {
+        if (exactDeg(name, n) === 0) return zero(x);
+      }
+      return call(m[name], toRad(x));
+    };
+  const inverse =
+    (name: 'asin' | 'acos' | 'atan' | 'asec' | 'acsc' | 'acot') => (x: never) =>
+      toDeg(call(m[name], x));
+  return {
+    sin: forward('sin'),
+    cos: forward('cos'),
+    tan: forward('tan'),
+    sec: forward('sec'),
+    csc: forward('csc'),
+    cot: forward('cot'),
+    asin: inverse('asin'),
+    acos: inverse('acos'),
+    atan: inverse('atan'),
+    asec: inverse('asec'),
+    acsc: inverse('acsc'),
+    acot: inverse('acot'),
+    atan2: (y: never, x: never) => toDeg(call(m.atan2, y, x)),
+  };
+}
 
-const scopeFor = (angle: AngleUnit): Record<string, unknown> =>
-  angle === 'deg' ? { ...DEGREE_SCOPE } : {};
+const DEGREE_SCOPE = degreeScope(DEFAULT);
+
+/** The scope that makes trig honour `angle` on mathjs instance `m`. */
+export function angleScope(
+  angle: AngleUnit,
+  m: MathInstance = DEFAULT,
+): Record<string, unknown> {
+  if (angle !== 'deg') return {};
+  return m === DEFAULT ? { ...DEGREE_SCOPE } : degreeScope(m);
+}
+
+const scopeFor = (angle: AngleUnit) => angleScope(angle);
 
 /** mathjs `evaluate`, with trig honouring the degrees/radians switch. */
 export function evaluateWithAngle(expr: string, angle: AngleUnit): unknown {

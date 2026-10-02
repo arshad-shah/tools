@@ -3,7 +3,7 @@ import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'pomodoro',
-  name: 'Pomodoro',
+  name: 'Pomodoro Timer',
   description: 'Focus and productivity timer',
   icon: IconClock,
   category: 'time',

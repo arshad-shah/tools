@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { logToolError, toToolError } from '@/shared/lib/errors';
-import completeSoundUrl from '../assets/complete.wav';
+import bellSoundUrl from '../assets/bell.wav';
+import chimeSoundUrl from '../assets/complete.wav';
+import woodSoundUrl from '../assets/wood.wav';
 import { usePomodoroStore } from '../store';
 import { MODE_INFO } from '../lib/modes';
+import { notifySessionEnd } from '../lib/notify';
+import type { SoundId } from '../types';
 import { formatTime } from '../lib/time';
+
+/** Same-origin bundled sounds (in-house; see src/app/licences.ts). */
+export const SOUND_URLS: Record<SoundId, string> = {
+  chime: chimeSoundUrl,
+  bell: bellSoundUrl,
+  wood: woodSoundUrl,
+};
 
 type WorkerMessage = { type: 'TICK'; timeLeft: number } | { type: 'COMPLETE' };
 
@@ -11,7 +22,7 @@ const reportSoundError = (e: unknown) =>
   logToolError(toToolError(e, 'Could not play the completion sound'));
 
 export interface TimerWorker {
-  /** End the current session now (counts and chimes like a real end). */
+  /** End the current session now without counting it (no chime). */
   skip(): void;
   /**
    * Call from a click (Start, Skip): creates and loads the one sound element,
@@ -25,8 +36,8 @@ export interface TimerWorker {
 
 /**
  * Owns the countdown worker. The store is the single place a session ends:
- * `finish()` runs once per COMPLETE (or Skip), counts once and plays the
- * sound once. The worker is (re)started whenever `isActive` or `mode`
+ * `finish()` runs once per COMPLETE, counts once and plays the sound once;
+ * `skip()` moves on without counting or a sound. The worker is (re)started whenever `isActive` or `mode`
  * changes, so an auto-started session really counts down.
  */
 export function useTimerWorker(): TimerWorker {
@@ -36,10 +47,14 @@ export function useTimerWorker(): TimerWorker {
   const isActive = usePomodoroStore((s) => s.timer.isActive);
   const mode = usePomodoroStore((s) => s.timer.mode);
 
+  const soundRef = useRef<SoundId | null>(null);
+
   const prime = useCallback(() => {
-    if (audioRef.current) return;
+    const sound = usePomodoroStore.getState().settings.sound ?? 'chime';
+    if (audioRef.current && soundRef.current === sound) return;
     try {
-      const audio = new Audio(completeSoundUrl);
+      const audio = new Audio(SOUND_URLS[sound] ?? chimeSoundUrl);
+      soundRef.current = sound;
       audio.preload = 'auto';
       audio.load();
       audioRef.current = audio;
@@ -48,29 +63,39 @@ export function useTimerWorker(): TimerWorker {
     }
   }, []);
 
-  const finish = useCallback(() => {
+  const end = useCallback((skipped: boolean) => {
     const store = usePomodoroStore.getState();
-    const { soundEnabled } = store.settings;
     const ended = store.timer.mode;
-    store.complete();
+    if (skipped) store.skip();
+    else store.complete();
     const next = usePomodoroStore.getState().timer;
+    if (!skipped)
+      notifySessionEnd(store.settings.notifications, ended, next.mode);
     setAnnouncement(
-      `${MODE_INFO[ended].label} finished. ${MODE_INFO[next.mode].label} ${
+      `${MODE_INFO[ended].label} ${skipped ? 'skipped' : 'finished'}. ${MODE_INFO[next.mode].label} ${
         next.isActive ? 'started' : 'ready to start'
       }.`,
     );
+  }, []);
+
+  const skip = useCallback(() => end(true), [end]);
+
+  const finish = useCallback(() => {
+    const { soundEnabled, volume } = usePomodoroStore.getState().settings;
+    end(false);
     if (!soundEnabled) return;
     prime();
     const audio = audioRef.current;
     if (!audio) return;
     // Autoplay can be blocked by the browser: not worth bothering the user.
     try {
+      audio.volume = Math.min(1, Math.max(0, (volume ?? 80) / 100));
       audio.currentTime = 0;
       audio.play().catch(reportSoundError);
     } catch (e) {
       reportSoundError(e);
     }
-  }, [prime]);
+  }, [end, prime]);
 
   useEffect(() => {
     const originalTitle = document.title;
@@ -114,5 +139,5 @@ export function useTimerWorker(): TimerWorker {
     }
   }, [isActive, mode]);
 
-  return { skip: finish, prime, announcement };
+  return { skip, prime, announcement };
 }

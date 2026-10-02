@@ -1,194 +1,148 @@
 import React from 'react';
-import {
-  IconArrowLeft,
-  IconDivide,
-  IconEqual,
-  IconMinus,
-  IconPercent,
-  IconPlus,
-  IconPower,
-  IconX,
-} from '@/shared/ui/icons';
+import { Button, Grid, Stack } from '@/shared/ui';
+import { KeyBackspace } from '@/shared/ui/icons';
 
-import { Grid } from '@/shared/ui';
-import type { CalculatorState } from '../hooks/useCalculator';
-import { CalcKey } from './CalcKey';
+/** What a key does: insert text, or one of the sheet's commands. */
+export type KeyEffect =
+  | { insert: string }
+  | { command: 'evaluate' | 'clear' | 'backspace' };
 
-type StandardKeypadProps = Pick<
-  CalculatorState,
-  | 'clear'
-  | 'clearEntry'
-  | 'backspace'
-  | 'performOperation'
-  | 'inputDigit'
-  | 'toggleSign'
-  | 'inputDecimal'
-  | 'calculate'
-  | 'percentage'
-  | 'squareRoot'
-  | 'square'
-  | 'reciprocal'
->;
+export interface KeyDef {
+  /** The key face. */
+  face: string;
+  /** Accessible name, when the face is a symbol. */
+  name?: string;
+  effect: KeyEffect;
+  tone?: 'operator' | 'equals' | 'clear';
+}
 
-export const StandardKeypad: React.FC<StandardKeypadProps> = ({
-  clear,
-  clearEntry,
-  backspace,
-  performOperation,
-  inputDigit,
-  toggleSign,
-  inputDecimal,
-  calculate,
-  percentage,
-  squareRoot,
-  square,
-  reciprocal,
-}) => (
-  <Grid cols={4} gap="2">
-    <CalcKey variant="primary" colorScheme="danger" onClick={clear}>
-      C
-    </CalcKey>
-    <CalcKey onClick={clearEntry}>CE</CalcKey>
-    <CalcKey
-      onClick={backspace}
-      icon={<IconArrowLeft size="sm" />}
-      label="Backspace"
-    />
-    <CalcKey
-      variant="primary"
-      colorScheme="accent"
-      onClick={() => performOperation('÷')}
-      icon={<IconDivide size="sm" />}
-      label="Divide"
-    />
+const ins = (face: string, insert = face, name?: string): KeyDef => ({
+  face,
+  name,
+  effect: { insert },
+  tone: undefined,
+});
+const op = (face: string, insert: string, name: string): KeyDef => ({
+  face,
+  name,
+  effect: { insert },
+  tone: 'operator',
+});
 
-    <CalcKey onClick={() => inputDigit(7)}>7</CalcKey>
-    <CalcKey onClick={() => inputDigit(8)}>8</CalcKey>
-    <CalcKey onClick={() => inputDigit(9)}>9</CalcKey>
-    <CalcKey
-      variant="primary"
-      colorScheme="accent"
-      onClick={() => performOperation('×')}
-      icon={<IconX size="sm" />}
-      label="Multiply"
-    />
+const TIMES = String.fromCodePoint(0xd7);
+const DIVIDE = String.fromCodePoint(0xf7);
+const MINUS = String.fromCodePoint(0x2212);
+const PI = String.fromCodePoint(0x3c0);
+const ROOT = String.fromCodePoint(0x221a);
+const SQUARED = `x${String.fromCodePoint(0xb2)}`;
 
-    <CalcKey onClick={() => inputDigit(4)}>4</CalcKey>
-    <CalcKey onClick={() => inputDigit(5)}>5</CalcKey>
-    <CalcKey onClick={() => inputDigit(6)}>6</CalcKey>
-    <CalcKey
-      variant="primary"
-      colorScheme="accent"
-      onClick={() => performOperation('-')}
-      icon={<IconMinus size="sm" />}
-      label="Subtract"
-    />
+/** Display symbols map to expression syntax: the multiply key types `*`. */
+const STANDARD_KEYS: KeyDef[] = [
+  {
+    face: 'C',
+    name: 'Clear line',
+    effect: { command: 'clear' },
+    tone: 'clear',
+  },
+  ins('('),
+  ins(')'),
+  op(DIVIDE, '/', 'Divide'),
+  ins('7'),
+  ins('8'),
+  ins('9'),
+  op(TIMES, '*', 'Multiply'),
+  ins('4'),
+  ins('5'),
+  ins('6'),
+  op(MINUS, '-', 'Subtract'),
+  ins('1'),
+  ins('2'),
+  ins('3'),
+  op('+', '+', 'Add'),
+  ins('0'),
+  ins('.', '.', 'Decimal point'),
+  op('%', '%', 'Percent'),
+  {
+    face: '=',
+    name: 'Equals',
+    effect: { command: 'evaluate' },
+    tone: 'equals',
+  },
+  op('^', '^', 'Power'),
+  ins('ans', 'ans', 'Previous answer'),
+  ins('to', ' to ', 'Convert units'),
+  { face: '', name: 'Backspace', effect: { command: 'backspace' } },
+];
 
-    <CalcKey onClick={() => inputDigit(1)}>1</CalcKey>
-    <CalcKey onClick={() => inputDigit(2)}>2</CalcKey>
-    <CalcKey onClick={() => inputDigit(3)}>3</CalcKey>
-    <CalcKey
-      variant="primary"
-      colorScheme="accent"
-      onClick={() => performOperation('+')}
-      icon={<IconPlus size="sm" />}
-      label="Add"
-    />
+const SCIENTIFIC_KEYS: KeyDef[] = [
+  ins('sin', 'sin('),
+  ins('cos', 'cos('),
+  ins('tan', 'tan('),
+  ins(PI, 'pi', 'Pi'),
+  ins('asin', 'asin('),
+  ins('acos', 'acos('),
+  ins('atan', 'atan('),
+  ins('e', 'e', 'Euler number'),
+  ins('ln', 'log(', 'Natural log'),
+  ins('log', 'log10(', 'Log base 10'),
+  ins(ROOT, 'sqrt(', 'Square root'),
+  ins(SQUARED, '^2', 'Square'),
+  ins('n!', '!', 'Factorial'),
+  ins('abs', 'abs(', 'Absolute value'),
+  ins('1/x', '1/', 'Reciprocal'),
+  ins('mod', ' mod ', 'Modulo'),
+];
 
-    <CalcKey onClick={toggleSign}>±</CalcKey>
-    <CalcKey onClick={() => inputDigit(0)}>0</CalcKey>
-    <CalcKey onClick={inputDecimal}>.</CalcKey>
-    <CalcKey
-      variant="primary"
-      colorScheme="success"
-      onClick={calculate}
-      icon={<IconEqual size="sm" />}
-      label="Equals"
-    />
+interface KeypadProps {
+  scientific: boolean;
+  onKey(effect: KeyEffect): void;
+}
 
-    <CalcKey
-      onClick={percentage}
-      icon={<IconPercent size="sm" />}
-      label="Percent"
-    />
-    <CalcKey onClick={squareRoot}>√</CalcKey>
-    <CalcKey onClick={square}>x²</CalcKey>
-    <CalcKey onClick={reciprocal}>1/x</CalcKey>
+const VARIANT = {
+  operator: 'secondary',
+  equals: 'primary',
+  clear: 'danger',
+} as const;
+
+const KeyGrid: React.FC<{
+  keys: KeyDef[];
+  onKey(effect: KeyEffect): void;
+  label: string;
+}> = ({ keys, onKey, label }) => (
+  <Grid cols={4} gap="2" role="group" aria-label={label}>
+    {keys.map((k) => (
+      <Button
+        key={k.name ?? k.face}
+        type="button"
+        size="lg"
+        fullWidth
+        variant={k.tone ? VARIANT[k.tone] : 'ghost'}
+        aria-label={k.name}
+        leftIcon={
+          'command' in k.effect && k.effect.command === 'backspace' ? (
+            <KeyBackspace size="sm" />
+          ) : undefined
+        }
+        className={
+          k.tone === 'operator' ? 'text-accent-fg' : 'border border-line'
+        }
+        onClick={() => onKey(k.effect)}
+      >
+        {k.face}
+      </Button>
+    ))}
   </Grid>
 );
 
-type ScientificKeypadProps = Pick<
-  CalculatorState,
-  | 'factorial'
-  | 'performOperation'
-  | 'sin'
-  | 'cos'
-  | 'tan'
-  | 'asin'
-  | 'acos'
-  | 'atan'
-  | 'sinh'
-  | 'cosh'
-  | 'tanh'
->;
-
-export const ScientificKeypad: React.FC<ScientificKeypadProps> = ({
-  factorial,
-  performOperation,
-  sin,
-  cos,
-  tan,
-  asin,
-  acos,
-  atan,
-  sinh,
-  cosh,
-  tanh,
-}) => (
-  <Grid cols={4} gap="2">
-    <CalcKey variant="secondary" colorScheme="accent" onClick={factorial}>
-      x!
-    </CalcKey>
-    <CalcKey
-      variant="secondary"
-      colorScheme="accent"
-      onClick={() => performOperation('pow')}
-      icon={<IconPower size="sm" />}
-      label="Power"
-    />
-    <CalcKey variant="secondary" colorScheme="accent" onClick={sin}>
-      sin
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={cos}>
-      cos
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={tan}>
-      tan
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={asin}>
-      asin
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={acos}>
-      acos
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={atan}>
-      atan
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={sinh}>
-      sinh
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={cosh}>
-      cosh
-    </CalcKey>
-    <CalcKey variant="secondary" colorScheme="accent" onClick={tanh}>
-      tanh
-    </CalcKey>
-    <CalcKey
-      variant="secondary"
-      colorScheme="accent"
-      onClick={() => performOperation('mod')}
-    >
-      mod
-    </CalcKey>
-  </Grid>
+/**
+ * Standard keys (and the scientific functions above them) that insert
+ * tokens into the active line; `=` records it and `C` clears it.
+ */
+export const Keypad: React.FC<KeypadProps> = ({ scientific, onKey }) => (
+  <Stack gap="3">
+    {scientific && (
+      <KeyGrid keys={SCIENTIFIC_KEYS} onKey={onKey} label="Scientific keys" />
+    )}
+    <KeyGrid keys={STANDARD_KEYS} onKey={onKey} label="Keypad" />
+  </Stack>
 );

@@ -1,83 +1,76 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CATEGORIES } from './categories';
-import { convertUnits, formatNumber, getTimeSince } from './convert';
+import { describe, expect, it } from 'vitest';
+import { convert } from './convert';
+import { formatNumber as formatNew } from './format';
+import { CATEGORIES as NEW_CATEGORIES, findUnit, getCategory } from './units';
 
-const category = (name: string) => CATEGORIES.find((c) => c.name === name)!;
-const unit = (cat: string, name: string) =>
-  category(cat).units.find((u) => u.name === name)!;
+describe('unit definitions', () => {
+  const cat = (id: string, basePx?: number) => getCategory(id, { basePx })!;
+  const u = (c: string, id: string, basePx?: number) =>
+    findUnit(cat(c, basePx), id)!;
+  const conv = (c: string, v: number, from: string, to: string, px?: number) =>
+    convert(v, u(c, from, px), u(c, to, px));
 
-const temperature = category('Temperature');
-const celsius = unit('Temperature', 'Celsius');
-const fahrenheit = unit('Temperature', 'Fahrenheit');
-const kelvin = unit('Temperature', 'Kelvin');
-const length = category('Length');
-const m = unit('Length', 'Meters');
-const km = unit('Length', 'Kilometers');
-
-describe('convertUnits', () => {
-  it('converts temperatures through kelvin', () => {
-    expect(convertUnits('100', celsius, fahrenheit, temperature)).toBe('212');
-    expect(convertUnits('0', celsius, kelvin, temperature)).toBe('273.15');
-    expect(convertUnits('32', fahrenheit, celsius, temperature)).toBe('0');
-    expect(convertUnits('-40', celsius, fahrenheit, temperature)).toBe('-40');
+  it('uses exact factors', () => {
+    expect(conv('length', 1, 'mi', 'm')).toBe(1609.344);
+    expect(conv('mass', 1, 'lb', 'kg')).toBe(0.45359237);
+    expect(conv('data', 1, 'MB', 'B')).toBe(1_000_000);
+    expect(conv('data', 1, 'MiB', 'B')).toBe(1_048_576);
   });
-
-  it('converts factor units through the base unit', () => {
-    expect(convertUnits('1', km, m, length)).toBe('1000');
-    expect(convertUnits('1500', m, km, length)).toBe('1.5');
-    expect(
-      convertUnits(
-        '1',
-        unit('Data', 'Kilobytes'),
-        unit('Data', 'Bits'),
-        category('Data'),
-      ),
-    ).toBe('8192');
+  it('keeps tiny values', () => {
+    expect(formatNew(conv('energy', 1, 'eV', 'J'))).toBe('1.602176634e-19');
   });
-
-  it('rounds to 10 decimals', () => {
-    expect(
-      convertUnits(
-        '1',
-        unit('Length', 'Inches'),
-        unit('Length', 'Miles'),
-        length,
-      ),
-    ).toBe('0.0000157829');
+  it('converts temperatures exactly at the common points', () => {
+    expect(conv('temperature', 32, 'f', 'c')).toBe(0);
+    expect(conv('temperature', -40, 'f', 'c')).toBe(-40);
+    expect(conv('temperature', 0, 'c', 'k')).toBe(273.15);
   });
-
-  it('returns empty for empty or non-numeric input, parses a numeric prefix', () => {
-    expect(convertUnits('', m, km, length)).toBe('');
-    expect(convertUnits('abc', m, km, length)).toBe('');
-    expect(convertUnits('12abc', m, km, length)).toBe('0.012');
+  it('inverts fuel economy', () => {
+    const mpg = conv('fuel', 10, 'l100km', 'mpg-us');
+    expect(mpg).toBeCloseTo(23.5215, 4);
+    expect(conv('fuel', mpg, 'mpg-us', 'l100km')).toBeCloseTo(10, 12);
   });
-});
-
-describe('formatNumber', () => {
-  it('groups the integer part only', () => {
-    expect(formatNumber('1234567.89')).toBe('1,234,567.89');
-    expect(formatNumber('1000')).toBe('1,000');
-    expect(formatNumber('0.00001234')).toBe('0.00001234');
-    expect(formatNumber('-1234')).toBe('-1,234');
+  it('sizes typography from the base font size', () => {
+    expect(conv('typography', 16, 'px', 'rem', 16)).toBe(1);
+    expect(conv('typography', 20, 'px', 'rem', 10)).toBe(2);
   });
-
-  it('leaves empty and non-numeric text alone', () => {
-    expect(formatNumber('')).toBe('');
-    expect(formatNumber('abc')).toBe('abc');
+  it('labels averaged calendar units', () => {
+    expect(u('time', 'mo').note).toBe('average Gregorian (30.436875 d)');
   });
-});
-
-describe('getTimeSince', () => {
-  afterEach(() => vi.useRealTimers());
-
-  it('buckets into just now, minutes, hours and days', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-01-10T12:00:00Z'));
-    const ago = (ms: number) => getTimeSince(new Date(Date.now() - ms));
-    expect(ago(59_000)).toBe('just now');
-    expect(ago(60_000)).toBe('1m ago');
-    expect(ago(59 * 60_000)).toBe('59m ago');
-    expect(ago(2 * 3_600_000)).toBe('2h ago');
-    expect(ago(3 * 86_400_000)).toBe('3d ago');
+  it('has ten new categories alongside the original ten', () => {
+    expect(NEW_CATEGORIES.map((c) => c.id)).toEqual(
+      expect.arrayContaining([
+        'angle',
+        'frequency',
+        'power',
+        'force',
+        'torque',
+        'fuel',
+        'data-rate',
+        'density',
+        'typography',
+        'cooking',
+      ]),
+    );
+    expect(NEW_CATEGORIES).toHaveLength(20);
+  });
+  it('round-trips every unit within 1e-12 relative', () => {
+    // Relative to the larger of the value and its base value, so an offset
+    // scale (0.001 K is -273.149 C) is measured against the magnitude it
+    // actually passes through.
+    for (const c of NEW_CATEGORIES)
+      for (const unitDef of c.units)
+        for (const x of [1, 123.456, 0.001, -7.5]) {
+          const base = unitDef.toBase(x);
+          const back = unitDef.fromBase(base);
+          const scale = Math.max(Math.abs(x), Math.abs(base));
+          expect(Math.abs(back - x) / scale).toBeLessThan(1e-12);
+        }
+  });
+  it('gives unique unit ids within each category', () => {
+    for (const c of NEW_CATEGORIES) {
+      const ids = c.units.map((x) => x.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(ids).toContain(c.base);
+    }
   });
 });
