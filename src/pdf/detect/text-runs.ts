@@ -1,6 +1,6 @@
-import { charSpans } from './advance';
+import { charSpans, fontAdvances } from './advance';
 import type { PageTextItems } from '@/pdf/render';
-import type { GlyphBox, TextRun } from './types';
+import type { FontAdvances, GlyphBox, TextRun } from './types';
 
 const FALLBACK_ASCENT = 0.8;
 const FALLBACK_DESCENT = -0.2;
@@ -10,11 +10,13 @@ const WHITESPACE = /^\s*$/u;
  * One run per non-blank pdf.js text item (spec 8.2 step 4): x and baseline
  * from the item transform, font size in page space, vertical extent from
  * the font's ascent and descent. Rotated text keeps a ` rotated` font
- * suffix so labelling can skip it.
+ * suffix so labelling can skip it. With `fonts`, each run carries its
+ * font's own advance widths.
  */
 export function textRuns(
   text: PageTextItems,
   fontNames: Record<string, string>,
+  fonts?: Record<string, FontAdvances>,
 ): TextRun[] {
   const runs: TextRun[] = [];
   text.items.forEach((item, index) => {
@@ -26,6 +28,7 @@ export function textRuns(
     const descent = style?.descent || FALLBACK_DESCENT;
     const rotated = Math.abs(t[1]) > 1e-6 || Math.abs(t[2]) > 1e-6;
     const name = fontNames[item.fontName] ?? item.fontName;
+    const font = fonts?.[item.fontName];
     runs.push({
       str: item.str,
       x: t[4],
@@ -36,15 +39,16 @@ export function textRuns(
       size,
       font: rotated ? `${name} rotated` : name,
       item: index,
+      ...(font ? { advances: fontAdvances(Array.from(item.str), font) } : {}),
     });
   });
   return runs;
 }
 
-/** Per code point boxes by proportional advance (standard widths, see advance.ts) (blank code points carry no ink and get no box). */
+/** Per code point boxes by proportional advance (the run's font widths, see advance.ts) (blank code points carry no ink and get no box). */
 export function splitGlyphs(run: TextRun): GlyphBox[] {
   const chars = Array.from(run.str);
-  const { offsets, widths } = charSpans(chars, run.w);
+  const { offsets, widths } = charSpans(chars, run.w, run.advances);
   const out: GlyphBox[] = [];
   chars.forEach((ch, i) => {
     if (WHITESPACE.test(ch)) return;

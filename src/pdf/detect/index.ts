@@ -7,6 +7,7 @@ export type {
   AutofillKey,
   DetectedField,
   FieldType,
+  FontAdvances,
   GlyphBox,
   Matrix,
   OperatorListLike,

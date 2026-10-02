@@ -1,10 +1,13 @@
+import type { FontAdvances } from './types';
+
 /*
  * Relative advance widths for splitting a text run into characters. pdf.js
  * reports only a run's total width, so each character gets a share in
- * proportion to its standard Helvetica width (1/1000 em, ASCII 32-126);
- * other characters count as 556. Exact for Helvetica and close for most
- * proportional fonts, far closer than equal shares when a label runs into
- * a dotted leader ("Occupation ........").
+ * proportion to its advance. The font's own widths are used when the render
+ * worker can read them (fontAdvancesOf in render/detect-page.ts); otherwise
+ * the standard Helvetica width (1/1000 em, ASCII 32-126), with other
+ * characters at 556. Either is far closer than equal shares when a label
+ * runs into a dotted leader ("Occupation ........").
  */
 const HELVETICA = [
   278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278,
@@ -16,20 +19,40 @@ const HELVETICA = [
   500, 334, 260, 334, 584,
 ];
 
-const weight = (ch: string) => {
+/** Standard Helvetica advance of one character, 1/1000 em. */
+export const helveticaAdvance = (ch: string) => {
   const cp = ch.codePointAt(0) ?? 0;
   return cp >= 32 && cp <= 126 ? HELVETICA[cp - 32] : 556;
 };
 
 /**
+ * Advances of each code point in the font's own widths, a character the
+ * font does not list taking its fallback or else the Helvetica width.
+ */
+export function fontAdvances(
+  chars: readonly string[],
+  font: FontAdvances | undefined,
+): number[] {
+  return chars.map((ch) => {
+    const own = font?.byChar[ch] ?? font?.fallback;
+    return own !== undefined && own > 0 ? own : helveticaAdvance(ch);
+  });
+}
+
+/**
  * Start offsets and widths of each code point of `chars` across a run of
- * total width `w` (offsets[i] + widths[i] = offsets[i + 1]).
+ * total width `w` (offsets[i] + widths[i] = offsets[i + 1]). `advances`
+ * (one per code point) default to the Helvetica widths.
  */
 export function charSpans(
   chars: readonly string[],
   w: number,
+  advances?: readonly number[],
 ): { offsets: number[]; widths: number[] } {
-  const weights = chars.map(weight);
+  const weights =
+    advances && advances.length === chars.length
+      ? advances
+      : chars.map(helveticaAdvance);
   const total = weights.reduce((s, x) => s + x, 0);
   const offsets: number[] = [];
   const widths: number[] = [];

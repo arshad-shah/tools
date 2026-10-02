@@ -1,6 +1,7 @@
 import type { PageTextItems } from '@/pdf/render';
 import { splitGlyphs, textRuns } from './text-runs';
 import type {
+  FontAdvances,
   Matrix,
   OperatorListLike,
   OpsTable,
@@ -56,11 +57,12 @@ export function extractGeometry(
   OPS: OpsTable,
   text: PageTextItems,
   fontNames: Record<string, string>,
+  fonts?: Record<string, FontAdvances>,
 ): PageGeometry {
   let pathOps = 0;
   for (let i = 0; i < list.fnArray.length; i++)
     if (list.fnArray[i] === OPS.constructPath) pathOps++;
-  const runs = textRuns(text, fontNames);
+  const runs = textRuns(text, fontNames, fonts);
   const glyphs = runs.flatMap(splitGlyphs);
   if (pathOps > MAX_PATH_OPS)
     return {

@@ -40,7 +40,10 @@ const iou = (a: Box, b: Box) => {
 async function detectAll(bytes: Uint8Array): Promise<PageDetection[]> {
   const pages = await loadPageInputs(bytes);
   return pages.map((p, i) =>
-    detectPage(extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames), i),
+    detectPage(
+      extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames, p.fonts),
+      i,
+    ),
   );
 }
 const fieldsOf = (pages: PageDetection[]) => pages.flatMap((p) => p.fields);
@@ -132,7 +135,13 @@ describe.each([
     for (let round = 0; round < 3; round++)
       pages.forEach((p, i) => {
         const start = performance.now();
-        const geom = extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames);
+        const geom = extractGeometry(
+          p.list,
+          PDFJS_OPS,
+          p.text,
+          p.fontNames,
+          p.fonts,
+        );
         ms.push(detectPage(geom, i).ms);
         withGeometry.push(performance.now() - start);
       });

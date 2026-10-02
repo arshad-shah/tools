@@ -34,7 +34,10 @@ const iou = (a: Box, b: Box) => {
 async function detectAll(bytes: Uint8Array) {
   const pages = await loadPageInputs(bytes);
   return pages.map((p, i) =>
-    detectPage(extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames), i),
+    detectPage(
+      extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames, p.fonts),
+      i,
+    ),
   );
 }
 

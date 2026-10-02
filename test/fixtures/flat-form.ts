@@ -10,10 +10,12 @@ import {
 } from 'pdf-lib';
 import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { textItemsFrom } from '../../src/pdf/render/text';
+import { fontAdvancesOf } from '../../src/pdf/render/detect-page';
 import type { PageTextItems } from '../../src/pdf/render';
 import type { Box } from '../../src/pdf/doc/types';
 import type {
   FieldType,
+  FontAdvances,
   OperatorListLike,
   OpsTable,
 } from '../../src/pdf/detect/types';
@@ -24,6 +26,8 @@ export interface PageInputs {
   list: OperatorListLike;
   text: PageTextItems;
   fontNames: Record<string, string>;
+  /** Per-font advance widths, as the render worker reads them. */
+  fonts: Record<string, FontAdvances>;
 }
 
 export const PDFJS_OPS: OpsTable = OPS;
@@ -36,6 +40,7 @@ export async function loadPageInputs(bytes: Uint8Array): Promise<PageInputs[]> {
   const task = getDocument({
     data: bytes.slice(),
     useSystemFonts: false,
+    fontExtraProperties: true,
     verbosity: 0,
   });
   try {
@@ -57,7 +62,11 @@ export async function loadPageInputs(bytes: Uint8Array): Promise<PageInputs[]> {
             ? String(font.name)
             : text.styles[id].fontFamily;
       }
-      out.push({ list, text, fontNames });
+      const fonts = fontAdvancesOf(
+        page as unknown as Parameters<typeof fontAdvancesOf>[0],
+        Object.keys(text.styles),
+      );
+      out.push({ list, text, fontNames, fonts });
     }
     return out;
   } finally {

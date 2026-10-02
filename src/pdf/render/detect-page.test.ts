@@ -7,12 +7,21 @@ import {
   makeNegativeReport,
 } from '../../../test/fixtures/flat-form';
 import { makeCharBoxForm } from '../../../test/fixtures/char-box-form';
-import { detectFromPage, summarise, type DetectPageLike } from './detect-page';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { fontAdvances } from '@/pdf/detect/advance';
+import {
+  detectFromPage,
+  fontAdvancesOf,
+  summarise,
+  type DetectPageLike,
+} from './detect-page';
 
 async function detect(bytes: Uint8Array, pageIndex = 0) {
   const task = getDocument({
     data: bytes.slice(),
     useSystemFonts: false,
+    // As the render worker opens documents (handlers/open.ts).
+    fontExtraProperties: true,
     verbosity: 0,
   });
   try {
@@ -86,5 +95,44 @@ describe('detectFromPage (render worker)', () => {
       true,
     );
     expect(neg.flatForm).toBe(false);
+  });
+});
+
+describe('fontAdvancesOf', () => {
+  it("reads each font's own widths through pdf.js", async () => {
+    const doc = await PDFDocument.create();
+    const pg = doc.addPage([300, 200]);
+    const mono = await doc.embedFont(StandardFonts.Courier);
+    const serif = await doc.embedFont(StandardFonts.TimesRoman);
+    pg.drawText('Wil', { x: 10, y: 100, size: 12, font: mono });
+    pg.drawText('Wil', { x: 10, y: 50, size: 12, font: serif });
+    const task = getDocument({
+      data: await doc.save(),
+      useSystemFonts: false,
+      fontExtraProperties: true,
+      verbosity: 0,
+    });
+    try {
+      const page = await (await task.promise).getPage(1);
+      await page.getOperatorList();
+      const text = await page.getTextContent();
+      const ids = text.items.map((i) => ('fontName' in i ? i.fontName : ''));
+      const fonts = fontAdvancesOf(page as unknown as DetectPageLike, ids);
+      const chars = Array.from('Wil');
+      expect(fontAdvances(chars, fonts[ids[0]])).toEqual([600, 600, 600]);
+      expect(fontAdvances(chars, fonts[ids[1]])).toEqual([944, 278, 278]);
+    } finally {
+      await task.destroy();
+    }
+  });
+
+  it('leaves out a font it cannot read', () => {
+    const page = {
+      commonObjs: {
+        has: () => true,
+        get: () => ({ widths: {}, defaultWidth: 0 }),
+      },
+    };
+    expect(fontAdvancesOf(page, ['f1'])).toEqual({});
   });
 });

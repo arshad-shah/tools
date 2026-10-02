@@ -94,6 +94,20 @@ export interface TextRun {
   size: number;
   font: string;
   item: number;
+  /**
+   * Advance width of each code point in 1/1000 em, from the font's own
+   * widths when pdf.js exposes them (absent: standard Helvetica widths).
+   */
+  advances?: number[];
+}
+
+/**
+ * A font's advance widths by character (1/1000 em), plus the width of any
+ * character not listed (a monospace font lists none).
+ */
+export interface FontAdvances {
+  byChar: Record<string, number>;
+  fallback?: number;
 }
 
 export interface PageGeometry {
