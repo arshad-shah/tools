@@ -15,5 +15,3 @@ export const KEY_TYPES = [
   { value: 'pem', label: 'PEM public key' },
   { value: 'jwk', label: 'JWK or JWKS' },
 ];
-
-export const MAX_SKEW_SEC = 3600;

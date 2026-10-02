@@ -109,3 +109,15 @@ describe('preview', () => {
     expect(preview(text + 'b').text.length).toBe(PREVIEW_LENGTH);
   });
 });
+
+describe('encode variants', () => {
+  it('pads, unpads and wraps at 76', () => {
+    expect(encodeText('a', { urlSafe: false, padding: false })).toBe('YQ');
+    expect(encodeText('a', { urlSafe: true, padding: true })).toBe('YQ==');
+    const wrapped = encodeText('x'.repeat(100), {
+      urlSafe: false,
+      wrap76: true,
+    });
+    expect(wrapped.split('\n').map((l) => l.length)).toEqual([76, 60]);
+  });
+});

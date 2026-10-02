@@ -7,10 +7,18 @@ import {
   IconShieldX,
 } from '@/shared/ui/icons';
 
-import { Card, CardBody, Inline, Input, Label, Stack, Text } from '@/shared/ui';
+import {
+  Card,
+  CardBody,
+  Inline,
+  Label,
+  Select,
+  Stack,
+  Text,
+} from '@/shared/ui';
 import type { SignatureStatus } from '../types';
 import type { TimeStatus } from '../lib/jwt';
-import { MAX_SKEW_SEC } from '../lib/constants';
+import { SKEW_OPTIONS } from '../settings';
 import { SIGNATURE_TEXT, timeText } from '../lib/status';
 import { StatusRow } from './StatusRow';
 
@@ -19,6 +27,8 @@ interface TokenStatusProps {
   skewSec: number;
   setSkewSec: (sec: number) => void;
   sigStatus: SignatureStatus;
+  /** Now, in seconds, for the live countdown (ticks each second). */
+  nowSec: number;
 }
 
 export const TokenStatus: React.FC<TokenStatusProps> = ({
@@ -26,6 +36,7 @@ export const TokenStatus: React.FC<TokenStatusProps> = ({
   skewSec,
   setSkewSec,
   sigStatus,
+  nowSec,
 }) => (
   <Card>
     <CardBody>
@@ -39,26 +50,21 @@ export const TokenStatus: React.FC<TokenStatusProps> = ({
         />
         <StatusRow
           label="Time claims"
-          {...timeText(timeStatus)}
+          {...timeText(timeStatus, nowSec)}
+          live
           icon={<IconClock size="md" />}
         />
         <Inline gap="2" align="center" wrap className="pl-8">
-          <Label htmlFor="jwt-clock-skew">Clock skew (seconds)</Label>
-          <div className="w-24">
-            <Input
+          <Label htmlFor="jwt-clock-skew">Clock skew</Label>
+          <div className="w-32">
+            <Select
               id="jwt-clock-skew"
-              type="number"
-              min={0}
-              max={MAX_SKEW_SEC}
               value={String(skewSec)}
-              onChange={(v) => {
-                const n = Math.floor(Number(v));
-                setSkewSec(
-                  Number.isFinite(n)
-                    ? Math.min(MAX_SKEW_SEC, Math.max(0, n))
-                    : 0,
-                );
-              }}
+              onValueChange={(v) => setSkewSec(Number(v))}
+              items={SKEW_OPTIONS.map((n) => ({
+                value: String(n),
+                label: n === 0 ? 'None' : `${n} s`,
+              }))}
             />
           </div>
           <Text size="xs" tone="subtle">

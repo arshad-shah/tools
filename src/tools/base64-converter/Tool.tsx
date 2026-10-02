@@ -1,52 +1,38 @@
 import React, { useMemo, useState } from 'react';
-import {
-  IconArrowRightLeft,
-  IconCheck,
-  IconCopy,
-  IconDownload,
-  IconFileUp,
-  IconX,
-} from '@/shared/ui/icons';
+import { IconArrowRightLeft, IconX } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
   Button,
   Card,
   CardBody,
-  CardHeader,
-  Center,
-  FilePicker,
-  IconButton,
   Inline,
   Label,
+  PrivacyNote,
+  SegmentedControl,
   Stack,
   Switch,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   Text,
-  Textarea,
+  TextInputPanel,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
-import { utf8Encode } from '@/shared/lib/encoding';
+import { readClipboardText } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
+import { useHandoffFiles } from '@/shared/lib/handoff';
+import { notify } from '@/shared/lib/notify';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import { DecodedView, type DecodedFile } from './components/DecodedView';
 import {
-  PREVIEW_LENGTH,
   decodeInput,
   encodeBytes,
   encodeText,
   guessFileType,
-  preview,
 } from './lib/convert';
-import { useHandoffFiles } from '@/shared/lib/handoff';
+import { describeBytes, type BytesInsight } from './lib/insight';
+import { base64Settings, type Base64Settings } from './settings';
 
-const previewNote = (total: number) =>
-  `Showing the first ${formatBytes(PREVIEW_LENGTH, 0)} of ${total.toLocaleString()} characters. Copy and Download use the full result.`;
-
-type Mode = 'encode' | 'decode';
+type Mode = Base64Settings['mode'];
 
 interface LoadedSource {
   name: string;
@@ -54,57 +40,64 @@ interface LoadedSource {
   bytes: Uint8Array;
 }
 
-interface DecodedFile {
-  bytes: Uint8Array;
-  mime: string;
-  ext: string;
-}
-
 interface Output {
   text: string;
   dataUri?: string;
-  /** Decoded bytes, offered as a download. */
-  file?: DecodedFile;
-  /** True when the decoded bytes are not text. */
-  binary?: boolean;
+  decoded?: { file: DecodedFile; text: string | null; insight: BytesInsight };
   error?: string;
 }
 
+const OptionSwitch: React.FC<{
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange(v: boolean): void;
+}> = ({ id, label, checked, onChange }) => (
+  <Inline gap="2" align="center">
+    <Switch
+      id={id}
+      checked={checked}
+      onCheckedChange={onChange}
+      aria-label={label}
+    />
+    <Label htmlFor={id}>{label}</Label>
+  </Inline>
+);
+
 const Base64Converter: React.FC = () => {
+  const [settings, update] = base64Settings.useSettings();
+  const { mode, urlSafe, padding, wrap76 } = settings;
   const [inputText, setInputText] = useState('');
   const [file, setFile] = useState<LoadedSource | null>(null);
   const [fileError, setFileError] = useState('');
-  const [mode, setMode] = useState<Mode>('encode');
-  const [urlSafe, setUrlSafe] = useState(false);
-  const { copiedKey, copy } = useClipboard();
 
+  const opts = { urlSafe, padding, wrap76 };
   const output = useMemo((): Output => {
     try {
       if (mode === 'encode') {
         if (file) {
-          const { base64, dataUri } = encodeBytes(file.bytes, file.mime, {
-            urlSafe,
-          });
+          const { base64, dataUri } = encodeBytes(file.bytes, file.mime, opts);
           return { text: base64, dataUri };
         }
-        return { text: inputText ? encodeText(inputText, { urlSafe }) : '' };
+        return { text: inputText ? encodeText(inputText, opts) : '' };
       }
       if (!inputText.trim()) return { text: '' };
-      const decoded = decodeInput(inputText);
-      const type: DecodedFile = {
-        bytes: decoded.bytes,
-        ...guessFileType(decoded.bytes, decoded.mime),
+      const d = decodeInput(inputText);
+      const file2: DecodedFile = {
+        bytes: d.bytes,
+        ...guessFileType(d.bytes, d.mime),
       };
-      return decoded.text === null
-        ? { text: '', file: type, binary: true }
-        : { text: decoded.text, file: type };
+      return {
+        text: d.text ?? '',
+        decoded: { file: file2, text: d.text, insight: describeBytes(d.bytes) },
+      };
     } catch (e) {
       return { text: '', error: toToolError(e).message };
     }
-  }, [mode, file, inputText, urlSafe]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, file, inputText, urlSafe, padding, wrap76]);
 
-  const loadFile = async (files: File[]) => {
-    const f = files[0];
+  const loadFile = async (f: File) => {
     setFileError('');
     try {
       const bytes = await readBytes(f);
@@ -113,234 +106,189 @@ const Base64Converter: React.FC = () => {
         bytes,
         mime: f.type || guessFileType(bytes).mime,
       });
+      update({ mode: 'encode' });
     } catch (e) {
       setFileError(toToolError(e, `Could not read ${f.name}`).message);
     }
   };
   // A file dropped on a hub is encoded like a picked one (spec §5.3).
-  useHandoffFiles((files) => void loadFile(files));
+  useHandoffFiles((files) => void loadFile(files[0]));
 
+  const setMode = (m: Mode) => {
+    update({ mode: m });
+    setFile(null);
+  };
   const swap = () => {
     if (!output.text) return;
     setInputText(output.text);
     setFile(null);
-    setMode((m) => (m === 'encode' ? 'decode' : 'encode'));
+    update({ mode: mode === 'encode' ? 'decode' : 'encode' });
   };
-
-  const download = () => {
-    if (mode === 'encode') {
-      saveBlob(
-        utf8Encode(output.text),
-        `${file ? file.name : 'encoded'}.base64.txt`,
-        'text/plain',
-      );
-    } else if (output.file) {
-      saveBlob(
-        output.file.bytes,
-        `decoded.${output.file.ext}`,
-        output.file.mime,
-      );
+  const fromClipboard = async (m: Mode) => {
+    try {
+      const text = await readClipboardText();
+      setFile(null);
+      setInputText(text);
+      update({ mode: m });
+    } catch (e) {
+      notify.error(toToolError(e, 'Could not read the clipboard').message);
     }
   };
 
-  const copyButton = (text: string, key: string, label: string) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      aria-label={`Copy ${label}`}
-      leftIcon={
-        copiedKey === key ? <IconCheck size="sm" /> : <IconCopy size="sm" />
-      }
-      onClick={() => void copy(text, key)}
-    >
-      {copiedKey === key ? 'Copied' : 'Copy'}
-    </Button>
-  );
-
-  const hasOutput = !!output.text || !!output.binary;
-  // Huge results are not rendered whole: a textarea with tens of MB of text
-  // freezes the page. Copy and Download still use the full value.
-  const resultPreview = preview(output.text);
-  const dataUriPreview = preview(output.dataUri ?? '');
+  useToolCommands('base64-converter', [
+    {
+      id: 'encode-clipboard',
+      label: 'Encode clipboard',
+      run: () => void fromClipboard('encode'),
+    },
+    {
+      id: 'decode-clipboard',
+      label: 'Decode clipboard',
+      run: () => void fromClipboard('decode'),
+    },
+    {
+      id: 'swap',
+      label: 'Swap input and output',
+      run: swap,
+      enabled: !!output.text,
+    },
+  ]);
 
   return (
-    <Card>
-      <CardHeader>
-        <Tabs
-          value={mode}
-          onValueChange={(v) => {
-            setMode(v as Mode);
-            setFile(null);
-          }}
-          variant="soft"
-          fullWidth
-        >
-          <TabsList aria-label="Encode or decode">
-            <TabsTrigger value="encode">Encode</TabsTrigger>
-            <TabsTrigger value="decode">Decode</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="5">
-          {mode === 'encode' ? (
-            <Inline justify="between" align="center" wrap>
-              <Inline gap="2" align="center">
-                <Switch
-                  id="b64-url-safe"
-                  checked={urlSafe}
-                  onCheckedChange={setUrlSafe}
-                  aria-label="URL-safe"
-                />
-                <Label htmlFor="b64-url-safe">URL-safe (no padding)</Label>
+    <Stack gap="4">
+      <Card>
+        <CardBody>
+          <Stack gap="4">
+            <Inline justify="between" align="center" wrap gap="3">
+              <SegmentedControl<Mode>
+                label="Mode"
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { value: 'encode', label: 'Encode' },
+                  { value: 'decode', label: 'Decode' },
+                ]}
+              />
+              {mode === 'encode' && (
+                <Inline gap="4" align="center" wrap>
+                  <OptionSwitch
+                    id="b64-url-safe"
+                    label="URL-safe"
+                    checked={urlSafe}
+                    onChange={(v) => update({ urlSafe: v, padding: !v })}
+                  />
+                  <OptionSwitch
+                    id="b64-padding"
+                    label="Padding"
+                    checked={padding}
+                    onChange={(v) => update({ padding: v })}
+                  />
+                  <OptionSwitch
+                    id="b64-wrap"
+                    label="Wrap at 76"
+                    checked={wrap76}
+                    onChange={(v) => update({ wrap76: v })}
+                  />
+                </Inline>
+              )}
+            </Inline>
+
+            {fileError && (
+              <Alert status="danger">
+                <AlertDescription>{fileError}</AlertDescription>
+              </Alert>
+            )}
+
+            {file ? (
+              <Inline justify="between" align="center">
+                <Text size="sm">
+                  {file.name} ({formatBytes(file.bytes.length)})
+                </Text>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<IconX size="sm" />}
+                  onClick={() => setFile(null)}
+                >
+                  Remove file
+                </Button>
               </Inline>
-              <FilePicker onFiles={(f) => void loadFile(f)}>
-                {(open) => (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    leftIcon={<IconFileUp size="sm" />}
-                    onClick={open}
-                  >
-                    Encode a file
-                  </Button>
-                )}
-              </FilePicker>
-            </Inline>
-          ) : (
-            <Text size="sm" tone="subtle">
-              Accepts standard or URL-safe Base64 and data URIs.
-            </Text>
-          )}
-
-          {fileError && (
-            <Alert status="danger">
-              <AlertDescription>{fileError}</AlertDescription>
-            </Alert>
-          )}
-
-          {file ? (
-            <Inline justify="between" align="center">
-              <Text size="sm">
-                {file.name} ({formatBytes(file.bytes.length)})
-              </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<IconX size="sm" />}
-                onClick={() => setFile(null)}
-              >
-                Remove file
-              </Button>
-            </Inline>
-          ) : (
-            <Stack gap="2">
-              <Label htmlFor="b64-input">
-                {mode === 'encode' ? 'Text to encode' : 'Base64 to decode'}
-              </Label>
-              <Textarea
-                id="b64-input"
+            ) : (
+              <TextInputPanel
+                label={
+                  mode === 'encode' ? 'Text to encode' : 'Base64 to decode'
+                }
                 value={inputText}
                 onChange={setInputText}
+                language="plain"
+                wrap
+                acceptBinary
                 placeholder={
                   mode === 'encode'
-                    ? 'Enter your text…'
-                    : 'Enter Base64 text or a data URI'
+                    ? 'Type text, or open or drop any file'
+                    : 'Paste Base64 (standard or URL-safe) or a data URI'
                 }
-                rows={6}
-                clearable
+                onFile={(f) => {
+                  if (mode !== 'encode') return false;
+                  void loadFile(f);
+                  return true;
+                }}
               />
-            </Stack>
-          )}
+            )}
 
-          <Center>
-            <IconButton
-              variant="primary"
-              label="Swap input and output"
-              icon={<IconArrowRightLeft size="md" />}
-              onClick={swap}
-              disabled={!output.text}
-            />
-          </Center>
+            <Inline justify="center">
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<IconArrowRightLeft size="sm" />}
+                onClick={swap}
+                disabled={!output.text}
+              >
+                Swap
+              </Button>
+            </Inline>
 
-          {output.error ? (
-            <Alert status="danger">
-              <AlertDescription>{output.error}</AlertDescription>
-            </Alert>
-          ) : (
-            <Stack gap="4">
-              <Stack gap="2">
-                <Inline justify="between" align="center">
-                  <Text size="sm" weight="semibold">
-                    {mode === 'encode' ? 'Base64 result' : 'Decoded result'}
-                  </Text>
-                  <Inline gap="1" align="center">
-                    {hasOutput && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        leftIcon={<IconDownload size="sm" />}
-                        onClick={download}
-                      >
-                        {mode === 'encode' ? 'Download .txt' : 'Download file'}
-                      </Button>
-                    )}
-                    {output.text && copyButton(output.text, 'result', 'result')}
-                  </Inline>
-                </Inline>
-                {output.binary && output.file ? (
-                  <Alert status="info">
-                    <AlertDescription>
-                      Binary data ({formatBytes(output.file.bytes.length)},{' '}
-                      {output.file.mime}). Download it as a file.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Textarea
-                    aria-label="Result"
-                    value={resultPreview.text}
+            {output.error ? (
+              <Alert status="danger">
+                <AlertDescription>{output.error}</AlertDescription>
+              </Alert>
+            ) : output.decoded ? (
+              <DecodedView
+                file={output.decoded.file}
+                text={output.decoded.text}
+                insight={output.decoded.insight}
+              />
+            ) : (
+              <Stack gap="4">
+                <TextInputPanel
+                  label="Result"
+                  value={output.text}
+                  onChange={() => {}}
+                  language="plain"
+                  readOnly
+                  wrap
+                  downloadName={`${file ? file.name : 'encoded'}.base64.txt`}
+                  maxHeight={420}
+                />
+                {output.dataUri && (
+                  <TextInputPanel
+                    label="Data URI"
+                    value={output.dataUri}
+                    onChange={() => {}}
+                    language="plain"
                     readOnly
-                    rows={6}
-                    placeholder={
-                      mode === 'encode'
-                        ? 'Base64 result will appear here…'
-                        : 'Decoded text will appear here…'
-                    }
+                    wrap
+                    downloadName={`${file?.name ?? 'file'}.datauri.txt`}
+                    maxHeight={240}
                   />
-                )}
-                {resultPreview.truncated && !output.binary && (
-                  <Text size="xs" tone="subtle">
-                    {previewNote(output.text.length)}
-                  </Text>
                 )}
               </Stack>
-
-              {output.dataUri && (
-                <Stack gap="2">
-                  <Inline justify="between" align="center">
-                    <Text size="sm" weight="semibold">
-                      Data URI
-                    </Text>
-                    {copyButton(output.dataUri, 'data-uri', 'data URI')}
-                  </Inline>
-                  <Textarea
-                    aria-label="Data URI"
-                    value={dataUriPreview.text}
-                    readOnly
-                    rows={4}
-                  />
-                  {dataUriPreview.truncated && (
-                    <Text size="xs" tone="subtle">
-                      {previewNote(output.dataUri.length)}
-                    </Text>
-                  )}
-                </Stack>
-              )}
-            </Stack>
-          )}
-        </Stack>
-      </CardBody>
-    </Card>
+            )}
+          </Stack>
+        </CardBody>
+      </Card>
+      <PrivacyNote variant="local" />
+    </Stack>
   );
 };
 

@@ -4,7 +4,8 @@ import { defineTool } from '@/app/tool';
 export default defineTool({
   id: 'password-generator',
   name: 'Password Generator',
-  description: 'Generate secure passwords',
+  description:
+    'Generate passwords, passphrases and PINs, and check the strength of a password',
   icon: IconKey,
   category: 'security',
   slug: 'password',

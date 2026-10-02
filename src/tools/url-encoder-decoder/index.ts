@@ -3,13 +3,24 @@ import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'url-encoder-decoder',
-  name: 'URL Encoder/Decoder',
-  description: 'Encode and decode URL parameters',
+  name: 'Text Encoder / Decoder',
+  description:
+    'Encode and decode URL, HTML entities, Unicode escapes, Punycode, hex, Base32 and more',
   icon: IconLink,
   category: 'encoding',
-  slug: 'url',
+  slug: 'text',
   kind: 'tool',
-  keywords: ['url', 'encode', 'decode', 'percent'],
+  keywords: [
+    'url',
+    'encode',
+    'decode',
+    'percent',
+    'url encoder',
+    'html entities',
+    'unicode escape',
+    'punycode',
+    'quoted printable',
+  ],
   version: '1.0.0',
   enabled: true,
   load: () => import('./Tool'),

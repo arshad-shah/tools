@@ -9,23 +9,36 @@ import { detectKind, type FileKind } from '@/shared/lib/files';
 
 export interface EncodeOptions {
   urlSafe: boolean;
+  /** `=` padding; defaults to on for standard and off for URL-safe. */
+  padding?: boolean;
+  /** Break lines at 76 characters (MIME, RFC 2045). */
+  wrap76?: boolean;
 }
 
-export function encodeText(text: string, { urlSafe }: EncodeOptions): string {
-  return bytesToBase64(utf8Encode(text), { urlSafe });
+const wrap = (s: string, on?: boolean) =>
+  on ? (s.match(/.{1,76}/g) ?? []).join('\n') : s;
+
+export function encodeText(
+  text: string,
+  { urlSafe, padding = !urlSafe, wrap76 }: EncodeOptions,
+): string {
+  return wrap(bytesToBase64(utf8Encode(text), { urlSafe, padding }), wrap76);
 }
 
 export function encodeBytes(
   bytes: Uint8Array,
   mime: string,
-  { urlSafe }: EncodeOptions,
+  { urlSafe, padding = !urlSafe, wrap76 }: EncodeOptions,
 ): { base64: string; dataUri: string } {
-  // Encode once. A data URI always uses the standard alphabet (RFC 2397).
+  // A data URI always uses the standard alphabet (RFC 2397), unwrapped.
   const standard = bytesToBase64(bytes);
   return {
-    base64: urlSafe
-      ? standard.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-      : standard,
+    base64: wrap(
+      urlSafe || !padding
+        ? bytesToBase64(bytes, { urlSafe, padding })
+        : standard,
+      wrap76,
+    ),
     dataUri: `data:${mime};base64,${standard}`,
   };
 }

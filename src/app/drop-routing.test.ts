@@ -36,6 +36,7 @@ describe('routeDrop', () => {
     expect(d.options.map((o) => o.path).sort()).toEqual([
       '/pdf/protect',
       '/pdf/unlock',
+      '/security/encrypt',
       '/security/hash',
     ]);
   });

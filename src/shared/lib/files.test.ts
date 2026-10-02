@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   acceptAttribute,
   describeKinds,
+  detectContentKind,
   detectKind,
   isOverSoftLimit,
   loadFile,
@@ -142,5 +143,41 @@ describe('readText / loadTextFile', () => {
     await expect(
       loadTextFile(file('12345', 'big.txt'), { maxBytes: 4 }),
     ).rejects.toMatchObject({ code: 'TOO_LARGE' });
+  });
+});
+
+describe('detectContentKind', () => {
+  it('keeps the detectKind results', () => {
+    expect(detectContentKind(ascii('%PDF-1.7'))).toBe('pdf');
+    expect(detectContentKind(bytes(0xff, 0xd8, 0xff, 0xe0))).toBe('jpeg');
+    expect(detectContentKind(ascii('GIF89a'))).toBe('gif');
+  });
+  it('detects archives', () => {
+    expect(detectContentKind(bytes(0x50, 0x4b, 0x03, 0x04, 0x14))).toBe('zip');
+    expect(detectContentKind(bytes(0x50, 0x4b, 0x05, 0x06, 0))).toBe('zip');
+    expect(detectContentKind(bytes(0x1f, 0x8b, 0x08, 0))).toBe('gzip');
+  });
+  it('detects media', () => {
+    expect(detectContentKind(ascii('\0\0\0\x18ftypmp42'))).toBe('mp4');
+    expect(detectContentKind(bytes(0x1a, 0x45, 0xdf, 0xa3, 0x9f))).toBe('webm');
+    expect(detectContentKind(ascii('ID3\x04\0'))).toBe('mp3');
+    expect(detectContentKind(bytes(0xff, 0xfb, 0x90, 0x64))).toBe('mp3');
+  });
+  it('detects JSON only when it parses', () => {
+    expect(detectContentKind(ascii('  {"a":1}\n'))).toBe('json');
+    expect(detectContentKind(ascii('[1,2]'))).toBe('json');
+    expect(detectContentKind(ascii('{"a":'))).toBeNull();
+    expect(detectContentKind(ascii('{"doc":"%PDF-1.4"}'))).toBe('json');
+  });
+  it('detects SVG after a prolog and comments', () => {
+    expect(
+      detectContentKind(
+        ascii('<?xml version="1.0"?>\n<!-- x --><svg xmlns="a"></svg>'),
+      ),
+    ).toBe('svg');
+    expect(detectContentKind(ascii('<html><svg></svg></html>'))).toBeNull();
+  });
+  it('returns null for plain text', () => {
+    expect(detectContentKind(ascii('hello'))).toBeNull();
   });
 });

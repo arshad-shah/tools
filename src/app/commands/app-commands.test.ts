@@ -43,7 +43,7 @@ describe('app command sources', () => {
   });
   it('finds tools by keyword', () => {
     setup();
-    expect(labels('checksum')).toContain('Hash Generator');
+    expect(labels('checksum')).toContain('Hash & Checksum');
   });
   it('lists favourites first on an empty query', () => {
     setup(['pomodoro', 'removed-tool']);

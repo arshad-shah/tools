@@ -55,6 +55,63 @@ export function detectKind(b: Uint8Array): FileKind | null {
   return null;
 }
 
+/** `detectKind` plus the non-document kinds Base64 decoding sniffs. */
+export type ContentKind =
+  | FileKind
+  | 'json'
+  | 'zip'
+  | 'gzip'
+  | 'svg'
+  | 'mp3'
+  | 'mp4'
+  | 'webm';
+
+const latin1 = (b: Uint8Array, end: number) =>
+  String.fromCharCode(...b.subarray(0, Math.min(b.length, end)));
+
+function looksLikeJson(b: Uint8Array): boolean {
+  let i = 0;
+  if (startsWith(b, [0xef, 0xbb, 0xbf])) i = 3;
+  while (i < b.length && (b[i] === 0x20 || (b[i] >= 0x09 && b[i] <= 0x0d))) i++;
+  if (b[i] !== 0x7b && b[i] !== 0x5b) return false;
+  try {
+    JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(b));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const SVG_RE =
+  /^(?:\s|<\?xml[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)*<svg[\s>]/i;
+
+/**
+ * Like `detectKind`, plus JSON, ZIP, gzip, SVG, MP3, MP4 and WebM. A PDF
+ * header anywhere but offset 0 only wins when nothing else matches, so a
+ * JSON document that mentions "%PDF-" stays JSON.
+ */
+export function detectContentKind(b: Uint8Array): ContentKind | null {
+  const kind = detectKind(b);
+  if (kind && kind !== 'pdf') return kind;
+  if (startsWith(b, [0x25, 0x50, 0x44, 0x46, 0x2d])) return 'pdf';
+  if (
+    startsWith(b, [0x50, 0x4b, 0x03, 0x04]) ||
+    startsWith(b, [0x50, 0x4b, 0x05, 0x06])
+  )
+    return 'zip';
+  if (startsWith(b, [0x1f, 0x8b])) return 'gzip';
+  if (startsWith(b, [0x66, 0x74, 0x79, 0x70], 4)) return 'mp4';
+  if (startsWith(b, [0x1a, 0x45, 0xdf, 0xa3])) return 'webm';
+  if (
+    startsWith(b, [0x49, 0x44, 0x33]) ||
+    (b.length >= 2 && b[0] === 0xff && (b[1] & 0xe6) === 0xe2)
+  )
+    return 'mp3';
+  if (looksLikeJson(b)) return 'json';
+  if (SVG_RE.test(latin1(b, 4096))) return 'svg';
+  return kind;
+}
+
 export async function readBytes(file: Blob): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer());
 }

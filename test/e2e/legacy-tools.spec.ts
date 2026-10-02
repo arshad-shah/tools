@@ -12,52 +12,6 @@ test('color-tester exports the palette as JSON', async ({ page }) => {
   expect(Array.isArray(body)).toBe(true);
 });
 
-test('url-encoder-decoder copies output', async ({ page, context }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto(pathOf('url-encoder-decoder'));
-  await page.getByRole('textbox').first().fill('a b&c');
-  await page.getByRole('button', { name: 'Copy' }).click();
-  await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-    'a%20b%26c',
-  );
-});
-
-test('jwt-decode shows "Copied" only on the button pressed', async ({
-  page,
-  context,
-}) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.goto(pathOf('jwt-decode'));
-  await page.getByRole('tab', { name: 'Signature' }).click();
-  await page.getByRole('button', { name: 'Signature value' }).click();
-  const copy = page.getByRole('button', { name: 'Copy', exact: true });
-  await expect(copy).toHaveCount(2); // token + signature
-  await copy.last().click();
-  await expect(page.getByRole('button', { name: 'Copied' })).toHaveCount(1);
-  await expect(copy).toHaveCount(1);
-});
-
-test('jwt-decode accordion triggers have accessible names', async ({
-  page,
-}) => {
-  await page.goto(pathOf('jwt-decode'));
-  for (const name of [
-    'Identity claims',
-    'Access & permissions',
-    'Timestamps',
-    'Issuer information',
-    'Custom claims',
-    'Raw JSON',
-  ]) {
-    await expect(page.getByRole('button', { name })).toBeVisible();
-  }
-  // A <button> may only hold phrasing content (no <div>/<p>).
-  await expect(page.locator('main button :is(div, p)')).toHaveCount(0);
-  await page.getByRole('tab', { name: 'Signature' }).click();
-  await expect(page.locator('main button :is(div, p)')).toHaveCount(0);
-});
-
 test('image-optimizer converts and downloads', async ({ page }) => {
   await page.goto(pathOf('image-optimizer'));
   await page

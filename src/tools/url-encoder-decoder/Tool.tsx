@@ -1,192 +1,249 @@
 import React, { useMemo, useState } from 'react';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
-
+import { IconArrowRightLeft, IconRefreshCw } from '@/shared/ui/icons';
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   Alert,
   AlertDescription,
+  Badge,
   Button,
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
-  Code,
-  Grid,
-  Heading,
   Inline,
   Label,
-  List,
-  ListItem,
+  PrivacyNote,
+  SegmentedControl,
+  Select,
+  SendToMenu,
   Stack,
-  Tabs,
-  TabsList,
-  TabsTrigger,
+  Switch,
   Text,
-  Textarea,
+  TextInputPanel,
+  type CodeMarker,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { codec, type Mode } from './lib/codec';
+import { offsetToLineCol } from '@/shared/lib/data-formats/json-locate';
+import { toToolError } from '@/shared/lib/errors';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import { asUrl } from './lib/as-url';
+import {
+  CODECS,
+  CodecError,
+  decodeUntilStable,
+  getCodec,
+  perLine,
+  type CodecId,
+} from './lib/codecs';
+import { textEncoderSettings, type TextEncoderSettings } from './settings';
 
-const URLEncoderDecoder: React.FC = () => {
-  const [inputText, setInputText] = useState('');
-  const [mode, setMode] = useState<Mode>('encode');
-  const { output: outputText, error } = useMemo(
-    () => codec(inputText, mode),
-    [inputText, mode],
-  );
-  const { copied, copy } = useClipboard();
+type Direction = TextEncoderSettings['direction'];
 
-  const handleCopy = () => {
-    if (outputText) void copy(outputText);
+interface Result {
+  output: string;
+  error?: string;
+  markers?: CodeMarker[];
+}
+
+const TextEncoderTool: React.FC = () => {
+  const [settings, update] = textEncoderSettings.useSettings();
+  const { direction, perLine: lines } = settings;
+  const codec = getCodec(settings.codec);
+  const [input, setInput] = useState('');
+  // "Decode until stable": the round count for the input it was run on.
+  const [stable, setStable] = useState<{
+    input: string;
+    output: string;
+    rounds: number;
+  } | null>(null);
+
+  const result = useMemo((): Result => {
+    if (!input) return { output: '' };
+    const fn = direction === 'encode' ? codec.encode : codec.decode;
+    try {
+      return { output: (lines ? perLine(fn) : fn)(input) };
+    } catch (e) {
+      const err = toToolError(e);
+      const at =
+        e instanceof CodecError
+          ? e.position
+          : err.cause instanceof CodecError
+            ? err.cause.position
+            : null;
+      if (at === null || lines) return { output: '', error: err.message };
+      const { line, column } = offsetToLineCol(input, at);
+      return {
+        output: '',
+        error: err.message,
+        markers: [{ line, column, message: err.message, severity: 'error' }],
+      };
+    }
+  }, [input, direction, codec, lines]);
+
+  const shownStable = stable && stable.input === input ? stable : null;
+  const output = shownStable ? shownStable.output : result.output;
+  const url = asUrl(output);
+
+  const swap = () => {
+    setInput(output);
+    setStable(null);
+    update({ direction: direction === 'encode' ? 'decode' : 'encode' });
+  };
+  const runStable = () => {
+    try {
+      const r = decodeUntilStable(codec, input);
+      setStable({ input, ...r });
+    } catch {
+      setStable(null);
+    }
   };
 
+  useToolCommands('url-encoder-decoder', [
+    {
+      id: 'swap',
+      label: 'Swap input and output',
+      run: swap,
+      enabled: !!output,
+    },
+    {
+      id: 'stable',
+      label: 'Decode until stable',
+      run: runStable,
+      enabled: !!input,
+    },
+  ]);
+
   return (
-    <Stack gap="6">
+    <Stack gap="4">
       <Card>
-        <CardHeader>
-          <Tabs
-            value={mode}
-            onValueChange={(v) => setMode(v as Mode)}
-            variant="soft"
-            fullWidth
-          >
-            <TabsList aria-label="Encode or decode">
-              <TabsTrigger value="encode">Encode</TabsTrigger>
-              <TabsTrigger value="decode">Decode</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardHeader>
         <CardBody>
-          <Stack gap="4">
-            <Stack gap="2">
-              <Label htmlFor="url-input">
-                {mode === 'encode' ? 'Text to encode' : 'Text to decode'}
-              </Label>
-              <Textarea
-                id="url-input"
-                placeholder={
-                  mode === 'encode'
-                    ? 'Enter text to encode'
-                    : 'Enter text to decode'
-                }
-                value={inputText}
-                onChange={setInputText}
-                rows={5}
-                clearable
-              />
-            </Stack>
-
-            <Inline gap="2" justify="end" wrap>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setInputText('')}
-              >
-                Clear
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={!outputText}
-                onClick={() => setInputText(outputText)}
-              >
-                Use output as input
-              </Button>
-            </Inline>
-
-            {error ? (
-              <Alert status="danger">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : (
-              <Stack gap="2">
-                <Inline justify="between" align="center">
-                  <Text size="sm" weight="semibold">
-                    {mode === 'encode' ? 'Encoded result' : 'Decoded result'}
-                  </Text>
-                  {outputText && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={
-                        copied ? (
-                          <IconCheck size="sm" />
-                        ) : (
-                          <IconCopy size="sm" />
-                        )
-                      }
-                      onClick={handleCopy}
-                    >
-                      {copied ? 'Copied' : 'Copy'}
-                    </Button>
-                  )}
-                </Inline>
-                <Textarea
-                  aria-label="Result"
-                  value={outputText}
-                  rows={5}
-                  readOnly
+          <Inline gap="4" align="end" wrap>
+            <Stack gap="1">
+              <Label htmlFor="text-codec">Codec</Label>
+              <div className="w-64">
+                <Select
+                  id="text-codec"
+                  value={codec.id}
+                  onValueChange={(v) => {
+                    setStable(null);
+                    update({ codec: v as CodecId });
+                  }}
+                  items={CODECS.map((c) => ({ value: c.id, label: c.label }))}
                 />
-              </Stack>
-            )}
-          </Stack>
+              </div>
+            </Stack>
+            <SegmentedControl<Direction>
+              label="Direction"
+              value={direction}
+              onChange={(d) => {
+                setStable(null);
+                update({ direction: d });
+              }}
+              options={[
+                { value: 'encode', label: 'Encode' },
+                { value: 'decode', label: 'Decode' },
+              ]}
+            />
+            <Inline gap="2" align="center">
+              <Switch
+                id="text-per-line"
+                checked={lines}
+                onCheckedChange={(v) => update({ perLine: v })}
+                aria-label="Each line separately"
+              />
+              <Label htmlFor="text-per-line">Each line separately</Label>
+            </Inline>
+          </Inline>
         </CardBody>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle as="h2">About URL Encoding</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <Stack gap="4">
-            <Text tone="muted">
-              URL encoding converts characters into a format that can be
-              transmitted over the Internet. URLs can only be sent using the
-              ASCII character set, so unsafe characters are replaced with a{' '}
-              <Code>%</Code> followed by two hexadecimal digits.
-            </Text>
-            <Grid max={2} gap="4">
-              <Stack gap="2">
-                <Heading level={3} size="md">
-                  Common encodings
-                </Heading>
-                <List>
-                  <ListItem>
-                    Space <Code>%20</Code>
-                  </ListItem>
-                  <ListItem>
-                    ! <Code>%21</Code>
-                  </ListItem>
-                  <ListItem>
-                    # <Code>%23</Code>
-                  </ListItem>
-                  <ListItem>
-                    $ <Code>%24</Code>
-                  </ListItem>
-                  <ListItem>
-                    &amp; <Code>%26</Code>
-                  </ListItem>
-                  <ListItem>
-                    + <Code>%2B</Code>
-                  </ListItem>
-                </List>
-              </Stack>
-              <Stack gap="2">
-                <Heading level={3} size="md">
-                  When to use it
-                </Heading>
-                <List>
-                  <ListItem>Building URLs with query parameters</ListItem>
-                  <ListItem>Sending data in HTTP requests</ListItem>
-                  <ListItem>Handling special characters in URLs</ListItem>
-                  <ListItem>Creating links with non-ASCII characters</ListItem>
-                </List>
-              </Stack>
-            </Grid>
-          </Stack>
-        </CardBody>
-      </Card>
+      <TextInputPanel
+        label={direction === 'encode' ? 'Text to encode' : 'Text to decode'}
+        value={input}
+        onChange={(v) => {
+          setInput(v);
+          setStable(null);
+        }}
+        language="plain"
+        wrap
+        markers={result.markers}
+        minHeight={140}
+      />
+
+      <Inline gap="2" align="center" wrap justify="center">
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<IconArrowRightLeft size="sm" />}
+          onClick={swap}
+          disabled={!output}
+        >
+          Swap
+        </Button>
+        {direction === 'decode' && (
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefreshCw size="sm" />}
+            onClick={runStable}
+            disabled={!input || !!result.error}
+          >
+            Decode until stable
+          </Button>
+        )}
+        {shownStable && (
+          <Badge variant="soft" tone="accent" size="sm">
+            {`Decoded in ${shownStable.rounds} round${shownStable.rounds === 1 ? '' : 's'}`}
+          </Badge>
+        )}
+      </Inline>
+
+      {result.error && (
+        <Alert status="danger">
+          <AlertDescription>{result.error}</AlertDescription>
+        </Alert>
+      )}
+
+      <TextInputPanel
+        label="Output"
+        value={output}
+        onChange={() => {}}
+        language="plain"
+        readOnly
+        wrap
+        downloadName={direction === 'encode' ? 'encoded.txt' : 'decoded.txt'}
+        minHeight={140}
+      />
+      {url && (
+        <Inline gap="2" align="center">
+          <Text size="sm" tone="subtle">
+            The output is a URL.
+          </Text>
+          <SendToMenu
+            payload={() => ({
+              kind: 'text',
+              mime: 'text/uri-list',
+              text: url,
+              sourceTool: 'url-encoder-decoder',
+            })}
+            sourceTool="url-encoder-decoder"
+            label="Open URL in"
+            size="sm"
+          />
+        </Inline>
+      )}
+
+      <Accordion type="single">
+        <AccordionItem value="about">
+          <AccordionTrigger>How this codec works</AccordionTrigger>
+          <AccordionContent>
+            <Text size="sm">{codec.about}</Text>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      <PrivacyNote variant="local" />
     </Stack>
   );
 };
 
-export default URLEncoderDecoder;
+export default TextEncoderTool;

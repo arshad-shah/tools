@@ -46,8 +46,28 @@ export const SIGNATURE_TEXT: Record<
   },
 };
 
+/** A live, second-precise duration: "4 min 12 s", "2 h 5 min", "3 d 1 h". */
+export function formatDuration(totalSec: number): string {
+  const s = Math.max(0, Math.round(totalSec));
+  const d = Math.floor(s / 86_400);
+  const h = Math.floor((s % 86_400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (d) return h ? `${d} d ${h} h` : `${d} d`;
+  if (h) return m ? `${h} h ${m} min` : `${h} h`;
+  if (m) return `${m} min ${sec} s`;
+  return `${sec} s`;
+}
+
+/** "expires in 4 min 12 s" or "expired 3 s ago" against `nowSec`. */
+export const relative = (at: number, nowSec: number, verb: string) =>
+  at >= nowSec
+    ? `${verb} in ${formatDuration(at - nowSec)}`
+    : `${verb} ${formatDuration(nowSec - at)} ago`;
+
 export const timeText = (
   status: TimeStatus,
+  nowSec?: number,
 ): {
   title: string;
   detail: string;
@@ -64,13 +84,13 @@ export const timeText = (
     case 'expired':
       return {
         title: 'Expired',
-        detail: `Expired on ${at(status.exp)}.`,
+        detail: `Expired on ${at(status.exp)}${nowSec === undefined ? '' : ` (${relative(status.exp!, nowSec, 'expired').replace('expired in', 'expires in')})`}.`,
         tone: 'danger',
       };
     case 'not-yet-valid':
       return {
         title: 'Not valid yet',
-        detail: `Not before ${at(status.nbf)}.`,
+        detail: `Not before ${at(status.nbf)}${nowSec === undefined ? '' : ` (${relative(status.nbf!, nowSec, 'valid')})`}.`,
         tone: 'danger',
       };
     case 'issued-in-future':
@@ -84,7 +104,7 @@ export const timeText = (
         title: 'Within validity window',
         detail:
           status.exp !== undefined
-            ? `Expires ${at(status.exp)}.`
+            ? `Expires ${at(status.exp)}${nowSec === undefined ? '' : `, ${relative(status.exp, nowSec, 'expires')}`}.`
             : 'No expiry (exp) claim.',
         tone: 'success',
       };
