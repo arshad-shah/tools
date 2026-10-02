@@ -260,3 +260,5 @@ export * from './key-value-bulk';
 export { renderFaviconImage, useFavicon } from './use-favicon';
 export * from './copy-button';
 export * from './switch-field';
+export * from './pane-tabs';
+export * from './use-pane-tab';
