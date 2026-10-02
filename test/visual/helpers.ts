@@ -38,9 +38,16 @@ export async function stabilise(page: Page): Promise<void> {
   });
 }
 
-/** Fails on serious or critical axe violations. */
+/**
+ * Fails on serious or critical axe violations. Sandboxed frames are skipped:
+ * they run no scripts, so axe cannot be injected into them (it would wait
+ * for them and then fail opening a helper page), and their content is the
+ * user's untrusted HTML, not ours.
+ */
 export async function expectAxeClean(page: Page): Promise<void> {
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await new AxeBuilder({ page })
+    .exclude('iframe[sandbox]')
+    .analyze();
   const blocking = results.violations
     .filter((v) => v.impact === 'serious' || v.impact === 'critical')
     .map((v) => ({

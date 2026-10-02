@@ -103,7 +103,8 @@ export function CodeTreeRow({
       {code && node.label !== '' && hasTail && (
         <span className={TOKEN_CLASS.punct}>{': '}</span>
       )}
-      {!code && node.label !== '' && hasTail && ' '}
+      {/* A bare space would be dropped as a whitespace-only flex item. */}
+      {!code && node.label !== '' && hasTail && <span> </span>}
       {node.value !== undefined && (
         <span className={TOKEN_CLASS[node.value.kind]}>{node.value.text}</span>
       )}

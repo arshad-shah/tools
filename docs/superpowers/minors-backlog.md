@@ -38,3 +38,12 @@ Non-blocking review findings, cleared in P5-G (phase 5) and P6-H (phase 6). Appe
 - P5-F: src/pdf/doc/types.ts CheckpointReport holds text lines only; F-7's rail badges ("Text added", "Low confidence") need per-page results -> add structured per-page OCR data to the report in F-7.
 - P5-F: test/e2e-csp/csp.spec.ts visits the Rive player without a real .riv, so the Rive runtime's wasm fetch is not exercised under the policy -> add a small .riv fixture and load it.
 - P5-F: scripts/copy-ocr-assets.mjs keys public/ocr/<v> by the tesseract.js version only; a tesseract.js-core bump alone reuses the path -> include the core version in the folder name once immutable cache headers are added.
+- 6-A2: src/shared/ui/text-input-toolbar.tsx is a plain button row with tooltips; master's kit Toolbar (P5-B) landed during catch-up -> adopt Toolbar.
+- 6-A2: src/pdf/workspace/ModeHost.test.tsx "registers commands only while active" is flaky on master (about 1 in 6 locally, red once in #69 CI) -> find the ordering or timing dependency on the command registry (P5-B).
+- 6-A2: src/shared/ui/virtual-list.tsx uses one tall spacer; 1M rows at 20 px exceeds Firefox's ~17M px element cap -> scaled scrolling if a tool needs that many rows in Firefox.
+- 6-A2: src/shared/ui/code-tree-row.tsx a root node with an empty label has no accessible name (axe) -> fall back to a label such as "root" or require one in TreeNodeData.
+- 6-A2: src/shared/ui/contrast-pair.tsx a preview pair that fails AA trips axe colour-contrast -> mark the preview sample inert or aria-hidden with the result text as the accessible content.
+- 6-A2: src/shared/ui/chart heatmap calendar month labels overlap at narrow widths when a month starts mid-week -> skip a label that would collide with the previous one.
+- 6-A2: src/shared/ui/sandboxed-html-doc.ts print frame uses sandbox "allow-modals allow-same-origin" (no scripts); not browser-verified -> C-16 e2e covers print and no-script execution.
+- 6-A2: src/shared/ui/share-button.tsx does not toast; useShareableState.share() toasts "Share link copied" -> keep one owner of that toast.
+- 6-A2: test/visual win32 baselines for icons, diagram, drawer, hub-pdf and the seven new gallery sections are not generated -> controller generates them.

@@ -124,6 +124,25 @@ describe('VirtualList', () => {
     expect(rows()[3].getAttribute('aria-posinset')).toBe('4');
   });
 
+  it('leaves aria-setsize and aria-posinset off grid rows', () => {
+    render(
+      <VirtualList
+        items={[1, 2, 3]}
+        estimateSize={20}
+        getKey={(item) => item}
+        role="grid"
+        ariaLabel="Grid"
+        height={100}
+        rowProps={(_, i) => ({ 'aria-rowindex': i + 2 })}
+        renderItem={(item) => <div role="gridcell">{item}</div>}
+      />,
+    );
+    const row = screen.getAllByRole('row')[0];
+    expect(row.getAttribute('aria-setsize')).toBeNull();
+    expect(row.getAttribute('aria-posinset')).toBeNull();
+    expect(row.getAttribute('aria-rowindex')).toBe('2');
+  });
+
   it('roving focus: ArrowDown and End move the active row and scroll; Home returns', () => {
     render(<Basic />);
     const first = rows()[0];

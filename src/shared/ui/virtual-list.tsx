@@ -118,7 +118,8 @@ const rowSelector = (i: number) => `[data-vl-row][data-index="${i}"]`;
  *
  * Rows: VirtualList owns the row element. It carries the child role for
  * `role` (list: listitem, listbox: option, tree: treeitem, grid: row, log:
- * article), `aria-setsize`, `aria-posinset`, the roving `tabIndex` and its
+ * article), `aria-setsize` and `aria-posinset` (not on grid rows, which
+ * take `aria-rowindex` from `rowProps`), the roving `tabIndex` and its
  * position. `renderItem` renders the row's content (for a grid: the
  * `gridcell`s). Use `rowProps` to add or override attributes per row, for
  * example `aria-level`, `aria-expanded` and per-level `aria-posinset` for a
@@ -320,6 +321,9 @@ export function VirtualList<T>({
 
   const childRole = itemRole ?? ITEM_ROLE[role];
   const presentational = childRole === 'none' || childRole === 'presentation';
+  // ARIA allows aria-setsize and aria-posinset on a row only inside a
+  // treegrid; grid rows carry aria-rowindex (set by the consumer) instead.
+  const positioned = !presentational && childRole !== 'row';
 
   const renderRow = (i: number) => {
     const item = items[i];
@@ -330,8 +334,8 @@ export function VirtualList<T>({
         key={getKey(item, i)}
         ref={measure ? observeRow : undefined}
         role={childRole}
-        aria-setsize={presentational ? undefined : count}
-        aria-posinset={presentational ? undefined : i + 1}
+        aria-setsize={positioned ? count : undefined}
+        aria-posinset={positioned ? i + 1 : undefined}
         {...extra}
         data-vl-row=""
         data-index={i}
