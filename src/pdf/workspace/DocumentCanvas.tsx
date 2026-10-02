@@ -1,5 +1,5 @@
 import { DocumentViewport, type ZoomSetting } from '@/shared/ui';
-import type { PageId } from '@/pdf/doc/types';
+import type { Box, PageId, PageRef } from '@/pdf/doc/types';
 import type { ModeModule, ModeProps } from './modes/types';
 import { displaySize } from './page-display';
 import { PageImage } from './PageImage';
@@ -18,12 +18,31 @@ export interface DocumentCanvasProps {
   /** The page with the largest visible area. */
   onCurrentPageChange?(id: PageId | null): void;
   onScaleChange?(scale: number): void;
-  scrollToPage?: { id: PageId; nonce: number };
+  scrollToPage?: PageScrollRequest;
+}
+
+/** A navigation request: the page, optionally a page-space box to centre. */
+export interface PageScrollRequest {
+  id: PageId;
+  nonce: number;
+  box?: Box;
+  focus?: boolean;
+}
+
+/** The page as drawn: the crop tool shows its page whole, so a crop can grow. */
+function shownPage(page: PageRef, mode: ModeProps): PageRef {
+  if (!page.crop || mode.tool.id !== 'crop' || page.id !== mode.doc.currentPage)
+    return page;
+  const whole = { ...page };
+  delete whole.crop;
+  return whole;
 }
 
 /**
  * The scrolling document (spec §6.1 canvas): one slot per page sized from
  * the page map, the page's bitmap, and the active mode's overlay on top.
+ * The overlay gets the page as it is (its pending crop included) and the
+ * viewport it is drawn with.
  */
 export function DocumentCanvas({
   mode,
@@ -40,8 +59,21 @@ export function DocumentCanvas({
   const Overlay = module?.PageOverlay;
   const pages = view.pages.map((p) => ({
     id: p.id,
-    ...displaySize(p, state.sources),
+    ...displaySize(shownPage(p, mode), state.sources),
   }));
+  // The box in slot CSS px at zoom 1 (the viewport scales it).
+  const target = scrollToPage
+    ? view.pages.find((p) => p.id === scrollToPage.id)
+    : undefined;
+  const request = scrollToPage && {
+    id: scrollToPage.id,
+    nonce: scrollToPage.nonce,
+    focus: scrollToPage.focus,
+    rect:
+      target && scrollToPage.box
+        ? boxToScreen(mode.doc.viewport(target, 1), scrollToPage.box)
+        : undefined,
+  };
   return (
     <DocumentViewport
       label="Document"
@@ -51,9 +83,10 @@ export function DocumentCanvas({
       onVisiblePagesChange={onVisiblePagesChange}
       onCurrentPageChange={onCurrentPageChange}
       onScaleChange={onScaleChange}
-      scrollToPage={scrollToPage}
+      scrollToPage={request}
       renderPage={({ index, scale, visible, visibleRect }) => {
-        const page = view.pages[index];
+        const actual = view.pages[index];
+        const page = shownPage(actual, mode);
         const handle = page.blank ? null : sourceDocs.get(page.source);
         const vp = mode.doc.viewport(page, scale);
         const tiled =
@@ -97,7 +130,7 @@ export function DocumentCanvas({
               <div className="absolute inset-0">
                 <Overlay
                   {...mode}
-                  page={page}
+                  page={actual}
                   pageNumber={index + 1}
                   viewport={vp}
                   width={vp.width}

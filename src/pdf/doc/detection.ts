@@ -1,5 +1,8 @@
 import type { DetectedField, PageDetection } from '@/pdf/detect';
-import type { SourceId } from './types';
+import type { Box, SourceId } from './types';
+
+/** A page's stored detection, with its table cells (absent in older saves). */
+export type CachedPage = PageDetection & { cells?: Box[] };
 
 /**
  * Flat-form detection results kept with the document (spec §8.4): one entry
@@ -7,7 +10,7 @@ import type { SourceId } from './types';
  * `${sourceId}:${pageIndex}` so results survive reorder and duplicate.
  */
 export interface DetectionCache {
-  pages: Record<string, PageDetection>;
+  pages: Record<string, CachedPage>;
 }
 
 export const detectionKey = (sourceId: SourceId, pageIndex: number) =>
@@ -17,7 +20,7 @@ export const detectionKey = (sourceId: SourceId, pageIndex: number) =>
 export function mergeDetection(
   cache: DetectionCache | undefined,
   sourceId: SourceId,
-  d: PageDetection,
+  d: CachedPage,
 ): DetectionCache {
   return {
     pages: {
@@ -32,7 +35,7 @@ export function asDetectionCache(v: unknown): DetectionCache | undefined {
   if (typeof v !== 'object' || v === null) return undefined;
   const pages = (v as { pages?: unknown }).pages;
   if (typeof pages !== 'object' || pages === null) return undefined;
-  return { pages: pages as Record<string, PageDetection> };
+  return { pages: pages as Record<string, CachedPage> };
 }
 
 /** A detected field's id in the view: unique across sources. */

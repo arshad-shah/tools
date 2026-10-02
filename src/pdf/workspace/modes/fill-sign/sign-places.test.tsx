@@ -276,4 +276,31 @@ describe('pageSignTargets', () => {
       ['sig-field', 'Sig1'],
     ]);
   });
+
+  it('leaves out /Sig fields the verifier reports as signed', () => {
+    const model = makeModel();
+    const page = model.getView().pages[0];
+    const widget = (fieldName: string, x: number) => ({
+      fieldName,
+      kind: 'signature' as const,
+      pageIndex: 0,
+      rect: { x, y: 580, width: 200, height: 40 },
+      readOnly: false,
+      value: '',
+      label: null,
+    });
+    const targets = pageSignTargets(
+      page,
+      {},
+      {
+        s0: {
+          hasAcroForm: true,
+          hasXfa: false,
+          widgets: [widget('Signed1', 60), widget('Empty1', 300)],
+        },
+      },
+      { s0: ['Signed1'] },
+    );
+    expect(targets.map((t) => t.label)).toEqual(['Empty1']);
+  });
 });

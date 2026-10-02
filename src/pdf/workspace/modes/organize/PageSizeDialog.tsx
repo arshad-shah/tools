@@ -13,6 +13,7 @@ import {
 } from '@/shared/ui';
 import type { PageId } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
+import type { OrganizeSurface } from './surface';
 
 const SIZES = {
   a4: { width: 595.28, height: 841.89 },
@@ -25,18 +26,26 @@ export function PageSizeDialog({
   onOpenChange,
   ctx,
   pageIds,
+  surface,
 }: {
   open: boolean;
   onOpenChange(o: boolean): void;
   ctx: ModeProps;
   pageIds: PageId[];
+  /** Where it shows: by its tool (popover) or as a phone sheet. */
+  surface?: OrganizeSurface;
 }) {
   const [choice, setChoice] = useState<'a4' | 'letter' | 'custom'>('a4');
   const [custom, setCustom] = useState({ width: 612, height: 792 });
   const size = choice === 'custom' ? custom : SIZES[choice];
   const n = pageIds.length;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      label="Page size"
+      {...surface}
+    >
       <DialogHeader>
         <DialogTitle>Page size</DialogTitle>
         <DialogDescription>

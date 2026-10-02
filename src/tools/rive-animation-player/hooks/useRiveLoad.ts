@@ -1,10 +1,14 @@
 import type { RefObject } from 'react';
-import { Layout, Rive } from '@rive-app/react-canvas';
 import { toToolError } from '@/shared/lib/errors';
 import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
 import { useJob } from '@/shared/state/useJob';
+import {
+  createRive,
+  loadRive,
+  type Rive,
+} from '@/shared/ui/adapters/rive-runtime';
 import { getAlignmentValue, getFitValue } from '../lib/layout';
 import { assertRiveFile } from '../lib/rive-file';
 import {
@@ -68,14 +72,11 @@ export function useRiveLoad(deps: RiveLoadDeps) {
     const live = (fn: () => void) => () => {
       if (riveRef.current === instance) fn();
     };
-    const instance: Rive = new Rive({
+    const instance: Rive = createRive({
       buffer,
       canvas,
-      autoplay: true,
-      layout: new Layout({
-        fit: getFitValue(alignFitIndex),
-        alignment: getAlignmentValue(alignFitIndex),
-      }),
+      fit: getFitValue(alignFitIndex),
+      alignment: getAlignmentValue(alignFitIndex),
       onLoad: live(deps.onLoad),
       onLoadError: live(deps.onLoadError),
       onPlay: live(() => deps.onPlaying(true)),
@@ -93,7 +94,7 @@ export function useRiveLoad(deps: RiveLoadDeps) {
     setStatus({ current: PlayerState.Loading });
     addDebugLog('Loading animation from buffer...', 'info');
     if (riveRef.current) {
-      riveRef.current.load({ buffer, autoplay: true });
+      loadRive(riveRef.current, buffer);
       return;
     }
     try {

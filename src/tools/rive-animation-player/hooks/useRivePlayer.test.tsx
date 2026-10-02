@@ -6,7 +6,7 @@ import {
   StateMachineInputType,
   type Layout,
   type StateMachineInput,
-} from '@rive-app/react-canvas';
+} from '@/shared/ui/adapters/rive-runtime';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { notify } from '@/shared/lib/notify';
 import { FakeRive } from '../test/fake-rive';

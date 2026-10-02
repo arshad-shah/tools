@@ -56,7 +56,7 @@ import {
 import { clampToPage, markBox, snapToCell } from './snap';
 import { fillSign, useFillSign } from './store';
 import { tabOrder } from './tab-order';
-import { lastUsed } from './text-style';
+import { lastUsed, textKey } from './text-style';
 
 const CLICK_TOOLS = new Set(['text', 'tick', 'cross', 'date', 'add-field']);
 
@@ -103,9 +103,8 @@ export function FieldsOverlay(props: PageOverlayProps) {
   const placing = useFillSign((s) => s.placing);
   const ready = useFillSign((s) => s.ready);
   const pageKey = detectionKey(page.source, page.index);
-  const cells = useFillSign((s) => s.cells[pageKey]) ?? [];
   const clickTool = !!tool.id && CLICK_TOOLS.has(tool.id);
-  useCells(
+  const cells = useCells(
     doc,
     pageKey,
     clickTool || resizing || placing
@@ -268,7 +267,7 @@ export function FieldsOverlay(props: PageOverlayProps) {
           pageId: page.id,
           rect: clampToPage(snapToCell(p, cells).box, pageBounds(ctx, page)),
           kind: tool.id,
-          style: { ...lastUsed(doc.state.id), comb: 0 },
+          style: { ...lastUsed(textKey(doc)), comb: 0 },
         },
         barClosed: null,
         typing: null,

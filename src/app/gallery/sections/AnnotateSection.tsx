@@ -34,6 +34,20 @@ export function AnnotateSection() {
           allowCustom
         />
       </Row>
+      <Row label="ColorSwatchPicker (visible label, disabled)">
+        <ColorSwatchPicker
+          label="Ink colour"
+          showLabel
+          value="#111827"
+          onChange={() => {}}
+          options={[
+            { value: '#111827', label: 'Black' },
+            { value: '#1d4ed8', label: 'Blue' },
+            { value: '#1e3a8a', label: 'Dark blue' },
+          ]}
+          disabled
+        />
+      </Row>
       <Row label="OverlayText (left, centre, rotated)">
         <Sized
           width={PAGE.width}

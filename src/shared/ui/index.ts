@@ -81,7 +81,12 @@ export {
 } from './states';
 export { CommandPalette, type CommandPaletteProps } from './command-palette';
 export { useCommandPaletteHotkey } from './use-command-palette-hotkey';
-export { AppShell, type AppShellProps } from './app-shell';
+export {
+  AppShell,
+  SkipLinks,
+  type AppShellProps,
+  type SkipLink,
+} from './app-shell';
 export { LayoutContext, type ShellLayout } from './layout-context';
 export { TopBar, type TopBarProps } from './top-bar';
 export { Breadcrumb, type BreadcrumbProps } from './breadcrumb';
@@ -116,6 +121,8 @@ export {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from './menu';
+export { menuItemsOf } from './menu-items';
+
 export {
   DiagramCanvas,
   type DiagramCanvasProps,
@@ -164,8 +171,10 @@ export {
 export {
   OverlayLayer,
   PageBox,
+  PagePlaced,
   type OverlayLayerProps,
   type PageBoxProps,
+  type PagePlacedProps,
   type OverlayTransform,
   type PageSpaceBox,
 } from './overlay-layer';
@@ -233,6 +242,11 @@ export { resolvePaint } from './shape-paint';
 export { ModeTabs, type ModeTabItem, type ModeTabsProps } from './mode-tabs';
 export { FloatingDock, type FloatingDockProps } from './floating-dock';
 export {
+  ToolButton,
+  type ToolButtonProps,
+  type ToolLabels,
+} from './tool-button';
+export {
   Toolbar,
   type ToolItem,
   type ToolGroup,
@@ -245,8 +259,10 @@ export { PageRail, type RailPage, type PageRailProps } from './page-rail';
 export {
   DocumentViewport,
   type DocumentViewportProps,
+  type ScrollRequest,
   type ZoomSetting,
 } from './document-viewport';
+export { zoomScale } from './zoom-scale';
 export {
   VirtualList,
   type VirtualListHandle,
@@ -288,7 +304,11 @@ export {
   buildSrcdoc,
   sandboxCsp,
 } from './sandboxed-html-doc';
-export { CameraCapture, type CameraCaptureProps } from './camera-capture';
+export {
+  CameraCapture,
+  CameraFrameGuide,
+  type CameraCaptureProps,
+} from './camera-capture';
 export { cameraError, CAMERA_BLOCKED, NO_CAMERA } from './camera-errors';
 export * from './code-tree';
 export * from './code-tree-model';

@@ -20,6 +20,8 @@ export interface WorkspaceShortcutApi {
   lastPage(): void;
   escape(): void;
   find(): void;
+  /** Mod+A: every page (modes with objects register their own Mod+A). */
+  selectAllPages(): void;
 }
 
 const GROUP = 'Workspace';
@@ -65,6 +67,7 @@ export function workspaceShortcuts(api: WorkspaceShortcutApi): ShortcutDef[] {
     def('last-page', 'End', 'Last page', api.lastPage),
     def('escape', 'Escape', 'Cancel', api.escape),
     def('find', 'Mod+F', 'Find in document', api.find),
+    def('select-all', 'Mod+A', 'Select all pages', api.selectAllPages),
   ];
 }
 

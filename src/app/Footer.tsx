@@ -6,8 +6,9 @@ import {
   IconSun,
   Logo,
 } from '@/shared/ui/icons';
-import { MetaList, SegmentedControl, StatusDot } from '@/shared/ui';
+import { Button, MetaList, SegmentedControl, StatusDot } from '@/shared/ui';
 import { LicencesButton } from './LicencesDialog';
+import { useHelp } from './shell/help-context';
 import type { ToolDefinition } from './tool';
 import { getEnabledTools } from './registry';
 import { formatBuildStamp, issuesUrl, REPO_URL } from './footerUtils';
@@ -20,6 +21,7 @@ const linkClass =
 /** Version and build info, privacy note, theme switch (spec §5.2). */
 export default function Footer({ tool }: { tool?: ToolDefinition }) {
   const { preference, setPreference } = useTheme();
+  const help = useHelp();
   const year = new Date().getFullYear();
   const toolCount = getEnabledTools().length;
   const stamp = formatBuildStamp(
@@ -34,9 +36,17 @@ export default function Footer({ tool }: { tool?: ToolDefinition }) {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
             <Logo className="h-4 self-start" />
-            <p className="flex items-center gap-2 text-sm text-fg-muted">
+            <p className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">
               <StatusDot tone="accent" decorative />
               Your files are processed on this device and never uploaded.
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={help.openPrivacy}
+                className="h-auto px-1 underline underline-offset-2"
+              >
+                Privacy
+              </Button>
             </p>
           </div>
           <SegmentedControl<ThemePreference>
@@ -55,7 +65,12 @@ export default function Footer({ tool }: { tool?: ToolDefinition }) {
           <MetaList
             items={[
               `${toolCount} tools`,
-              <span key="build" data-dynamic="">
+              // Only a real build stamp varies between runs: it is masked
+              // in screenshots. "dev" is stable and stays visible.
+              <span
+                key="build"
+                {...(stamp.href && stamp.sha ? { 'data-dynamic': '' } : {})}
+              >
                 {stamp.href && stamp.sha ? (
                   <>
                     {stamp.version}{' '}

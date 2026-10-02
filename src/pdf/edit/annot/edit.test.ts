@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { PDFDocument, PDFRef } from 'pdf-lib';
+import { PDFDict, PDFDocument, PDFName, PDFRef } from 'pdf-lib';
 import { makeAnnotatedPdf } from '../../../../test/fixtures/annotated';
 import { toExistingAnnotations } from '../../render/annotations';
 import {
@@ -128,6 +128,25 @@ describe('existing annotations', () => {
     const [moved] = await listed(await doc.save());
     expect(moved.rect).toEqual({ x: 110, y: 500, width: 100, height: 20 });
     expect(moved.quadPoints!.slice(0, 2)).toEqual([110, 520]);
+  });
+
+  it('a move maps geometry from the rect the viewer listed', async () => {
+    const { doc, page } = await blankDoc();
+    const ref = writeTextMarkup(doc, page, {
+      ...base(),
+      subtype: 'Highlight',
+      quads: [[100, 620, 200, 620, 100, 600, 200, 600]],
+    });
+    // A third-party /Rect that differs from what pdf.js reports.
+    const dict = doc.context.lookup(ref, PDFDict);
+    dict.set(PDFName.of('Rect'), doc.context.obj([90, 590, 230, 640]));
+    // pdf.js lists the box around the quads: 100,600 to 200,620.
+    await updateAnnotation(doc, page, ref, {
+      from: { x: 100, y: 600, width: 100, height: 20 },
+      rect: { x: 110, y: 500, width: 100, height: 20 },
+    });
+    const [moved] = await listed(await doc.save());
+    expect(moved.quadPoints!.slice(0, 4)).toEqual([110, 520, 210, 520]);
   });
 
   it('every supported subtype survives an edit', async () => {

@@ -68,8 +68,19 @@ export class SourceDocs {
     );
   }
 
-  /** A document the caller already opened in the render worker. */
+  /** Stops an open in flight; its document is closed when it lands. */
+  private abortOpen(id: SourceId) {
+    this.opening.get(id)?.abort();
+    this.opening.delete(id);
+  }
+
+  /**
+   * A document the caller already opened in the render worker. An open of
+   * the same source still in flight is aborted, so it cannot replace (and
+   * leak) this one.
+   */
   seed(id: SourceId, info: DocInfo): void {
+    this.abortOpen(id);
     const old = this.handles.get(id);
     if (old?.docId && old.docId !== info.docId) this.close(old.docId);
     this.handles.set(id, { docId: info.docId, info, error: null });
@@ -84,7 +95,9 @@ export class SourceDocs {
       const ctrl = new AbortController();
       this.opening.set(id, ctrl);
       void this.bytesOf(id)
-        .then((bytes) => this.render.open(bytes, ctrl.signal))
+        // Keyed by source: bytes re-read from disk are a new array each
+        // time, and the crash budget must still add up per document.
+        .then((bytes) => this.render.open(bytes, ctrl.signal, `source:${id}`))
         .then(
           (info) => {
             if (ctrl.signal.aborted) {
@@ -121,18 +134,15 @@ export class SourceDocs {
    */
   show(ids: Iterable<SourceId>): void {
     const wanted = new Set(ids);
-    for (const [id, c] of this.opening)
-      if (!wanted.has(id)) {
-        c.abort();
-        this.opening.delete(id);
-      }
     this.release(wanted);
     this.ensure(wanted);
   }
 
-  /** Closes sources not listed in `keep`. */
+  /** Closes sources not listed in `keep`, and aborts their opens in flight. */
   release(keep: Iterable<SourceId>): void {
     const wanted = new Set(keep);
+    for (const id of [...this.opening.keys()])
+      if (!wanted.has(id)) this.abortOpen(id);
     let any = false;
     for (const [id, h] of this.handles)
       if (!wanted.has(id)) {

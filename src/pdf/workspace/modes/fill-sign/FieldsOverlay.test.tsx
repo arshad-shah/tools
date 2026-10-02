@@ -45,6 +45,7 @@ function fakeDoc(model: DocumentModel): DocumentApi {
     setDetection: (d) => model.setDetection(d),
     undo: () => void model.undo(),
     announce: () => {},
+    goToPage: () => {},
   };
   return api as DocumentApi;
 }

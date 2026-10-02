@@ -67,6 +67,7 @@ describe('verifyRedaction', () => {
       problems: [],
       documentLevel: false,
       rawBytes: false,
+      kept: [],
     });
   });
 
@@ -155,5 +156,28 @@ describe('verifyRedaction', () => {
       signal,
     );
     expect(v.ok).toBe(true);
+    expect(v.kept).toEqual([REDACT_TERM]);
+  });
+
+  it('still searches the marked page data for a term kept on another page', async () => {
+    const bytes = await makeContentPdf([
+      { content: `% ${REDACT_TERM}\n0 g 70 695 120 20 re f` },
+      { content: `BT /F1 14 Tf 72 700 Td (${REDACT_TERM}) Tj ET` },
+    ]);
+    const v = await verifyRedaction(
+      {
+        bytes,
+        pages: [page0({ x: 70, y: 695, width: 120, height: 20 }, REDACT_TERM)],
+        terms: [REDACT_TERM],
+      },
+      nodeRedactServices(),
+      signal,
+    );
+    expect(v.ok).toBe(false);
+    expect(v.failedPages).toEqual([0]);
+    expect(v.problems).toEqual([
+      'Page 1: a search term remains in the page data',
+    ]);
+    expect(v.rawBytes).toBe(false);
   });
 });

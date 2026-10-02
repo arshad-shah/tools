@@ -14,6 +14,7 @@ import {
   Inspector,
   ModeTabs,
   SidePanel,
+  SkipLinks,
   TopBar,
   type ModeTabItem,
   type ZoomSetting,
@@ -25,9 +26,9 @@ import { historyMessage, useLiveRegion } from './live-region';
 import { ModeHost } from './ModeHost';
 import { ModeToolbarContext } from './mode-toolbar-context';
 import { getMode, MODE_ORDER, MODES } from './modes/registry';
-import type { ActiveTool, ModeContext } from './modes/types';
+import type { ActiveTool, GoToPageOptions, ModeContext } from './modes/types';
 import { PageRailPanel } from './PageRailPanel';
-import { DocumentCanvas } from './DocumentCanvas';
+import { DocumentCanvas, type PageScrollRequest } from './DocumentCanvas';
 import type { WorkspaceSession } from './session';
 import { useWorkspaceSettings } from './settings';
 import { useHeldValue } from './use-held-value';
@@ -37,14 +38,26 @@ import {
   workspaceShortcuts,
   type WorkspaceShortcutApi,
 } from './shortcuts';
-import { TopBarControls } from './TopBarControls';
+import { TopBarControls, type TopBarMenuItem } from './TopBarControls';
+import { clearTrustedRootsCommand } from './modes/fill-sign/trusted-roots-command';
 import { SignedBadge } from './SignedBadge';
 import { useAutosave } from './use-autosave';
 import { useDocumentModel } from './useDocument';
 import { useSelection } from './useSelection';
 import { useConfirm, useWorkspaceJob } from './use-workspace-job';
-import { nextZoom } from './zoom';
+import { effectiveZoom, nextZoom } from './zoom';
 import { useWorkspaceTestHook } from './test-hook';
+
+/** Workspace settings in the top bar's More menu (plan H-14). */
+const SETTINGS_ITEMS: TopBarMenuItem[] = [clearTrustedRootsCommand()].map(
+  (c) => ({ id: c.id, label: c.label, onSelect: () => void c.run() }),
+);
+
+/** The document first; the active mode's tools next (spec §13.2). */
+const SKIP_LINKS = [
+  { href: '#workspace-canvas', label: 'Skip to the document' },
+  { href: '#mode-panel', label: 'Skip to the tools' },
+];
 
 export interface WorkspaceShellProps {
   session: WorkspaceSession;
@@ -60,6 +73,8 @@ export interface WorkspaceShellProps {
   breadcrumb: React.ReactNode;
   /** Opens new bytes (an extract) as a separate document. */
   onOpenNew(doc: { name: string; bytes: Uint8Array }): void;
+  /** The app's help menu in the top bar (shortcut sheet, privacy note). */
+  helpMenu?: (size: 'md' | 'lg') => React.ReactNode;
 }
 
 const PHONE = '(max-width: 899px)';
@@ -128,6 +143,7 @@ export function WorkspaceShell({
   onUnlock,
   breadcrumb,
   onOpenNew,
+  helpMenu,
 }: WorkspaceShellProps) {
   const { model, sourceDocs } = session;
   const settings = useWorkspaceSettings();
@@ -145,7 +161,8 @@ export function WorkspaceShell({
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [toolId, setToolId] = useState<string | null>(null);
   const [current, setCurrent] = useState<PageId | null>(null);
-  const [scrollTo, setScrollTo] = useState<{ id: PageId; nonce: number }>();
+  const [visiblePages, setVisiblePages] = useState<readonly PageId[]>([]);
+  const [scrollTo, setScrollTo] = useState<PageScrollRequest>();
   const [railDrawer, setRailDrawer] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
@@ -183,6 +200,12 @@ export function WorkspaceShell({
     },
   }));
 
+  // Navigation (rail, keys, modes): current page plus a scroll request.
+  const navigate = useCallback((id: PageId, opts: GoToPageOptions = {}) => {
+    setCurrent(id);
+    setScrollTo((prev) => ({ id, ...opts, nonce: (prev?.nonce ?? 0) + 1 }));
+  }, []);
+
   const doc = useMemo(
     () =>
       createDocumentApi({
@@ -191,13 +214,23 @@ export function WorkspaceShell({
         services: session.services,
         sourceDocs,
         currentPage,
+        visiblePages,
         announce,
         runJob: job.run,
         confirm,
+        goToPage: navigate,
       }),
     // version and sourcesVersion: a new api object after every change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [model, session, sourceDocs, currentPage, version, sourcesVersion],
+    [
+      model,
+      session,
+      sourceDocs,
+      currentPage,
+      visiblePages,
+      version,
+      sourcesVersion,
+    ],
   );
   const tool: ActiveTool = useMemo(
     () => ({ id: toolId, set: setToolId }),
@@ -220,9 +253,7 @@ export function WorkspaceShell({
 
   const goTo = (i: number) => {
     const id = pageIds[Math.max(0, Math.min(pageIds.length - 1, i))];
-    if (!id) return;
-    setCurrent(id);
-    setScrollTo((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
+    if (id) navigate(id);
   };
   const at = Math.max(0, pageIds.indexOf(currentPage ?? ''));
 
@@ -279,15 +310,14 @@ export function WorkspaceShell({
     lastPage: () => goTo(pageIds.length - 1),
     escape: () => (toolId ? setToolId(null) : selection.clear()),
     find: () => {},
+    selectAllPages: () => selection.selectPages(pageIds),
   });
 
   const actions: WorkspaceActions = {
     session,
     runJob: job.run,
     unlock: onUnlock,
-    goToPage: (id) => {
-      if (pageIds.includes(id)) goTo(pageIds.indexOf(id));
-    },
+    goToPage: (id) => doc.goToPage(id),
     async openAsNew(next) {
       const saved = !!session.db && saving.status !== 'off';
       if (
@@ -328,10 +358,9 @@ export function WorkspaceShell({
             sourceDocs={sourceDocs}
             current={currentPage}
             width={compact ? 220 : settings.railWidth}
-            onCurrent={setCurrent}
+            onCurrent={(id) => navigate(id)}
             onActivate={(id) => {
-              setCurrent(id);
-              setScrollTo((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }));
+              navigate(id, { focus: true });
               setRailDrawer(false);
             }}
           />
@@ -362,6 +391,8 @@ export function WorkspaceShell({
             onUnlock={onUnlock}
             badges={<SignedBadge session={session} compact={compact} />}
             onSearch={onSearch}
+            helpMenu={helpMenu}
+            settingsItems={SETTINGS_ITEMS}
             onExport={() => setExportOpen(true)}
           />
         );
@@ -382,12 +413,7 @@ export function WorkspaceShell({
                 data-layout={layout}
                 className="grid h-dvh grid-rows-[auto_auto_1fr] overflow-hidden bg-canvas text-fg"
               >
-                <a
-                  href="#workspace-canvas"
-                  className="sr-only rounded-md bg-surface px-3 py-2 text-sm font-medium text-fg shadow-e2 focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-palette"
-                >
-                  Skip to the document
-                </a>
+                <SkipLinks links={SKIP_LINKS} />
                 <header role="banner">
                   <TopBar
                     compact={compact}
@@ -419,7 +445,7 @@ export function WorkspaceShell({
                         inert={busy}
                         aria-busy={busy}
                         aria-label={`${manifest.label} mode`}
-                        className="flex min-h-11 items-center border-b border-line bg-surface px-2"
+                        className="flex min-h-11 min-w-0 items-center border-b border-line bg-surface px-2"
                       >
                         {toolbar}
                       </div>
@@ -433,6 +459,7 @@ export function WorkspaceShell({
                           value={manifest.id}
                           onChange={(id) => request(id as ModeId)}
                           size={layout === 'phone' ? 'lg' : 'md'}
+                          labels="responsive"
                         />
                       </nav>
                       <div
@@ -482,10 +509,21 @@ export function WorkspaceShell({
                       mode={ctx}
                       module={module}
                       sourceDocs={sourceDocs}
-                      zoom={settings.zoom}
+                      zoom={effectiveZoom(settings.zoom, {
+                        railOpen: layout === 'standard' && settings.railOpen,
+                        inspectorOpen:
+                          layout === 'standard' &&
+                          showInspector &&
+                          inspectorOpen,
+                      })}
                       onZoomChange={setZoom}
                       onScaleChange={setScale}
                       onCurrentPageChange={(id) => id && setCurrent(id)}
+                      onVisiblePagesChange={(ids) =>
+                        setVisiblePages((prev) =>
+                          prev.join(' ') === ids.join(' ') ? prev : ids,
+                        )
+                      }
                       scrollToPage={scrollTo}
                     />
                   </main>

@@ -30,16 +30,19 @@ export function TopBar({
   return (
     <div
       className={cn(
-        'flex items-center gap-4 border-b border-line bg-surface px-4',
-        compact ? 'h-12' : 'h-14',
+        'flex items-center border-b border-line bg-surface',
+        // Compact (Focus, phone): 44px targets in a 56px bar, tighter gutters.
+        compact ? 'h-[56px] gap-2 px-2' : 'h-14 gap-4 px-4',
         className,
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {renderLink({
           href: homeHref,
-          className:
-            'inline-flex shrink-0 items-center rounded-sm text-fg transition-colors duration-fast hover:text-fg-muted pointer-coarse:min-h-11',
+          className: cn(
+            'inline-flex shrink-0 items-center rounded-sm text-fg transition-colors duration-fast hover:text-fg-muted pointer-coarse:min-h-touch',
+            compact && 'min-h-touch',
+          ),
           'aria-label': 'tools home',
           children: <Logo label="tools home" className="h-5" />,
         })}

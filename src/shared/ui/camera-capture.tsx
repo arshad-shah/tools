@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { cameraError } from './camera-errors';
@@ -18,6 +18,11 @@ export interface CameraCaptureProps {
   /** Accessible name of the video. */
   label: string;
   onError(e: ToolError): void;
+  /**
+   * Drawn over the live preview while the camera runs (a framing guide,
+   * say). Decorative: hidden from screen readers and from the pointer.
+   */
+  overlay?: ReactNode;
   className?: string;
 }
 
@@ -39,6 +44,7 @@ export function CameraCapture({
   facingMode = 'environment',
   label,
   onError,
+  overlay,
   className,
 }: CameraCaptureProps) {
   const video = useRef<HTMLVideoElement>(null);
@@ -184,6 +190,14 @@ export function CameraCapture({
             !running && 'invisible',
           )}
         />
+        {running && overlay ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+          >
+            {overlay}
+          </div>
+        ) : null}
         {!running && (
           <p className="absolute inset-0 flex items-center justify-center text-sm text-fg-muted">
             Camera is off
@@ -235,3 +249,26 @@ export function CameraCapture({
   );
 }
 CameraCapture.displayName = 'CameraCapture';
+
+/**
+ * A framing guide for CameraCapture's `overlay`: a centred dashed frame
+ * with a baseline, the rest of the preview dimmed, and an optional hint.
+ */
+export function CameraFrameGuide({ hint }: { hint?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 overflow-hidden"
+    >
+      {hint ? (
+        <span className="relative z-10 rounded-sm bg-black/55 px-2 py-0.5 text-sm font-medium text-white">
+          {hint}
+        </span>
+      ) : null}
+      <div className="relative h-2/5 w-4/5 rounded-md border-2 border-dashed border-white/90 shadow-[0_0_0_9999px_rgb(0_0_0/0.35)]">
+        <div className="absolute inset-x-[8%] bottom-[22%] border-b-2 border-white/70" />
+      </div>
+    </div>
+  );
+}
+CameraFrameGuide.displayName = 'CameraFrameGuide';

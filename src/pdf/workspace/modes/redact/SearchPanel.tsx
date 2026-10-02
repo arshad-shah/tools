@@ -22,6 +22,7 @@ import {
   type SearchQuery,
 } from '@/pdf/redact/search';
 import type { DocumentApi } from '../types';
+import { pageFieldValues, type FormInfoCache } from './field-values';
 import { useRedactUi } from './ui-store';
 
 const PRESET_IDS = Object.keys(PRESETS) as RedactPreset[];
@@ -90,12 +91,14 @@ export function SearchPanel({ doc }: { doc: DocumentApi }) {
 
   const readPages = useEffectEvent(async () => {
     const pages = [];
+    const forms: FormInfoCache = new Map();
     for (const [i, page] of doc.view.pages.entries()) {
       if (page.blank) continue;
       pages.push({
         pageId: page.id,
         pageNumber: i + 1,
         items: await doc.text(page),
+        fields: await pageFieldValues(doc, page, forms),
       });
     }
     return pages;

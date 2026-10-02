@@ -39,6 +39,8 @@ interface EngineBlock {
   }[];
 }
 export interface OcrEngineWorker {
+  /** tesseract.js exposes the Web Worker behind it. */
+  worker?: Pick<EventTarget, 'addEventListener'> | null;
   terminate(): Promise<unknown>;
   setParameters(params: Record<string, string>): Promise<unknown>;
 }
@@ -150,6 +152,9 @@ export async function createOcrPool(o: {
     stopped: boolean;
     /** Rejecters of jobs in flight: a terminated job never settles. */
     pending: Set<(e: ToolError) => void>;
+    /** A worker died after loading (its jobs would never settle). */
+    crashed: boolean;
+    onCrash: (() => void) | null;
   }
   let live: Promise<Live> | null = null;
 
@@ -181,28 +186,54 @@ export async function createOcrPool(o: {
         cause: (failed as PromiseRejectedResult).reason,
       });
     }
-    for (const r of results)
-      scheduler.addWorker((r as PromiseFulfilledResult<OcrEngineWorker>).value);
-    return { scheduler, stopped: false, pending: new Set() };
+    const l: Live = {
+      scheduler,
+      stopped: false,
+      pending: new Set(),
+      crashed: false,
+      onCrash: null,
+    };
+    for (const r of results) {
+      const w = (r as PromiseFulfilledResult<OcrEngineWorker>).value;
+      // tesseract only watches its worker's errors while loading: a worker
+      // that dies later leaves its job unsettled, so the pool fails it.
+      w.worker?.addEventListener('error', () => {
+        l.crashed = true;
+        l.onCrash?.();
+      });
+      scheduler.addWorker(w);
+    }
+    return l;
   };
+
+  const crashed = (cause?: unknown) =>
+    new ToolError('WORKER_CRASHED', 'Text recognition stopped unexpectedly', {
+      cause,
+    });
 
   const ensure = () => {
     if (!live) {
       const p = start();
       live = p;
-      p.catch(() => {
-        if (live === p) live = null;
-      });
+      p.then(
+        (l) => {
+          l.onCrash = () => void stop(p, crashed());
+          if (l.crashed) l.onCrash();
+        },
+        () => {
+          if (live === p) live = null;
+        },
+      );
     }
     return live;
   };
 
-  const stop = async (owner: Promise<Live>) => {
+  const stop = async (owner: Promise<Live>, reason = cancelled()) => {
     if (live === owner) live = null;
     const l = await owner.catch(() => null);
     if (!l || l.stopped) return;
     l.stopped = true;
-    for (const fail of l.pending) fail(cancelled());
+    for (const fail of l.pending) fail(reason);
     l.pending.clear();
     await l.scheduler.terminate().catch(() => undefined);
   };
@@ -229,15 +260,7 @@ export async function createOcrPool(o: {
             (e: unknown) => {
               if (l.stopped) return reject(cancelled());
               void stop(owner);
-              reject(
-                new ToolError(
-                  'WORKER_CRASHED',
-                  'Text recognition stopped unexpectedly',
-                  {
-                    cause: e,
-                  },
-                ),
-              );
+              reject(crashed(e));
             },
           )
           .finally(() => {

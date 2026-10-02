@@ -40,9 +40,6 @@ export function setOcrUi(patch: Partial<OcrUi>): void {
 
 export const getOcrUi = () => state;
 
-/** Back to defaults (tests). */
-export const resetOcrUi = () => setOcrUi(INITIAL);
-
 export function useOcrUi(): OcrUi {
   return useSyncExternalStore(
     (l) => {

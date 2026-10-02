@@ -43,7 +43,7 @@ export function previewLines(
 
 /**
  * What sanitise would remove, kind by kind: the current view materialised
- * once, then one dry run per kind in the edit worker (nothing changes).
+ * once, then one preview pass in the edit worker (nothing changes).
  */
 export async function sanitizePreview(
   session: WorkspaceActions['session'],
@@ -53,19 +53,7 @@ export async function sanitizePreview(
   const { bytes } = await materializeIn(services, await planFor(model, blobs), {
     signal,
   });
-  const out = {} as SanitizePreview;
-  for (const k of SANITIZE_KEYS) {
-    const only = Object.fromEntries(
-      SANITIZE_KEYS.map((x) => [x, x === k]),
-    ) as unknown as SanitizeParams;
-    const r = await services.edit.call(
-      'sanitize',
-      [bytes.slice(), { ...only, dryRun: true }],
-      { signal },
-    );
-    out[k] = r.report.removed;
-  }
-  return out;
+  return services.edit.call('sanitizePreview', [bytes], { signal });
 }
 
 let sanitizeOpen = false;

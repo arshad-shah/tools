@@ -37,4 +37,30 @@ describe('AutofillPreview', () => {
     ).toEqual(['a', 'c']);
     expect(label).toBe('Fill 2 fields from My details');
   });
+
+  it('groups a duplicated page field into one row that fills both', () => {
+    const dispatch = vi.fn();
+    render(
+      <AutofillPreview
+        open
+        onOpenChange={() => {}}
+        rows={[
+          { fieldId: 'p1/0:cell:210:700', label: 'Surname', value: 'Doe' },
+          { fieldId: 'p9/0:cell:210:700', label: 'Surname', value: 'Doe' },
+          { fieldId: 'p1/0:cell:210:650', label: 'Postcode', value: 'D02' },
+        ]}
+        toOp={(r) => ({
+          type: 'flat.fill',
+          params: { fieldId: r.fieldId, value: r.value },
+        })}
+        dispatch={dispatch}
+        onEditDetails={() => {}}
+      />,
+    );
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    expect(screen.getByText('2 places')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Fill 3 fields' }));
+    expect(dispatch.mock.calls[0][0]).toHaveLength(3);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Surname: Doe' }));
+  });
 });

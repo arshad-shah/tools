@@ -5,6 +5,7 @@ import {
   AlertDescription,
   Button,
   CameraCapture,
+  CameraFrameGuide,
   LoadingState,
   Stack,
 } from '@/shared/ui';
@@ -13,6 +14,7 @@ import type { ToolError } from '@/shared/lib/errors';
 
 export const CAMERA_DENIED =
   'Camera access was blocked. Allow it in your browser settings, or upload a photo instead.';
+export const FRAME_HINT = 'Fit your signature in the frame';
 export const CAMERA_UNAVAILABLE =
   "This browser can't use a camera here. Upload a photo instead.";
 
@@ -70,6 +72,7 @@ export function PhotoCamera({
         label="Camera preview"
         active={active}
         fps={4}
+        overlay={<CameraFrameGuide hint={FRAME_HINT} />}
         onActiveChange={(on) => {
           setActive(on);
           if (on) setProblem(null);

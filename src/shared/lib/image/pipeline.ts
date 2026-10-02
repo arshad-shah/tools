@@ -1,6 +1,13 @@
 import { ToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import type { RpcContext } from '@/shared/lib/worker-rpc';
+import {
+  canvasToBlob,
+  createScratchCanvas,
+  hasScratchCanvas,
+  scratchContext2D,
+  type ScratchCanvas,
+} from '@/shared/ui/scratch-canvas';
 import { encodePalettePng } from './png-palette';
 import { searchQuality } from './target-size';
 
@@ -107,14 +114,16 @@ export type AvifEncoder = (
 ) => Promise<Uint8Array>;
 
 async function canvasEncode(
-  canvas: OffscreenCanvas,
+  canvas: ScratchCanvas,
   encoding: Exclude<ImageEncoding, 'png-palette' | 'avif'>,
   quality: number,
 ): Promise<Uint8Array> {
   const type = MIME[encoding];
-  const blob = await canvas
-    .convertToBlob({ type, quality: isLossy(encoding) ? quality : undefined })
-    .catch(() => null);
+  const blob = await canvasToBlob(
+    canvas,
+    type,
+    isLossy(encoding) ? quality : undefined,
+  );
   // Browsers fall back to PNG for types they cannot encode.
   if (!blob || blob.type !== type)
     throw new ToolError(
@@ -126,8 +135,9 @@ async function canvasEncode(
 
 /**
  * Decode (upright, from EXIF orientation), high-quality resize, background
- * fill and encode. Browser or worker only: needs createImageBitmap and
- * OffscreenCanvas. Re-encoding drops every metadata segment.
+ * fill and encode. Browser or worker only: needs createImageBitmap, and
+ * OffscreenCanvas or (on the main thread of an older browser) a canvas
+ * element. Re-encoding drops every metadata segment.
  */
 export async function processImage(
   file: Blob,
@@ -136,7 +146,7 @@ export async function processImage(
   encodeAvif?: AvifEncoder,
 ): Promise<ImageResult> {
   validateJob(job);
-  if (typeof OffscreenCanvas === 'undefined')
+  if (!hasScratchCanvas())
     throw new ToolError(
       'UNSUPPORTED_FEATURE',
       'This browser cannot re-encode images (no OffscreenCanvas)',
@@ -166,8 +176,8 @@ export async function processImage(
       });
       checkAborted(ctx.signal);
     }
-    const canvas = new OffscreenCanvas(width, height);
-    const g = canvas.getContext('2d');
+    const canvas = createScratchCanvas(width, height);
+    const g = scratchContext2D(canvas);
     if (!g)
       throw new ToolError('INVALID_FILE', 'This image is too large to process');
     if (needsBackground(job.encoding)) {

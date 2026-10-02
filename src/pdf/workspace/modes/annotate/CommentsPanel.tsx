@@ -1,13 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
-  ColorSwatchPicker,
   Input,
   InspectorSection,
   Label,
-  SegmentedControl,
   Select,
-  Slider,
   Stack,
   Switch,
   Text,
@@ -18,21 +15,17 @@ import type { ModeProps } from '../types';
 import { relativeTime } from '../../relative-time';
 import { commentRows, type CommentRow } from './comments-rows';
 import { useAllExisting } from './existing';
-import {
-  getAnnotateUi,
-  INKS,
-  setAnnotateUi,
-  useAnnotateUi,
-  WIDTHS,
-} from './ui-store';
+import { getAnnotateUi, setAnnotateUi, useAnnotateUi } from './ui-store';
 
 const ALL = '';
 
-/** Scrolls the canvas to a page slot (page-slot-N is the canvas contract). */
-function goToPage(n: number) {
-  document
-    .querySelector(`[data-testid="page-slot-${n}"]`)
-    ?.scrollIntoView({ block: 'center' });
+/** Centres the annotation's anchor in the canvas and focuses its page. */
+function goTo(ctx: ModeProps, row: CommentRow) {
+  const [x, y] = row.anchor;
+  ctx.doc.goToPage(row.pageId, {
+    box: { x, y, width: 1, height: 1 },
+    focus: true,
+  });
 }
 
 function AuthorField({ ctx }: { ctx: ModeProps }) {
@@ -62,63 +55,12 @@ function AuthorField({ ctx }: { ctx: ModeProps }) {
   );
 }
 
-/** The one selected pending annotation, if any. */
-function selectedPending(ctx: ModeProps) {
-  if (ctx.selection.objects.size !== 1) return null;
-  const [id] = ctx.selection.objects;
-  for (const [pageId, list] of ctx.doc.view.overlays) {
-    const o = list.find((x) => x.opId === id && x.type.startsWith('annot.'));
-    if (o) return { pageId, item: o };
-  }
-  return null;
-}
-
-function StyleSection({ ctx }: { ctx: ModeProps }) {
+/** Colour, opacity and width moved to the toolbar's Style control (P5-D). */
+function StyleSection() {
   const ui = useAnnotateUi();
-  const picked = selectedPending(ctx);
-  const pickedColor = (picked?.item.params as { color?: string } | undefined)
-    ?.color;
   return (
-    <InspectorSection title="Style">
+    <InspectorSection title="Display">
       <Stack gap="3">
-        <ColorSwatchPicker
-          label={pickedColor ? 'Colour of the selected annotation' : 'Colour'}
-          value={pickedColor ?? ui.color}
-          onChange={(color) => {
-            setAnnotateUi({ color });
-            // The selected annotation takes the colour too (one undo step).
-            if (picked && pickedColor)
-              ctx.doc.dispatch({
-                type: 'annot.update',
-                params: {
-                  pageId: picked.pageId,
-                  target: { kind: 'pending', id: picked.item.opId },
-                  patch: { color },
-                },
-              });
-          }}
-          options={INKS}
-          allowCustom
-        />
-        <Stack gap="1">
-          <Label htmlFor="annotate-opacity">Opacity</Label>
-          <Slider
-            id="annotate-opacity"
-            aria-label="Opacity"
-            value={Math.round(ui.opacity * 100)}
-            min={10}
-            max={100}
-            step={5}
-            onValueChange={(v) => setAnnotateUi({ opacity: v / 100 })}
-          />
-        </Stack>
-        <SegmentedControl
-          label="Width"
-          size="sm"
-          value={String(ui.width) as '1' | '2' | '4'}
-          onChange={(v) => setAnnotateUi({ width: Number(v) })}
-          options={WIDTHS.map((w) => ({ value: w.value, label: w.label }))}
-        />
         <div className="flex items-center justify-between gap-2">
           <Label htmlFor="annotate-hide">Hide existing annotations</Label>
           <Switch
@@ -171,11 +113,7 @@ function Row({
         ) : null}
         {row.text ? <Text size="sm">{row.text}</Text> : null}
         <div className="flex flex-wrap gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => goToPage(row.pageNumber)}
-          >
+          <Button size="sm" variant="ghost" onClick={() => goTo(ctx, row)}>
             Go to
           </Button>
           {row.replyable ? (
@@ -323,7 +261,7 @@ export function CommentsPanel(ctx: ModeProps) {
           )}
         </Stack>
       </InspectorSection>
-      <StyleSection ctx={ctx} />
+      <StyleSection />
     </div>
   );
 }

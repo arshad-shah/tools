@@ -55,7 +55,13 @@ const rotate = (id: string) => ({
 
 let saver: Autosave | null = null;
 function setup(
-  opts: { enabled?: boolean; fail?: () => unknown; retryMs?: number } = {},
+  opts: {
+    enabled?: boolean;
+    fail?: () => unknown;
+    retryMs?: number;
+    thumb?: () => Promise<Blob | null>;
+    thumbTimeoutMs?: number;
+  } = {},
 ) {
   const model = makeModel();
   const { db, data, writes } = fakeDb(opts.fail);
@@ -63,7 +69,7 @@ function setup(
   blobs.addCheckpoint(makeCheckpoint('ckpt0', 's0'), new Uint8Array([1]));
   const onError = vi.fn();
   const persist = vi.fn(async () => true);
-  const thumb = vi.fn(async () => new Blob(['jpg']));
+  const thumb = vi.fn(opts.thumb ?? (async () => new Blob(['jpg'])));
   saver = createAutosave({
     db,
     model,
@@ -78,6 +84,7 @@ function setup(
     persist,
     now: () => 42,
     retryMs: opts.retryMs,
+    thumbTimeoutMs: opts.thumbTimeoutMs,
   });
   const logWrites = () => writes.filter((w) => w.put.includes('logs:doc1'));
   return {
@@ -234,5 +241,44 @@ describe('createAutosave', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(logWrites()).toHaveLength(1);
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves without the thumbnail when it hangs', async () => {
+    const { logWrites, data } = setup({
+      thumb: () => new Promise<Blob | null>(() => {}),
+      thumbTimeoutMs: 1000,
+    });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(logWrites()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(logWrites()).toHaveLength(1);
+    expect(data.get('documents:doc1')).toMatchObject({ thumb: null });
+  });
+
+  it('saves the log and blobs as they are once the thumbnail is ready', async () => {
+    let ready: (b: Blob) => void = () => {};
+    const { model, data, blobs, writes } = setup({
+      thumb: () => new Promise<Blob | null>((r) => (ready = r)),
+    });
+    await vi.advanceTimersByTimeAsync(800);
+    // A change and a new blob land while the thumbnail renders.
+    model.dispatch(rotate('ckpt0:1'));
+    blobs.addSource('s2', new Uint8Array([2]));
+    ready(new Blob(['jpg']));
+    await vi.advanceTimersByTimeAsync(0);
+    const log = data.get('logs:doc1') as { log: unknown[] };
+    expect(log.log).toHaveLength(1);
+    expect(writes[0].put).toContain('blobs:doc1/src/s2');
+  });
+
+  it('clears the saved opt-in when saving is turned off', async () => {
+    const { model, data, saver: s } = setup();
+    model.setSaveOptIn(true);
+    await vi.advanceTimersByTimeAsync(800);
+    expect(data.get('logs:doc1')).toMatchObject({ saveOptIn: true });
+    model.setSaveOptIn(false);
+    s.setEnabled(false);
+    await s.flush();
+    expect(data.get('logs:doc1')).not.toHaveProperty('saveOptIn');
   });
 });

@@ -3,6 +3,7 @@ import { cn } from '@/shared/lib/cn';
 import { useDockedBarOpen } from './docked-bar-state';
 import type { ModeTabItem } from './mode-tabs';
 import { rovingIndex } from './roving';
+import type { ToolLabels } from './tool-button';
 import { useScrollRow } from './use-scroll-row';
 
 export interface FloatingDockProps {
@@ -12,6 +13,11 @@ export interface FloatingDockProps {
   onChange(id: string): void;
   /** lg: 49px targets with labels for phones. Default md (44px). */
   size?: 'md' | 'lg';
+  /**
+   * Names beside the icons: responsive shows them from md up (desktop, the
+   * owner's labels), icon only below. Default none.
+   */
+  labels?: ToolLabels;
 }
 
 /**
@@ -24,6 +30,7 @@ export function FloatingDock({
   value,
   onChange,
   size = 'md',
+  labels = 'none',
 }: FloatingDockProps) {
   const tabs = React.useRef(new Map<string, HTMLButtonElement>());
   const scroller = useScrollRow<HTMLDivElement>('x');
@@ -70,7 +77,11 @@ export function FloatingDock({
             className={cn(
               'flex shrink-0 snap-start flex-col items-center justify-center gap-0.5 rounded-lg outline-none transition-colors duration-fast',
               'focus-visible:ring-2 focus-visible:ring-focus',
-              size === 'lg' ? 'size-14' : 'size-11',
+              // size-touch: 44px whatever the root font size (h-11 is 38.5px).
+              size === 'lg' ? 'size-14' : 'size-touch',
+              labels === 'responsive' &&
+                'md:w-auto md:flex-row md:gap-1.5 md:px-3',
+              labels === 'always' && 'w-auto flex-row gap-1.5 px-3',
               selected
                 ? 'bg-accent-soft text-accent-fg'
                 : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
@@ -81,7 +92,9 @@ export function FloatingDock({
               aria-hidden
               className={cn(
                 'max-w-full truncate px-0.5 text-[10px] leading-3',
-                size === 'md' && 'sr-only',
+                size === 'md' && labels === 'none' && 'sr-only',
+                size === 'md' && labels === 'responsive' && 'max-md:sr-only',
+                labels !== 'none' && 'text-sm leading-none',
               )}
             >
               {it.label}

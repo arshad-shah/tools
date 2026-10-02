@@ -152,4 +152,57 @@ describe('materialize', () => {
       materialize(plan(), { signal: ctrl.signal, progress: () => {} }),
     ).rejects.toMatchObject({ code: 'CANCELLED' });
   });
+
+  it('writes pending crop and page size', async () => {
+    const out = await materialize(
+      plan({
+        pages: [
+          {
+            ...ref('c:0', 's0', 0),
+            crop: { x: 10, y: 20, width: 300, height: 400 },
+          },
+          { ...ref('c:1', 's0', 1), size: { width: 400, height: 500 } },
+        ],
+      }),
+      ctx(),
+    );
+    const [a, b] = (await PDFDocument.load(out.bytes)).getPages();
+    expect(a.getCropBox()).toEqual({ x: 10, y: 20, width: 300, height: 400 });
+    expect(b.getMediaBox()).toMatchObject({ width: 400, height: 500 });
+  });
+
+  it('writes labels for an exported subset of pages', async () => {
+    const out = await materialize(
+      plan({
+        pages: [ref('c:2', 's0', 2), ref('c:0', 's0', 0)],
+        pageLabels: [{ start: 0, style: 'A' }],
+      }),
+      ctx(),
+    );
+    const task = getDocument({ data: out.bytes.slice(), verbosity: 0 });
+    try {
+      const pdf = await task.promise;
+      expect(pdf.numPages).toBe(2);
+      expect(await pdf.getPageLabels()).toEqual(['A', 'B']);
+    } finally {
+      await task.destroy();
+    }
+  });
+
+  it('turns pdf-lib failures into a plain message', async () => {
+    const copy = vi
+      .spyOn(PDFDocument.prototype, 'copyPages')
+      .mockRejectedValue(
+        new Error('Expected instance of PDFDict, but got undefined'),
+      );
+    try {
+      await expect(materialize(plan(), ctx())).rejects.toMatchObject({
+        code: 'INVALID_FILE',
+        message:
+          'This PDF has a structure we could not rebuild. It may be damaged.',
+      });
+    } finally {
+      copy.mockRestore();
+    }
+  });
 });

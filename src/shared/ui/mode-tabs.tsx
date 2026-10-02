@@ -85,13 +85,22 @@ export function ModeTabs({
   const tabs = React.useRef(new Map<string, HTMLButtonElement>());
   const scroller = useScrollRow<HTMLDivElement>('x');
 
+  // Focus follows a keyboard switch only once it happens: the owner may
+  // refuse it (an unsaved mode asks "Leave mode?").
+  const pendingFocus = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (pendingFocus.current !== value) return;
+    pendingFocus.current = null;
+    tabs.current.get(value)?.focus();
+  }, [value]);
+
   const onKeyDown = (e: React.KeyboardEvent, index: number) => {
     const to = rovingIndex(e, index, shown.length);
     if (to === null) return;
     e.preventDefault();
     const id = shown[to].id;
+    pendingFocus.current = id;
     onChange(id);
-    tabs.current.get(id)?.focus();
   };
 
   return (

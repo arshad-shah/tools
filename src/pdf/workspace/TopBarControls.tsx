@@ -23,6 +23,7 @@ import {
   ShortcutHint,
   StatusDot,
   Switch,
+  ToolButton,
   Tooltip,
 } from '@/shared/ui';
 
@@ -52,6 +53,20 @@ export interface TopBarControlsProps {
   badges?: ReactNode;
   onSearch(): void;
   onExport(): void;
+  /** The app's help menu (keyboard shortcuts, privacy), at the bar's size. */
+  helpMenu?: (size: 'md' | 'lg') => ReactNode;
+  /**
+   * Workspace settings actions (e.g. "Clear trusted roots"), listed in the
+   * More menu. The standard layout has no More menu: there they stay in
+   * Mod+K under Settings.
+   */
+  settingsItems?: TopBarMenuItem[];
+}
+
+export interface TopBarMenuItem {
+  id: string;
+  label: string;
+  onSelect(): void;
 }
 
 const SAVE_TEXT: Record<SaveStatus, string> = {
@@ -74,10 +89,13 @@ function NameField({
   name,
   onRename,
   narrow,
+  touch,
 }: {
   name: string;
   onRename(n: string): void;
   narrow?: boolean;
+  /** 44px field (Focus and phone). */
+  touch?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const commit = () => {
@@ -88,6 +106,7 @@ function NameField({
     <div className={narrow ? 'w-24 min-w-0' : 'w-40 min-w-0 sm:w-56'}>
       <Input
         aria-label="Document name"
+        size={touch ? 'lg' : 'md'}
         value={draft ?? name}
         onChange={setDraft}
         onBlur={commit}
@@ -95,7 +114,12 @@ function NameField({
           if (e.key === 'Enter') {
             e.preventDefault();
             commit();
-          } else if (e.key === 'Escape') setDraft(null);
+          } else if (e.key === 'Escape') {
+            // Cancels the edit only: the workspace's Esc (clear the
+            // selection) skips handled keys.
+            e.preventDefault();
+            setDraft(null);
+          }
         }}
       />
     </div>
@@ -110,26 +134,31 @@ export function TopBarControls(p: TopBarControlsProps) {
   const phone = p.layout === 'phone';
   // Focus and phone are touch layouts: 44px targets (spec §13.2).
   const size = p.compact ? 'lg' : 'md';
+  // Labels beside the icons on desktop, icon-only on phones (owner note).
   const undoButton = (
     <Tooltip content={undo} shortcut="Mod+Z">
-      <IconButton
-        variant="ghost"
+      <ToolButton
+        labels="responsive"
         size={size}
         label={undo}
+        text="Undo"
         icon={IconUndo}
         aria-disabled={!p.undoLabel}
+        className={p.undoLabel ? undefined : 'opacity-50'}
         onClick={() => p.undoLabel && p.onUndo()}
       />
     </Tooltip>
   );
   const redoButton = (
     <Tooltip content={redo} shortcut="Mod+Shift+Z">
-      <IconButton
-        variant="ghost"
+      <ToolButton
+        labels="responsive"
         size={size}
         label={redo}
+        text="Redo"
         icon={IconRedo}
         aria-disabled={!p.redoLabel}
+        className={p.redoLabel ? undefined : 'opacity-50'}
         onClick={() => p.redoLabel && p.onRedo()}
       />
     </Tooltip>
@@ -170,18 +199,19 @@ export function TopBarControls(p: TopBarControlsProps) {
   if (p.compact)
     return (
       <div className="flex min-w-0 items-center justify-end gap-1">
-        <NameField name={p.name} onRename={p.onRename} narrow={phone} />
+        <NameField name={p.name} onRename={p.onRename} narrow={phone} touch />
         {restricted}
         {p.badges}
         {undoButton}
         {phone ? null : redoButton}
-        <IconButton
-          variant="ghost"
+        <ToolButton
+          labels="responsive"
           size={size}
           label="Pages"
           icon={IconMenu}
           onClick={p.onOpenPages}
         />
+        {p.helpMenu?.(size)}
         {exportButton}
         <DropdownMenu>
           <DropdownMenuTrigger>
@@ -218,6 +248,11 @@ export function TopBarControls(p: TopBarControlsProps) {
                   : 'Stop saving on this device'}
               </DropdownMenuItem>
             ) : null}
+            {p.settingsItems?.map((item) => (
+              <DropdownMenuItem key={item.id} onClick={item.onSelect}>
+                {item.label}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
         <StatusDot tone={SAVE_TONE[p.save]} label={saveText} />
@@ -242,18 +277,23 @@ export function TopBarControls(p: TopBarControlsProps) {
       {undoButton}
       {redoButton}
       <Tooltip content="Page rail" shortcut="Mod+\\">
-        <IconButton
-          variant="ghost"
+        <ToolButton
+          labels="responsive"
+          size="md"
           label="Page rail"
+          text="Pages"
           icon={IconPanelLeft}
           aria-pressed={!!p.railOpen}
+          className={p.railOpen ? 'bg-accent-soft text-accent-fg' : undefined}
           onClick={p.onOpenPages}
         />
       </Tooltip>
       <Tooltip content="Focus layout" shortcut="F">
-        <IconButton
-          variant="ghost"
+        <ToolButton
+          labels="responsive"
+          size="md"
           label="Focus layout"
+          text="Focus"
           icon={p.layout === 'focus' ? IconLayoutStandard : IconLayoutFocus}
           aria-pressed={p.layout === 'focus'}
           onClick={p.onToggleFocus}
@@ -271,6 +311,7 @@ export function TopBarControls(p: TopBarControlsProps) {
           />
         ) : null}
       </span>
+      {p.helpMenu?.(size)}
       {exportButton}
     </div>
   );

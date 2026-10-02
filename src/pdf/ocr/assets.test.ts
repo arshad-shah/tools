@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ToolError } from '@/shared/lib/errors';
 import {
-  OCR_MANIFEST_URL,
+  OCR_MANIFEST,
   assertSameOrigin,
   downloadSize,
   hasCachedLanguage,
@@ -52,45 +52,22 @@ describe('simdSupported', () => {
 });
 
 describe('loadOcrManifest', () => {
-  it('fetches the versioned manifest', async () => {
-    const m = fakeManifest();
-    const fetch = vi.fn(async () => new Response(JSON.stringify(m)));
+  it('returns the manifest inlined at build time without fetching', async () => {
+    const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);
-    expect(await loadOcrManifest()).toEqual(m);
-    expect(fetch).toHaveBeenCalledWith(OCR_MANIFEST_URL, expect.anything());
-    expect(OCR_MANIFEST_URL).toMatch(
-      /^\/ocr\/\d+\.\d+\.\d+\/ocr-manifest\.json$/,
-    );
-  });
-
-  it('maps a failed fetch to NETWORK with the spec message', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))),
-    );
-    await expect(loadOcrManifest()).rejects.toMatchObject({
-      code: 'NETWORK',
-      message:
-        "Couldn't download OCR data. Check your connection and try again.",
-    });
-  });
-
-  it('maps an HTTP error to NETWORK', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response('', { status: 404 })),
-    );
-    expect(await codeOf(loadOcrManifest())).toBe('NETWORK');
+    const m = await loadOcrManifest();
+    expect(m).toBe(OCR_MANIFEST);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(m.version).toMatch(/^\d+\.\d+\.\d+-core-\d+\.\d+\.\d+/);
+    expect(m.worker.path).toBe(`/ocr/${m.version}/worker.min.js`);
+    expect(m.worker.bytes).toBeGreaterThan(0);
+    expect(m.languages.eng.bytes).toBeGreaterThan(0);
   });
 
   it('refuses a manifest pointing at another origin', async () => {
     const m = fakeManifest();
     m.languages.eng.path = 'https://cdn.example/eng.traineddata.gz';
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(JSON.stringify(m))),
-    );
-    expect(await codeOf(loadOcrManifest())).toBe('UNKNOWN');
+    expect(await codeOf(loadOcrManifest(m))).toBe('UNKNOWN');
   });
 });
 

@@ -17,6 +17,8 @@ export interface AutosaveOptions {
   enabled: boolean;
   /** Default 750. */
   debounceMs?: number;
+  /** A thumbnail slower than this is skipped for this save. Default 5000. */
+  thumbTimeoutMs?: number;
   /** Delay before retrying a failed save without a new change. Default 5000. */
   retryMs?: number;
   /** STORAGE_FULL -> notify with action "Clear old documents". */
@@ -35,6 +37,22 @@ export interface Autosave {
   dispose(): void;
 }
 
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timed out')), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e: unknown) => {
+        clearTimeout(t);
+        reject(e instanceof Error ? e : new Error(String(e)));
+      },
+    );
+  });
+}
+
 /**
  * Saves the document to IndexedDB (spec §6.6): debounced after each change
  * and at once when the tab is hidden. Each save is ONE transaction (record,
@@ -45,6 +63,7 @@ export interface Autosave {
 export function createAutosave(o: AutosaveOptions): Autosave {
   const debounceMs = o.debounceMs ?? 750;
   const retryMs = o.retryMs ?? 5000;
+  const thumbTimeoutMs = o.thumbTimeoutMs ?? 5000;
   const now = o.now ?? Date.now;
   const persist = o.persist ?? requestPersistence;
   const docId = o.model.getState().id;
@@ -90,17 +109,25 @@ export function createAutosave(o: AutosaveOptions): Autosave {
   async function save() {
     if (!enabled || !dirty) return;
     dirty = false;
+    const first = o.model.getView().pages[0];
+    const key = first ? `${first.id}:${first.rotate}` : '';
+    if (key !== thumbKey) {
+      const next = await withTimeout(o.thumb(), thumbTimeoutMs).catch(
+        () => undefined,
+      );
+      // A hung or failed thumbnail keeps the old one and is tried again.
+      if (next !== undefined) {
+        thumb = next;
+        thumbKey = key;
+      }
+    }
+    // Snapshot the log and the blobs together, after the await, so the
+    // record never points at bytes this transaction does not hold.
     const view = o.model.getView();
     const { doc, log } = toRecords(o.model.getState(), {
       ...o.ui(),
       pageCount: view.pages.length,
     });
-    const first = view.pages[0];
-    const key = first ? `${first.id}:${first.rotate}` : '';
-    if (key !== thumbKey) {
-      thumb = await o.thumb().catch(() => thumb);
-      thumbKey = key;
-    }
     const writes = o.blobs.pendingWrites();
     o.onStatus?.('saving');
     try {
@@ -128,6 +155,18 @@ export function createAutosave(o: AutosaveOptions): Autosave {
     }
   }
 
+  async function clearOptIn() {
+    try {
+      const rec = await o.db.get<LogRecord>('logs', docId);
+      if (!rec?.saveOptIn) return;
+      const next = { ...rec };
+      delete next.saveOptIn;
+      await o.db.put('logs', docId, next);
+    } catch (e) {
+      report(e);
+    }
+  }
+
   function flush(): Promise<void> {
     if (timer) {
       clearTimeout(timer);
@@ -152,9 +191,11 @@ export function createAutosave(o: AutosaveOptions): Autosave {
       if (on) {
         dirty = true;
         schedule();
-      } else if (timer) {
-        clearTimeout(timer);
+      } else {
+        if (timer) clearTimeout(timer);
         timer = null;
+        // A saved copy must not restore with saving back on.
+        if (saved) chain = chain.then(clearOptIn, clearOptIn);
       }
     },
     isEnabled: () => enabled,

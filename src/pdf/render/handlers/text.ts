@@ -1,3 +1,4 @@
+import type { PDFPageProxy } from 'pdfjs-dist';
 import type { RpcContext } from '@/shared/lib/worker-rpc';
 import { textFromItems, textItemsFrom } from '../text';
 import type { PageText } from '../types';
@@ -21,24 +22,38 @@ export interface PageTextItems {
   >;
 }
 
+/** Runs `read` on one page, then frees the page's parsed resources. */
+async function withPage<T>(
+  docId: string,
+  pageIndex: number,
+  read: (page: PDFPageProxy) => Promise<T>,
+): Promise<T> {
+  const page = await getDoc(docId).getPage(pageIndex + 1);
+  try {
+    return await read(page);
+  } finally {
+    page.cleanup();
+  }
+}
+
 export const textHandlers = {
-  async extractText(
+  extractText(
     _ctx: RpcContext,
     docId: string,
     pageIndex: number,
   ): Promise<PageText> {
-    const page = await getDoc(docId).getPage(pageIndex + 1);
-    return textFromItems((await page.getTextContent()).items);
+    return withPage(docId, pageIndex, async (page) =>
+      textFromItems((await page.getTextContent()).items),
+    );
   },
 
-  async textItems(
+  textItems(
     _ctx: RpcContext,
     docId: string,
     pageIndex: number,
   ): Promise<PageTextItems> {
-    const page = await getDoc(docId).getPage(pageIndex + 1);
-    return textItemsFrom(
-      await page.getTextContent({ includeMarkedContent: false }),
+    return withPage(docId, pageIndex, async (page) =>
+      textItemsFrom(await page.getTextContent({ includeMarkedContent: false })),
     );
   },
 };

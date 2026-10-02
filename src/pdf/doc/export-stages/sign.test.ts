@@ -178,6 +178,20 @@ describe('sign export stage', () => {
     expect(reports.map((r) => r.integrity)).toEqual(['intact', 'intact']);
   });
 
+  it('does not take "/ByteRange" text inside a stream for a signature', async () => {
+    const doc = await PDFDocument.load(await makeTextPdf({ pages: 2 }));
+    doc.context.register(
+      doc.context.stream(['/By', 'teRange [0 1 2 3]'].join('')),
+    );
+    const { model, blobs } = await setup(
+      await doc.save({ useObjectStreams: false }),
+    );
+    const out = await exportDocument(model, blobs, options(sig()), env());
+    expect(out.warnings).not.toContain(SIGN_ONLY_KEPT);
+    const reports = await verifyPdfSignatures(out.bytes);
+    expect(reports).toHaveLength(1);
+  });
+
   it('refuses password protection together with a signature', async () => {
     const { model, blobs } = await setup();
     model.dispatch({

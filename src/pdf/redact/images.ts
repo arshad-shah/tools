@@ -170,21 +170,37 @@ export async function decodeForRedaction(
   return out;
 }
 
-/** Paints the image pixels whose centres fall under the marks; returns how many. */
+export type Rgb = [number, number, number];
+
+/** Overlap below this many square points counts as touching, not covering. */
+const TOUCH = 1e-6;
+
+/**
+ * Paints every image pixel whose footprint (its page-space bounding box)
+ * overlaps a mark, so a mark smaller than one pixel of an upscaled image
+ * still paints that pixel. `fill` is one colour, or one per mark (by
+ * index). Returns how many pixels were painted.
+ */
 export function paintCovered(
   img: DecodedImage,
   ctm: Matrix,
   marks: readonly Box[],
-  fill: [number, number, number],
+  fill: Rgb | readonly Rgb[],
 ): number {
   const { width: W, height: H, comps, pixels } = img;
-  const gray = Math.round(
-    0.2126 * fill[0] + 0.7152 * fill[1] + 0.0722 * fill[2],
-  );
+  const perMark = Array.isArray(fill[0]);
+  const fillOf = (i: number): Rgb =>
+    perMark
+      ? ((fill as readonly Rgb[])[i] ?? (fill as readonly Rgb[])[0])
+      : (fill as Rgb);
   // Only scan the pixel window that can intersect a mark.
   const inv = invert(ctm);
   let painted = 0;
-  for (const m of marks) {
+  for (const [mi, m] of marks.entries()) {
+    const rgb = fillOf(mi);
+    const gray = Math.round(
+      0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2],
+    );
     const pts = [
       [m.x, m.y],
       [m.x + m.width, m.y],
@@ -199,15 +215,21 @@ export function paintCovered(
     const py1 = Math.min(H - 1, Math.ceil((1 - Math.min(...vs)) * H) + 1);
     for (let py = py0; py <= py1; py++)
       for (let px = px0; px <= px1; px++) {
-        const [x, y] = apply(ctm, (px + 0.5) / W, 1 - (py + 0.5) / H);
-        if (x < m.x || x > m.x + m.width || y < m.y || y > m.y + m.height)
-          continue;
+        const foot = quadBox(
+          corners(ctm, px / W, 1 - (py + 1) / H, (px + 1) / W, 1 - py / H),
+        );
+        const ow =
+          Math.min(foot.x + foot.width, m.x + m.width) - Math.max(foot.x, m.x);
+        const oh =
+          Math.min(foot.y + foot.height, m.y + m.height) -
+          Math.max(foot.y, m.y);
+        if (!(ow > 0 && oh > 0 && ow * oh > TOUCH)) continue;
         const o = (py * W + px) * comps;
         if (comps === 1) pixels[o] = gray;
         else {
-          pixels[o] = fill[0];
-          pixels[o + 1] = fill[1];
-          pixels[o + 2] = fill[2];
+          pixels[o] = rgb[0];
+          pixels[o + 1] = rgb[1];
+          pixels[o + 2] = rgb[2];
         }
         if (img.smask) img.smask.pixels[py * W + px] = 255;
         painted++;

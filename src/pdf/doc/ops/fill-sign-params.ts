@@ -34,7 +34,7 @@ export interface FlatFillParams {
   multiline?: boolean;
   /** Text colour, '#rrggbb' (default black). */
   color?: string;
-  /** Letter spacing in points (PDF Tc), single-line text only. */
+  /** Letter spacing in points (PDF Tc), on every line. */
   spacing?: number;
   /** Character boxes: this many equal cells, one character in each. */
   comb?: number;

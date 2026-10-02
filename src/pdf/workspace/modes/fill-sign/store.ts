@@ -95,12 +95,14 @@ export interface FillSignState {
   placing: 'signature' | 'initials' | null;
   /** Form info per source id (render worker). */
   forms: Record<string, FormInfo | undefined>;
+  /** Signed /Sig field names per source id (from the verifier). */
+  signedFields: Record<string, readonly string[] | undefined>;
   formError: ToolError | null;
   /** Detection progress across pages. */
   progress: { done: number; total: number } | null;
   /** Page keys (`sourceId:index`) whose detection failed. */
   crashed: ReadonlySet<string>;
-  /** Table cells per page key, for click-anywhere snapping. */
+  /** Table cells fetched this session for pages restored without them. */
   cells: Record<string, Box[]>;
   /** Detected places to sign per page key (smart placement). */
   signTargets: Record<string, SignTarget[]>;
@@ -132,6 +134,7 @@ const initial: FillSignState = {
   placing: null,
   justPlaced: null,
   forms: {},
+  signedFields: {},
   formError: null,
   progress: null,
   crashed: new Set(),

@@ -29,6 +29,8 @@ export interface PageRailProps {
   onDelete?(ids: string[]): void;
   /** e.g. PageThumb at priority 1. */
   renderThumb(page: RailPage, width: number): React.ReactNode;
+  /** A mode's status over the bottom-left of the thumbnail (e.g. fields left). */
+  renderBadge?(page: RailPage): React.ReactNode;
   /** CSS px, 120..260. */
   width: number;
 }
@@ -78,6 +80,7 @@ export function PageRail({
   current,
   onSelect,
   onActivate,
+  renderBadge,
   onMove,
   onDelete,
   renderThumb,
@@ -220,6 +223,20 @@ export function PageRail({
     }
   };
 
+  // Over the thumbnail, not after it (the box clips what follows: P5-F).
+  const badge = (page: RailPage) => {
+    const node = renderBadge?.(page);
+    if (node === null || node === undefined || node === false) return null;
+    return (
+      <div
+        data-rail-badge=""
+        className="absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] rounded-sm bg-surface/90 px-1 py-0.5 shadow-e1 empty:hidden"
+      >
+        {node}
+      </div>
+    );
+  };
+
   return (
     <>
       <div
@@ -279,11 +296,12 @@ export function PageRail({
                   width={thumbW}
                   height={thumbW / (page.aspect || 1)}
                   className={cn(
-                    'overflow-hidden rounded-sm bg-surface shadow-page',
+                    'relative overflow-hidden rounded-sm bg-surface shadow-page',
                     page.id === current && 'ring-2 ring-accent-indicator',
                   )}
                 >
                   {renderThumb(page, thumbW)}
+                  {badge(page)}
                 </Sized>
                 <div className="flex h-5 items-center gap-1" aria-hidden>
                   <span className="font-mono text-xs text-fg-muted">

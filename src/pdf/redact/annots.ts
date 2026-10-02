@@ -63,7 +63,12 @@ function clearValue(doc: PDFDocument, field: PDFDict) {
  * AcroForm /Fields), and a parent left without kids goes too, so the
  * field and its value leave the document.
  */
-function removeWidget(doc: PDFDocument, ref: PDFObject, widget: PDFDict) {
+function removeWidget(
+  doc: PDFDocument,
+  ref: PDFObject,
+  widget: PDFDict,
+  cleared: Set<PDFDict>,
+) {
   const acro = resolve(doc, doc.catalog.get(PDFName.of('AcroForm')));
   let node: PDFObject = ref;
   let dict: PDFDict = widget;
@@ -74,6 +79,7 @@ function removeWidget(doc: PDFDocument, ref: PDFObject, widget: PDFDict) {
       const left = removeFrom(doc, parent, 'Kids', node);
       if (left > 0) {
         clearValue(doc, parent);
+        cleared.add(parent);
         return;
       }
       node = parentRef;
@@ -85,17 +91,28 @@ function removeWidget(doc: PDFDocument, ref: PDFObject, widget: PDFDict) {
   }
 }
 
+export interface RemovedAnnotations {
+  /** Annotations and widgets removed from the page. */
+  count: number;
+  /**
+   * Fields that keep widgets elsewhere but lost a widget under a mark:
+   * their value is emptied everywhere.
+   */
+  clearedFields: number;
+}
+
 /**
  * Removes every annotation and widget whose /Rect intersects a mark (spec
- * 10.2 step 6), with the popups that belong to them. Returns how many.
+ * 10.2 step 6), with the popups that belong to them.
  */
 export function removeAnnotations(
   doc: PDFDocument,
   page: PDFPage,
   marks: readonly Box[],
-): number {
+): RemovedAnnotations {
   const annotsObj = resolve(doc, page.node.get(PDFName.of('Annots')));
-  if (!(annotsObj instanceof PDFArray)) return 0;
+  if (!(annotsObj instanceof PDFArray)) return { count: 0, clearedFields: 0 };
+  const cleared = new Set<PDFDict>();
   const entries = annotsObj
     .asArray()
     .map((ref) => ({ ref, dict: resolve(doc, ref) }));
@@ -106,7 +123,7 @@ export function removeAnnotations(
     if (!rect || !marks.some((m) => intersects(rect, m))) continue;
     gone.add(ref);
     if (dict.get(PDFName.of('Subtype')) === PDFName.of('Widget'))
-      removeWidget(doc, ref, dict);
+      removeWidget(doc, ref, dict, cleared);
   }
   // Popups (and replies) of removed annotations go with them.
   for (const { ref, dict } of entries) {
@@ -117,5 +134,5 @@ export function removeAnnotations(
   }
   const keep = entries.filter((e) => !gone.has(e.ref)).map((e) => e.ref);
   page.node.set(PDFName.of('Annots'), doc.context.obj(keep));
-  return gone.size;
+  return { count: gone.size, clearedFields: cleared.size };
 }

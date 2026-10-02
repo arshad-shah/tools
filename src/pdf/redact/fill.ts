@@ -26,14 +26,16 @@ export function privateResources(doc: PDFDocument, page: PDFPage): PDFDict {
 /**
  * Draws the redaction fills (and fitted overlay text) over the page: the
  * existing content is wrapped in q/Q so its graphics state cannot leak.
+ * `only` draws just the fills or just the overlay text.
  */
 export async function drawFills(
   doc: PDFDocument,
   page: PDFPage,
   marks: readonly RedactMark[],
+  only?: 'fills' | 'text',
 ): Promise<void> {
   const parts: string[] = [];
-  const texts = marks.filter((m) => m.overlayText);
+  const texts = only === 'fills' ? [] : marks.filter((m) => m.overlayText);
   let fontName = '';
   let font: Awaited<ReturnType<PDFDocument['embedFont']>> | null = null;
   const res = privateResources(doc, page);
@@ -54,9 +56,10 @@ export async function drawFills(
   );
   for (const m of marks) {
     const { x, y, width, height } = m.box;
-    parts.push(
-      `q ${rg(rgbOf(m.fill))} ${n(x)} ${n(y)} ${n(width)} ${n(height)} re f Q`,
-    );
+    if (only !== 'text')
+      parts.push(
+        `q ${rg(rgbOf(m.fill))} ${n(x)} ${n(y)} ${n(width)} ${n(height)} re f Q`,
+      );
     if (!m.overlayText || !font) continue;
     const upright = angle === 90 || angle === 270;
     const [w, h] = upright ? [height, width] : [width, height];

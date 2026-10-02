@@ -1,4 +1,4 @@
-import { Alignment, Fit } from '@rive-app/react-canvas';
+import { Alignment, Fit } from '@/shared/ui/adapters/rive-runtime';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ALIGN_FIT,

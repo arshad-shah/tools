@@ -81,7 +81,8 @@ const headerFooter = defineMaterializer<HeaderFooterParams>({
         color: p.color,
         margin: p.margin,
         pages: { mode: 'ranges', text: pages.map((i) => i + 1).join(',') },
-        filename: p.filename,
+        // The file being written; the op's name when not exporting.
+        filename: ctx.filename ?? p.filename,
         date: new Date(p.date),
       },
       ctx.draw.fonts,

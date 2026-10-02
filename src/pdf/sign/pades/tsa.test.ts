@@ -104,6 +104,44 @@ describe('requestTimestamp', () => {
     });
   });
 
+  it('sends a nonce that is minimal positive DER', async () => {
+    vi.spyOn(crypto, 'getRandomValues').mockImplementation(<T>(a: T): T => {
+      (a as Uint8Array).fill(0);
+      (a as Uint8Array)[1] = 0x05;
+      return a;
+    });
+    let sent: Uint8Array | null = null;
+    vi.stubGlobal('fetch', async (_u: unknown, init: RequestInit) => {
+      sent = init.body as Uint8Array;
+      throw new TypeError('Failed to fetch');
+    });
+    await expect(requestTimestamp(sig, opts())).rejects.toBeTruthy();
+    vi.restoreAllMocks();
+    const req = pkijs.TimeStampReq.fromBER(sent!.slice().buffer);
+    const first = new Uint8Array(req.nonce!.valueBlock.valueHexView)[0];
+    // Not 0x00 (non-minimal before a byte under 0x80) and not negative.
+    expect(first & 0x80).toBe(0);
+    expect(first).not.toBe(0);
+  });
+
+  it('cuts a long status text from the server short', async () => {
+    const long = 'x'.repeat(5000);
+    const resp = new pkijs.TimeStampResp({
+      status: new pkijs.PKIStatusInfo({
+        status: 2,
+        statusStrings: [new asn1js.Utf8String({ value: long })],
+      }),
+    });
+    vi.stubGlobal(
+      'fetch',
+      async () => new Response(new Uint8Array(resp.toSchema().toBER(false))),
+    );
+    const err = (await requestTimestamp(sig, opts()).catch((e) => e)) as Error;
+    expect(err).toMatchObject({ code: 'NETWORK' });
+    expect(err.message.length).toBeLessThanOrEqual(200);
+    expect(err.message.startsWith('xxx')).toBe(true);
+  });
+
   it('still reports a cancel by the user as a cancel', async () => {
     const ctrl = new AbortController();
     vi.stubGlobal(

@@ -14,8 +14,11 @@ export function targetPages({ doc, selection }: ModeProps): PageId[] {
 }
 
 /** Why "Delete pages" is unavailable, or null. */
-export function deleteBlocked(ctx: ModeProps): string | null {
-  const n = targetPages(ctx).length;
+export function deleteBlocked(
+  ctx: ModeProps,
+  pageIds = targetPages(ctx),
+): string | null {
+  const n = pageIds.length;
   if (n === 0) return 'Select pages to delete';
   return n >= ctx.doc.view.pages.length ? KEEP_ONE : null;
 }
@@ -26,10 +29,10 @@ export function rotate(ctx: ModeProps, delta: 90 | -90) {
     ctx.doc.dispatch({ type: 'page.rotate', params: { pageIds, delta } });
 }
 
-export function deletePages(ctx: ModeProps) {
-  const pageIds = targetPages(ctx);
+/** Deletes the pages (default: the selection), keeping at least one. */
+export function deletePages(ctx: ModeProps, pageIds = targetPages(ctx)) {
   if (!pageIds.length) return;
-  const blocked = deleteBlocked(ctx);
+  const blocked = deleteBlocked(ctx, pageIds);
   if (blocked) return ctx.doc.announce(blocked);
   if (ctx.doc.dispatch({ type: 'page.delete', params: { pageIds } }).length)
     ctx.selection.clear();

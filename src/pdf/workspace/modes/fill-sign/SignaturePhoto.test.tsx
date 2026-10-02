@@ -126,6 +126,16 @@ describe('SignaturePhoto: upload', () => {
     ).toHaveLength(1);
   });
 
+  it('labels the contrast slider by its visible label with a unique id', async () => {
+    render(<SignaturePhoto onChange={() => {}} client={fakeClient()} />);
+    upload('sig.webp', 'image/webp');
+    await screen.findByRole('img', { name: 'Signature preview' });
+    const slider = screen.getByRole('slider', { name: 'Contrast' });
+    expect(slider.getAttribute('aria-label')).toBeNull();
+    expect(slider.id).not.toBe('sig-photo-contrast');
+    expect(document.querySelector(`label[for="${slider.id}"]`)).toBeTruthy();
+  });
+
   it('refuses a photo over 25 MB before decoding it', async () => {
     const client = fakeClient();
     render(<SignaturePhoto onChange={() => {}} client={client} />);

@@ -1,15 +1,17 @@
 import { notify } from '@/shared/lib/notify';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { newId } from '@/shared/lib/id';
+import { createXxh64 } from '@/shared/lib/crypto/checksum';
 import type { JobContext } from '@/shared/state/useJob';
 import type { BlobStore } from '@/pdf/doc/blob-store';
 import { runCheckpoint } from '@/pdf/doc/checkpoints/run';
 import { assertUnrestricted } from '@/pdf/doc/restricted';
 import type { DocumentModel } from '@/pdf/doc/model';
+import { blobKey } from '@/pdf/doc/serialize';
 import type { Services } from '@/pdf/doc/services';
 import type { DocInfo } from '@/pdf/render';
 import type { PageId } from '@/pdf/doc/types';
-import type { DocumentApi } from './modes/types';
+import type { DocumentApi, GoToPageOptions } from './modes/types';
 import { displayViewport, pageGeom } from './page-display';
 import type { SourceDocs } from './source-docs';
 
@@ -24,6 +26,8 @@ export interface DocumentApiDeps {
   services: Services;
   sourceDocs: SourceDocs;
   currentPage: PageId | null;
+  /** Pages the canvas shows, in document order. */
+  visiblePages?: readonly PageId[];
   announce(message: string): void;
   /** Runs `fn` with the workspace ProgressOverlay; null when cancelled. */
   runJob<R>(
@@ -31,6 +35,8 @@ export interface DocumentApiDeps {
     fn: (ctx: JobContext) => Promise<R>,
   ): Promise<R | null>;
   confirm(message: string): Promise<boolean>;
+  /** Makes the page current and scrolls the canvas (the shell's navigation). */
+  goToPage?(id: PageId, opts: GoToPageOptions): void;
 }
 
 /** The view of the document a mode works with (spec §7.1). */
@@ -52,6 +58,7 @@ export function createDocumentApi(d: DocumentApiDeps): DocumentApi {
     state,
     sources: sourceDocs.snapshot(),
     currentPage: d.currentPage,
+    visiblePages: d.visiblePages ?? [],
     dispatch(op, label) {
       try {
         guard();
@@ -73,6 +80,7 @@ export function createDocumentApi(d: DocumentApiDeps): DocumentApi {
             services,
             type,
             params,
+            exclude: opts?.exclude,
             signal: job.signal,
             progress: job.progress,
             inspect: async (bytes, signal) => {
@@ -105,6 +113,13 @@ export function createDocumentApi(d: DocumentApiDeps): DocumentApi {
       blobs.addAsset(id, bytes);
       return id;
     },
+    assetBytes: (id) => blobs.assetBytes(id),
+    async contentHash() {
+      const first = model.getState().checkpoints[0];
+      const h = createXxh64();
+      h.update(await blobs.checkpointBytes(first.id));
+      return h.digestHex();
+    },
     undo: () => void model.undo(),
     setDetection: (detection) => model.setDetection(detection),
     async addSource(bytes, name) {
@@ -123,6 +138,15 @@ export function createDocumentApi(d: DocumentApiDeps): DocumentApi {
       sourceDocs.seed(id, info);
       return id;
     },
+    removeSource(id) {
+      if (!model.removeSource(id)) return;
+      void blobs
+        .drop([blobKey.source(model.getState().id, id)])
+        .catch(() => {});
+      sourceDocs.release(
+        Object.keys(sourceDocs.snapshot()).filter((s) => s !== id),
+      );
+    },
     render: services.render,
     text: (page) => services.render.textItems(docIdOf(page.source), page.index),
     pageGeom: (page) => pageGeom(page, model.getState().sources),
@@ -130,5 +154,9 @@ export function createDocumentApi(d: DocumentApiDeps): DocumentApi {
       displayViewport(page, model.getState().sources, scale),
     services,
     announce: d.announce,
+    goToPage(id, opts = {}) {
+      if (!model.getView().pages.some((p) => p.id === id)) return;
+      d.goToPage?.(id, opts);
+    },
   };
 }

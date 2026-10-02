@@ -74,7 +74,7 @@ describe('IconButton', () => {
 
   it('lg is a 44px touch target', () => {
     render(<IconButton label="Search" icon={IconSearch} size="lg" />);
-    expect(screen.getByRole('button').className).toContain('size-11');
+    expect(screen.getByRole('button').className).toContain('size-touch');
   });
 });
 

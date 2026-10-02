@@ -4,11 +4,14 @@ import {
   IconRedactApply,
   IconRedactArea,
   IconRedactSearch,
+  IconSettings,
 } from '@/shared/ui/icons';
 import { ModeToolbar } from '../../ModeToolbar';
+import { ToolbarPanel } from '../../ToolbarPanel';
 import type { DocumentApi, ModeProps } from '../types';
 import { applyBlocked, applyRedactions, askApply, toggleArea } from './actions';
 import { ApplyConfirm } from './ApplyConfirm';
+import { RedactOptions } from './RedactOptions';
 import { AREA_TOOL, markTotals } from './marks';
 import { setRedactUi, useRedactUi } from './ui-store';
 
@@ -80,7 +83,21 @@ export function RedactToolbar(ctx: ModeProps) {
   ];
   return (
     <>
-      <ModeToolbar groups={groups} />
+      <ModeToolbar
+        groups={groups}
+        trailing={
+          // Fill, overlay text, image quality and snapping (backlog P5-E).
+          <ToolbarPanel
+            layout={ctx.layout}
+            label="Redaction options"
+            text="Options"
+            leading={<IconSettings size="sm" />}
+            title="Redaction options"
+          >
+            <RedactOptions />
+          </ToolbarPanel>
+        }
+      />
       <ApplyConfirm
         open={ui.confirmOpen}
         areas={totals.areas}

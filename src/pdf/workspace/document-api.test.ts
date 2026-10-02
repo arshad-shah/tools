@@ -20,6 +20,7 @@ const info = (docId: string, pages = 1): DocInfo => ({
 });
 
 function setup(restricted = false) {
+  const goToPage = vi.fn();
   const model = makeModel(makeState(3, { restricted }));
   const blobs = new BlobStore(null, 'doc1');
   const render = {
@@ -45,13 +46,31 @@ function setup(restricted = false) {
     runJob: async (_t, fn) =>
       fn({ signal: new AbortController().signal, progress: () => {} }),
     confirm: async () => true,
+    goToPage,
   });
-  return { model, api, render, blobs, sourceDocs };
+  return { model, api, render, blobs, sourceDocs, goToPage };
 }
 
 beforeAll(() => registerCoreOperations());
 
 describe('createDocumentApi', () => {
+  it('hashes the opened file: the same bytes give the same key', async () => {
+    const a = setup();
+    const b = setup();
+    a.blobs.addCheckpoint(a.model.currentCheckpoint(), new Uint8Array([7, 8]));
+    b.blobs.addCheckpoint(b.model.currentCheckpoint(), new Uint8Array([7, 8]));
+    const ha = await a.api.contentHash();
+    expect(ha).toMatch(/^[0-9a-f]{16}$/);
+    expect(await b.api.contentHash()).toBe(ha);
+  });
+
+  it('reads back a stored asset and lists the visible pages', async () => {
+    const { api } = setup();
+    const id = api.addAsset(new Uint8Array([1, 2, 3]), 'image/png');
+    expect([...(await api.assetBytes(id))]).toEqual([1, 2, 3]);
+    expect(api.visiblePages).toEqual([]);
+  });
+
   it('dispatches and reports invalid edits instead of throwing', () => {
     const error = vi.spyOn(notify, 'error').mockImplementation(() => '');
     const { api, model } = setup();
@@ -106,6 +125,18 @@ describe('createDocumentApi', () => {
     ).toThrow(expect.objectContaining({ code: 'TOO_LARGE' }));
   });
 
+  it('removeSource rolls back a merged file nothing uses', async () => {
+    const { api, model, blobs, sourceDocs, render } = setup();
+    const id = await api.addSource(new Uint8Array([1, 2]), 'b.pdf');
+    api.removeSource(id);
+    expect(model.getState().sources[id]).toBeUndefined();
+    await expect(blobs.sourceBytes(id)).rejects.toBeDefined();
+    expect(blobs.pendingWrites()).toEqual([]);
+    expect(sourceDocs.get(id)).toBeUndefined();
+    expect(render.close).toHaveBeenCalledWith('r2');
+    expect(sourceDocs.get('s0')?.docId).toBe('r1');
+  });
+
   it('geometry and text go through the page source', async () => {
     const { api, render } = setup();
     const page = api.view.pages[0];
@@ -116,5 +147,20 @@ describe('createDocumentApi', () => {
     });
     await api.text(page);
     expect(render.textItems).toHaveBeenCalledWith('r1', 0);
+  });
+
+  it('navigates the canvas to a page or a box on it', () => {
+    const { api, goToPage } = setup();
+    const box = { x: 72, y: 600, width: 200, height: 20 };
+    api.goToPage('ckpt0:2', { box, focus: false });
+    expect(goToPage).toHaveBeenCalledWith('ckpt0:2', { box, focus: false });
+    api.goToPage('ckpt0:1');
+    expect(goToPage).toHaveBeenLastCalledWith('ckpt0:1', {});
+  });
+
+  it('ignores navigation to a page that is not in the document', () => {
+    const { api, goToPage } = setup();
+    api.goToPage('nope');
+    expect(goToPage).not.toHaveBeenCalled();
   });
 });

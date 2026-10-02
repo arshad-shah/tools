@@ -34,6 +34,8 @@ export type AnnotTarget =
 
 export interface AnnotPatch {
   rect?: Box;
+  /** The listed rect a move of an existing annotation started from. */
+  from?: Box;
   color?: string;
   contents?: string;
   opacity?: number;
@@ -195,10 +197,12 @@ export function patch(v: unknown, what: string): AnnotPatch {
   const o = asRecord(v, what);
   const out: AnnotPatch = {};
   if (o.rect !== undefined) out.rect = box(o.rect, what);
+  if (o.from !== undefined) out.from = box(o.from, what);
   if (o.color !== undefined) out.color = hex(o.color, what);
   if (o.contents !== undefined) out.contents = text(o.contents, what);
   if (o.opacity !== undefined) out.opacity = opacity(o.opacity, what);
-  if (Object.keys(out).length === 0) throw bad(`${what}: nothing to change`);
+  if (Object.keys(out).filter((k) => k !== 'from').length === 0)
+    throw bad(`${what}: nothing to change`);
   return out;
 }
 

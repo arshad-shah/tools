@@ -3,6 +3,7 @@ export declare const OCR_LANG_VARIANT: string;
 export declare const OCR_CORE_FILES: Readonly<{ simd: string; plain: string }>;
 export declare const OCR_MANIFEST_FILE: string;
 export declare function manifestUrl(version: string): string;
+export declare function ocrFolder(tesseract: string, core: string): string;
 
 export interface OcrAssetEntry {
   path: string;
@@ -31,3 +32,7 @@ export declare function copyOcrAssets(options: CopyOcrAssetsOptions): Promise<{
   copied: number;
   manifest: OcrAssetManifest;
 }>;
+
+export declare function buildOcrManifest(
+  nodeModules: string,
+): Promise<OcrAssetManifest>;

@@ -1,13 +1,8 @@
-import {
-  degrees,
-  rgb,
-  StandardFonts,
-  type PDFDocument,
-  type PDFFont,
-} from 'pdf-lib';
+import { degrees, rgb, StandardFonts, type PDFDocument } from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
 import { hexToRgb } from './color';
 import type { FontCache } from './font-cache';
+import { FontStack } from './font-stack';
 import { unsupportedChars } from './fonts';
 import { pageFrame, selectPages, type PageSelection } from './geometry';
 import {
@@ -32,7 +27,8 @@ const invalid = (m: string) => new ToolError('INVALID_INPUT', m);
 /**
  * Left, centre and right header and footer text on the selected pages,
  * anchored to the visual page edges (rotation-aware). Helvetica, falling
- * back to the Unicode font when the text needs characters it lacks.
+ * back to the Unicode font (itself falling back per character) when the
+ * text needs characters it lacks.
  */
 export async function headerFooterDoc(
   doc: PDFDocument,
@@ -48,7 +44,6 @@ export async function headerFooterDoc(
   const total = doc.getPageCount();
   const pages = selectPages(o.pages, total);
   const helvetica = doc.embedStandardFont(StandardFonts.Helvetica);
-  let unicode: PDFFont | null = null;
   for (const i of pages) {
     const fill = (t: string) =>
       formatHeaderFooter(t, {
@@ -67,28 +62,35 @@ export async function headerFooterDoc(
     const all = [filled.header, filled.footer]
       .flatMap((s) => [s.left, s.center, s.right])
       .join('');
-    let font = helvetica;
+    let font = new FontStack([helvetica]);
     if (unsupportedChars(helvetica, all).length) {
       if (!fonts)
         throw invalid(
           'The header or footer has characters Helvetica cannot draw',
         );
-      unicode ??= await fonts.get({ unicode: true });
-      font = unicode;
+      font = await fonts.forText({ unicode: true }, all);
+      font.assertDrawable(all, 'The header or footer');
     }
     const page = doc.getPage(i);
     const placed = headerFooterPlacements(pageFrame(page), filled, {
       width: (t, size) => font.widthOfTextAtSize(t, size),
       height: (size) => font.heightAtSize(size, { descender: false }),
     });
-    for (const p of placed)
-      page.drawText(p.text, {
-        x: p.x,
-        y: p.y,
-        size: p.size,
-        font,
-        color: rgb(color.r, color.g, color.b),
-        rotate: degrees(p.rotate),
-      });
+    for (const p of placed) {
+      // Runs advance along the text's own direction.
+      const rad = (p.rotate * Math.PI) / 180;
+      let along = 0;
+      for (const run of font.runs(p.text)) {
+        page.drawText(run.text, {
+          x: p.x + along * Math.cos(rad),
+          y: p.y + along * Math.sin(rad),
+          size: p.size,
+          font: run.font,
+          color: rgb(color.r, color.g, color.b),
+          rotate: degrees(p.rotate),
+        });
+        along += run.font.widthOfTextAtSize(run.text, p.size);
+      }
+    }
   }
 }

@@ -76,11 +76,11 @@ function SignatureCard({ r }: { r: SignatureReport }) {
         ]}
       />
       <ul className="flex flex-col gap-1 text-sm text-fg-muted">
-        {r.notes.map((n) => (
-          <li key={n}>{n}</li>
+        {r.notes.map((n, i) => (
+          <li key={`n${i}`}>{n}</li>
         ))}
-        {r.problems.map((p) => (
-          <li key={p} className="text-danger">
+        {r.problems.map((p, i) => (
+          <li key={`p${i}`} className="text-danger">
             {p}
           </li>
         ))}
@@ -92,7 +92,7 @@ function SignatureCard({ r }: { r: SignatureReport }) {
             <AccordionContent>
               <Stack gap="3">
                 {r.chain.map((c, i) => (
-                  <Stack key={c.sha256} gap="1">
+                  <Stack key={`${i}-${c.sha256}`} gap="1">
                     {r.chain.length > 1 ? (
                       <Text size="sm" tone="muted">
                         {i === 0 ? 'Signer' : `Issuer ${i}`}
@@ -129,8 +129,8 @@ export function SignaturesPanel({
         <LoadingState label="Checking signatures" />
       ) : (
         <ul className="flex flex-col gap-3">
-          {reports.map((r) => (
-            <SignatureCard key={r.fieldName} r={r} />
+          {reports.map((r, i) => (
+            <SignatureCard key={`${i}-${r.fieldName}`} r={r} />
           ))}
         </ul>
       )}

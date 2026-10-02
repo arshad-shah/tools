@@ -74,6 +74,16 @@ describe('MetaList', () => {
       expect(s.textContent).toBe('');
     }
   });
+
+  it('drops empty items, so separators never strand', () => {
+    const { container } = render(
+      <MetaList
+        items={['36 tools', '', null, false, undefined, 'Copyright']}
+      />,
+    );
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-separator]')).toHaveLength(1);
+  });
 });
 
 describe('StatusDot', () => {

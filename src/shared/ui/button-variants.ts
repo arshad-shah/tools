@@ -20,9 +20,9 @@ export const buttonVariants = cva(
       },
       // Touch (coarse pointer): every size reaches the 44px target.
       size: {
-        sm: 'h-8 px-3 text-sm pointer-coarse:min-h-11 pointer-coarse:min-w-11',
-        md: 'h-9 px-4 text-base pointer-coarse:min-h-11 pointer-coarse:min-w-11',
-        lg: 'h-11 px-5 text-md',
+        sm: 'h-8 px-3 text-sm pointer-coarse:min-h-touch pointer-coarse:min-w-touch',
+        md: 'h-9 px-4 text-base pointer-coarse:min-h-touch pointer-coarse:min-w-touch',
+        lg: 'h-touch px-5 text-md',
       },
       fullWidth: { true: 'w-full', false: '' },
     },

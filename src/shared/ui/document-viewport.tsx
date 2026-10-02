@@ -2,16 +2,14 @@ import React from 'react';
 import { cn } from '@/shared/lib/cn';
 import { Positioned, Sized } from './positioned';
 import { useScrollBox } from './use-scroll-box';
-import {
-  clampPercent,
-  useViewportGestures,
-  type ZoomAnchor,
-} from './use-viewport-gestures';
+import { useViewportGestures, type ZoomAnchor } from './use-viewport-gestures';
 import { cumulativeOffsets, visibleRange } from './virtual';
+import { zoomScale } from './zoom-scale';
 
 export type ZoomSetting =
-  | { kind: 'fit-width' }
-  | { kind: 'fit-page' }
+  /** max: a cap in percent (the workspace default reads at 125 at most). */
+  | { kind: 'fit-width'; max?: number }
+  | { kind: 'fit-page'; max?: number }
   /** 25..800 */
   | { kind: 'percent'; value: number };
 
@@ -40,34 +38,27 @@ export interface DocumentViewportProps {
   onVisiblePagesChange?(ids: string[]): void;
   /** The page with the largest visible area (the current page). */
   onCurrentPageChange?(id: string | null): void;
-  /** Imperative scroll request; a new nonce scrolls again. */
-  scrollToPage?: { id: string; nonce: number };
+  /**
+   * Imperative scroll request; a new nonce scrolls again. `rect` (slot CSS
+   * px at zoom 1) is centred in the viewport instead of showing the page
+   * top; `focus` moves focus to the page slot afterwards.
+   */
+  scrollToPage?: ScrollRequest;
   /** CSS px between and around pages. Default 16. */
   gap?: number;
   /** The scale the zoom setting resolved to (fit modes depend on the viewport size). */
   onScaleChange?(scale: number): void;
 }
 
+export interface ScrollRequest {
+  id: string;
+  nonce: number;
+  rect?: { left: number; top: number; width: number; height: number };
+  focus?: boolean;
+}
+
 /** Used until the viewport is measured (and where there is no layout). */
 const FALLBACK = { width: 0, height: 800 };
-
-/** Scale for a zoom setting; fit modes need a measured viewport. */
-function zoomScale(
-  zoom: ZoomSetting,
-  pages: { width: number; height: number }[],
-  clientWidth: number,
-  clientHeight: number,
-  gap: number,
-): number {
-  if (zoom.kind === 'percent') return clampPercent(zoom.value) / 100;
-  const maxW = Math.max(1, ...pages.map((p) => p.width));
-  const maxH = Math.max(1, ...pages.map((p) => p.height));
-  if (clientWidth <= 0) return 1;
-  const fitWidth = (clientWidth - 2 * gap) / maxW;
-  if (zoom.kind === 'fit-width' || clientHeight <= 0)
-    return Math.max(0.01, fitWidth);
-  return Math.max(0.01, Math.min(fitWidth, (clientHeight - 2 * gap) / maxH));
-}
 
 /**
  * The scrolling document: virtualised page slots (each a labelled region),
@@ -167,17 +158,62 @@ export function DocumentViewport({
   const scrollIndex = scrollToPage
     ? pages.findIndex((p) => p.id === scrollToPage.id)
     : -1;
-  const scrollTarget = scrollIndex >= 0 ? offsets[scrollIndex] : null;
+  const rect = scrollToPage?.rect;
+  const scrollTarget =
+    scrollIndex < 0
+      ? null
+      : rect
+        ? Math.max(
+            0,
+            gap +
+              offsets[scrollIndex] +
+              rect.top * scale -
+              (viewH - rect.height * scale) / 2,
+          )
+        : offsets[scrollIndex];
+  const scrollLeftTarget =
+    scrollIndex >= 0 && rect
+      ? Math.max(
+          0,
+          (contentW - pages[scrollIndex].width * scale) / 2 +
+            rect.left * scale -
+            ((box.width || 0) - rect.width * scale) / 2,
+        )
+      : null;
+  const focusSlot = !!scrollToPage?.focus;
+  const targetId = scrollIndex >= 0 ? pages[scrollIndex].id : null;
   // Only a new request (nonce) scrolls; zoom changes keep the position.
   const lastNonce = React.useRef<number | null>(null);
+  const pendingFocus = React.useRef<string | null>(null);
   const nonce = scrollToPage?.nonce ?? null;
   React.useLayoutEffect(() => {
     const el = ref.current;
     if (!el || scrollTarget === null || nonce === lastNonce.current) return;
     lastNonce.current = nonce;
     el.scrollTop = scrollTarget;
+    if (scrollLeftTarget !== null) el.scrollLeft = scrollLeftTarget;
     measure();
-  }, [nonce, scrollTarget, ref, measure]);
+    pendingFocus.current = focusSlot ? targetId : null;
+  }, [
+    nonce,
+    scrollTarget,
+    scrollLeftTarget,
+    focusSlot,
+    targetId,
+    ref,
+    measure,
+  ]);
+  // Focus waits for the slot to mount (it may be far from the old position).
+  React.useLayoutEffect(() => {
+    const id = pendingFocus.current;
+    if (!id) return;
+    const slot = ref.current?.querySelector<HTMLElement>(
+      `[data-page-id="${CSS.escape(id)}"]`,
+    );
+    if (!slot) return;
+    pendingFocus.current = null;
+    slot.focus({ preventScroll: true });
+  });
 
   return (
     <>
@@ -218,7 +254,9 @@ export function DocumentViewport({
                 aria-label={`Page ${i + 1} of ${pages.length}`}
                 data-testid={`page-slot-${i + 1}`}
                 data-page-id={page.id}
-                className="overflow-hidden bg-surface shadow-page"
+                // Focusable by navigation (goToPage), not in the Tab order.
+                tabIndex={-1}
+                className="overflow-hidden bg-surface shadow-page outline-none focus-visible:ring-2 focus-visible:ring-focus"
               >
                 {renderPage({
                   id: page.id,

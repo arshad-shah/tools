@@ -66,7 +66,19 @@ describe('Footer', () => {
       });
       expect(link.getAttribute('href')).toBe(`${REPO}/commit/a1b2c3d`);
       expect(screen.getByText(/v2026\.10\.01/)).toBeTruthy();
+      expect(link.closest('[data-dynamic]')).not.toBeNull();
     });
+  });
+
+  it('dev builds show the stable "dev" stamp unmasked between the meta items', () => {
+    const { container } = render(<Footer />);
+    const items = [...container.querySelectorAll('li')].map(
+      (li) => li.textContent,
+    );
+    expect(items).toContain('dev');
+    expect(items.every((t) => t && t.trim().length > 0)).toBe(true);
+    // Only a real build stamp varies between runs (masked in screenshots).
+    expect(container.querySelector('[data-dynamic]')).toBeNull();
   });
 
   it('separates items with decorative elements, never characters', () => {

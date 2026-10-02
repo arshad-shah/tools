@@ -11,7 +11,7 @@ import { effectiveRotation } from '@/pdf/doc/page-map';
 import type { ModeProps } from '../types';
 import { detectedKey, fieldName, FREE, type ViewField } from './fields';
 import { fillSign, type ReadySignature } from './store';
-import { lastUsed, remember, type FieldStyle } from './text-style';
+import { lastUsed, remember, textKey, type FieldStyle } from './text-style';
 import { nextEmpty, tabOrder } from './tab-order';
 
 /** A clicked or typed value as the op that writes it (null: nothing to do). */
@@ -89,7 +89,7 @@ export function restyle(
     },
   });
   if (!ops.length) return null;
-  remember(ctx.doc.state.id, {
+  remember(textKey(ctx.doc), {
     size: style.size,
     color: style.color,
     spacing: style.spacing,
@@ -147,8 +147,12 @@ export function advance(
     editing: next && !toggles(next) ? next.key : null,
     focusKey: next?.key ?? fromKey,
   });
-  if (next) ctx.doc.announce(fieldName(next));
-  else ctx.doc.announce('No empty fields left');
+  if (next) {
+    // The field may be pages away: bring it into view (its editor focuses
+    // itself once it mounts).
+    ctx.doc.goToPage(next.page.id, { box: next.rect });
+    ctx.doc.announce(fieldName(next));
+  } else ctx.doc.announce('No empty fields left');
   return next;
 }
 
@@ -282,7 +286,7 @@ export function addTextAtCentre(ctx: ModeProps): void {
   const page = ctx.doc.view.pages.find((p) => p.id === ctx.doc.currentPage);
   if (!page) return;
   const box = pageBounds(ctx, page);
-  const style = { ...lastUsed(ctx.doc.state.id), comb: 0 };
+  const style = { ...lastUsed(textKey(ctx.doc)), comb: 0 };
   const h = 1.25 * style.size + 4;
   fillSign.set({
     draft: {
@@ -428,8 +432,8 @@ export function fillableFields(
 
 /**
  * Make fillable (spec §8.5): flat fills of the accepted fields become the
- * new fields' values, so they are removed first (one step); if the
- * checkpoint does not complete, that step is undone again.
+ * new fields' values, so the checkpoint is built without them (one undo
+ * step: undoing it brings the flat fills back).
  */
 export async function makeFillable(
   ctx: ModeProps,
@@ -442,27 +446,16 @@ export async function makeFillable(
   }
   const n = accepted.length;
   const confirmText = `Turns ${n} accepted ${n === 1 ? 'field' : 'fields'} into real form fields.`;
-  const fills = fields
+  const exclude = fields
     .filter(
       (f) => f.origin === 'detected' && f.status === 'field' && f.fillOpId,
     )
-    .map((f) => ({ type: 'object.remove', params: { targetId: f.fillOpId } }));
-  let removed = false;
-  if (fills.length) {
-    removed =
-      ctx.doc.dispatch(fills, 'Move filled values into form fields').length > 0;
-    if (!removed) return;
-  }
-  let report = null;
-  try {
-    report = await ctx.doc.runCheckpoint(
-      'flat.makeFillable',
-      { fields: accepted },
-      { title: 'Making the form fillable', confirm: confirmText },
-    );
-  } finally {
-    if (!report && removed) ctx.doc.undo();
-  }
+    .map((f) => f.fillOpId!);
+  await ctx.doc.runCheckpoint(
+    'flat.makeFillable',
+    { fields: accepted },
+    { title: 'Making the form fillable', confirm: confirmText, exclude },
+  );
 }
 
 export async function flatten(ctx: ModeProps): Promise<void> {

@@ -172,4 +172,50 @@ describe('DocumentViewport', () => {
     expect(region.scrollTop).toBe(9 * 808);
     expect(screen.getByTestId('page-slot-10')).toBeTruthy();
   });
+
+  it('centres a requested box on the page and can focus the page', () => {
+    stubBox(800, 400);
+    const { rerender, region } = view();
+    rerender(
+      <DocumentViewport
+        label="Document"
+        pages={PAGES}
+        zoom={{ kind: 'percent', value: 100 }}
+        onZoomChange={() => {}}
+        renderPage={() => null}
+        scrollToPage={{
+          id: 'p10',
+          nonce: 1,
+          rect: { left: 0, top: 500, width: 100, height: 40 },
+          focus: true,
+        }}
+      />,
+    );
+    // Page top (gap + offset) + box top - half the space around the box.
+    expect(region.scrollTop).toBe(16 + 9 * 808 + 500 - (400 - 40) / 2);
+    const slot = screen.getByTestId('page-slot-10');
+    expect(document.activeElement).toBe(slot);
+    expect(slot.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('scales the requested box with the zoom', () => {
+    stubBox(800, 400);
+    const { rerender, region } = view();
+    rerender(
+      <DocumentViewport
+        label="Document"
+        pages={PAGES}
+        zoom={{ kind: 'percent', value: 200 }}
+        onZoomChange={() => {}}
+        renderPage={() => null}
+        scrollToPage={{
+          id: 'p2',
+          nonce: 1,
+          rect: { left: 0, top: 300, width: 100, height: 20 },
+        }}
+      />,
+    );
+    // 200%: slots are 1584 tall with a 16 gap.
+    expect(region.scrollTop).toBe(16 + 1600 + 600 - (400 - 40) / 2);
+  });
 });

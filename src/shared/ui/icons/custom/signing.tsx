@@ -19,9 +19,10 @@ export const IconInkPen = defineIcon(
 export const IconInkWeight = defineIcon(
   'IconInkWeight',
   <>
-    <path d="M4 6h16" strokeWidth="1" />
-    <path d="M4 12h16" strokeWidth="2.25" />
-    <path d="M4 18h16" strokeWidth="3.5" />
+    {/* Thin, medium, heavy: a line, then flat bars growing in height. */}
+    <path d="M4 6h16" />
+    <rect x="4" y="11.25" width="16" height="1.5" rx="0.75" />
+    <rect x="4" y="16.5" width="16" height="3" rx="1.5" />
   </>,
 );
 export const IconTraceSignature = defineIcon(

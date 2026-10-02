@@ -8,6 +8,23 @@ import {
   VIEWPORTS,
 } from './helpers';
 
+/** One baseline per custom icon group (`src/shared/ui/icons/custom/<group>.tsx`). */
+const ICON_GROUPS = [
+  'annotate',
+  'brand',
+  'diagram',
+  'edit',
+  'fill-sign',
+  'keys',
+  'layout',
+  'modes',
+  'ocr',
+  'optimize',
+  'organize',
+  'redact',
+  'tools-p6',
+];
+
 const SECTIONS = [
   'icons',
   'buttons',
@@ -62,6 +79,13 @@ for (const theme of ['light', 'dark'] as const) {
       test(section, async ({ page }) => {
         const el = page.getByTestId(`kit-section-${section}`);
         await expect(el).toHaveScreenshot(`${section}-${theme}.png`);
+      });
+    }
+
+    for (const group of ICON_GROUPS) {
+      test(`icon group ${group}`, async ({ page }) => {
+        const el = page.getByTestId(`kit-icon-group-${group}`);
+        await expect(el).toHaveScreenshot(`icons-${group}-${theme}.png`);
       });
     }
 

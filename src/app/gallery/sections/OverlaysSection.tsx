@@ -2,6 +2,10 @@ import { useRef, useState } from 'react';
 import {
   Button,
   CommandPalette,
+  Dialog,
+  DialogBody,
+  DialogHeader,
+  DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -26,6 +30,8 @@ export function OverlaysSection() {
   const [open, setOpen] = useState(true);
   const [note, setNote] = useState(false);
   const [palette, setPalette] = useState(false);
+  const sizeAnchor = useRef<HTMLButtonElement>(null);
+  const [size, setSize] = useState(false);
   return (
     <Section name="overlays" title="Overlays">
       <div className="min-h-56">
@@ -74,6 +80,25 @@ export function OverlaysSection() {
           </Popover>
         </Row>
       </div>
+      <Row label="Dialog as a popover by its tool (a sheet on phones)">
+        <Button ref={sizeAnchor} onClick={() => setSize((o) => !o)}>
+          Page size
+        </Button>
+        <Dialog
+          open={size}
+          onOpenChange={setSize}
+          label="Page size"
+          presentation="popover"
+          anchor={sizeAnchor}
+        >
+          <DialogHeader>
+            <DialogTitle>Page size</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <Text size="sm">A4, Letter or custom points.</Text>
+          </DialogBody>
+        </Dialog>
+      </Row>
       <Row label="Menu, palette, toasts">
         <DropdownMenu>
           <DropdownMenuTrigger>

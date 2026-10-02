@@ -97,3 +97,51 @@ describe('searchPages', () => {
     ]);
   });
 });
+
+describe('searchPages form fields', () => {
+  it('finds a term in a form field value and marks the whole widget', () => {
+    const m = searchPages(
+      [
+        {
+          pageId: 'p1',
+          pageNumber: 1,
+          items: page(item('Nothing here', 72, 700)),
+          fields: [
+            {
+              name: 'account',
+              value: 'ACC-1234',
+              rect: { x: 72, y: 650, width: 200, height: 20 },
+            },
+          ],
+        },
+      ],
+      q({ text: 'acc-1234' }),
+    );
+    expect(m).toHaveLength(1);
+    expect(m[0].text).toBe('ACC-1234');
+    expect(m[0].rects).toEqual([{ x: 71.5, y: 649.5, width: 201, height: 21 }]);
+    expect(m[0].context).toBe('Form field account: ACC-1234');
+    expect(m[0].context.slice(m[0].contextStart)).toMatch(/^ACC-1234/);
+  });
+
+  it('skips fields whose value does not match', () => {
+    const m = searchPages(
+      [
+        {
+          pageId: 'p1',
+          pageNumber: 1,
+          items: page(),
+          fields: [
+            {
+              name: 'a',
+              value: 'other',
+              rect: { x: 0, y: 0, width: 5, height: 5 },
+            },
+          ],
+        },
+      ],
+      q({ text: 'secret' }),
+    );
+    expect(m).toEqual([]);
+  });
+});

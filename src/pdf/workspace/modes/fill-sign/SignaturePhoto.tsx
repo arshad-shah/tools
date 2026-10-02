@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { IconRotateCcw, IconUpload } from '@/shared/ui/icons';
 import {
   Button,
@@ -80,6 +80,7 @@ export function SignaturePhoto({
   disabled,
   client,
 }: SignaturePhotoProps) {
+  const contrastId = useId();
   const [method, setMethod] = useState<Method>('camera');
   const [shot, setShot] = useState<Shot | null>(null);
   const [problem, setProblem] = useState<ToolError | null>(null);
@@ -216,11 +217,10 @@ export function SignaturePhoto({
       {shot ? (
         <Inline gap="3" align="end" wrap>
           <Stack gap="1" className="min-w-48 flex-1">
-            <Label htmlFor="sig-photo-contrast">Contrast</Label>
+            <Label htmlFor={contrastId}>Contrast</Label>
             <Inline gap="2" align="center">
               <Slider
-                id="sig-photo-contrast"
-                aria-label="Contrast"
+                id={contrastId}
                 min={0.05}
                 max={0.3}
                 step={0.01}

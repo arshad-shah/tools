@@ -100,6 +100,49 @@ describe('encrypt export stage', () => {
     expect(enc.stdout).toContain('file encryption method: AESv3');
   });
 
+  it('a typed owner password opens the file as owner', async () => {
+    const owner = ['battery', 'staple'].join(' ');
+    const { model, blobs } = await setup({
+      enabled: true,
+      permissions: { ...DEFAULT_PERMISSIONS, copy: false },
+    });
+    const out = await exportDocument(
+      model,
+      blobs,
+      options({
+        password: OPEN,
+        confirmPassword: OPEN,
+        ownerPassword: owner,
+      }),
+      env(),
+    );
+    expect(await qpdfHandlers.passwordRole(rpc, out.bytes, owner)).toBe(
+      'owner',
+    );
+    expect(await qpdfHandlers.passwordRole(rpc, out.bytes, OPEN)).toBe('user');
+  });
+
+  it('a blank owner password leaves the restrictions locked', async () => {
+    const { model, blobs } = await setup({
+      enabled: true,
+      permissions: { ...DEFAULT_PERMISSIONS, copy: false },
+    });
+    const out = await exportDocument(
+      model,
+      blobs,
+      options({ password: OPEN, confirmPassword: OPEN, ownerPassword: '' }),
+      env(),
+    );
+    // The open password is only the user password: the random owner
+    // password (never shown) is the only one that lifts the permissions.
+    expect(await qpdfHandlers.passwordRole(rpc, out.bytes, OPEN)).toBe('user');
+    expect(await qpdfHandlers.passwordRole(rpc, out.bytes, '')).toBe('none');
+    const r = await run(['--show-encryption', `--password=${OPEN}`, 'in.pdf'], {
+      'in.pdf': out.bytes,
+    });
+    expect(r.stdout).toContain('extract for any purpose: not allowed');
+  });
+
   it('does nothing when protection is off', async () => {
     const { model, blobs } = await setup({
       enabled: false,

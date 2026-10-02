@@ -8,4 +8,13 @@ describe('cn', () => {
       'px-4 text-fg',
     );
   });
+
+  it('knows the touch-target sizes (tokens.css) conflict with h-, w- and size-', () => {
+    expect(cn('h-9 px-4', 'p-0', 'size-touch')).toBe('p-0 size-touch');
+    expect(cn('h-8 min-w-8', 'h-touch min-w-touch')).toBe(
+      'h-touch min-w-touch',
+    );
+    expect(cn('w-9', 'w-touch')).toBe('w-touch');
+    expect(cn('min-h-11', 'min-h-touch')).toBe('min-h-touch');
+  });
 });

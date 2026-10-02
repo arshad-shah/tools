@@ -105,6 +105,24 @@ test('a PDF tool renders pages under the policy (pdf.js worker and wasm)', async
   expect(await violations()).toEqual([]);
 });
 
+test('the Rive player plays a real .riv under the policy (wasm runtime)', async ({
+  page,
+}) => {
+  const violations = await watchPolicy(page);
+  await page.goto(pathOf('rive-animation-player'));
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles('test/fixtures/rive/vehicles.riv');
+  await expect(page.getByRole('combobox', { name: 'Artboard' })).toHaveValue(
+    'Truck',
+  );
+  await expect(page.getByText(/^\d+\.\d\d s of /)).toBeVisible({
+    timeout: 15_000,
+  });
+  expect(await violations()).toEqual([]);
+});
+
 test('OCR downloads, recognises and writes its text layer under the policy', async ({
   page,
 }) => {

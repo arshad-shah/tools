@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
@@ -32,16 +33,23 @@ import { PageLabelsDialog } from './PageLabelsDialog';
 import { PageSizeDialog } from './PageSizeDialog';
 import { extractPages } from './split-extract';
 import { SplitDialog } from './SplitDialog';
+import { presentationFor } from './surface';
 import { openOrganizeDialog, useOrganizeDialog } from './ui-store';
 
 /** Organize tools (plan B-16 table): rotate, pages, shape, labels, files. */
 export function OrganizeToolbar(ctx: ModeProps) {
   const ws = useWorkspace();
   const dialog = useOrganizeDialog();
+  // A dialog belongs to this document: a new one (or none) closes it.
+  const docId = ctx.doc.state.id;
+  useEffect(() => () => openOrganizeDialog(null), [docId]);
   const merge = useMergeIn(ctx);
   const targets = targetPages(ctx);
   const blocked = deleteBlocked(ctx);
   const restricted = ctx.doc.state.restricted;
+  const sizeAnchor = useRef<HTMLButtonElement>(null);
+  const splitAnchor = useRef<HTMLButtonElement>(null);
+  const presentation = presentationFor(ctx.layout);
 
   const extract = async (then: 'download' | 'open') => {
     const { model, blobs, services } = ws.session;
@@ -130,6 +138,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
           label: 'Page size',
           icon: IconScaling,
           kind: 'button',
+          anchor: sizeAnchor,
           onSelect: () => openOrganizeDialog('size'),
         },
       ],
@@ -187,6 +196,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
           label: 'Split',
           icon: IconSplitAt,
           kind: 'button',
+          anchor: splitAnchor,
           disabled: restricted ? RESTRICTED_MESSAGE : false,
           onSelect: () => openOrganizeDialog('split'),
         },
@@ -209,11 +219,17 @@ export function OrganizeToolbar(ctx: ModeProps) {
         onOpenChange={close}
         ctx={ctx}
         pageIds={targets}
+        surface={{ presentation, anchor: sizeAnchor }}
       />
       {dialog === 'labels' ? (
         <PageLabelsDialog open onOpenChange={close} ctx={ctx} />
       ) : null}
-      <SplitDialog open={dialog === 'split'} onOpenChange={close} ctx={ctx} />
+      <SplitDialog
+        open={dialog === 'split'}
+        onOpenChange={close}
+        ctx={ctx}
+        surface={{ presentation, anchor: splitAnchor }}
+      />
     </>
   );
 }

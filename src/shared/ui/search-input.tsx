@@ -33,7 +33,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     <div
       className={cn(
         'flex items-center gap-2 rounded-md border border-line-strong bg-surface-2 transition-colors duration-fast focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
-        size === 'lg' ? 'h-11 px-4' : 'h-9 px-3 pointer-coarse:h-11',
+        size === 'lg' ? 'h-touch px-4' : 'h-9 px-3 pointer-coarse:h-touch',
         className,
       )}
     >

@@ -1,7 +1,12 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { OverlayLayer, PageBox, type OverlayTransform } from './overlay-layer';
+import {
+  OverlayLayer,
+  PageBox,
+  PagePlaced,
+  type OverlayTransform,
+} from './overlay-layer';
 import { ShapeLayer } from './shape-layer';
 import { resolvePaint } from './shape-paint';
 import { SelectionFrame } from './selection-frame';
@@ -24,6 +29,42 @@ describe('OverlayLayer and PageBox', () => {
     expect(el.style.top).toBe('72px');
     expect(el.style.width).toBe('50px');
     expect(el.style.height).toBe('20px');
+  });
+
+  it('PagePlaced lays content out in page units, turned with the page', () => {
+    // Upright: the content's top-left is the page point (x, y + height).
+    const { rerender } = render(
+      <PagePlaced
+        transform={PDF}
+        x={100}
+        y={700}
+        width={50}
+        height={20}
+        data-testid="pp"
+      />,
+    );
+    const el = () => screen.getByTestId('pp');
+    expect(el().style.width).toBe('50px');
+    expect(el().style.height).toBe('20px');
+    expect(el().style.transform).toBe('matrix(1, 0, 0, 1, 100, 72)');
+    // Turned 90 degrees counter-clockwise about (x, y): the content's left
+    // edge now runs up the page from (x, y).
+    rerender(
+      <PagePlaced
+        transform={PDF}
+        x={100}
+        y={700}
+        width={50}
+        height={20}
+        rotate={90}
+        data-testid="pp"
+      />,
+    );
+    const m = el()
+      .style.transform.replace(/matrix\(|\)/g, '')
+      .split(',')
+      .map((v) => Math.round(Number(v) * 1000) / 1000 + 0);
+    expect(m).toEqual([0, -1, 1, 0, 80, 92]);
   });
 
   it('is inert to the pointer unless interactive', () => {

@@ -1,4 +1,4 @@
-import type { Rive } from '@rive-app/react-canvas';
+import type { Rive } from '@/shared/ui/adapters/rive-runtime';
 
 export enum PlayerState {
   Idle,

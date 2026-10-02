@@ -1,7 +1,7 @@
 import type { Box } from '@/pdf/doc/types';
 import type { Interpretation } from '@/pdf/edit/content/interpreter';
 import type { ParsedContent } from '@/pdf/edit/content/tokens';
-import { applyEdits, type Edits } from './edits';
+import type { Edits } from './edits';
 import { coveredBy } from './geometry';
 
 const PATH_OPS = new Set(
@@ -33,13 +33,4 @@ export function pathEdits(
       if (PATH_OPS.has(parsed.ops[i].op)) edits.set(i, []);
   }
   return { edits, removed };
-}
-
-export function removePaths(
-  parsed: ParsedContent,
-  interp: Interpretation,
-  marks: readonly Box[],
-): { parsed: ParsedContent; removed: number } {
-  const { edits, removed } = pathEdits(parsed, interp, marks);
-  return { parsed: applyEdits(parsed, edits), removed };
 }

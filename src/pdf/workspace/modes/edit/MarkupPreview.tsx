@@ -1,6 +1,13 @@
-import { OverlayText, ShapeLayer, type OverlayTransform } from '@/shared/ui';
+import { useState } from 'react';
+import {
+  Image,
+  OverlayText,
+  PagePlaced,
+  type OverlayTransform,
+} from '@/shared/ui';
 import type { HeaderFooterParams, WatermarkParams } from '@/pdf/doc/ops/markup';
 import type { PageRef } from '@/pdf/doc/types';
+import type { PageFrame } from '@/pdf/edit/geometry';
 import { trySelectPages } from '@/pdf/edit/geometry';
 import {
   formatHeaderFooter,
@@ -12,6 +19,8 @@ import {
 import type { DocumentApi } from '../types';
 import { activeMarkup, frameOf } from './markup-state';
 import { metricsOf, useTextLayout } from '../../text-layout';
+import { useWorkspace } from '../../workspace-context';
+import { useAssetBytes } from './use-asset';
 
 export interface MarkupPreviewProps {
   doc: DocumentApi;
@@ -20,6 +29,57 @@ export interface MarkupPreviewProps {
   transform: OverlayTransform;
   width: number;
   height: number;
+}
+
+type ImageContent = Extract<WatermarkParams['content'], { kind: 'image' }>;
+
+/**
+ * An image watermark as the writer draws it: its width a share of the
+ * visual page width, its height from the image, placed and turned by
+ * watermarkPlacement.
+ */
+function WatermarkImage({
+  wm,
+  content,
+  frame,
+  transform,
+}: {
+  wm: WatermarkParams;
+  content: ImageContent;
+  frame: PageFrame;
+  transform: OverlayTransform;
+}) {
+  const bytes = useAssetBytes(useWorkspace(), content.assetId);
+  // Height over width, known once the image loads.
+  const [ratio, setRatio] = useState(0.5);
+  if (!bytes) return null;
+  const visual = frame.rotation % 180 === 0 ? frame.width : frame.height;
+  const width = visual * content.widthFraction;
+  const box = { width, height: width * ratio };
+  const at = watermarkPlacement(frame, box, wm);
+  return (
+    <PagePlaced
+      transform={transform}
+      x={at.x}
+      y={at.y}
+      width={box.width}
+      height={box.height}
+      rotate={at.rotate}
+      opacity={wm.opacity}
+    >
+      <Image
+        src={bytes}
+        mime={content.format === 'png' ? 'image/png' : 'image/jpeg'}
+        decorative
+        className="size-full"
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (img.naturalWidth > 0)
+            setRatio(img.naturalHeight / img.naturalWidth);
+        }}
+      />
+    </PagePlaced>
+  );
 }
 
 /**
@@ -76,29 +136,13 @@ export function MarkupPreview({
         />,
       );
     } else {
-      // Image watermarks preview as their outline (the export is exact).
-      const w =
-        (frame.rotation % 180 === 0 ? frame.width : frame.height) *
-        wm.content.widthFraction;
-      const box = { width: w, height: w * 0.5 };
-      const at = watermarkPlacement(frame, box, wm);
-      const r = (at.rotate * Math.PI) / 180;
-      const pt = (dx: number, dy: number) =>
-        `${at.x + dx * Math.cos(r) - dy * Math.sin(r)},${at.y + dx * Math.sin(r) + dy * Math.cos(r)}`;
       parts.push(
-        <ShapeLayer
+        <WatermarkImage
           key="watermark-image"
-          width={width}
-          height={height}
+          wm={wm}
+          content={wm.content}
+          frame={frame}
           transform={transform}
-          shapes={[
-            {
-              kind: 'path',
-              d: `M${pt(0, 0)} L${pt(box.width, 0)} L${pt(box.width, box.height)} L${pt(0, box.height)} Z`,
-              stroke: { token: 'accent' },
-              width: 1,
-            },
-          ]}
         />,
       );
     }

@@ -55,6 +55,10 @@ export class BlobStore implements BlobSource {
   addAsset(id: AssetId, bytes: Uint8Array): void {
     this.add(blobKey.asset(this.docId, id), bytes);
   }
+  /** A restricted document's encrypted original, saved with it. */
+  addOriginal(bytes: Uint8Array): void {
+    this.add(blobKey.original(this.docId), bytes);
+  }
 
   /** Evicts other checkpoints' bytes from memory once they are on disk. */
   keepInMemory(current: CheckpointId, previous: CheckpointId | null): void {
@@ -73,6 +77,26 @@ export class BlobStore implements BlobSource {
     });
   }
 
+  /**
+   * Bytes this document keeps besides its checkpoints (merged sources and
+   * assets), in memory or on disk, for the disk budget.
+   */
+  async otherBytes(): Promise<number> {
+    const ckpt = `${this.docId}/ckpt/`;
+    const isOther = (k: string) =>
+      k.startsWith(`${this.docId}/`) && !k.startsWith(ckpt);
+    let total = 0;
+    for (const [k, bytes] of this.memory)
+      if (isOther(k)) total += bytes.byteLength;
+    if (!this.db) return total;
+    const onDisk = (await this.db.keys('blobs', `${this.docId}/`)).filter(
+      (k) => isOther(k) && !this.memory.has(k),
+    );
+    for (const k of onDisk)
+      total += (await this.db.get<Blob>('blobs', k))?.size ?? 0;
+    return total;
+  }
+
   markWritten(keys: string[]): void {
     for (const k of keys) this.pending.delete(k);
   }
@@ -83,6 +107,11 @@ export class BlobStore implements BlobSource {
     const blob = this.db ? await this.db.get<Blob>('blobs', key) : undefined;
     if (!blob) throw new ToolError('INVALID_INPUT', missing);
     return new Uint8Array(await blob.arrayBuffer());
+  }
+
+  /** The encrypted original, or null when none is kept. */
+  originalBytes(): Promise<Uint8Array | null> {
+    return this.read(blobKey.original(this.docId), '').catch(() => null);
   }
 
   checkpointBytes(id: CheckpointId): Promise<Uint8Array> {

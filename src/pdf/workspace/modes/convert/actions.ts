@@ -1,4 +1,4 @@
-import { deriveFilename, saveBlob, saveZip } from '@/shared/lib/download';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { loadFile, type FileKind } from '@/shared/lib/files';
 import { newId } from '@/shared/lib/id';
@@ -18,6 +18,8 @@ import {
 import { MAX_EXPORT_DPI, MIN_EXPORT_DPI } from '@/pdf/render';
 import { useWorkspace } from '../../workspace-context';
 import type { ModeProps } from '../types';
+import { dispatchWithSource } from './insert';
+import { imageSaver } from '@/pdf/convert/zip-stream';
 import { useConvertSettings } from './settings';
 
 export const IMAGE_KINDS: FileKind[] = ['png', 'jpeg', 'webp', 'gif'];
@@ -83,15 +85,33 @@ export function useConvertActions(ctx: ModeProps) {
       dpi: clampDpi(settings.dpi),
       quality: settings.quality,
     };
+    // Images stream into the download as they are rendered.
+    const saver = imageSaver(
+      IMAGE_MIME[opts.format],
+      deriveFilename(name, 'images', 'zip'),
+    );
     return run(
       'Converting pages to images',
-      (job) => exportImages(model, blobs, scoped(), opts, { ...job, services }),
-      async ({ files, capped }) => {
-        if (files.length === 1)
-          saveBlob(files[0].data, files[0].name, IMAGE_MIME[opts.format]);
-        else await saveZip(files, deriveFilename(name, 'images', 'zip'));
+      async (job) => {
+        try {
+          const r = await exportImages(
+            model,
+            blobs,
+            scoped(),
+            opts,
+            { ...job, services },
+            saver.add,
+          );
+          return { capped: r.capped, saved: await saver.finish() };
+        } catch (e) {
+          saver.abort();
+          throw e;
+        }
+      },
+      async ({ capped, saved }) => {
+        saveBlob(saved.blob, saved.name);
         notify.success(
-          `Saved ${files.length} ${files.length === 1 ? 'image' : 'images'}`,
+          `Saved ${saved.count} ${saved.count === 1 ? 'image' : 'images'}`,
         );
         if (capped.length)
           notify.info(
@@ -180,7 +200,12 @@ export function useConvertActions(ctx: ModeProps) {
           settings.pageSize,
           job.signal,
         );
-        return ctx.doc.addSource(bytes, label);
+        const id = await ctx.doc.addSource(bytes, label);
+        if (job.signal.aborted) {
+          ctx.doc.removeSource(id);
+          job.signal.throwIfAborted();
+        }
+        return id;
       },
       (sourceId) => {
         const count = model.getState().sources[sourceId]?.pageCount ?? 0;
@@ -188,7 +213,7 @@ export function useConvertActions(ctx: ModeProps) {
         const at =
           pages.findIndex((p) => p.id === ctx.doc.currentPage) + 1 ||
           pages.length;
-        const ops = ctx.doc.dispatch({
+        const ops = dispatchWithSource(ctx.doc, sourceId, {
           type: 'page.insertImages',
           params: {
             at,

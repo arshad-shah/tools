@@ -51,21 +51,32 @@ export function createPdfRender(
    * worker healthy and resets the RPC's restart budget).
    */
   const reopens = new WeakMap<
-    Uint8Array,
+    object,
     { generation: number; times: number[] }
   >();
+  /**
+   * A caller key (e.g. a source id) stands for its document across re-reads
+   * of the bytes, which come back as a new array each time.
+   */
+  const keyed = new Map<string, object>();
+  const identity = (bytes: Uint8Array, key?: string): object => {
+    if (key === undefined) return bytes;
+    let token = keyed.get(key);
+    if (!token) keyed.set(key, (token = {}));
+    return token;
+  };
 
   /** Source bytes of every open document, to attribute its calls. */
-  const sourceOf = new Map<string, Uint8Array>();
+  const sourceOf = new Map<string, object>();
   /** Calls the worker is running, with the generation they were sent to. */
-  const running = new Set<{ bytes: Uint8Array; generation: number }>();
+  const running = new Set<{ bytes: object; generation: number }>();
   /**
    * Sources that had a call in flight when the worker crashed: the possible
    * culprits. Only their reopens count against the budget, so one document
    * that keeps crashing the worker does not use up the budgets of innocent
    * documents that merely lived in the same worker.
    */
-  const suspects = new WeakSet<Uint8Array>();
+  const suspects = new WeakSet<object>();
   // Registered before any usePdfDocument subscriber, so suspects are known
   // before anything reopens.
   client.onRestart(() => {
@@ -80,7 +91,7 @@ export function createPdfRender(
    * still bounds that case.
    */
   const track = <T>(
-    bytes: Uint8Array | undefined,
+    bytes: object | undefined,
     call: () => Promise<T>,
   ): Promise<T> => {
     if (!bytes) return call();
@@ -89,7 +100,7 @@ export function createPdfRender(
     return call().finally(() => running.delete(entry));
   };
 
-  const checkReopenBudget = (bytes: Uint8Array) => {
+  const checkReopenBudget = (bytes: object) => {
     const generation = client.generation;
     const seen = reopens.get(bytes);
     if (!seen) {
@@ -119,16 +130,18 @@ export function createPdfRender(
      * Copies the bytes (callers keep theirs) and transfers the copy to the
      * worker. Aborting releases the worker-side document even if parsing had
      * already finished (the RPC drops results after an abort, so the worker
-     * would otherwise keep a doc nobody can close).
+     * would otherwise keep a doc nobody can close). `key` names the
+     * document for the crash budget when its bytes may be re-read.
      */
-    async open(bytes: Uint8Array, signal?: AbortSignal) {
-      checkReopenBudget(bytes);
+    async open(bytes: Uint8Array, signal?: AbortSignal, key?: string) {
+      const who = identity(bytes, key);
+      checkReopenBudget(who);
       const copy = bytes.slice();
       const docId = newId();
       const generation = client.generation;
       // Start the call first so its own abort listener (which posts 'abort'
       // for the open) is registered before ours (which posts 'close').
-      const opening = track(bytes, () =>
+      const opening = track(who, () =>
         client.call('open', [docId, copy], {
           signal,
           transfer: [copy.buffer],
@@ -143,7 +156,7 @@ export function createPdfRender(
       try {
         const doc = await opening;
         openedIn.set(docId, generation);
-        sourceOf.set(docId, bytes);
+        sourceOf.set(docId, who);
         return doc;
       } finally {
         signal?.removeEventListener('abort', release);
@@ -193,19 +206,30 @@ export function createPdfRender(
         priority,
       );
     },
-    /** Encoded PNG/JPEG of one page at `opts.dpi` (capped to the canvas limit). */
+    /**
+     * Encoded PNG/JPEG of one page at `opts.dpi` (capped to the canvas
+     * limit). Bulk work (thumbnails, exports) passes background priority 2
+     * so it never holds up the canvas.
+     */
     renderPageImage(
       docId: string,
       pageIndex: number,
       opts: PageImageOptions,
       signal?: AbortSignal,
+      priority: Priority = 0,
     ) {
-      return withSlot(async () => {
-        assertAlive(docId);
-        return track(sourceOf.get(docId), () =>
-          client.call('renderPageImage', [docId, pageIndex, opts], { signal }),
-        );
-      }, signal);
+      return withSlot(
+        async () => {
+          assertAlive(docId);
+          return track(sourceOf.get(docId), () =>
+            client.call('renderPageImage', [docId, pageIndex, opts], {
+              signal,
+            }),
+          );
+        },
+        signal,
+        priority,
+      );
     },
     async extractText(docId: string, pageIndex: number, signal?: AbortSignal) {
       assertAlive(docId);

@@ -1,7 +1,7 @@
 import {
   Image,
   OverlayText,
-  PageBox,
+  PagePlaced,
   ShapeLayer,
   type OverlayFontFamily,
   type OverlayTransform,
@@ -16,7 +16,6 @@ import type { CoverParams } from '@/pdf/doc/ops/cover';
 import type { OverlayItem } from '@/pdf/doc/types';
 import { useWorkspace } from '../../workspace-context';
 import { metricsOf, useTextLayout, type LayoutFont } from '../../text-layout';
-import { frameRotation } from '../../objects/useObjectSelection';
 import { contentShapes, coverShape } from './content-shapes';
 import { useAssetBytes } from './use-asset';
 
@@ -89,6 +88,11 @@ function TextPreview({
   );
 }
 
+/**
+ * An image as drawImage writes it: its box turned `rotate` degrees
+ * counter-clockwise about the centre, and with the page's own rotation
+ * (the transform), so it previews the right way round on a turned page.
+ */
 function ImagePreview({
   p,
   transform,
@@ -99,11 +103,23 @@ function ImagePreview({
   const ws = useWorkspace();
   const bytes = useAssetBytes(ws, p.assetId);
   if (!bytes) return null;
+  const { x, y, width, height } = p.rect;
+  const r = ((p.rotate ?? 0) * Math.PI) / 180;
+  const [cos, sin] = [Math.cos(r), Math.sin(r)];
+  // The lower-left corner after turning about the centre.
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+  const ox = cx + cos * (-width / 2) - sin * (-height / 2);
+  const oy = cy + sin * (-width / 2) + cos * (-height / 2);
   return (
-    <PageBox
+    <PagePlaced
       transform={transform}
-      box={p.rect}
-      rotate={frameRotation(p.rotate)}
+      x={ox}
+      y={oy}
+      width={width}
+      height={height}
+      rotate={p.rotate ?? 0}
+      opacity={p.opacity}
     >
       <Image
         src={bytes}
@@ -112,7 +128,7 @@ function ImagePreview({
         fit="cover"
         className="size-full"
       />
-    </PageBox>
+    </PagePlaced>
   );
 }
 

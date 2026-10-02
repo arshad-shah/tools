@@ -57,6 +57,10 @@ export const IconChevronLeft = fromLucide('IconChevronLeft', L.ChevronLeft);
 export const IconChevronRight = fromLucide('IconChevronRight', L.ChevronRight);
 export const IconChevronUp = fromLucide('IconChevronUp', L.ChevronUp);
 export const IconCircle = fromLucide('IconCircle', L.Circle);
+export const IconCircleHelp = fromLucide(
+  'IconCircleHelp',
+  L.CircleQuestionMark,
+);
 export const IconClipboard = fromLucide('IconClipboard', L.Clipboard);
 export const IconClock = fromLucide('IconClock', L.Clock);
 export const IconCode = fromLucide('IconCode', L.Code);
@@ -103,6 +107,7 @@ export const IconImageOff = fromLucide('IconImageOff', L.ImageOff);
 export const IconImages = fromLucide('IconImages', L.Images);
 export const IconInfo = fromLucide('IconInfo', L.Info);
 export const IconKey = fromLucide('IconKey', L.Key);
+export const IconKeyboard = fromLucide('IconKeyboard', L.Keyboard);
 export const IconKeyRound = fromLucide('IconKeyRound', L.KeyRound);
 export const IconLayers = fromLucide('IconLayers', L.Layers);
 export const IconLayoutGrid = fromLucide('IconLayoutGrid', L.LayoutGrid);

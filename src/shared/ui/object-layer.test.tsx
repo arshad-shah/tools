@@ -158,6 +158,16 @@ describe('ObjectLayer', () => {
     expect(box.width).toBeCloseTo(box.height, 6);
   });
 
+  it('handle dots never take presses: only the handle box does', () => {
+    render(<Harness initial={['a']} />);
+    const handles = [
+      ...document.querySelectorAll<HTMLElement>('[data-handle]'),
+    ];
+    expect(handles.length).toBeGreaterThan(0);
+    for (const h of handles)
+      expect(h.firstElementChild?.className).toContain('pointer-events-none');
+  });
+
   it('shows resize handles for one selection and a rotate handle when rotatable', () => {
     const { unmount } = render(<Harness initial={['a']} />);
     // 50 x 20 px: no top and bottom handles over its middle (drag area).

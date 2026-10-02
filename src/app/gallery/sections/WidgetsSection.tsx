@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   BitGrid,
   CameraCapture,
+  CameraFrameGuide,
   CompareSlider,
   Meter,
   PrivacyNote,
@@ -73,6 +74,11 @@ export function WidgetsSection() {
             {cameraError && (
               <p className="mt-1 text-sm text-danger">{cameraError}</p>
             )}
+          </div>
+        </Row>
+        <Row label="CameraFrameGuide: the overlay CameraCapture draws over a live preview">
+          <div className="relative aspect-video w-full overflow-hidden rounded-md border border-line bg-surface-3">
+            <CameraFrameGuide hint="Fit your signature in the frame" />
           </div>
         </Row>
         <Row label="Meter: continuous and segmented, auto tones">

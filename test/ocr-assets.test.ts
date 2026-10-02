@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   OCR_MANIFEST_FILE,
+  buildOcrManifest,
   copyOcrAssets,
   manifestUrl,
+  ocrFolder,
   type OcrAssetManifest,
 } from '../scripts/copy-ocr-assets.mjs';
 
@@ -39,6 +41,26 @@ describe('copyOcrAssets', () => {
     expect(written).toEqual(manifest);
     expect(manifestUrl(version)).toBe(`/ocr/${version}/${OCR_MANIFEST_FILE}`);
     expect(version).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it('names the folder after both the tesseract.js and the core versions', () => {
+    const pkg = (name: string) =>
+      JSON.parse(
+        readFileSync(join(nodeModules, name, 'package.json'), 'utf8'),
+      ) as { version: string };
+    const folder = ocrFolder(
+      pkg('tesseract.js').version,
+      pkg('tesseract.js-core').version,
+    );
+    expect(folder).toBe(
+      `${pkg('tesseract.js').version}-core-${pkg('tesseract.js-core').version}`,
+    );
+    expect(version).toBe(folder);
+    expect(manifest.worker.path.startsWith(`/ocr/${folder}/`)).toBe(true);
+  });
+
+  it('builds the same manifest without copying (inlined at build time)', async () => {
+    expect(await buildOcrManifest(nodeModules)).toEqual(manifest);
   });
 
   it('lists the ten Latin-script languages with labels and sizes', () => {

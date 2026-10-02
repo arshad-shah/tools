@@ -2,9 +2,13 @@ import type { PDFPage } from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
 import type { RpcContext } from '@/shared/lib/worker-rpc';
 import type { DrawCtx } from '@/pdf/edit/draw';
-import { FontCache, loadNotoSans } from '@/pdf/edit/font-cache';
+import {
+  FontCache,
+  loadNotoFallbacks,
+  loadNotoSans,
+} from '@/pdf/edit/font-cache';
 import { loadPdf } from '@/pdf/edit/load';
-import { rebuildingSave } from '@/pdf/edit/ops';
+import { rebuilding, rebuildingSave } from '@/pdf/edit/ops';
 import {
   arrangePages,
   setPageLabels,
@@ -30,6 +34,8 @@ export interface MaterializePlan {
   pageLabels: readonly PageLabelRange[] | null;
   /** view.docOverlays + per-page overlays, log order (hidden excluded). */
   overlays: OverlayItem[];
+  /** The exported file's name (header and footer {filename}). */
+  filename?: string;
 }
 
 export interface MaterializeResult {
@@ -43,8 +49,16 @@ const cancelled = () => new ToolError('CANCELLED', 'Cancelled');
  * Builds the output PDF from the current checkpoint and the view (spec
  * §6.4): page order, rotation, boxes and labels from the page map, then
  * overlay writers by phase, then a full rewrite. Runs in the edit worker.
+ * pdf-lib's raw failures become a plain INVALID_FILE (the cause kept).
  */
-export async function materialize(
+export function materialize(
+  plan: MaterializePlan,
+  rpc: RpcContext,
+): Promise<MaterializeResult> {
+  return rebuilding(() => build(plan, rpc));
+}
+
+async function build(
   plan: MaterializePlan,
   rpc: RpcContext,
 ): Promise<MaterializeResult> {
@@ -107,7 +121,10 @@ export async function materialize(
   if (plan.pageLabels !== null)
     setPageLabels(doc, plan.pageLabels.length ? plan.pageLabels : null);
   const byId = new Map(plan.pages.map((p, i) => [p.id, arranged.pages[i]]));
-  const draw: DrawCtx = { doc, fonts: new FontCache(doc, loadNotoSans) };
+  const draw: DrawCtx = {
+    doc,
+    fonts: new FontCache(doc, loadNotoSans, loadNotoFallbacks),
+  };
   const ctx: MaterializeCtx = {
     doc,
     draw,
@@ -122,6 +139,7 @@ export async function materialize(
       return bytes;
     },
     note: (t) => notes.push(t),
+    ...(plan.filename !== undefined ? { filename: plan.filename } : {}),
   };
   for (const phase of PHASE_ORDER) {
     const items = plan.overlays.filter(
@@ -129,7 +147,10 @@ export async function materialize(
     );
     for (const [i, o] of items.entries()) {
       if (rpc.signal.aborted) throw cancelled();
-      await getMaterializer(o.type)!.apply(ctx, o.params, { id: o.opId });
+      await getMaterializer(o.type)!.apply(ctx, o.params, {
+        id: o.opId,
+        ...(o.at !== undefined ? { at: o.at } : {}),
+      });
       rpc.progress({ done: i + 1, total: items.length, label: phase });
     }
   }

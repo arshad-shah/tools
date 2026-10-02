@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { makeTextPdf, pdfPageTexts } from '../../../test/fixtures/builders';
@@ -101,6 +101,27 @@ describe('convert exports', () => {
     expect(r.markdown).not.toContain('Alpha 1');
   });
 
+  it('writes the detected table cells of a page as a GFM table', async () => {
+    const { model, blobs } = await setup(1);
+    const { render } = nodeRender();
+    // "Alpha 1" is drawn near the top left: a 2 x 2 grid around it.
+    const grid = [0, 1].flatMap((r) =>
+      [0, 1].map((c) => ({
+        x: 40 + 200 * c,
+        y: 690 - 40 * r,
+        width: 200,
+        height: 40,
+      })),
+    );
+    const detect = vi.fn(async () => ({ cells: grid }));
+    const services = inProcessServices({
+      render: { ...render, detect } as unknown as Services['render'],
+    });
+    const r = await exportMarkdown(model, blobs, null, { services });
+    expect(detect).toHaveBeenCalledTimes(1);
+    expect(r.markdown).toContain('| --- | --- |');
+  });
+
   it('names images by view page number and reports capped resolution', async () => {
     const { model, blobs, services } = await setup(3);
     const r = await exportImages(
@@ -118,6 +139,21 @@ describe('convert exports', () => {
       { page: 1, dpi: 150 },
       { page: 3, dpi: 150 },
     ]);
+  });
+
+  it('hands each image to the sink as it is rendered and keeps none', async () => {
+    const { model, blobs, services } = await setup(2);
+    const seen: string[] = [];
+    const r = await exportImages(
+      model,
+      blobs,
+      null,
+      { format: 'png', dpi: 72, quality: 0.9 },
+      { services },
+      (f) => void seen.push(f.name),
+    );
+    expect(seen).toEqual(['a.page-1.png', 'a.page-2.png']);
+    expect(r.files).toEqual([]);
   });
 
   it('reports pages without a text layer', async () => {

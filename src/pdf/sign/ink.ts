@@ -46,10 +46,20 @@ export function inkToVector(
   const all = outlines.flat();
   if (all.length === 0)
     throw new ToolError('INVALID_INPUT', 'Draw your signature first');
-  const xs = all.map((p) => p[0]);
-  const ys = all.map((p) => p[1]);
-  const x0 = Math.min(...xs) - MARGIN;
-  const y0 = Math.min(...ys) - MARGIN;
+  // A loop, not Math.min(...xs): a long drawing has more points than a
+  // spread call can take as arguments.
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of all) {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  const x0 = minX - MARGIN;
+  const y0 = minY - MARGIN;
   const d = outlines
     .map((o) =>
       outlineToPath(o.map(([x, y]): [number, number] => [x - x0, y - y0])),
@@ -57,8 +67,8 @@ export function inkToVector(
     .join('');
   return {
     d,
-    width: Math.max(...xs) + MARGIN - x0,
-    height: Math.max(...ys) + MARGIN - y0,
+    width: maxX + MARGIN - x0,
+    height: maxY + MARGIN - y0,
   };
 }
 

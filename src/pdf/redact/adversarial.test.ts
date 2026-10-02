@@ -23,6 +23,10 @@ import {
   nodeRedactServices,
   viewWithMarks,
 } from '../../../test/fixtures/redact-services';
+import {
+  LAYER_TERM,
+  makeOptionalContentPdf,
+} from '../../../test/fixtures/redact-oc';
 import { runRedaction } from '@/pdf/doc/checkpoints/redact';
 import { rawContainsTerm } from './verify';
 import { ToolError } from '@/shared/lib/errors';
@@ -176,6 +180,27 @@ describe('terms hidden outside the page content', () => {
       );
     const qdf = (await services.qpdf.qdf(bytes)).bytes;
     expect(rawContainsTerm(qdf, LEAK_TERM)).toBe(false);
+  }, 60_000);
+});
+
+describe('optional content', () => {
+  it('removes text in a hidden layer under a mark and keeps the visible layer', async () => {
+    const services = nodeRedactServices();
+    const src = await makeOptionalContentPdf();
+    expect(
+      rawContainsTerm((await services.qpdf.qdf(src)).bytes, LAYER_TERM),
+    ).toBe(true);
+    const { bytes, report } = await runRedaction(
+      src,
+      { dpi: 150 },
+      viewWithMarks(1, [{ page: 0, rects: [ADV_MARK], term: LAYER_TERM }]),
+      env(services),
+    );
+    expect(report.rasterisedPages).toEqual([]);
+    expect(
+      rawContainsTerm((await services.qpdf.qdf(bytes)).bytes, LAYER_TERM),
+    ).toBe(false);
+    expect((await pdfPageTexts(bytes))[0]).toContain('Public layer line');
   }, 60_000);
 });
 

@@ -14,7 +14,10 @@ import { useScrollRow } from './use-scroll-row';
 
 export interface ToolItem {
   id: string;
+  /** Accessible name and tooltip. */
   label: string;
+  /** Visible text when the toolbar shows labels (default `label`). */
+  shortLabel?: string;
   icon: IconComponent;
   shortcut?: string;
   kind: 'button' | 'toggle' | 'split';
@@ -24,6 +27,8 @@ export interface ToolItem {
   onSelect(): void;
   /** Split button menu. */
   menu?: { id: string; label: string; onSelect(): void }[];
+  /** Receives the item's button, e.g. to anchor a Popover it opens. */
+  anchor?: React.RefObject<HTMLButtonElement | null>;
 }
 
 export interface ToolGroup {
@@ -53,15 +58,23 @@ export interface ToolbarProps {
 
 export type ToolbarSize = 'md' | 'lg';
 
+/** Sets an item's anchor ref (kept out of render: called from a ref callback). */
+function setAnchor(item: ToolItem, el: HTMLButtonElement | null) {
+  if (item.anchor) item.anchor.current = el;
+}
+
 /** Toolbar size to IconButton size. */
 const BUTTON_SIZE = { md: 'sm', lg: 'lg' } as const;
-/** The split button's menu trigger: thin across the bar, full size along it. */
+/**
+ * The split button's menu trigger: thin across the bar, and as long as its
+ * main button along it (labelled or icon-only), so the pair stays one row.
+ */
 const SPLIT_TRIGGER = {
   md: {
-    vertical: 'h-4 w-(--icon-button-sm)',
-    horizontal: 'h-(--icon-button-sm) w-4',
+    vertical: 'h-4 w-auto self-stretch',
+    horizontal: 'h-auto w-4 self-stretch',
   },
-  lg: { vertical: 'h-5 w-11', horizontal: 'h-11 w-5' },
+  lg: { vertical: 'h-touch w-touch', horizontal: 'h-touch w-touch' },
 } as const;
 
 /**
@@ -124,15 +137,21 @@ export function Toolbar({
         ref={(el: HTMLButtonElement | null) => {
           if (el) nodes.current.set(item.id, el);
           else nodes.current.delete(item.id);
+          setAnchor(item, el);
         }}
         label={item.label}
         icon={item.icon}
         variant="ghost"
         size={BUTTON_SIZE[size]}
         showLabel={labelled && !vertical ? 'desktop' : undefined}
+        text={item.shortLabel}
         tabIndex={item.id === active ? 0 : -1}
+        // Toggles, and split items that show a pressed state (review P5-C).
         aria-pressed={
-          item.kind === 'toggle' ? Boolean(item.pressed) : undefined
+          item.kind === 'toggle' ||
+          (item.kind === 'split' && item.pressed !== undefined)
+            ? Boolean(item.pressed)
+            : undefined
         }
         aria-disabled={disabled || undefined}
         aria-keyshortcuts={item.shortcut}
@@ -142,6 +161,7 @@ export function Toolbar({
           if (!disabled) item.onSelect();
         }}
         className={cn(
+          'shrink-0',
           item.pressed && 'bg-accent-soft text-accent-fg hover:text-accent-fg',
           disabled && 'cursor-not-allowed opacity-50',
           item.kind === 'split' &&
@@ -161,7 +181,10 @@ export function Toolbar({
     );
     if (item.kind !== 'split') return tip;
     return (
-      <DropdownMenu key={item.id} className={cn(vertical && 'flex-col')}>
+      <DropdownMenu
+        key={item.id}
+        className={cn('shrink-0', vertical && 'flex-col')}
+      >
         {tip}
         <DropdownMenuTrigger>
           <IconButton
@@ -236,7 +259,7 @@ export function Toolbar({
         <div
           className={cn(
             'flex shrink-0 items-center gap-1',
-            vertical ? 'mt-1' : 'ml-auto',
+            vertical ? 'mt-1 flex-col' : 'ml-auto pl-1',
           )}
         >
           {trailing}

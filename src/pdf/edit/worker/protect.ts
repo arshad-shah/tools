@@ -2,6 +2,7 @@ import { Transferred, type RpcContext } from '@/shared/lib/worker-rpc';
 import { getMetadata, type PdfMetadata } from '@/pdf/edit/metadata';
 import {
   sanitizeDoc,
+  sanitizePreviewDoc,
   type SanitizeOptions,
   type SanitizeReport,
 } from '@/pdf/edit/sanitize';
@@ -11,6 +12,14 @@ export const protectHandlers = {
   /** Document properties of the current base (Protect mode form). */
   getMetadata(_ctx: RpcContext, bytes: Uint8Array): Promise<PdfMetadata> {
     return getMetadata(bytes);
+  },
+
+  /** What each sanitise kind would remove (one load, nothing changes). */
+  sanitizePreview(
+    _ctx: RpcContext,
+    bytes: Uint8Array,
+  ): Promise<Record<keyof SanitizeOptions, string[]>> {
+    return sanitizePreviewDoc(bytes);
   },
 
   /** The `sanitize` checkpoint, and its dry-run preview. */

@@ -1,6 +1,10 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { saveBlob, deriveFilename } from '@/shared/lib/download';
-import { toToolError, type ToolError } from '@/shared/lib/errors';
+import {
+  toToolError,
+  type ToolError,
+  type ToolErrorCode,
+} from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
 import type { JobProgress } from '@/shared/state/useJob';
 import { IconEye } from '@/shared/ui/icons';
@@ -58,6 +62,9 @@ function firstChangedPage(view: DocView, baseSource: string): PageId | null {
   return changed?.id ?? null;
 }
 
+/** Failures a plain retry can fix: the secrets stay for that retry. */
+const RETRYABLE = new Set<ToolErrorCode>(['CANCELLED', 'NETWORK', 'TIMEOUT']);
+
 const initialOptions = (name: string, selected: PageId[]): ExportOptions => ({
   filename: deriveFilename(name, 'edited', 'pdf'),
   onlyPages: null,
@@ -101,6 +108,9 @@ function ExportDialogBody({
   const [error, setError] = useState<ToolError | null>(null);
   const [notes, setNotes] = useState<string[] | null>(null);
   const ctrl = useRef<AbortController | null>(null);
+  // Leaving (closing the dialog, the workspace or the page) stops the
+  // export, so nothing downloads after the user has gone.
+  useEffect(() => () => ctrl.current?.abort(), []);
 
   const summary = summarizeChanges(state, view);
   const warnings = exportWarnings(state, view);
@@ -114,6 +124,19 @@ function ExportDialogBody({
     .filter((b): b is string => !!b);
   const set = (patch: Partial<ExportOptions>) =>
     setOptions((o) => ({ ...o, ...patch }) as ExportOptions);
+
+  // Passwords and keys do not outlive the export that used them (G25).
+  const dropSecrets = () => {
+    const secrets = EXPORT_OPTION_SECTIONS.flatMap((s) => s.secret ?? []);
+    if (secrets.length)
+      setOptions(
+        (o) =>
+          ({
+            ...o,
+            ...Object.fromEntries(secrets.map((k) => [k, ''])),
+          }) as ExportOptions,
+      );
+  };
 
   const start = async () => {
     const filename =
@@ -135,16 +158,7 @@ function ExportDialogBody({
         },
       );
       if (c.signal.aborted) return;
-      // Passwords do not outlive the export that used them (G25).
-      const secrets = EXPORT_OPTION_SECTIONS.flatMap((s) => s.secret ?? []);
-      if (secrets.length)
-        setOptions(
-          (o) =>
-            ({
-              ...o,
-              ...Object.fromEntries(secrets.map((k) => [k, ''])),
-            }) as ExportOptions,
-        );
+      dropSecrets();
       save(out.bytes, filename, 'application/pdf');
       notify.success(`Exported ${filename}`);
       const told = [...out.warnings, ...out.notes];
@@ -153,6 +167,8 @@ function ExportDialogBody({
     } catch (e) {
       const err = toToolError(e);
       if (err.code !== 'CANCELLED') setError(err);
+      // Kept only for a failure worth retrying as is (G25, review M14).
+      if (!RETRYABLE.has(err.code)) dropSecrets();
     } finally {
       if (ctrl.current === c) ctrl.current = null;
       setRunning(false);

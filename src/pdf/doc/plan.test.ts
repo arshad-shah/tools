@@ -68,6 +68,9 @@ describe('planFor', () => {
       rect: { x: 1, y: 1, width: 5, height: 5 },
     });
 
+    const without = await planFor(model, blobs, { excludeOverlays: [img.id] });
+    expect(without.overlays.map((o) => o.opId)).toEqual([img2.id]);
+
     const only = await planFor(model, blobs, { onlyPages: ['ckpt0:0'] });
     expect(only.pages.map((p) => p.id)).toEqual(['ckpt0:0']);
     expect(only.sources).toEqual({});

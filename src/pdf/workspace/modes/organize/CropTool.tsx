@@ -4,10 +4,41 @@ import { Button, OverlayLayer, SelectionFrame } from '@/shared/ui';
 import type { Box } from '@/pdf/doc/types';
 import type { PageOverlayProps } from '../types';
 
+const clampTo = (v: number, lo: number, hi: number) =>
+  Math.min(Math.max(v, lo), hi);
+
+/**
+ * Keeps a crop area on its page: a move (same size as `prev`) stops at the
+ * edge; a resize is cut back to the page.
+ */
+function fitCrop(next: Box, prev: Box, page: Box): Box {
+  const right = page.x + page.width;
+  const bottom = page.y + page.height;
+  if (next.width === prev.width && next.height === prev.height) {
+    const width = Math.min(next.width, page.width);
+    const height = Math.min(next.height, page.height);
+    return {
+      x: clampTo(next.x, page.x, right - width),
+      y: clampTo(next.y, page.y, bottom - height),
+      width,
+      height,
+    };
+  }
+  const x = clampTo(next.x, page.x, right - 1);
+  const y = clampTo(next.y, page.y, bottom - 1);
+  return {
+    x,
+    y,
+    width: Math.max(1, Math.min(next.x + next.width, right) - x),
+    height: Math.max(1, Math.min(next.y + next.height, bottom) - y),
+  };
+}
+
 /**
  * The crop tool's page overlay: a frame over the current page, starting at
  * its pending crop or its full view. Each drag or keyboard gesture is one
  * `page.crop` step; Esc while adjusting goes back to where it started.
+ * The area never leaves the page.
  */
 export function CropTool(props: PageOverlayProps) {
   const { page, doc, tool, viewport, width, height, pageNumber } = props;
@@ -37,6 +68,7 @@ export function CropTool(props: PageOverlayProps) {
         transform={{ a, b, c, d, e, f }}
         box={box}
         resizable
+        snap={(next) => fitCrop(next, box, full)}
         label={`Crop area of page ${pageNumber}`}
         onChange={(next) => setPreview({ key, box: next })}
         onCommit={(next) => {
@@ -56,7 +88,7 @@ export function CropTool(props: PageOverlayProps) {
             onClick={() =>
               doc.dispatch({
                 type: 'page.crop',
-                params: { pageIds: [page.id], box: full },
+                params: { pageIds: [page.id], box: null },
               })
             }
           >

@@ -174,13 +174,20 @@ describe('Toolbar', () => {
     rerender(<Toolbar label="Tools" groups={groups()} size="lg" />);
     for (const name of ['Undo', 'Pen', 'Rotate']) {
       const b = screen.getByRole('button', { name });
-      expect(b.className).toContain('size-11');
+      expect(b.className).toContain('size-touch');
       expect(b.className).not.toContain('--icon-button-sm');
     }
-    // The split button's menu trigger is 44px along the bar too.
-    expect(
-      screen.getByRole('button', { name: 'Rotate options' }).className,
-    ).toContain('h-11');
+    // The split button's menu trigger is a full 44px target too (P5-G).
+    const trigger = screen.getByRole('button', { name: 'Rotate options' });
+    expect(trigger.className).toContain('h-touch');
+    expect(trigger.className).toContain('w-touch');
+  });
+
+  it('a split trigger stretches to its main button, labelled or not', () => {
+    render(<Toolbar label="Tools" groups={groups()} />);
+    const trigger = screen.getByRole('button', { name: 'Rotate options' });
+    expect(trigger.className).toContain('self-stretch');
+    expect(trigger.className).toContain('h-auto');
   });
 });
 
@@ -220,10 +227,11 @@ describe('FloatingPalette', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'Undo' }).className).toContain(
-      'size-11',
+      'size-touch',
     );
     const grip = screen.getByRole('button', { name: /Move tools/ });
-    expect(grip.className).toContain('size-11');
+    expect(grip.className).toContain('h-touch');
+    expect(grip.className).toContain('w-touch');
   });
 });
 

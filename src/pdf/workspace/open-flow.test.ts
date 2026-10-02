@@ -81,14 +81,18 @@ describe('openFile', () => {
   });
 
   it('opens an owner-password-only PDF as restricted', async () => {
-    const out = await openFile(
-      file(await makeOwnerOnlyEncryptedPdf()),
-      services,
-    );
+    const encrypted = await makeOwnerOnlyEncryptedPdf();
+    const out = await openFile(file(encrypted), services);
     expect(out.status).toBe('restricted');
     if (out.status === 'restricted') {
       expect(out.model.getState().restricted).toBe(true);
       expect(out.model.getState().ownerRestricted).toBe(true);
+      // The encrypted original is kept (and saved) for the owner password.
+      expect(await out.blobs.originalBytes()).toEqual(encrypted);
+      const id = out.model.getState().id;
+      expect(out.blobs.pendingWrites().map((w) => w.key)).toContain(
+        `${id}/original`,
+      );
     }
   });
 

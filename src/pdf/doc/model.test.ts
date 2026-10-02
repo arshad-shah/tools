@@ -268,6 +268,64 @@ describe('DocumentModel', () => {
     });
   });
 
+  it('removeSource drops a source no operation uses', () => {
+    const m = new DocumentModel(initial());
+    const events: HistoryEvent[] = [];
+    m.subscribe((e) => events.push(e));
+    m.addSource({ ...source('s2', 1), origin: 'merged' });
+    expect(m.removeSource('s2')).toBe(true);
+    expect(m.getState().sources.s2).toBeUndefined();
+    expect(events.at(-1)).toEqual({
+      kind: 'dropped',
+      checkpoints: [],
+      sources: ['s2'],
+    });
+  });
+
+  it('removeSource keeps a source an operation or checkpoint uses', () => {
+    const m = new DocumentModel(initial());
+    m.addSource({ ...source('s2', 1), origin: 'merged' });
+    m.dispatch({
+      type: 'page.mergeIn',
+      params: { sourceId: 's2', at: 0, newIds: ['m0'] },
+    });
+    expect(m.removeSource('s2')).toBe(false);
+    expect(m.removeSource('s0')).toBe(false);
+    expect(m.getState().sources.s2).toBeDefined();
+  });
+
+  it('refuses to merge in more pages than the file has, or a missing file', () => {
+    const { m } = model();
+    m.addSource({ ...source('s2', 2), origin: 'merged' });
+    const merge = (sourceId: string, newIds: string[]) => () =>
+      m.dispatch({
+        type: 'page.mergeIn',
+        params: { sourceId, at: 0, newIds },
+      });
+    expect(merge('s2', ['a', 'b', 'c'])).toThrow(
+      expect.objectContaining({ code: 'INVALID_INPUT' }),
+    );
+    expect(merge('nope', ['a'])).toThrow(
+      expect.objectContaining({ code: 'INVALID_INPUT' }),
+    );
+    expect(m.getState().log).toHaveLength(0);
+  });
+
+  it('removeSource forgets an unused merged file only', () => {
+    const { m } = model();
+    m.addSource({ ...source('s2', 2), origin: 'merged' });
+    m.addSource({ ...source('s3', 1), origin: 'merged' });
+    m.dispatch({
+      type: 'page.mergeIn',
+      params: { sourceId: 's3', at: 0, newIds: ['x'] },
+    });
+    expect(m.removeSource('s2')).toBe(true);
+    expect(m.getState().sources.s2).toBeUndefined();
+    expect(m.removeSource('s3')).toBe(false);
+    expect(m.removeSource('s0')).toBe(false);
+    expect(m.getState().sources.s3).toBeDefined();
+  });
+
   it('unrestrict lifts the read-only flag once', () => {
     const m = new DocumentModel({ ...initial(), restricted: true });
     const seen: HistoryEvent[] = [];

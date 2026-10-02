@@ -1,0 +1,44 @@
+name: Perf
+
+# Workspace performance budgets on large-300.pdf (spec §14, plan G-6).
+# Nightly and on demand; never a pull-request check (spec §15).
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf
+  cancel-in-progress: false
+
+jobs:
+  perf:
+    name: Workspace performance budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # global-setup generates the fixtures (large-300.pdf included).
+      - name: Performance budgets
+        run: pnpm test:e2e --grep @perf
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf
+          path: test-results/perf.json
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: perf-playwright-report
+          path: playwright-report

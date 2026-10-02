@@ -9,9 +9,10 @@ import { getWorkspaceDb } from '../../workspace-db';
 export const CLEAR_TRUSTED_ROOTS = 'Clear trusted roots';
 
 /**
- * Settings: forget every imported root certificate (plan H-14). The
- * workspace has no settings menu in the standard layout, so this lives in
- * Mod+K under Settings; the Trusted roots dialog also has "Clear all".
+ * Settings: forget every imported root certificate (plan H-14). It is in
+ * Mod+K under Settings and in the top bar's More menu (Focus and phone
+ * layouts; the standard layout has no such menu). The Trusted roots dialog
+ * also has "Clear all".
  */
 export function clearTrustedRootsCommand(): Command {
   return {

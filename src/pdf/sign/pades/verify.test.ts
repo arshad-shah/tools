@@ -17,6 +17,8 @@ import {
   INVALID_SUMMARY,
   REVOCATION_NOTE,
   MORE_NOT_CHECKED,
+  digestNote,
+  SHA1_NOTE,
   signingCertificateMatches,
   signingCertificateProblem,
   TIMESTAMP_UNVERIFIED_NOTE,
@@ -277,6 +279,20 @@ describe('verifyPdfSignatures', () => {
       /signing certificate/,
     );
     expect(signingCertificateProblem(null, 'adbe.pkcs7.detached')).toBeNull();
+  });
+
+  it('says an unverified signing time is stated by the signer', () => {
+    expect(DEVICE_CLOCK_NOTE).toBe(
+      'The signing time is stated by the signer and is not verified.',
+    );
+  });
+
+  it('warns about SHA-1 digests only', () => {
+    expect(digestNote('SHA-1')).toBe(SHA1_NOTE);
+    expect(SHA1_NOTE).toBe(
+      'This signature uses SHA-1, which is no longer considered secure.',
+    );
+    expect(digestNote('SHA-256')).toBeNull();
   });
 
   it('returns nothing for an unsigned file', async () => {

@@ -56,6 +56,10 @@ export function ShellSection() {
           <AppShell
             className="h-full min-h-0"
             mainId="kit-shell-main"
+            // SkipLinks: Tab into the frame to see it.
+            skipLinks={[
+              { href: '#kit-shell-main', label: 'Skip to the shell content' },
+            ]}
             topBar={
               <TopBar
                 compact

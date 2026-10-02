@@ -79,6 +79,15 @@ export function InputsSection() {
           />
         </Stack>
         <Stack gap="2">
+          <Label htmlFor="kit-input-compact">Compact (inline editor)</Label>
+          <Input
+            id="kit-input-compact"
+            value={text}
+            onChange={setText}
+            size="sm"
+          />
+        </Stack>
+        <Stack gap="2">
           <Label htmlFor="kit-disabled">Disabled</Label>
           <Input
             id="kit-disabled"

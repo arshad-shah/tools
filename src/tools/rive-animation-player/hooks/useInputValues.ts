@@ -3,7 +3,7 @@ import {
   Rive,
   StateMachineInput,
   StateMachineInputType,
-} from '@rive-app/react-canvas';
+} from '@/shared/ui/adapters/rive-runtime';
 import { notify } from '@/shared/lib/notify';
 import type { DebugLog } from '../types';
 

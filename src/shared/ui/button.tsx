@@ -100,7 +100,7 @@ Button.displayName = 'Button';
 const iconButtonSize = {
   sm: 'size-(--icon-button-sm)',
   md: 'size-(--icon-button-md)',
-  lg: 'size-11',
+  lg: 'size-touch',
 } as const;
 /** Glyph size for an icon component; a rendered node keeps its own size. */
 const iconGlyph: Record<keyof typeof iconButtonSize, string | undefined> = {
@@ -137,6 +137,8 @@ export interface IconButtonProps extends Omit<
    * wide screens (6-H); icon only, with its accessible name, elsewhere.
    */
   showLabel?: 'desktop';
+  /** The visible text when showLabel applies (default `label`). */
+  text?: string;
 }
 function renderIcon(
   icon: IconComponent | React.ReactNode,
@@ -163,6 +165,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       asChild,
       disabled,
       showLabel,
+      text,
       children,
       ...props
     },
@@ -199,7 +202,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         )}
         {showLabel ? (
           <span aria-hidden className="hidden text-sm desk:inline">
-            {label}
+            {text ?? label}
           </span>
         ) : null}
       </button>

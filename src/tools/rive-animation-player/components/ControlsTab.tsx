@@ -1,5 +1,5 @@
 import React from 'react';
-import { StateMachineInput } from '@rive-app/react-canvas';
+import { StateMachineInput } from '@/shared/ui/adapters/rive-runtime';
 import { IconPause, IconPlay } from '@/shared/ui/icons';
 
 import {

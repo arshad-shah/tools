@@ -1,5 +1,5 @@
 import React from 'react';
-import { Fit } from '@rive-app/react-canvas';
+import { Fit } from '@/shared/ui/adapters/rive-runtime';
 import {
   IconArrowDown,
   IconArrowDownLeft,

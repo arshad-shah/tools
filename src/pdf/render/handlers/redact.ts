@@ -4,12 +4,16 @@ import {
   burnMarks,
   collectDocTexts,
   coverageOf,
+  REDACT_RENDER,
   type DocTextEntry,
 } from '@/pdf/redact/raster-core';
 import { canvasPx, exportScale } from '../render-scale';
 import { cancelled, getDoc, paintPage } from './state';
 
-/** Renders a page unrotated over its CropBox at `dpi` (capped to the canvas limit). */
+/**
+ * Renders a page unrotated over its CropBox at `dpi` (capped to the canvas
+ * limit), without annotations.
+ */
 async function renderFlat(
   ctx: RpcContext,
   docId: string,
@@ -25,7 +29,7 @@ async function renderFlat(
     canvasPx(viewport.width),
     canvasPx(viewport.height),
   );
-  await paintPage(ctx, page, canvas, viewport);
+  await paintPage(ctx, page, canvas, viewport, undefined, REDACT_RENDER);
   return { canvas, viewport };
 }
 

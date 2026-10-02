@@ -202,6 +202,26 @@ describe('pdfRender after a worker restart', () => {
     await expect(render.open(new Uint8Array([1]))).resolves.toBeTruthy();
   });
 
+  it('keys the crash budget by the caller key when the bytes are re-read', async () => {
+    const { render, crashWhileRendering } = setup();
+    // Bytes read back from disk are a new array each time.
+    const fresh = () => new Uint8Array([9]);
+    let doc = await render.open(fresh(), undefined, 'source-a');
+    for (let i = 0; i < 2; i++) {
+      await crashWhileRendering(doc.docId);
+      doc = await render.open(fresh(), undefined, 'source-a');
+    }
+    await crashWhileRendering(doc.docId);
+    await expect(
+      render.open(fresh(), undefined, 'source-a'),
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(/keeps crashing/),
+    });
+    await expect(
+      render.open(fresh(), undefined, 'source-b'),
+    ).resolves.toBeTruthy();
+  });
+
   it('counts a crash during the open itself against that document', async () => {
     const { render, crash } = setup({ maxReopens: 1 });
     const bytes = new Uint8Array([9]);
@@ -324,5 +344,30 @@ describe('pdfRender tiles, text items and priorities', () => {
     await Promise.all([...busy, ...queued]);
     // The tile (priority 1, queued before width 20) is not a renderPage call.
     expect(renderGate.widths).toEqual([1, 2, 3, 4, 30, 20, 10]);
+  });
+
+  it('queues page images behind the canvas when asked for background priority', async () => {
+    const { render, posted } = setup();
+    const doc = await render.open(new Uint8Array([1]));
+    let open!: () => void;
+    renderGate.wait = new Promise<void>((r) => (open = r));
+    const busy = [1, 2, 3, 4].map((w) => render.renderPage(doc.docId, 0, w));
+    for (let i = 0; i < 50 && renderGate.widths.length < 4; i++)
+      await new Promise((r) => setTimeout(r, 0));
+    const image = render.renderPageImage(
+      doc.docId,
+      0,
+      { dpi: 72, format: 'jpeg', quality: 0.7 },
+      undefined,
+      2,
+    );
+    const canvas = render.renderPage(doc.docId, 0, 50);
+    renderGate.wait = null;
+    open();
+    await Promise.all([...busy, image, canvas]);
+    const calls = posted.filter(
+      (p) => p === 'call:renderPage' || p === 'call:renderPageImage',
+    );
+    expect(calls.at(-1)).toBe('call:renderPageImage');
   });
 });

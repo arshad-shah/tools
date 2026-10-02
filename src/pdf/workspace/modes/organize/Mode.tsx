@@ -120,7 +120,10 @@ const mode: ModeModule = {
       run: () => duplicatePages(ctx),
     },
   ],
-  onLeave: (ctx) => ctx.tool.set(null),
+  onLeave: (ctx) => {
+    ctx.tool.set(null);
+    openOrganizeDialog(null);
+  },
 };
 
 export default mode;

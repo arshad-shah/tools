@@ -63,20 +63,46 @@ function sessionFor(
   };
 }
 
+/** A document a superseded open still opened in the render worker. */
+const closeDoc = (docId: string) =>
+  void getServices()
+    .render.close(docId)
+    .catch(() => {});
+
 /**
  * Opening documents in the workspace (spec §12, §13.3): files, staged
  * bytes, restores from this device, passwords, repair of damaged files and
- * one automatic retry after a worker crash.
+ * one automatic retry after a worker crash. Each open, restore or repair
+ * supersedes the one before (and unmount or close supersede them all): a
+ * superseded attempt is aborted, and a document it still opens is closed.
  */
 export function useWorkspaceDocument() {
   const [phase, setPhase] = useState<WorkspacePhase>({ kind: 'empty' });
   const current = useRef<WorkspaceSession | null>(null);
+  const attempt = useRef<AbortController | null>(null);
 
   const replaceSession = (next: WorkspaceSession | null) => {
     current.current?.sourceDocs.dispose();
     current.current = next;
   };
-  useEffect(() => () => replaceSession(null), []);
+  /** Supersedes the attempt in flight; the returned signal is this one's. */
+  const begin = () => {
+    attempt.current?.abort();
+    attempt.current = new AbortController();
+    return attempt.current.signal;
+  };
+  // Unmounting does not abort (StrictMode remounts at once and the effect
+  // that started an open does not run again): work that lands while
+  // unmounted is stale and closes what it opened.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      replaceSession(null);
+    };
+  }, []);
+  const stale = (signal: AbortSignal) => signal.aborted || !mounted.current;
 
   const fail = useCallback((e: unknown, file: OpenSource | null) => {
     const error = toToolError(e);
@@ -89,8 +115,10 @@ export function useWorkspaceDocument() {
     async (
       result: Exclude<OpenResult, { status: 'locked' }>,
       file: OpenSource,
+      signal: AbortSignal,
     ) => {
       const db = await getWorkspaceDb();
+      if (stale(signal)) return closeDoc(result.info.docId);
       const session = sessionFor(result.model, result.blobs, db);
       session.sourceDocs.seed(
         result.model.currentCheckpoint().sourceId,
@@ -109,6 +137,7 @@ export function useWorkspaceDocument() {
 
   const open = useCallback(
     async (file: OpenSource, password?: string) => {
+      const signal = begin();
       if (password === undefined)
         setPhase({ kind: 'opening', name: file.name });
       else setPhase({ kind: 'locked', file, error: null, busy: true });
@@ -116,11 +145,20 @@ export function useWorkspaceDocument() {
       for (let attempt = 0; ; attempt++) {
         try {
           const db = await getWorkspaceDb();
-          const result = await openFile(file, getServices(), { password, db });
+          const result = await openFile(file, getServices(), {
+            password,
+            db,
+            signal,
+          });
+          if (stale(signal)) {
+            if (result.status !== 'locked') closeDoc(result.info.docId);
+            return;
+          }
           if (result.status === 'locked')
             return setPhase({ kind: 'locked', file, error: null, busy: false });
-          return await ready(result, file);
+          return await ready(result, file, signal);
         } catch (e) {
+          if (stale(signal)) return;
           const error = toToolError(e);
           if (error.code === 'WRONG_PASSWORD' && password !== undefined)
             return setPhase({
@@ -152,6 +190,7 @@ export function useWorkspaceDocument() {
 
   const restore = useCallback(
     async (id: string) => {
+      const signal = begin();
       setPhase({ kind: 'opening', name: 'your document' });
       try {
         const db = await getWorkspaceDb();
@@ -161,11 +200,13 @@ export function useWorkspaceDocument() {
             'Local storage is not available in this browser',
           );
         const { state, ui, blobs } = await restoreDocument(db, id);
+        const original = state.restricted ? await blobs.originalBytes() : null;
+        if (stale(signal)) return;
         const session = sessionFor(new DocumentModel(state), blobs, db);
         replaceSession(session);
-        setPhase({ kind: 'ready', session, ui, original: null });
+        setPhase({ kind: 'ready', session, ui, original });
       } catch (e) {
-        fail(e, null);
+        if (!stale(signal)) fail(e, null);
       }
     },
     [fail],
@@ -174,18 +215,25 @@ export function useWorkspaceDocument() {
   /** Rewrites a damaged file with qpdf and opens the result. */
   const repair = useCallback(
     async (file: OpenSource) => {
+      const signal = begin();
       setPhase({ kind: 'opening', name: file.name });
       try {
-        const { bytes } = await getServices().qpdf.optimize(file.bytes, {});
+        const { bytes } = await getServices().qpdf.optimize(
+          file.bytes,
+          {},
+          signal,
+        );
+        if (stale(signal)) return;
         await open({ ...file, bytes });
       } catch (e) {
-        fail(e, null);
+        if (!stale(signal)) fail(e, null);
       }
     },
     [open, fail],
   );
 
   const close = useCallback(() => {
+    attempt.current?.abort();
     replaceSession(null);
     setPhase({ kind: 'empty' });
   }, []);

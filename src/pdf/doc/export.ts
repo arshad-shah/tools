@@ -32,6 +32,7 @@ export async function exportDocument(
   const plan = await planFor(model, blobs, {
     onlyPages: options.onlyPages ?? undefined,
     excludeOverlays: excludedOverlays(options),
+    filename: options.filename,
   });
   if (plan.pages.length === 0)
     throw new ToolError('INVALID_INPUT', 'There are no pages to export');

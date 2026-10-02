@@ -1,21 +1,18 @@
-import { version as tesseractVersion } from 'tesseract.js/package.json';
+import BUILD_MANIFEST from 'virtual:ocr-manifest';
 import { ToolError } from '@/shared/lib/errors';
 import { OCR_LANGUAGES, type OcrLanguage, type OcrManifest } from './types';
 
 /*
  * Same-origin OCR assets (spec 11). Nothing is fetched before the person
- * consents; every URL the engine is given is checked to be on this origin
- * (decision G11).
+ * consents (the manifest with the sizes is part of the app build); every
+ * URL the engine is given is checked to be on this origin (decision G11).
  */
 
 export const OCR_NETWORK_MESSAGE =
   "Couldn't download OCR data. Check your connection and try again.";
 
-/** Where scripts/copy-ocr-assets.mjs writes the manifest for this build. */
-export const OCR_MANIFEST_URL = `/ocr/${tesseractVersion}/ocr-manifest.json`;
-
-const networkError = (cause?: unknown) =>
-  new ToolError('NETWORK', OCR_NETWORK_MESSAGE, { cause });
+/** This build's asset manifest (scripts/copy-ocr-assets.mjs writes the files). */
+export const OCR_MANIFEST: OcrManifest = BUILD_MANIFEST;
 
 /** Throws when `url` would leave this origin. */
 export function assertSameOrigin(url: string): void {
@@ -36,20 +33,10 @@ const manifestUrls = (m: OcrManifest) => [
   ...Object.values(m.languages).map((l) => l.path),
 ];
 
-/** Fetches this build's manifest. Failure is NETWORK, never a fallback. */
+/** This build's manifest, its paths checked to be on this origin. */
 export async function loadOcrManifest(
-  signal?: AbortSignal,
+  manifest: OcrManifest = OCR_MANIFEST,
 ): Promise<OcrManifest> {
-  let manifest: OcrManifest;
-  try {
-    const res = await fetch(OCR_MANIFEST_URL, { signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for ${OCR_MANIFEST_URL}`);
-    manifest = (await res.json()) as OcrManifest;
-  } catch (e) {
-    if (signal?.aborted)
-      throw new ToolError('CANCELLED', 'Cancelled', { cause: e });
-    throw networkError(e);
-  }
   for (const url of manifestUrls(manifest)) assertSameOrigin(url);
   return manifest;
 }

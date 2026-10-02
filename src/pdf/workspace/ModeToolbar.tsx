@@ -11,14 +11,16 @@ import { ModeToolbarContext } from './mode-toolbar-context';
 /**
  * What a mode's Toolbar component renders: the same groups become the
  * Standard toolbar, the Focus floating palette, or the phone's bar above
- * the dock (spec §6.1).
+ * the dock (spec §6.1). Every bar is one row that scrolls sideways (nothing
+ * wraps), labelled beside the icons from md up and icon-only on phones,
+ * with 44px targets in Focus and on phones.
  */
 export function ModeToolbar({
   groups,
   trailing,
 }: {
   groups: ToolGroup[];
-  /** Status after the tools (Standard and phone toolbars only). */
+  /** Custom controls and status after the tools (every layout). */
   trailing?: ReactNode;
 }) {
   const s = useContext(ModeToolbarContext);
@@ -32,6 +34,7 @@ export function ModeToolbar({
         side={s.palette}
         size="lg"
         onSideChange={s.onPaletteChange}
+        trailing={trailing}
       />
     );
   if (s.layout === 'phone')
@@ -48,10 +51,15 @@ export function ModeToolbar({
             label={s.label}
             groups={groups}
             size="lg"
+            labelled
             trailing={trailing}
           />
         </div>
       </div>
     );
-  return <Toolbar label={s.label} groups={groups} trailing={trailing} />;
+  return (
+    <div className="flex min-w-0 flex-1">
+      <Toolbar label={s.label} groups={groups} labelled trailing={trailing} />
+    </div>
+  );
 }

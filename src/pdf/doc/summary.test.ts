@@ -106,6 +106,37 @@ describe('summarizeChanges', () => {
     ]);
   });
 
+  it('skips page changes to pages deleted later', () => {
+    const m = new DocumentModel(state());
+    m.dispatch(rotate('c:0'));
+    m.dispatch({
+      type: 'page.duplicate',
+      params: { pageIds: ['c:1'], newIds: ['d1'] },
+    });
+    m.dispatch({ type: 'page.delete', params: { pageIds: ['c:0', 'c:1'] } });
+    expect(summarizeChanges(m.getState(), m.getView())).toEqual([
+      {
+        mode: 'organize',
+        lines: ['1 page duplicated', '2 pages deleted'],
+      },
+    ]);
+  });
+
+  it('a reset crop clears the crop and is not a change', () => {
+    const m = new DocumentModel(state());
+    const box = { x: 10, y: 10, width: 300, height: 300 };
+    m.dispatch({ type: 'page.crop', params: { pageIds: ['c:0', 'c:1'], box } });
+    m.dispatch({ type: 'page.crop', params: { pageIds: ['c:0'], box: null } });
+    expect(m.getView().pages[0]).not.toHaveProperty('crop');
+    expect(m.getView().pages[1].crop).toEqual(box);
+    expect(m.getState().log.at(-1)?.label).toBe('Reset the crop of page 1');
+    expect(summarizeChanges(m.getState(), m.getView())).toEqual([
+      { mode: 'organize', lines: ['1 page cropped'] },
+    ]);
+    m.dispatch({ type: 'page.crop', params: { pageIds: ['c:1'], box: null } });
+    expect(summarizeChanges(m.getState(), m.getView())).toEqual([]);
+  });
+
   it('checkpoints contribute their report title; no changes is empty', () => {
     const m = new DocumentModel(state());
     expect(summarizeChanges(m.getState(), m.getView())).toEqual([]);

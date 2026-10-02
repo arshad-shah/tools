@@ -1,4 +1,4 @@
-import type { PDFFont } from 'pdf-lib';
+import type { TextMeasure } from './font-stack';
 import { ToolError } from '@/shared/lib/errors';
 import type { Box } from './draw';
 
@@ -80,7 +80,7 @@ function wrap(
  * `truncated` says so. `lineHeight` is a multiple of the size (default 1.2).
  */
 export function fitText(
-  font: PDFFont,
+  font: TextMeasure,
   text: string,
   box: Box,
   style: {

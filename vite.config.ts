@@ -9,6 +9,7 @@ import { glyphReport } from './scripts/vite-glyph-report';
 import { escapeVendorGlyphs } from './scripts/vite-vendor-glyphs';
 import { SECURITY_HEADERS, cspHeaders } from './scripts/csp';
 import { chunkPackages } from './scripts/vite-chunk-packages';
+import { ocrManifest } from './scripts/vite-ocr-manifest';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -20,9 +21,11 @@ export default defineConfig({
     glyphReport(),
     cspHeaders(),
     chunkPackages(),
+    ocrManifest(),
   ],
   define: buildDefines(),
-  // dist/.vite/manifest.json feeds test/bundle-budget.test.ts (spec 12.5);
+  // dist/.vite/manifest.json feeds test/bundle-budget.test.ts (spec 12.5)
+  // and test/bundle-size.test.ts (the lazy chunk split, spec 14);
   // public/.assetsignore keeps it off the deployed site.
   build: { manifest: true },
   // Module workers everywhere: qpdf-wasm's loader uses dynamic import(),
@@ -31,8 +34,16 @@ export default defineConfig({
   // (fontkit in the edit worker) are escaped there too.
   worker: { format: 'es', plugins: () => [escapeVendorGlyphs()] },
   // Worker-only dependencies are invisible to the dep scanner; pre-bundle
-  // them so the first edit-worker load cannot trigger a re-optimise reload.
-  optimizeDeps: { include: ['@pdf-lib/standard-fonts'] },
+  // them so the first worker load cannot trigger a re-optimise reload (which
+  // drops in-memory state such as a Home hand-off). test/vite-optimize-deps
+  // keeps this list complete.
+  optimizeDeps: {
+    include: [
+      '@pdf-lib/standard-fonts',
+      'pdfjs-dist/build/pdf.worker.mjs',
+      '@arshad-shah/qpdf-wasm',
+    ],
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

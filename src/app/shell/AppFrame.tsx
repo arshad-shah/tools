@@ -28,6 +28,9 @@ import { AppNav } from './AppNav';
 import { useBreadcrumbSegments } from './breadcrumb';
 import { BreadcrumbProvider } from './breadcrumb-context';
 import { KeepAliveOutlet } from './keep-alive';
+import { HelpContext } from './help-context';
+import { useHelpDialogs } from './HelpDialogs';
+import { HelpMenu } from './HelpMenu';
 import { PaletteContext } from './palette';
 import { routerLink } from './router-link';
 import { ThemeMenu } from './ThemeMenu';
@@ -62,6 +65,7 @@ function Frame() {
   useCommandPaletteHotkey(setPaletteOpen);
   useAppCommands();
   useScrollRestore();
+  const { dialogs: helpDialogs, ...help } = useHelpDialogs();
 
   const desktop = useMediaQuery(DESKTOP);
   const collapsed = useNavStore((s) => s.collapsed);
@@ -85,83 +89,87 @@ function Frame() {
 
   return (
     <PaletteContext.Provider value={openPalette}>
-      <AppShell
-        aside={
-          showNav ? (
-            <div className="sticky top-0 max-h-dvh w-60 overflow-y-auto border-r border-line px-3 py-4">
-              <AppNav />
-            </div>
-          ) : undefined
-        }
-        asideLabel="Site navigation"
-        topBar={
-          <TopBar
-            renderLink={routerLink}
-            breadcrumb={
-              segments.length ? (
-                <Breadcrumb segments={segments} renderLink={routerLink} />
-              ) : undefined
-            }
-            actions={
-              <>
-                {desktop ? (
-                  <IconButton
-                    variant="ghost"
-                    label="Navigation"
-                    showLabel="desktop"
-                    aria-pressed={!collapsed}
-                    icon={IconPanelLeft}
-                    onClick={toggleNav}
-                  />
-                ) : (
-                  <IconButton
-                    variant="ghost"
-                    label="Menu"
-                    aria-haspopup="dialog"
-                    aria-expanded={menuOpen}
-                    icon={IconMenu}
-                    onClick={() => setMenuOpen(true)}
-                  />
-                )}
-                {/* Home has its own search field; one search control per page. */}
-                {home ? null : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={openPalette}
-                    leftIcon={<IconSearch size="sm" />}
-                    rightIcon={<ShortcutHint keys="Mod+K" />}
-                    className="text-fg-muted max-sm:min-w-11 max-sm:px-0"
-                  >
-                    {/* Icon only on phones; the name stays for screen readers. */}
-                    <span className="max-sm:sr-only">Search</span>
-                  </Button>
-                )}
-                <ThemeMenu />
-              </>
-            }
-          />
-        }
-      >
-        <div className="flex min-h-full flex-col">
-          <div className="flex-1">
-            <KeepAliveOutlet />
-          </div>
-          <Footer tool={tool} />
-        </div>
-      </AppShell>
-      {desktop ? null : (
-        <Drawer
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-          side="left"
-          title="Menu"
+      <HelpContext.Provider value={help}>
+        <AppShell
+          aside={
+            showNav ? (
+              <div className="sticky top-0 max-h-dvh w-60 overflow-y-auto border-r border-line px-3 py-4">
+                <AppNav />
+              </div>
+            ) : undefined
+          }
+          asideLabel="Site navigation"
+          topBar={
+            <TopBar
+              renderLink={routerLink}
+              breadcrumb={
+                segments.length ? (
+                  <Breadcrumb segments={segments} renderLink={routerLink} />
+                ) : undefined
+              }
+              actions={
+                <>
+                  {desktop ? (
+                    <IconButton
+                      variant="ghost"
+                      label="Navigation"
+                      showLabel="desktop"
+                      aria-pressed={!collapsed}
+                      icon={IconPanelLeft}
+                      onClick={toggleNav}
+                    />
+                  ) : (
+                    <IconButton
+                      variant="ghost"
+                      label="Menu"
+                      aria-haspopup="dialog"
+                      aria-expanded={menuOpen}
+                      icon={IconMenu}
+                      onClick={() => setMenuOpen(true)}
+                    />
+                  )}
+                  {/* Home has its own search field; one search control per page. */}
+                  {home ? null : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={openPalette}
+                      leftIcon={<IconSearch size="sm" />}
+                      rightIcon={<ShortcutHint keys="Mod+K" />}
+                      className="text-fg-muted max-sm:min-w-11 max-sm:px-0"
+                    >
+                      {/* Icon only on phones; the name stays for screen readers. */}
+                      <span className="max-sm:sr-only">Search</span>
+                    </Button>
+                  )}
+                  <HelpMenu />
+                  <ThemeMenu />
+                </>
+              }
+            />
+          }
         >
-          <AppNav />
-        </Drawer>
-      )}
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-      <Toaster />
+          <div className="flex min-h-full flex-col">
+            <div className="flex-1">
+              <KeepAliveOutlet />
+            </div>
+            <Footer tool={tool} />
+          </div>
+        </AppShell>
+        {desktop ? null : (
+          <Drawer
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
+            side="left"
+            title="Menu"
+          >
+            <AppNav />
+          </Drawer>
+        )}
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+        {helpDialogs}
+        <Toaster />
+      </HelpContext.Provider>
     </PaletteContext.Provider>
   );
 }

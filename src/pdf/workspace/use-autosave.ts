@@ -12,10 +12,18 @@ import type { WorkspaceSession } from './session';
 import type { SaveStatus } from './TopBarControls';
 
 const THUMB_DPI = 72;
+/** The saved thumbnail never holds up the canvas. */
+const BACKGROUND = 2;
+
+/** Encrypted inputs save only once the user opted in (kept in the record). */
+const savesByDefault = (session: WorkspaceSession) => {
+  const st = session.model.getState();
+  return !st.encryptedInput || !!st.saveOptIn;
+};
 
 /**
  * Autosave for the open document (spec §6.6): on unless the input was
- * encrypted (then opt-in), quota errors toasted with "Clear old documents",
+ * encrypted (then opt-in, remembered across restores), quota errors toasted with "Clear old documents",
  * and the checkpoint disk budget enforced after each checkpoint.
  */
 export function useAutosave(
@@ -24,7 +32,7 @@ export function useAutosave(
 ) {
   const { model, db } = session;
   const [status, setStatus] = useState<SaveStatus>(() =>
-    !db ? 'unavailable' : model.getState().encryptedInput ? 'off' : 'saving',
+    !db ? 'unavailable' : savesByDefault(session) ? 'saving' : 'off',
   );
   const saver = useRef<Autosave | null>(null);
   const latestUi = useRef(ui);
@@ -39,7 +47,7 @@ export function useAutosave(
       model,
       blobs: session.blobs,
       ui: () => latestUi.current(),
-      enabled: !model.getState().encryptedInput,
+      enabled: savesByDefault(session),
       async thumb() {
         const page = model.getView().pages[0];
         const docId = page && session.sourceDocs.get(page.source)?.docId;
@@ -48,6 +56,8 @@ export function useAutosave(
           docId,
           page.index,
           { dpi: THUMB_DPI, format: 'jpeg', quality: 0.7 },
+          undefined,
+          BACKGROUND,
         );
         return new Blob([img.bytes as Uint8Array<ArrayBuffer>], {
           type: 'image/jpeg',
@@ -77,7 +87,7 @@ export function useAutosave(
       if (s.isEnabled()) setStatus('saving');
       if (e.kind !== 'checkpoint') return;
       void estimateQuota()
-        .then((q) => enforceCheckpointBudget(db, model, q))
+        .then((q) => enforceCheckpointBudget(model, session.blobs, q))
         .then((dropped) => {
           if (dropped.length)
             notify.info(
@@ -96,7 +106,11 @@ export function useAutosave(
   return {
     status,
     setEnabled(on: boolean) {
-      saver.current?.setEnabled(on);
+      // Saving turns on before the choice lands, and off after, so the
+      // saved record always carries the latest choice.
+      if (on) saver.current?.setEnabled(true);
+      if (model.getState().encryptedInput) model.setSaveOptIn(on);
+      if (!on) saver.current?.setEnabled(false);
       setStatus(on ? 'saving' : 'off');
     },
     flush: () => saver.current?.flush() ?? Promise.resolve(),

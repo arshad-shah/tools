@@ -4,18 +4,19 @@ import { Button, InspectorSection } from '@/shared/ui';
 import { useDocumentSignatures } from '../../signatures';
 import { WorkspaceContext } from '../../workspace-context';
 import type { ModeProps } from '../types';
+import { FillSummary } from './FillSummary';
 import { SignaturesPanel } from './SignaturesPanel';
 
 const SIGNING = new Set(['sign.place', 'sign.block', 'sign.initialPages']);
 
-/** The Fill & Sign inspector: the selected signature, block or initials. */
+/** The selected signature, block or initials; else the fill summary. */
 function PlacedSection(ctx: ModeProps) {
   const { doc, selection } = ctx;
   const all = [...doc.view.overlays.values(), doc.view.docOverlays].flat();
   const signatures = [...selection.objects].filter((id) =>
     all.some((o) => o.opId === id && SIGNING.has(o.type)),
   );
-  if (!signatures.length) return null;
+  if (!signatures.length) return <FillSummary {...ctx} />;
   return (
     <InspectorSection title="Placed signature">
       <div className="flex flex-col gap-2 p-3">

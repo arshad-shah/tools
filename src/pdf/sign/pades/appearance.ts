@@ -1,9 +1,12 @@
 import {
+  concatTransformationMatrix,
   PDFArray,
   PDFDict,
   PDFName,
   PDFPage,
   PDFRef,
+  popGraphicsState,
+  pushGraphicsState,
   rgb,
   StandardFonts,
   type PDFDocument,
@@ -12,6 +15,21 @@ import type { Box } from '@/pdf/edit/draw';
 
 /** Draws the visual signature into `box` on a scratch page (page space, y up). */
 export type PaintVisual = (page: PDFPage, box: Box) => Promise<void>;
+
+/**
+ * Upright frame to page space for a page shown turned clockwise by the key:
+ * the content is turned the other way (counter-clockwise in y-up space) by
+ * the same angle, so the reader sees it upright. `pw` and `ph` are the
+ * appearance box's page-space sides.
+ */
+const TURNS: Record<
+  number,
+  (pw: number, ph: number) => ReturnType<typeof concatTransformationMatrix>
+> = {
+  90: (pw) => concatTransformationMatrix(0, 1, -1, 0, pw, 0),
+  180: (pw, ph) => concatTransformationMatrix(-1, 0, 0, -1, pw, ph),
+  270: (_pw, ph) => concatTransformationMatrix(0, -1, 1, 0, 0, ph),
+};
 
 /** Share of the appearance height the visual signature takes when captioned. */
 const VISUAL_SHARE = 0.75;
@@ -22,20 +40,30 @@ const VISUAL_SHARE = 0.75;
  * that never joins the page tree, then embedded; a caption ("Digitally
  * signed by {name}" and the date, Helvetica 6 to 8pt) goes below it. An
  * invisible signature gets an empty /BBox [0 0 0 0].
+ *
+ * `pageRotation` is the page's /Rotate: the whole layout (visual above,
+ * caption below) is made in the frame the reader sees and turned into page
+ * space, so the caption reads upright under the visual on a turned page.
  */
 export async function buildAppearance(
   doc: PDFDocument,
   rect: Box | null,
   paint: PaintVisual | null,
   caption: { name: string; date: string } | null,
+  pageRotation = 0,
 ): Promise<PDFRef> {
   if (!rect || rect.width <= 0 || rect.height <= 0)
     return doc.context.register(
       doc.context.formXObject([], { BBox: [0, 0, 0, 0] }),
     );
-  const { width: w, height: h } = rect;
   const page = PDFPage.create(doc);
-  page.setSize(w, h);
+  page.setSize(rect.width, rect.height);
+  const r = (((Math.round(pageRotation / 90) * 90) % 360) + 360) % 360;
+  // The upright frame: a quarter turn swaps the sides as the reader sees them.
+  const [w, h] =
+    r % 180 === 90 ? [rect.height, rect.width] : [rect.width, rect.height];
+  const turn = TURNS[r]?.(rect.width, rect.height);
+  if (turn) page.pushOperators(pushGraphicsState(), turn);
   const visualH = caption ? h * VISUAL_SHARE : h;
   if (paint)
     await paint(page, { x: 0, y: h - visualH, width: w, height: visualH });
@@ -59,6 +87,7 @@ export async function buildAppearance(
       });
     });
   }
+  if (turn) page.pushOperators(popGraphicsState());
   const embedded = await doc.embedPage(page);
   // pdf-lib embeds lazily: copy the content now, before the page goes.
   await doc.flush();
@@ -72,7 +101,10 @@ export async function buildAppearance(
   const xobject = doc.context.lookup(embedded.ref);
   if (xobject && 'dict' in xobject) {
     const dict = (xobject as { dict: PDFDict }).dict;
-    dict.set(PDFName.of('BBox'), doc.context.obj([0, 0, w, h]));
+    dict.set(
+      PDFName.of('BBox'),
+      doc.context.obj([0, 0, rect.width, rect.height]),
+    );
     dict.delete(PDFName.of('Matrix'));
   }
   return embedded.ref;

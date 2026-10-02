@@ -33,6 +33,8 @@ export interface StyledText {
   comb?: number;
   /** Degrees counterclockwise about the box centre. */
   rotate?: number;
+  /** Wrap from the top of the box (letter spacing and combs apply per line). */
+  multiline?: boolean;
 }
 
 const metrics = (font: PDFFont) => ({
@@ -44,9 +46,10 @@ const metrics = (font: PDFFont) => ({
 });
 
 /**
- * Draws one line of typed text as page content with letter spacing (Tc) or
- * character boxes. Characters the font can't draw are refused before
- * anything is drawn. Returns the layout (truncation is the caller's note).
+ * Draws typed text as page content with letter spacing (Tc) or character
+ * boxes, on one line or wrapped (`multiline`). Characters the font can't
+ * draw are refused before anything is drawn. Returns the layout
+ * (truncation is the caller's note).
  */
 export async function drawStyledText(
   ctx: DrawCtx,
@@ -59,15 +62,15 @@ export async function drawStyledText(
   if (!(style.size > 0 && Number.isFinite(style.size)))
     throw invalid('The text size must be a positive number');
   const font = await ctx.fonts.get(style.font);
-  const clean = normalizeText(text).replace(/\n/g, ' ');
-  assertDrawable(font, clean, 'The text');
+  const norm = normalizeText(text);
+  const clean = style.multiline ? norm : norm.replace(/\n/g, ' ');
+  assertDrawable(font, clean.replace(/\n/g, ''), 'The text');
   const m = metrics(font);
   const layout = layoutStyled(m.widthOf, m.heightAt, clean, box, style);
-  const chars = Array.from(clean).slice(0, layout.x.length);
-  if (chars.length === 0) return layout;
+  const lines = layout.lines.filter((l) => l.chars.length > 0);
+  if (lines.length === 0) return layout;
   const key = page.node.newFontDictionary(font.name, font.ref);
   const matrix = rotated(box, style.rotate);
-  const y = box.y + layout.baseline;
   page.pushOperators(pushGraphicsState());
   if (matrix) page.pushOperators(concatTransformationMatrix(...matrix));
   page.pushOperators(
@@ -75,20 +78,23 @@ export async function drawStyledText(
     beginText(),
     setFontAndSize(key, layout.size),
   );
-  if (style.comb) {
-    // One show per cell, so each character sits exactly in its box.
-    chars.forEach((ch, i) =>
+  for (const line of lines) {
+    const y = box.y + line.baseline;
+    if (style.comb) {
+      // One show per cell, so each character sits exactly in its box.
+      line.chars.forEach((ch, i) =>
+        page.pushOperators(
+          setTextMatrix(1, 0, 0, 1, box.x + line.x[i], y),
+          showText(font.encodeText(ch)),
+        ),
+      );
+    } else {
       page.pushOperators(
-        setTextMatrix(1, 0, 0, 1, box.x + layout.x[i], y),
-        showText(font.encodeText(ch)),
-      ),
-    );
-  } else {
-    page.pushOperators(
-      setCharacterSpacing(style.spacing ?? 0),
-      setTextMatrix(1, 0, 0, 1, box.x, y),
-      showText(font.encodeText(chars.join(''))),
-    );
+        setCharacterSpacing(style.spacing ?? 0),
+        setTextMatrix(1, 0, 0, 1, box.x, y),
+        showText(font.encodeText(line.chars.join(''))),
+      );
+    }
   }
   page.pushOperators(endText(), popGraphicsState());
   return layout;

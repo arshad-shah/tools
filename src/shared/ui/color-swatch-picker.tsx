@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { IconPalette } from './icons';
 import { ColorInput } from './color-input';
@@ -19,6 +19,9 @@ export interface ColorSwatchPickerProps {
   options: ColorSwatchOption[];
   /** Adds a "Custom colour" choice that opens a hex field. */
   allowCustom?: boolean;
+  /** Shows `label` above the swatches (it names the group either way). */
+  showLabel?: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -34,8 +37,11 @@ export function ColorSwatchPicker({
   onChange,
   options,
   allowCustom = false,
+  showLabel = false,
+  disabled = false,
   className,
 }: ColorSwatchPickerProps) {
+  const labelId = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const customRef = useRef<HTMLButtonElement | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
@@ -45,6 +51,7 @@ export function ColorSwatchPicker({
   const current = preset >= 0 ? preset : allowCustom ? customIndex : 0;
 
   const choose = (i: number, open: boolean) => {
+    if (disabled) return;
     refs.current[i]?.focus();
     if (i === customIndex) {
       if (open) setCustomOpen(true);
@@ -77,11 +84,13 @@ export function ColorSwatchPicker({
       aria-checked={i === current}
       aria-label={name}
       tabIndex={i === current ? 0 : -1}
+      disabled={disabled}
       onClick={() => choose(i, true)}
       onKeyDown={(e) => onKeyDown(e, i)}
       className={cn(
         'inline-flex size-8 items-center justify-center rounded-md outline-none transition-colors duration-fast',
         'hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-focus',
+        'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent',
         i === current && 'bg-accent-soft',
       )}
     >
@@ -89,11 +98,16 @@ export function ColorSwatchPicker({
     </button>
   );
 
-  return (
+  const group = (
     <div
       role="radiogroup"
-      aria-label={label}
-      className={cn('inline-flex flex-wrap items-center gap-1', className)}
+      aria-label={showLabel ? undefined : label}
+      aria-labelledby={showLabel ? labelId : undefined}
+      aria-disabled={disabled || undefined}
+      className={cn(
+        'inline-flex flex-wrap items-center gap-1',
+        !showLabel && className,
+      )}
     >
       {options.map((o, i) =>
         radio(
@@ -135,6 +149,15 @@ export function ColorSwatchPicker({
           </Popover>
         </>
       ) : null}
+    </div>
+  );
+  if (!showLabel) return group;
+  return (
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <span id={labelId} className="text-sm font-medium text-fg">
+        {label}
+      </span>
+      {group}
     </div>
   );
 }

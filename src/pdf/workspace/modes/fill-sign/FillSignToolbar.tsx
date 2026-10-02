@@ -26,18 +26,28 @@ import {
   makeFillable,
 } from './actions';
 import { AutofillPreview } from './AutofillPreview';
-import { useDetection, useFormInfo, useViewFields } from './data';
+import {
+  useContentHash,
+  useDetection,
+  useFormInfo,
+  useViewFields,
+} from './data';
+import { useRestoredPreviews } from './restored-previews';
 import { MyDetailsDialog } from './MyDetailsDialog';
 import { SignatureDialog } from './SignatureDialog';
 import { autofillOp, openMyDetails } from './my-details-flow';
 import { nextPlaceToSign } from './sign-places';
+import { useSignedFields } from './signed-fields';
 import { fillSign, useFillSign } from './store';
 
 /** Fill & Sign tools (plan C-12): fields, fill, sign, form. */
 export function FillSignToolbar(ctx: ModeProps) {
   const { doc, tool } = ctx;
   useFormInfo(doc);
+  useSignedFields(doc);
   useDetection(doc, true);
+  useRestoredPreviews(doc);
+  useContentHash(doc);
   const fields = useViewFields(doc);
   const showDetected = useFillSign((s) => s.showDetected);
   const dialog = useFillSign((s) => s.dialog);

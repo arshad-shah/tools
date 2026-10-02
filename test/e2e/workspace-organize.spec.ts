@@ -104,7 +104,8 @@ test('zooming past 200 percent renders sharp tiles for the visible area', async 
 }) => {
   await open(page);
   await page.getByRole('region', { name: 'Document' }).click();
-  for (let i = 0; i < 2; i++) await page.keyboard.press(`${mod}+Equal`);
+  // The default reads at 125% at most (P5-G): 150, 200, then 300.
+  for (let i = 0; i < 3; i++) await page.keyboard.press(`${mod}+Equal`);
   const tiles = page.locator(
     '[data-testid="page-slot-1"] canvas[aria-label="Page 1 detail"][data-rendered="true"]',
   );
