@@ -11,7 +11,7 @@ import type { PageGeometry } from './types';
 
 async function geometryOf(bytes: Uint8Array): Promise<PageGeometry> {
   const [p] = await loadPageInputs(bytes);
-  return extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames);
+  return extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames, p.fonts);
 }
 const raw = async (content: string, resources?: Record<string, unknown>) =>
   geometryOf(await makeRawContentPdf(content, resources));

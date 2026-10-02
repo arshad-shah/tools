@@ -38,6 +38,9 @@ export const openHandlers = {
       verbosity: VERBOSITY,
       disableFontFace: true, // FontFace needs a document; glyphs render as paths instead
       useSystemFonts: false,
+      // Exposes each font's widths and ToUnicode map, so form detection
+      // splits text runs by the real glyph advances (detect-page.ts).
+      fontExtraProperties: true,
       // Must be an explicit boolean: the default probe reads document.baseURI.
       // `true` because the display-side fetcher (false) also reads
       // document.baseURI and silently fails in a worker; the core-side

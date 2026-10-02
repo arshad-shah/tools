@@ -27,7 +27,7 @@ function targetsOf(geom: PageGeometry, pageIndex = 0) {
 async function pdfTargets(bytes: Uint8Array, pageIndex: number) {
   const p = (await loadPageInputs(bytes))[pageIndex];
   return targetsOf(
-    extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames),
+    extractGeometry(p.list, PDFJS_OPS, p.text, p.fontNames, p.fonts),
     pageIndex,
   );
 }

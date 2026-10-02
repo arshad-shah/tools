@@ -19,7 +19,7 @@ export const textBefore = (str: string, from: number, to: number): string =>
  */
 export function matchRect(run: TextRun, index: number, length: number): Box {
   const chars = Array.from(run.str);
-  const { offsets, widths } = charSpans(chars, run.w);
+  const { offsets, widths } = charSpans(chars, run.w, run.advances);
   const start = Array.from(run.str.slice(0, index)).length;
   const count = Array.from(run.str.slice(index, index + length)).length;
   const end = start + count;
@@ -59,7 +59,15 @@ export function joinBaselineRuns(runs: TextRun[]): TextRun[] {
       if (next === undefined) break;
       used.add(next);
       const r = runs[next];
-      cur = { ...cur, str: cur.str + r.str, w: r.x + r.w - cur.x };
+      cur = {
+        ...cur,
+        str: cur.str + r.str,
+        w: r.x + r.w - cur.x,
+        advances:
+          cur.advances && r.advances
+            ? [...cur.advances, ...r.advances]
+            : undefined,
+      };
     }
     out.push(cur);
   }
