@@ -189,10 +189,7 @@ export function ColorPicker({
     <div
       role="group"
       aria-label={label}
-      className={cn(
-        'grid w-full max-w-72 grid-cols-[minmax(0,1fr)] gap-3',
-        className,
-      )}
+      className={cn('grid w-full max-w-72 gap-3', className)}
     >
       <ColorArea
         state={state}

@@ -73,13 +73,7 @@ export function RowCells<R>(p: RowCellsProps<R>) {
             onCancel={p.onCancel}
           />
         ) : (
-          // Long text ellipsises; the full value is the native tooltip.
-          <span
-            className="truncate"
-            title={text.length > 24 ? text : undefined}
-          >
-            {highlight(text, p.search)}
-          </span>
+          <span className="truncate">{highlight(text, p.search)}</span>
         )}
       </div>
     );

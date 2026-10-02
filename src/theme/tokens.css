@@ -407,10 +407,9 @@
 
 /*
  * 6-H: control sizes in px (the root font is 14px, so Tailwind's size-11 is
- * only 38.5px). Icon buttons are one step larger with a fine pointer on
- * desktop widths (sm 28 to 32px, md 32 to 36px, sm glyphs 14 to 16px) and at
- * least 44px with a coarse pointer (touch and phones). --control-touch is
- * the 44px minimum every touch target meets.
+ * only 38.5px). Icon buttons reach at least 44px with a coarse pointer
+ * (touch and phones); the desktop size step belongs to another Part.
+ * --control-touch is the 44px minimum every touch target meets.
  */
 :root {
   --control-touch: 44px;
@@ -424,13 +423,6 @@
 /* Step 11 (h-11, size-11, min-h-11) is the 44px touch size everywhere. */
 @theme {
   --spacing-11: 44px;
-}
-@media (pointer: fine) and (min-width: 1024px) {
-  :root {
-    --control-icon-sm: 32px;
-    --control-icon-md: 36px;
-    --glyph-icon-sm: 16px;
-  }
 }
 @media (pointer: coarse) {
   :root {

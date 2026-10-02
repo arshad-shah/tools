@@ -52,10 +52,7 @@ const focusGrid = () => {
 describe('DataGrid filters, search, selection, details and editing', () => {
   it('opens the filter popover from the header button and filters through the caller', () => {
     render(<Filtered />);
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Column options Name' }),
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filter Name' }));
     const pop = screen.getByRole('dialog', { name: 'Filter Name' });
     expect(pop).toBeTruthy();
     fireEvent.change(screen.getByRole('textbox', { name: 'Contains' }), {
@@ -80,8 +77,7 @@ describe('DataGrid filters, search, selection, details and editing', () => {
 
   it('offers a number range for number columns', () => {
     render(<Filtered />);
-    fireEvent.click(screen.getByRole('button', { name: 'Column options Age' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filter Age' }));
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Minimum' }), {
       target: { value: '40' },
     });

@@ -4,32 +4,29 @@ import { copyText } from '@/shared/lib/clipboard';
 import { cn } from '@/shared/lib/cn';
 import { notify } from '@/shared/lib/notify';
 import { Drawer } from '../drawer';
-import { EmptyState } from '../empty-state';
 import { VirtualList, type VirtualListHandle } from '../virtual-list';
-import { autoWidths, measureText } from './auto-width';
 import { RowCells } from './cells';
 import {
   columnLayout,
   columnWindow,
   moveColumn,
   scrollLeftFor,
+  updateColumn,
   visibleColumns,
   type GridColumn,
   type SortKey,
 } from './columns';
-import type { GridFilters } from './filters';
+import { cellText, type GridFilters } from './filters';
 import { handleGridKey } from './grid-keys';
 import {
-  gridBox,
-  pinFirstWhenNarrow,
   useColumnsState,
   useControllable,
   useGridViewport,
   useSortOrder,
 } from './grid-state';
-import { headerActions } from './header-actions';
-import { HeaderRow } from './header';
+import { HeaderRow, type HeaderActions } from './header';
 import { clampPos, rangeOf, rangeToTsv, type CellPos } from './selection';
+import { nextSort } from './sort';
 
 export interface DataGridProps<R> {
   rows: readonly R[];
@@ -62,18 +59,9 @@ export interface DataGridProps<R> {
   onCellEdit?(rowIndex: number, columnId: string, value: unknown): void;
   /** Shown when there are no rows. */
   emptyLabel?: string;
-  /**
-   * The most the grid grows to (a CSS length or px). Without it the grid
-   * sizes to its rows up to `maxRows`, then scrolls inside.
-   */
   height?: number | string;
-  /** Rows shown before the body scrolls when `height` is not set. Default 12. */
-  maxRows?: number;
   className?: string;
 }
-
-/** Narrower than this, the first column sticks while scrolling sideways. */
-const NARROW = 480;
 
 const OVERSCAN = 6;
 const NO_FILTERS: GridFilters = {};
@@ -104,8 +92,7 @@ export function DataGrid<R>({
   editable,
   onCellEdit,
   emptyLabel = 'No rows',
-  height,
-  maxRows,
+  height = 400,
   className,
 }: DataGridProps<R>) {
   const baseId = useId().replace(/[^\w-]/g, '');
@@ -124,7 +111,9 @@ export function DataGrid<R>({
     NO_FILTERS,
     onFiltersChange,
   );
+  const visible = useMemo(() => visibleColumns(cols), [cols]);
   const hiddenCols = useMemo(() => cols.filter((c) => c.hidden), [cols]);
+  const layout = useMemo(() => columnLayout(visible), [visible]);
 
   const order = useSortOrder(rows, manualSort ? [] : sort, cols);
   const viewRows = useMemo(
@@ -135,19 +124,6 @@ export function DataGrid<R>({
   const n = viewRows.length;
 
   const view = useGridViewport(listRef, headerRef);
-  // Phones: the first column sticks so rows stay readable while scrolling.
-  const narrow = view.width > 0 && view.width < NARROW;
-  const visible = useMemo(
-    () => pinFirstWhenNarrow(visibleColumns(cols), narrow),
-    [cols, narrow],
-  );
-  // Widths from the header labels and a sample of rows; spare room is
-  // shared so a table that fits never scrolls sideways (6-H).
-  const sizes = useMemo(
-    () => autoWidths(visible, rows, view.width, measureText),
-    [visible, rows, view.width],
-  );
-  const layout = useMemo(() => columnLayout(visible, sizes), [visible, sizes]);
   const [range, setRowRange] = useState({ start: 0, end: 0 });
   const [activeState, setActive] = useState<CellPos>({ row: 0, col: 0 });
   const [anchor, setAnchor] = useState<CellPos | null>(null);
@@ -227,21 +203,32 @@ export function DataGrid<R>({
     announce(`${header} moved to column ${at + 1} of ${nextVisible.length}`);
   };
 
-  const base = headerActions({
-    cols,
-    setCols,
-    sort,
-    setSort,
-    filters,
-    setFilters,
-    rows,
+  const actions: HeaderActions<R> = {
+    sort: (id, additive) => setSort(nextSort(sort, id, additive)),
+    setSortDir: (id, dir) =>
+      setSort(dir ? [{ id, dir }] : sort.filter((s) => s.id !== id)),
+    resize: (id, width, commit) =>
+      setCols(updateColumn(cols, id, { width }), commit),
     move,
-  });
-  const actions = {
-    ...base,
-    hide: (id: string) => {
-      base.hide(id);
+    hide: (id) => {
+      setCols(updateColumn(cols, id, { hidden: true }));
       focusGrid();
+    },
+    show: (id) => setCols(updateColumn(cols, id, { hidden: false })),
+    setFilter: (id, f) => {
+      const next = { ...filters };
+      if (f) next[id] = f;
+      else delete next[id];
+      setFilters(next);
+    },
+    distinct: (col) => {
+      const seen = new Set<string>();
+      const limit = Math.min(rows.length, 10_000);
+      for (let i = 0; i < limit && seen.size < 100; i++)
+        seen.add(cellText(col.accessor(rows[i])));
+      return [...seen].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true }),
+      );
     },
   };
 
@@ -293,26 +280,13 @@ export function DataGrid<R>({
     active.row < range.end + OVERSCAN &&
     win.includes(active.col);
 
-  const box = gridBox({
-    rows: n,
-    rowHeight,
-    maxRows,
-    capped: height !== undefined,
-    overflowX: view.width > 0 && layout.total > view.width + 1,
-    hbar: view.hbar,
-  });
-
   return (
     <div
       className={cn(
         'relative flex flex-col overflow-hidden rounded-lg border border-line bg-surface',
         className,
       )}
-      style={{
-        height: box.height,
-        maxHeight: height,
-        minHeight: box.minHeight,
-      }}
+      style={{ height }}
       onKeyDown={onKeyDown}
       onFocus={(e) => e.target === gridEl() && setFocused(true)}
       onBlur={(e) => e.target === gridEl() && setFocused(false)}
@@ -377,11 +351,9 @@ export function DataGrid<R>({
         )}
       />
       {n === 0 && (
-        <EmptyState
-          size="sm"
-          title={emptyLabel}
-          className="pointer-events-none absolute inset-x-0 top-12"
-        />
+        <p className="pointer-events-none absolute inset-x-0 top-16 text-center text-sm text-fg-muted">
+          {emptyLabel}
+        </p>
       )}
       {renderDetails && (
         <Drawer

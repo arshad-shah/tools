@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { cn } from '@/shared/lib/cn';
+import { Badge } from '../badge';
 import { IconArrowDown, IconArrowUp } from '../icons';
 import { ColumnMenu } from './column-menu';
 import {
@@ -11,7 +12,7 @@ import {
   type SortKey,
 } from './columns';
 import { FilterPopover } from './filter-popover';
-import { isFilterActive, type ColumnFilter } from './filters';
+import type { ColumnFilter } from './filters';
 
 const TYPE_BADGE: Record<ColumnType, [short: string, long: string]> = {
   text: ['abc', 'text'],
@@ -25,8 +26,6 @@ export interface HeaderActions<R> {
   setSortDir(id: string, dir: 'asc' | 'desc' | null): void;
   /** `commit` false while a pointer drag is in progress. */
   resize(id: string, width: number, commit: boolean): void;
-  /** Double-click on the resize handle: fit the column to its content. */
-  autofit(id: string): void;
   move(id: string, delta: -1 | 1): void;
   hide(id: string): void;
   show(id: string): void;
@@ -144,8 +143,6 @@ function HeaderCell<R>({
   actions,
 }: HeaderCellProps<R>) {
   const drag = useRef<{ x: number; w: number; last: number } | null>(null);
-  const menuButton = useRef<HTMLButtonElement>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
   const clamp = (w: number) => clampWidth(c as GridColumn<unknown>, w);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -215,22 +212,22 @@ function HeaderCell<R>({
       {priority !== undefined && (
         <span className="sr-only">{`sort priority ${priority}`}</span>
       )}
-      {/* The type stays for screen readers; no badge eats label width. */}
-      {badge && <span className="sr-only">{`${badge[1]} column`}</span>}
+      {badge && (
+        <>
+          <Badge size="xs" aria-hidden className="shrink-0">
+            {badge[0]}
+          </Badge>
+          <span className="sr-only">{`${badge[1]} column`}</span>
+        </>
+      )}
       <FilterPopover
         header={c.header}
         type={c.type}
         filter={filter}
         onChange={(f) => actions.setFilter(c.id, f)}
         distinct={() => actions.distinct(c)}
-        open={filterOpen}
-        onOpenChange={setFilterOpen}
-        anchor={menuButton}
       />
       <ColumnMenu
-        buttonRef={menuButton}
-        onFilter={() => setFilterOpen(true)}
-        filterActive={isFilterActive(filter)}
         header={c.header}
         sortDir={sortDir}
         onSortDir={(dir) => actions.setSortDir(c.id, dir)}
@@ -249,7 +246,6 @@ function HeaderCell<R>({
         aria-orientation="vertical"
         aria-label={`Resize ${c.header}`}
         onPointerDown={onPointerDown}
-        onDoubleClick={() => actions.autofit(c.id)}
         className="absolute inset-y-0 -right-1 z-[3] w-2 cursor-col-resize touch-none hover:bg-accent/40"
       />
     </div>

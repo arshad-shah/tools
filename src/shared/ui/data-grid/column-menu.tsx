@@ -1,6 +1,4 @@
-import type React from 'react';
 import { useRef, useState } from 'react';
-import { cn } from '@/shared/lib/cn';
 import { Button, IconButton } from '../button';
 import {
   IconArrowDown,
@@ -9,7 +7,6 @@ import {
   IconArrowUp,
   IconEye,
   IconEyeOff,
-  IconFilter,
   IconMinus,
   IconMoreHorizontal,
   IconPlus,
@@ -30,11 +27,6 @@ export interface ColumnMenuProps {
   canHide: boolean;
   hidden: readonly { id: string; header: string }[];
   onShow(id: string): void;
-  /** Opens the column's filter editor (anchored to this menu's button). */
-  onFilter(): void;
-  filterActive: boolean;
-  /** Receives the menu button, the filter editor's anchor. */
-  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 const itemClass = 'w-full justify-start';
@@ -45,8 +37,7 @@ const itemClass = 'w-full justify-start';
  */
 export function ColumnMenu(p: ColumnMenuProps) {
   const [open, setOpen] = useState(false);
-  const own = useRef<HTMLButtonElement>(null);
-  const anchor = p.buttonRef ?? own;
+  const anchor = useRef<HTMLButtonElement>(null);
   const run = (fn: () => void) => () => {
     fn();
     setOpen(false);
@@ -56,19 +47,14 @@ export function ColumnMenu(p: ColumnMenuProps) {
     <>
       <IconButton
         ref={anchor}
-        label={
-          p.filterActive
-            ? `Column options ${p.header}, filtered`
-            : `Column options ${p.header}`
-        }
-        icon={p.filterActive ? IconFilter : IconMoreHorizontal}
+        label={`Column options ${p.header}`}
+        icon={IconMoreHorizontal}
         variant="ghost"
         size="sm"
-        tone={p.filterActive ? 'accent' : undefined}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={cn('size-7 shrink-0', p.filterActive && 'bg-accent-soft')}
+        className="size-7 shrink-0"
       />
       <Popover
         open={open}
@@ -78,20 +64,6 @@ export function ColumnMenu(p: ColumnMenuProps) {
         align="end"
         className="flex w-56 flex-col gap-0.5 p-1"
       >
-        <Button
-          variant="ghost"
-          size="sm"
-          className={itemClass}
-          leftIcon={<IconFilter size="sm" />}
-          aria-haspopup="dialog"
-          onClick={() => {
-            setOpen(false);
-            p.onFilter();
-          }}
-        >
-          {p.filterActive ? 'Edit filter' : 'Filter'}
-        </Button>
-        <div className="my-1 h-px bg-line" role="separator" />
         <Button
           variant="ghost"
           size="sm"
