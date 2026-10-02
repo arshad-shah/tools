@@ -7,9 +7,17 @@ import { defineIcon, fromLucide } from '../icon';
 export const IconZoomIn = fromLucide('IconZoomIn', L.ZoomIn);
 export const IconZoomOut = fromLucide('IconZoomOut', L.ZoomOut);
 export const IconMaximize = fromLucide('IconMaximize', L.Maximize);
-export const IconScan = fromLucide('IconScan', L.Scan);
 export const IconMap = fromLucide('IconMap', L.Map);
 export const IconLocate = fromLucide('IconLocate', L.LocateFixed);
+
+/** Actual size: a frame holding 1:1 (the lucide scan corners read as "fit"). */
+export const IconActualSize = defineIcon(
+  'IconActualSize',
+  <>
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="M7 10.5 8.5 9v6M15.5 10.5 17 9v6M12 10.5v.01M12 13.5v.01" />
+  </>,
+);
 
 /** Parent card on the left, two children to its right. */
 export const IconLayoutLeftRight = defineIcon(

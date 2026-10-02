@@ -45,17 +45,19 @@ export function paintMinimap(
       Math.max(1, c.h * t.scale),
     );
 
-  const x0 = toWorldX(view, 0);
-  const y0 = toWorldY(view, 0);
-  const x1 = toWorldX(view, size.w);
-  const y1 = toWorldY(view, size.h);
+  // The visible world region, clipped to the map so it always shows.
+  const x0 = Math.max(0, mx(toWorldX(view, 0)));
+  const y0 = Math.max(0, my(toWorldY(view, 0)));
+  const x1 = Math.min(MINIMAP_W - 1, mx(toWorldX(view, size.w)));
+  const y1 = Math.min(MINIMAP_H - 1, my(toWorldY(view, size.h)));
+  if (x1 <= x0 || y1 <= y0) return;
   ctx.strokeStyle = theme.select;
   ctx.lineWidth = 1;
   ctx.strokeRect(
-    Math.round(mx(x0)) + 0.5,
-    Math.round(my(y0)) + 0.5,
-    (x1 - x0) * t.scale,
-    (y1 - y0) * t.scale,
+    Math.round(x0) + 0.5,
+    Math.round(y0) + 0.5,
+    Math.round(x1 - x0),
+    Math.round(y1 - y0),
   );
 }
 

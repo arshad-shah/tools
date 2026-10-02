@@ -3,13 +3,13 @@ import type { DiagramController, Direction } from '@/shared/diagram';
 import { isMac } from '@/shared/lib/platform';
 import { IconButton, type IconButtonProps } from './button';
 import {
+  IconActualSize,
   IconDownload,
   IconLayoutLeftRight,
   IconLayoutTopBottom,
   IconLocate,
   IconMap,
   IconMaximize,
-  IconScan,
   IconZoomIn,
   IconZoomOut,
 } from './icons';
@@ -100,7 +100,7 @@ export function DiagramCanvasControls({
       <Control
         label="Actual size"
         shortcut="1"
-        icon={IconScan}
+        icon={IconActualSize}
         onClick={() => c.zoomTo(1)}
       />
       <Control
