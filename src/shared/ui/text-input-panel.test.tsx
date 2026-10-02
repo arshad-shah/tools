@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { putHandoff } from '@/shared/lib/handoff';
 import { hotkeyLabel } from '@/shared/lib/hotkeys';
+import type { CodeSurfaceHandle } from './code-surface';
 import { TextInputPanel, type TextInputPanelProps } from './text-input-panel';
 
 const notify = vi.hoisted(() => ({
@@ -58,6 +59,26 @@ afterEach(() => {
 });
 
 describe('TextInputPanel', () => {
+  it('exposes the editor and reports caret moves', () => {
+    const ref = { current: null as CodeSurfaceHandle | null };
+    const onSelectionChange = vi.fn();
+    render(
+      <Panel
+        initial={'{"a": 1}'}
+        editorRef={ref}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+    const box = screen.getByRole('textbox', {
+      name: 'Input',
+    }) as HTMLTextAreaElement;
+    act(() => ref.current!.setSelection(1, 4));
+    expect([box.selectionStart, box.selectionEnd]).toEqual([1, 4]);
+    box.setSelectionRange(5, 5);
+    fireEvent.select(box);
+    expect(onSelectionChange).toHaveBeenLastCalledWith(5, 5);
+  });
+
   it('is a labelled group whose toolbar buttons have names and tooltips', () => {
     render(<Panel downloadName="input.json" />);
     expect(group()).toBeTruthy();

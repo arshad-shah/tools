@@ -211,6 +211,31 @@ describe('DiagramCanvas host', () => {
     expect((300 - after.x) / after.scale).toBeCloseTo(wx, 9);
   });
 
+  it('reports viewport changes, flagging the ones the person made', () => {
+    const onViewportChange = vi.fn();
+    const t = mount({ onViewportChange });
+    onViewportChange.mockClear();
+    fireEvent.wheel(t.canvas, { deltaY: -120, clientX: 300, clientY: 200 });
+    expect(onViewportChange).toHaveBeenLastCalledWith(
+      t.ref.current!.getView(),
+      true,
+    );
+    act(() => t.ref.current!.fit());
+    expect(onViewportChange).toHaveBeenLastCalledWith(expect.anything(), false);
+  });
+
+  it('reveal centres only a card that is off-screen', () => {
+    const t = mount();
+    const before = t.ref.current!.getView();
+    act(() => t.ref.current!.reveal('root'));
+    expect(t.ref.current!.getView()).toEqual(before);
+    fireEvent.wheel(t.canvas, { deltaY: -2000, clientX: 0, clientY: 0 });
+    fireEvent.wheel(t.canvas, { deltaY: -2000, clientX: 0, clientY: 0 });
+    const zoomed = t.ref.current!.getView();
+    act(() => t.ref.current!.reveal('root'));
+    expect(t.ref.current!.getView()).not.toEqual(zoomed);
+  });
+
   it('recentres from a minimap click', () => {
     const t = mount();
     const mini = screen.getByTestId('diagram-minimap');
@@ -361,5 +386,15 @@ describe('DiagramCanvas controls and keyboard', () => {
     const [blob, name] = vi.mocked(saveBlob).mock.calls.at(-1)!;
     expect(name).toBe('diagram.svg');
     expect((blob as Blob).type).toBe('image/svg+xml');
+  });
+
+  it('names exports after exportName', async () => {
+    const t = mount({ exportName: 'data-map' });
+    fireEvent.keyDown(t.canvas, { key: 'E', ctrlKey: true, shiftKey: true });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Export SVG' }));
+    expect(vi.mocked(saveBlob).mock.calls.at(-1)![1]).toBe('data-map.svg');
+    t.ref.current!.exportPng();
+    await act(async () => {});
+    expect(vi.mocked(saveBlob).mock.calls.at(-1)![1]).toBe('data-map.png');
   });
 });

@@ -194,18 +194,3 @@ test('calculator plots an expression without crashing', async ({ page }) => {
     0,
   );
 });
-
-test('json-and-xml-viewer highlights editor lines that match the search', async ({
-  page,
-}) => {
-  await page.goto(pathOf('json-and-xml-viewer'));
-  await page
-    .locator('textarea')
-    .first()
-    .fill('{\n  "name": "Ada",\n  "age": 36\n}');
-  await page.getByPlaceholder(/Search/).fill('name');
-  const line = page.locator('.w-tc-editor-preview .highlighted-line');
-  await expect(line).toHaveCount(1);
-  await expect(line).toContainText('"name"');
-  await expect(line).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-});

@@ -49,6 +49,8 @@ export interface DiagramCanvasHandle {
   fit(): void;
   zoomTo(scale: number): void;
   centreOn(id: string): void;
+  /** Centre on a card only when part of it is off-screen. */
+  reveal(id: string): void;
   exportPng(): Promise<void>;
   exportSvg(): void;
   /** The current viewport (pan and zoom). */
@@ -78,6 +80,10 @@ export interface DiagramCanvasProps {
   /** Read by screen readers as the canvas description. */
   ariaSummary?: string;
   onLayout?: (info: DiagramLayoutInfo) => void;
+  /** The viewport moved; `user` when the person panned or zoomed. */
+  onViewportChange?: (view: Viewport, user: boolean) => void;
+  /** Export file names: `<exportName>.png` and `.svg`. */
+  exportName?: string;
   className?: string;
   ref?: React.Ref<DiagramCanvasHandle>;
 }
@@ -95,6 +101,8 @@ export function DiagramCanvas({
   ariaLabel,
   ariaSummary,
   onLayout,
+  onViewportChange,
+  exportName = 'diagram',
   className,
   ref,
 }: DiagramCanvasProps) {
@@ -130,9 +138,14 @@ export function DiagramCanvas({
   const [c] = useState(() => new DiagramController(theme, measure));
 
   // Latest callbacks, read by the controller's events.
-  const latest = useRef({ onSelect, onExpandMore, onLayout });
+  const latest = useRef({
+    onSelect,
+    onExpandMore,
+    onLayout,
+    onViewportChange,
+  });
   useEffect(() => {
-    latest.current = { onSelect, onExpandMore, onLayout };
+    latest.current = { onSelect, onExpandMore, onLayout, onViewportChange };
   });
 
   useEffect(() => {
@@ -155,6 +168,7 @@ export function DiagramCanvas({
         else latest.current.onSelect?.(id, row);
       },
       expandMore: (id) => latest.current.onExpandMore?.(id),
+      view: (v, user) => latest.current.onViewportChange?.(v, user),
     });
     return () => {
       cancelAnimationFrame(raf.current);
@@ -233,8 +247,8 @@ export function DiagramCanvas({
   // --- actions ----------------------------------------------------------------
   const exportSvg = useCallback(() => {
     const svg = toSvg(c.cards, c.routes, c.theme, 32, c.measure);
-    saveBlob(new Blob([svg], { type: 'image/svg+xml' }), 'diagram.svg');
-  }, [c]);
+    saveBlob(new Blob([svg], { type: 'image/svg+xml' }), `${exportName}.svg`);
+  }, [c, exportName]);
   const exportPng = useCallback(async () => {
     try {
       const { blob, scaleUsed } = await toPng(
@@ -242,15 +256,15 @@ export function DiagramCanvas({
         c.theme,
         { measure: c.measure },
       );
-      saveBlob(blob, 'diagram.png');
+      saveBlob(blob, `${exportName}.png`);
       if (scaleUsed < 2)
         notify.info(
-          `The diagram is large, so diagram.png was saved at scale ${scaleUsed}.`,
+          `The diagram is large, so ${exportName}.png was saved at scale ${scaleUsed}.`,
         );
     } catch (e) {
       notify.error(toToolError(e));
     }
-  }, [c]);
+  }, [c, exportName]);
   const toggleDirection = () => setDirection((d) => (d === 'LR' ? 'TB' : 'LR'));
   const toggleMinimap = () => setShowMinimap((v) => !v);
 
@@ -260,6 +274,7 @@ export function DiagramCanvas({
       fit: () => c.fit(),
       zoomTo: (s: number) => c.zoomTo(s),
       centreOn: (id: string) => c.centreOn(id),
+      reveal: (id: string) => c.reveal(id),
       exportPng,
       exportSvg,
       getView: () => c.view,

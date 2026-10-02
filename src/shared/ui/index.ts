@@ -137,7 +137,7 @@ export {
 } from './positioned';
 // Adapters for heavy third-party libraries are imported from their own
 // files (e.g. '@/shared/ui/adapters/RivePlayer') so a page that does not use
-// React Flow, Rive, QR or the code editor never loads them.
+// Rive or QR never loads them.
 export {
   tokenColor,
   useTokenColors,

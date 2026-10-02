@@ -35,3 +35,11 @@ export {
 export { toMarkdownTable } from './markdown-table';
 export { toNdjson } from './ndjson';
 export { columnName, toXlsx } from './xlsx-write';
+export {
+  MOCK_SCHEMA_MIME,
+  inferMockSchema,
+  parseMockSchema,
+  type MockField,
+  type MockFieldType,
+  type MockSchema,
+} from './mock-schema';

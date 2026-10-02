@@ -56,7 +56,7 @@ describe('routeDrop', () => {
     expect(d.error).toBeInstanceOf(ToolError);
     expect(d.error.code).toBe('INVALID_FILE');
     expect(d.error.message).toBe(
-      'No tool here accepts these files. Accepted: CSV, TSV, JSON or XML',
+      'No tool here accepts these files. Accepted: CSV, TSV, JSON, XML or text',
     );
   });
   it('ignores disabled tools', async () => {

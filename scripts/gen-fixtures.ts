@@ -45,7 +45,45 @@ function signatureRgba(width: number, height: number): Uint8Array {
   return rgba;
 }
 
+/** About 20 MB of records for the JSON & XML Viewer large-input e2e. */
+function largeJson(): Uint8Array {
+  const rows: string[] = [];
+  for (let i = 0; i < 83_000; i++)
+    rows.push(
+      JSON.stringify({
+        id: i,
+        name: `Item ${i}`,
+        email: `user${i}@example.com`,
+        active: i % 3 === 0,
+        score: (i * 7919) % 1000,
+        tags: ['alpha', 'beta', 'gamma'].slice(0, (i % 3) + 1),
+        address: {
+          street: `${i} Long Road`,
+          city: 'Springfield',
+          zip: String(10000 + (i % 89999)),
+        },
+        note: 'x'.repeat(40),
+      }),
+    );
+  return new TextEncoder().encode(`{"items":[\n${rows.join(',\n')}\n]}\n`);
+}
+
+/** 5,000 objects and arrays (cards) for the Map worker-layout e2e. */
+function map5000Json(): Uint8Array {
+  const items = Array.from({ length: 1666 }, (_, i) => ({
+    id: i,
+    meta: {
+      created: `2026-01-${String((i % 28) + 1).padStart(2, '0')}`,
+      rev: i % 7,
+    },
+    tags: [`t${i % 5}`, `t${i % 11}`],
+  }));
+  return new TextEncoder().encode(JSON.stringify({ items }));
+}
+
 const files: Record<string, Uint8Array> = {
+  'large.json': largeJson(),
+  'map-5000.json': map5000Json(),
   'text-3.pdf': await makeTextPdf({ pages: 3, label: 'Alpha' }),
   'text-12.pdf': await makeTextPdf({ pages: 12, label: 'Beta' }),
   'text-300.pdf': await makeTextPdf({ pages: 300, label: 'Big' }),

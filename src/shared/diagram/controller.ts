@@ -36,6 +36,8 @@ export interface ControllerEvents {
   select(id: string | null, row?: number): void;
   /** The user activated a `more` row. */
   expandMore(id: string): void;
+  /** The viewport moved; `user` when a pan, pinch, wheel or minimap did it. */
+  view?(view: Viewport, user: boolean): void;
 }
 
 /** Pixels a pointer may wander before a press becomes a drag. */
@@ -128,8 +130,9 @@ export class DiagramController {
     return id === null ? undefined : this.cards.find((c) => c.id === id);
   }
 
-  setView(v: Viewport): void {
+  setView(v: Viewport, user = false): void {
     this.view = v;
+    this.events.view?.(v, user);
     this.invalidate();
   }
 
@@ -166,7 +169,10 @@ export class DiagramController {
   }
 
   pan(dx: number, dy: number): void {
-    this.setView({ ...this.view, x: this.view.x + dx, y: this.view.y + dy });
+    this.setView(
+      { ...this.view, x: this.view.x + dx, y: this.view.y + dy },
+      true,
+    );
   }
 
   private relatedTo(id: string | null): Set<string> | undefined {
@@ -236,6 +242,7 @@ export class DiagramController {
       const [a, b] = [...this.pointers.values()];
       this.setView(
         zoomAt(this.view, (a.x + b.x) / 2, (a.y + b.y) / 2, d / this.pinch),
+        true,
       );
       this.pinch = d;
       return;
@@ -304,7 +311,7 @@ export class DiagramController {
     const px =
       deltaMode === 1 ? deltaY * 16 : deltaMode === 2 ? deltaY * 400 : deltaY;
     const k = ctrl ? 0.01 : 0.0015;
-    this.setView(zoomAt(this.view, x, y, Math.exp(-px * k)));
+    this.setView(zoomAt(this.view, x, y, Math.exp(-px * k)), true);
   }
 
   /** Minimap press or drag: centre the view on that world point. */
@@ -312,11 +319,14 @@ export class DiagramController {
     if (!this.cards.length) return;
     const { wx, wy } = minimapToWorld(this.cards, x, y);
     const s = this.view.scale;
-    this.setView({
-      scale: s,
-      x: this.size.w / 2 - wx * s,
-      y: this.size.h / 2 - wy * s,
-    });
+    this.setView(
+      {
+        scale: s,
+        x: this.size.w / 2 - wx * s,
+        y: this.size.h / 2 - wy * s,
+      },
+      true,
+    );
   }
 
   /** Tell the host a `more` row was activated. */
