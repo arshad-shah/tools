@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock } from 'lucide-react';
+import { IconLock } from '@/shared/ui/icons';
 import {
   Button,
   Card,
@@ -236,7 +236,7 @@ const ProtectTool: React.FC<ToolProps> = () => {
               <div>
                 <Button
                   variant="solid"
-                  leftIcon={<Lock size={16} />}
+                  leftIcon={<IconLock size="sm" />}
                   disabled={!!problem || job.status === 'running'}
                   onClick={() => void protect(file)}
                 >

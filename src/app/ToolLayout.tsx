@@ -1,6 +1,6 @@
 import React, { Suspense, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { IconArrowLeft } from '@/shared/ui/icons';
 import {
   Box,
   Container,
@@ -75,15 +75,15 @@ const ToolLayout: React.FC<ToolLayoutProps> = ({
                   asChild
                   variant="ghost"
                   size="sm"
-                  leftIcon={<ArrowLeft size={16} />}
+                  leftIcon={<IconArrowLeft size="sm" />}
                 >
                   <Link to="/">Back</Link>
                 </Button>
                 <span
                   aria-hidden
-                  className="flex size-10 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface-subtle text-accent"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface-subtle text-accent-fg"
                 >
-                  <Icon size={22} />
+                  <Icon size="xl" />
                 </span>
                 <Stack gap="1" className="min-w-0">
                   <Inline gap="2" wrap>

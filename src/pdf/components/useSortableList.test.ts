@@ -13,7 +13,7 @@ describe('moveItem', () => {
     [0, 2, ['b', 'c', 'a', 'd']],
     [3, 0, ['d', 'a', 'b', 'c']],
     [1, 1, ['a', 'b', 'c', 'd']],
-  ])('moves %d → %d', (from, to, expected) => {
+  ])('moves %d to %d', (from, to, expected) => {
     expect(moveItem(['a', 'b', 'c', 'd'], from, to)).toEqual(expected);
   });
   it('does not mutate the input', () => {

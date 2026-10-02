@@ -1,5 +1,5 @@
 import React from 'react';
-import { GripVertical, X } from 'lucide-react';
+import { IconGripVertical, IconX } from '@/shared/ui/icons';
 import { IconButton } from '@/shared/ui';
 import { formatBytes } from '@/shared/lib/format';
 import { useKeyboardReorder, useSortableList } from './useSortableList';
@@ -57,10 +57,9 @@ export function SortableFileList<T extends FileItem>({
             onKeyDown={(e) => keyboard.onItemKeyDown(e, i)}
             className="flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <GripVertical
-              size={16}
+            <IconGripVertical
+              size="sm"
               className="shrink-0 cursor-grab text-fg-faint"
-              aria-hidden
             />
             {renderPreview && (
               <div className="flex w-14 shrink-0 items-center justify-center">
@@ -77,7 +76,7 @@ export function SortableFileList<T extends FileItem>({
             {renderExtra?.(item)}
             <IconButton
               label={`Remove ${item.name}`}
-              icon={<X size={16} />}
+              icon={<IconX size="sm" />}
               variant="ghost"
               size="sm"
               disabled={disabled}

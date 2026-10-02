@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Images } from 'lucide-react';
+import { IconImages } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -224,7 +224,7 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
               <div>
                 <Button
                   variant="solid"
-                  leftIcon={<Images size={16} />}
+                  leftIcon={<IconImages size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() =>
                     job.run(file, doc, {

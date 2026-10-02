@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { IconAlertTriangle } from '@/shared/ui/icons';
 import { Spinner } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 import { usePageBitmap, type PageInfo } from '@/pdf/render';
@@ -140,7 +140,7 @@ export const PageThumb: React.FC<PageThumbProps> = ({
                 title={error.message}
                 className="text-danger"
               >
-                <AlertTriangle size={16} aria-hidden />
+                <IconAlertTriangle size="sm" />
               </span>
             ) : (
               // Decorative: a grid of thumbs must not create a live region each.

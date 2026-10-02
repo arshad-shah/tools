@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import {
-  AlertTriangle,
-  Brain,
-  Check,
-  CheckCircle2,
-  Copy,
-  Download,
-  Eye,
-  Palette as PaletteIcon,
-  RefreshCw,
-  Save,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+  IconAlertTriangle,
+  IconBrain,
+  IconCheck,
+  IconCheckCircle2,
+  IconCopy,
+  IconDownload,
+  IconEye,
+  IconPalette,
+  IconRefreshCw,
+  IconSave,
+  IconSparkles,
+  IconTrash2,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -289,7 +289,7 @@ const ColorTester: React.FC = () => {
         <CardBody>
           <Stack gap="2">
             <Inline align="center" gap="2">
-              <Brain size={16} aria-hidden />
+              <IconBrain size="sm" />
               <Text size="sm" weight="semibold">
                 Mood
               </Text>
@@ -392,7 +392,7 @@ const ColorTester: React.FC = () => {
         </Card>
         {whiteLevel.colorScheme !== 'success' &&
           blackLevel.colorScheme !== 'success' && (
-            <Alert status="warning" icon={<AlertTriangle aria-hidden />}>
+            <Alert status="warning" icon={<IconAlertTriangle />}>
               <AlertTitle>Low contrast</AlertTitle>
               <AlertDescription>
                 Neither white nor black text reaches WCAG AA on this colour for
@@ -411,7 +411,7 @@ const ColorTester: React.FC = () => {
           <Card>
             <CardHeader>
               <Inline align="center" gap="2">
-                <PaletteIcon size={20} aria-hidden />
+                <IconPalette size="lg" />
                 <CardTitle as="h3">Current colour</CardTitle>
               </Inline>
             </CardHeader>
@@ -423,7 +423,7 @@ const ColorTester: React.FC = () => {
                 >
                   <CardBody>
                     <Stack gap="2" align="center">
-                      <Sparkles size={36} aria-hidden />
+                      <IconSparkles size="2xl" />
                       <Heading
                         level={3}
                         size="xl"
@@ -446,7 +446,7 @@ const ColorTester: React.FC = () => {
                   <Button
                     variant="soft"
                     size="sm"
-                    leftIcon={<RefreshCw size={14} />}
+                    leftIcon={<IconRefreshCw size="sm" />}
                     onClick={generateRandomColor}
                   >
                     Random
@@ -454,7 +454,7 @@ const ColorTester: React.FC = () => {
                   <Button
                     variant="solid"
                     size="sm"
-                    leftIcon={<Save size={14} />}
+                    leftIcon={<IconSave size="sm" />}
                     onClick={saveColor}
                   >
                     Save
@@ -476,9 +476,9 @@ const ColorTester: React.FC = () => {
                         label="Copy hex"
                         icon={
                           copiedKey === 'hex' ? (
-                            <CheckCircle2 size={14} />
+                            <IconCheckCircle2 size="sm" />
                           ) : (
-                            <Copy size={14} />
+                            <IconCopy size="sm" />
                           )
                         }
                         onClick={() => copyToClipboard(hexCode, 'hex')}
@@ -499,9 +499,9 @@ const ColorTester: React.FC = () => {
                         label="Copy rgb"
                         icon={
                           copiedKey === 'rgb' ? (
-                            <CheckCircle2 size={14} />
+                            <IconCheckCircle2 size="sm" />
                           ) : (
-                            <Copy size={14} />
+                            <IconCopy size="sm" />
                           )
                         }
                         onClick={() => copyToClipboard(rgbString, 'rgb')}
@@ -525,25 +525,25 @@ const ColorTester: React.FC = () => {
                 <TabsList aria-label="Tester views">
                   <TabsTrigger value="harmony">
                     <Inline gap="2" align="center" wrap={false}>
-                      <PaletteIcon size={14} aria-hidden />
+                      <IconPalette size="sm" />
                       <span>Harmony</span>
                     </Inline>
                   </TabsTrigger>
                   <TabsTrigger value="psychology">
                     <Inline gap="2" align="center" wrap={false}>
-                      <Brain size={14} aria-hidden />
+                      <IconBrain size="sm" />
                       <span>Psychology</span>
                     </Inline>
                   </TabsTrigger>
                   <TabsTrigger value="preview">
                     <Inline gap="2" align="center" wrap={false}>
-                      <Eye size={14} aria-hidden />
+                      <IconEye size="sm" />
                       <span>Preview</span>
                     </Inline>
                   </TabsTrigger>
                   <TabsTrigger value="accessibility">
                     <Inline gap="2" align="center" wrap={false}>
-                      <Check size={14} aria-hidden />
+                      <IconCheck size="sm" />
                       <span>A11y</span>
                     </Inline>
                   </TabsTrigger>
@@ -662,7 +662,7 @@ const ColorTester: React.FC = () => {
             <Button
               variant="soft"
               size="sm"
-              leftIcon={<Download size={14} />}
+              leftIcon={<IconDownload size="sm" />}
               disabled={savedColors.length === 0}
               onClick={exportPalette}
             >
@@ -698,7 +698,7 @@ const ColorTester: React.FC = () => {
                         variant="danger"
                         size="sm"
                         label="Delete colour"
-                        icon={<Trash2 size={12} />}
+                        icon={<IconTrash2 size="xs" />}
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteColor(idx);

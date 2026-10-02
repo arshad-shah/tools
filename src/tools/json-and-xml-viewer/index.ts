@@ -1,11 +1,11 @@
-import { CodeXml } from 'lucide-react';
+import { IconCodeXml } from '@/shared/ui/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'json-and-xml-viewer',
   name: 'Json and Xml Viewer',
   description: 'View Json and Xml',
-  icon: CodeXml,
+  icon: IconCodeXml,
   category: 'data',
   version: '1.0.0',
   enabled: true,

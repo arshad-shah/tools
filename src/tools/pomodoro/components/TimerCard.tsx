@@ -1,13 +1,13 @@
 import React from 'react';
 import {
-  Clock,
-  Flame,
-  Pause,
-  Play,
-  RotateCcw,
-  SkipForward,
-  Sparkles,
-} from 'lucide-react';
+  IconClock,
+  IconFlame,
+  IconPause,
+  IconPlay,
+  IconRotateCcw,
+  IconSkipForward,
+  IconSparkles,
+} from '@/shared/ui/icons';
 import {
   Badge,
   Box,
@@ -53,7 +53,7 @@ export const TimerCard: React.FC = () => {
 
           <Stack gap="6" align="center">
             <Inline align="center" gap="3" wrap justify="center">
-              <Icon size={28} aria-hidden />
+              <Icon size="2xl" />
               <Heading level={2} size="xl">
                 {info.label}
               </Heading>
@@ -62,7 +62,7 @@ export const TimerCard: React.FC = () => {
                   variant="soft"
                   tone="warning"
                   size="sm"
-                  icon={<Flame size={14} aria-hidden />}
+                  icon={<IconFlame size="sm" />}
                 >
                   {dailyPomodoros} today
                 </Badge>
@@ -82,7 +82,7 @@ export const TimerCard: React.FC = () => {
             </p>
 
             <Inline align="center" gap="2">
-              <Clock size={14} aria-hidden />
+              <IconClock size="sm" />
               <Text size="sm" tone="subtle">
                 {Math.floor(timer.timeLeft / 60)} minutes remaining
               </Text>
@@ -94,7 +94,7 @@ export const TimerCard: React.FC = () => {
 
             {progress >= 100 && (
               <Inline align="center" gap="2">
-                <Sparkles size={16} aria-hidden />
+                <IconSparkles size="sm" />
                 <Text size="sm" weight="medium">
                   Time&apos;s up!
                 </Text>
@@ -106,7 +106,11 @@ export const TimerCard: React.FC = () => {
                 variant={timer.isActive ? 'danger' : 'solid'}
                 size="lg"
                 leftIcon={
-                  timer.isActive ? <Pause size={20} /> : <Play size={20} />
+                  timer.isActive ? (
+                    <IconPause size="lg" />
+                  ) : (
+                    <IconPlay size="lg" />
+                  )
                 }
                 onClick={() => {
                   if (settings.soundEnabled) prime();
@@ -119,14 +123,14 @@ export const TimerCard: React.FC = () => {
                 variant="soft"
                 size="lg"
                 label="Reset"
-                icon={<RotateCcw size={20} />}
+                icon={<IconRotateCcw size="lg" />}
                 onClick={() => usePomodoroStore.getState().resetTimer()}
               />
               <IconButton
                 variant="soft"
                 size="lg"
                 label="Skip"
-                icon={<SkipForward size={20} />}
+                icon={<IconSkipForward size="lg" />}
                 onClick={skip}
               />
             </Inline>

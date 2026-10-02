@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { IconUpload } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 
 interface FileUploadProps {
@@ -53,15 +53,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         if (!disabled) emit(e.dataTransfer.files);
       }}
       className={cn(
-        'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-10 text-center transition-colors',
+        'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-6 py-10 text-center transition-colors duration-fast',
         dragging
-          ? 'border-accent bg-accent/5'
-          : 'border-line hover:border-line-strong',
+          ? 'border-accent bg-accent-soft'
+          : 'border-line-strong hover:bg-surface-2',
         disabled && 'cursor-not-allowed opacity-50',
         className,
       )}
     >
-      <Upload size={22} className="text-accent" aria-hidden />
+      <IconUpload size="xl" className="text-accent-fg" />
       <span className="text-sm text-fg">{label}</span>
       {hint && <span className="font-mono text-xs text-fg-subtle">{hint}</span>}
       <input

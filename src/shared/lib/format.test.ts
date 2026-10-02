@@ -10,7 +10,7 @@ describe('formatBytes', () => {
     [5 * 1024 ** 2, '5.0 MB'],
     [5 * 1024 ** 3, '5.0 GB'],
     [2 * 1024 ** 4, '2.0 TB'],
-  ])('%d → %s', (n, expected) => {
+  ])('%d to %s', (n, expected) => {
     expect(formatBytes(n)).toBe(expected);
   });
   it('rolls over to the next unit when rounding reaches 1024', () => {
@@ -33,7 +33,7 @@ describe('formatSizeChange', () => {
     [100, 150, '+50.0%'],
     [100, 100, '±0.0%'],
     [0, 10, '—'],
-  ])('%d → %d is %s', (before, after, expected) => {
+  ])('%d to %d is %s', (before, after, expected) => {
     expect(formatSizeChange(before, after)).toBe(expected);
   });
 });

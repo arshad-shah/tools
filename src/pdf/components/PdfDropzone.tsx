@@ -73,11 +73,14 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
   const [rejected, setRejected] = useState<string[]>([]);
   const [locked, setLocked] = useState<LockedEntry[]>([]);
   const [busy, setBusy] = useState(false);
-  // What is locked right now, for async work that outlives a render.
+  // What is locked right now, for async work that outlives a render. It is
+  // updated in the same call as the state (never one render later), so an
+  // unlock finishing just after a replacing drop sees the replacement.
   const lockedNow = useRef<LockedEntry[]>([]);
-  useEffect(() => {
-    lockedNow.current = locked;
-  }, [locked]);
+  const updateLocked = (next: (prev: LockedEntry[]) => LockedEntry[]) => {
+    lockedNow.current = next(lockedNow.current);
+    setLocked(lockedNow.current);
+  };
   // A decryption that finishes after unmount must not hand files over.
   const alive = useRef(true);
   useEffect(() => {
@@ -132,7 +135,9 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
     });
     setBusy(false);
     setRejected(errors);
-    setLocked((prev) => (multiple ? [...prev, ...newlyLocked] : newlyLocked));
+    updateLocked((prev) =>
+      multiple ? [...prev, ...newlyLocked] : newlyLocked,
+    );
     for (const f of ready) {
       if (isOverSoftLimit(f.size))
         notify.info(
@@ -143,11 +148,11 @@ export const PdfDropzone: React.FC<PdfDropzoneProps> = ({
   };
 
   const patch = (id: string, p: Partial<LockedEntry>) =>
-    setLocked((prev) =>
+    updateLocked((prev) =>
       prev.map((l) => (l.file.id === id ? { ...l, ...p } : l)),
     );
   const drop = (id: string) =>
-    setLocked((prev) => prev.filter((l) => l.file.id !== id));
+    updateLocked((prev) => prev.filter((l) => l.file.id !== id));
 
   const submit = async (entry: LockedEntry, password: string) => {
     const { id } = entry.file;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { IconChevronDown } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 
 interface AccordionCtx {
@@ -57,7 +57,10 @@ export const AccordionItem: React.FC<AccordionItemProps> = ({
 }) => (
   <ItemCtx.Provider value={value}>
     <div
-      className={cn('overflow-hidden rounded-lg border border-line', className)}
+      className={cn(
+        'overflow-hidden rounded-lg bg-surface shadow-e1',
+        className,
+      )}
     >
       {children}
     </div>
@@ -76,19 +79,18 @@ export const AccordionTrigger: React.FC<
       aria-expanded={isOpen}
       onClick={() => ctx.toggle(value)}
       className={cn(
-        'flex w-full items-center justify-between gap-3 bg-surface px-4 py-3 text-left text-sm font-semibold text-fg transition-colors hover:bg-surface-subtle',
+        'flex w-full items-center justify-between gap-3 bg-surface px-4 py-3 text-left text-sm font-semibold text-fg transition-colors duration-fast hover:bg-surface-2',
         className,
       )}
       {...props}
     >
       {children}
-      <ChevronDown
-        size={16}
+      <IconChevronDown
+        size="sm"
         className={cn(
-          'shrink-0 text-fg-subtle transition-transform',
+          'shrink-0 text-fg-subtle transition-transform duration-base',
           isOpen && 'rotate-180',
         )}
-        aria-hidden
       />
     </button>
   );
@@ -104,7 +106,7 @@ export const AccordionContent: React.FC<
     <div
       role="region"
       className={cn(
-        'border-t border-line bg-canvas/40 px-4 py-3 text-sm text-fg-muted',
+        'border-t border-line px-4 py-3 text-sm text-fg-muted',
         className,
       )}
       {...props}

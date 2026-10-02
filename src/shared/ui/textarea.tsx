@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { IconX } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 
 interface TextareaProps extends Omit<
@@ -8,7 +8,7 @@ interface TextareaProps extends Omit<
 > {
   value: string;
   onChange?: (value: string) => void;
-  /** Show a clear (✕) affordance when there is content. */
+  /** Show a clear (close icon) affordance when there is content. */
   clearable?: boolean;
   invalid?: boolean;
 }
@@ -25,12 +25,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         readOnly={readOnly}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className={cn(
-          'w-full resize-y rounded-md border bg-surface px-3 py-2 font-mono text-sm text-fg',
-          'placeholder:text-fg-faint',
-          'transition-colors focus:outline-none',
+          'w-full resize-y rounded-md border bg-surface-2 px-3 py-2 font-mono text-sm text-fg',
+          'placeholder:text-fg-subtle',
+          'transition-colors duration-fast focus-visible:outline-2 focus-visible:outline-offset-2',
           invalid
-            ? 'border-danger focus:border-danger'
-            : 'border-line focus:border-accent',
+            ? 'border-danger focus-visible:outline-danger'
+            : 'border-line-strong focus-visible:outline-focus',
           readOnly && 'text-fg-muted',
           clearable && value ? 'pr-9' : '',
           className,
@@ -42,9 +42,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           type="button"
           aria-label="Clear"
           onClick={() => onChange('')}
-          className="absolute right-2 top-2 text-fg-faint transition-colors hover:text-fg"
+          className="absolute right-2 top-2 text-fg-subtle transition-colors hover:text-fg"
         >
-          <X size={16} />
+          <IconX size="sm" />
         </button>
       )}
     </div>

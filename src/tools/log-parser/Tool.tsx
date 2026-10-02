@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import {
-  Activity,
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle,
-  ChevronRight,
-  Clock,
-  Copy,
-  Cpu,
-  Download,
-  FileText,
-  Filter,
-  Info,
-  LayoutGrid,
-  PanelLeft,
-  PanelRight,
-  RefreshCw,
-  Search,
-  Trash2,
-} from 'lucide-react';
+  IconActivity,
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconCheckCircle,
+  IconChevronRight,
+  IconClock,
+  IconCopy,
+  IconCpu,
+  IconDownload,
+  IconFileText,
+  IconFilter,
+  IconInfo,
+  IconLayoutGrid,
+  IconPanelLeft,
+  IconPanelRight,
+  IconRefreshCw,
+  IconSearch,
+  IconTrash2,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -46,6 +46,7 @@ import {
   SearchInput,
   Select,
   Stack,
+  StatusDot,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -80,27 +81,27 @@ const LEVEL_INFO: Record<
   error: {
     label: 'Error',
     tone: 'danger',
-    icon: <AlertCircle size={14} aria-hidden />,
+    icon: <IconAlertCircle size="sm" />,
   },
   warn: {
     label: 'Warn',
     tone: 'warning',
-    icon: <AlertTriangle size={14} aria-hidden />,
+    icon: <IconAlertTriangle size="sm" />,
   },
   info: {
     label: 'Info',
     tone: 'accent',
-    icon: <Info size={14} aria-hidden />,
+    icon: <IconInfo size="sm" />,
   },
   debug: {
     label: 'Debug',
     tone: 'neutral',
-    icon: <Cpu size={14} aria-hidden />,
+    icon: <IconCpu size="sm" />,
   },
   success: {
     label: 'Success',
     tone: 'success',
-    icon: <CheckCircle size={14} aria-hidden />,
+    icon: <IconCheckCircle size="sm" />,
   },
 };
 
@@ -143,7 +144,7 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
                 variant="ghost"
                 size="sm"
                 label="Copy raw line"
-                icon={<Copy size={14} />}
+                icon={<IconCopy size="sm" />}
                 onClick={() => onCopy(log.raw)}
               />
               {(log.details || log.raw !== log.message) && (
@@ -152,8 +153,8 @@ const LogRow: React.FC<LogRowProps> = ({ log, copied, onCopy }) => {
                   size="sm"
                   label={expanded ? 'Collapse' : 'Expand'}
                   icon={
-                    <ChevronRight
-                      size={14}
+                    <IconChevronRight
+                      size="sm"
                       className={cn(
                         'transition-transform duration-150',
                         expanded && 'rotate-90',
@@ -230,14 +231,14 @@ const LogParserTool: React.FC = () => {
       <CardHeader>
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
-            <FileText size={18} aria-hidden />
+            <IconFileText size="md" />
             <CardTitle as="h3">Log input</CardTitle>
           </Inline>
           <Inline gap="2" wrap>
             <Button
               variant="soft"
               size="sm"
-              leftIcon={<RefreshCw size={14} />}
+              leftIcon={<IconRefreshCw size="sm" />}
               onClick={loadSampleLogs}
             >
               Load sample
@@ -245,7 +246,7 @@ const LogParserTool: React.FC = () => {
             <Button
               variant="soft"
               size="sm"
-              leftIcon={<Trash2 size={14} />}
+              leftIcon={<IconTrash2 size="sm" />}
               disabled={!logText}
               onClick={clearLogs}
             >
@@ -282,7 +283,7 @@ const LogParserTool: React.FC = () => {
       <CardHeader>
         <Inline justify="between" align="center" wrap gap="2">
           <Inline align="center" gap="2">
-            <Activity size={18} aria-hidden />
+            <IconActivity size="md" />
             <CardTitle as="h3">Parsed logs</CardTitle>
             <Badge variant="soft" tone="neutral" size="sm">
               {filteredLogs.length} of {parsedLogs.length}
@@ -292,7 +293,7 @@ const LogParserTool: React.FC = () => {
             <Button
               variant="soft"
               size="sm"
-              leftIcon={<Download size={14} />}
+              leftIcon={<IconDownload size="sm" />}
               onClick={downloadFiltered}
             >
               Download
@@ -304,7 +305,7 @@ const LogParserTool: React.FC = () => {
         {parsedLogs.length === 0 ? (
           <EmptyState>
             <EmptyStateIcon>
-              <FileText size={36} aria-hidden />
+              <IconFileText size="2xl" />
             </EmptyStateIcon>
             <EmptyStateTitle>No logs yet</EmptyStateTitle>
             <EmptyStateDescription>
@@ -315,7 +316,7 @@ const LogParserTool: React.FC = () => {
               <Button
                 variant="solid"
                 size="sm"
-                leftIcon={<RefreshCw size={14} />}
+                leftIcon={<IconRefreshCw size="sm" />}
                 onClick={loadSampleLogs}
               >
                 Load sample
@@ -325,7 +326,7 @@ const LogParserTool: React.FC = () => {
         ) : filteredLogs.length === 0 ? (
           <EmptyState>
             <EmptyStateIcon>
-              <Search size={36} aria-hidden />
+              <IconSearch size="2xl" />
             </EmptyStateIcon>
             <EmptyStateTitle>No matches</EmptyStateTitle>
             <EmptyStateDescription>
@@ -371,10 +372,13 @@ const LogParserTool: React.FC = () => {
             <Button
               variant={showFilters ? 'solid' : 'soft'}
               size="sm"
-              leftIcon={<Filter size={14} />}
+              leftIcon={<IconFilter size="sm" />}
               onClick={() => setShowFilters(!showFilters)}
             >
-              Filters{hasActiveFilters && ' •'}
+              Filters
+              {hasActiveFilters && (
+                <StatusDot tone="accent" label="Filters active" />
+              )}
             </Button>
             <Tabs
               value={viewMode}
@@ -385,13 +389,13 @@ const LogParserTool: React.FC = () => {
             >
               <TabsList aria-label="View mode">
                 <TabsTrigger value="input">
-                  <PanelLeft size={14} aria-hidden />
+                  <IconPanelLeft size="sm" />
                 </TabsTrigger>
                 <TabsTrigger value="split">
-                  <LayoutGrid size={14} aria-hidden />
+                  <IconLayoutGrid size="sm" />
                 </TabsTrigger>
                 <TabsTrigger value="output">
-                  <PanelRight size={14} aria-hidden />
+                  <IconPanelRight size="sm" />
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -437,7 +441,7 @@ const LogParserTool: React.FC = () => {
             <CardHeader>
               <Inline justify="between" align="center" wrap>
                 <Inline align="center" gap="2">
-                  <Filter size={18} aria-hidden />
+                  <IconFilter size="md" />
                   <CardTitle as="h3">Filters</CardTitle>
                 </Inline>
                 <Button
@@ -467,7 +471,7 @@ const LogParserTool: React.FC = () => {
                     value={searchComponent}
                     onChange={setSearchComponent}
                     placeholder="Filter by component…"
-                    leadingSlot={<Cpu size={16} aria-hidden />}
+                    leadingSlot={<IconCpu size="sm" />}
                   />
                 </Stack>
                 <Stack gap="2">
@@ -479,7 +483,7 @@ const LogParserTool: React.FC = () => {
                       setTimeRange({ ...timeRange, start: v || undefined })
                     }
                     placeholder="e.g. 12:00:00"
-                    leadingSlot={<Clock size={16} aria-hidden />}
+                    leadingSlot={<IconClock size="sm" />}
                   />
                 </Stack>
                 <Stack gap="2">
@@ -491,7 +495,7 @@ const LogParserTool: React.FC = () => {
                       setTimeRange({ ...timeRange, end: v || undefined })
                     }
                     placeholder="e.g. 13:00:00"
-                    leadingSlot={<Clock size={16} aria-hidden />}
+                    leadingSlot={<IconClock size="sm" />}
                   />
                 </Stack>
               </Grid>
@@ -511,7 +515,7 @@ const LogParserTool: React.FC = () => {
         )}
 
         {parsedLogs.length === 0 && !logText && (
-          <Alert status="info" icon={<Info size={18} aria-hidden />}>
+          <Alert status="info" icon={<IconInfo size="md" />}>
             <AlertTitle>How to use</AlertTitle>
             <AlertDescription>
               Paste your application logs into the input panel, pick a log type

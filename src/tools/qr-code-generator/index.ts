@@ -1,11 +1,11 @@
-import { QrCode } from 'lucide-react';
+import { IconQrCode } from '@/shared/ui/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'qr-code-generator',
   name: 'QR Code Generator',
   description: 'Generate QR codes',
-  icon: QrCode,
+  icon: IconQrCode,
   category: 'web',
   version: '1.0.0',
   enabled: true,

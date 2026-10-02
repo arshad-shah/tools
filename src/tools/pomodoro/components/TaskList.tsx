@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListTodo, Plus } from 'lucide-react';
+import { IconListTodo, IconPlus } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -29,7 +29,7 @@ export const TaskList: React.FC = () => {
     <Stack gap="4">
       <Inline justify="between" align="center" wrap>
         <Inline align="center" gap="2">
-          <ListTodo size={20} aria-hidden />
+          <IconListTodo size="lg" />
           <Heading level={3} size="md">
             Tasks for today
           </Heading>
@@ -55,7 +55,7 @@ export const TaskList: React.FC = () => {
             type="submit"
             variant="solid"
             disabled={!newTitle.trim()}
-            leftIcon={<Plus size={16} />}
+            leftIcon={<IconPlus size="sm" />}
           >
             Add
           </Button>

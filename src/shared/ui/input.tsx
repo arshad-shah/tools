@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { IconX } from '@/shared/ui/icons';
 import { cn } from '@/shared/lib/cn';
 
 interface InputProps extends Omit<
@@ -32,10 +32,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div
         className={cn(
-          'flex h-10 w-full items-center gap-2 rounded-md border bg-surface px-3 transition-colors',
+          'flex h-9 w-full items-center gap-2 rounded-md border bg-surface-2 px-3 transition-colors duration-fast',
           invalid
-            ? 'border-danger focus-within:border-danger'
-            : 'border-line focus-within:border-accent',
+            ? 'border-danger focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-danger'
+            : 'border-line-strong focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
         )}
       >
         {leadingSlot && (
@@ -49,7 +49,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           className={cn(
             'min-w-0 flex-1 bg-transparent text-sm text-fg',
-            'placeholder:text-fg-faint focus:outline-none',
+            'placeholder:text-fg-subtle focus:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-50',
             className,
           )}
@@ -60,9 +60,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type="button"
             aria-label="Clear"
             onClick={() => onChange('')}
-            className="shrink-0 text-fg-faint transition-colors hover:text-fg"
+            className="shrink-0 text-fg-subtle transition-colors hover:text-fg"
           >
-            <X size={16} />
+            <IconX size="sm" />
           </button>
         )}
         {trailingSlot && <span className="shrink-0">{trailingSlot}</span>}

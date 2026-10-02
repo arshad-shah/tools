@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Copy, FileText } from 'lucide-react';
+import { IconCopy, IconFileText } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -126,7 +126,7 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
               <div>
                 <Button
                   variant="solid"
-                  leftIcon={<FileText size={16} />}
+                  leftIcon={<IconFileText size="sm" />}
                   disabled={job.status === 'running'}
                   onClick={() => job.run(doc)}
                 >
@@ -168,7 +168,7 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
                 <div>
                   <Button
                     variant="soft"
-                    leftIcon={<Copy size={16} />}
+                    leftIcon={<IconCopy size="sm" />}
                     onClick={() => void copyAll()}
                   >
                     {copied ? 'Copied' : 'Copy text'}

@@ -14,13 +14,13 @@ export const Statistic = React.forwardRef<HTMLDivElement, StatProps>(
     <div
       ref={ref}
       className={cn(
-        'flex flex-col gap-1 rounded-lg border border-line bg-surface p-4',
+        'flex flex-col gap-1 rounded-lg bg-surface p-4 shadow-e1',
         className,
       )}
       {...props}
     >
       <div className="flex items-center gap-2 font-mono text-xs text-fg-subtle">
-        {icon && <span className="text-accent">{icon}</span>}
+        {icon && <span className="text-accent-fg">{icon}</span>}
         {label}
       </div>
       <div className="font-mono text-2xl font-bold text-fg">{value}</div>

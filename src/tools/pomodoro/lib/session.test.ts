@@ -57,7 +57,7 @@ describe('durations and guards', () => {
 });
 
 describe('completeSession', () => {
-  it('work → short break: +1 daily/weekly, focus += workDuration, task +1, streak +1 on first of day', () => {
+  it('work to short break: +1 daily/weekly, focus += workDuration, task +1, streak +1 on first of day', () => {
     const s = state({
       tasks: [task('a')],
       timer: { mode: 'work', timeLeft: 0, isActive: true, currentTask: 'a' },
@@ -137,7 +137,7 @@ describe('completeSession', () => {
     });
     expect(r.timer.currentTask).toBe('c');
   });
-  it('break → work does NOT touch tasks or stats (B5)', () => {
+  it('break to work does NOT touch tasks or stats (B5)', () => {
     const s = state({
       tasks: [task('a')],
       timer: {
@@ -157,7 +157,7 @@ describe('completeSession', () => {
       currentTask: 'a',
     });
   });
-  it('long break → work, auto-started when autoStartPomodoros is on', () => {
+  it('long break to work, auto-started when autoStartPomodoros is on', () => {
     const s = state({
       settings: { ...defaultState(DAY1).settings, autoStartPomodoros: true },
       timer: {
@@ -311,7 +311,7 @@ describe('rolloverDay', () => {
     expect(r.currentStreak).toBe(0);
   });
   it('resets the weekly count when a new (Monday-based) week starts', () => {
-    // Thu 1 Oct → Sun 4 Oct is the same week; Mon 5 Oct is a new one.
+    // Thu 1 Oct to Sun 4 Oct is the same week; Mon 5 Oct is a new one.
     expect(
       rolloverDay(base, new Date(2026, 9, 4, 9).getTime()).weeklyPomodoros,
     ).toBe(5);

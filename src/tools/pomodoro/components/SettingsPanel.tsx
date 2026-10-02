@@ -1,5 +1,12 @@
 import React from 'react';
-import { Battery, Clock, Coffee, Play, Settings2, Timer } from 'lucide-react';
+import {
+  IconBattery,
+  IconClock,
+  IconCoffee,
+  IconPlay,
+  IconSettings2,
+  IconTimer,
+} from '@/shared/ui/icons';
 import {
   Badge,
   Card,
@@ -23,7 +30,7 @@ export const SettingsPanel: React.FC = () => {
   return (
     <Stack gap="6">
       <Inline align="center" gap="2">
-        <Settings2 size={20} aria-hidden />
+        <IconSettings2 size="lg" />
         <Heading level={3} size="md">
           Settings
         </Heading>
@@ -31,7 +38,7 @@ export const SettingsPanel: React.FC = () => {
 
       <Stack gap="4">
         <Inline align="center" gap="2">
-          <Clock size={18} aria-hidden />
+          <IconClock size="md" />
           <Heading level={4} size="sm">
             Timer durations
           </Heading>
@@ -42,7 +49,7 @@ export const SettingsPanel: React.FC = () => {
             <Stack gap="3">
               <Inline justify="between" align="center" wrap>
                 <Inline align="center" gap="2">
-                  <Timer size={16} aria-hidden />
+                  <IconTimer size="sm" />
                   <Label>Work duration</Label>
                 </Inline>
                 <Badge variant="soft" tone="accent" size="sm">
@@ -66,7 +73,7 @@ export const SettingsPanel: React.FC = () => {
             <Stack gap="3">
               <Inline justify="between" align="center" wrap>
                 <Inline align="center" gap="2">
-                  <Coffee size={16} aria-hidden />
+                  <IconCoffee size="sm" />
                   <Label>Short break</Label>
                 </Inline>
                 <Badge variant="soft" tone="info" size="sm">
@@ -90,7 +97,7 @@ export const SettingsPanel: React.FC = () => {
             <Stack gap="3">
               <Inline justify="between" align="center" wrap>
                 <Inline align="center" gap="2">
-                  <Battery size={16} aria-hidden />
+                  <IconBattery size="sm" />
                   <Label>Long break</Label>
                 </Inline>
                 <Badge variant="soft" tone="success" size="sm">
@@ -112,7 +119,7 @@ export const SettingsPanel: React.FC = () => {
 
       <Stack gap="4">
         <Inline align="center" gap="2">
-          <Play size={18} aria-hidden />
+          <IconPlay size="md" />
           <Heading level={4} size="sm">
             Automation
           </Heading>

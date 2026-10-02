@@ -49,6 +49,10 @@ describe('previewText', () => {
     });
   });
   it('never splits a surrogate pair', () => {
-    expect(previewText('ab😀cd', 3)).toEqual({ text: 'ab…', truncated: true });
+    const grin = String.fromCodePoint(0x1f600);
+    expect(previewText(`ab${grin}cd`, 3)).toEqual({
+      text: 'ab…',
+      truncated: true,
+    });
   });
 });

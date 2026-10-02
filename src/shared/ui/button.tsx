@@ -2,6 +2,7 @@ import React from 'react';
 import { type VariantProps } from 'class-variance-authority';
 import { cn } from '@/shared/lib/cn';
 import { buttonVariants } from './button-variants';
+import type { IconComponent, IconSize } from './icons';
 import { Spinner } from './spinner';
 
 /* ------------------------------------------------------------------ *
@@ -68,7 +69,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       );
     }
     const left = loading ? (
-      <Spinner size={spinnerForSize[size ?? 'md']} />
+      <Spinner size={spinnerForSize[size ?? 'md']} decorative />
     ) : (
       leftIcon
     );
@@ -77,6 +78,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={classes}
         disabled={disabled || loading}
+        aria-busy={loading || undefined}
         {...props}
       >
         {left}
@@ -92,23 +94,30 @@ Button.displayName = 'Button';
  * IconButton — square, icon-only, requires a label
  * ------------------------------------------------------------------ */
 const iconButtonSize = {
-  xs: 'size-7',
+  xs: 'size-8',
   sm: 'size-8',
-  md: 'size-10',
+  md: 'size-9',
   lg: 'size-11',
 } as const;
+const iconSizeFor: Record<keyof typeof iconButtonSize, IconSize> = {
+  xs: 'sm',
+  sm: 'sm',
+  md: 'md',
+  lg: 'lg',
+};
 /** Tints ghost/soft icon buttons without a full filled background. */
 const iconButtonTone = {
   danger: 'text-danger hover:text-danger',
   warning: 'text-warning hover:text-warning',
-  accent: 'text-accent hover:text-accent',
+  accent: 'text-accent-fg hover:text-accent-fg',
 } as const;
 export interface IconButtonProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
   'aria-label'
 > {
   label: string;
-  icon: React.ReactNode;
+  /** An icon component (sized to the button) or a rendered node. */
+  icon: IconComponent | React.ReactNode;
   variant?: NonNullable<VariantProps<typeof buttonVariants>['variant']>;
   size?: keyof typeof iconButtonSize;
   /** Color tint for ghost/soft icon buttons (e.g. a destructive action). */
@@ -116,13 +125,21 @@ export interface IconButtonProps extends Omit<
   loading?: boolean;
   asChild?: boolean;
 }
+function renderIcon(icon: IconComponent | React.ReactNode, size: IconSize) {
+  if (typeof icon === 'function') {
+    const Icon = icon as IconComponent;
+    return <Icon size={size} />;
+  }
+  return icon;
+}
+
 export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   (
     {
       className,
       label,
       icon,
-      variant = 'soft',
+      variant = 'secondary',
       size = 'md',
       tone,
       loading,
@@ -153,9 +170,14 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         className={classes}
         aria-label={label}
         disabled={disabled || loading}
+        aria-busy={loading || undefined}
         {...props}
       >
-        {loading ? <Spinner size="sm" /> : icon}
+        {loading ? (
+          <Spinner size="sm" decorative />
+        ) : (
+          renderIcon(icon, iconSizeFor[size])
+        )}
       </button>
     );
   },

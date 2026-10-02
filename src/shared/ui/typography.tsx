@@ -28,8 +28,8 @@ export const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
       <Tag
         ref={ref}
         className={cn(
-          'font-bold tracking-tight text-fg',
-          mono && 'font-mono',
+          'font-semibold tracking-tight text-fg',
+          mono && 'font-mono-meta',
           headingSize[size],
           className,
         )}
@@ -53,8 +53,8 @@ const textTone = {
   default: 'text-fg',
   muted: 'text-fg-muted',
   subtle: 'text-fg-subtle',
-  faint: 'text-fg-faint',
-  accent: 'text-accent',
+  faint: 'text-fg-subtle',
+  accent: 'text-accent-fg',
 } as const;
 
 interface TextProps extends React.HTMLAttributes<HTMLElement> {
@@ -127,7 +127,7 @@ export const Code = React.forwardRef<HTMLElement, CodeProps>(
         'font-mono text-sm text-fg-muted',
         block
           ? 'block overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-line bg-canvas p-3'
-          : 'rounded bg-surface-subtle px-1.5 py-0.5',
+          : 'rounded-sm bg-surface-2 px-1.5 py-0.5',
         className,
       )}
       {...props}
@@ -135,20 +135,3 @@ export const Code = React.forwardRef<HTMLElement, CodeProps>(
   ),
 );
 Code.displayName = 'Code';
-
-/* ------------------------------------------------------------------ *
- * Kbd — keyboard / identifier chip
- * ------------------------------------------------------------------ */
-export const Kbd: React.FC<React.HTMLAttributes<HTMLElement>> = ({
-  className,
-  ...props
-}) => (
-  <kbd
-    className={cn(
-      'inline-flex items-center rounded border border-line-strong bg-surface-subtle px-1.5 py-0.5 font-mono text-xs text-fg-muted',
-      className,
-    )}
-    {...props}
-  />
-);
-Kbd.displayName = 'Kbd';

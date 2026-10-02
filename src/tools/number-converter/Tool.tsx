@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Award, Check, Copy, Hash, Info } from 'lucide-react';
+import {
+  IconAward,
+  IconCheck,
+  IconCopy,
+  IconHash,
+  IconInfo,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -130,13 +136,13 @@ const NumberConverter: React.FC = () => {
           <TabsList aria-label="Number converter view">
             <TabsTrigger value="converter">
               <Inline gap="2" align="center" wrap={false}>
-                <Hash size={16} aria-hidden />
+                <IconHash size="sm" />
                 <span>Converter</span>
               </Inline>
             </TabsTrigger>
             <TabsTrigger value="info">
               <Inline gap="2" align="center" wrap={false}>
-                <Info size={16} aria-hidden />
+                <IconInfo size="sm" />
                 <span>Number systems</span>
               </Inline>
             </TabsTrigger>
@@ -215,9 +221,9 @@ const NumberConverter: React.FC = () => {
                                 size="sm"
                                 leftIcon={
                                   copiedKey === t.value ? (
-                                    <Check size={14} />
+                                    <IconCheck size="sm" />
                                   ) : (
-                                    <Copy size={14} />
+                                    <IconCopy size="sm" />
                                   )
                                 }
                                 onClick={() => handleCopy(value, t.value)}
@@ -311,7 +317,7 @@ const NumberConverter: React.FC = () => {
                 </Grid>
               </Stack>
 
-              <Alert status="info" icon={<Award aria-hidden />}>
+              <Alert status="info" icon={<IconAward />}>
                 <AlertDescription>
                   <Text as="span" weight="semibold">
                     Why multiple number systems?

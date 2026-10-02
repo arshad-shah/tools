@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import type { IconComponent } from '@/shared/ui/icons';
 
 export type ToolCategory =
   | 'encoding'
@@ -17,7 +17,7 @@ export interface ToolDefinition {
   id: string;
   name: string;
   description: string;
-  icon: LucideIcon;
+  icon: IconComponent;
   enabled: boolean;
   category: ToolCategory;
   version?: string;

@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { ChevronDown, ChevronRight, Copy, Link2 } from 'lucide-react';
+import {
+  IconChevronDown,
+  IconChevronRight,
+  IconCopy,
+  IconLink2,
+} from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 
@@ -135,7 +140,11 @@ const DataNode: React.FC<{
           onClick={onToggle}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
-          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {isExpanded ? (
+            <IconChevronDown size="sm" />
+          ) : (
+            <IconChevronRight size="sm" />
+          )}
         </button>
       ) : (
         <span className={styles.chevronSpacer} aria-hidden />
@@ -164,7 +173,7 @@ const DataNode: React.FC<{
             aria-label="Copy path"
             onClick={onCopyPath}
           >
-            <Link2 size={12} />
+            <IconLink2 size="xs" />
           </button>
         </Tooltip>
         <Tooltip content="Copy value">
@@ -174,7 +183,7 @@ const DataNode: React.FC<{
             aria-label="Copy value"
             onClick={onCopyValue}
           >
-            <Copy size={12} />
+            <IconCopy size="xs" />
           </button>
         </Tooltip>
       </span>

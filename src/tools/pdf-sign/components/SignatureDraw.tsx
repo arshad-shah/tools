@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Eraser, Undo2 } from 'lucide-react';
+import { IconEraser, IconUndo } from '@/shared/ui/icons';
 import { Button, Inline, Label, Select, Stack, Text } from '@/shared/ui';
 import {
   addPoint,
@@ -157,7 +157,7 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
         <Button
           size="sm"
           variant="soft"
-          leftIcon={<Undo2 size={14} />}
+          leftIcon={<IconUndo size="sm" />}
           disabled={disabled || strokes.length === 0}
           onClick={() => commit(strokes.slice(0, -1))}
         >
@@ -166,7 +166,7 @@ export const SignatureDraw: React.FC<SignatureSourceProps> = ({
         <Button
           size="sm"
           variant="ghost"
-          leftIcon={<Eraser size={14} />}
+          leftIcon={<IconEraser size="sm" />}
           disabled={disabled || strokes.length === 0}
           onClick={() => commit([])}
         >

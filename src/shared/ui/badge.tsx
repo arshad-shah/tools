@@ -3,7 +3,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/shared/lib/cn';
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 font-medium leading-none',
+  'inline-flex items-center gap-1 font-mono-meta leading-none',
   {
     variants: {
       variant: {
@@ -20,36 +20,48 @@ const badgeVariants = cva(
         info: '',
       },
       size: {
-        xs: 'px-1.5 py-0.5 text-[0.6rem]',
-        sm: 'px-2 py-1 text-[0.65rem]',
+        xs: 'px-1.5 py-0.5 text-xs',
+        sm: 'px-1.5 py-1 text-xs',
         md: 'px-2.5 py-1 text-xs',
       },
-      pill: { true: 'rounded-full', false: 'rounded-md' },
+      pill: { true: 'rounded-full', false: 'rounded-sm' },
     },
     compoundVariants: [
       // solid
       { variant: 'solid', tone: 'accent', class: 'bg-accent text-accent-ink' },
-      { variant: 'solid', tone: 'neutral', class: 'bg-surface-strong text-fg' },
-      { variant: 'solid', tone: 'success', class: 'bg-success text-canvas' },
+      { variant: 'solid', tone: 'neutral', class: 'bg-surface-3 text-fg' },
+      { variant: 'solid', tone: 'success', class: 'bg-accent text-accent-ink' },
       { variant: 'solid', tone: 'warning', class: 'bg-warning text-canvas' },
       { variant: 'solid', tone: 'danger', class: 'bg-danger text-canvas' },
       { variant: 'solid', tone: 'info', class: 'bg-info text-canvas' },
       // soft
-      { variant: 'soft', tone: 'accent', class: 'bg-accent/15 text-accent' },
+      {
+        variant: 'soft',
+        tone: 'accent',
+        class: 'bg-accent-soft text-accent-fg',
+      },
       {
         variant: 'soft',
         tone: 'neutral',
-        class: 'bg-surface-subtle text-fg-muted',
+        class: 'bg-surface-2 text-fg-muted',
       },
-      { variant: 'soft', tone: 'success', class: 'bg-success/15 text-success' },
-      { variant: 'soft', tone: 'warning', class: 'bg-warning/15 text-warning' },
-      { variant: 'soft', tone: 'danger', class: 'bg-danger/15 text-danger' },
-      { variant: 'soft', tone: 'info', class: 'bg-info/15 text-info' },
+      {
+        variant: 'soft',
+        tone: 'success',
+        class: 'bg-accent-soft text-accent-fg',
+      },
+      {
+        variant: 'soft',
+        tone: 'warning',
+        class: 'bg-warning-soft text-warning',
+      },
+      { variant: 'soft', tone: 'danger', class: 'bg-danger-soft text-danger' },
+      { variant: 'soft', tone: 'info', class: 'bg-info-soft text-info' },
       // outline
       {
         variant: 'outline',
         tone: 'accent',
-        class: 'border border-accent/40 text-accent',
+        class: 'border border-accent-fg/40 text-accent-fg',
       },
       {
         variant: 'outline',
@@ -59,7 +71,7 @@ const badgeVariants = cva(
       {
         variant: 'outline',
         tone: 'success',
-        class: 'border border-success/40 text-success',
+        class: 'border border-accent-fg/40 text-accent-fg',
       },
       {
         variant: 'outline',
@@ -103,7 +115,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       ref={ref}
       className={cn(
         badgeVariants({ variant, tone, size, pill }),
-        mono && 'font-mono',
+        mono && 'font-mono-meta',
         className,
       )}
       {...props}

@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo } from 'react';
-import { RefreshCw, Home, AlertCircle } from 'lucide-react';
+import { IconAlertCircle, IconHome, IconRefreshCw } from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -11,7 +11,6 @@ import {
   CardHeader,
   Code,
   Inline,
-  Kbd,
   Stack,
   Text,
 } from '@/shared/ui';
@@ -69,7 +68,7 @@ class ToolErrorBoundary extends Component<Props, State> {
       <Stack gap="4">
         <Card>
           <CardHeader>
-            <Alert status="danger" icon={<AlertCircle size={18} aria-hidden />}>
+            <Alert status="danger" icon={<IconAlertCircle size="md" />}>
               <AlertTitle>{toolName} encountered an error</AlertTitle>
               <AlertDescription>
                 We hit an unexpected issue while running this tool. You can try
@@ -87,7 +86,7 @@ class ToolErrorBoundary extends Component<Props, State> {
                 <Text size="xs" tone="subtle">
                   Tool ID:
                 </Text>
-                <Kbd>{toolId}</Kbd>
+                <Code>{toolId}</Code>
               </Inline>
             </Stack>
           </CardBody>
@@ -95,14 +94,14 @@ class ToolErrorBoundary extends Component<Props, State> {
             <Inline gap="2" wrap justify="end">
               <Button
                 variant="soft"
-                leftIcon={<Home size={16} />}
+                leftIcon={<IconHome size="sm" />}
                 onClick={this.handleNavigateHome}
               >
                 Go to dashboard
               </Button>
               <Button
                 variant="solid"
-                leftIcon={<RefreshCw size={16} />}
+                leftIcon={<IconRefreshCw size="sm" />}
                 onClick={this.handleRetry}
               >
                 Retry {toolName}

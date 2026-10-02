@@ -1,17 +1,17 @@
 import {
-  AlertCircle,
-  Calendar,
-  Clock,
-  Globe,
-  Hash,
-  Info,
-  Key,
-  Mail,
-  Shield,
-  Target,
-  User,
-  Zap,
-} from 'lucide-react';
+  IconAlertCircle,
+  IconCalendar,
+  IconClock,
+  IconGlobe,
+  IconHash,
+  IconInfo,
+  IconKey,
+  IconMail,
+  IconShield,
+  IconTarget,
+  IconUser,
+  IconZap,
+} from '@/shared/ui/icons';
 import { ExpiryInfo } from '../types';
 import { isExpired } from './jwt';
 
@@ -48,21 +48,21 @@ const getExpiryInfo = (
 
 const getClaimIcon = (key: string) => {
   const icons: Record<string, React.ReactNode> = {
-    sub: <User size={16} />,
-    name: <User size={16} />,
-    email: <Mail size={16} />,
-    role: <Shield size={16} />,
-    roles: <Shield size={16} />,
-    permissions: <Key size={16} />,
-    iat: <Calendar size={16} />,
-    exp: <Clock size={16} />,
-    nbf: <AlertCircle size={16} />,
-    iss: <Globe size={16} />,
-    aud: <Target size={16} />,
-    scope: <Zap size={16} />,
-    jti: <Hash size={16} />,
+    sub: <IconUser size="sm" />,
+    name: <IconUser size="sm" />,
+    email: <IconMail size="sm" />,
+    role: <IconShield size="sm" />,
+    roles: <IconShield size="sm" />,
+    permissions: <IconKey size="sm" />,
+    iat: <IconCalendar size="sm" />,
+    exp: <IconClock size="sm" />,
+    nbf: <IconAlertCircle size="sm" />,
+    iss: <IconGlobe size="sm" />,
+    aud: <IconTarget size="sm" />,
+    scope: <IconZap size="sm" />,
+    jti: <IconHash size="sm" />,
   };
-  return icons[key] || <Info size={16} />;
+  return icons[key] || <IconInfo size="sm" />;
 };
 
 const getClaimLabel = (key: string): string => {

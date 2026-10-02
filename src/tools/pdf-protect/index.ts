@@ -1,11 +1,11 @@
-import { Lock } from 'lucide-react';
+import { IconLock } from '@/shared/ui/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'pdf-protect',
   name: 'Protect PDF',
   description: 'Add a password and permission restrictions to a PDF (AES-256)',
-  icon: Lock,
+  icon: IconLock,
   category: 'pdf',
   version: '1.0.0',
   isNew: true,

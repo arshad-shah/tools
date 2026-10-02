@@ -1,5 +1,10 @@
 import React, { Component, ErrorInfo } from 'react';
-import { AlertTriangle, Home, RefreshCw, X } from 'lucide-react';
+import {
+  IconAlertTriangle,
+  IconHome,
+  IconRefreshCw,
+  IconX,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertTitle,
@@ -74,10 +79,7 @@ class ErrorBoundary extends Component<Props, State> {
           <Container size="md">
             <Card>
               <CardHeader>
-                <Alert
-                  status="danger"
-                  icon={<AlertTriangle size={18} aria-hidden />}
-                >
+                <Alert status="danger" icon={<IconAlertTriangle size="md" />}>
                   <AlertTitle>Application error detected</AlertTitle>
                   <AlertDescription>
                     Something went wrong in the application. Our engineers have
@@ -111,21 +113,21 @@ class ErrorBoundary extends Component<Props, State> {
                 <Inline gap="2" wrap justify="end">
                   <Button
                     variant="ghost"
-                    leftIcon={<X size={16} />}
+                    leftIcon={<IconX size="sm" />}
                     onClick={this.handleDismiss}
                   >
                     Dismiss
                   </Button>
                   <Button
                     variant="soft"
-                    leftIcon={<Home size={16} />}
+                    leftIcon={<IconHome size="sm" />}
                     onClick={this.handleGoHome}
                   >
                     Go to dashboard
                   </Button>
                   <Button
                     variant="solid"
-                    leftIcon={<RefreshCw size={16} />}
+                    leftIcon={<IconRefreshCw size="sm" />}
                     onClick={this.handleReload}
                   >
                     Reload application

@@ -3,10 +3,15 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
+import local from './eslint-rules/index.js';
 
 export default tseslint.config(
   {
     ignores: ['dist', 'public/pdfjs', 'playwright-report', 'test-results'],
+  },
+  {
+    // Every runner (CLI, editor, lint-staged) reports stale disables.
+    linterOptions: { reportUnusedDisableDirectives: 'error' },
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -41,5 +46,19 @@ export default tseslint.config(
   {
     files: ['scripts/**/*.{ts,mjs}', 'test/**/*.ts', '*.config.ts'],
     languageOptions: { globals: { ...globals.node } },
+  },
+  // Design-system rules (spec 1A): enforced at error, never disabled inline.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    plugins: { local },
+    rules: {
+      'local/no-pictographic-text': 'error',
+      'local/no-lucide-outside-icons': 'error',
+      'local/no-disable-enforced': 'error',
+    },
+  },
+  {
+    files: ['eslint-rules/**/*.js', 'public/theme-init.js'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
 );

@@ -70,7 +70,7 @@ export const TabsList: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
       className={cn(
         'flex',
         variant === 'soft'
-          ? 'gap-1 rounded-md border border-line bg-surface p-1'
+          ? 'gap-1 rounded-lg bg-surface-2 p-1'
           : 'gap-1 border-b border-line',
         fullWidth && 'w-full',
         className,
@@ -101,19 +101,19 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
       tabIndex={selected ? 0 : -1}
       onClick={() => setValue(value)}
       className={cn(
-        'font-mono text-sm transition-colors focus:outline-none focus-visible:text-accent',
+        'text-sm font-medium transition-[color,background-color,border-color] duration-base ease-out-soft',
         fullWidth && 'flex-1',
         variant === 'soft'
           ? cn(
-              'rounded px-3 py-1.5',
+              'rounded-md px-3 py-1.5',
               selected
-                ? 'bg-accent font-bold text-accent-ink'
+                ? 'bg-surface text-fg shadow-e1'
                 : 'text-fg-muted hover:text-fg',
             )
           : cn(
               '-mb-px border-b-2 px-3 py-2',
               selected
-                ? 'border-accent text-accent'
+                ? 'border-accent-indicator text-fg'
                 : 'border-transparent text-fg-muted hover:text-fg',
             ),
         className,

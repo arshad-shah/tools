@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FileText } from 'lucide-react';
+import { IconFileText } from '@/shared/ui/icons';
 import { buildRegistry, TOOLS } from './registry';
 import { defineTool } from './tool';
 
@@ -8,7 +8,7 @@ const fake = (id: string, name = id) =>
     id,
     name,
     description: 'd',
-    icon: FileText,
+    icon: IconFileText,
     enabled: true,
     category: 'pdf',
     load: async () => ({ default: () => null }),

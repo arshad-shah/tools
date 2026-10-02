@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { IconStar, IconStarFilled } from '@/shared/ui/icons';
 import {
   Container,
   Section,
@@ -104,9 +104,9 @@ const Dashboard: React.FC = () => {
         <div className="flex items-start justify-between">
           <span
             aria-hidden
-            className="flex size-9 items-center justify-center rounded-md border border-line-strong bg-surface-subtle text-accent"
+            className="flex size-9 items-center justify-center rounded-md border border-line-strong bg-surface-subtle text-accent-fg"
           >
-            <Icon size={18} />
+            <Icon size="md" />
           </span>
           <button
             type="button"
@@ -120,10 +120,12 @@ const Dashboard: React.FC = () => {
             }}
             className={cn(
               'transition-colors',
-              isFavorite ? 'text-accent' : 'text-fg-faint hover:text-fg-muted',
+              isFavorite
+                ? 'text-accent-fg'
+                : 'text-fg-faint hover:text-fg-muted',
             )}
           >
-            <Star size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+            {isFavorite ? <IconStarFilled size="sm" /> : <IconStar size="sm" />}
           </button>
         </div>
         <h3 className="font-semibold leading-tight text-fg">{tool.name}</h3>
@@ -211,13 +213,7 @@ const Dashboard: React.FC = () => {
                 <SectionLabel
                   label="favorites"
                   count={favoriteTools.length}
-                  icon={
-                    <Star
-                      size={15}
-                      className="text-accent"
-                      fill="currentColor"
-                    />
-                  }
+                  icon={<IconStarFilled size="sm" className="text-accent-fg" />}
                 />
                 <Grid gap="3" max={4}>
                   {favoriteTools.map(renderToolCard)}

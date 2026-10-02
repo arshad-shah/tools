@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCheck, Clipboard, Copy, ExternalLink } from 'lucide-react';
+import {
+  IconCheckCheck,
+  IconClipboard,
+  IconCopy,
+  IconExternalLink,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -103,7 +108,7 @@ const URLParser: React.FC = () => {
         onChange={setUrl}
         placeholder="Enter a URL to parse…"
         invalid={!isValid}
-        leadingSlot={<ExternalLink size={18} aria-hidden />}
+        leadingSlot={<IconExternalLink size="md" />}
         clearable
         aria-label="URL to parse"
       />
@@ -111,7 +116,7 @@ const URLParser: React.FC = () => {
         <Button
           variant="soft"
           size="sm"
-          leftIcon={<Clipboard size={16} />}
+          leftIcon={<IconClipboard size="sm" />}
           onClick={handlePaste}
         >
           Paste from clipboard
@@ -205,9 +210,9 @@ const URLParser: React.FC = () => {
                           label={`Copy ${f.label}`}
                           icon={
                             copiedKey === f.label ? (
-                              <CheckCheck size={16} />
+                              <IconCheckCheck size="sm" />
                             ) : (
-                              <Copy size={16} />
+                              <IconCopy size="sm" />
                             )
                           }
                           onClick={() => handleCopy(f.value, f.label)}
@@ -248,9 +253,9 @@ const URLParser: React.FC = () => {
                   size="sm"
                   leftIcon={
                     copiedKey === `table-${item.label}` ? (
-                      <CheckCheck size={14} />
+                      <IconCheckCheck size="sm" />
                     ) : (
-                      <Copy size={14} />
+                      <IconCopy size="sm" />
                     )
                   }
                   onClick={() => handleCopy(item.value, `table-${item.label}`)}
@@ -283,9 +288,9 @@ const URLParser: React.FC = () => {
                   size="sm"
                   leftIcon={
                     copiedKey === `param-${key}` ? (
-                      <CheckCheck size={14} />
+                      <IconCheckCheck size="sm" />
                     ) : (
-                      <Copy size={14} />
+                      <IconCopy size="sm" />
                     )
                   }
                   onClick={() => handleCopy(value, `param-${key}`)}

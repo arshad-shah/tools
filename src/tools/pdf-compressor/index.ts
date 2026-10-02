@@ -1,4 +1,4 @@
-import { Minimize2 } from 'lucide-react';
+import { IconMinimize2 } from '@/shared/ui/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'PDF Compressor',
   description:
     'Shrink PDFs by recompressing images and restructuring the file, with a per-stage report',
-  icon: Minimize2,
+  icon: IconMinimize2,
   category: 'pdf',
   version: '2.0.0',
   isNew: true,

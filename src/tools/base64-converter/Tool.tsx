@@ -1,5 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRightLeft, Check, Copy, Download, FileUp, X } from 'lucide-react';
+import {
+  IconArrowRightLeft,
+  IconCheck,
+  IconCopy,
+  IconDownload,
+  IconFileUp,
+  IconX,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -138,7 +145,9 @@ const Base64Converter: React.FC = () => {
       variant="ghost"
       size="sm"
       aria-label={`Copy ${label}`}
-      leftIcon={copiedKey === key ? <Check size={16} /> : <Copy size={16} />}
+      leftIcon={
+        copiedKey === key ? <IconCheck size="sm" /> : <IconCopy size="sm" />
+      }
       onClick={() => void copy(text, key)}
     >
       {copiedKey === key ? 'Copied' : 'Copy'}
@@ -187,7 +196,7 @@ const Base64Converter: React.FC = () => {
                   <Button
                     variant="soft"
                     size="sm"
-                    leftIcon={<FileUp size={16} />}
+                    leftIcon={<IconFileUp size="sm" />}
                     onClick={open}
                   >
                     Encode a file
@@ -215,7 +224,7 @@ const Base64Converter: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                leftIcon={<X size={14} />}
+                leftIcon={<IconX size="sm" />}
                 onClick={() => setFile(null)}
               >
                 Remove file
@@ -245,7 +254,7 @@ const Base64Converter: React.FC = () => {
             <IconButton
               variant="solid"
               label="Swap input and output"
-              icon={<ArrowRightLeft size={18} />}
+              icon={<IconArrowRightLeft size="md" />}
               onClick={swap}
               disabled={!output.text}
             />
@@ -267,7 +276,7 @@ const Base64Converter: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        leftIcon={<Download size={16} />}
+                        leftIcon={<IconDownload size="sm" />}
                         onClick={download}
                       >
                         {mode === 'encode' ? 'Download .txt' : 'Download file'}

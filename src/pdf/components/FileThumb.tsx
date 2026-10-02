@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { IconAlertTriangle } from '@/shared/ui/icons';
 import { Spinner } from '@/shared/ui';
 import { usePdfDocument } from '@/pdf/render';
 import { PageThumb } from './PageThumb';
@@ -126,7 +126,7 @@ export const FileThumb: React.FC<FileThumbProps> = ({
             title={error.message}
             className="text-danger"
           >
-            <AlertTriangle size={16} aria-hidden />
+            <IconAlertTriangle size="sm" />
           </span>
         ) : (
           // Decorative: a long list must not create a live region per row.

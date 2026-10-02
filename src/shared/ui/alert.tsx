@@ -2,10 +2,10 @@ import React from 'react';
 import { cn } from '@/shared/lib/cn';
 
 const statusStyles = {
-  danger: 'border-danger/40 bg-danger-dim/60 text-danger',
-  warning: 'border-warning/40 bg-warning/10 text-warning',
-  success: 'border-success/40 bg-success/10 text-success',
-  info: 'border-accent/40 bg-accent/10 text-accent',
+  danger: 'border-danger/40 bg-danger-soft text-danger',
+  warning: 'border-warning/40 bg-warning-soft text-warning',
+  success: 'border-accent-fg/40 bg-accent-soft text-accent-fg',
+  info: 'border-info/40 bg-info-soft text-info',
 } as const;
 
 interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -18,7 +18,7 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       ref={ref}
       role="alert"
       className={cn(
-        'flex gap-3 rounded-md border p-4',
+        'flex gap-3 rounded-lg border p-4',
         statusStyles[status],
         className,
       )}

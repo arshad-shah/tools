@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
+import { StatusDot } from './status-dot';
 
 export const List: React.FC<React.HTMLAttributes<HTMLUListElement>> = ({
   className,
@@ -18,9 +19,7 @@ export const ListItem: React.FC<React.LiHTMLAttributes<HTMLLIElement>> = ({
   ...props
 }) => (
   <li className={cn('flex items-center gap-2', className)} {...props}>
-    <span aria-hidden className="text-accent">
-      ›
-    </span>
+    <StatusDot tone="accent" decorative />
     <span className="min-w-0">{children}</span>
   </li>
 );

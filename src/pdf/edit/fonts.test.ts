@@ -9,7 +9,12 @@ describe('font checks', () => {
       await PDFDocument.create()
     ).embedFont(StandardFonts.Helvetica);
     expect(unsupportedChars(font, 'Página 1')).toEqual([]);
-    expect(unsupportedChars(font, 'Página № №1 🙂')).toEqual(['№', '🙂']);
+    // Built from code points: rule (a) bans pictographs as literals.
+    const smile = String.fromCodePoint(0x1f642);
+    expect(unsupportedChars(font, `Página № №1 ${smile}`)).toEqual([
+      '№',
+      smile,
+    ]);
     expect(() => assertDrawable(font, 'Seite №', 'The watermark text')).toThrow(
       "The watermark text contains characters the font can't draw: №",
     );

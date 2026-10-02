@@ -5,10 +5,18 @@ import tailwindcss from '@tailwindcss/vite';
 
 import { cloudflare } from '@cloudflare/vite-plugin';
 import { buildDefines } from './build-info';
+import { glyphReport } from './scripts/vite-glyph-report';
+import { escapeVendorGlyphs } from './scripts/vite-vendor-glyphs';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), cloudflare()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    cloudflare(),
+    escapeVendorGlyphs(),
+    glyphReport(),
+  ],
   define: buildDefines(),
   // Module workers everywhere: qpdf-wasm's loader uses dynamic import(),
   // which the default IIFE worker format cannot code-split.

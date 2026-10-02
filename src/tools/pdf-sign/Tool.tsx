@@ -1,5 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Signature } from 'lucide-react';
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconSignature,
+} from '@/shared/ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -242,7 +246,7 @@ const PdfSignTool: React.FC<ToolProps> = () => {
                   <Inline gap="2" align="center">
                     <IconButton
                       label="Previous page"
-                      icon={<ChevronLeft size={16} />}
+                      icon={<IconChevronLeft size="sm" />}
                       size="sm"
                       disabled={pageIndex === 0}
                       onClick={() => changePage(pageIndex - 1)}
@@ -252,7 +256,7 @@ const PdfSignTool: React.FC<ToolProps> = () => {
                     </Text>
                     <IconButton
                       label="Next page"
-                      icon={<ChevronRight size={16} />}
+                      icon={<IconChevronRight size="sm" />}
                       size="sm"
                       disabled={pageIndex >= doc.pageCount - 1}
                       onClick={() => changePage(pageIndex + 1)}
@@ -282,7 +286,7 @@ const PdfSignTool: React.FC<ToolProps> = () => {
               </div>
               <Button
                 variant="solid"
-                leftIcon={<Signature size={16} />}
+                leftIcon={<IconSignature size="sm" />}
                 disabled={job.status === 'running' || !source || !rect}
                 onClick={() =>
                   source && rect && job.run(file, { pageIndex, rect }, source)
