@@ -1,5 +1,8 @@
 import type { NewOperation, Operation, PageId } from '@/pdf/doc/types';
 
+/** Field id prefix of free Fill & Sign boxes (fill-sign/fields.ts FREE). */
+const FREE_FIELD = 'free:';
+
 /** Paste offset, points (right and down on an upright page). */
 export const PASTE_OFFSET = 10;
 
@@ -52,14 +55,21 @@ export function createObjectClipboard(newId: () => string): ObjectClipboard {
     },
     paste(pageId) {
       pastes += 1;
-      return held.map((h) => ({
-        type: h.type,
-        params: {
+      return held.map((h) => {
+        const params: Record<string, unknown> = {
           ...offsetParams(h.params, PASTE_OFFSET * pastes),
           id: newId(),
           pageId,
-        },
-      }));
+        };
+        // A free Fill & Sign box is its own field: a copy that shared the
+        // id would supersede the original.
+        if (
+          typeof params.fieldId === 'string' &&
+          params.fieldId.startsWith(FREE_FIELD)
+        )
+          params.fieldId = `${FREE_FIELD}${newId()}`;
+        return { type: h.type, params };
+      });
     },
     get size() {
       return held.length;

@@ -30,6 +30,7 @@ import { PageRailPanel } from './PageRailPanel';
 import { DocumentCanvas } from './DocumentCanvas';
 import type { WorkspaceSession } from './session';
 import { useWorkspaceSettings } from './settings';
+import { useHeldValue } from './use-held-value';
 import { WorkspaceContext, type WorkspaceActions } from './workspace-context';
 import {
   workspaceCommands,
@@ -308,11 +309,15 @@ export function WorkspaceShell({
     shortcut: m.shortcut,
   }));
 
+  // The inspector opens for a selection once a press (a drag on an
+  // object) is released, so the page does not shift under the pointer.
+  const hasSelection = useHeldValue(
+    selection.pages.size > 0 || selection.objects.size > 0,
+  );
+
   return (
     <ModeHost manifest={manifest} ctx={ctx} onModeChange={changeMode}>
       {({ module, request, toolbar }) => {
-        const hasSelection =
-          selection.pages.size > 0 || selection.objects.size > 0;
         const Inspect = module?.Inspector;
         const showInspector =
           !!Inspect && (hasSelection || !!module?.inspectorPinned);

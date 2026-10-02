@@ -37,8 +37,14 @@ export function selectedObjects(
   );
 }
 
-/** Page-space clockwise CSS rotation (the frame) from an op's counter-clockwise degrees. */
-export const frameRotation = (rotate = 0) => -rotate;
+/**
+ * Page-space clockwise CSS rotation (the frame) from an op's
+ * counter-clockwise degrees, in -180..180.
+ */
+export const frameRotation = (rotate = 0) => {
+  const cw = ((-rotate % 360) + 360) % 360 || 0;
+  return cw > 180 ? cw - 360 : cw;
+};
 /** An op's counter-clockwise degrees (0..359) from the frame's clockwise ones. */
 export const opRotation = (frame: number) => ((-frame % 360) + 360) % 360;
 

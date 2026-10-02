@@ -8,7 +8,7 @@ import {
 } from '@/shared/ui';
 import type { Box } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
-import { advance, commitValue, resizeField } from './actions';
+import { advance, resizeField, writeValue } from './actions';
 import { FieldEditor } from './FieldEditor';
 import { FieldValue } from './FieldValue';
 import { fieldName, type ViewField } from './fields';
@@ -32,6 +32,8 @@ export interface FieldItemProps {
   transform: OverlayTransform;
   quarter: boolean;
   snap(box: Box): Box;
+  /** A free box being dragged or resized on the object layer. */
+  livePreview?: Box;
   onActivate(): void;
   onKeyDown(e: React.KeyboardEvent): void;
   onContextMenu?(e: React.MouseEvent): void;
@@ -39,9 +41,10 @@ export interface FieldItemProps {
 
 /**
  * One field on the page: its value as it will export, then the control for
- * its state: a FieldBox (with the inline editor while editing), resize
- * handles while resizing, or, for a selected free text box, a move and
- * resize frame (double-click or Edit text to type, Delete to remove).
+ * its state: a FieldBox (with the inline editor while editing) or resize
+ * handles while resizing. Free boxes are placed objects: the page's object
+ * layer moves, resizes and deletes them; here they only show their value
+ * and, while editing, the editor.
  */
 export function FieldItem({
   ctx,
@@ -50,6 +53,7 @@ export function FieldItem({
   transform,
   quarter,
   snap,
+  livePreview,
   onActivate,
   onKeyDown,
   onContextMenu,
@@ -63,14 +67,10 @@ export function FieldItem({
     s.styling?.key === x.key ? s.styling.style : null,
   );
   const [preview, setPreview] = useState<Box | null>(null);
-  const selected =
-    x.origin === 'free' &&
-    !!x.fillOpId &&
-    ctx.selection.objects.has(x.fillOpId);
   const name = fieldName(x);
   const value = (
     <FieldValue
-      field={{ ...x, rect: preview ?? x.rect }}
+      field={{ ...x, rect: livePreview ?? preview ?? x.rect }}
       value={typing ?? x.value}
       settings={styling ?? undefined}
       transform={transform}
@@ -78,48 +78,28 @@ export function FieldItem({
     />
   );
 
-  if (resizing || (selected && !editing))
+  if (resizing)
     return (
       <>
         {value}
-        <FocusOnMount
-          active
-          onLeave={
-            resizing ? () => fillSign.set({ resizing: null }) : undefined
-          }
-        >
-          <div
-            onDoubleClick={() => selected && fillSign.set({ editing: x.key })}
-            onKeyDown={(e) => {
-              if (e.altKey && e.key.toLowerCase() === 't') {
-                e.preventDefault();
-                fillSign.set({ barFocus: fillSign.get().barFocus + 1 });
-              }
+        <FocusOnMount active onLeave={() => fillSign.set({ resizing: null })}>
+          <SelectionFrame
+            transform={transform}
+            box={preview ?? x.rect}
+            resizable
+            snap={snap}
+            label={`Resize ${name}`}
+            onChange={setPreview}
+            onCommit={(box) => {
+              setPreview(null);
+              resizeField(ctx, x, box);
             }}
-          >
-            <SelectionFrame
-              transform={transform}
-              box={preview ?? x.rect}
-              resizable
-              snap={resizing ? snap : undefined}
-              label={resizing ? `Resize ${name}` : name}
-              onChange={setPreview}
-              onCommit={(box) => {
-                setPreview(null);
-                if (resizing) resizeField(ctx, x, box);
-                else if (x.fillOpId) {
-                  const ops = ctx.doc.dispatch({
-                    type: 'object.move',
-                    params: { targetId: x.fillOpId, rect: box },
-                  });
-                  if (ops.length) ctx.selection.selectObjects([x.fillOpId]);
-                }
-              }}
-            />
-          </div>
+          />
         </FocusOnMount>
       </>
     );
+
+  if (x.origin === 'free' && !editing) return value;
 
   return (
     <>
@@ -144,12 +124,19 @@ export function FieldItem({
             }
             onCommit={(v) => {
               fillSign.set({ typing: null });
-              if (commitValue(ctx, x, v)) advance(ctx, all, x.key);
+              const done = writeValue(ctx, x, v);
+              if (!done.ok) return;
+              if (x.origin === 'free') {
+                // Back to the placed box, selected for moving or styling.
+                fillSign.set({ editing: null });
+                const id = done.opId ?? x.fillOpId;
+                if (id && v !== '') ctx.selection.selectObjects([id]);
+              } else advance(ctx, all, x.key);
             }}
             onCancel={() => fillSign.set({ editing: null, typing: null })}
             onTab={(v, dir) => {
               fillSign.set({ typing: null });
-              if (commitValue(ctx, x, v)) advance(ctx, all, x.key, dir);
+              if (writeValue(ctx, x, v).ok) advance(ctx, all, x.key, dir);
             }}
           />
         ) : undefined}

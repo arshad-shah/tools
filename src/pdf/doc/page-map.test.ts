@@ -362,6 +362,87 @@ describe('object ops', () => {
     expect(def.noOutput).toBe(true);
   });
 
+  it('object.move fits geometry without a rect (ink strokes) to the box', () => {
+    const v0 = base();
+    const ink = {
+      opId: 'ink1',
+      type: 'test.ink',
+      pageId: 'c:1',
+      params: {
+        strokes: [
+          [
+            [0, 0],
+            [10, 10],
+          ],
+        ],
+      },
+    };
+    const view = { ...v0, overlays: new Map([['c:1', [ink]]]) };
+    const v = foldView(view, [
+      {
+        id: 'm',
+        type: 'object.move',
+        v: 1,
+        params: {
+          targetId: 'ink1',
+          rect: { x: 50, y: 50, width: 20, height: 20 },
+        },
+        at: 0,
+        label: '',
+      },
+    ]);
+    expect(v.overlays.get('c:1')![0].params).toEqual({
+      strokes: [
+        [
+          [50, 50],
+          [70, 70],
+        ],
+      ],
+    });
+  });
+
+  it('object.order restacks the target among its page objects', () => {
+    const v0 = base();
+    const mk = (id: string) => ({
+      opId: id,
+      type: 'test.object',
+      pageId: 'c:1',
+      params: { rect: { x: 0, y: 0, width: 1, height: 1 } },
+    });
+    const view = {
+      ...v0,
+      overlays: new Map([['c:1', ['a', 'b', 'c'].map(mk)]]),
+    };
+    const order = (targetId: string, to: string) =>
+      foldView(view, [
+        {
+          id: 'o',
+          type: 'object.order',
+          v: 1,
+          params: { targetId, to },
+          at: 0,
+          label: '',
+        },
+      ])
+        .overlays.get('c:1')!
+        .map((o) => o.opId);
+    expect(order('a', 'front')).toEqual(['b', 'c', 'a']);
+    expect(order('c', 'back')).toEqual(['c', 'a', 'b']);
+    expect(order('a', 'forward')).toEqual(['b', 'a', 'c']);
+    expect(order('c', 'backward')).toEqual(['a', 'c', 'b']);
+    expect(order('c', 'front')).toEqual(['a', 'b', 'c']);
+    const def = getOperation('object.order');
+    expect(def.noOutput).toBe(true);
+    expect(() => def.validate({ targetId: 'a', to: 'up' })).toThrow();
+    expect(
+      def.label(def.validate({ targetId: 'a', to: 'front' }), {
+        pageNumber: () => 2,
+        pageCount: 3,
+        pageOf: () => 'c:1',
+      }),
+    ).toBe('Bring object to front on page 2');
+  });
+
   it('object.remove hides the target', () => {
     const v = foldView(withObject(), [
       {

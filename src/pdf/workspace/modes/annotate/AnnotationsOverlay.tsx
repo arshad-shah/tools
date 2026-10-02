@@ -1,18 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   AlertDescription,
   Button,
   HitArea,
   OverlayLayer,
-  SelectionFrame,
   ShapeLayer,
-  type Shape,
+  type LayerObject,
+  type ObjectChange,
 } from '@/shared/ui';
 import { PdfTextLayerHost } from '@/shared/ui/adapters/PdfTextLayerHost';
 import { toScreen } from '@/pdf/doc/geometry';
-import type { Box } from '@/pdf/doc/types';
+import { geometryBounds } from '@/pdf/doc/object-geometry';
+import type { Box, OverlayItem } from '@/pdf/doc/types';
 import type { PageOverlayProps } from '../types';
+import { ModeObjectLayer } from '../../objects/ModeObjectLayer';
+import { focusProperties, previewItem } from '../../objects/object-ops';
 import { selectionQuads } from '../../selection-quads';
 import { ensureOverlayFonts } from '../../overlay-fonts';
 import { useGoToMode } from '../../workspace-context';
@@ -32,7 +35,28 @@ import {
 } from './tools';
 import { getAnnotateUi, setAnnotateUi, useAnnotateUi } from './ui-store';
 
-const MOVABLE = new Set(['annot.freetext', 'annot.shape', 'annot.stamp']);
+/** Annotations whose text the editor changes (Enter, double-click). */
+const TEXTUAL = new Set(['annot.freetext', 'annot.note']);
+
+/**
+ * A pending annotation as a placed object. Frames use the geometry's own
+ * bounds (what object.move maps); notes are a fixed-size icon.
+ */
+function asObject(o: OverlayItem): LayerObject | null {
+  const note = o.type === 'annot.note';
+  const box = note ? boundsOf(o) : geometryBounds(o.params);
+  if (!box) return null;
+  const p = o.params as { author: string };
+  const body = textOf(o);
+  return {
+    id: o.opId,
+    box,
+    label: `${kindName(o)} by ${p.author}${body ? `: ${body}` : ''}`,
+    resizable: !note,
+    keepAspect: o.type === 'annot.stamp',
+    editable: TEXTUAL.has(o.type),
+  };
+}
 
 /**
  * Annotate mode on one page: the text layer for markup tools, pending
@@ -48,7 +72,13 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
   const slot = useRef<HTMLDivElement>(null);
   const existing = useExistingAnnotations(doc, page) ?? [];
   const text = usePageText(doc, page);
-  const pending = pendingAnnots(doc, page.id);
+  const [preview, setPreview] = useState<ReadonlyMap<
+    string,
+    ObjectChange
+  > | null>(null);
+  const placed = pendingAnnots(doc, page.id);
+  // Annotations follow a drag live; the op lands on release.
+  const pending = placed.map((o) => previewItem(o, preview?.get(o.opId)));
   const [a, b, c, d, e, f] = viewport.transform;
   const t = { a, b, c, d, e, f };
   const scale = Math.hypot(a, b);
@@ -86,20 +116,6 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
     });
   };
 
-  const selected = pending.find((o) => selection.objects.has(o.opId));
-  const outline: Shape[] =
-    selected && !MOVABLE.has(selected.type) && boundsOf(selected)
-      ? [
-          {
-            kind: 'rect',
-            box: boundsOf(selected)!,
-            stroke: { token: 'accent' },
-            width: 1,
-            dash: 'dashed',
-          },
-        ]
-      : [];
-
   const editor = ui.editor?.pageId === page.id ? ui.editor : null;
   const anchorOf = (box: Box) => () => {
     const r = slot.current!.getBoundingClientRect();
@@ -127,7 +143,7 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
         width={width}
         height={height}
         transform={t}
-        shapes={[...pending.flatMap((o) => shapesOf(o, scale)), ...outline]}
+        shapes={pending.flatMap((o) => shapesOf(o, scale))}
       />
       {pending.map((o) =>
         o.type === 'annot.freetext' ? (
@@ -161,7 +177,48 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
           />
         </div>
       ) : null}
-      {picking ? (
+      {tool === 'select' ? (
+        <ModeObjectLayer
+          doc={doc}
+          selection={selection}
+          pageNumber={pageNumber}
+          viewport={viewport}
+          width={width}
+          height={height}
+          marquee
+          onPreview={setPreview}
+          objects={placed.map(asObject).filter((o): o is LayerObject => !!o)}
+          onDelete={(ids) => {
+            doc.dispatch(
+              ids.map((id) => ({
+                type: 'annot.delete',
+                params: { pageId: page.id, target: { kind: 'pending', id } },
+              })),
+              ids.length > 1 ? `Delete ${ids.length} annotations` : undefined,
+            );
+            selection.selectObjects([]);
+          }}
+          onEdit={(id) => {
+            const o = placed.find((x) => x.opId === id);
+            const box = o && boundsOf(o);
+            if (!o || !box) return;
+            setAnnotateUi({
+              editor: {
+                kind: 'edit',
+                pageId: page.id,
+                at: [box.x, box.y],
+                target: { kind: 'pending', id },
+                text: textOf(o),
+              },
+            });
+          }}
+          onProperties={(id) => {
+            selection.selectObjects([id]);
+            focusProperties('#annotate-opacity');
+          }}
+        />
+      ) : null}
+      {tool === 'eraser' ? (
         <OverlayLayer
           width={width}
           height={height}
@@ -170,44 +227,24 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
           {pending.map((o) => {
             const box = boundsOf(o);
             if (!box) return null;
-            const p = o.params as { author: string };
-            const body = textOf(o);
             return (
               <HitArea
                 key={o.opId}
                 transform={t}
                 box={box}
-                label={`${kindName(o)} by ${p.author}${body ? `: ${body}` : ''}`}
-                pressed={selection.objects.has(o.opId)}
-                onActivate={() => {
-                  if (tool === 'eraser')
-                    doc.dispatch({
-                      type: 'annot.delete',
-                      params: {
-                        pageId: page.id,
-                        target: { kind: 'pending', id: o.opId },
-                      },
-                    });
-                  else selection.selectObjects([o.opId]);
-                }}
+                label={`Erase ${kindName(o)}`}
+                onActivate={() =>
+                  doc.dispatch({
+                    type: 'annot.delete',
+                    params: {
+                      pageId: page.id,
+                      target: { kind: 'pending', id: o.opId },
+                    },
+                  })
+                }
               />
             );
           })}
-          {selected && MOVABLE.has(selected.type) && tool === 'select' ? (
-            <SelectionFrame
-              transform={t}
-              box={(selected.params as { rect: Box }).rect}
-              resizable
-              label={`${kindName(selected)}: ${textOf(selected) || 'selected'}`}
-              onChange={() => {}}
-              onCommit={(rect) =>
-                doc.dispatch({
-                  type: 'object.move',
-                  params: { targetId: selected.opId, rect },
-                })
-              }
-            />
-          ) : null}
         </OverlayLayer>
       ) : null}
       {DRAW_TOOLS.has(tool) ? (

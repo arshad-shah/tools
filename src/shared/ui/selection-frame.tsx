@@ -246,7 +246,8 @@ export function SelectionFrame({
                 })
               }
               className={cn(
-                'absolute size-3 rounded-sm border-2 border-accent-indicator bg-surface',
+                // The pseudo-element widens the hit target (44px on touch).
+                "absolute size-3 rounded-sm border-2 border-accent-indicator bg-surface after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:after:-inset-[17px]",
                 h.className,
               )}
             />
@@ -265,7 +266,7 @@ export function SelectionFrame({
               cy: f.top + f.height / 2,
             });
           }}
-          className="absolute -top-7 left-1/2 -ml-1.5 size-3 cursor-grab rounded-full border-2 border-accent-indicator bg-surface"
+          className="absolute -top-7 left-1/2 -ml-1.5 size-3 cursor-grab rounded-full border-2 border-accent-indicator bg-surface after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:-top-12 pointer-coarse:after:-inset-[17px]"
         />
       ) : null}
     </Positioned>

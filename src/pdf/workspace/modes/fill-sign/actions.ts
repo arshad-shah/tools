@@ -103,6 +103,18 @@ export function commitValue(
   f: ViewField,
   value: string,
 ): boolean {
+  return writeValue(ctx, f, value).ok;
+}
+
+/**
+ * Writes a value: whether it applied and the op that now holds the field
+ * (null when nothing new was written).
+ */
+export function writeValue(
+  ctx: ModeProps,
+  f: ViewField,
+  value: string,
+): { ok: boolean; opId: string | null } {
   // Text settings still settling go in with the value.
   const pending = fillSign.get().styling;
   if (pending?.key === f.key) {
@@ -110,12 +122,13 @@ export function commitValue(
     f = { ...f, style: pending.style };
     if (value === f.value) {
       const kept = restyle(ctx, f, pending.style);
-      return kept !== null;
+      return { ok: kept !== null, opId: kept };
     }
   }
   const op = valueOp(f, value);
-  if (!op) return true;
-  return ctx.doc.dispatch(op).length > 0;
+  if (!op) return { ok: true, opId: null };
+  const done = ctx.doc.dispatch(op);
+  return { ok: done.length > 0, opId: done[0]?.id ?? null };
 }
 
 /** Tick fields and radio options toggle on activation. */
