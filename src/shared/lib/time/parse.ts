@@ -5,6 +5,7 @@ import {
   localZone,
   wallClockAt,
   wallClockToEpoch,
+  zoneOffsetMinutes,
   type WallClock,
 } from './zones';
 
@@ -205,6 +206,10 @@ function parseRelative(t: string, now: number, zone: string): number | null {
       exactMs +=
         n * (unit === 'h' ? 3_600_000 : unit === 'min' ? 60_000 : 1000);
   }
+  // "now" with only exact units is plain arithmetic: no wall-clock round
+  // trip, which would pick the wrong one of a repeated hour.
+  if (base === 'now' && calendarMonths === 0 && calendarDays === 0)
+    return now + exactMs;
   // Calendar units move the wall clock (DST-safe); h, min and s are exact.
   w = addMonths(w, calendarMonths);
   if (calendarDays) {
@@ -216,7 +221,24 @@ function parseRelative(t: string, now: number, zone: string): number | null {
       d: day.getUTCDate(),
     };
   }
-  return wallClockToEpoch(w, zone).epochMs + fixedMs + exactMs;
+  return resolveKeepingOffset(w, zone, now) + fixedMs + exactMs;
+}
+
+/**
+ * The instant for a wall clock in `zone`, keeping the offset in force at
+ * `from` when that offset still gives this wall clock (so 01:30 EST plus
+ * 0 days stays EST in a repeated hour); otherwise the zone's own answer.
+ */
+function resolveKeepingOffset(
+  w: WallClock,
+  zone: string,
+  from: number,
+): number {
+  const asUtc = wallClockToEpoch(w, 'UTC').epochMs;
+  const offset = zoneOffsetMinutes(zone, from);
+  const candidate = asUtc - offset * 60_000;
+  if (zoneOffsetMinutes(zone, candidate) === offset) return candidate;
+  return wallClockToEpoch(w, zone).epochMs;
 }
 
 /**
