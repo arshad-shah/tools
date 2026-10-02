@@ -6,21 +6,16 @@ import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
   Alert,
   AlertDescription,
-  Box,
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
   Center,
   Code,
   Inline,
+  PaneTabs,
   SegmentedControl,
   ShareButton,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+  usePaneTab,
 } from '@/shared/ui';
 import { QrCode } from '@/shared/ui/adapters/QrCode';
 import { BatchPanel } from './components/BatchPanel';
@@ -68,7 +63,7 @@ export default function QrCodeGenerator() {
   const [type, setType] = useState<PayloadType>('url');
   const [fields, setFields] = useState<PayloadFields>(DEFAULT_FIELDS);
   const [logo, setLogo] = useState('');
-  const [tab, setTab] = useState('content');
+  const tab = usePaneTab('qr-code-generator', 'content');
   const { copy } = useClipboard();
 
   const value = useMemo(() => buildPayload(type, fields[type]), [type, fields]);
@@ -116,7 +111,7 @@ export default function QrCodeGenerator() {
         const c = JSON.parse(handoff.text) as { fg?: unknown; bg?: unknown };
         if (typeof c.fg === 'string' && HEX.test(c.fg)) update({ fg: c.fg });
         if (typeof c.bg === 'string' && HEX.test(c.bg)) update({ bg: c.bg });
-        setTab('style');
+        tab.show('style');
       } catch {
         // Not colours after all: keep the current style.
       }
@@ -160,125 +155,128 @@ export default function QrCodeGenerator() {
 
   const empty = value.trim() === '' || !!problem;
 
-  return (
-    <Box className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <Card className="min-w-0">
+  const previewPane = (
+    <Stack gap="4" className="min-w-0">
+      <Card>
         <CardBody>
-          <Tabs value={tab} onValueChange={setTab} variant="soft">
-            <TabsList aria-label="QR sections">
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="style">Style</TabsTrigger>
-              <TabsTrigger value="export">Export</TabsTrigger>
-              <TabsTrigger value="batch">Batch</TabsTrigger>
-            </TabsList>
-            <TabsContent value="content">
-              <Box className="pt-4">
-                <ContentForm
-                  type={type}
-                  onTypeChange={setType}
-                  fields={fields}
-                  onFieldChange={setField}
-                />
-              </Box>
-            </TabsContent>
-            <TabsContent value="style">
-              <Box className="pt-4">
-                <StylePanel
-                  settings={settings}
-                  update={update}
-                  logo={logo}
-                  onLogoChange={setLogo}
-                />
-              </Box>
-            </TabsContent>
-            <TabsContent value="export">
-              <Box className="pt-4">
-                <ExportPanel
-                  value={value}
-                  qrStyle={style}
-                  settings={settings}
-                  update={update}
-                  baseName={`qr-${type}`}
-                  disabled={empty}
-                />
-              </Box>
-            </TabsContent>
-            <TabsContent value="batch">
-              <Box className="pt-4">
-                <BatchPanel qrStyle={style} />
-              </Box>
-            </TabsContent>
-          </Tabs>
+          <Stack gap="3">
+            <Inline justify="end">
+              <SegmentedControl
+                label="Preview render"
+                size="sm"
+                value={settings.renderAs}
+                onChange={(renderAs) => update({ renderAs })}
+                options={[
+                  { value: 'svg', label: 'SVG' },
+                  { value: 'canvas', label: 'Canvas' },
+                ]}
+              />
+            </Inline>
+            {problem && (
+              <Alert status="danger" size="sm">
+                <AlertDescription>{problem}</AlertDescription>
+              </Alert>
+            )}
+            <Center>
+              <QrCode
+                label="QR code preview"
+                format={settings.renderAs}
+                value={empty ? ' ' : value}
+                size={settings.size}
+                bg={settings.bg}
+                fg={settings.fg}
+                level={settings.ecc}
+                includeMargin={settings.margin}
+                imageSettings={
+                  logo
+                    ? {
+                        src: logo,
+                        width: Math.round(
+                          settings.size * Math.sqrt(settings.logoFraction),
+                        ),
+                        height: Math.round(
+                          settings.size * Math.sqrt(settings.logoFraction),
+                        ),
+                        excavate: settings.excavate,
+                      }
+                    : undefined
+                }
+              />
+            </Center>
+            <Code
+              block
+              className="max-h-32 overflow-auto break-all whitespace-pre-wrap"
+              aria-label="Encoded text"
+            >
+              {value || ' '}
+            </Code>
+          </Stack>
         </CardBody>
       </Card>
+      <ScanCheck value={empty ? '' : value} qrStyle={style} />
+    </Stack>
+  );
 
-      <Stack gap="4" className="min-w-0">
-        <Card>
-          <CardHeader>
-            <Inline gap="2" align="center" justify="between" wrap>
-              <CardTitle as="h2">Preview</CardTitle>
-              <Inline gap="2" align="center">
-                <SegmentedControl
-                  label="Preview render"
-                  size="sm"
-                  value={settings.renderAs}
-                  onChange={(renderAs) => update({ renderAs })}
-                  options={[
-                    { value: 'svg', label: 'SVG' },
-                    { value: 'canvas', label: 'Canvas' },
-                  ]}
-                />
-                {!SECRET_TYPES.has(type) && (
-                  <ShareButton share={share} label="Share" size="sm" />
-                )}
-              </Inline>
-            </Inline>
-          </CardHeader>
-          <CardBody>
-            <Stack gap="3">
-              {problem && (
-                <Alert status="danger">
-                  <AlertDescription>{problem}</AlertDescription>
-                </Alert>
-              )}
-              <Center>
-                <QrCode
-                  label="QR code preview"
-                  format={settings.renderAs}
-                  value={empty ? ' ' : value}
-                  size={settings.size}
-                  bg={settings.bg}
-                  fg={settings.fg}
-                  level={settings.ecc}
-                  includeMargin={settings.margin}
-                  imageSettings={
-                    logo
-                      ? {
-                          src: logo,
-                          width: Math.round(
-                            settings.size * Math.sqrt(settings.logoFraction),
-                          ),
-                          height: Math.round(
-                            settings.size * Math.sqrt(settings.logoFraction),
-                          ),
-                          excavate: settings.excavate,
-                        }
-                      : undefined
-                  }
-                />
-              </Center>
-              <Code
-                block
-                className="max-h-32 overflow-auto break-all whitespace-pre-wrap"
-                aria-label="Encoded text"
-              >
-                {value || ' '}
-              </Code>
-            </Stack>
-          </CardBody>
-        </Card>
-        <ScanCheck value={empty ? '' : value} qrStyle={style} />
-      </Stack>
-    </Box>
+  // One pane at a time (ruling R41); Preview gets a dot when the code
+  // changes while another pane is shown.
+  return (
+    <PaneTabs
+      id="qr-code-generator"
+      label="QR panes"
+      value={tab.value}
+      onValueChange={tab.show}
+      actions={SECRET_TYPES.has(type) ? null : <ShareButton share={share} />}
+      panes={[
+        {
+          id: 'content',
+          label: 'Content',
+          content: (
+            <ContentForm
+              type={type}
+              onTypeChange={setType}
+              fields={fields}
+              onFieldChange={setField}
+            />
+          ),
+        },
+        {
+          id: 'style',
+          label: 'Style',
+          content: (
+            <StylePanel
+              settings={settings}
+              update={update}
+              logo={logo}
+              onLogoChange={setLogo}
+            />
+          ),
+        },
+        {
+          id: 'preview',
+          label: 'Preview',
+          changeKey: `${value}|${JSON.stringify(style)}`,
+          content: previewPane,
+        },
+        {
+          id: 'export',
+          label: 'Export',
+          content: (
+            <ExportPanel
+              value={value}
+              qrStyle={style}
+              settings={settings}
+              update={update}
+              baseName={`qr-${type}`}
+              disabled={empty}
+            />
+          ),
+        },
+        {
+          id: 'batch',
+          label: 'Batch',
+          content: <BatchPanel qrStyle={style} />,
+        },
+      ]}
+    />
   );
 }

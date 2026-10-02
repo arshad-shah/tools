@@ -5,6 +5,7 @@ import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import {
   Button,
   DataGrid,
@@ -91,6 +92,14 @@ export function OutputPanel({ tables }: OutputPanelProps) {
       sourceTool: TOOL_ID,
       filename: `${name}.${fmt}`,
     });
+  const openCsv = () => open('csv-viewer', 'text/csv', 'csv');
+  const openJson = () =>
+    open('json-and-xml-viewer', 'application/json', 'json');
+
+  useSendCommands(TOOL_ID, [
+    { target: 'csv-viewer', run: openCsv },
+    { target: 'json-and-xml-viewer', run: openJson },
+  ]);
 
   return (
     <Stack gap="3">
@@ -148,7 +157,7 @@ export function OutputPanel({ tables }: OutputPanelProps) {
           size="sm"
           variant="secondary"
           leftIcon={<IconSendTo size="sm" />}
-          onClick={() => open('csv-viewer', 'text/csv', 'csv')}
+          onClick={openCsv}
         >
           Open in CSV Viewer
         </Button>
@@ -156,9 +165,7 @@ export function OutputPanel({ tables }: OutputPanelProps) {
           size="sm"
           variant="secondary"
           leftIcon={<IconSendTo size="sm" />}
-          onClick={() =>
-            open('json-and-xml-viewer', 'application/json', 'json')
-          }
+          onClick={openJson}
         >
           Open in JSON Viewer
         </Button>

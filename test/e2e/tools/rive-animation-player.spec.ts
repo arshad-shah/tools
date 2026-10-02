@@ -70,3 +70,27 @@ test('rejects a non-Rive file with a toast', async ({ page }) => {
       .getByText('fake.riv is not a Rive (.riv) file'),
   ).toBeVisible();
 });
+
+test('the side tabs fit their card at 1400 px (they scroll, not overflow)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto(pathOf('rive-animation-player'));
+  const list = page.getByRole('tablist', { name: 'Settings' });
+  await expect(list).toBeVisible();
+  const { listRight, cardRight, listWidth, cardWidth } = await list.evaluate(
+    (el) => {
+      const card = el.closest('[data-side-panel]') as HTMLElement;
+      const l = el.getBoundingClientRect();
+      const c = card.getBoundingClientRect();
+      return {
+        listRight: l.right,
+        cardRight: c.right,
+        listWidth: l.width,
+        cardWidth: c.width,
+      };
+    },
+  );
+  expect(listRight).toBeLessThanOrEqual(cardRight);
+  expect(listWidth).toBeLessThanOrEqual(cardWidth);
+});

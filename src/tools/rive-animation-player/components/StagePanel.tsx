@@ -1,12 +1,11 @@
-import { useId } from 'react';
 import {
   Button,
   ColorField,
   Inline,
-  Label,
   SegmentedControl,
   Stack,
-  Switch,
+  SwitchField,
+  Text,
 } from '@/shared/ui';
 
 export type DeviceChoice = 'none' | 'phone' | 'tablet' | 'desktop';
@@ -32,7 +31,6 @@ export function StagePanel({
   onChange: (patch: { background?: string; checkerboard?: boolean }) => void;
   onDeviceChange: (device: DeviceChoice) => void;
 }) {
-  const checkerId = useId();
   return (
     <Stack gap="4">
       <Stack gap="2">
@@ -47,7 +45,9 @@ export function StagePanel({
           {['transparent', 'white', 'black'].map((c) => (
             <Button
               key={c}
-              variant={background === c ? 'primary' : 'secondary'}
+              // A selection, never primary: pressed state on a quiet button.
+              variant={background === c ? 'secondary' : 'ghost'}
+              aria-pressed={background === c}
               size="sm"
               disabled={checkerboard}
               onClick={() => onChange({ background: c })}
@@ -57,16 +57,15 @@ export function StagePanel({
           ))}
         </Inline>
       </Stack>
-      <Inline gap="2" align="center">
-        <Switch
-          id={checkerId}
-          checked={checkerboard}
-          onCheckedChange={(v) => onChange({ checkerboard: v })}
-        />
-        <Label htmlFor={checkerId}>Checkerboard (shows transparency)</Label>
-      </Inline>
+      <SwitchField
+        label="Checkerboard (shows transparency)"
+        checked={checkerboard}
+        onCheckedChange={(v) => onChange({ checkerboard: v })}
+      />
       <Stack gap="2">
-        <Label>Device frame</Label>
+        <Text as="span" size="sm" weight="medium">
+          Device frame
+        </Text>
         <SegmentedControl
           label="Device frame"
           size="sm"

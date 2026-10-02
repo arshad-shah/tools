@@ -58,22 +58,43 @@ describe('Text Diff', () => {
     await waitFor(() =>
       expect(screen.getByText('0 added, 0 removed, 1 changed')).toBeTruthy(),
     );
-    expect(
-      (
-        screen.getByRole('textbox', {
-          name: 'Original text',
-        }) as HTMLTextAreaElement
-      ).value,
-    ).toBe('alpha');
-    expect(
-      (
-        screen.getByRole('textbox', {
-          name: 'Changed text',
-        }) as HTMLTextAreaElement
-      ).value,
-    ).toBe('beta');
+    tab('Original');
+    expect(box('Original text').value).toBe('alpha');
+    // The inputs are tabs (R41): Changed is hidden until shown.
+    expect(screen.queryByRole('textbox', { name: 'Changed text' })).toBeNull();
+    tab('Changed');
+    expect(box('Changed text').value).toBe('beta');
+    // The diff result is not tabbed: it stays on screen.
+    expect(screen.getByText('0 added, 0 removed, 1 changed')).toBeTruthy();
+  });
+
+  it('a pair from the HTTP Client fills both sides', async () => {
+    const id = putHandoff({
+      kind: 'text',
+      mime: 'application/vnd.tools.diff-pair+json',
+      sourceTool: 'api-request',
+      text: JSON.stringify({ left: '{"v":1}', right: '{"v":2}' }),
+      meta: { pair: true },
+    });
+    act(() =>
+      window.history.replaceState(null, '', `/text/diff?handoff=${id}`),
+    );
+    render(<TextDiff />);
+    await screen.findByText('0 added, 0 removed, 1 changed');
+    tab('Original');
+    expect(box('Original text').value).toBe('{"v":1}');
+    tab('Changed');
+    expect(box('Changed text').value).toBe('{"v":2}');
   });
 });
+
+function tab(name: string) {
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
+}
+
+function box(name: string) {
+  return screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
+}
 
 function putHandoffAndOpen(left: string, right: string) {
   const id = putHandoff(diffPairPayload({ left, right }, 'test'));

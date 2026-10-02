@@ -1,3 +1,4 @@
+import { useHandoff } from '@/shared/lib/handoff';
 import {
   useDeferredValue,
   useEffect,
@@ -5,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
 } from 'react';
 import type { ToolProps } from '@/app/tool';
 import { copyText } from '@/shared/lib/clipboard';
@@ -17,15 +17,17 @@ import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
 import {
   Alert,
   Button,
-  CodeSurface,
-  Label,
+  Inline,
   MetaList,
-  SplitPane,
-  Switch,
+  PaneTabs,
+  Stack,
+  SwitchField,
+  TextInputPanel,
+  usePaneTab,
   type CodeSurfaceHandle,
   type SandboxedHtmlHandle,
 } from '@/shared/ui';
-import { IconEraser, IconFileText, IconList } from '@/shared/ui/icons';
+import { IconList } from '@/shared/ui/icons';
 import { textStats } from '@/tools/text-toolkit/lib/stats';
 import { ExportMenu, type ExportActions } from './components/ExportMenu';
 import { FormatToolbar } from './components/FormatToolbar';
@@ -64,8 +66,21 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   const selection = useRef<Selection>({ start: 0, end: 0 });
   const pendingSelection = useRef<Selection | null>(null);
   const pendingJump = useRef<number | null>(null);
-  const wrapId = useId();
   const remoteNoteId = useId();
+  // R41: Edit and Preview are tabs, one at a time.
+  const tab = usePaneTab('markdown-editor', 'edit');
+
+  // Text handed over from another tool (Text Toolkit, Send to) opens once.
+  const handed = useHandoff(
+    (p) =>
+      p.kind === 'text' &&
+      (p.mime === 'text/markdown' || p.mime === 'text/plain'),
+  );
+  const [takenHandoff, setTakenHandoff] = useState<typeof handed>(null);
+  if (handed !== takenHandoff) {
+    setTakenHandoff(handed);
+    if (handed?.kind === 'text') setTextState(handed.text);
+  }
 
   const rendered = useRendered(text);
   const baseCss = useMemo(() => markdownCss(tokens), [tokens]);
@@ -223,129 +238,98 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   ];
   useToolCommands(definition.id, commands);
 
-  // Shift+7 types '&' on many layouts, so match the physical key as well.
-  const onEditorKeyDown = (e: KeyboardEvent) => {
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      e.shiftKey &&
-      !e.altKey &&
-      e.code === 'Digit7' &&
-      e.key !== '7'
-    ) {
-      e.preventDefault();
-      format('ol');
-    }
-  };
-
-  const clear = () => {
-    const previous = text;
-    setText('');
-    notify.info('Document cleared', {
-      action: { label: 'Undo', onClick: () => setText(previous) },
-    });
-  };
-
   const remote = rendered.remoteImages;
 
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+  const editPane = (
+    <Stack gap="2">
+      <Inline gap="2" wrap justify="between">
         <FormatToolbar onFormat={format} />
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Switch
-              id={wrapId}
-              checked={settings.wrap}
-              onCheckedChange={(wrap) => update({ wrap })}
-            />
-            <Label htmlFor={wrapId}>Wrap lines</Label>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            leftIcon={<IconFileText size="sm" />}
-            onClick={() => setText(SAMPLE_MARKDOWN)}
-          >
-            Load sample
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            leftIcon={<IconEraser size="sm" />}
-            disabled={text === ''}
-            onClick={clear}
-          >
-            Clear
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            leftIcon={<IconList size="sm" />}
-            onClick={() => setOutlineOpen(true)}
-          >
-            Outline
-          </Button>
-          <ExportMenu actions={actions} disabled={text === ''} />
-        </div>
-      </div>
+        <SwitchField
+          label="Wrap lines"
+          checked={settings.wrap}
+          onCheckedChange={(wrap) => update({ wrap })}
+        />
+      </Inline>
+      <TextInputPanel
+        editorRef={editor}
+        value={text}
+        onChange={setText}
+        language="markdown"
+        label="Markdown"
+        accept=".md,.markdown,.txt,text/markdown,text/plain"
+        samples={[{ label: 'Sample document', value: SAMPLE_MARKDOWN }]}
+        wrap={settings.wrap}
+        placeholder="Type Markdown here"
+        onSelectionChange={(start, end) => {
+          selection.current = { start, end };
+        }}
+        minHeight={384}
+        maxHeight={720}
+      />
+    </Stack>
+  );
+
+  return (
+    <Stack gap="3">
       {remote > 0 && !allowRemote ? (
-        <Alert
-          status="warning"
-          className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm"
-        >
-          <span className="flex flex-col gap-1">
-            <span className="font-medium">
-              {plural(remote, 'remote image')} blocked
-            </span>
-            <span id={remoteNoteId}>
-              Loading them is a network request to the image hosts.
-            </span>
-          </span>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            aria-describedby={remoteNoteId}
-            onClick={() => setAllowRemote(true)}
-          >
-            Load for this document
-          </Button>
+        <Alert status="warning" size="sm">
+          <Inline gap="2" wrap justify="between">
+            <Stack gap="1">
+              <span className="font-medium">
+                {plural(remote, 'remote image')} blocked
+              </span>
+              <span id={remoteNoteId}>
+                Loading them is a network request to the image hosts.
+              </span>
+            </Stack>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              aria-describedby={remoteNoteId}
+              onClick={() => setAllowRemote(true)}
+            >
+              Load for this document
+            </Button>
+          </Inline>
         </Alert>
       ) : null}
-      <div className="h-[70vh] min-h-96">
-        <SplitPane
-          direction="horizontal"
-          defaultRatio={1 - settings.previewWidth}
-          separatorLabel="Resize editor and preview"
-          className="h-full"
-        >
-          <div className="h-full" onKeyDown={onEditorKeyDown}>
-            <CodeSurface
-              ref={editor}
-              value={text}
-              onChange={setText}
-              language="markdown"
-              label="Markdown"
-              wrap={settings.wrap}
-              placeholder="Type Markdown here"
-              onSelectionChange={(start, end) => {
-                selection.current = { start, end };
-              }}
-              maxHeight="none"
-              className="h-full"
-            />
-          </div>
-          <Preview
-            ref={preview}
-            html={rendered.html}
-            baseCss={baseCss}
-            allowRemoteImages={allowRemote}
-          />
-        </SplitPane>
-      </div>
+      <PaneTabs
+        id="markdown-editor"
+        label="Markdown panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        actions={
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              leftIcon={<IconList size="sm" />}
+              onClick={() => setOutlineOpen(true)}
+            >
+              Outline
+            </Button>
+            <ExportMenu actions={actions} disabled={text === ''} />
+          </>
+        }
+        panes={[
+          { id: 'edit', label: 'Edit', content: editPane },
+          {
+            id: 'preview',
+            label: 'Preview',
+            changeKey: rendered.html,
+            content: (
+              <Preview
+                ref={preview}
+                html={rendered.html}
+                baseCss={baseCss}
+                allowRemoteImages={allowRemote}
+              />
+            ),
+          },
+        ]}
+      />
       <div aria-live="polite">
         <MetaList
           items={[
@@ -359,10 +343,13 @@ export default function MarkdownEditor({ definition }: ToolProps) {
         open={outlineOpen}
         onOpenChange={setOutlineOpen}
         items={rendered.outline}
-        onJump={(line) => {
-          pendingJump.current = line;
+        onJump={(item) => {
+          // Preview shown: scroll the preview there; else move the caret.
+          if (tab.value === 'preview')
+            preview.current?.scrollToFragment(item.id);
+          else pendingJump.current = item.line;
         }}
       />
-    </div>
+    </Stack>
   );
 }

@@ -15,6 +15,14 @@ import {
 
 const UTC = { zone: 'UTC' };
 
+/** Date.UTC without the 0-99 to 1900-1999 year mapping. */
+const utc = (y: number, m: number, d: number, hh = 0) => {
+  const t = new Date(0);
+  t.setUTCFullYear(y, m, d);
+  t.setUTCHours(hh);
+  return t.getTime();
+};
+
 describe('parseInstant', () => {
   it('detects Unix magnitudes', () => {
     expect(parseInstant('1700000000', UTC)).toEqual({
@@ -121,6 +129,24 @@ describe('parseInstant', () => {
     );
   });
 
+  it('range-checks ISO offset hours and minutes', () => {
+    for (const t of [
+      '2024-01-01T12:00+99:99',
+      '2024-01-01T12:00+24:00',
+      '2024-01-01T12:00-05:60',
+      '2024-01-01T12:00+0975',
+    ])
+      expect(() => parseInstant(t, UTC)).toThrow(
+        expect.objectContaining({
+          code: 'INVALID_INPUT',
+          message: expect.stringMatching(/offset/i),
+        }),
+      );
+    expect(parseInstant('2024-01-01T12:00+23:59', UTC).epochMs).toBe(
+      Date.UTC(2024, 0, 1, 12) - (23 * 60 + 59) * 60_000,
+    );
+  });
+
   it('gives a hint for unreadable text', () => {
     expect(() => parseInstant('next tuesday-ish', UTC)).toThrow(
       expect.objectContaining({
@@ -131,6 +157,28 @@ describe('parseInstant', () => {
     expect(() => parseInstant('now + 3 fortnights', UTC)).toThrow(
       /Unknown unit/,
     );
+  });
+});
+
+describe('years 0 to 99', () => {
+  it('shifts relative days within the same year', () => {
+    const now = utc(50, 5, 15, 12);
+    expect(parseInstant('tomorrow', { now, zone: 'UTC' }).epochMs).toBe(
+      utc(50, 5, 16),
+    );
+    expect(parseInstant('yesterday', { now, zone: 'UTC' }).epochMs).toBe(
+      utc(50, 5, 14),
+    );
+    expect(parseInstant('today + 3d', { now, zone: 'UTC' }).epochMs).toBe(
+      utc(50, 5, 18),
+    );
+  });
+  it('computes ISO weeks and day of year', () => {
+    // Year 0 is a leap year (divisible by 400); 1900 is not.
+    expect(dayOfYear(utc(0, 11, 31))).toBe(366);
+    // 1 January of year 0 was a Saturday: week 52 of year -1.
+    expect(isoWeek(utc(0, 0, 1))).toEqual({ year: -1, week: 52 });
+    expect(isoWeek(utc(0, 0, 3))).toEqual({ year: 0, week: 1 });
   });
 });
 
@@ -196,6 +244,15 @@ describe('zones', () => {
     expect(wallClockToEpoch(at(2024, 6, 1, 12, 0), 'America/New_York')).toEqual(
       { epochMs: Date.UTC(2024, 5, 1, 16), status: 'ok' },
     );
+  });
+  it('resolves wall clocks under an LMT offset with seconds', () => {
+    // Dublin Mean Time was UTC-00:25:21.
+    expect(
+      wallClockToEpoch(
+        { y: 1900, m: 1, d: 1, hh: 12, mm: 0, ss: 0 },
+        'Europe/Dublin',
+      ),
+    ).toEqual({ epochMs: Date.UTC(1900, 0, 1, 12, 25, 21), status: 'ok' });
   });
   it('refuses unknown zones', () => {
     expect(() => zoneOffsetMinutes('Mars/Olympus', 0)).toThrow(

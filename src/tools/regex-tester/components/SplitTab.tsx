@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, CodeSurface, Inline, Stack, Text } from '@/shared/ui';
+import { Badge, EmptyState, Inline, Stack, TextInputPanel } from '@/shared/ui';
 import { useRegexJob } from '../hooks/useRegexJob';
 import { plural } from '../lib/plural';
 import type { RegexRunner } from '../lib/runner';
@@ -28,9 +28,11 @@ export const SplitTab: React.FC<SplitTabProps> = ({
 
   if (key === null)
     return (
-      <Text size="sm" tone="subtle">
-        Enter a pattern and a test string to split the text.
-      </Text>
+      <EmptyState
+        size="sm"
+        title="Nothing to split"
+        description="Enter a pattern and a test string to split the text."
+      />
     );
   return (
     <Stack gap="3">
@@ -43,12 +45,13 @@ export const SplitTab: React.FC<SplitTabProps> = ({
         </Inline>
       )}
       {parts && !job.error && (
-        <CodeSurface
+        <TextInputPanel
           value={JSON.stringify(parts, null, 2)}
+          onChange={() => {}}
           language="json"
           label="Split result"
           readOnly
-          lineNumbers
+          downloadName="split.json"
           maxHeight={360}
         />
       )}

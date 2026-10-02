@@ -3,7 +3,9 @@ import {
   Button,
   DeviceFrame,
   FocusOverlay,
+  CopyButton,
   Heading,
+  PaneTabs,
   PrivacyNote,
   SplitPane,
   Text,
@@ -44,6 +46,27 @@ export function PanesSection() {
   const [focus, setFocus] = useState(false);
   return (
     <Section name="panes" title="Panes and frames">
+      <Row label="PaneTabs: one pane at a time (R41), Output with actions">
+        <div className="w-full max-w-xl">
+          <PaneTabs
+            id="kit-gallery"
+            label="Example panes"
+            actions={<CopyButton label="output" value="SGVsbG8=" />}
+            panes={[
+              {
+                id: 'input',
+                label: 'Input',
+                content: <Pane title="Input" body="Hello" />,
+              },
+              {
+                id: 'output',
+                label: 'Output',
+                content: <Pane title="Output" body="SGVsbG8=" />,
+              },
+            ]}
+          />
+        </div>
+      </Row>
       <Row label="SplitPane: horizontal, collapsible both, 40 percent">
         <SplitPane
           direction="horizontal"

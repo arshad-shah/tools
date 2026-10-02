@@ -91,4 +91,51 @@ describe('xml', () => {
       p: { b: '', '#text': ['a', 'c'] },
     });
   });
+
+  it('keeps the DOCTYPE internal subset and the declaration', () => {
+    const src =
+      '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE note [\n  <!ENTITY who "me">\n  <!ATTLIST note id CDATA "]>">\n]>\n<note><to>x</to></note>';
+    const expected = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<!DOCTYPE note [\n  <!ENTITY who "me">\n  <!ATTLIST note id CDATA "]>">\n]>',
+      '<note>',
+      '  <to>x</to>',
+      '</note>',
+      '',
+    ].join('\n');
+    expect(prettyXml(src)).toBe(expected);
+    // A Document from parseXml remembers its prolog too.
+    expect(prettyXml(parseXml(src))).toBe(expected);
+    expect(minifyXml(parseXml(src))).toBe(
+      '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE note [\n  <!ENTITY who "me">\n  <!ATTLIST note id CDATA "]>">\n]><note><to>x</to></note>',
+    );
+  });
+
+  it('maps very deep nesting to INVALID_INPUT instead of a stack overflow', () => {
+    // jsdom builds deep trees in quadratic time, so this is a minimal
+    // stand-in with just the DOM members the walkers read.
+    const node = (kids: unknown[]) => ({
+      nodeType: 1,
+      tagName: 'a',
+      attributes: [],
+      childNodes: kids,
+      getAttribute: () => null,
+    });
+    let el = node([]);
+    for (let i = 0; i < 60_000; i++) el = node([el]);
+    const doc = {
+      nodeType: 9,
+      childNodes: [el],
+      documentElement: el,
+    } as unknown as Document;
+    const deep = expect.objectContaining({ code: 'INVALID_INPUT' });
+    expect(() => prettyXml(doc)).toThrow(deep);
+    expect(() => minifyXml(doc)).toThrow(deep);
+    expect(() => xmlToJson(doc)).toThrow(deep);
+    let json: Record<string, unknown> = {};
+    const top = json;
+    for (let i = 0; i < 60_000; i++)
+      json = json.a = {} as Record<string, unknown>;
+    expect(() => jsonToXml(top)).toThrow(deep);
+  });
 });

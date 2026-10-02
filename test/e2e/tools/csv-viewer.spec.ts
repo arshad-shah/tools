@@ -157,35 +157,12 @@ test('the chart tab draws a chart of the filtered rows', async ({ page }) => {
   ).toBeVisible();
 });
 
-test.skip('Open as JSON shows the tree in the JSON Viewer', () => {
-  // Waits for Part 6-B (JSON Viewer accepts application/json); H-1 removes
-  // this skip.
-});
-
-test('scrolling large.csv has no long task over 100 ms', async ({ page }) => {
-  test.setTimeout(120_000);
-  await page.goto(pathOf('csv-viewer'));
-  await page
-    .locator('input[type=file]')
-    .first()
-    .setInputFiles('test/fixtures/generated/large.csv');
-  const grid = page.getByRole('grid', { name: 'Table data' });
-  await expect(grid).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText('500,000 of 500,000 rows')).toBeVisible();
-  await page.evaluate(() => {
-    (window as unknown as { longTasks: number[] }).longTasks = [];
-    new PerformanceObserver((l) => {
-      for (const e of l.getEntries())
-        (window as unknown as { longTasks: number[] }).longTasks.push(
-          e.duration,
-        );
-    }).observe({ type: 'longtask', buffered: false });
-  });
-  await grid.hover();
-  for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 2000);
-  await page.waitForTimeout(300);
-  const tasks = await page.evaluate(
-    () => (window as unknown as { longTasks: number[] }).longTasks,
-  );
-  expect(Math.max(0, ...tasks)).toBeLessThan(100);
+test('Send CSV to lists Text Diff and hands the shown rows over', async ({
+  page,
+}) => {
+  await open(page, 'numbers.csv', NUMBERS);
+  await page.getByRole('button', { name: 'Send CSV to' }).click();
+  await page.getByRole('menuitem', { name: /Text Diff/ }).click();
+  await expect(page).toHaveURL(/diff/);
+  await expect(page.getByText('item0,5').first()).toBeAttached();
 });

@@ -160,6 +160,10 @@ export function bytesToBase32(
 /**
  * Decodes RFC 4648 Base32 in any case, with or without padding; spaces and
  * line breaks are ignored. Errors name the character position (1-based).
+ *
+ * Deliberately lenient: non-zero trailing bits in the last character are
+ * dropped, and the padding count is not checked (`MY=` decodes like `MY`).
+ * Only lengths no byte string can produce are refused.
  */
 export function base32ToBytes(input: string): Uint8Array<ArrayBuffer> {
   const body = input.replace(/=+\s*$/, '');
@@ -224,6 +228,8 @@ export function bytesToBase58(bytes: Uint8Array): string {
 
 /** Decodes Bitcoin-alphabet Base58; errors name the character position. */
 export function base58ToBytes(input: string): Uint8Array<ArrayBuffer> {
+  // Positions are reported against `input`, so the trimmed lead counts.
+  const lead = input.length - input.trimStart().length;
   const text = input.trim();
   let zeros = 0;
   while (zeros < text.length && text[zeros] === '1') zeros++;
@@ -234,7 +240,7 @@ export function base58ToBytes(input: string): Uint8Array<ArrayBuffer> {
     if (v < 0)
       throw new ToolError(
         'INVALID_INPUT',
-        `Not valid Base58: unexpected "${text[i]}" at character ${i + 1}`,
+        `Not valid Base58: unexpected "${text[i]}" at character ${lead + i + 1}`,
       );
     let carry = v;
     for (let j = 0; j < bytes.length; j++) {
@@ -255,7 +261,8 @@ export function base58ToBytes(input: string): Uint8Array<ArrayBuffer> {
 /** Bits as 0 and 1, `groupBy` bits per space-separated group. */
 export function bytesToBinary(bytes: Uint8Array, groupBy = 8): string {
   if (!Number.isInteger(groupBy) || groupBy < 1)
-    throw new RangeError(
+    throw new ToolError(
+      'INVALID_INPUT',
       `groupBy must be a whole number of bits, got ${groupBy}`,
     );
   let bits = '';

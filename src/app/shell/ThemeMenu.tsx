@@ -19,6 +19,7 @@ export function ThemeMenu() {
         ref={anchor}
         variant="ghost"
         label="Theme"
+        showLabel="desktop"
         aria-haspopup="dialog"
         aria-expanded={open}
         icon={ICON[preference]}

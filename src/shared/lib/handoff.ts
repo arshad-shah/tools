@@ -33,6 +33,34 @@ interface Entry {
   expires: number;
 }
 
+/**
+ * UTF-8 size of `text` in bytes, without allocating the encoding. A lone
+ * surrogate counts as 3 bytes (TextEncoder writes U+FFFD for it).
+ */
+function utf8Length(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c < 0x80) n += 1;
+    else if (c < 0x800) n += 2;
+    else if (c >= 0xd800 && c <= 0xdbff && i + 1 < text.length) {
+      const d = text.charCodeAt(i + 1);
+      if (d >= 0xdc00 && d <= 0xdfff) {
+        n += 4;
+        i++;
+      } else n += 3;
+    } else n += 3;
+  }
+  return n;
+}
+
+/** True when `text` is over HANDOFF_TEXT_MAX bytes as UTF-8. */
+function textTooLarge(text: string): boolean {
+  if (text.length > HANDOFF_TEXT_MAX) return true;
+  if (text.length * 3 <= HANDOFF_TEXT_MAX) return false;
+  return utf8Length(text) > HANDOFF_TEXT_MAX;
+}
+
 /** Insertion-ordered, so the first key is the oldest entry. */
 const pending = new Map<string, Entry>();
 
@@ -42,14 +70,14 @@ function prune(now: number): void {
 
 /**
  * Stores a payload and returns its one-time id. A bare `File[]` is a files
- * payload (the hub drop). Text over 50 MB is refused with TOO_LARGE; past
+ * payload (the hub drop). Text over 50 MB (as UTF-8) is refused with TOO_LARGE; past
  * eight entries the oldest is dropped.
  */
 export function putHandoff(payload: HandoffPayload | File[]): string {
   const p: HandoffPayload = Array.isArray(payload)
     ? { kind: 'files', files: payload }
     : payload;
-  if (p.kind === 'text' && p.text.length > HANDOFF_TEXT_MAX)
+  if (p.kind === 'text' && textTooLarge(p.text))
     throw new ToolError(
       'TOO_LARGE',
       'This text is too large to send to another tool (over 50 MB)',

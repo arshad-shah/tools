@@ -16,7 +16,7 @@ import { MeetingPlanner } from './components/MeetingPlanner';
 import { NowPanel } from './components/NowPanel';
 import { WorldClock } from './components/WorldClock';
 import { ZoneConverter } from './components/ZoneConverter';
-import { useNow } from './hooks/useNow';
+import { useNow } from '@/shared/lib/use-now';
 import { readInstant, type ReadAs } from './lib/read';
 import { epochSettings } from './settings';
 import { EPOCH_SHARE_VERSION, parseEpochShare, type EpochShare } from './share';

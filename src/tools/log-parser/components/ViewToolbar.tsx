@@ -4,8 +4,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Inline,
   Select,
-  Switch,
+  SwitchField,
   Tooltip,
 } from '@/shared/ui';
 import {
@@ -17,7 +18,8 @@ import {
 } from '@/shared/ui/icons';
 import type { ExportFormat } from '../hooks/useLogSource';
 import { formatOptions } from '../lib/format-ref';
-import type { SavedFormat } from '../settings';
+import type { LogColumn, SavedFormat } from '../settings';
+import { ColumnMenu } from './ColumnMenu';
 
 const EXPORT_FORMATS: { fmt: ExportFormat; label: string }[] = [
   { fmt: 'text', label: 'Export as text' },
@@ -32,6 +34,8 @@ export interface ViewToolbarProps {
   onNewFormat(): void;
   wrap: boolean;
   onWrap(wrap: boolean): void;
+  columns: readonly LogColumn[];
+  onColumns(columns: LogColumn[]): void;
   hasLog: boolean;
   onNextError(): void;
   onExport(fmt: ExportFormat): void;
@@ -39,7 +43,7 @@ export interface ViewToolbarProps {
   onCompare(): void;
 }
 
-/** Format picker, wrap, next error, compare and export. */
+/** Format picker, wrap, columns, next error, compare and export. */
 export function ViewToolbar({
   format,
   onFormat,
@@ -47,6 +51,8 @@ export function ViewToolbar({
   onNewFormat,
   wrap,
   onWrap,
+  columns,
+  onColumns,
   hasLog,
   onNextError,
   onExport,
@@ -55,11 +61,11 @@ export function ViewToolbar({
 }: ViewToolbarProps) {
   const { items, groups } = formatOptions(customFormats);
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <Inline gap="2" wrap>
       <div className="w-48">
         <Select
           aria-label="Log format"
-          className="h-8 text-sm"
+          size="sm"
           value={format}
           onValueChange={onFormat}
           items={items}
@@ -74,15 +80,9 @@ export function ViewToolbar({
       >
         Custom format
       </Button>
-      <label className="flex items-center gap-2 text-sm text-fg-muted">
-        <Switch
-          aria-label="Wrap lines"
-          checked={wrap}
-          onCheckedChange={onWrap}
-        />
-        Wrap
-      </label>
-      <div className="ml-auto flex flex-wrap items-center gap-2">
+      <SwitchField label="Wrap lines" checked={wrap} onCheckedChange={onWrap} />
+      <ColumnMenu columns={columns} onColumns={onColumns} />
+      <Inline gap="2" wrap className="ml-auto">
         <Tooltip content="Jump to next error" shortcut="e">
           <Button
             size="sm"
@@ -121,7 +121,7 @@ export function ViewToolbar({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    </div>
+      </Inline>
+    </Inline>
   );
 }

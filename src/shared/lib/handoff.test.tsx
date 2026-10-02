@@ -120,6 +120,15 @@ describe('handoff (text payloads)', () => {
       putHandoff({ ...text, text: 'x'.repeat(50 * 1024 * 1024 + 1) }),
     ).toThrow(expect.objectContaining({ code: 'TOO_LARGE' }));
   });
+  it('measures the text limit in UTF-8 bytes, not UTF-16 units', () => {
+    // 26 Mi two-byte characters: under the limit in units, over it in bytes.
+    const big = 'é'.repeat(26 * 1024 * 1024);
+    expect(() => putHandoff({ ...text, text: big })).toThrow(
+      expect.objectContaining({ code: 'TOO_LARGE' }),
+    );
+    const id = putHandoff({ ...text, text: big.slice(0, 25 * 1024 * 1024) });
+    expect(takeHandoff(id)).not.toBeNull();
+  });
   it('still carries files', () => {
     const f = new File(['a'], 'a.txt');
     const id = putHandoff({ kind: 'files', files: [f] });

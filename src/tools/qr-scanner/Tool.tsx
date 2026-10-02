@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ToolError, toToolError } from '@/shared/lib/errors';
-import { useHandoffFiles } from '@/shared/lib/handoff';
+import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { decodeBarcodes, type DecodedBarcode } from '@/shared/lib/qr-decode';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
   Alert,
@@ -12,20 +14,21 @@ import {
   Card,
   CardBody,
   EmptyState,
-  EmptyStateDescription,
-  EmptyStateTitle,
   ErrorState,
   Image,
   LoadingState,
+  PaneTabs,
   PrivacyNote,
   ShapeLayer,
   Sized,
   Stack,
+  usePaneTab,
   type Shape,
 } from '@/shared/ui';
-import { IconPlay } from '@/shared/ui/icons';
+import { IconPlay, IconQrCode } from '@/shared/ui/icons';
 import { ResultCard } from './components/ResultCard';
 import { ScanSources, type SourceMode } from './components/ScanSources';
+import { resultHandoffs, type ResultTarget } from './lib/handoffs';
 
 const MAX_PREVIEW = 640;
 const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
@@ -35,6 +38,28 @@ interface Scanned {
   width: number;
   height: number;
   results: DecodedBarcode[];
+}
+
+/** Pastes into these are typing, not an image to scan. */
+function isTextField(t: EventTarget | null): boolean {
+  if (!(t instanceof HTMLElement)) return false;
+  return (
+    t.isContentEditable ||
+    t instanceof HTMLTextAreaElement ||
+    (t instanceof HTMLInputElement &&
+      !['button', 'checkbox', 'radio', 'file', 'range', 'color'].includes(
+        t.type,
+      ))
+  );
+}
+
+/** The first image among pasted clipboard items, if any. */
+function pastedImage(e: ClipboardEvent): File | null {
+  for (const item of e.clipboardData?.items ?? []) {
+    if (item.kind === 'file' && item.type.startsWith('image/'))
+      return item.getAsFile();
+  }
+  return null;
 }
 
 async function readClipboardImage(): Promise<Blob> {
@@ -47,6 +72,7 @@ async function readClipboardImage(): Promise<Blob> {
 }
 
 export default function QrScanner() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<SourceMode>('image');
   const [camera, setCamera] = useState(false);
   const [scanned, setScanned] = useState<Scanned | null>(null);
@@ -54,9 +80,11 @@ export default function QrScanner() {
   const [busy, setBusy] = useState(false);
   const decoding = useRef(false);
   const job = useRef(0);
+  const tab = usePaneTab('qr-scanner', 'scan');
 
   const scanImage = async (blob: Blob) => {
     const id = ++job.current;
+    tab.show('results');
     setBusy(true);
     setError(null);
     try {
@@ -96,6 +124,7 @@ export default function QrScanner() {
         if (results.length) {
           setCamera(false);
           setScanned({ image: null, width, height, results });
+          tab.show('results');
         }
       })
       .catch((e: unknown) =>
@@ -121,6 +150,24 @@ export default function QrScanner() {
     if (files[0]) void scanImage(files[0]);
   });
 
+  // Mod+V anywhere on the page scans a pasted image (spec 9.2); typing in a
+  // text field keeps its own paste.
+  const scanLatest = useRef(scanImage);
+  useEffect(() => {
+    scanLatest.current = scanImage;
+  });
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (e.defaultPrevented || isTextField(e.target)) return;
+      const file = pastedImage(e);
+      if (!file) return;
+      e.preventDefault();
+      void scanLatest.current(file);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, []);
+
   useToolCommands('qr-scanner', [
     { id: 'paste', label: 'Paste image', run: () => void paste() },
     {
@@ -134,6 +181,23 @@ export default function QrScanner() {
     },
   ]);
 
+  // The palette mirrors the first code's hand-off buttons (one id per target).
+  const first = scanned && !busy ? scanned.results[0] : undefined;
+  const firstHandoffs = first ? resultHandoffs(first) : {};
+  const send = (target: ResultTarget) => ({
+    target,
+    run: () => {
+      const payload = firstHandoffs[target];
+      if (payload) sendTo(navigate, target, payload);
+    },
+    enabled: !!firstHandoffs[target],
+  });
+  useSendCommands('qr-scanner', [
+    send('url-parser'),
+    send('qr-code-generator'),
+    send('url-encoder-decoder'),
+  ]);
+
   const scale = scanned ? Math.min(1, MAX_PREVIEW / scanned.width) : 1;
   const shapes: Shape[] =
     scanned?.results.map((r) => ({
@@ -143,93 +207,119 @@ export default function QrScanner() {
       width: 3,
     })) ?? [];
 
+  const resultsPane = busy ? (
+    <LoadingState label="Reading codes" />
+  ) : scanned ? (
+    <Stack gap="3">
+      {scanned.image && (
+        <Card>
+          <CardBody>
+            <Box className="overflow-auto">
+              <Sized
+                width={Math.round(scanned.width * scale)}
+                height={Math.round(scanned.height * scale)}
+                className="relative"
+                data-testid="scan-preview"
+              >
+                <Image
+                  src={scanned.image}
+                  alt="Scanned image"
+                  fit="contain"
+                  className="absolute inset-0 h-full w-full"
+                />
+                <ShapeLayer
+                  width={Math.round(scanned.width * scale)}
+                  height={Math.round(scanned.height * scale)}
+                  transform={{ ...IDENTITY, a: scale, d: scale }}
+                  shapes={shapes}
+                />
+              </Sized>
+            </Box>
+          </CardBody>
+        </Card>
+      )}
+      {scanned.results.length === 0 ? (
+        <EmptyState
+          title="No code found"
+          description="Try a sharper or larger image, with the whole code in view and a light margin around it."
+        />
+      ) : (
+        <>
+          <Alert status="success" size="sm">
+            <AlertDescription>
+              Found {scanned.results.length}{' '}
+              {scanned.results.length === 1 ? 'code' : 'codes'}.
+            </AlertDescription>
+          </Alert>
+          {scanned.results.map((r, i) => (
+            <ResultCard key={`${i}-${r.text}`} result={r} index={i} />
+          ))}
+        </>
+      )}
+      {mode === 'camera' && !camera && (
+        <Button
+          variant="primary"
+          leftIcon={<IconPlay size="sm" />}
+          onClick={() => {
+            setCamera(true);
+            tab.show('scan');
+          }}
+        >
+          Continue scanning
+        </Button>
+      )}
+    </Stack>
+  ) : (
+    <EmptyState
+      icon={IconQrCode}
+      title="Nothing scanned yet"
+      description="Choose, drop or paste an image (Mod+V works anywhere on the page), or use the camera."
+    />
+  );
+
   return (
     <Stack gap="4">
       <PrivacyNote variant="local">
         Images and camera frames are read in this browser and never stored.
       </PrivacyNote>
-      <Card>
-        <CardBody>
-          <ScanSources
-            mode={mode}
-            onModeChange={(m) => {
-              setMode(m);
-              if (m === 'image') setCamera(false);
-            }}
-            onImage={(b) => void scanImage(b)}
-            onPaste={() => void paste()}
-            cameraActive={camera}
-            onCameraActiveChange={setCamera}
-            onFrame={onFrame}
-            onError={setError}
-          />
-        </CardBody>
-      </Card>
-
-      {busy && <LoadingState label="Reading codes" />}
       {error && <ErrorState error={error} title="Could not scan" />}
-
-      {scanned && !busy && (
-        <Stack gap="3">
-          {scanned.image && (
-            <Card>
-              <CardBody>
-                <Box className="overflow-auto">
-                  <Sized
-                    width={Math.round(scanned.width * scale)}
-                    height={Math.round(scanned.height * scale)}
-                    className="relative"
-                    data-testid="scan-preview"
-                  >
-                    <Image
-                      src={scanned.image}
-                      alt="Scanned image"
-                      fit="contain"
-                      className="absolute inset-0 h-full w-full"
-                    />
-                    <ShapeLayer
-                      width={Math.round(scanned.width * scale)}
-                      height={Math.round(scanned.height * scale)}
-                      transform={{ ...IDENTITY, a: scale, d: scale }}
-                      shapes={shapes}
-                    />
-                  </Sized>
-                </Box>
-              </CardBody>
-            </Card>
-          )}
-          {scanned.results.length === 0 ? (
-            <EmptyState>
-              <EmptyStateTitle>No code found</EmptyStateTitle>
-              <EmptyStateDescription>
-                Try a sharper or larger image, with the whole code in view and a
-                light margin around it.
-              </EmptyStateDescription>
-            </EmptyState>
-          ) : (
-            <>
-              <Alert status="success">
-                <AlertDescription>
-                  Found {scanned.results.length}{' '}
-                  {scanned.results.length === 1 ? 'code' : 'codes'}.
-                </AlertDescription>
-              </Alert>
-              {scanned.results.map((r, i) => (
-                <ResultCard key={`${i}-${r.text}`} result={r} index={i} />
-              ))}
-            </>
-          )}
-          {mode === 'camera' && !camera && (
-            <Button
-              variant="primary"
-              leftIcon={<IconPlay size="sm" />}
-              onClick={() => setCamera(true)}
-            >
-              Continue scanning
-            </Button>
-          )}
-        </Stack>
-      )}
+      <PaneTabs
+        id="qr-scanner"
+        label="Scanner panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          {
+            id: 'scan',
+            label: 'Scan',
+            content: (
+              <Card>
+                <CardBody>
+                  <ScanSources
+                    mode={mode}
+                    onModeChange={(m) => {
+                      setMode(m);
+                      if (m === 'image') setCamera(false);
+                    }}
+                    onImage={(b) => void scanImage(b)}
+                    onPaste={() => void paste()}
+                    cameraActive={camera}
+                    onCameraActiveChange={setCamera}
+                    onFrame={onFrame}
+                    onError={setError}
+                  />
+                </CardBody>
+              </Card>
+            ),
+          },
+          {
+            id: 'results',
+            label: 'Results',
+            changeKey: scanned,
+            content: resultsPane,
+          },
+        ]}
+      />
     </Stack>
   );
 }

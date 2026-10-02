@@ -17,6 +17,8 @@ async function open(page: Page, theme: Theme) {
   await setTheme(page, theme);
   await page.getByRole('button', { name: 'Load a sample' }).click();
   await page.getByRole('menuitem', { name: 'JSON bookstore' }).click();
+  // One pane at a time (R41): the sample lands in Source.
+  await page.getByRole('tab', { name: 'Tree', exact: true }).click();
   await expect(page.getByRole('tree', { name: 'Document tree' })).toBeVisible();
   await stabilise(page);
 }

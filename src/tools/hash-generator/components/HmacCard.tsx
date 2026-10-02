@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  AlertDescription,
   Card,
   CardBody,
   CardHeader,
@@ -9,9 +8,9 @@ import {
   Inline,
   Input,
   Label,
+  EmptyState,
   Select,
   Stack,
-  Text,
 } from '@/shared/ui';
 import {
   bytesFrom,
@@ -118,15 +117,15 @@ export const HmacCard: React.FC<HmacCardProps> = ({
             </div>
           </Inline>
           {parsed.error && (
-            <Alert status="danger">
-              <AlertDescription>{parsed.error}</AlertDescription>
+            <Alert status="danger" size="sm">
+              {parsed.error}
             </Alert>
           )}
           {!key ? (
-            <Text size="sm" tone="subtle">
-              Enter an HMAC secret key to compute HMAC values. The key is never
-              stored.
-            </Text>
+            <EmptyState
+              size="sm"
+              description="Enter an HMAC secret key to compute HMAC values. The key is never stored."
+            />
           ) : (
             value !== null && (
               <ResultRow

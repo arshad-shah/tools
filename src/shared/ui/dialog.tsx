@@ -73,7 +73,7 @@ export const Dialog: React.FC<DialogProps> = ({
   if (!open) return null;
   return createPortal(
     <DialogCtx.Provider value={ctx}>
-      <div className="fixed inset-0 z-dialog flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 max-sm:items-end max-sm:p-0">
         <div
           className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
           onClick={close}
@@ -89,6 +89,9 @@ export const Dialog: React.FC<DialogProps> = ({
           tabIndex={-1}
           className={cn(
             'relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-xl bg-surface shadow-e3 outline-none',
+            // Phones: a bottom sheet, full width, up to the full height, with
+            // the footer actions in thumb reach.
+            'max-sm:max-h-dvh max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)]',
             size === 'lg' ? 'max-w-3xl' : 'max-w-lg',
           )}
         >
@@ -119,7 +122,7 @@ export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
         type="button"
         aria-label="Close"
         onClick={close}
-        className="shrink-0 text-fg-subtle transition-colors hover:text-fg"
+        className="-m-2 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors hover:text-fg pointer-coarse:size-11"
       >
         <IconX size="md" />
       </button>

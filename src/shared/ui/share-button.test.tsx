@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { ShareButton } from './share-button';
 
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
@@ -47,5 +48,47 @@ describe('ShareButton', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Share' }));
     });
     expect(notify.success).not.toHaveBeenCalled();
+  });
+
+  describe('with useShareableState (the single owner of the toast)', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    function Real() {
+      const share = useShareableState<{ v: 1; a: string }>({
+        toolId: 'url-parser',
+        version: 1,
+        parse: (raw) => raw as { v: 1; a: string },
+        select: () => ({ v: 1, a: 'x' }),
+      });
+      return <ShareButton share={share} />;
+    }
+
+    it('toasts "Share link copied" exactly once per click', async () => {
+      notify.success.mockClear();
+      notify.error.mockClear();
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+      render(<Real />);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+      });
+      expect(writeText).toHaveBeenCalledTimes(1);
+      expect(notify.success).toHaveBeenCalledTimes(1);
+      expect(notify.success).toHaveBeenCalledWith('Share link copied');
+      expect(notify.error).not.toHaveBeenCalled();
+    });
+
+    it('reports a copy failure once, from the hook', async () => {
+      notify.success.mockClear();
+      notify.error.mockClear();
+      const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+      vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+      render(<Real />);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+      });
+      expect(notify.error).toHaveBeenCalledTimes(1);
+      expect(notify.success).not.toHaveBeenCalled();
+    });
   });
 });

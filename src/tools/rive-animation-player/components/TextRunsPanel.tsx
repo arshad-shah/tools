@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Input, Label, Stack, Text } from '@/shared/ui';
+import { Button, EmptyState, Input, Label, Stack, Text } from '@/shared/ui';
 import { notify } from '@/shared/lib/notify';
 import { textRuns } from '../lib/animator';
 import type { LoadedRive } from '../types';
@@ -18,9 +18,11 @@ export function TextRunsPanel({ loaded }: { loaded: LoadedRive | null }) {
 
   if (!loaded)
     return (
-      <Text size="sm" tone="subtle">
-        Load a Rive file to edit its text.
-      </Text>
+      <EmptyState
+        size="sm"
+        title="No file loaded"
+        description="Load a Rive file to edit its text."
+      />
     );
   const { rive } = loaded;
 

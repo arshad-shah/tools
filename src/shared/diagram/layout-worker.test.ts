@@ -75,6 +75,38 @@ describe('layout worker', () => {
     client.terminate();
   });
 
+  it('kills a superseded layout and runs the next one on a fresh worker', async () => {
+    let started = 0;
+    let killed = 0;
+    const client = createLayoutClient(() => {
+      started++;
+      const port = connect();
+      return {
+        postMessage: (m, t) => port.postMessage(m, t),
+        addEventListener: (type, l) => port.addEventListener(type, l),
+        removeEventListener: (type, l) => port.removeEventListener(type, l),
+        terminate: () => killed++,
+      } satisfies RpcEndpoint;
+    });
+    const d = randomTree(400, 2);
+    const first = client.layout(d, {}, metrics);
+    const second = client.layout(d, {}, metrics);
+    await expect(first).rejects.toMatchObject({ code: 'CANCELLED' });
+    await expect(second).resolves.toMatchObject({ mode: 'tree' });
+    expect(killed).toBe(1);
+    expect(started).toBe(2);
+    const ctrl = new AbortController();
+    const third = client.layout(d, {}, metrics, ctrl.signal);
+    ctrl.abort();
+    await expect(third).rejects.toMatchObject({ code: 'CANCELLED' });
+    expect(killed).toBe(2);
+    await expect(client.layout(d, {}, metrics)).resolves.toMatchObject({
+      mode: 'tree',
+    });
+    expect(started).toBe(3);
+    client.terminate();
+  });
+
   it('honours the caller signal', async () => {
     const client = createLayoutClient(connect);
     const ctrl = new AbortController();

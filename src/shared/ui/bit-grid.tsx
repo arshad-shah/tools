@@ -70,7 +70,7 @@ export const BitGrid: React.FC<BitGridProps> = ({
             if (!inert) onToggle?.(i);
           }}
           className={cn(
-            'flex size-8 items-center justify-center rounded-md border font-mono text-sm transition-colors duration-fast',
+            'flex size-8 items-center justify-center rounded-md border font-mono text-sm transition-colors duration-fast pointer-coarse:size-11',
             'outline-none focus-visible:ring-2 focus-visible:ring-focus',
             on
               ? 'border-accent-indicator bg-accent text-accent-ink'
@@ -95,7 +95,9 @@ export const BitGrid: React.FC<BitGridProps> = ({
       className={cn('flex flex-wrap gap-x-4 gap-y-3', className)}
     >
       {bytes.map((b) => (
-        <div key={b} data-byte={b} className="flex gap-2">
+        // A byte's nibbles wrap onto two lines when 44 px touch bits
+        // would not fit (8 bits are wider than a 360 px phone).
+        <div key={b} data-byte={b} className="flex flex-wrap gap-2">
           {[1, 0].map((n) => {
             const top = b * 8 + n * 4 + 3;
             return (

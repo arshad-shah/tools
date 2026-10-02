@@ -3,13 +3,13 @@ import {
   MOCK_LOCALES,
   type MockLocale,
 } from '@/shared/lib/data-formats/mock-schema';
-import { copyText } from '@/shared/lib/clipboard';
 import { formatBytes } from '@/shared/lib/format';
 import type { JobProgress } from '@/shared/state/useJob';
 import {
   Alert,
   AlertDescription,
   Button,
+  CopyButton,
   Grid,
   IconButton,
   Inline,
@@ -21,7 +21,7 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
-import { IconCopy, IconDice1, IconRefreshCw } from '@/shared/ui/icons';
+import { IconDice1, IconRefreshCw } from '@/shared/ui/icons';
 import { MAX_COUNT, WARN_COUNT } from '../lib/engine';
 import { LOCALE_LABEL } from '../lib/locales';
 import { memoryEstimate, newSeed } from '../lib/seed';
@@ -73,14 +73,7 @@ export function GeneratePanel(p: GeneratePanelProps) {
               icon={IconDice1}
               onClick={() => p.onSeed(newSeed())}
             />
-            <IconButton
-              size="sm"
-              variant="ghost"
-              label="Copy seed"
-              icon={IconCopy}
-              disabled={!p.seed}
-              onClick={() => void copyText(p.seed)}
-            />
+            <CopyButton label="seed" value={p.seed} />
           </Inline>
         </Stack>
         <Stack gap="1">
@@ -102,14 +95,14 @@ export function GeneratePanel(p: GeneratePanelProps) {
           : 'No seed: values come from the browser secure random source.'}
       </Text>
       {over ? (
-        <Alert status="danger">
+        <Alert status="danger" size="sm">
           <AlertDescription>
             {`At most ${MAX_COUNT.toLocaleString('en-US')} rows per table.`}
           </AlertDescription>
         </Alert>
       ) : (
         p.count > WARN_COUNT && (
-          <Alert status="warning">
+          <Alert status="warning" size="sm">
             <AlertDescription>
               {`Large output: about ${formatBytes(memoryEstimate(p.count, p.fieldCount))} in memory. The preview shows the first 1,000 rows.`}
             </AlertDescription>
@@ -118,6 +111,7 @@ export function GeneratePanel(p: GeneratePanelProps) {
       )}
       <Inline gap="3" align="center" wrap>
         <Button
+          variant="primary"
           leftIcon={<IconRefreshCw size="sm" />}
           onClick={p.onGenerate}
           disabled={over || p.running}

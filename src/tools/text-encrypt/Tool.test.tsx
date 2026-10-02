@@ -31,12 +31,18 @@ vi.mock('@/shared/workers/text-client', () => ({
 }));
 beforeEach(() => localStorage.clear());
 
-const renderTool = () =>
-  render(
+/** The panes remember the last one shown, so each test starts on Input. */
+const showPane = (name: 'Input' | 'Output') =>
+  fireEvent.click(screen.getByRole('tab', { name }));
+const renderTool = () => {
+  const r = render(
     <MemoryRouter>
       <TextEncrypt />
     </MemoryRouter>,
   );
+  showPane('Input');
+  return r;
+};
 const pass = ['amber', 'quartz', 'river'].join(' ');
 const box = (name: string) =>
   screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
@@ -62,7 +68,12 @@ describe('TextEncrypt', () => {
   it('round-trips and reports a wrong passphrase', async () => {
     renderTool();
     const armoured = await encrypt('meet at noon');
+    // Encrypt showed the Output pane (R41); the next input goes in Input.
+    expect(
+      screen.getByRole('tab', { name: 'Output' }).getAttribute('aria-selected'),
+    ).toBe('true');
     fireEvent.click(screen.getByRole('radio', { name: 'Decrypt' }));
+    showPane('Input');
     fireEvent.change(box('Encrypted message'), { target: { value: armoured } });
     fireEvent.change(screen.getByLabelText('Passphrase'), {
       target: { value: 'wrong' },

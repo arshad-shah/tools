@@ -31,7 +31,7 @@ export function Section({
 }) {
   return (
     <Stack gap="3">
-      <Heading level={4} size="sm">
+      <Heading level={2} size="sm">
         {title}
       </Heading>
       {children}
@@ -43,7 +43,7 @@ export function Section({
 export function SidePanel({ tabs }: { tabs: Record<SideTab, ReactNode[]> }) {
   const [tab, setTab] = useState<SideTab>('controls');
   return (
-    <Card>
+    <Card data-side-panel="">
       <CardBody>
         <Tabs
           value={tab}

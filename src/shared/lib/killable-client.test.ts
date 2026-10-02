@@ -76,4 +76,14 @@ describe('killable client', () => {
     await expect(client.call('echo', ['x'])).resolves.toBe('x');
     expect(workers()).toBe(2);
   });
+  it('kill: false on a call cancels only that call and keeps the worker', async () => {
+    const { client, workers, terminated } = setup();
+    const ctrl = new AbortController();
+    const p = client.call('hang', [], { signal: ctrl.signal, kill: false });
+    ctrl.abort();
+    await expect(p).rejects.toMatchObject({ code: 'CANCELLED' });
+    await expect(client.call('echo', ['x'])).resolves.toBe('x');
+    expect(workers()).toBe(1);
+    expect(terminated()).toBe(0);
+  });
 });

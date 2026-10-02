@@ -10,7 +10,6 @@ export enum PlayerError {
   NoAnimation,
 }
 
-export type BackgroundColor = 'transparent' | 'white' | 'black';
 export type AlignFitIndex = { alignment: number; fit: number };
 export type Dimensions = { width: number; height: number };
 export type Status = {

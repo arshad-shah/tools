@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { textWorker } from '@/shared/workers/text-client';
 import {
-  Alert,
-  AlertDescription,
+  ErrorState,
   Badge,
   Card,
   CardBody,
@@ -151,9 +150,7 @@ export function ProfilePanel({ rows, columns, types }: ProfilePanelProps) {
   if (state.key !== key) return <LoadingState label="Profiling columns" />;
   if (state.error)
     return (
-      <Alert status="danger">
-        <AlertDescription>{state.error.message}</AlertDescription>
-      </Alert>
+      <ErrorState title="Could not profile the columns" error={state.error} />
     );
   return (
     <Stack gap="3">

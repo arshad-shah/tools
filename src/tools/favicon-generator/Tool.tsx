@@ -4,9 +4,16 @@ import { saveZip } from '@/shared/lib/download';
 import { ToolError } from '@/shared/lib/errors';
 import { readText } from '@/shared/lib/files';
 import { useHandoffFiles } from '@/shared/lib/handoff';
+import { sniffAcceptKind } from '@/shared/lib/sniff';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useJob } from '@/shared/state/useJob';
-import { Box, Container, Grid, PrivacyNote, Stack } from '@/shared/ui';
+import {
+  Container,
+  PaneTabs,
+  PrivacyNote,
+  Stack,
+  usePaneTab,
+} from '@/shared/ui';
 import { ExportPanel } from './components/ExportPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import {
@@ -51,7 +58,7 @@ export default function FaviconGenerator() {
   const [svg, setSvg] = useState<SvgState>(EMPTY_SVG);
   const [name, setName] = useState('');
   const [shortName, setShortName] = useState('');
-  const { copied, copy } = useClipboard();
+  const { copy } = useClipboard();
 
   const loadImage = useCallback(async (file: File) => {
     setMode('image');
@@ -64,13 +71,23 @@ export default function FaviconGenerator() {
       setImageError(`${file.name} could not be decoded as an image`);
     }
   }, []);
-  useHandoffFiles((files) => {
-    if (files[0]) void loadImage(files[0]);
-  });
-
   const loadSvgFile = useCallback(async (file: File) => {
     setSvg(svgState(await readText(file)));
   }, []);
+  // A dropped or handed-off SVG opens the SVG source; anything else is an image.
+  const loadFile = useCallback(
+    async (file: File) => {
+      if ((await sniffAcceptKind(file)) === 'svg') {
+        setMode('svg');
+        await loadSvgFile(file);
+      } else await loadImage(file);
+    },
+    [loadImage, loadSvgFile],
+  );
+  useHandoffFiles((files) => {
+    if (files[0]) void loadFile(files[0]);
+  });
+  const tab = usePaneTab('favicon-generator', 'source');
 
   let textError: string | null = null;
   if (text.trim())
@@ -125,49 +142,61 @@ export default function FaviconGenerator() {
   return (
     <Container size="full">
       <Stack gap="4">
-        <Grid max={2} gap="4">
-          <Stack gap="4">
-            <SourcePanel
-              mode={mode}
-              onModeChange={setMode}
-              imageName={image?.name ?? null}
-              imageError={imageError}
-              onImage={(f) => void loadImage(f)}
-              svg={svg}
-              onSvgText={(t) => setSvg(svgState(t))}
-              onSvgFile={(f) => void loadSvgFile(f)}
-              text={text}
-              onTextChange={setText}
-              textError={textError}
-              settings={settings}
-              update={update}
-            />
-            <ExportPanel
-              name={name}
-              onNameChange={setName}
-              shortName={shortName}
-              onShortNameChange={setShortName}
-              themeColor={settings.themeColor}
-              backgroundColor={settings.backgroundColor}
-              onColours={update}
-              snippet={snippet}
-              canDownload={!!source}
-              downloading={job.status === 'running'}
-              error={job.error?.message ?? null}
-              onDownload={() => void download()}
-              copied={copied}
-              onCopy={copySnippet}
-            />
-          </Stack>
-          <Box>
-            <PreviewPanel
-              source={source}
-              backgroundColor={settings.backgroundColor}
-              name={name}
-              shortName={shortName}
-            />
-          </Box>
-        </Grid>
+        <PaneTabs
+          id="favicon-generator"
+          label="Favicon panes"
+          value={tab.value}
+          onValueChange={tab.show}
+          panes={[
+            {
+              id: 'source',
+              label: 'Source',
+              content: (
+                <SourcePanel
+                  mode={mode}
+                  onModeChange={setMode}
+                  imageName={image?.name ?? null}
+                  imageError={imageError}
+                  onImage={(f) => void loadImage(f)}
+                  svg={svg}
+                  onSvgText={(t) => setSvg(svgState(t))}
+                  text={text}
+                  onTextChange={setText}
+                  textError={textError}
+                  settings={settings}
+                  update={update}
+                />
+              ),
+            },
+            {
+              id: 'preview',
+              label: 'Preview',
+              changeKey: source,
+              content: (
+                <PreviewPanel
+                  source={source}
+                  backgroundColor={settings.backgroundColor}
+                  name={name}
+                  shortName={shortName}
+                />
+              ),
+            },
+          ]}
+        />
+        <ExportPanel
+          name={name}
+          onNameChange={setName}
+          shortName={shortName}
+          onShortNameChange={setShortName}
+          themeColor={settings.themeColor}
+          backgroundColor={settings.backgroundColor}
+          onColours={update}
+          snippet={snippet}
+          canDownload={!!source}
+          downloading={job.status === 'running'}
+          error={job.error?.message ?? null}
+          onDownload={() => void download()}
+        />
         <PrivacyNote variant="local">
           Icons are drawn on this device.
         </PrivacyNote>

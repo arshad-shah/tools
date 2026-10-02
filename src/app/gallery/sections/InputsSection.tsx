@@ -10,6 +10,7 @@ import {
   Slider,
   Stack,
   Switch,
+  SwitchField,
   Textarea,
   FontSample,
   RadioGroup,
@@ -87,6 +88,15 @@ export function InputsSection() {
           />
         </Stack>
       </div>
+      <Row label="SwitchField">
+        <SwitchField label="Padding" checked={on} onCheckedChange={setOn} />
+        <SwitchField
+          label="Wrap at 76"
+          description="MIME line length"
+          checked={false}
+          onCheckedChange={() => {}}
+        />
+      </Row>
       <Row label="Switch, Checkbox, Slider, NumberInput">
         <Switch checked={on} onCheckedChange={setOn} aria-label="Autosave" />
         <Switch checked={false} onCheckedChange={() => {}} aria-label="Off" />

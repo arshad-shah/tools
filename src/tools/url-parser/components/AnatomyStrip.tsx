@@ -16,7 +16,7 @@ const TONE: Record<PartId, string> = {
 export function AnatomyStrip({ segments }: { segments: Segment[] }) {
   const { copiedKey, copy } = useClipboard();
   return (
-    <Inline gap="1" align="center" aria-label="URL parts" role="group">
+    <Inline gap="1" align="center" wrap aria-label="URL parts" role="group">
       {segments.map((s) => (
         <Tooltip
           key={s.id}

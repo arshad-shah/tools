@@ -58,9 +58,9 @@ export function LayoutControls({
           {alignValues.map((value, idx) => (
             <IconButton
               key={value}
-              variant={
-                alignFitIndex.alignment === idx ? 'primary' : 'secondary'
-              }
+              // A selection, never primary: pressed state on a quiet button.
+              variant={alignFitIndex.alignment === idx ? 'secondary' : 'ghost'}
+              aria-pressed={alignFitIndex.alignment === idx}
               size="md"
               label={value}
               icon={alignmentIcon[value]}

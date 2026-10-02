@@ -4,9 +4,6 @@ import { useMemo, useState } from 'react';
 import { IconInfo } from '@/shared/ui/icons';
 
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Box,
   Button,
   Card,
@@ -14,11 +11,13 @@ import {
   CardHeader,
   CardTitle,
   Container,
+  ErrorState,
   Grid,
   Inline,
   Stack,
   Text,
 } from '@/shared/ui';
+import { ToolError } from '@/shared/lib/errors';
 import { useHandoffFiles } from '@/shared/lib/handoff';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -134,7 +133,7 @@ export default function RiveAnimationPlayer() {
             <CardHeader>
               <Inline justify="between" align="center" wrap gap="2">
                 <Stack gap="0">
-                  <CardTitle as="h3">Preview</CardTitle>
+                  <CardTitle as="h2">Preview</CardTitle>
                   <Text size="sm" tone="subtle">
                     {filename ? (
                       <>
@@ -195,14 +194,17 @@ export default function RiveAnimationPlayer() {
                 )}
 
                 {status.error != null && (
-                  <Alert status="danger">
-                    <AlertTitle>Error loading animation</AlertTitle>
-                    <AlertDescription>
-                      {status.error === PlayerError.NoAnimation
-                        ? "The uploaded file doesn't contain any animations."
-                        : 'An error occurred while loading the animation.'}
-                    </AlertDescription>
-                  </Alert>
+                  <ErrorState
+                    title="Error loading animation"
+                    error={
+                      new ToolError(
+                        'INVALID_FILE',
+                        status.error === PlayerError.NoAnimation
+                          ? "The uploaded file doesn't contain any animations."
+                          : 'An error occurred while loading the animation.',
+                      )
+                    }
+                  />
                 )}
 
                 <Button

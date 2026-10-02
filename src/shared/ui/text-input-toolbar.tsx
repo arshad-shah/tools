@@ -19,6 +19,7 @@ import {
 import { Select } from './select';
 import { ENCODING_LABELS, type TextEncodingId } from './text-input-lib';
 import { Tooltip } from './tooltip';
+import { useScrollRow } from './use-scroll-row';
 
 export interface TextSample {
   label: string;
@@ -45,6 +46,7 @@ const ToolButton = React.forwardRef<
       variant="ghost"
       label={label}
       icon={icon}
+      showLabel="desktop"
       onClick={onClick}
       disabled={disabled}
     />
@@ -70,7 +72,11 @@ export interface TextInputToolbarProps {
   downloadRef: React.Ref<HTMLButtonElement>;
 }
 
-/** The TextInputPanel's actions: each a named icon button with a tooltip. */
+/**
+ * The TextInputPanel's actions: each a named icon button with a tooltip,
+ * labelled with words on desktop (6-H). Like the kit Toolbar, it stays one
+ * row that scrolls sideways (edge fade) on narrow screens.
+ */
 export function TextInputToolbar({
   readOnly,
   hasValue,
@@ -89,8 +95,12 @@ export function TextInputToolbar({
   downloadRef,
 }: TextInputToolbarProps) {
   const many = (samples?.length ?? 0) > 1;
+  const row = useScrollRow<HTMLDivElement>('x');
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div
+      ref={row}
+      className="flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain p-0.5 scrollbar-none scroll-fade-x [&>*]:shrink-0"
+    >
       {encodingOptions?.length && !readOnly ? (
         <div className="w-44">
           <Select
@@ -101,7 +111,7 @@ export function TextInputToolbar({
               value: e,
               label: ENCODING_LABELS[e],
             }))}
-            className="h-8 text-sm"
+            size="sm"
           />
         </div>
       ) : null}
@@ -142,6 +152,7 @@ export function TextInputToolbar({
                     variant="ghost"
                     label="Load a sample"
                     icon={IconFileText}
+                    showLabel="desktop"
                   />
                 </DropdownMenuTrigger>
               </Tooltip>

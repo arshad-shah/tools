@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { buildSrcdoc, printSrcdoc } from './sandboxed-html-doc';
 
@@ -18,6 +18,11 @@ export interface SandboxedHtmlProps {
 export interface SandboxedHtmlHandle {
   /** Prints the HTML through a temporary script-free frame. */
   print(): void;
+  /**
+   * Shows the element with this id (a heading): the document is rebuilt to
+   * open scrolled there (CSS only, no script). Kept until `html` changes.
+   */
+  scrollToFragment(id: string): void;
 }
 
 /**
@@ -34,13 +39,31 @@ export const SandboxedHtml = forwardRef<
     { html, title, allowRemoteImages = false, baseCss, onLoad, className },
     ref,
   ) => {
+    const [fragment, setFragment] = useState<{
+      id: string;
+      nonce: number;
+      html: string;
+    } | null>(null);
+    const shown = fragment?.html === html ? fragment : null;
     const srcdoc = useMemo(
-      () => buildSrcdoc(html, { allowRemoteImages, baseCss }),
-      [html, allowRemoteImages, baseCss],
+      () =>
+        buildSrcdoc(html, {
+          allowRemoteImages,
+          baseCss,
+          target: shown?.id,
+          nonce: shown?.nonce,
+        }),
+      [html, allowRemoteImages, baseCss, shown],
     );
-    useImperativeHandle(ref, () => ({ print: () => printSrcdoc(srcdoc) }), [
-      srcdoc,
-    ]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        print: () => printSrcdoc(srcdoc),
+        scrollToFragment: (id) =>
+          setFragment((f) => ({ id, nonce: (f?.nonce ?? 0) + 1, html })),
+      }),
+      [srcdoc, html],
+    );
     return (
       <iframe
         sandbox=""

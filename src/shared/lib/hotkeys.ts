@@ -82,13 +82,16 @@ export function matchesHotkey(
   const wanted = hk.key === 'Space' ? ' ' : hk.key;
   const pressed = normaliseKey(e.key);
   const isLetter = /^[a-z]$/.test(wanted);
-  // Printable non-letters ('?', '/', '+') imply their own shift state on
-  // every layout, so shift is not compared for them.
-  const printable = wanted.length === 1 && !isLetter;
+  const isDigit = /^[0-9]$/.test(wanted);
+  // Printable symbols ('?', '/', '+') imply their own shift state on every
+  // layout, so shift is not compared for them.
+  const printable = wanted.length === 1 && !isLetter && !isDigit;
   if (!printable && e.shiftKey !== hk.shift) return false;
   if (pressed === wanted) return true;
-  // Option on macOS changes e.key (Option+P is a symbol): fall back to code.
-  return isLetter && e.code === `Key${wanted.toUpperCase()}`;
+  // Option on macOS changes e.key (Option+P is a symbol) and Shift changes a
+  // digit's key (Shift+7 is '&' on US layouts): fall back to the physical key.
+  if (isLetter) return e.code === `Key${wanted.toUpperCase()}`;
+  return isDigit && e.code === `Digit${wanted}`;
 }
 
 /**
@@ -177,7 +180,8 @@ export interface ShortcutDef {
   when?: () => boolean;
   /**
    * Fire while a text field has focus. Default false: fields keep their own
-   * keys (native undo, select all, typing). Escape is always allowed.
+   * keys (native undo, select all, typing). Escape is always allowed. Keys
+   * typed with AltGraph held never fire in a field.
    */
   allowInFields?: boolean;
   /**
@@ -215,6 +219,9 @@ function onKeyDown(e: KeyboardEvent): void {
   // An IME is composing: the key belongs to the composition.
   if (e.isComposing || e.key === 'Process') return;
   const typing = isTypingTarget(e.target);
+  // AltGr types characters ("@" on German layouts) and Windows reports it as
+  // Ctrl+Alt: in a field it is text, never a Ctrl+Alt shortcut.
+  const altGraph = e.getModifierState?.('AltGraph') ?? false;
   const modal = modalOpen(e.target);
   for (let r = stack.length - 1; r >= 0; r--) {
     const defs = stack[r].defs;
@@ -222,7 +229,7 @@ function onKeyDown(e: KeyboardEvent): void {
       const def = defs[i];
       if (!matchesHotkey(e, def.combo)) continue;
       const escape = parseHotkey(def.combo).key === 'Escape';
-      if (typing && !def.allowInFields && !escape) continue;
+      if (typing && (!def.allowInFields || altGraph) && !escape) continue;
       if (modal && !def.allowInModal && !escape) continue;
       if (def.when && !def.when()) continue;
       e.preventDefault();

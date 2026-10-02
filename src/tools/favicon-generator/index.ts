@@ -12,8 +12,7 @@ export default defineTool({
   slug: 'favicon',
   kind: 'tool',
   keywords: ['favicon', 'ico', 'apple touch icon', 'pwa icons', 'webmanifest'],
-  // AcceptKind has no 'svg': SVG comes in through the tool's own DropZone.
-  accepts: [{ kinds: ['png', 'jpeg', 'webp'], multiple: false }],
+  accepts: [{ kinds: ['png', 'jpeg', 'webp', 'svg'], multiple: false }],
   version: '1.0.0',
   enabled: true,
   isNew: true,

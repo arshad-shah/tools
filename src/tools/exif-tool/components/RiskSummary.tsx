@@ -31,7 +31,7 @@ export function RiskSummary({ risk }: { risk: Risk }) {
     <Card>
       <CardHeader>
         <Inline gap="2" align="center" justify="between" wrap>
-          <CardTitle as="h3">Privacy</CardTitle>
+          <CardTitle as="h2">Privacy</CardTitle>
           <Badge variant="soft" tone={level.tone} data-testid="risk-level">
             {level.label}
           </Badge>

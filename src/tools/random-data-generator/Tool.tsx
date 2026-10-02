@@ -5,7 +5,7 @@ import {
   type MockSchema,
   type MockTable,
 } from '@/shared/lib/data-formats/mock-schema';
-import { copyText } from '@/shared/lib/clipboard';
+import { useClipboard } from '@/shared/lib/clipboard';
 import { useHandoff } from '@/shared/lib/handoff';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
@@ -16,13 +16,15 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
+  EmptyState,
+  ErrorState,
   Inline,
+  PaneTabs,
   ShareButton,
   Stack,
+  usePaneTab,
 } from '@/shared/ui';
-import { IconPlusCircle } from '@/shared/ui/icons';
+import { IconPlusCircle, IconTable } from '@/shared/ui/icons';
 import { FieldEditor } from './components/FieldEditor';
 import { GeneratePanel } from './components/GeneratePanel';
 import { newSeed } from './lib/seed';
@@ -107,6 +109,8 @@ function Generator({
         : null,
   );
   const job = useMockGenerator();
+  const tab = usePaneTab(TOOL_ID, 'schema');
+  const { copy } = useClipboard();
   const [count, setCount] = useState(link?.count ?? initial.count);
   const [locale, setLocale] = useState(link?.locale ?? initial.locale);
 
@@ -140,6 +144,7 @@ function Generator({
     );
 
   const generate = () => {
+    tab.show('preview');
     void job.run(clean(schema), count, seed || null, locale);
   };
 
@@ -157,7 +162,7 @@ function Generator({
       shortcut: 'Mod+Shift+C',
       run: () =>
         job.result &&
-        void copyText(
+        void copy(
           JSON.stringify(Object.values(job.result.tables).at(-1), null, 2),
         ),
       enabled: job.result !== null,
@@ -178,10 +183,64 @@ function Generator({
     },
   ]);
 
+  const schemaPane = (
+    <Card>
+      <CardBody>
+        <Stack gap="4">
+          <TableBar
+            tables={schema.tables}
+            active={Math.min(active, schema.tables.length - 1)}
+            onActive={setActive}
+            onTables={(tables: MockTable[]) =>
+              setSchema(withTableIds({ tables }), null)
+            }
+          />
+          <Stack gap="3">
+            {table.fields.map((field, index) => (
+              <FieldEditor
+                key={field.id ?? index}
+                field={field}
+                index={index}
+                parentPath=""
+                level={0}
+                expandedFields={expanded}
+                totalFields={table.fields.length}
+                tables={schema.tables}
+                onRemoveField={(path) =>
+                  setFields(removeField(table.fields, path))
+                }
+                onUpdateField={(path, patch) =>
+                  setFields(updateField(table.fields, path, patch))
+                }
+                onMoveField={(path, dir) =>
+                  setFields(moveField(table.fields, path, dir))
+                }
+                onToggleExpanded={(key) =>
+                  setExpanded((e) => ({ ...e, [key]: !e[key] }))
+                }
+                onAddField={(parent) =>
+                  setFields(addField(table.fields, parent))
+                }
+              />
+            ))}
+            <Button
+              variant="secondary"
+              leftIcon={<IconPlusCircle size="sm" />}
+              onClick={() => setFields(addField(table.fields))}
+              fullWidth
+            >
+              Add field
+            </Button>
+          </Stack>
+        </Stack>
+      </CardBody>
+    </Card>
+  );
+
   return (
     <Stack gap="4">
       {receivedInvalid && (
-        <Alert status="danger">
+        <Alert status="danger" size="sm">
           <AlertDescription>
             The schema handed over is not valid.
           </AlertDescription>
@@ -205,89 +264,57 @@ function Generator({
           lastPreset={lastPreset}
           onSchema={replaceSchema}
         />
-        <ShareButton share={share} size="sm" />
+        <ShareButton share={share} />
       </Inline>
 
-      <Card>
-        <CardHeader>
-          <CardTitle as="h3">Schema</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <Stack gap="4">
-            <TableBar
-              tables={schema.tables}
-              active={Math.min(active, schema.tables.length - 1)}
-              onActive={setActive}
-              onTables={(tables: MockTable[]) =>
-                setSchema(withTableIds({ tables }), null)
-              }
-            />
-            <Stack gap="3">
-              {table.fields.map((field, index) => (
-                <FieldEditor
-                  key={field.id ?? index}
-                  field={field}
-                  index={index}
-                  parentPath=""
-                  level={0}
-                  expandedFields={expanded}
-                  totalFields={table.fields.length}
-                  tables={schema.tables}
-                  onRemoveField={(path) =>
-                    setFields(removeField(table.fields, path))
-                  }
-                  onUpdateField={(path, patch) =>
-                    setFields(updateField(table.fields, path, patch))
-                  }
-                  onMoveField={(path, dir) =>
-                    setFields(moveField(table.fields, path, dir))
-                  }
-                  onToggleExpanded={(key) =>
-                    setExpanded((e) => ({ ...e, [key]: !e[key] }))
-                  }
-                  onAddField={(parent) =>
-                    setFields(addField(table.fields, parent))
-                  }
-                />
-              ))}
-              <Button
-                variant="secondary"
-                leftIcon={<IconPlusCircle size="sm" />}
-                onClick={() => setFields(addField(table.fields))}
-                fullWidth
-              >
-                Add field
-              </Button>
-            </Stack>
-            <GeneratePanel
-              count={count}
-              onCount={(n) => {
-                setCount(n);
-                update({ count: n });
-              }}
-              seed={seed}
-              onSeed={setSeed}
-              locale={locale}
-              onLocale={(l) => {
-                setLocale(l);
-                update({ locale: l });
-              }}
-              fieldCount={table.fields.length}
-              running={job.status === 'running'}
-              progress={job.progress}
-              onGenerate={generate}
-              onCancel={job.cancel}
-            />
-          </Stack>
-        </CardBody>
-      </Card>
+      <GeneratePanel
+        count={count}
+        onCount={(n) => {
+          setCount(n);
+          update({ count: n });
+        }}
+        seed={seed}
+        onSeed={setSeed}
+        locale={locale}
+        onLocale={(l) => {
+          setLocale(l);
+          update({ locale: l });
+        }}
+        fieldCount={table.fields.length}
+        running={job.status === 'running'}
+        progress={job.progress}
+        onGenerate={generate}
+        onCancel={job.cancel}
+      />
 
-      {job.error && (
-        <Alert status="danger">
-          <AlertDescription>{job.error.message}</AlertDescription>
-        </Alert>
-      )}
-      {job.result && <OutputPanel tables={job.result.tables} />}
+      <PaneTabs
+        id={TOOL_ID}
+        label="Mock data panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          { id: 'schema', label: 'Schema', content: schemaPane },
+          {
+            id: 'preview',
+            label: 'Preview',
+            changeKey: job.result,
+            content: job.error ? (
+              <ErrorState
+                title="Could not generate the data"
+                error={job.error}
+              />
+            ) : job.result ? (
+              <OutputPanel tables={job.result.tables} />
+            ) : (
+              <EmptyState
+                icon={IconTable}
+                title="No data yet"
+                description="Generate to preview the rows here."
+              />
+            ),
+          },
+        ]}
+      />
     </Stack>
   );
 }

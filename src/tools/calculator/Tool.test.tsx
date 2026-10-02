@@ -138,6 +138,9 @@ describe('Calculator', () => {
     expect(line(1)).toHaveProperty('value', '2.5');
     press('Add to favourites');
     expect(calculatorSettings.getSettings().saved).toHaveLength(1);
+    const star = screen.getByRole('button', { name: 'Remove from favourites' });
+    expect(star.getAttribute('aria-pressed')).toBe('true');
+    expect(star.className).not.toMatch(/bg-accent\b/);
   });
 
   it('hydrates the sheet, angle and precision from a share link', () => {

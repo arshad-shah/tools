@@ -3,7 +3,15 @@ import type { ToolProps } from '@/app/tool';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
-import { IconButton, SendToMenu, TextInputPanel, Tooltip } from '@/shared/ui';
+import {
+  Grid,
+  IconButton,
+  Inline,
+  SendToMenu,
+  Stack,
+  TextInputPanel,
+  Tooltip,
+} from '@/shared/ui';
 import { IconRedo, IconUndo } from '@/shared/ui/icons';
 import { createRegexRunner } from '@/tools/regex-tester/lib/runner';
 import { OpsPanel } from './components/OpsPanel';
@@ -102,11 +110,12 @@ export default function TextToolkit({ definition }: ToolProps) {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+    <Stack gap="6">
+      <Inline gap="2" wrap justify="end">
         <Tooltip content="Undo" shortcut={UNDO_SHORTCUT}>
           <IconButton
             label="Undo"
+            showLabel="desktop"
             icon={IconUndo}
             size="sm"
             variant="ghost"
@@ -117,6 +126,7 @@ export default function TextToolkit({ definition }: ToolProps) {
         <Tooltip content="Redo" shortcut={REDO_SHORTCUT}>
           <IconButton
             label="Redo"
+            showLabel="desktop"
             icon={IconRedo}
             size="sm"
             variant="ghost"
@@ -137,7 +147,7 @@ export default function TextToolkit({ definition }: ToolProps) {
                 }
           }
         />
-      </div>
+      </Inline>
       <TextInputPanel
         value={text}
         onChange={doc.set}
@@ -150,8 +160,8 @@ export default function TextToolkit({ definition }: ToolProps) {
         wrap
         minHeight={200}
       />
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="flex flex-col gap-8">
+      <Grid cols={{ base: 1, lg: 2 }} gap="8">
+        <Stack gap="8">
           <OpsPanel
             ops={ops}
             onRun={runOp}
@@ -160,8 +170,8 @@ export default function TextToolkit({ definition }: ToolProps) {
             filter={filter}
             onFilter={setFilter}
           />
-        </div>
-        <div className="flex flex-col gap-8">
+        </Stack>
+        <Stack gap="8">
           <ReplacePanel
             text={text}
             runner={runner}
@@ -176,8 +186,8 @@ export default function TextToolkit({ definition }: ToolProps) {
             onLocale={(locale) => update({ locale })}
             onStopWords={(stopWords) => update({ stopWords })}
           />
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Grid>
+    </Stack>
   );
 }

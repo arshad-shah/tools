@@ -8,11 +8,13 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  EmptyState,
   Image,
   Inline,
   Stack,
   Text,
 } from '@/shared/ui';
+import { IconShapes } from '@/shared/ui/icons';
 import { MASKABLE_PADDING } from '../lib/outputs';
 import { renderIcon, type IconSource } from '../lib/render';
 
@@ -118,7 +120,7 @@ export function PreviewPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle as="h3">Preview</CardTitle>
+        <CardTitle as="h2">Preview</CardTitle>
       </CardHeader>
       <CardBody>
         {error ? (
@@ -126,9 +128,12 @@ export function PreviewPanel({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : !icons ? (
-          <Text size="sm" tone="muted">
-            Choose a source to see the icons.
-          </Text>
+          <EmptyState
+            size="sm"
+            icon={IconShapes}
+            title="No icon yet"
+            description="Choose a source to see the icons."
+          />
         ) : (
           <Stack gap="5">
             <Stack gap="2">

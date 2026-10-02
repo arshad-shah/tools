@@ -1,5 +1,15 @@
 import { useId, type ReactNode } from 'react';
-import { Button, Input, Label, NumberInput, Select, Switch } from '@/shared/ui';
+import {
+  Button,
+  Heading,
+  Inline,
+  Input,
+  Label,
+  NumberInput,
+  Select,
+  Stack,
+  SwitchField,
+} from '@/shared/ui';
 import type { OpGroup, TextOp } from '../lib/ops';
 import type { ToolkitSettings } from '../settings';
 
@@ -23,28 +33,10 @@ function Field({
 }) {
   const id = useId();
   return (
-    <div className="flex min-w-28 flex-1 flex-col gap-1">
+    <Stack gap="1" className="min-w-28 flex-1">
       <Label htmlFor={id}>{label}</Label>
       {children(id)}
-    </div>
-  );
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange(on: boolean): void;
-}) {
-  const id = useId();
-  return (
-    <div className="flex items-center gap-2">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-      <Label htmlFor={id}>{label}</Label>
-    </div>
+    </Stack>
   );
 }
 
@@ -55,20 +47,20 @@ function LineOptions({
   onFilter,
 }: Omit<OpsPanelProps, 'ops' | 'onRun'>) {
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-line p-3">
-      <div className="flex flex-wrap gap-3">
-        <Toggle
+    <Stack gap="3" className="rounded-md border border-line p-3">
+      <Inline gap="3" wrap>
+        <SwitchField
           label="Duplicates ignore case"
           checked={s.dedupeCaseInsensitive}
-          onChange={(v) => update({ dedupeCaseInsensitive: v })}
+          onCheckedChange={(v) => update({ dedupeCaseInsensitive: v })}
         />
-        <Toggle
+        <SwitchField
           label="Filter removes matches"
           checked={s.filterInvert}
-          onChange={(v) => update({ filterInvert: v })}
+          onCheckedChange={(v) => update({ filterInvert: v })}
         />
-      </div>
-      <div className="flex flex-wrap gap-3">
+      </Inline>
+      <Inline gap="3" wrap align="start">
         <Field label="Keep duplicate">
           {(id) => (
             <Select
@@ -102,8 +94,8 @@ function LineOptions({
             />
           )}
         </Field>
-      </div>
-      <div className="flex flex-wrap gap-3">
+      </Inline>
+      <Inline gap="3" wrap align="start">
         <Field label="Prefix">
           {(id) => (
             <Input
@@ -143,8 +135,8 @@ function LineOptions({
         <Field label="Filter text">
           {(id) => <Input id={id} value={filter} onChange={onFilter} />}
         </Field>
-      </div>
-    </div>
+      </Inline>
+    </Stack>
   );
 }
 
@@ -159,7 +151,7 @@ function OtherOptions({
 }) {
   if (group === 'Case')
     return (
-      <div className="flex flex-wrap gap-3">
+      <Inline gap="3" wrap align="start">
         <Field label="Slug separator">
           {(id) => (
             <Input
@@ -169,10 +161,10 @@ function OtherOptions({
             />
           )}
         </Field>
-      </div>
+      </Inline>
     );
   return (
-    <div className="flex flex-wrap gap-3">
+    <Inline gap="3" wrap align="start">
       <Field label="Tab width">
         {(id) => (
           <NumberInput
@@ -184,7 +176,7 @@ function OtherOptions({
           />
         )}
       </Field>
-    </div>
+    </Inline>
   );
 }
 
@@ -194,18 +186,15 @@ export function OpsPanel(props: OpsPanelProps) {
   const headingId = useId();
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h2 id={headingId} className="text-md font-semibold text-fg">
+      <Heading level={2} size="md" id={headingId}>
         Operations
-      </h2>
+      </Heading>
       {GROUPS.map((group) => (
-        <div
-          key={group}
-          role="group"
-          aria-label={group}
-          className="flex flex-col gap-2"
-        >
-          <h3 className="text-sm font-medium text-fg-muted">{group}</h3>
-          <div className="flex flex-wrap gap-2">
+        <Stack key={group} gap="2" role="group" aria-label={group}>
+          <Heading level={3} size="sm" className="text-fg-muted">
+            {group}
+          </Heading>
+          <Inline gap="2" wrap>
             {ops
               .filter((o) => o.group === group)
               .map((o) => (
@@ -219,7 +208,7 @@ export function OpsPanel(props: OpsPanelProps) {
                   {o.label}
                 </Button>
               ))}
-          </div>
+          </Inline>
           {group === 'Lines' ? (
             <LineOptions {...props} />
           ) : (
@@ -229,7 +218,7 @@ export function OpsPanel(props: OpsPanelProps) {
               update={props.update}
             />
           )}
-        </div>
+        </Stack>
       ))}
     </section>
   );

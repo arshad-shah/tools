@@ -14,9 +14,14 @@ const LOG = [
   '2024-01-15T08:24:10.567 [INFO] [com.example.StartupManager] Started in 3.45 seconds',
 ].join('\n');
 
+/** R41: Input and Output are tabs. */
+const show = (page: Page, name: 'Input' | 'Output') =>
+  page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
+
 async function pasteLog(page: Page) {
   await page.goto(pathOf('log-parser'));
   await page.getByRole('textbox', { name: 'Log' }).fill(LOG);
+  await show(page, 'Output');
   await expect(page.getByText('4 of 4 entries')).toBeVisible();
 }
 
@@ -44,6 +49,25 @@ test('log viewer filters by level', async ({ page }) => {
   await expect(page.getByText('4 of 4 entries')).toBeVisible();
 });
 
+test('log viewer hides a column from the Columns menu', async ({ page }) => {
+  await pasteLog(page);
+  const log = page.getByRole('log', { name: 'Log entries' });
+  const lineCells = log.locator('[data-column="line"]');
+  await expect(lineCells).toHaveCount(4);
+  await page.getByRole('button', { name: 'Columns' }).click();
+  await page.getByRole('checkbox', { name: 'Line number' }).click();
+  await expect(lineCells).toHaveCount(0);
+  await page.reload();
+  // The last pane (Output) is remembered too.
+  await show(page, 'Input');
+  await page.getByRole('textbox', { name: 'Log' }).fill(LOG);
+  await show(page, 'Output');
+  await expect(page.getByText('4 of 4 entries')).toBeVisible();
+  // The choice is a setting: it survives a reload.
+  await expect(log.locator('[data-column="level"]')).toHaveCount(4);
+  await expect(log.locator('[data-column="line"]')).toHaveCount(0);
+});
+
 test('log viewer exports CSV', async ({ page }) => {
   await pasteLog(page);
   await page.getByRole('button', { name: 'Export' }).click();
@@ -51,19 +75,12 @@ test('log viewer exports CSV', async ({ page }) => {
     page.waitForEvent('download'),
     page.getByRole('menuitem', { name: 'Export as CSV' }).click(),
   ]);
-  expect(download.suggestedFilename()).toBe('log-export.csv');
+  expect(download.suggestedFilename()).toBe('log.export.csv');
   const csv = readFileSync((await download.path())!, 'utf8');
   expect(csv.split(/\r?\n/)[0]).toBe(
     'line,time,level,component,message,fields',
   );
   expect(csv).toContain('DatabaseService.java:42');
-});
-
-test('log viewer uses a format handed off from the Regex Tester', async () => {
-  test.skip(
-    true,
-    'The Regex Tester "Use as log format" UI is being rebuilt; the hand-off is covered by the Log Viewer component test',
-  );
 });
 
 test('log viewer streams a large file with progress', async ({ page }) => {
@@ -79,6 +96,7 @@ test('log viewer streams a large file with progress', async ({ page }) => {
     timeout: 55_000,
   });
   // The file is streamed to the worker, never read into the editor.
+  await show(page, 'Input');
   await expect(page.getByRole('textbox', { name: 'Log' })).not.toContainText(
     'worker-0',
   );

@@ -23,6 +23,8 @@ export interface ChartPointerArgs {
   brush?: (range: [number, number] | null) => void;
   onView(view: ChartView): void;
   onHover?: (hover: ChartHover | null) => void;
+  /** A click (press and release without a drag) on a point. */
+  onPointClick?: (point: ChartHover) => void;
 }
 
 const sameHover = (a: ChartHover | null, b: ChartHover | null) =>
@@ -34,6 +36,7 @@ export function useChartPointer({
   brush,
   onView,
   onHover,
+  onPointClick,
 }: ChartPointerArgs) {
   const [hit, setHit] = useState<Hit | null>(null);
   const [brushPx, setBrushPx] = useState<[number, number] | null>(null);
@@ -118,6 +121,22 @@ export function useChartPointer({
       return;
     }
     gesture.current = null;
+    if (
+      g &&
+      g.mode !== 'pinch' &&
+      model &&
+      onPointClick &&
+      e.type === 'pointerup'
+    ) {
+      const p = local(e);
+      const hit = Math.hypot(p.x - g.start.x, p.y - g.start.y) < 3;
+      // A bar is hit anywhere in its column: retry at the baseline.
+      const bottom = model.plot.y + model.plot.h - 1;
+      const target = hit
+        ? (hitTest(model, p.x, p.y) ?? hitTest(model, p.x, bottom))
+        : null;
+      if (target) onPointClick(target.hover);
+    }
     if (g?.mode === 'brush' && model && e.type === 'pointerup') {
       const p = local(e);
       const { plot } = model;

@@ -91,6 +91,24 @@ describe('buildViewModel', () => {
     ]);
   });
 
+  it('pairs intraline ranges by line number around ignored blank lines', () => {
+    const left = 'x\nhello world\n\nfoo bar';
+    const right = 'x\nhello there\nfoo baz';
+    const marked = (s: {
+      lines: string[];
+      ranges: { start: number; end: number }[];
+    }) => {
+      const text = s.lines.join('\n');
+      return s.ranges.map((r) => text.slice(r.start, r.end));
+    };
+    const opts = { ignoreBlankLines: true, granularity: 'word' as const };
+    const split = build(left, right, {}, opts);
+    expect(marked(split.left)).toEqual(['world', 'bar']);
+    expect(marked(split.right!)).toEqual(['there', 'baz']);
+    const unified = build(left, right, { view: 'unified' }, opts);
+    expect(marked(unified.left)).toEqual(['world', 'bar', 'there', 'baz']);
+  });
+
   it('keeps ignored blank lines in place with original numbers', () => {
     const vm = build('a\n\nb', 'a\nc', {}, { ignoreBlankLines: true });
     expect(vm.left.numbers).toEqual([1, 2, 3]);

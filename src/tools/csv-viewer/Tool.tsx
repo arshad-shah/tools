@@ -1,32 +1,29 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { copyText } from '@/shared/lib/clipboard';
+import { useClipboard } from '@/shared/lib/clipboard';
 import {
   inferMockSchema,
   MOCK_SCHEMA_MIME,
   toCsv,
 } from '@/shared/lib/data-formats';
 import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
   Alert,
   AlertDescription,
-  AlertTitle,
   Badge,
   Button,
+  ErrorState,
   Heading,
   Inline,
-  Label,
-  Progress,
   SendToMenu,
   Stack,
-  Switch,
+  SwitchField,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  Text,
-  TextInputPanel,
   type GridFilters,
   type SortKey,
 } from '@/shared/ui';
@@ -41,6 +38,7 @@ import { ChartPanel } from './components/ChartPanel';
 import { EditToolbar } from './components/EditToolbar';
 import { ExportMenu } from './components/ExportMenu';
 import { GridView } from './components/GridView';
+import { InputScreen } from './components/InputScreen';
 import { ParseOptions } from './components/ParseOptions';
 import { ProfilePanel } from './components/ProfilePanel';
 import { WarningsAlert } from './components/WarningsAlert';
@@ -48,27 +46,15 @@ import { useCsvTable } from './hooks/useCsvTable';
 import { inferColumnTypes } from './lib/columns';
 import { isTextEncodingChoice } from './lib/decode';
 import type { Row } from './lib/edit';
+import { SAMPLES } from './lib/samples';
+import { csvTextPayload, jsonPayload } from './lib/send';
 import { tableView } from './lib/view';
 import { csvSettings } from './settings';
 
 const TOOL_ID = 'csv-viewer';
-const MAX_BYTES = 200 * 1024 * 1024;
-const TEXT_MIMES = ['text/csv', 'text/tab-separated-values', 'text/plain'];
-
-const SAMPLES = [
-  {
-    label: 'People (CSV)',
-    value:
-      'name,age,city,salary,joined\nJohn,28,New York,75000,2021-03-04\nSarah,32,San Francisco,92000,2019-11-20\nMike,45,Chicago,68000,2015-06-01\nEmma,37,Boston,83000,2020-01-15\nDavid,29,Seattle,79000,2022-08-30',
-  },
-  {
-    label: 'Prices (semicolon, decimal commas)',
-    value: 'item;price;stock\nTea;1,50;12\nCake;2,75;4\nScone;1,95;9',
-  },
-];
-
 export default function CsvViewer() {
   const navigate = useNavigate();
+  const { copy } = useClipboard();
   const [settings, updateSettings] = csvSettings.useSettings();
   const csv = useCsvTable({
     delimiter: settings.delimiterChoice,
@@ -146,6 +132,21 @@ export default function CsvViewer() {
       for (const c of visibleColumns) o[c] = r[c] ?? null;
       return o;
     });
+  const generateMore = () =>
+    sendTo(navigate, 'random-data-generator', {
+      kind: 'text',
+      mime: MOCK_SCHEMA_MIME,
+      text: JSON.stringify(inferMockSchema(projected().slice(0, 1000))),
+      sourceTool: TOOL_ID,
+    });
+
+  useSendCommands(TOOL_ID, [
+    {
+      target: 'random-data-generator',
+      run: generateMore,
+      enabled: Boolean(table && loaded),
+    },
+  ]);
 
   useToolCommands(TOOL_ID, [
     {
@@ -166,7 +167,7 @@ export default function CsvViewer() {
       id: 'copy',
       label: 'Copy shown rows as CSV',
       shortcut: 'Mod+Shift+C',
-      run: () => void copyText(toCsv(viewRows, { columns: visibleColumns })),
+      run: () => void copy(toCsv(viewRows, { columns: visibleColumns })),
       enabled: table !== null,
     },
     {
@@ -186,62 +187,15 @@ export default function CsvViewer() {
     },
   ]);
 
-  const progress = csv.job.status === 'running' ? csv.job.progress : null;
-
   if (!table || !loaded) {
     return (
-      <Stack gap="4">
-        <TextInputPanel
-          label="CSV or TSV data"
-          value={paste}
-          onChange={changePaste}
-          language="csv"
-          samples={SAMPLES}
-          accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
-          maxBytes={MAX_BYTES}
-          handoff={(p) => p.kind === 'text' && TEXT_MIMES.includes(p.mime)}
-          onFile={(file) => {
-            loadFile(file);
-            return true;
-          }}
-          placeholder="Paste rows copied from a spreadsheet, or open or drop a CSV or TSV file"
-          minHeight={240}
-        />
-        <Inline gap="3" align="center" wrap>
-          <Button
-            size="sm"
-            onClick={() => loadText(paste)}
-            disabled={!paste.trim() || csv.job.status === 'running'}
-            leftIcon={<IconTable size="sm" />}
-          >
-            Open as table
-          </Button>
-          {csv.job.status === 'running' && (
-            <>
-              <Text size="sm" tone="subtle">
-                {progress?.label ?? 'Reading'}
-              </Text>
-              {progress && (
-                <Progress
-                  className="w-48"
-                  value={progress.done}
-                  max={progress.total}
-                  label="Loading progress"
-                />
-              )}
-              <Button size="sm" variant="ghost" onClick={csv.job.cancel}>
-                Cancel
-              </Button>
-            </>
-          )}
-        </Inline>
-        {csv.job.error && (
-          <Alert status="danger">
-            <AlertTitle>Could not read the data</AlertTitle>
-            <AlertDescription>{csv.job.error.message}</AlertDescription>
-          </Alert>
-        )}
-      </Stack>
+      <InputScreen
+        paste={paste}
+        onPasteChange={changePaste}
+        onOpenText={() => loadText(paste)}
+        onFile={loadFile}
+        job={csv.job}
+      />
     );
   }
 
@@ -274,29 +228,23 @@ export default function CsvViewer() {
           />
           <SendToMenu
             sourceTool={TOOL_ID}
+            label="Send JSON to"
             size="sm"
-            payload={() => ({
-              kind: 'text',
-              mime: 'application/json',
-              text: JSON.stringify(projected(), null, 2),
-              sourceTool: TOOL_ID,
-              filename: `${loaded.name.replace(/\.[^.]+$/, '')}.json`,
-            })}
+            payload={() => jsonPayload(projected(), loaded.name)}
+          />
+          <SendToMenu
+            sourceTool={TOOL_ID}
+            label="Send CSV to"
+            size="sm"
+            payload={() =>
+              csvTextPayload(viewRows, visibleColumns, loaded.name)
+            }
           />
           <Button
             size="sm"
             variant="secondary"
             leftIcon={<IconSparkles size="sm" />}
-            onClick={() =>
-              sendTo(navigate, 'random-data-generator', {
-                kind: 'text',
-                mime: MOCK_SCHEMA_MIME,
-                text: JSON.stringify(
-                  inferMockSchema(projected().slice(0, 1000)),
-                ),
-                sourceTool: TOOL_ID,
-              })
-            }
+            onClick={generateMore}
           >
             Generate more like this
           </Button>
@@ -334,12 +282,10 @@ export default function CsvViewer() {
         <WarningsAlert warnings={loaded.warnings} />
       )}
       {csv.job.error && (
-        <Alert status="danger">
-          <AlertDescription>{csv.job.error.message}</AlertDescription>
-        </Alert>
+        <ErrorState title="Could not read the data" error={csv.job.error} />
       )}
       {csv.editError && (
-        <Alert status="danger">
+        <Alert status="danger" size="sm">
           <AlertDescription>{csv.editError.message}</AlertDescription>
         </Alert>
       )}
@@ -382,16 +328,13 @@ export default function CsvViewer() {
                 onEdit={csv.apply}
                 rowCount={table.rows.length}
               />
-              <Inline gap="2" align="center" wrap={false}>
-                <Switch
-                  id="csv-compact"
-                  checked={settings.density === 'compact'}
-                  onCheckedChange={(c) =>
-                    updateSettings({ density: c ? 'compact' : 'comfortable' })
-                  }
-                />
-                <Label htmlFor="csv-compact">Compact rows</Label>
-              </Inline>
+              <SwitchField
+                label="Compact rows"
+                checked={settings.density === 'compact'}
+                onCheckedChange={(c) =>
+                  updateSettings({ density: c ? 'compact' : 'comfortable' })
+                }
+              />
             </Inline>
             <GridView
               table={table}

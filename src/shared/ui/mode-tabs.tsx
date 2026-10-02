@@ -11,6 +11,7 @@ import {
 } from './menu';
 import { rovingIndex } from './roving';
 import { ShortcutHint } from './shortcut-hint';
+import { useScrollRow } from './use-scroll-row';
 
 export interface ModeTabItem {
   id: string;
@@ -82,6 +83,7 @@ export function ModeTabs({
   const n = Math.max(1, maxVisible ?? fitCount(width, items.length));
   const { shown, hidden } = splitItems(items, n, value);
   const tabs = React.useRef(new Map<string, HTMLButtonElement>());
+  const scroller = useScrollRow<HTMLDivElement>('x');
 
   const onKeyDown = (e: React.KeyboardEvent, index: number) => {
     const to = rovingIndex(e, index, shown.length);
@@ -94,7 +96,12 @@ export function ModeTabs({
 
   return (
     <div ref={root} className="flex min-w-0 flex-1 items-end gap-1">
-      <div role="tablist" aria-label={label} className="flex min-w-0 items-end">
+      <div
+        ref={scroller}
+        role="tablist"
+        aria-label={label}
+        className="flex min-w-0 flex-nowrap items-end overflow-x-auto overscroll-x-contain scrollbar-none scroll-fade-x"
+      >
         {shown.map((it, i) => {
           const selected = it.id === value;
           const Icon = it.icon;
@@ -115,7 +122,7 @@ export function ModeTabs({
               onClick={() => onChange(it.id)}
               onKeyDown={(e) => onKeyDown(e, i)}
               className={cn(
-                'relative inline-flex h-10 items-center gap-2 whitespace-nowrap px-3 text-sm font-medium outline-none transition-colors duration-fast',
+                'relative inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap px-3 pointer-coarse:h-11 text-sm font-medium outline-none transition-colors duration-fast',
                 'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus',
                 selected ? 'text-fg' : 'text-fg-muted hover:text-fg',
               )}

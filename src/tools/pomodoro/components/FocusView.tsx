@@ -37,7 +37,7 @@ export const FocusView: React.FC<{
             {formatTime(timer.timeLeft)}
           </Text>
           <Button
-            variant={timer.isActive ? 'danger' : 'primary'}
+            variant={timer.isActive ? 'secondary' : 'primary'}
             size="lg"
             leftIcon={
               timer.isActive ? <IconPause size="lg" /> : <IconPlay size="lg" />

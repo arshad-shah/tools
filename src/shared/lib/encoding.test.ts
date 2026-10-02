@@ -200,6 +200,11 @@ describe('Base58 (Bitcoin alphabet)', () => {
     expect(() => base58ToBytes('0OIl')).toThrow(/character 1/);
     expect(() => base58ToBytes('1l')).toThrow(/character 2/);
   });
+  it('counts error positions from the start of the raw input', () => {
+    expect(() => base58ToBytes('  1l')).toThrow(/character 4/);
+    expect(() => base58ToBytes('\n\t2l ')).toThrow(/character 4/);
+    expect([...base58ToBytes('  112\n')]).toEqual([0, 0, 1]);
+  });
 });
 
 describe('bytesToBinary', () => {
@@ -210,6 +215,8 @@ describe('bytesToBinary', () => {
   });
   it('refuses a group size that is not a positive whole number', () => {
     for (const g of [0, -1, 1.5, Number.NaN])
-      expect(() => bytesToBinary(Uint8Array.of(1), g)).toThrow(RangeError);
+      expect(() => bytesToBinary(Uint8Array.of(1), g)).toThrow(
+        expect.objectContaining({ name: 'ToolError', code: 'INVALID_INPUT' }),
+      );
   });
 });

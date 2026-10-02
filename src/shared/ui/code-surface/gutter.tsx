@@ -25,10 +25,13 @@ export function GutterCell({
   line,
   markers,
   showNumber,
+  label,
 }: {
   line: number;
   markers: readonly CodeMarker[] | undefined;
   showNumber: boolean;
+  /** Shown instead of the line number when given; null is blank. */
+  label?: number | string | null;
 }) {
   const top = markers?.length ? mostSevere(markers) : undefined;
   const Icon = top ? ICON[top.severity] : null;
@@ -52,7 +55,7 @@ export function GutterCell({
       </span>
       {showNumber ? (
         <span aria-hidden="true" className="flex-1 text-right">
-          {line}
+          {label === undefined ? line : (label ?? '')}
         </span>
       ) : null}
     </>

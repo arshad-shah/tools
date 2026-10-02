@@ -1,11 +1,11 @@
-import { useClipboard } from '@/shared/lib/clipboard';
 import {
   Box,
-  Button,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
+  CopyButton,
+  EmptyState,
   Image,
   Inline,
   Stack,
@@ -17,7 +17,6 @@ import {
   TableRow,
   Text,
 } from '@/shared/ui';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
 import { GROUPS, type MetaGroup, type Metadata } from '../lib/read';
 
 const GROUP_LABEL: Record<MetaGroup, string> = {
@@ -34,21 +33,13 @@ const GROUP_LABEL: Record<MetaGroup, string> = {
 };
 
 function GpsCoordinates({ lat, lon }: { lat: number; lon: number }) {
-  const { copied, copy } = useClipboard();
   const text = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
   return (
     <Inline gap="2" align="center" wrap>
       <Text as="span" size="sm" mono>
         {text}
       </Text>
-      <Button
-        size="sm"
-        variant="ghost"
-        leftIcon={copied ? <IconCheck size="sm" /> : <IconCopy size="sm" />}
-        onClick={() => void copy(text)}
-      >
-        {copied ? 'Copied' : 'Copy coordinates'}
-      </Button>
+      <CopyButton variant="text" label="coordinates" value={text} />
     </Inline>
   );
 }
@@ -65,7 +56,7 @@ function GroupTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle as="h3">{GROUP_LABEL[group]}</CardTitle>
+        <CardTitle as="h2">{GROUP_LABEL[group]}</CardTitle>
       </CardHeader>
       <CardBody>
         <Stack gap="2">
@@ -107,7 +98,7 @@ export function MetaTables({ meta }: { meta: Metadata }) {
       {meta.thumbnail ? (
         <Card>
           <CardHeader>
-            <CardTitle as="h3">Embedded thumbnail</CardTitle>
+            <CardTitle as="h2">Embedded thumbnail</CardTitle>
           </CardHeader>
           <CardBody>
             <Box className="max-w-48">
@@ -123,9 +114,11 @@ export function MetaTables({ meta }: { meta: Metadata }) {
         </Card>
       ) : null}
       {groups.length === 0 ? (
-        <Text size="sm" tone="muted">
-          No metadata found in this file.
-        </Text>
+        <EmptyState
+          size="sm"
+          title="No metadata found"
+          description="This file carries no EXIF, IPTC, XMP or ICC data."
+        />
       ) : (
         groups.map((g) => (
           <GroupTable key={g} group={g} rows={meta.groups[g]} meta={meta} />

@@ -72,6 +72,24 @@ describe('digest', () => {
       code: 'INVALID_INPUT',
     });
   });
+
+  it('refuses inherited object keys as ids with INVALID_INPUT', async () => {
+    for (const id of [
+      'toString',
+      'constructor',
+      '__proto__',
+    ] as unknown as DigestId[]) {
+      await expect(digest(id, te('x'))).rejects.toMatchObject({
+        code: 'INVALID_INPUT',
+      });
+      await expect(createDigest(id)).rejects.toMatchObject({
+        code: 'INVALID_INPUT',
+      });
+      await expect(hmac(id, te('k'), te('x'))).rejects.toMatchObject({
+        code: 'INVALID_INPUT',
+      });
+    }
+  });
 });
 
 describe('digest helpers', () => {

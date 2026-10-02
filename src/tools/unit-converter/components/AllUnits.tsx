@@ -9,7 +9,6 @@ import {
   Alert,
   AlertDescription,
   IconButton,
-  Inline,
   Input,
   Label,
   Stack,
@@ -65,8 +64,12 @@ export const AllUnits: React.FC<AllUnitsProps> = ({
         const text = isEditing ? editing.text : (values[u.id] ?? '');
         const isPinned = pinned.has(u.id);
         return (
-          <Inline key={u.id} gap="2" align="center" wrap={false}>
-            <Stack gap="0" className="w-44 shrink-0">
+          // Label above the value on phones, beside it from sm up.
+          <div
+            key={u.id}
+            className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:grid-cols-[11rem_minmax(0,1fr)_auto_auto]"
+          >
+            <Stack gap="0" className="col-span-3 sm:col-span-1">
               <Label htmlFor={id}>{u.label}</Label>
               <Text size="xs" tone="subtle">
                 {u.note ? `${u.symbol}, ${u.note}` : u.symbol}
@@ -111,7 +114,7 @@ export const AllUnits: React.FC<AllUnitsProps> = ({
               }
               onClick={() => onTogglePin(u.id)}
             />
-          </Inline>
+          </div>
         );
       })}
     </Stack>

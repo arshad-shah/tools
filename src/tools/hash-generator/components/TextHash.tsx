@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  AlertDescription,
+  EmptyState,
   Inline,
-  Label,
+  PaneTabs,
   Select,
   Stack,
-  Switch,
+  SwitchField,
   TextInputPanel,
+  usePaneTab,
 } from '@/shared/ui';
 import {
   bytesFrom,
@@ -50,6 +51,7 @@ export const TextHash: React.FC<TextHashProps> = ({
   onMessage,
 }) => {
   const [input, setInput] = useState('');
+  const tab = usePaneTab('hash-generator', 'input');
   // An empty message is valid (SHA-256("") is well known) but only hashed
   // when asked, so the page does not open full of results.
   const [hashEmpty, setHashEmpty] = useState(false);
@@ -96,7 +98,7 @@ export const TextHash: React.FC<TextHashProps> = ({
   const expectedHex = expected.trim() ? normalizeExpected(expected) : null;
   const shown = selected.filter((id) => results[id] !== undefined);
 
-  return (
+  const inputPane = (
     <Stack gap="4">
       <TextInputPanel
         label="Text to hash"
@@ -118,24 +120,25 @@ export const TextHash: React.FC<TextHashProps> = ({
           />
         </div>
         {input === '' && (
-          <Inline gap="2" align="center">
-            <Switch
-              id="hash-empty"
-              checked={hashEmpty}
-              onCheckedChange={setHashEmpty}
-              aria-label="Hash an empty message"
-            />
-            <Label htmlFor="hash-empty">Hash an empty message</Label>
-          </Inline>
+          <SwitchField
+            label="Hash an empty message"
+            checked={hashEmpty}
+            onCheckedChange={setHashEmpty}
+          />
         )}
       </Inline>
       {message.error && (
-        <Alert status="danger">
-          <AlertDescription>{message.error}</AlertDescription>
+        <Alert status="danger" size="sm">
+          {message.error}
         </Alert>
       )}
+    </Stack>
+  );
+
+  const outputPane = (
+    <Stack gap="4">
       <VerifyField value={expected} onChange={setExpected} results={results} />
-      {shown.length > 0 && (
+      {shown.length > 0 ? (
         <Stack gap="0" role="list" aria-label="Hash results">
           {shown.map((id) => {
             const hex = results[id]!;
@@ -152,7 +155,31 @@ export const TextHash: React.FC<TextHashProps> = ({
             );
           })}
         </Stack>
+      ) : (
+        <EmptyState
+          size="sm"
+          title="No hashes yet"
+          description="Type a message in the Input tab to see its hashes."
+        />
       )}
     </Stack>
+  );
+
+  return (
+    <PaneTabs
+      id="hash-generator"
+      label="Text hash panes"
+      value={tab.value}
+      onValueChange={tab.show}
+      panes={[
+        { id: 'input', label: 'Input', content: inputPane },
+        {
+          id: 'output',
+          label: 'Output',
+          content: outputPane,
+          changeKey: shown.map((id) => results[id]).join(),
+        },
+      ]}
+    />
   );
 };

@@ -7,6 +7,7 @@ import format from './format';
 import mock from './mock';
 import ping from './ping';
 import regex from './regex';
+import jsonQuery from './json-query';
 
 /**
  * Every text-worker handler (spec §4.4). Append-only: each Part adds one
@@ -24,6 +25,7 @@ export const textHandlers = {
   ...csv,
   ...mock,
   ...format,
+  ...jsonQuery,
 };
 
 export type TextHandlers = typeof textHandlers;

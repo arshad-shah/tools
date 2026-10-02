@@ -9,15 +9,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  EmptyState,
   Inline,
   Input,
   KeyValueEditor,
   Label,
   Select,
   Stack,
-  Switch,
   Text,
   type KeyValueRow,
+  SwitchField,
 } from '@/shared/ui';
 import { IconPlus, IconSettings, IconTrash2 } from '@/shared/ui/icons';
 import { clearSessionSecrets, type Environment } from '../lib/env';
@@ -145,18 +146,14 @@ export function EnvironmentMenu({
                   Use a variable as {'{{name}}'} in the URL, params, headers,
                   auth or body. Mark tokens and passwords as secret.
                 </Text>
-                <Inline gap="2" align="center">
-                  <Switch
-                    id="env-remember"
-                    checked={current.rememberSecrets}
-                    onCheckedChange={(rememberSecrets) =>
-                      patch({ rememberSecrets })
-                    }
-                  />
-                  <Label htmlFor="env-remember">
-                    Remember secret values in this browser
-                  </Label>
-                </Inline>
+                <SwitchField
+                  label="Remember secret values in this browser"
+                  id="env-remember"
+                  checked={current.rememberSecrets}
+                  onCheckedChange={(rememberSecrets) =>
+                    patch({ rememberSecrets })
+                  }
+                />
                 {current.rememberSecrets ? (
                   <Alert status="warning">
                     <AlertDescription>
@@ -204,7 +201,11 @@ export function EnvironmentMenu({
                 </Inline>
               </Stack>
             ) : (
-              <Text tone="muted">No environments yet.</Text>
+              <EmptyState
+                size="sm"
+                title="No environments yet"
+                description="Add one to keep variables such as {{baseUrl}}."
+              />
             )}
           </Stack>
         </DialogBody>

@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   Code,
+  CopyButton,
   Grid,
   Input,
   Inline,
@@ -20,12 +21,10 @@ import {
   TableCell,
   TableRow,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { listZones } from '@/shared/lib/time';
 import { KIND_LABELS, outputsFor } from '../lib/outputs';
 import { readInstant, type ReadAs } from '../lib/read';
-import { CopyValue } from './CopyValue';
 
 const READ_AS: { value: ReadAs; label: string }[] = [
   { value: 'auto', label: 'Detect automatically' },
@@ -56,7 +55,6 @@ export const ConvertPanel: React.FC<ConvertPanelProps> = ({
   onZone,
   now,
 }) => {
-  const { copiedKey, copy } = useClipboard();
   const zones = useMemo(
     () => listZones().map((z) => ({ value: z.id, label: z.label })),
     [],
@@ -140,12 +138,7 @@ export const ConvertPanel: React.FC<ConvertPanelProps> = ({
                       <Code>{o.value}</Code>
                     </TableCell>
                     <TableCell>
-                      <CopyValue
-                        label={o.label}
-                        value={o.value}
-                        copied={copiedKey === o.label}
-                        onCopy={() => void copy(o.value, o.label)}
-                      />
+                      <CopyButton label={o.label} value={o.value} />
                     </TableCell>
                   </TableRow>
                 ))}

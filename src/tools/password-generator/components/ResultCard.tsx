@@ -11,6 +11,7 @@ import {
   Text,
 } from '@/shared/ui';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { crackTime, strengthLabel } from '../lib/entropy';
 import { passwordTargets } from '../lib/handoffs';
 
@@ -32,6 +33,14 @@ export const ResultCard: React.FC<ResultCardProps> = ({
   const navigate = useNavigate();
   const [revealed, setRevealed] = useState(false);
   const times = crackTime(bits);
+  const targets = passwordTargets(value);
+  useSendCommands(
+    'password-generator',
+    targets.map((t) => ({
+      target: t.toolId,
+      run: () => sendTo(navigate, t.toolId, t.payload),
+    })),
+  );
   return (
     <Stack gap="3">
       <Inline gap="2" align="center" wrap={false}>
@@ -69,7 +78,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({
         </Text>
       </Stack>
       <Inline gap="2" wrap>
-        {passwordTargets(value).map((t) => (
+        {targets.map((t) => (
           <Button
             key={t.toolId}
             variant="secondary"

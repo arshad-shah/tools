@@ -83,6 +83,15 @@ describe('JavaScript', () => {
       '/ b /',
       'regex',
     ]);
+    // After the keyword `this`, "/" divides.
+    for (const line of ['n = this / 2 / k', 'm = this/2/k'])
+      expect(kindsOf('js', line).some(([, kind]) => kind === 'regex')).toBe(
+        false,
+      );
+    expect(kindsOf('js', 'return /a/.test(s)')).toContainEqual([
+      '/a/',
+      'regex',
+    ]);
     expect(kindsOf('js', 'x = /a[/]b/gi.test(s)')).toContainEqual([
       '/a[/]b/gi',
       'regex',

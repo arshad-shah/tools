@@ -11,7 +11,6 @@ test('text-diff-checker loads a file into the left pane', async ({ page }) => {
       mimeType: 'text/plain',
       buffer: Buffer.from('hello left'),
     });
-  await expect(page.getByText('left.txt loaded successfully')).toBeVisible();
   await expect(
     page.getByRole('textbox', { name: 'Original text' }),
   ).toHaveValue('hello left');

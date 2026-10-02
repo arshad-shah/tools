@@ -2,6 +2,7 @@ import { useId, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import {
   Alert,
   AlertTitle,
@@ -95,6 +96,19 @@ export function StripPanel({
   );
   const selectedDone =
     selected?.status === 'done' && selected.output ? selected : null;
+  const toCompressor = () =>
+    sendTo(navigate, 'image-optimizer', {
+      kind: 'files',
+      files: entries.map((e) => e.file),
+      sourceTool: 'exif-tool',
+    });
+  useSendCommands('exif-tool', [
+    {
+      target: 'image-optimizer',
+      run: toCompressor,
+      enabled: entries.length > 0,
+    },
+  ]);
 
   return (
     <Card>
@@ -181,13 +195,7 @@ export function StripPanel({
               variant="ghost"
               leftIcon={<IconSendTo size="sm" />}
               disabled={entries.length === 0}
-              onClick={() =>
-                sendTo(navigate, 'image-optimizer', {
-                  kind: 'files',
-                  files: entries.map((e) => e.file),
-                  sourceTool: 'exif-tool',
-                })
-              }
+              onClick={toCompressor}
             >
               Send to Image Compressor
             </Button>

@@ -1,8 +1,15 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { putHandoff } from '@/shared/lib/handoff';
+import { viewerSettings } from '../settings';
 import { Shell } from './Shell';
 
 vi.mock('@/shared/ui/diagram-canvas', () => ({ DiagramCanvas: () => null }));
@@ -10,6 +17,8 @@ vi.mock('@/shared/ui/diagram-canvas', () => ({ DiagramCanvas: () => null }));
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   localStorage.clear();
+  // Settings (the shown tab among them) live in memory between tests.
+  renderHook(() => viewerSettings.useSettings()).result.current[2]();
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -57,15 +66,36 @@ describe('Shell', () => {
     expect(editor().selectionStart).toBe('{\n  "a": 1,\n'.length);
   });
 
-  it('switches tabs with Alt+3 and back with Alt+1', async () => {
+  it('shows Source, Tree, Map, Query and Convert as tabs, Source first', async () => {
+    mount();
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+      'Source',
+      'Tree',
+      'Map',
+      'Query',
+      'Convert',
+    ]);
+    expect(
+      screen.getByRole('tab', { name: 'Source' }).getAttribute('aria-selected'),
+    ).toBe('true');
+    // A view before any document says why it is empty.
+    fireEvent.click(screen.getByRole('tab', { name: 'Tree' }));
+    expect(screen.getByRole('tabpanel').textContent).toContain(
+      'No document yet',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Source' }));
+    expect(screen.getByRole('tabpanel').textContent).toContain('Document');
+  });
+
+  it('switches tabs with Alt+4 and back with Alt+2', async () => {
     mount();
     await type('{"a":1}');
-    fireEvent.keyDown(window, { key: '3', code: 'Digit3', altKey: true });
+    fireEvent.keyDown(window, { key: '4', code: 'Digit4', altKey: true });
     await settle();
     expect(
       screen.getByRole('tab', { name: 'Query' }).getAttribute('aria-selected'),
     ).toBe('true');
-    fireEvent.keyDown(window, { key: '1', code: 'Digit1', altKey: true });
+    fireEvent.keyDown(window, { key: '2', code: 'Digit2', altKey: true });
     await settle();
     expect(
       screen.getByRole('tab', { name: 'Tree' }).getAttribute('aria-selected'),

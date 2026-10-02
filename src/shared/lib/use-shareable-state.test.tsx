@@ -115,7 +115,7 @@ describe('useShareableState', () => {
     );
     expect(result.current.canShare).toBe(false);
     expect(result.current.reason).toMatch(
-      /^Too large to share as a link \(\d+ KB\)$/,
+      /^Too large to share as a link \([\d,]+ of 6,000 characters\)$/,
     );
     await expect(result.current.share()).rejects.toMatchObject({
       code: 'TOO_LARGE',

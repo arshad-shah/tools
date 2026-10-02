@@ -66,6 +66,23 @@ describe('TimerCard shortcuts', { timeout: 20_000 }, () => {
     expect(screen.getByRole('dialog', { name: 'Focus view' })).toBeTruthy();
   });
 
+  it('picks the mode in a segmented control and keeps Pause non-destructive', async () => {
+    const store = await setup();
+    const modes = screen.getByRole('radiogroup', { name: 'Timer mode' });
+    fireEvent.click(within(modes).getByRole('radio', { name: 'Short Break' }));
+    expect(store.getState().timer.mode).toBe('shortBreak');
+    expect(
+      within(modes)
+        .getByRole('radio', { name: 'Short Break' })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+    const pause = screen.getByRole('button', { name: 'Pause' });
+    expect(pause.className).not.toMatch(/bg-danger/);
+    // Only the main action is primary: Start (now Pause) is not.
+    expect(pause.className).not.toMatch(/bg-accent\b/);
+  });
+
   it('the focus view starts and pauses the timer', async () => {
     const store = await setup();
     fireEvent.click(screen.getByRole('button', { name: 'Focus view' }));

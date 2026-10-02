@@ -72,6 +72,8 @@ export interface ChartProps {
   formatX?: (x: XValue) => string;
   formatY?: (y: number) => string;
   onPointHover?: (hover: ChartHover | null) => void;
+  /** A click on a point (no drag): jump to what it stands for. */
+  onPointClick?: (point: ChartHover) => void;
   /** Wheel, drag, pinch and keyboard zoom and pan. */
   zoomable?: boolean;
   /** Drag selects an x range (Shift-drag pans instead); a click clears it. */
@@ -101,6 +103,7 @@ export function Chart({
   formatX,
   formatY,
   onPointHover,
+  onPointClick,
   zoomable = false,
   brush,
   className,
@@ -202,6 +205,7 @@ export function Chart({
     brush,
     onView: changeView,
     onHover: onPointHover,
+    onPointClick,
   });
 
   const paint = useCallback(

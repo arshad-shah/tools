@@ -44,3 +44,5 @@ Binding decisions made while executing the phase plans. Later rulings override e
 - Ruling R39 (owner 2026-10-02): Fill & Sign gets manual click-to-type text boxes with a floating toolbar (size, colour, letter spacing, comb/character-box mode with cell count), like Acrobat Fill & Sign and Edge Add text.
 - Ruling R40 (owner 2026-10-02): bundle size is not a concern; choose libraries and implementations for quality and UX, with no size-driven splitting or trade-offs.
 - Ruling R41 (owner 2026-10-02): text input/output tools show one pane at a time in tabs (Input/Output, Edit/Preview and so on) instead of side by side, on all screen sizes. Text Diff inputs become Original/Changed tabs; the diff result keeps its own view switch.
+  - 6-H note (R40): only the lazy-only check for Prettier, zxcvbn, exifr, avif and zxing stays, in `test/lazy-chunks.test.ts`; no chunk budgets.
+  - 6-H note (R41): built once in the kit as `PaneTabs`; panes stay mounted, explicit runs reveal Output, a dot marks a pane that changed while hidden, Output carries Copy/Download, the last tab is remembered per tool, SplitPane leaves tools.

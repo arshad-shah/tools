@@ -1,5 +1,12 @@
 import { IconTrash2 } from '@/shared/ui/icons';
-import { Button, Inline, Stack, Text, VirtualList } from '@/shared/ui';
+import {
+  Button,
+  EmptyState,
+  Inline,
+  Stack,
+  Text,
+  VirtualList,
+} from '@/shared/ui';
 import type { LoggedEvent } from '../hooks/useRiveEvents';
 
 const clock = (ms: number) => {
@@ -33,10 +40,11 @@ export function EventsLog({
         </Button>
       </Inline>
       {events.length === 0 ? (
-        <Text size="sm" tone="subtle">
-          No events yet. Events appear here when a playing state machine reports
-          them.
-        </Text>
+        <EmptyState
+          size="sm"
+          title="No events yet"
+          description="Events appear here when a playing state machine reports them."
+        />
       ) : (
         <VirtualList
           items={events}

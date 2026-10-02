@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
   DateInput,
+  EmptyState,
   Grid,
   Label,
   NumberInput,
@@ -94,9 +95,11 @@ export const MeetingPlanner: React.FC<MeetingPlannerProps> = ({
             {bestText}
           </Text>
           {zones.length === 0 ? (
-            <Text size="sm" tone="subtle">
-              Add zones in the world clock to plan across them.
-            </Text>
+            <EmptyState
+              size="sm"
+              title="No zones yet"
+              description="Add zones in the world clock to plan across them."
+            />
           ) : (
             <Table aria-label="Meeting planner" data-testid="meeting-planner">
               <TableHeader>

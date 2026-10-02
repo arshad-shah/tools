@@ -21,14 +21,6 @@ const CURVES: Record<number, string> = {
   64: 'P-521',
 };
 
-/** The JWA algorithms we verify (RFC 7518 section 3, RFC 8037). */
-export const SUPPORTED_ALGS = [
-  ...['HS', 'RS', 'PS', 'ES'].flatMap((f) =>
-    ['256', '384', '512'].map((n) => `${f}${n}`),
-  ),
-  'EdDSA',
-];
-
 export type VerifyResult = 'verified' | 'invalid' | 'unsigned';
 
 const invalid = (message: string, cause?: unknown) =>

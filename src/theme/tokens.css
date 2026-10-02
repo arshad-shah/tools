@@ -9,6 +9,8 @@
  */
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+/* 6-H: desktop = a fine pointer on a wide screen (labels beside icons). */
+@custom-variant desk (@media (pointer: fine) and (min-width: 1024px));
 
 /* Spec §4.2. Light is the default before the bootstrap script runs. */
 :root,
@@ -379,4 +381,72 @@
   --color-chart-6: var(--chart-6);
   --color-chart-7: var(--chart-7);
   --color-chart-8: var(--chart-8);
+}
+
+/*
+ * 6-H: one-row scrolling bars (useScrollRow). The mask fades whichever end
+ * hides content (data-fade="start end"); the scrollbar stays hidden because
+ * the fade is the cue. Mask colours are alpha only.
+ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility scroll-fade-x {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black var(--fade-start),
+    black calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+  &[data-fade~='start'] {
+    --fade-start: 1.5rem;
+  }
+  &[data-fade~='end'] {
+    --fade-end: 1.5rem;
+  }
+  &:dir(rtl) {
+    mask-image: linear-gradient(
+      to left,
+      transparent 0,
+      black var(--fade-start),
+      black calc(100% - var(--fade-end)),
+      transparent 100%
+    );
+  }
+}
+@utility scroll-fade-y {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--fade-start),
+    black calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+  &[data-fade~='start'] {
+    --fade-start: 1.5rem;
+  }
+  &[data-fade~='end'] {
+    --fade-end: 1.5rem;
+  }
+}
+
+/*
+ * 6-H: the root font is 14px, so Tailwind's size-11 is only 38.5px; step 11
+ * is pinned to 44px. --control-touch is the 44px minimum every touch target
+ * meets (icon button sizes are the --icon-button-* tokens above).
+ */
+:root {
+  --control-touch: 44px;
+}
+/* Step 11 (h-11, size-11, min-h-11) is the 44px touch size everywhere. */
+@theme {
+  --spacing-11: 44px;
 }

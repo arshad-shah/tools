@@ -1,13 +1,50 @@
 /** @vitest-environment jsdom */
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { SandboxedHtml, type SandboxedHtmlHandle } from './sandboxed-html';
-import { PRINT_SANDBOX, countRemoteImages } from './sandboxed-html-doc';
+import {
+  PRINT_SANDBOX,
+  buildSrcdoc,
+  countRemoteImages,
+} from './sandboxed-html-doc';
 
 const frame = () => screen.getByTitle('Preview') as HTMLIFrameElement;
 
 describe('SandboxedHtml', () => {
+  it('scrollToFragment rebuilds the srcdoc with the target in view (CSS only)', () => {
+    const ref = createRef<SandboxedHtmlHandle>();
+    const html = '<h2 id="intro">Intro</h2><h2 id="end">End</h2>';
+    const { rerender } = render(
+      <SandboxedHtml ref={ref} html={html} title="Preview" />,
+    );
+    expect(frame().getAttribute('srcdoc')).not.toContain(
+      'scroll-initial-target',
+    );
+    act(() => ref.current!.scrollToFragment('end'));
+    const doc = frame().getAttribute('srcdoc') ?? '';
+    expect(doc).toContain('[id="end"]{scroll-initial-target:nearest}');
+    // Still no script and the same CSP.
+    expect(doc).not.toContain('<script');
+    expect(doc).toContain("default-src 'none'");
+    // The same heading again reloads (the user may have scrolled away).
+    act(() => ref.current!.scrollToFragment('end'));
+    expect(frame().getAttribute('srcdoc')).not.toBe(doc);
+    // New HTML drops the target: an edit does not jump the preview.
+    rerender(
+      <SandboxedHtml ref={ref} html={`${html}<p>x</p>`} title="Preview" />,
+    );
+    expect(frame().getAttribute('srcdoc')).not.toContain(
+      'scroll-initial-target',
+    );
+  });
+
+  it('a fragment target cannot break out of its style element', () => {
+    const doc = buildSrcdoc('<p>x</p>', { target: 'a"]</style><script>' });
+    expect(doc).not.toContain('</style><script>');
+    expect(doc).not.toContain('"]</style');
+  });
+
   it('renders an iframe with sandbox="" and a title', () => {
     render(<SandboxedHtml html="<p>Hi</p>" title="Preview" />);
     expect(frame().tagName).toBe('IFRAME');

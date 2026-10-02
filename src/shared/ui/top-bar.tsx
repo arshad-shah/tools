@@ -39,7 +39,7 @@ export function TopBar({
         {renderLink({
           href: homeHref,
           className:
-            'inline-flex shrink-0 items-center rounded-sm text-fg transition-colors duration-fast hover:text-fg-muted',
+            'inline-flex shrink-0 items-center rounded-sm text-fg transition-colors duration-fast hover:text-fg-muted pointer-coarse:min-h-11',
           'aria-label': 'tools home',
           children: <Logo label="tools home" className="h-5" />,
         })}

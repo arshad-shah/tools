@@ -158,6 +158,7 @@ const Calculator: React.FC = () => {
               variant="secondary"
               size="sm"
               label="Calculator keys"
+              showLabel="desktop"
               icon={IconInfo}
               onClick={() => setHelpOpen(true)}
             />

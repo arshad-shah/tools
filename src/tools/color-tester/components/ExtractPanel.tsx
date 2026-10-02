@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatColor } from '@/shared/lib/colour';
 import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import { useJob } from '@/shared/state/useJob';
 import { imageClient } from '@/shared/workers/image-client';
 import { IconPlus, IconQrCode } from '@/shared/ui/icons';
@@ -60,6 +61,9 @@ export function ExtractPanel({ onAdd, cvd }: ExtractPanelProps) {
       sourceTool: 'color-tester',
     });
   };
+  useSendCommands('color-tester', [
+    { target: 'qr-code-generator', run: toQr, enabled: !!qr },
+  ]);
 
   return (
     <Stack gap="4">

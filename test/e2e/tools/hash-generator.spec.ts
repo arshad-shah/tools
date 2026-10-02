@@ -3,12 +3,20 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { pathOf } from '../tool-routes';
 
-const message = (page: import('@playwright/test').Page) =>
-  page.getByRole('textbox', { name: 'Text to hash' });
+type Page = import('@playwright/test').Page;
+/** R41 tabs: shows a pane by its tab. */
+const show = (page: Page, name: 'Input' | 'Output') =>
+  page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
+/** Types the message in the Input pane, then shows the Output pane. */
+const typeMessage = async (page: Page, text: string) => {
+  await show(page, 'Input');
+  await page.getByRole('textbox', { name: 'Text to hash' }).fill(text);
+  await show(page, 'Output');
+};
 
 test('computes HMAC only with the key the user enters', async ({ page }) => {
   await page.goto(pathOf('hash-generator'));
-  await message(page).fill('what do ya want for nothing?');
+  await typeMessage(page, 'what do ya want for nothing?');
   await expect(page.getByTestId('hash-sha256')).toBeVisible();
   await expect(page.getByTestId('hash-hmac-sha256')).toHaveCount(0);
   await expect(
@@ -25,7 +33,7 @@ test('offers FIPS 202 SHA3-256 and a labelled Keccak-256', async ({ page }) => {
   await page.goto(pathOf('hash-generator'));
   await page.getByRole('checkbox', { name: 'SHA3-256' }).click();
   await page.getByRole('checkbox', { name: 'Keccak-256 (Ethereum)' }).click();
-  await message(page).fill('abc');
+  await typeMessage(page, 'abc');
   await expect(page.getByTestId('hash-sha3-256')).toHaveText(
     '3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532',
   );
@@ -38,6 +46,7 @@ test('hashes an empty message', async ({ page }) => {
   await page.goto(pathOf('hash-generator'));
   await expect(page.getByTestId('hash-sha256')).toHaveCount(0);
   await page.getByRole('switch', { name: 'Hash an empty message' }).click();
+  await show(page, 'Output');
   await expect(page.getByTestId('hash-sha256')).toHaveText(
     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
   );
@@ -49,7 +58,7 @@ test('hashes an empty message', async ({ page }) => {
 
 test('the verify field identifies the algorithm', async ({ page }) => {
   await page.goto(pathOf('hash-generator'));
-  await message(page).fill('abc');
+  await typeMessage(page, 'abc');
   await page
     .getByLabel('Expected hash')
     .fill(

@@ -7,6 +7,7 @@ import {
   SegmentedControl,
   Slider,
   Stack,
+  SwitchField,
   Text,
 } from '@/shared/ui';
 import { useWordlist } from '../hooks/useWordlist';
@@ -18,7 +19,6 @@ import {
   passphraseEntropy,
 } from '../lib/passphrase';
 import type { PasswordSettings } from '../settings';
-import { OptionSwitch } from './OptionSwitch';
 import { ResultCard } from './ResultCard';
 
 interface PassphraseTabProps {
@@ -90,17 +90,17 @@ export const PassphraseTab: React.FC<PassphraseTabProps> = ({
             { value: 'all', label: 'ALL' },
           ]}
         />
-        <OptionSwitch
+        <SwitchField
           id="pp-number"
           label="Add a number"
           checked={s.addNumber}
-          onChange={(v) => update({ addNumber: v })}
+          onCheckedChange={(v) => update({ addNumber: v })}
         />
-        <OptionSwitch
+        <SwitchField
           id="pp-symbol"
           label="Add a symbol"
           checked={s.addSymbol}
-          onChange={(v) => update({ addSymbol: v })}
+          onCheckedChange={(v) => update({ addSymbol: v })}
         />
       </Inline>
       {list ? (

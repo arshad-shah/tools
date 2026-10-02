@@ -14,7 +14,9 @@ test('home states the promise and lists the categories', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Free, private tools. Nothing leaves your browser.',
   );
-  await expect(page.getByRole('link', { name: 'PDF' })).toBeVisible();
+  await expect(
+    page.getByRole('main').getByRole('link', { name: 'PDF' }),
+  ).toBeVisible();
 });
 
 test('a tool lives at /<category>/<slug>', async ({ page }) => {
@@ -96,6 +98,11 @@ for (const tool of ENABLED) {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     page.on('console', (m) => {
+      // Playwright's trace snapshotter tries to run script in every frame;
+      // the Markdown preview's srcdoc frame is sandboxed without scripts on
+      // purpose, so Chromium logs this refusal (proof the sandbox holds).
+      if (m.text().startsWith("Blocked script execution in 'about:srcdoc'"))
+        return;
       if (m.type() === 'error') errors.push(`console.error: ${m.text()}`);
     });
 

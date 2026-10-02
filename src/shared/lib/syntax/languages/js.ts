@@ -115,7 +115,11 @@ export const js: LanguageDef = {
         else if (line[skipSpace(line, end)] === '(') kind = 'fn';
         out.push(i, end, kind);
         i = end;
-        prev = kind;
+        // `this` and `super` are values: a "/" after them divides.
+        prev =
+          kind === 'keyword' && (word === 'this' || word === 'super')
+            ? 'close'
+            : kind;
         continue;
       }
       if (c === 47) {

@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { IconLock, IconUnlock } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
+  ErrorState,
   Inline,
   LoadingState,
+  PaneTabs,
   SegmentedControl,
   Stack,
   TextInputPanel,
+  usePaneTab,
 } from '@/shared/ui';
 import { armor, dearmor } from '@/shared/lib/crypto/aead';
 import { utf8Decode, utf8Encode } from '@/shared/lib/encoding';
-import { toToolError } from '@/shared/lib/errors';
+import { toToolError, type ToolError } from '@/shared/lib/errors';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import type { useCryptoJob } from '../hooks/useCryptoJob';
 import { KDF_PARAMS, type KdfChoice } from '../settings';
@@ -42,15 +43,20 @@ export const TextMode: React.FC<TextModeProps> = ({
   const [direction, setDirection] = useState<Direction>('encrypt');
   const [input, setInput] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [result, setResult] = useState<{ text?: string; error?: string }>({});
+  const [result, setResult] = useState<{ text?: string; error?: ToolError }>(
+    {},
+  );
+  const tab = usePaneTab('text-encrypt', 'input');
   const job = direction === 'encrypt' ? jobs.sealJob : jobs.openJob;
   const encrypting = direction === 'encrypt';
   const mismatch = encrypting && confirm !== passphrase;
   const canRun =
     input !== '' && passphrase !== '' && !mismatch && job.status !== 'running';
 
+  // An explicit run shows the Output pane: the result or why it failed.
   const run = async () => {
     setResult({});
+    tab.show('output');
     if (encrypting) {
       const out = await jobs.sealJob.run(
         utf8Encode(input),
@@ -64,7 +70,7 @@ export const TextMode: React.FC<TextModeProps> = ({
     try {
       sealed = dearmor(input);
     } catch (e) {
-      setResult({ error: toToolError(e).message });
+      setResult({ error: toToolError(e) });
       return;
     }
     const out = await jobs.openJob.run(sealed, passphrase);
@@ -72,15 +78,13 @@ export const TextMode: React.FC<TextModeProps> = ({
       try {
         setResult({ text: utf8Decode(out) });
       } catch (e) {
-        setResult({
-          error: toToolError(e, 'The decrypted data is not text').message,
-        });
+        setResult({ error: toToolError(e, 'The decrypted data is not text') });
       }
     }
   };
 
   const error =
-    result.error ?? (job.status === 'error' ? job.error?.message : undefined);
+    result.error ?? (job.status === 'error' ? job.error : undefined);
 
   return (
     <Stack gap="4">
@@ -96,23 +100,6 @@ export const TextMode: React.FC<TextModeProps> = ({
           { value: 'encrypt', label: 'Encrypt' },
           { value: 'decrypt', label: 'Decrypt' },
         ]}
-      />
-      <TextInputPanel
-        label={encrypting ? 'Message' : 'Encrypted message'}
-        value={input}
-        onChange={(v) => {
-          setInput(v);
-          setResult({});
-        }}
-        language="plain"
-        wrap
-        handoff={acceptsText}
-        placeholder={
-          encrypting
-            ? 'The text to encrypt'
-            : '-----BEGIN TOOLS ENCRYPTED MESSAGE----- ...'
-        }
-        minHeight={120}
       />
       <PassphraseFields
         value={passphrase}
@@ -142,20 +129,63 @@ export const TextMode: React.FC<TextModeProps> = ({
           </>
         )}
       </Inline>
-      {error && (
-        <Alert status="danger">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <TextInputPanel
-        label={encrypting ? 'Encrypted message' : 'Decrypted message'}
-        value={result.text ?? ''}
-        onChange={() => {}}
-        language="plain"
-        readOnly
-        wrap
-        downloadName={encrypting ? 'message.txt.asc' : 'message.txt'}
-        minHeight={120}
+      <PaneTabs
+        id="text-encrypt"
+        label="Message panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          {
+            id: 'input',
+            label: 'Input',
+            content: (
+              <TextInputPanel
+                label={encrypting ? 'Message' : 'Encrypted message'}
+                value={input}
+                onChange={(v) => {
+                  setInput(v);
+                  setResult({});
+                }}
+                language="plain"
+                wrap
+                handoff={acceptsText}
+                placeholder={
+                  encrypting
+                    ? 'The text to encrypt'
+                    : '-----BEGIN TOOLS ENCRYPTED MESSAGE----- ...'
+                }
+                minHeight={120}
+              />
+            ),
+          },
+          {
+            id: 'output',
+            label: 'Output',
+            changeKey: result.text ?? error,
+            content: (
+              <Stack gap="3">
+                {error && (
+                  <ErrorState
+                    title={
+                      encrypting ? 'Could not encrypt' : 'Could not decrypt'
+                    }
+                    error={error}
+                  />
+                )}
+                <TextInputPanel
+                  label={encrypting ? 'Encrypted message' : 'Decrypted message'}
+                  value={result.text ?? ''}
+                  onChange={() => {}}
+                  language="plain"
+                  readOnly
+                  wrap
+                  downloadName={encrypting ? 'message.txt.asc' : 'message.txt'}
+                  minHeight={120}
+                />
+              </Stack>
+            ),
+          },
+        ]}
       />
     </Stack>
   );

@@ -19,9 +19,9 @@ import {
   Slider,
   Stack,
   Text,
-  Textarea,
+  TextInputPanel,
 } from '@/shared/ui';
-import { IconFileCode, IconImage } from '@/shared/ui/icons';
+import { IconImage } from '@/shared/ui/icons';
 import type { IconFont, IconShape } from '../lib/render';
 import type { FaviconSettings } from '../settings';
 
@@ -43,7 +43,6 @@ export interface SourcePanelProps {
   onImage(file: File): void;
   svg: SvgState;
   onSvgText(text: string): void;
-  onSvgFile(file: File): void;
   text: string;
   onTextChange(t: string): void;
   textError: string | null;
@@ -79,28 +78,17 @@ function ImageSource(p: SourcePanelProps) {
 }
 
 function SvgSource(p: SourcePanelProps) {
-  const id = useId();
   const { svg } = p;
   return (
     <Stack gap="2">
-      <DropZone
-        variant="inline"
-        multiple={false}
+      <TextInputPanel
+        label="SVG markup"
+        language="xml"
         accept=".svg,image/svg+xml"
-        icon={IconFileCode}
-        title="Drop an SVG file"
-        chooseLabel="Choose SVG"
-        onFiles={(f) => f[0] && p.onSvgFile(f[0])}
-      />
-      <Label htmlFor={id}>Or paste SVG markup</Label>
-      <Textarea
-        id={id}
-        rows={6}
         value={svg.text}
         onChange={p.onSvgText}
-        invalid={!!svg.error}
-        spellCheck={false}
-        placeholder="<svg xmlns=...>"
+        placeholder="Paste SVG markup, open or drop an .svg file"
+        minHeight={180}
       />
       {svg.error ? (
         <Alert status="danger">
@@ -205,7 +193,7 @@ export function SourcePanel(p: SourcePanelProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle as="h3">Source</CardTitle>
+        <CardTitle as="h2">Source</CardTitle>
       </CardHeader>
       <CardBody>
         <Stack gap="3">

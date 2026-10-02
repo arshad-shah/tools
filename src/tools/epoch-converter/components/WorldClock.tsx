@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
   Code,
+  EmptyState,
   IconButton,
   Inline,
   SearchInput,
@@ -98,14 +99,18 @@ export const WorldClock: React.FC<WorldClockProps> = ({
             </Inline>
           )}
           {query.trim() && matches.length === 0 && (
-            <Text size="sm" tone="subtle">
-              No other zone matches that search.
-            </Text>
+            <EmptyState
+              size="sm"
+              title="No matches"
+              description="No other zone matches that search."
+            />
           )}
           {zones.length === 0 ? (
-            <Text size="sm" tone="subtle">
-              Add zones to compare them side by side.
-            </Text>
+            <EmptyState
+              size="sm"
+              title="No zones yet"
+              description="Add zones to compare them side by side."
+            />
           ) : (
             <Table aria-label="World clock">
               <TableHeader>

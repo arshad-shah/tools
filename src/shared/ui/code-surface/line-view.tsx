@@ -62,10 +62,12 @@ export function GutterRows({
   w,
   data,
   showNumbers,
+  labels,
 }: {
   w: RowWindow;
   data: LineData;
   showNumbers: boolean;
+  labels?: readonly (number | string | null)[];
 }) {
   const out: ReactNode[] = [];
   for (let r = w.start; r < w.end; r++) {
@@ -88,11 +90,42 @@ export function GutterRows({
           line={line + 1}
           markers={data.markers.get(line + 1)}
           showNumber={showNumbers}
+          label={labels ? (labels[line] ?? null) : undefined}
         />
       </div>,
     );
   }
   return <>{out}</>;
+}
+
+/** The sticky gutter column: numbers (or labels) and marker icons. */
+export function GutterColumn({
+  w,
+  data,
+  lineNumbers,
+  labels,
+  digits,
+  className,
+}: {
+  w: RowWindow;
+  data: LineData;
+  lineNumbers: boolean;
+  labels?: readonly (number | string | null)[];
+  digits: number;
+  className: string;
+}) {
+  return (
+    <div
+      data-cs-gutter=""
+      className={cn(
+        'sticky left-0 z-20 shrink-0 select-none border-r border-line bg-surface-2 text-fg-subtle',
+        className,
+      )}
+      style={{ width: lineNumbers ? `calc(${digits}ch + 28px)` : 24 }}
+    >
+      <GutterRows w={w} data={data} showNumbers={lineNumbers} labels={labels} />
+    </div>
+  );
 }
 
 /** "Show N hidden lines" buttons over the empty rows a fold leaves. */

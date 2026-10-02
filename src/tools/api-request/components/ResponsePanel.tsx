@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
+import { useSendCommands } from '@/shared/lib/send-commands';
 import {
   Badge,
   Button,
   Card,
   CardBody,
   CardHeader,
+  CopyButton,
+  EmptyState,
   Inline,
   MetaList,
   Stack,
@@ -23,10 +25,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  Text,
 } from '@/shared/ui';
 import {
-  IconCopy,
   IconDownload,
   IconFileJson,
   IconKey,
@@ -67,13 +67,51 @@ const EXT: Record<string, string> = {
 /** Status, timing, size, headers and the body views, with hand-offs. */
 export function ResponsePanel({ sent }: { sent: Sent }) {
   const navigate = useNavigate();
-  const { copiedKey, copy } = useClipboard();
   const res = sent.response;
   const view = bodyView(res);
   const [tab, setTab] = useState('pretty');
   const tokens = findTokens(res);
   const t = sent.timing;
   const src = 'api-request';
+
+  const canCompare = sent.previousText !== undefined && res.text !== undefined;
+  const openJson = () =>
+    sendTo(navigate, 'json-and-xml-viewer', {
+      kind: 'text',
+      mime: 'application/json',
+      sourceTool: src,
+      text: res.text ?? '',
+    });
+  const comparePrevious = () =>
+    sendTo(navigate, 'text-diff-checker', {
+      kind: 'text',
+      mime: 'application/vnd.tools.diff-pair+json',
+      sourceTool: src,
+      text: JSON.stringify({ left: sent.previousText, right: res.text }),
+      meta: { pair: true },
+    });
+  const decodeToken = () =>
+    tokens[0] &&
+    sendTo(navigate, 'jwt-decode', {
+      kind: 'text',
+      mime: 'application/jwt',
+      sourceTool: src,
+      text: tokens[0],
+    });
+  const inspectUrl = () =>
+    sendTo(navigate, 'url-parser', {
+      kind: 'text',
+      mime: 'text/uri-list',
+      sourceTool: src,
+      text: sent.url,
+    });
+
+  useSendCommands(src, [
+    { target: 'json-and-xml-viewer', run: openJson, enabled: view === 'json' },
+    { target: 'text-diff-checker', run: comparePrevious, enabled: canCompare },
+    { target: 'jwt-decode', run: decodeToken, enabled: !!tokens[0] },
+    { target: 'url-parser', run: inspectUrl },
+  ]);
 
   return (
     <Card>
@@ -100,15 +138,12 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
       <CardBody>
         <Stack gap="3">
           <Inline gap="2" wrap>
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconCopy size="sm" />}
+            <CopyButton
+              variant="text"
+              label="body"
+              value={res.text ?? ''}
               disabled={res.text === undefined}
-              onClick={() => void copy(res.text ?? '', 'body')}
-            >
-              {copiedKey === 'body' ? 'Copied' : 'Copy body'}
-            </Button>
+            />
             <Button
               size="sm"
               variant="secondary"
@@ -117,7 +152,7 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
               onClick={() =>
                 saveBlob(
                   res.bytes,
-                  `response.${EXT[res.contentType] ?? 'bin'}`,
+                  deriveFilename('response', '', EXT[res.contentType] ?? 'bin'),
                   res.contentType || 'application/octet-stream',
                 )
               }
@@ -129,35 +164,17 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconFileJson size="sm" />}
-                onClick={() =>
-                  sendTo(navigate, 'json-and-xml-viewer', {
-                    kind: 'text',
-                    mime: 'application/json',
-                    sourceTool: src,
-                    text: res.text ?? '',
-                  })
-                }
+                onClick={openJson}
               >
                 Open in JSON Viewer
               </Button>
             )}
-            {sent.previousText !== undefined && res.text !== undefined && (
+            {canCompare && (
               <Button
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconSplit size="sm" />}
-                onClick={() =>
-                  sendTo(navigate, 'text-diff-checker', {
-                    kind: 'text',
-                    mime: 'application/vnd.tools.diff-pair+json',
-                    sourceTool: src,
-                    text: JSON.stringify({
-                      left: sent.previousText,
-                      right: res.text,
-                    }),
-                    meta: { pair: true },
-                  })
-                }
+                onClick={comparePrevious}
               >
                 Compare with previous response
               </Button>
@@ -167,14 +184,7 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
                 size="sm"
                 variant="secondary"
                 leftIcon={<IconKey size="sm" />}
-                onClick={() =>
-                  sendTo(navigate, 'jwt-decode', {
-                    kind: 'text',
-                    mime: 'application/jwt',
-                    sourceTool: src,
-                    text: tokens[0],
-                  })
-                }
+                onClick={decodeToken}
               >
                 Decode token
               </Button>
@@ -183,14 +193,7 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
               size="sm"
               variant="ghost"
               leftIcon={<IconLink size="sm" />}
-              onClick={() =>
-                sendTo(navigate, 'url-parser', {
-                  kind: 'text',
-                  mime: 'text/uri-list',
-                  sourceTool: src,
-                  text: sent.url,
-                })
-              }
+              onClick={inspectUrl}
             >
               Inspect URL
             </Button>
@@ -238,10 +241,11 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
                   </TableBody>
                 </Table>
               ) : (
-                <Text tone="muted">
-                  The browser exposed no headers (cross-origin responses show
-                  only safe ones).
-                </Text>
+                <EmptyState
+                  size="sm"
+                  title="No headers"
+                  description="The browser exposed no headers (cross-origin responses show only safe ones)."
+                />
               )}
             </TabsContent>
           </Tabs>

@@ -5,9 +5,9 @@
  *
  * The painter draws onto a canvas, which cannot resolve `var(--x)`, so the
  * palette is read out of the live token layer and handed over as concrete
- * values. Every colour comes from a token (each role chains to a second token
- * until the syntax tokens exist), so the diagram follows `data-theme` with no
- * colour literal of its own. `watchTheme` signals a repaint on theme change.
+ * values. Every colour comes from a token (6-A1's syntax and match tokens
+ * included; the interim fallbacks are gone), so the diagram follows
+ * `data-theme` with no colour literal of its own. `watchTheme` signals a repaint on theme change.
  */
 import { readThemeTokens, watchTheme } from '@/shared/lib/theme-tokens';
 import {
@@ -57,7 +57,7 @@ const ROLES = {
   divider: ['line'],
   title: ['fg'],
   eyebrow: ['fg-subtle', 'fg-muted'],
-  key: ['syntax-key', 'fg'],
+  key: ['syntax-key'],
   chip: ['surface-3', 'surface-2'],
   chipText: ['fg-muted', 'fg'],
   edge: ['fg-subtle', 'line-control'],
@@ -66,15 +66,15 @@ const ROLES = {
   select: ['focus', 'accent-fg'],
   selectFill: ['accent-soft', 'surface-3'],
   hoverFill: ['surface-3', 'surface-2'],
-  matchFill: ['match-soft', 'warning-soft'],
-  string: ['syntax-string', 'accent-fg'],
-  number: ['syntax-number', 'info'],
-  boolean: ['syntax-boolean', 'warning'],
-  null: ['syntax-null', 'fg-subtle'],
+  matchFill: ['match-soft'],
+  string: ['syntax-string'],
+  number: ['syntax-number'],
+  boolean: ['syntax-boolean'],
+  null: ['syntax-null'],
   object: ['fg-muted'],
   array: ['fg-muted'],
-  element: ['syntax-tag', 'info'],
-  attribute: ['syntax-attr', 'warning'],
+  element: ['syntax-tag'],
+  attribute: ['syntax-attr'],
   text: ['fg'],
   more: ['fg-subtle'],
 } as const;

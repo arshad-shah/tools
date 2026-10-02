@@ -144,7 +144,12 @@ describe('RiveAnimationPlayer panels', () => {
     });
     await loadFile();
     openTab('Export');
-    fireEvent.click(screen.getByRole('button', { name: 'Copy snippet' }));
+    // A read-only text panel: its toolbar holds Copy (and Download).
+    const panel = screen.getByRole('group', { name: 'Embed snippet panel' });
+    expect(
+      within(panel).getByRole('button', { name: 'Download' }),
+    ).toBeTruthy();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Copy' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const code = (writeText.mock.calls[0] as unknown as [string])[0];
     expect(code).toContain(
@@ -152,12 +157,29 @@ describe('RiveAnimationPlayer panels', () => {
     );
 
     fireEvent.click(screen.getByRole('radio', { name: 'Web' }));
-    // The button reads "Copied" for a moment after a copy.
-    fireEvent.click(screen.getByRole('button', { name: 'Copied' }));
+    fireEvent.click(within(panel).getByRole('button', { name: 'Copy' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
     expect((writeText.mock.calls[1] as unknown as [string])[0]).toContain(
       "import { Rive } from '@rive-app/canvas';",
     );
+  });
+
+  it('draws selections as pressed buttons, never primary', async () => {
+    await loadFile();
+    openTab('Stage');
+    const white = screen.getByRole('button', { name: 'White' });
+    fireEvent.click(white);
+    expect(
+      screen
+        .getByRole('button', { name: 'White' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(screen.getByRole('button', { name: 'White' }).className).not.toMatch(
+      /bg-accent\b/,
+    );
+    const center = screen.getByRole('button', { name: 'Center' });
+    expect(center.getAttribute('aria-pressed')).toBe('true');
+    expect(center.className).not.toMatch(/bg-accent\b/);
   });
 
   it('says so when the file has no data bindings', async () => {

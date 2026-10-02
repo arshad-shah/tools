@@ -4,7 +4,6 @@ import {
   IconBraces,
   IconCheckCircle,
   IconClock,
-  IconCopy,
   IconGlobe,
   IconSettings,
   IconShield,
@@ -17,14 +16,13 @@ import {
   AccordionItem,
   AccordionTrigger,
   Badge,
-  Button,
   Card,
   CardBody,
-  Code,
   Grid,
   Inline,
   Stack,
   Text,
+  TextInputPanel,
 } from '@/shared/ui';
 import type { ExpiryInfo, JWTPayload } from '../types';
 import type { CategorizedClaims } from '../lib/categorize';
@@ -36,16 +34,12 @@ interface PayloadSectionProps {
   payload: JWTPayload;
   categorizedClaims: CategorizedClaims;
   expiryInfo: ExpiryInfo;
-  copiedKey: string | null;
-  copy: (text: string, key?: string) => Promise<boolean>;
 }
 
 export const PayloadSection: React.FC<PayloadSectionProps> = ({
   payload,
   categorizedClaims,
   expiryInfo,
-  copiedKey,
-  copy,
 }) => (
   <Stack gap="4">
     {categorizedClaims.identity.length > 0 && (
@@ -236,30 +230,17 @@ export const PayloadSection: React.FC<PayloadSectionProps> = ({
           </span>
         </AccordionTrigger>
         <AccordionContent>
-          <Stack gap="2">
-            <Inline justify="between" align="center">
-              <Text size="sm" weight="medium">
-                Complete payload
-              </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={
-                  copiedKey === 'payload' ? (
-                    <IconCheckCircle size="sm" />
-                  ) : (
-                    <IconCopy size="sm" />
-                  )
-                }
-                onClick={() =>
-                  void copy(JSON.stringify(payload, null, 2), 'payload')
-                }
-              >
-                {copiedKey === 'payload' ? 'Copied' : 'Copy'}
-              </Button>
-            </Inline>
-            <Code block>{JSON.stringify(payload, null, 2)}</Code>
-          </Stack>
+          <TextInputPanel
+            label="Complete payload"
+            value={JSON.stringify(payload, null, 2)}
+            onChange={() => {}}
+            language="json"
+            readOnly
+            wrap
+            minHeight={80}
+            maxHeight={320}
+            downloadName="jwt-payload.json"
+          />
         </AccordionContent>
       </AccordionItem>
     </Accordion>

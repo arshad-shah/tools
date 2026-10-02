@@ -1,8 +1,6 @@
 import React from 'react';
 import {
   IconBraces,
-  IconCheckCircle,
-  IconCopy,
   IconFileJson,
   IconKey,
   IconSettings,
@@ -14,12 +12,10 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Button,
-  Code,
   Grid,
-  Inline,
   Stack,
   Text,
+  TextInputPanel,
 } from '@/shared/ui';
 import type { JWTHeader } from '../types';
 import { getClaimIcon } from '../lib/claim-icon';
@@ -28,15 +24,9 @@ import { ClaimCard } from './ClaimCard';
 
 interface HeaderSectionProps {
   header: JWTHeader;
-  copiedKey: string | null;
-  copy: (text: string, key?: string) => Promise<boolean>;
 }
 
-export const HeaderSection: React.FC<HeaderSectionProps> = ({
-  header,
-  copiedKey,
-  copy,
-}) => (
+export const HeaderSection: React.FC<HeaderSectionProps> = ({ header }) => (
   <Stack gap="4">
     <Grid max={2} gap="3">
       {header.alg && (
@@ -102,30 +92,17 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           </span>
         </AccordionTrigger>
         <AccordionContent>
-          <Stack gap="2">
-            <Inline justify="between" align="center">
-              <Text size="sm" weight="medium">
-                Complete header
-              </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={
-                  copiedKey === 'header' ? (
-                    <IconCheckCircle size="sm" />
-                  ) : (
-                    <IconCopy size="sm" />
-                  )
-                }
-                onClick={() =>
-                  void copy(JSON.stringify(header, null, 2), 'header')
-                }
-              >
-                {copiedKey === 'header' ? 'Copied' : 'Copy'}
-              </Button>
-            </Inline>
-            <Code block>{JSON.stringify(header, null, 2)}</Code>
-          </Stack>
+          <TextInputPanel
+            label="Complete header"
+            value={JSON.stringify(header, null, 2)}
+            onChange={() => {}}
+            language="json"
+            readOnly
+            wrap
+            minHeight={80}
+            maxHeight={320}
+            downloadName="jwt-header.json"
+          />
         </AccordionContent>
       </AccordionItem>
     </Accordion>

@@ -14,8 +14,8 @@ import {
   Select,
   Slider,
   Stack,
-  Switch,
   Text,
+  SwitchField,
 } from '@/shared/ui';
 import { IconImage, IconTrash2 } from '@/shared/ui/icons';
 import type { EccLevel } from '../lib/render';
@@ -93,14 +93,12 @@ export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
             onValueChange={(size) => update({ size })}
           />
         </Stack>
-        <Inline gap="2" align="center">
-          <Switch
-            id="qr-margin"
-            checked={s.margin}
-            onCheckedChange={(margin) => update({ margin })}
-          />
-          <Label htmlFor="qr-margin">Quiet zone (4 modules)</Label>
-        </Inline>
+        <SwitchField
+          label="Quiet zone (4 modules)"
+          id="qr-margin"
+          checked={s.margin}
+          onCheckedChange={(margin) => update({ margin })}
+        />
       </Grid>
       <Stack gap="2">
         <Text weight="medium">Logo (stays on this device)</Text>
@@ -148,16 +146,12 @@ export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
                 onValueChange={(v) => update({ logoFraction: v / 100 })}
               />
             </Stack>
-            <Inline gap="2" align="center">
-              <Switch
-                id="qr-excavate"
-                checked={s.excavate}
-                onCheckedChange={(excavate) => update({ excavate })}
-              />
-              <Label htmlFor="qr-excavate">
-                Clear the modules behind the logo
-              </Label>
-            </Inline>
+            <SwitchField
+              label="Clear the modules behind the logo"
+              id="qr-excavate"
+              checked={s.excavate}
+              onCheckedChange={(excavate) => update({ excavate })}
+            />
           </Grid>
         )}
       </Stack>

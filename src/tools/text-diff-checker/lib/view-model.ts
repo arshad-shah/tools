@@ -1,6 +1,11 @@
 import { diffChars, diffWordsWithSpace } from 'diff';
 import type { DiffContext, DiffView } from '../settings';
-import { splitLines, type DiffResult, type Granularity } from './engine';
+import {
+  splitLines,
+  type DiffResult,
+  type Granularity,
+  type Range,
+} from './engine';
 
 export type LineKind = 'added' | 'removed' | 'changed';
 export type RangeKind = 'diff-add' | 'diff-del';
@@ -200,6 +205,18 @@ export function buildViewModel(
   };
 
   for (const hunk of result.hunks) {
+    // Intraline ranges pair the compared lines; key them by original line
+    // number so ignored blank lines spliced in below never shift them.
+    const leftRanges = new Map<number, Range[]>();
+    const rightRanges = new Map<number, Range[]>();
+    hunk.intraline?.forEach((x, k) => {
+      leftRanges.set(hunk.leftLines[k], x.left);
+      rightRanges.set(hunk.rightLines[k], x.right);
+    });
+    const del = (l: number) =>
+      leftRanges.get(l)?.map((x) => ({ ...x, kind: 'diff-del' as const }));
+    const add = (r: number) =>
+      rightRanges.get(r)?.map((x) => ({ ...x, kind: 'diff-add' as const }));
     // Ignored blank lines inside a change render as part of it.
     const h =
       hunk.kind === 'equal'
@@ -247,7 +264,6 @@ export function buildViewModel(
         for (let k = 0; k < n; k++) {
           const l = h.leftLines[k];
           const r = h.rightLines[k];
-          const intra = h.intraline?.[k];
           lrows.push(
             l === undefined
               ? pad()
@@ -255,10 +271,7 @@ export function buildViewModel(
                   text: lineOf(leftText, l),
                   number: l,
                   kind: r === undefined ? 'removed' : leftKind,
-                  ranges: intra?.left.map((x) => ({
-                    ...x,
-                    kind: 'diff-del' as const,
-                  })),
+                  ranges: del(l),
                   equal: false,
                 },
           );
@@ -269,36 +282,27 @@ export function buildViewModel(
                   text: lineOf(rightText, r),
                   number: r,
                   kind: l === undefined ? 'added' : rightKind,
-                  ranges: intra?.right.map((x) => ({
-                    ...x,
-                    kind: 'diff-add' as const,
-                  })),
+                  ranges: add(r),
                   equal: false,
                 },
           );
         }
       } else if (opts.view === 'unified' || h.kind !== 'change') {
-        h.leftLines.forEach((l, k) =>
+        h.leftLines.forEach((l) =>
           rows.push({
             text: lineOf(leftText, l),
             number: l,
             kind: 'removed',
-            ranges: h.intraline?.[k]?.left.map((x) => ({
-              ...x,
-              kind: 'diff-del' as const,
-            })),
+            ranges: del(l),
             equal: false,
           }),
         );
-        h.rightLines.forEach((r, k) =>
+        h.rightLines.forEach((r) =>
           rows.push({
             text: lineOf(rightText, r),
             number: r,
             kind: 'added',
-            ranges: h.intraline?.[k]?.right.map((x) => ({
-              ...x,
-              kind: 'diff-add' as const,
-            })),
+            ranges: add(r),
             equal: false,
           }),
         );

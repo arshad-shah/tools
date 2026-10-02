@@ -1,5 +1,6 @@
 import {
   offsetText,
+  utcDate,
   wallClockAt,
   zoneOffsetMinutes,
   type WallClock,
@@ -88,9 +89,8 @@ export function formatRelative(
 export function dayOfYear(epochMs: number, zone = 'UTC'): number {
   const w = wallClockAt(epochMs, zone);
   return (
-    Math.round(
-      (Date.UTC(w.y, w.m - 1, w.d) - Date.UTC(w.y, 0, 1)) / 86_400_000,
-    ) + 1
+    Math.round((utcDate(w.y, w.m - 1, w.d) - utcDate(w.y, 0, 1)) / 86_400_000) +
+    1
   );
 }
 
@@ -100,13 +100,13 @@ export function isoWeek(
   zone = 'UTC',
 ): { year: number; week: number } {
   const w = wallClockAt(epochMs, zone);
-  const d = new Date(Date.UTC(w.y, w.m - 1, w.d));
+  const d = new Date(utcDate(w.y, w.m - 1, w.d));
   const dow = d.getUTCDay() || 7;
   // The Thursday of this week decides the year.
   d.setUTCDate(d.getUTCDate() + 4 - dow);
   const y = d.getUTCFullYear();
   const week = Math.ceil(
-    ((d.getTime() - Date.UTC(y, 0, 1)) / 86_400_000 + 1) / 7,
+    ((d.getTime() - utcDate(y, 0, 1)) / 86_400_000 + 1) / 7,
   );
   return { year: y, week };
 }

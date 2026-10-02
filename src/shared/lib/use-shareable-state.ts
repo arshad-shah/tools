@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { copyText } from './clipboard';
 import { ToolError } from './errors';
 import { notify } from './notify';
-import { decodeShare, encodeShare } from './share-state';
+import { decodeShare, encodeShare, SHARE_FRAGMENT_MAX } from './share-state';
 
 export interface ShareableStateOptions<S> {
   toolId: string;
@@ -85,8 +85,23 @@ export function useShareableState<S>({
     if (hydration.error) notify.error(hydration.error);
   }, [hydration]);
 
-  // Encode only when the shared state changes.
-  const json = JSON.stringify(select()) ?? 'null';
+  // Encode only when the shared state changes. Stringifying large inputs
+  // (Text Diff) on every keystroke-free render is wasted work, so a state
+  // whose top-level values are unchanged reuses the last JSON.
+  const selected = select();
+  const [memo, setMemo] = useState(() => ({
+    state: selected,
+    json: JSON.stringify(selected) ?? 'null',
+  }));
+  let current = memo;
+  if (!shallowEqual(memo.state, selected)) {
+    const json = JSON.stringify(selected) ?? 'null';
+    current = { state: selected, json };
+    // Only a real change is stored: a select() that builds fresh nested
+    // arrays every render must not loop on a render-phase update.
+    if (json !== memo.json) setMemo(current);
+  }
+  const json = current.json;
   const encoded = useMemo(
     () => encodeShare(JSON.parse(json) as unknown, version),
     [json, version],
@@ -114,5 +129,31 @@ export function useShareableState<S>({
   };
 }
 
+// The fragment limit is in characters, so the message counts characters
+// (a KB figure under the 6,000-character cap looked deceptively small).
 const tooLarge = (size: number) =>
-  `Too large to share as a link (${Math.ceil(size / 1024)} KB)`;
+  `Too large to share as a link (${size.toLocaleString('en')} of ${SHARE_FRAGMENT_MAX.toLocaleString('en')} characters)`;
+
+/** Same keys with identical values (one level deep). */
+function shallowEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (
+    typeof a !== 'object' ||
+    typeof b !== 'object' ||
+    a === null ||
+    b === null ||
+    Array.isArray(a) !== Array.isArray(b)
+  )
+    return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  return (
+    ka.length === kb.length &&
+    ka.every((k) =>
+      Object.is(
+        (a as Record<string, unknown>)[k],
+        (b as Record<string, unknown>)[k],
+      ),
+    )
+  );
+}

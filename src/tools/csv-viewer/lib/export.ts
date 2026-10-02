@@ -41,9 +41,6 @@ const FORMAT_INFO: Record<ExportFormat, { mime: string; extension: string }> = {
   },
 };
 
-export const isExportFormat = (v: unknown): v is ExportFormat =>
-  (EXPORT_FORMATS as readonly unknown[]).includes(v);
-
 export interface ExportTable {
   /** Visible columns, in display order. */
   columns: string[];

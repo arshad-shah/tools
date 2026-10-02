@@ -17,7 +17,7 @@ export const Presets: React.FC<{
   flavour: CronFlavour;
   onPick(expr: string): void;
 }> = ({ flavour, onPick }) => (
-  <Inline gap="2" role="group" aria-label="Presets">
+  <Inline gap="2" wrap role="group" aria-label="Presets">
     {PRESETS.map((p) => (
       <Button
         key={p.label}

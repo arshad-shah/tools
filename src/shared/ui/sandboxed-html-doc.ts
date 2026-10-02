@@ -13,17 +13,39 @@ const escapeAttr = (s: string) =>
 /** `</style` cannot close the base style element early. */
 const safeCss = (css: string) => css.replace(/<\/style/gi, '<\\/style');
 
-/** The srcdoc: CSP meta first, then the base styles, then the HTML. */
+/** An id as a CSS string: quotes, backslashes and angle brackets escaped. */
+const cssString = (s: string) =>
+  `"${s.replace(/[\\"<>\n\r]/g, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"`;
+
+/**
+ * The srcdoc: CSP meta first, then the base styles, then the HTML.
+ * `target` (an element id) opens the document scrolled to that element:
+ * CSS `scroll-initial-target`, since the frame runs no script and the
+ * parent cannot reach an opaque-origin frame to set its fragment. Browsers
+ * without the property open at the top. `nonce` forces a fresh document
+ * (the same target again after the reader scrolled away).
+ */
 export function buildSrcdoc(
   html: string,
   {
     allowRemoteImages = false,
     baseCss,
-  }: { allowRemoteImages?: boolean; baseCss?: string } = {},
+    target,
+    nonce,
+  }: {
+    allowRemoteImages?: boolean;
+    baseCss?: string;
+    target?: string;
+    nonce?: number;
+  } = {},
 ): string {
   const meta = `<meta http-equiv="Content-Security-Policy" content="${escapeAttr(sandboxCsp(allowRemoteImages))}">`;
   const style = baseCss ? `<style>${safeCss(baseCss)}</style>` : '';
-  return `<!doctype html><html><head><meta charset="utf-8">${meta}${style}</head><body>${html}</body></html>`;
+  const scroll = target
+    ? `<style>[id=${cssString(target)}]{scroll-initial-target:nearest}</style>`
+    : '';
+  const mark = nonce ? `<!--${nonce}-->` : '';
+  return `<!doctype html><html><head><meta charset="utf-8">${meta}${style}${scroll}</head><body>${html}${mark}</body></html>`;
 }
 
 const REMOTE = /^\s*(?:https?:)?\/\//i;

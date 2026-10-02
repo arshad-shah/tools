@@ -1,17 +1,18 @@
-import { useState } from 'react';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { IconCopy, IconPlay } from '@/shared/ui/icons';
+import { useRef, useState } from 'react';
+import { textWorker } from '@/shared/workers/text-client';
+import { IconPlay } from '@/shared/ui/icons';
 import {
   Alert,
   Button,
   CodeSurface,
+  CopyButton,
   Inline,
   Select,
   Stack,
   Text,
   VirtualList,
 } from '@/shared/ui';
-import { runQuery, type QueryOutcome } from '../lib/query';
+import { runQueryOffThread, type QueryOutcome } from '../lib/query';
 import { pushHistory, viewerSettings } from '../settings';
 
 export interface QueryTabProps {
@@ -27,15 +28,24 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
   const [settings, update] = viewerSettings.useSettings();
   const [expr, setExpr] = useState(xml ? '//*' : '$..*');
   const [outcome, setOutcome] = useState<QueryOutcome | null>(null);
-  const { copy } = useClipboard();
   const language = xml ? 'XPath' : 'JSONPath';
+  const seq = useRef(0);
 
+  // JSONPath runs on the text worker; only the latest run's result shows.
   const run = (e = expr) => {
     if (!e.trim()) return;
-    const result = runQuery(e, { value, xml });
-    setOutcome(result);
-    if (result.ok)
-      update({ queryHistory: pushHistory(settings.queryHistory, e) });
+    const mine = ++seq.current;
+    void runQueryOffThread(e, { value, xml }, textWorker).then((result) => {
+      if (mine !== seq.current) return;
+      setOutcome(result);
+      if (result.ok)
+        update({
+          queryHistory: pushHistory(
+            viewerSettings.getSettings().queryHistory,
+            e,
+          ),
+        });
+    });
   };
 
   const rows = outcome?.ok ? outcome.rows : [];
@@ -54,6 +64,7 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
         />
         <Button
           size="md"
+          variant="primary"
           leftIcon={<IconPlay size="sm" />}
           onClick={() => run()}
         >
@@ -76,7 +87,7 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
         />
       ) : null}
       {outcome && !outcome.ok ? (
-        <Alert status="danger" className="p-3 text-sm">
+        <Alert status="danger" size="sm">
           {outcome.error.message}
         </Alert>
       ) : null}
@@ -85,23 +96,18 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
           <Text size="sm" tone="muted" aria-live="polite">
             {`${rows.length.toLocaleString('en-US')} ${rows.length === 1 ? 'result' : 'results'}`}
           </Text>
-          <Button
-            size="sm"
-            variant="secondary"
-            leftIcon={<IconCopy size="sm" />}
+          <CopyButton
+            variant="text"
+            label="results as JSON"
             disabled={!rows.length}
-            onClick={() =>
-              void copy(
-                JSON.stringify(
-                  rows.map((r) => ({ path: r.path, value: r.value })),
-                  null,
-                  2,
-                ),
+            value={() =>
+              JSON.stringify(
+                rows.map((r) => ({ path: r.path, value: r.value })),
+                null,
+                2,
               )
             }
-          >
-            Copy results as JSON
-          </Button>
+          />
         </Inline>
       ) : null}
       {rows.length ? (
