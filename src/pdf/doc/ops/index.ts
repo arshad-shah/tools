@@ -1,5 +1,6 @@
 import { registerOperations } from '../registry';
 import { OBJECT_OPS } from './objects';
+import { OCR_OPS } from './ocr';
 import { ORGANIZE_OPS } from './organize';
 
 export { ORGANIZE_OPS } from './organize';
@@ -11,5 +12,5 @@ export { OBJECT_OPS } from './objects';
  * their arrays here (append-only registry).
  */
 export function registerCoreOperations(): void {
-  registerOperations([...ORGANIZE_OPS, ...OBJECT_OPS]);
+  registerOperations([...ORGANIZE_OPS, ...OBJECT_OPS, ...OCR_OPS]);
 }

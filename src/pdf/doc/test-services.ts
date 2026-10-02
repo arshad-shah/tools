@@ -28,6 +28,7 @@ export function inProcessServices(patch: Partial<Services> = {}): Services {
     render: {} as Services['render'],
     qpdf: {} as Services['qpdf'],
     compress: {} as Services['compress'],
+    ocr: {} as Services['ocr'],
     ...patch,
   };
 }

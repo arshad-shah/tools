@@ -5,6 +5,7 @@ import type { CompressDeps } from '@/pdf/compress/pipeline';
 import { qpdf, type createQpdf } from '@/pdf/qpdf/client';
 import { pdfRender, type PdfRender } from '@/pdf/render/client';
 import type { EditHandlers } from '@/pdf/edit/worker/handlers';
+import { createOcrService, type OcrService } from '@/pdf/ocr/service';
 import { serialised } from './edit-queue';
 import type {
   MaterializePlan,
@@ -20,6 +21,7 @@ export interface Services {
   render: PdfRender;
   qpdf: ReturnType<typeof createQpdf>;
   compress: CompressDeps;
+  ocr: OcrService;
 }
 
 let services: Services | null = null;
@@ -38,6 +40,7 @@ export function getServices(): Services {
     render: pdfRender,
     qpdf,
     compress: browserCompressDeps,
+    ocr: createOcrService(),
   };
   return services;
 }

@@ -7,7 +7,13 @@ import local from './eslint-rules/index.js';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'public/pdfjs', 'playwright-report', 'test-results'],
+    ignores: [
+      'dist',
+      'public/pdfjs',
+      'public/ocr',
+      'playwright-report',
+      'test-results',
+    ],
   },
   {
     // Every runner (CLI, editor, lint-staged) reports stale disables.
