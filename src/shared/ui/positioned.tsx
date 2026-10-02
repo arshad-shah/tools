@@ -17,6 +17,8 @@ export interface PositionedProps {
    * both turn about the top-left corner instead of the centre.
    */
   transform?: OverlayTransform;
+  /** 0..1, for previews of semi-transparent content. */
+  opacity?: number;
   className?: string;
   children?: React.ReactNode;
   'data-testid'?: string;
@@ -32,7 +34,18 @@ export const Positioned = React.forwardRef<
     Omit<React.HTMLAttributes<HTMLDivElement>, 'style' | 'children'>
 >(
   (
-    { x, y, width, height, rotate, transform, className, children, ...rest },
+    {
+      x,
+      y,
+      width,
+      height,
+      rotate,
+      transform,
+      opacity,
+      className,
+      children,
+      ...rest
+    },
     ref,
   ) => {
     const parts = [
@@ -50,6 +63,7 @@ export const Positioned = React.forwardRef<
           height,
           transform: parts.length ? parts.join(' ') : undefined,
           transformOrigin: transform ? '0 0' : undefined,
+          opacity,
         }}
         {...rest}
       >

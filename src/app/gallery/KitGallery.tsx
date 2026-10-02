@@ -1,6 +1,7 @@
 import { Heading, SegmentedControl, Stack, Text } from '@/shared/ui';
 import { IconMonitor, IconMoon, IconSun } from '@/shared/ui/icons';
 import { useTheme, type ThemePreference } from '@/shared/lib/theme';
+import { AnnotateSection } from './sections/AnnotateSection';
 import { ButtonsSection } from './sections/ButtonsSection';
 import { CardsSection } from './sections/CardsSection';
 import { ChartSection } from './sections/ChartSection';
@@ -68,6 +69,7 @@ export default function KitGallery() {
       <KeysSection />
       <PageOverlaysSection />
       <FormFieldsSection />
+      <AnnotateSection />
       <PanelsSection />
       <WorkspaceBarsSection />
       <DocumentSection />

@@ -1,0 +1,244 @@
+import { useEffect, useRef } from 'react';
+import {
+  Alert,
+  AlertDescription,
+  HitArea,
+  OverlayLayer,
+  SelectionFrame,
+  ShapeLayer,
+  type Shape,
+} from '@/shared/ui';
+import { PdfTextLayerHost } from '@/shared/ui/adapters/PdfTextLayerHost';
+import { toScreen } from '@/pdf/doc/geometry';
+import type { Box } from '@/pdf/doc/types';
+import type { PageOverlayProps } from '../types';
+import { selectionQuads } from '../../selection-quads';
+import { ensureOverlayFonts } from '../../overlay-fonts';
+import { DrawLayer } from './DrawLayer';
+import { ExistingLayer } from './ExistingLayer';
+import { useExistingAnnotations, usePageText } from './existing';
+import { NoteEditor } from './NoteEditor';
+import { boundsOf, kindName, shapesOf, textOf } from './pending-shapes';
+import { FreeTextPreview, StampPreview } from './PendingText';
+import { saveEditor } from './save-editor';
+import {
+  activeTool,
+  addAnnotation,
+  DRAW_TOOLS,
+  MARKUP_TOOLS,
+  pendingAnnots,
+} from './tools';
+import { getAnnotateUi, setAnnotateUi, useAnnotateUi } from './ui-store';
+
+const MOVABLE = new Set(['annot.freetext', 'annot.shape', 'annot.stamp']);
+
+/**
+ * Annotate mode on one page: the text layer for markup tools, pending
+ * annotations drawn with the writers' geometry, existing annotations as
+ * hit areas (hidden, deleted or edited ones patched over), the pointer
+ * drawing layer and the note editor.
+ */
+export function AnnotationsOverlay(props: PageOverlayProps) {
+  const { doc, page, pageNumber, viewport, width, height, selection } = props;
+  const ui = useAnnotateUi();
+  const tool = activeTool(props.tool.id);
+  const slot = useRef<HTMLDivElement>(null);
+  const existing = useExistingAnnotations(doc, page) ?? [];
+  const text = usePageText(doc, page);
+  const pending = pendingAnnots(doc, page.id);
+  const [a, b, c, d, e, f] = viewport.transform;
+  const t = { a, b, c, d, e, f };
+  const scale = Math.hypot(a, b);
+  const markup = MARKUP_TOOLS[tool];
+  const picking = tool === 'select' || tool === 'eraser';
+
+  useEffect(() => {
+    void ensureOverlayFonts().catch(() => {});
+  }, []);
+
+  const onTextPointerUp = () => {
+    if (!markup || !slot.current) return;
+    const sel = document.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      if (text && text.items.length === 0)
+        setAnnotateUi({ noTextPage: page.id });
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    if (!slot.current.contains(range.commonAncestorContainer)) return;
+    const quads = selectionQuads(
+      [...range.getClientRects()],
+      slot.current.getBoundingClientRect(),
+      viewport,
+    );
+    sel.removeAllRanges();
+    if (quads.length === 0) return;
+    const ui = getAnnotateUi();
+    addAnnotation(doc, 'annot.markup', {
+      pageId: page.id,
+      subtype: markup,
+      quads,
+      opacity: ui.opacity,
+      contents: range.toString().slice(0, 1000),
+    });
+  };
+
+  const selected = pending.find((o) => selection.objects.has(o.opId));
+  const outline: Shape[] =
+    selected && !MOVABLE.has(selected.type) && boundsOf(selected)
+      ? [
+          {
+            kind: 'rect',
+            box: boundsOf(selected)!,
+            stroke: { token: 'accent' },
+            width: 1,
+            dash: 'dashed',
+          },
+        ]
+      : [];
+
+  const editor = ui.editor?.pageId === page.id ? ui.editor : null;
+  const anchorOf = (box: Box) => () => {
+    const r = slot.current!.getBoundingClientRect();
+    const [x, y] = toScreen(viewport, box.x + box.width, box.y + box.height);
+    return new DOMRect(r.left + x, r.top + y, 1, 1);
+  };
+
+  return (
+    <div
+      ref={slot}
+      className="absolute inset-0"
+      data-testid={`annotate-page-${pageNumber}`}
+    >
+      <ExistingLayer
+        doc={doc}
+        page={page}
+        list={existing}
+        tool={tool}
+        viewport={viewport}
+        width={width}
+        height={height}
+        interactive={picking}
+      />
+      <ShapeLayer
+        width={width}
+        height={height}
+        transform={t}
+        shapes={[...pending.flatMap((o) => shapesOf(o, scale)), ...outline]}
+      />
+      {pending.map((o) =>
+        o.type === 'annot.freetext' ? (
+          <FreeTextPreview
+            key={o.opId}
+            item={o}
+            transform={t}
+            width={width}
+            height={height}
+          />
+        ) : o.type === 'annot.stamp' ? (
+          <StampPreview
+            key={o.opId}
+            item={o}
+            transform={t}
+            width={width}
+            height={height}
+          />
+        ) : null,
+      )}
+      {text && !page.blank ? (
+        <div className="absolute inset-0" onPointerUp={onTextPointerUp}>
+          <PdfTextLayerHost
+            text={text}
+            geom={doc.pageGeom(page)}
+            rotate={page.rotate}
+            scale={scale}
+            crop={page.crop}
+            selectable={!!markup}
+            label={`Page ${pageNumber} text`}
+          />
+        </div>
+      ) : null}
+      {picking ? (
+        <OverlayLayer
+          width={width}
+          height={height}
+          label={`Annotations on page ${pageNumber}`}
+        >
+          {pending.map((o) => {
+            const box = boundsOf(o);
+            if (!box) return null;
+            const p = o.params as { author: string };
+            const body = textOf(o);
+            return (
+              <HitArea
+                key={o.opId}
+                transform={t}
+                box={box}
+                label={`${kindName(o)} by ${p.author}${body ? `: ${body}` : ''}`}
+                pressed={selection.objects.has(o.opId)}
+                onActivate={() => {
+                  if (tool === 'eraser')
+                    doc.dispatch({
+                      type: 'annot.delete',
+                      params: {
+                        pageId: page.id,
+                        target: { kind: 'pending', id: o.opId },
+                      },
+                    });
+                  else selection.selectObjects([o.opId]);
+                }}
+              />
+            );
+          })}
+          {selected && MOVABLE.has(selected.type) && tool === 'select' ? (
+            <SelectionFrame
+              transform={t}
+              box={(selected.params as { rect: Box }).rect}
+              resizable
+              label={`${kindName(selected)}: ${textOf(selected) || 'selected'}`}
+              onChange={() => {}}
+              onCommit={(rect) =>
+                doc.dispatch({
+                  type: 'object.move',
+                  params: { targetId: selected.opId, rect },
+                })
+              }
+            />
+          ) : null}
+        </OverlayLayer>
+      ) : null}
+      {DRAW_TOOLS.has(tool) ? (
+        <DrawLayer
+          doc={doc}
+          page={page}
+          pageNumber={pageNumber}
+          tool={tool}
+          viewport={viewport}
+          width={width}
+          height={height}
+        />
+      ) : null}
+      {markup && ui.noTextPage === page.id ? (
+        <div className="absolute inset-x-4 top-4">
+          <Alert status="info">
+            <AlertDescription>
+              No text here. Run OCR to make it selectable.
+            </AlertDescription>
+          </Alert>
+        </div>
+      ) : null}
+      {editor ? (
+        <NoteEditor
+          editor={editor}
+          anchor={anchorOf(
+            'rect' in editor
+              ? editor.rect
+              : { x: editor.at[0], y: editor.at[1], width: 20, height: 20 },
+          )}
+          onCancel={() => setAnnotateUi({ editor: null })}
+          onSave={(body) => saveEditor(doc, editor, body)}
+        />
+      ) : null}
+    </div>
+  );
+}

@@ -258,3 +258,14 @@ export * from './bytes-view';
 export * from './key-value-editor';
 export * from './key-value-bulk';
 export { renderFaviconImage, useFavicon } from './use-favicon';
+export {
+  OverlayText,
+  type OverlayTextProps,
+  type OverlayFontFamily,
+  type OverlayTextMetrics,
+} from './overlay-text';
+export {
+  ColorSwatchPicker,
+  type ColorSwatchPickerProps,
+  type ColorSwatchOption,
+} from './color-swatch-picker';
