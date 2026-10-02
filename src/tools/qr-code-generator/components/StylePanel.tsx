@@ -1,170 +1,166 @@
-import React from 'react';
+import { formatColor } from '@/shared/lib/colour';
+import { notify } from '@/shared/lib/notify';
+import { toToolError } from '@/shared/lib/errors';
+import { toDataUri } from '@/shared/lib/encoding';
+import { readBytes } from '@/shared/lib/files';
 import {
-  Badge,
   Button,
-  ButtonGroup,
-  Card,
-  CardBody,
+  ColorPicker,
+  FilePicker,
   Grid,
+  Image,
   Inline,
-  Input,
   Label,
+  Select,
   Slider,
   Stack,
   Switch,
   Text,
 } from '@/shared/ui';
-import { COLOR_PRESETS, ERROR_LEVEL_PCT, ERROR_LEVELS } from '../lib/options';
-import type { ErrorCorrectionLevel, QRCodeState, RenderAs } from '../types';
+import { IconImage, IconTrash2 } from '@/shared/ui/icons';
+import type { EccLevel } from '../lib/render';
+import type { QrSettings } from '../settings';
 
-/** Size, colour, error-correction and output-format controls. */
-export const StylePanel: React.FC<{
-  state: QRCodeState;
-  setSize: (size: number) => void;
-  setBackgroundColor: (color: string) => void;
-  setForegroundColor: (color: string) => void;
-  setErrorCorrectionLevel: (level: ErrorCorrectionLevel) => void;
-  setRenderAs: (renderAs: RenderAs) => void;
-  setIncludeMargin: (includeMargin: boolean) => void;
-}> = ({
-  state,
-  setSize,
-  setBackgroundColor,
-  setForegroundColor,
-  setErrorCorrectionLevel,
-  setRenderAs,
-  setIncludeMargin,
-}) => (
-  <>
-    <Card>
-      <CardBody>
-        <Stack gap="3">
-          <Inline justify="between" align="center">
-            <Label>QR code size</Label>
-            <Badge variant="soft" tone="accent" size="sm">
-              {state.size}px
-            </Badge>
-          </Inline>
-          <Slider
-            value={state.size}
-            onValueChange={(v) => setSize(v as number)}
-            min={100}
-            max={500}
-            step={20}
-            aria-label="QR size"
+const ECC_ITEMS = [
+  { value: 'L', label: 'Low (7%)' },
+  { value: 'M', label: 'Medium (15%)' },
+  { value: 'Q', label: 'Quartile (25%)' },
+  { value: 'H', label: 'High (30%)' },
+];
+
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const LOGO_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/svg+xml',
+  'image/gif',
+];
+
+interface Props {
+  settings: QrSettings;
+  update(patch: Partial<QrSettings>): void;
+  logo: string;
+  onLogoChange(dataUrl: string): void;
+}
+
+/** Colours, size, error correction, quiet zone and a local logo. */
+export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
+  const pickLogo = async (file: File) => {
+    try {
+      if (!LOGO_TYPES.includes(file.type))
+        throw new Error('Choose a PNG, JPEG, WebP, GIF or SVG image');
+      if (file.size > LOGO_MAX_BYTES)
+        throw new Error('The logo must be 2 MB or smaller');
+      onLogoChange(toDataUri(await readBytes(file), file.type));
+      if (s.ecc === 'L' || s.ecc === 'M') update({ ecc: 'H' });
+    } catch (e) {
+      notify.error(toToolError(e, 'Could not read the logo'));
+    }
+  };
+  return (
+    <Stack gap="4">
+      <Grid max={2} gap="4">
+        <ColorPicker
+          label="Code colour"
+          value={s.fg}
+          onChange={(_, c) => update({ fg: formatColor(c, 'hex') })}
+        />
+        <ColorPicker
+          label="Background colour"
+          value={s.bg}
+          onChange={(_, c) => update({ bg: formatColor(c, 'hex') })}
+        />
+      </Grid>
+      <Grid max={2} gap="3">
+        <Stack gap="1">
+          <Label htmlFor="qr-ecc">Error correction</Label>
+          <Select
+            id="qr-ecc"
+            value={s.ecc}
+            onValueChange={(v) => update({ ecc: v as EccLevel })}
+            items={ECC_ITEMS}
           />
         </Stack>
-      </CardBody>
-    </Card>
-
-    <Card>
-      <CardBody>
-        <Stack gap="3">
-          <Label>Colour presets</Label>
-          <Grid cols={{ base: 3, sm: 6 }} gap="2">
-            {COLOR_PRESETS.map((p) => (
+        <Stack gap="1">
+          <Label htmlFor="qr-size">Preview size ({s.size} px)</Label>
+          <Slider
+            id="qr-size"
+            value={s.size}
+            min={128}
+            max={512}
+            step={16}
+            onValueChange={(size) => update({ size })}
+          />
+        </Stack>
+        <Inline gap="2" align="center">
+          <Switch
+            id="qr-margin"
+            checked={s.margin}
+            onCheckedChange={(margin) => update({ margin })}
+          />
+          <Label htmlFor="qr-margin">Quiet zone (4 modules)</Label>
+        </Inline>
+      </Grid>
+      <Stack gap="2">
+        <Text weight="medium">Logo (stays on this device)</Text>
+        <Inline gap="2" align="center">
+          {logo && (
+            <Image src={logo} alt="Logo" fit="contain" className="h-10 w-10" />
+          )}
+          <FilePicker
+            accept={LOGO_TYPES.join(',')}
+            onFiles={(f) => f[0] && void pickLogo(f[0])}
+          >
+            {(open) => (
               <Button
-                key={p.name}
-                variant={
-                  p.bg === state.backgroundColor &&
-                  p.fg === state.foregroundColor
-                    ? 'primary'
-                    : 'secondary'
-                }
                 size="sm"
-                onClick={() => {
-                  setBackgroundColor(p.bg);
-                  setForegroundColor(p.fg);
-                }}
+                variant="secondary"
+                leftIcon={<IconImage size="sm" />}
+                onClick={open}
               >
-                {p.name}
+                {logo ? 'Change logo' : 'Add logo'}
               </Button>
-            ))}
-          </Grid>
-          <Grid cols={{ base: 1, md: 2 }} gap="3">
-            <Stack gap="2">
-              <Label htmlFor="bg-color">Background</Label>
-              <Input
-                id="bg-color"
-                value={state.backgroundColor}
-                onChange={setBackgroundColor}
-                placeholder="#FFFFFF"
+            )}
+          </FilePicker>
+          {logo && (
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={<IconTrash2 size="sm" />}
+              onClick={() => onLogoChange('')}
+            >
+              Remove logo
+            </Button>
+          )}
+        </Inline>
+        {logo && (
+          <Grid max={2} gap="3">
+            <Stack gap="1">
+              <Label htmlFor="qr-logo-size">
+                Logo area ({Math.round(s.logoFraction * 100)}% of the code)
+              </Label>
+              <Slider
+                id="qr-logo-size"
+                value={Math.round(s.logoFraction * 100)}
+                min={2}
+                max={30}
+                onValueChange={(v) => update({ logoFraction: v / 100 })}
               />
             </Stack>
-            <Stack gap="2">
-              <Label htmlFor="fg-color">Foreground</Label>
-              <Input
-                id="fg-color"
-                value={state.foregroundColor}
-                onChange={setForegroundColor}
-                placeholder="#000000"
+            <Inline gap="2" align="center">
+              <Switch
+                id="qr-excavate"
+                checked={s.excavate}
+                onCheckedChange={(excavate) => update({ excavate })}
               />
-            </Stack>
+              <Label htmlFor="qr-excavate">
+                Clear the modules behind the logo
+              </Label>
+            </Inline>
           </Grid>
-        </Stack>
-      </CardBody>
-    </Card>
-
-    <Card>
-      <CardBody>
-        <Stack gap="3">
-          <Label>Error correction</Label>
-          <ButtonGroup>
-            {ERROR_LEVELS.map((level) => (
-              <Button
-                key={level}
-                variant={
-                  state.errorCorrectionLevel === level ? 'primary' : 'secondary'
-                }
-                size="sm"
-                onClick={() => setErrorCorrectionLevel(level)}
-              >
-                {level} ({ERROR_LEVEL_PCT[level]})
-              </Button>
-            ))}
-          </ButtonGroup>
-          <Text size="xs" tone="subtle">
-            Higher levels make the QR more resistant to damage but denser.
-          </Text>
-        </Stack>
-      </CardBody>
-    </Card>
-
-    <Card>
-      <CardBody>
-        <Stack gap="3">
-          <Label>Output format</Label>
-          <ButtonGroup>
-            <Button
-              variant={state.renderAs === 'canvas' ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setRenderAs('canvas')}
-            >
-              PNG
-            </Button>
-            <Button
-              variant={state.renderAs === 'svg' ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setRenderAs('svg')}
-            >
-              SVG
-            </Button>
-          </ButtonGroup>
-          <Inline justify="between" align="center" wrap>
-            <Stack gap="0">
-              <Label htmlFor="include-margin">Include margin</Label>
-              <Text size="xs" tone="subtle">
-                Adds white space around the QR
-              </Text>
-            </Stack>
-            <Switch
-              id="include-margin"
-              checked={state.includeMargin}
-              onCheckedChange={setIncludeMargin}
-            />
-          </Inline>
-        </Stack>
-      </CardBody>
-    </Card>
-  </>
-);
+        )}
+      </Stack>
+    </Stack>
+  );
+}

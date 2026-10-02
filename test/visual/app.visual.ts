@@ -70,5 +70,21 @@ for (const theme of ['light', 'dark'] as const) {
         await expect(page).toHaveScreenshot(`tool-${tool.id}-${theme}.png`);
         await expectAxeClean(page);
       });
+
+    // Flagship web page at phone width too (plan G2-12).
+    test('tool api-request phone', async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.phone);
+      await open(
+        page,
+        toolRoutes().find((t) => t.id === 'api-request')!.path,
+        theme,
+      );
+      await expect(page).toHaveScreenshot(
+        `tool-api-request-phone-${theme}.png`,
+        {
+          fullPage: true,
+        },
+      );
+    });
   });
 }

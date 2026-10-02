@@ -1,153 +1,284 @@
-import React, { useState } from 'react';
-import { IconLayers, IconPalette, IconShield } from '@/shared/ui/icons';
-
+import { useMemo, useState } from 'react';
+import { useClipboard } from '@/shared/lib/clipboard';
+import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
+import { useToolCommands } from '@/shared/lib/tool-commands';
+import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
+  Alert,
+  AlertDescription,
   Box,
   Card,
   CardBody,
+  CardHeader,
+  CardTitle,
+  Center,
+  Code,
   Inline,
+  SegmentedControl,
+  ShareButton,
   Stack,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/shared/ui';
-import { AdvancedSettings } from './components/AdvancedSettings';
-import { ContentTab } from './components/ContentTab';
-import { EncryptionTab } from './components/EncryptionTab';
-import { LogoPanel } from './components/LogoPanel';
-import { QrPreview } from './components/QrPreview';
+import { QrCode } from '@/shared/ui/adapters/QrCode';
+import { BatchPanel } from './components/BatchPanel';
+import { ContentForm } from './components/ContentForm';
+import { ExportPanel } from './components/ExportPanel';
+import { ScanCheck } from './components/ScanCheck';
 import { StylePanel } from './components/StylePanel';
-import { useQRCode } from './hooks/useQrCode';
+import {
+  buildPayload,
+  DEFAULT_FIELDS,
+  geoProblem,
+  SECRET_TYPES,
+  type PayloadFields,
+  type PayloadType,
+} from './lib/payloads';
+import type { QrStyle } from './lib/render';
+import { qrSettings } from './settings';
+import { canShareType, parseQrShare, QR_SHARE_VERSION } from './share';
 
-const QRCodeGenerator: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<
-    'content' | 'appearance' | 'encryption'
-  >('content');
+const COLORS_MIME = 'application/vnd.tools.colors+json';
+const HEX = /^#[0-9a-f]{6}$/i;
 
-  const {
-    state,
-    finalData,
-    encryptionError,
-    qrRef,
-    setText,
-    setSize,
-    setQrType,
-    setBackgroundColor,
-    setForegroundColor,
-    setErrorCorrectionLevel,
-    setIncludeMargin,
-    setRenderAs,
-    setUseImage,
-    setImageSettings,
-    setContactData,
-    setWifiData,
-    setCryptoData,
-    setEncryptionConfig,
-    setMaskPattern,
-    setVersion,
-    generateRandomIV,
-    generateRandomSalt,
-    handleDownloadQRCode,
-  } = useQRCode();
+const accepts = (p: HandoffPayload) =>
+  p.kind === 'text' &&
+  ['text/uri-list', 'text/plain', COLORS_MIME].includes(p.mime);
+
+/** The value is the first URL of a uri-list, or the text. */
+function fromText(
+  p: HandoffPayload,
+): { type: PayloadType; text: string } | null {
+  if (p.kind !== 'text' || p.mime === COLORS_MIME) return null;
+  const line =
+    p.mime === 'text/uri-list'
+      ? (p.text.split(/\r?\n/).find((l) => l.trim() && !l.startsWith('#')) ??
+        '')
+      : p.text;
+  const text = line.trim();
+  return /^https?:\/\//i.test(text)
+    ? { type: 'url', text }
+    : { type: 'text', text: p.text };
+}
+
+export default function QrCodeGenerator() {
+  const [settings, update] = qrSettings.useSettings();
+  const [type, setType] = useState<PayloadType>('url');
+  const [fields, setFields] = useState<PayloadFields>(DEFAULT_FIELDS);
+  const [logo, setLogo] = useState('');
+  const [tab, setTab] = useState('content');
+  const { copy } = useClipboard();
+
+  const value = useMemo(() => buildPayload(type, fields[type]), [type, fields]);
+  const problem = type === 'geo' ? geoProblem(fields.geo) : null;
+  const style: QrStyle = {
+    fg: settings.fg,
+    bg: settings.bg,
+    ecc: settings.ecc,
+    margin: settings.margin ? 4 : 0,
+    logo,
+    logoFraction: logo ? settings.logoFraction : 0,
+    excavate: settings.excavate,
+  };
+
+  const share = useShareableState({
+    toolId: 'qr-code-generator',
+    version: QR_SHARE_VERSION,
+    parse: parseQrShare,
+    select: () => ({
+      v: 1 as const,
+      type,
+      fields: canShareType(type) ? fields[type] : {},
+      style: {
+        fg: settings.fg,
+        bg: settings.bg,
+        ecc: settings.ecc,
+        margin: settings.margin,
+      },
+    }),
+  });
+
+  // Hydrate once per incoming link or hand-off (state adjusted while rendering).
+  const handoff = useHandoff(accepts);
+  const incoming = share.loaded ?? handoff;
+  const [hydrated, setHydrated] = useState<unknown>(null);
+  if (incoming && hydrated !== incoming) {
+    setHydrated(incoming);
+    if (share.loaded) {
+      const s = share.loaded;
+      setType(s.type);
+      setFields((f) => ({ ...f, [s.type]: s.fields }));
+      update(s.style);
+    } else if (handoff?.kind === 'text' && handoff.mime === COLORS_MIME) {
+      try {
+        const c = JSON.parse(handoff.text) as { fg?: unknown; bg?: unknown };
+        if (typeof c.fg === 'string' && HEX.test(c.fg)) update({ fg: c.fg });
+        if (typeof c.bg === 'string' && HEX.test(c.bg)) update({ bg: c.bg });
+        setTab('style');
+      } catch {
+        // Not colours after all: keep the current style.
+      }
+    } else if (handoff) {
+      const t = fromText(handoff);
+      if (t) {
+        setType(t.type);
+        setFields((f) =>
+          t.type === 'url'
+            ? { ...f, url: { url: t.text } }
+            : { ...f, text: { text: t.text } },
+        );
+      }
+    }
+  }
+
+  const setField = (t: PayloadType, key: string, v: string | boolean) =>
+    setFields((f) => ({ ...f, [t]: { ...f[t], [key]: v } }));
+
+  useToolCommands('qr-code-generator', [
+    {
+      id: 'copy',
+      label: 'Copy encoded text',
+      shortcut: 'Mod+Shift+C',
+      run: () => void copy(value, 'value'),
+    },
+    {
+      id: 'clear',
+      label: 'Clear',
+      shortcut: 'Mod+Shift+X',
+      run: () => setFields((f) => ({ ...f, [type]: DEFAULT_FIELDS[type] })),
+    },
+    {
+      id: 'share',
+      label: 'Copy share link',
+      shortcut: 'Mod+Shift+S',
+      enabled: canShareType(type) && share.canShare,
+      run: () => void share.share(),
+    },
+  ]);
+
+  const empty = value.trim() === '' || !!problem;
 
   return (
     <Box className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <Box className="min-w-0">
+      <Card className="min-w-0">
+        <CardBody>
+          <Tabs value={tab} onValueChange={setTab} variant="soft">
+            <TabsList aria-label="QR sections">
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="style">Style</TabsTrigger>
+              <TabsTrigger value="export">Export</TabsTrigger>
+              <TabsTrigger value="batch">Batch</TabsTrigger>
+            </TabsList>
+            <TabsContent value="content">
+              <Box className="pt-4">
+                <ContentForm
+                  type={type}
+                  onTypeChange={setType}
+                  fields={fields}
+                  onFieldChange={setField}
+                />
+              </Box>
+            </TabsContent>
+            <TabsContent value="style">
+              <Box className="pt-4">
+                <StylePanel
+                  settings={settings}
+                  update={update}
+                  logo={logo}
+                  onLogoChange={setLogo}
+                />
+              </Box>
+            </TabsContent>
+            <TabsContent value="export">
+              <Box className="pt-4">
+                <ExportPanel
+                  value={value}
+                  qrStyle={style}
+                  settings={settings}
+                  update={update}
+                  baseName={`qr-${type}`}
+                  disabled={empty}
+                />
+              </Box>
+            </TabsContent>
+            <TabsContent value="batch">
+              <Box className="pt-4">
+                <BatchPanel qrStyle={style} />
+              </Box>
+            </TabsContent>
+          </Tabs>
+        </CardBody>
+      </Card>
+
+      <Stack gap="4" className="min-w-0">
         <Card>
+          <CardHeader>
+            <Inline gap="2" align="center" justify="between" wrap>
+              <CardTitle as="h2">Preview</CardTitle>
+              <Inline gap="2" align="center">
+                <SegmentedControl
+                  label="Preview render"
+                  size="sm"
+                  value={settings.renderAs}
+                  onChange={(renderAs) => update({ renderAs })}
+                  options={[
+                    { value: 'svg', label: 'SVG' },
+                    { value: 'canvas', label: 'Canvas' },
+                  ]}
+                />
+                {!SECRET_TYPES.has(type) && (
+                  <ShareButton share={share} label="Share" size="sm" />
+                )}
+              </Inline>
+            </Inline>
+          </CardHeader>
           <CardBody>
-            <Tabs
-              value={activeTab}
-              onValueChange={(v) => setActiveTab(v as typeof activeTab)}
-              variant="soft"
-              fullWidth
-            >
-              <TabsList aria-label="QR sections">
-                <TabsTrigger value="content">
-                  <Inline gap="2" align="center" wrap={false}>
-                    <IconLayers size="sm" />
-                    <span>Content</span>
-                  </Inline>
-                </TabsTrigger>
-                <TabsTrigger value="appearance">
-                  <Inline gap="2" align="center" wrap={false}>
-                    <IconPalette size="sm" />
-                    <span>Appearance</span>
-                  </Inline>
-                </TabsTrigger>
-                <TabsTrigger value="encryption">
-                  <Inline gap="2" align="center" wrap={false}>
-                    <IconShield size="sm" />
-                    <span>Encryption</span>
-                  </Inline>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="content">
-                <Box className="pt-4">
-                  <ContentTab
-                    state={state}
-                    setText={setText}
-                    setQrType={setQrType}
-                    setContactData={setContactData}
-                    setWifiData={setWifiData}
-                    setCryptoData={setCryptoData}
-                  />
-                </Box>
-              </TabsContent>
-
-              <TabsContent value="appearance">
-                <Box className="pt-4">
-                  <Stack gap="4">
-                    <StylePanel
-                      state={state}
-                      setSize={setSize}
-                      setBackgroundColor={setBackgroundColor}
-                      setForegroundColor={setForegroundColor}
-                      setErrorCorrectionLevel={setErrorCorrectionLevel}
-                      setRenderAs={setRenderAs}
-                      setIncludeMargin={setIncludeMargin}
-                    />
-                    <LogoPanel
-                      state={state}
-                      setUseImage={setUseImage}
-                      setImageSettings={setImageSettings}
-                    />
-                    <AdvancedSettings
-                      state={state}
-                      setVersion={setVersion}
-                      setMaskPattern={setMaskPattern}
-                    />
-                  </Stack>
-                </Box>
-              </TabsContent>
-
-              <TabsContent value="encryption">
-                <Box className="pt-4">
-                  <EncryptionTab
-                    encryptionConfig={state.encryptionConfig}
-                    setEncryptionConfig={setEncryptionConfig}
-                    generateRandomIV={generateRandomIV}
-                    generateRandomSalt={generateRandomSalt}
-                  />
-                </Box>
-              </TabsContent>
-            </Tabs>
+            <Stack gap="3">
+              {problem && (
+                <Alert status="danger">
+                  <AlertDescription>{problem}</AlertDescription>
+                </Alert>
+              )}
+              <Center>
+                <QrCode
+                  label="QR code preview"
+                  format={settings.renderAs}
+                  value={empty ? ' ' : value}
+                  size={settings.size}
+                  bg={settings.bg}
+                  fg={settings.fg}
+                  level={settings.ecc}
+                  includeMargin={settings.margin}
+                  imageSettings={
+                    logo
+                      ? {
+                          src: logo,
+                          width: Math.round(
+                            settings.size * Math.sqrt(settings.logoFraction),
+                          ),
+                          height: Math.round(
+                            settings.size * Math.sqrt(settings.logoFraction),
+                          ),
+                          excavate: settings.excavate,
+                        }
+                      : undefined
+                  }
+                />
+              </Center>
+              <Code
+                block
+                className="max-h-32 overflow-auto break-all whitespace-pre-wrap"
+                aria-label="Encoded text"
+              >
+                {value || ' '}
+              </Code>
+            </Stack>
           </CardBody>
         </Card>
-      </Box>
-
-      <Box className="min-w-0">
-        <QrPreview
-          state={state}
-          finalData={finalData}
-          encryptionError={encryptionError}
-          qrRef={qrRef}
-          onDownload={handleDownloadQRCode}
-        />
-      </Box>
+        <ScanCheck value={empty ? '' : value} qrStyle={style} />
+      </Stack>
     </Box>
   );
-};
-
-export default QRCodeGenerator;
+}

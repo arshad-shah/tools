@@ -1,322 +1,384 @@
-import React, { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { readClipboardText } from '@/shared/lib/clipboard';
+import { toToolError } from '@/shared/lib/errors';
+import { useHandoff } from '@/shared/lib/handoff';
+import { notify } from '@/shared/lib/notify';
+import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
-  IconFilePlus,
-  IconFolderPlus,
-  IconGlobe,
-  IconSave,
-} from '@/shared/ui/icons';
-
-import {
+  Alert,
+  AlertDescription,
   Box,
   Button,
-  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
-  EmptyState,
-  EmptyStateActions,
-  EmptyStateDescription,
-  EmptyStateIcon,
-  EmptyStateTitle,
+  ErrorState,
   IconButton,
   Inline,
+  KeyValueEditor,
+  Label,
+  LoadingState,
+  NumberInput,
+  PrivacyNote,
+  SegmentedControl,
   Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Text,
 } from '@/shared/ui';
 import {
-  RequestItemType,
-  RequestTab,
-  ResponseTab,
-  ResponseType,
-} from './types';
-import { toToolError } from '@/shared/lib/errors';
-import { newId } from '@/shared/lib/id';
-import { notify } from '@/shared/lib/notify';
-import { useJob } from '@/shared/state/useJob';
-import { addCollection, addRequest, deleteNode } from './lib/collections';
-import { sendRequest, type RequestInput } from './lib/request';
-import { useApiCollections } from './store';
-import { useRequestDraft } from './hooks/useRequestDraft';
+  IconCode,
+  IconFilePlus,
+  IconFolderPlus,
+  IconSave,
+} from '@/shared/ui/icons';
+import { AuthTab } from './components/AuthTab';
+import { BodyTab } from './components/BodyTab';
+import { CollectionsIO } from './components/CollectionsIO';
 import { CollectionTree } from './components/CollectionTree';
+import { CorsHelp } from './components/CorsHelp';
+import { EnvironmentMenu } from './components/EnvironmentMenu';
+import { HistoryPanel } from './components/HistoryPanel';
 import { NewCollectionDialog } from './components/NewCollectionDialog';
-import { RequestForm } from './components/RequestForm';
+import { RequestBar } from './components/RequestBar';
 import { ResponsePanel } from './components/ResponsePanel';
 import { SaveRequestDialog } from './components/SaveRequestDialog';
+import { SnippetDialog } from './components/SnippetDialog';
+import { useHttpClient } from './hooks/useHttpClient';
+import { buildRequest } from './lib/http';
+import { requestFromHandoff } from './lib/io';
+import { emptyRequest } from './lib/model';
 
-const ApiTester: React.FC = () => {
-  // Request state
-  const editor = useRequestDraft();
-  const { draft } = editor;
-  const { requestType } = draft;
+export default function HttpClient() {
+  const c = useHttpClient();
+  const { request, setRequest, job } = c;
+  const [reqTab, setReqTab] = useState('params');
+  const [side, setSide] = useState('collections');
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saveFolder, setSaveFolder] = useState('');
+  const [newOpen, setNewOpen] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [snippetOpen, setSnippetOpen] = useState(false);
 
-  // Response state
-  const job = useJob((ctx, input: RequestInput) =>
-    sendRequest(input, ctx.signal),
-  );
-  // Kept across sends, so a send that fails validation or is cancelled
-  // leaves the previous response on screen (as before useJob).
-  const [response, setResponse] = useState<ResponseType | null>(null);
-  const isLoading = job.status === 'running';
-  // Invalid input (no URL, bad JSON) is toasted; network failures show as a
-  // status-0 response instead.
-  useEffect(() => {
-    if (job.error) notify.error(job.error);
-  }, [job.error]);
-
-  // UI state
-  const [sidebarActive, setSidebarActive] = useState<boolean>(true);
-  const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
-  const [saveModalOpen, setSaveModalOpen] = useState<boolean>(false);
-  const [saveName, setSaveName] = useState<string>('');
-  const [newCollectionModalOpen, setNewCollectionModalOpen] =
-    useState<boolean>(false);
-  const [newCollectionName, setNewCollectionName] = useState('');
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
-  const [activeRequestTab, setActiveRequestTab] =
-    useState<RequestTab>('params');
-  const [activeResponseTab, setActiveResponseTab] =
-    useState<ResponseTab>('body');
-
-  const collections = useApiCollections((s) => s.collections);
-  const { setCollections } = useApiCollections.getState();
-
-  const handleSend = async () => {
-    const result = await job.run(draft);
-    if (result) setResponse(result);
-  };
-
-  const handleSelectRequest = (req: RequestItemType) => {
-    setSelectedRequest(req.id);
-    editor.load(req);
-  };
-
-  const handleSaveRequest = () => {
-    if (!saveName) {
-      notify.error('Please enter a name');
-      return;
-    }
-    const now = Date.now();
-    const newReq: RequestItemType = {
-      id: newId(),
-      type: 'request',
-      name: saveName,
-      method: draft.method,
-      url: draft.url,
-      requestType,
-      headers: [...draft.headers],
-      params: [...draft.params],
-      bodyType: draft.bodyType,
-      body: draft.body,
-      graphqlQuery: draft.graphqlQuery,
-      graphqlVariables: draft.graphqlVariables,
-      createdAt: now,
-      updatedAt: now,
-    };
+  const unresolved = useMemo(() => {
     try {
-      setCollections(
-        addRequest(collections, selectedCollectionId || null, newReq),
-      );
+      return buildRequest(request, c.vars).unresolved;
+    } catch {
+      return [];
+    }
+  }, [request, c.vars]);
+
+  // A request handed over by URL Inspector or a cURL command (once each).
+  const handoff = useHandoff(
+    (p) =>
+      p.kind === 'text' &&
+      (p.mime === 'application/x-curl' ||
+        p.mime === 'application/vnd.tools.http-request+json'),
+  );
+  const [hydrated, setHydrated] = useState<unknown>(null);
+  if (handoff && hydrated !== handoff) {
+    setHydrated(handoff);
+    try {
+      const r = requestFromHandoff(handoff);
+      if (r) {
+        setRequest(r);
+        c.setSavedId(null);
+      }
     } catch (e) {
-      notify.error(toToolError(e));
-      return;
+      notify.error(toToolError(e, 'Could not open the handed-off request'));
     }
-    setSelectedRequest(newReq.id);
-    setSaveModalOpen(false);
-    setSaveName('');
-  };
+  }
 
-  const handleCreateCollection = () => {
-    if (!newCollectionName.trim()) return;
-    setCollections(addCollection(collections, newCollectionName));
-    setNewCollectionName('');
-    setNewCollectionModalOpen(false);
-  };
-
-  const handleCreateNewRequest = () => {
-    if (collections.length === 0) {
-      setNewCollectionModalOpen(true);
-      return;
+  const send = () => void c.send();
+  const save = () => {
+    if (!c.saveCurrent()) {
+      setSaveName(
+        request.url.replace(/^https?:\/\//, '').slice(0, 60) || 'Request',
+      );
+      setSaveOpen(true);
     }
-    const newReq: RequestItemType = {
-      id: newId(),
-      type: 'request',
-      name: 'New Request',
-      method: 'GET',
-      url: '',
-      requestType: 'rest',
-    };
-    setCollections(addRequest(collections, collections[0].id, newReq));
-    editor.reset();
-    setSelectedRequest(newReq.id);
   };
 
-  // Finds and removes the folder or request anywhere in the tree (B6).
-  const handleDelete = (id: string) => {
-    setCollections(deleteNode(collections, id));
-    if (selectedRequest === id) setSelectedRequest(null);
-  };
+  useToolCommands('api-request', [
+    {
+      id: 'send',
+      label: 'Send request',
+      shortcut: 'Mod+Enter',
+      enabled: job.status !== 'running',
+      run: send,
+    },
+    { id: 'save', label: 'Save request', shortcut: 'Mod+S', run: save },
+    { id: 'snippet', label: 'Copy as code', run: () => setSnippetOpen(true) },
+    {
+      id: 'curl',
+      label: 'Import cURL from clipboard',
+      run: () =>
+        void readClipboardText().then(
+          (t) => c.importCurl(t),
+          (e: unknown) =>
+            notify.error(toToolError(e, 'Could not read the clipboard')),
+        ),
+    },
+    {
+      id: 'new',
+      label: 'New request',
+      run: () => {
+        setRequest(emptyRequest());
+        c.setSavedId(null);
+      },
+    },
+  ]);
+
+  const error = job.status === 'error' ? job.error : null;
 
   return (
-    <Box className="w-full">
-      <Box
-        className={`grid grid-cols-1 gap-4${
-          sidebarActive ? ' lg:grid-cols-4' : ''
-        }`}
-      >
-        {sidebarActive && (
-          <Box className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <Inline justify="between" align="center" wrap gap="2">
-                  <CardTitle as="h3">Collections</CardTitle>
-                  <Inline gap="1">
-                    <IconButton
-                      variant="secondary"
-                      size="sm"
-                      label="New request"
-                      icon={<IconFilePlus size="sm" />}
-                      onClick={handleCreateNewRequest}
-                    />
-                    <IconButton
-                      variant="secondary"
-                      size="sm"
-                      label="New collection"
-                      icon={<IconFolderPlus size="sm" />}
-                      onClick={() => setNewCollectionModalOpen(true)}
-                    />
-                  </Inline>
+    <Box className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <Card className="min-w-0 self-start">
+        <CardBody>
+          <Tabs value={side} onValueChange={setSide} variant="soft" fullWidth>
+            <TabsList aria-label="Saved and recent">
+              <TabsTrigger value="collections">Collections</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
+            </TabsList>
+            <TabsContent value="collections">
+              <Stack gap="2" className="pt-3">
+                <Inline gap="1" wrap>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    label="New request"
+                    icon={<IconFilePlus size="sm" />}
+                    onClick={() => {
+                      setRequest(emptyRequest());
+                      c.setSavedId(null);
+                    }}
+                  />
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    label="New collection"
+                    icon={<IconFolderPlus size="sm" />}
+                    onClick={() => setNewOpen(true)}
+                  />
+                  <CollectionsIO
+                    collections={c.collections}
+                    environment={c.activeEnv}
+                    onImport={(cols, env) => {
+                      c.setCollections([...c.collections, ...cols]);
+                      if (env) c.saveEnvironments([...c.environments, env]);
+                    }}
+                  />
                 </Inline>
-              </CardHeader>
-              <CardBody>
                 <CollectionTree
-                  collections={collections}
-                  selectedRequest={selectedRequest}
-                  onSelectRequest={handleSelectRequest}
-                  onDelete={handleDelete}
+                  collections={c.collections}
+                  selectedRequest={c.savedId}
+                  onSelectRequest={(r) => c.open(r.id)}
+                  onDelete={(id) => c.remove(id)}
                 />
-              </CardBody>
-            </Card>
-          </Box>
-        )}
+              </Stack>
+            </TabsContent>
+            <TabsContent value="history">
+              <Box className="pt-3">
+                <HistoryPanel
+                  items={c.history}
+                  persist={c.settings.historyPersist}
+                  onPersistChange={c.setHistoryPersist}
+                  onClear={c.clearHistory}
+                  onOpen={(h) => {
+                    setRequest(
+                      h.request ??
+                        emptyRequest({
+                          mode: h.mode,
+                          method: h.method,
+                          url: h.url,
+                        }),
+                    );
+                    c.setSavedId(null);
+                  }}
+                />
+              </Box>
+            </TabsContent>
+          </Tabs>
+        </CardBody>
+      </Card>
 
-        <Box className={sidebarActive ? 'lg:col-span-3' : undefined}>
-          <Stack gap="4">
-            <Inline justify="between" align="center" wrap gap="2">
-              <ButtonGroup>
-                <Button
-                  variant={requestType === 'rest' ? 'primary' : 'secondary'}
+      <Stack gap="4" className="min-w-0">
+        <PrivacyNote variant="network" />
+        <Card>
+          <CardHeader>
+            <Inline gap="2" align="center" justify="between" wrap>
+              <CardTitle as="h2">Request</CardTitle>
+              <Inline gap="2" align="center" wrap>
+                <SegmentedControl
+                  label="Request type"
                   size="sm"
-                  onClick={() => editor.setField('requestType', 'rest')}
+                  value={request.mode}
+                  onChange={(mode) =>
+                    setRequest({ ...request, mode: mode as 'rest' | 'graphql' })
+                  }
+                  options={[
+                    { value: 'rest', label: 'REST' },
+                    { value: 'graphql', label: 'GraphQL' },
+                  ]}
+                />
+                <EnvironmentMenu
+                  environments={c.environments}
+                  activeId={c.settings.activeEnv}
+                  onActiveChange={(activeEnv) => c.update({ activeEnv })}
+                  onSave={c.saveEnvironments}
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  leftIcon={<IconCode size="sm" />}
+                  onClick={() => setSnippetOpen(true)}
                 >
-                  REST
+                  Code
                 </Button>
                 <Button
-                  variant={requestType === 'graphql' ? 'primary' : 'secondary'}
                   size="sm"
-                  onClick={() => editor.setField('requestType', 'graphql')}
-                >
-                  GraphQL
-                </Button>
-              </ButtonGroup>
-              <Inline gap="2">
-                <Button
                   variant="secondary"
-                  size="sm"
                   leftIcon={<IconSave size="sm" />}
-                  onClick={() => setSaveModalOpen(true)}
+                  onClick={save}
                 >
                   Save
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setSidebarActive(!sidebarActive)}
-                >
-                  {sidebarActive ? 'Hide collections' : 'Show collections'}
-                </Button>
               </Inline>
             </Inline>
+          </CardHeader>
+          <CardBody>
+            <Stack gap="3">
+              <RequestBar
+                request={request}
+                onChange={setRequest}
+                onCurl={c.importCurl}
+                onSend={send}
+                onCancel={job.cancel}
+                running={job.status === 'running'}
+                unresolved={unresolved}
+              />
+              {unresolved.length > 0 && (
+                <Alert status="warning">
+                  <AlertDescription>
+                    Unresolved variables: {unresolved.join(', ')}. Add them to
+                    the active environment.
+                  </AlertDescription>
+                </Alert>
+              )}
+              <Tabs value={reqTab} onValueChange={setReqTab} variant="soft">
+                <TabsList aria-label="Request parts">
+                  <TabsTrigger value="params">
+                    Params ({request.params.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="headers">
+                    Headers ({request.headers.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="auth">Auth</TabsTrigger>
+                  <TabsTrigger value="body">
+                    {request.mode === 'graphql' ? 'Query' : 'Body'}
+                  </TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+                <TabsContent value="params">
+                  <KeyValueEditor
+                    rows={request.params}
+                    onChange={(params) => setRequest({ ...request, params })}
+                    ariaLabel="Query parameters"
+                  />
+                </TabsContent>
+                <TabsContent value="headers">
+                  <KeyValueEditor
+                    rows={request.headers}
+                    onChange={(headers) => setRequest({ ...request, headers })}
+                    ariaLabel="Headers"
+                    keyLabel="Header"
+                  />
+                </TabsContent>
+                <TabsContent value="auth">
+                  <AuthTab
+                    auth={request.auth}
+                    onChange={(auth) => setRequest({ ...request, auth })}
+                  />
+                </TabsContent>
+                <TabsContent value="body">
+                  <BodyTab request={request} onChange={setRequest} />
+                </TabsContent>
+                <TabsContent value="settings">
+                  <Stack gap="2">
+                    <Label htmlFor="http-timeout">Timeout (seconds)</Label>
+                    <NumberInput
+                      id="http-timeout"
+                      value={Math.round(c.settings.timeoutMs / 1000)}
+                      min={1}
+                      max={600}
+                      onValueChange={(s) =>
+                        c.update({ timeoutMs: Math.max(1, s || 30) * 1000 })
+                      }
+                    />
+                    <Text size="xs" tone="muted">
+                      Redirects are followed by the browser and cannot be turned
+                      off from a page.
+                    </Text>
+                  </Stack>
+                </TabsContent>
+              </Tabs>
+            </Stack>
+          </CardBody>
+        </Card>
 
-            {selectedRequest ? (
-              <Stack gap="4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle as="h3">Request</CardTitle>
-                  </CardHeader>
-                  <CardBody>
-                    <RequestForm
-                      editor={editor}
-                      isLoading={isLoading}
-                      onSend={() => void handleSend()}
-                      onCancel={job.cancel}
-                      activeRequestTab={activeRequestTab}
-                      setActiveRequestTab={setActiveRequestTab}
-                    />
-                  </CardBody>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle as="h3">Response</CardTitle>
-                  </CardHeader>
-                  <CardBody>
-                    <ResponsePanel
-                      isLoading={isLoading}
-                      response={response}
-                      activeResponseTab={activeResponseTab}
-                      setActiveResponseTab={setActiveResponseTab}
-                    />
-                  </CardBody>
-                </Card>
-              </Stack>
-            ) : (
-              <Card>
-                <CardBody>
-                  <EmptyState>
-                    <EmptyStateIcon>
-                      <IconGlobe size="3xl" />
-                    </EmptyStateIcon>
-                    <EmptyStateTitle>No request selected</EmptyStateTitle>
-                    <EmptyStateDescription>
-                      Pick a request from a collection or create a new one to
-                      get started.
-                    </EmptyStateDescription>
-                    <EmptyStateActions>
-                      <Button
-                        variant="primary"
-                        leftIcon={<IconFilePlus size="sm" />}
-                        onClick={handleCreateNewRequest}
-                      >
-                        New request
-                      </Button>
-                    </EmptyStateActions>
-                  </EmptyState>
-                </CardBody>
-              </Card>
-            )}
-          </Stack>
-        </Box>
-      </Box>
+        {job.status === 'running' && (
+          <LoadingState label="Waiting for the response" />
+        )}
+        {error &&
+          (error.code === 'NETWORK' ? (
+            <CorsHelp error={error} />
+          ) : (
+            <ErrorState error={error} title="Request failed" headingLevel={3} />
+          ))}
+        {c.sent && job.status !== 'running' && !error && (
+          <ResponsePanel sent={c.sent} />
+        )}
+      </Stack>
 
       <SaveRequestDialog
-        open={saveModalOpen}
-        onOpenChange={setSaveModalOpen}
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
         saveName={saveName}
         setSaveName={setSaveName}
-        selectedCollectionId={selectedCollectionId}
-        setSelectedCollectionId={setSelectedCollectionId}
-        collections={collections}
-        onSave={handleSaveRequest}
+        selectedCollectionId={saveFolder}
+        setSelectedCollectionId={setSaveFolder}
+        collections={c.collections}
+        onSave={() => {
+          try {
+            c.saveAs(saveName, saveFolder || null);
+            setSaveOpen(false);
+          } catch (e) {
+            notify.error(toToolError(e, 'Could not save the request'));
+          }
+        }}
       />
-
       <NewCollectionDialog
-        open={newCollectionModalOpen}
-        onOpenChange={setNewCollectionModalOpen}
-        newCollectionName={newCollectionName}
-        setNewCollectionName={setNewCollectionName}
-        onCreate={handleCreateCollection}
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        newCollectionName={newName}
+        setNewCollectionName={setNewName}
+        onCreate={() => {
+          if (!newName.trim()) return;
+          c.addCollection(newName);
+          setNewName('');
+          setNewOpen(false);
+        }}
+      />
+      <SnippetDialog
+        open={snippetOpen}
+        onOpenChange={setSnippetOpen}
+        request={request}
+        vars={c.vars}
       />
     </Box>
   );
-};
-
-export default ApiTester;
+}

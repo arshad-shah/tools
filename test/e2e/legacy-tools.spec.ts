@@ -12,16 +12,6 @@ test('color-tester exports the palette as JSON', async ({ page }) => {
   expect(Array.isArray(body)).toBe(true);
 });
 
-test('qr-code-generator downloads a PNG', async ({ page }) => {
-  await page.goto(pathOf('qr-code-generator'));
-  await page.getByRole('textbox').first().fill('https://example.com');
-  const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download QR code' }).click();
-  expect((await download).suggestedFilename()).toMatch(
-    /^qrcode-[a-z]+-\d+\.png$/,
-  );
-});
-
 test('url-encoder-decoder copies output', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(pathOf('url-encoder-decoder'));
@@ -175,55 +165,6 @@ test('rive-animation-player rejects a non-Rive file with a toast', async ({
   ).toBeVisible();
 });
 
-test('api-request keeps collections saved under the legacy key', async ({
-  page,
-}) => {
-  await page.addInitScript(() => {
-    if (localStorage.getItem('kit:store:tool:api-request')) return;
-    localStorage.setItem(
-      'apiTesterCollections',
-      JSON.stringify([
-        {
-          id: 'legacy',
-          type: 'folder',
-          name: 'Legacy Collection',
-          children: [
-            {
-              id: 'legacy-req',
-              type: 'request',
-              name: 'Legacy Request',
-              method: 'GET',
-              url: 'https://example.com',
-            },
-          ],
-        },
-      ]),
-    );
-  });
-  await page.goto(pathOf('api-request'));
-  await expect(page.getByText('Legacy Collection')).toBeVisible();
-  await expect(page.getByText('Legacy Request')).toBeVisible();
-  expect(
-    await page.evaluate(() => localStorage.getItem('apiTesterCollections')),
-  ).toBeNull();
-  await page.reload();
-  await expect(page.getByText('Legacy Collection')).toBeVisible();
-});
-
-test('api-request toasts invalid input instead of window.alert', async ({
-  page,
-}) => {
-  page.on('dialog', () => {
-    throw new Error('unexpected window dialog');
-  });
-  await page.goto(pathOf('api-request'));
-  await page.getByRole('button', { name: 'New request' }).first().click();
-  await page.getByRole('button', { name: 'Send' }).click();
-  await expect(
-    page.locator('[data-sonner-toast]').getByText('Please enter a URL'),
-  ).toBeVisible();
-});
-
 test('text-diff-checker accepts a text/plain file of any extension', async ({
   page,
 }) => {
@@ -240,25 +181,6 @@ test('text-diff-checker accepts a text/plain file of any extension', async ({
   await expect(
     page.getByRole('textbox', { name: 'Modified text' }),
   ).toHaveValue('print("right")');
-});
-
-test('api-request keeps the last response when a send fails validation', async ({
-  page,
-}) => {
-  await page.route('https://jsonplaceholder.typicode.com/users', (route) =>
-    route.fulfill({ json: [{ id: 1, name: 'Mocked' }] }),
-  );
-  await page.goto(pathOf('api-request'));
-  await page.getByText('Get Users').click();
-  await page.getByRole('button', { name: 'Send', exact: true }).click();
-  await expect(page.getByText('200', { exact: false }).first()).toBeVisible();
-  await expect(page.getByText('Mocked')).toBeVisible();
-  await page.getByRole('textbox', { name: 'Request URL' }).fill('');
-  await page.getByRole('button', { name: 'Send', exact: true }).click();
-  await expect(
-    page.locator('[data-sonner-toast]').getByText('Please enter a URL'),
-  ).toBeVisible();
-  await expect(page.getByText('Mocked')).toBeVisible();
 });
 
 test('calculator plots an expression without crashing', async ({ page }) => {
