@@ -161,6 +161,13 @@ test.describe('Edit objects', () => {
   test('marquee, Shift-click, the object menu and arrows', async ({ page }) => {
     await toolbarButton(page, 'Shape: Rectangle').click();
     await drag(page, await at(page, 100, 400), await at(page, 160, 360));
+    // Placing returns to Select with the new shape selected.
+    await expect(toolbarButton(page, 'Select')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(page.getByTestId('selection-frame')).toHaveCount(1);
+    await toolbarButton(page, 'Shape: Rectangle').click();
     await drag(page, await at(page, 300, 400), await at(page, 360, 360));
     await toolbarButton(page, 'Select').click();
     const shapes = page.getByTestId('objects-page-1').getByRole('button', {
