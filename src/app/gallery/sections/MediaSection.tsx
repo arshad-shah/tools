@@ -102,7 +102,6 @@ export function MediaSection() {
       <Row label="ColorBlock, Indent, Select groups">
         <ColorBlock
           color={color}
-          alpha={0.8}
           textColor="#ffffff"
           className="rounded-md px-3 py-2 text-sm"
         >
