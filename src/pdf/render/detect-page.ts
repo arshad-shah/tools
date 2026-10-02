@@ -7,7 +7,10 @@ import {
   type OperatorListLike,
   type OpsTable,
   type PageDetection,
+  type PageGeometry,
+  type Seg,
 } from '@/pdf/detect';
+import { imageCoverage, type ImageOpsTable } from '@/pdf/detect/raster';
 import type { PageTextItems } from './handlers/text';
 import { textItemsFrom } from './text';
 
@@ -23,6 +26,41 @@ export interface DetectPageLike {
     includeMarkedContent: boolean;
   }): Promise<Parameters<typeof textItemsFrom>[0]>;
   commonObjs: { has(id: string): boolean; get(id: string): unknown };
+  /** pdf.js `page.view`: the unrotated crop box. */
+  view?: number[];
+}
+
+/** Raster rulings are found on a render at this DPI (spec 11). */
+export const RASTER_DPI = 150;
+/** An image must cover more than this share of the page to be a scan. */
+export const SCAN_COVERAGE = 0.5;
+
+/** The raster pass for image-only pages (F-6): rulings in page space. */
+export interface RasterPass {
+  ops: ImageOpsTable;
+  segments(): Promise<Seg[]>;
+}
+
+/**
+ * A scanned page: no vector rules at all and one image over half the
+ * page. Only then is the page rendered for raster rulings.
+ */
+function isScan(
+  geom: PageGeometry,
+  list: OperatorListLike,
+  ops: ImageOpsTable,
+  view: number[] | undefined,
+): boolean {
+  if (geom.skipped) return false;
+  const lines = normaliseLines(geom.segments, geom.rects);
+  if (lines.h.length || lines.v.length) return false;
+  const v = (view?.length === 4 ? view : [0, 0, 612, 792]) as [
+    number,
+    number,
+    number,
+    number,
+  ];
+  return imageCoverage(list, ops, v) > SCAN_COVERAGE;
 }
 
 /** PDF font names (Wingdings, ZapfDingbats...) by pdf.js font id. */
@@ -46,18 +84,22 @@ function fontNamesOf(page: DetectPageLike, text: PageTextItems) {
 /**
  * Flat-form detection of one page (spec §8.2-8.4): operator list and text
  * content through extractGeometry, then the pure pipeline. Runs in the
- * render worker.
+ * render worker. With `raster`, a scanned page's rulings come from a
+ * render instead (spec 11 "Scans as forms").
  */
 export async function detectFromPage(
   page: DetectPageLike,
   pageIndex: number,
   OPS: OpsTable,
+  raster?: RasterPass,
 ): Promise<PageDetectionResult> {
   const list = await page.getOperatorList();
   const text = textItemsFrom(
     await page.getTextContent({ includeMarkedContent: false }),
   );
-  const geom = extractGeometry(list, OPS, text, fontNamesOf(page, text));
+  let geom = extractGeometry(list, OPS, text, fontNamesOf(page, text));
+  if (raster && isScan(geom, list, raster.ops, page.view))
+    geom = { ...geom, segments: await raster.segments() };
   const result = detectPage(geom, pageIndex);
   const cells = geom.skipped
     ? []
