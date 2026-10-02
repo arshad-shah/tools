@@ -83,6 +83,9 @@ export function PageText({
 }
 PageText.displayName = 'PageText';
 
+/** Advance of every glyph of Courier New (and metric clones), in em. */
+export const MONO_ADVANCE = 0.6;
+
 export interface PageTextInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   'onChange' | 'value' | 'style' | 'size' | 'className'
@@ -93,6 +96,12 @@ export interface PageTextInputProps extends Omit<
   fontPx: number;
   /** Letter spacing on screen, CSS px. */
   spacingPx?: number;
+  /**
+   * Character boxes: each box's width on screen, CSS px. The (invisible)
+   * text then runs in a monospace face spaced to one box per character, so
+   * the caret and selection sit on the box edges.
+   */
+  cellPx?: number;
   'aria-label': string;
 }
 
@@ -101,12 +110,13 @@ export interface PageTextInputProps extends Omit<
  * fills its parent (the box being edited). The text itself is drawn by
  * PageText where the export puts it, so the page shows through and the
  * text appears in place at its true size; this input only carries the
- * caret, the selection and the keyboard.
+ * caret, the selection and the keyboard. With `cellPx` its advances match
+ * the character boxes.
  */
 export const PageTextInput = React.forwardRef<
   HTMLInputElement,
   PageTextInputProps
->(({ value, onChange, fontPx, spacingPx = 0, ...rest }, ref) => (
+>(({ value, onChange, fontPx, spacingPx = 0, cellPx, ...rest }, ref) => (
   <input
     ref={ref}
     type="text"
@@ -114,8 +124,16 @@ export const PageTextInput = React.forwardRef<
     onChange={(e) => onChange(e.target.value)}
     autoComplete="off"
     spellCheck={false}
-    className="absolute inset-0 m-0 h-full w-full border-0 bg-transparent p-0 [font-family:Helvetica,Arial,sans-serif] leading-none text-transparent caret-accent-fg outline-none selection:bg-accent-soft"
-    style={{ fontSize: fontPx, letterSpacing: spacingPx }}
+    className={cn(
+      'absolute inset-0 m-0 h-full w-full border-0 bg-transparent p-0 leading-none text-transparent caret-accent-fg outline-none selection:bg-accent-soft',
+      cellPx
+        ? "[font-family:'Courier_New',Courier,'Liberation_Mono',monospace]"
+        : '[font-family:Helvetica,Arial,sans-serif]',
+    )}
+    style={{
+      fontSize: fontPx,
+      letterSpacing: cellPx ? cellPx - MONO_ADVANCE * fontPx : spacingPx,
+    }}
     {...rest}
   />
 ));
