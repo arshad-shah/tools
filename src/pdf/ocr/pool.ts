@@ -40,6 +40,7 @@ interface EngineBlock {
 }
 export interface OcrEngineWorker {
   terminate(): Promise<unknown>;
+  setParameters(params: Record<string, string>): Promise<unknown>;
 }
 export interface OcrEngineScheduler {
   addWorker(worker: OcrEngineWorker): string;
@@ -62,6 +63,11 @@ export interface OcrEngine {
 
 /** tesseract.js OEM.LSTM_ONLY: the shipped cores have no legacy engine. */
 const OEM_LSTM_ONLY = 1;
+/**
+ * PSM.AUTO: full page layout analysis. tesseract.js defaults to one
+ * uniform block, which reads a scanned form's table as noise.
+ */
+const PSM_AUTO = '3';
 
 export const defaultPoolSize = () =>
   Math.min(
@@ -150,9 +156,20 @@ export async function createOcrPool(o: {
   const start = async (): Promise<Live> => {
     const scheduler = engine.createScheduler();
     const results = await Promise.allSettled(
-      Array.from({ length: size }, () =>
-        engine.createWorker(o.langs.join('+'), OEM_LSTM_ONLY, options),
-      ),
+      Array.from({ length: size }, async () => {
+        const worker = await engine.createWorker(
+          o.langs.join('+'),
+          OEM_LSTM_ONLY,
+          options,
+        );
+        try {
+          await worker.setParameters({ tessedit_pageseg_mode: PSM_AUTO });
+        } catch (e) {
+          await worker.terminate().catch(() => undefined);
+          throw e;
+        }
+        return worker;
+      }),
     );
     const failed = results.find((r) => r.status === 'rejected');
     if (failed) {
