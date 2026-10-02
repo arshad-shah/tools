@@ -5,3 +5,4 @@ dist-ssr
 pnpm-lock.yaml
 *.min.js
 *.min.css
+src/tools/password-generator/data/eff-large.json

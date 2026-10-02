@@ -1,6 +1,7 @@
 import json from './json';
 import diff from './diff';
 import log from './log';
+import hash from './hash';
 import ping from './ping';
 import regex from './regex';
 
@@ -16,6 +17,7 @@ export const textHandlers = {
   ...regex,
   ...diff,
   ...log,
+  ...hash,
 };
 
 export type TextHandlers = typeof textHandlers;

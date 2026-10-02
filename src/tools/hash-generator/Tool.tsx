@@ -1,314 +1,132 @@
-import React, { useMemo, useState } from 'react';
-import { IconCheck, IconCopy, IconUpload, IconX } from '@/shared/ui/icons';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
-  Button,
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
-  Code,
-  FilePicker,
-  Heading,
+  Checkbox,
   Inline,
-  Input,
   Label,
-  Select,
+  PrivacyNote,
+  SegmentedControl,
   Stack,
-  Switch,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   Text,
-  Textarea,
 } from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { toToolError } from '@/shared/lib/errors';
-import { readBytes } from '@/shared/lib/files';
-import { formatBytes } from '@/shared/lib/format';
-import { useHandoffFiles } from '@/shared/lib/handoff';
-import {
-  ALGORITHMS,
-  HMAC_ALGORITHMS,
-  computeHash,
-  computeHmac,
-  isHmac,
-  parseKey,
-  type KeyFormat,
-} from './lib/hash';
+import { DIGESTS, type DigestId } from '@/shared/lib/crypto/digest';
+import { useHandoff } from '@/shared/lib/handoff';
+import { DigestBadges } from './components/ResultRow';
+import { FileHashes } from './components/FileHashes';
+import { HmacCard } from './components/HmacCard';
+import { TextHash } from './components/TextHash';
+import { DIGEST_FORMATS, type DigestFormat } from './lib/format';
+import { hashSettings } from './settings';
 
-interface Result {
-  id: string;
-  name: string;
-  value?: string;
-  error?: string;
-}
-
-const KEY_FORMATS = [
-  { value: 'text', label: 'Text (UTF-8)' },
-  { value: 'hex', label: 'Hex' },
+const GROUPS: { id: string; label: string }[] = [
+  { id: 'sha2', label: 'SHA-2' },
+  { id: 'sha3', label: 'SHA-3' },
+  { id: 'blake', label: 'BLAKE' },
+  { id: 'legacy', label: 'Legacy' },
+  { id: 'checksum', label: 'Checksums' },
 ];
 
 const HashGenerator: React.FC = () => {
-  const [input, setInput] = useState('');
-  const [selected, setSelected] = useState<string>('all');
-  const [hmacKey, setHmacKey] = useState('');
-  const [keyFormat, setKeyFormat] = useState<KeyFormat>('text');
-  // An empty message is a valid input (SHA-256("") is well known), but
-  // only hashed when asked, so the page does not open full of results.
-  const [hashEmpty, setHashEmpty] = useState(false);
-  // A file replaces the text as the message while it is set.
-  const [file, setFile] = useState<{ name: string; bytes: Uint8Array } | null>(
-    null,
-  );
-  const [fileError, setFileError] = useState<string | null>(null);
-  const hasInput = file !== null || input !== '' || hashEmpty;
-  const message = file ? file.bytes : input;
+  const [settings, update] = hashSettings.useSettings();
+  const files = useHandoff();
+  const [tab, setTab] = useState<'text' | 'files'>('text');
+  const [message, setMessage] = useState<Uint8Array | null>(null);
+  const onMessage = useCallback((b: Uint8Array | null) => setMessage(b), []);
+  const shownTab = files && tab === 'text' && !message ? 'files' : tab;
 
-  const openFile = async (picked: File) => {
-    setFileError(null);
-    try {
-      setFile({ name: picked.name, bytes: await readBytes(picked) });
-    } catch (e) {
-      setFileError(toToolError(e).message);
-    }
+  // Table order, so results and grid columns never depend on click order.
+  const selected = useMemo(
+    () =>
+      DIGESTS.map((d) => d.id).filter((id) => settings.selected.includes(id)),
+    [settings.selected],
+  );
+  const toggle = (id: DigestId, on: boolean) => {
+    const next = on
+      ? [...settings.selected, id]
+      : settings.selected.filter((s) => s !== id);
+    if (next.length) update({ selected: next });
   };
-  // A file dropped on a hub is hashed like a picked one (spec §5.3).
-  useHandoffFiles((files) => void openFile(files[0]));
-  const { copiedKey, copy } = useClipboard();
-
-  const items = useMemo(
-    () => [
-      { value: 'all', label: 'All algorithms' },
-      ...ALGORITHMS.map((a) => ({ value: a.id, label: a.name })),
-      ...HMAC_ALGORITHMS.map((a) => ({ value: a.id, label: a.name })),
-    ],
-    [],
-  );
-
-  const wantsHmac = selected === 'all' || isHmac(selected);
-
-  // The key is parsed once; a bad hex key is reported, never hashed.
-  const key = useMemo((): { bytes?: Uint8Array; error?: string } => {
-    if (!hmacKey) return {};
-    try {
-      return { bytes: parseKey(hmacKey, keyFormat) };
-    } catch (e) {
-      return { error: toToolError(e).message };
-    }
-  }, [hmacKey, keyFormat]);
-
-  const results = useMemo((): Result[] => {
-    if (!hasInput) return [];
-    const out: Result[] = [];
-    const run = (id: string, name: string, fn: () => string) => {
-      try {
-        out.push({ id, name, value: fn() });
-      } catch (e) {
-        out.push({ id, name, error: toToolError(e).message });
-      }
-    };
-    for (const a of ALGORITHMS) {
-      if (selected === 'all' || selected === a.id)
-        run(a.id, a.name, () => computeHash(a.id, message));
-    }
-    if (key.bytes) {
-      const bytes = key.bytes;
-      for (const a of HMAC_ALGORITHMS) {
-        if (selected === 'all' || selected === a.id)
-          run(a.id, a.name, () => computeHmac(a.id, bytes, message));
-      }
-    }
-    return out;
-  }, [message, hasInput, selected, key.bytes]);
 
   return (
-    <Stack gap="6">
+    <Stack gap="4">
       <Card>
         <CardBody>
-          <Stack gap="5">
-            <Stack gap="2">
-              <Inline justify="between" align="center">
-                <Label htmlFor="hash-input">Text to hash</Label>
-                {input && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<IconX size="sm" />}
-                    onClick={() => setInput('')}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </Inline>
-              {file ? (
-                <Inline justify="between" align="center" gap="3" wrap>
-                  <Text size="sm">
-                    Hashing file{' '}
-                    <Text as="span" weight="semibold">
-                      {file.name}
-                    </Text>{' '}
-                    ({formatBytes(file.bytes.byteLength)})
+          <Stack gap="4">
+            <Stack gap="2" role="group" aria-label="Algorithms">
+              {GROUPS.map((g) => (
+                <Inline key={g.id} gap="4" align="center" wrap>
+                  <Text size="sm" weight="semibold" className="w-24">
+                    {g.label}
                   </Text>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<IconX size="sm" />}
-                    onClick={() => setFile(null)}
-                  >
-                    Clear file
-                  </Button>
+                  {DIGESTS.filter((d) => d.group === g.id).map((d) => (
+                    <Inline key={d.id} gap="2" align="center">
+                      <Checkbox
+                        id={`alg-${d.id}`}
+                        checked={settings.selected.includes(d.id)}
+                        onCheckedChange={(on) => toggle(d.id, on)}
+                        aria-label={d.name}
+                        size="sm"
+                      />
+                      <Label htmlFor={`alg-${d.id}`}>{d.name}</Label>
+                      <DigestBadges info={d} />
+                    </Inline>
+                  ))}
                 </Inline>
-              ) : (
-                <Textarea
-                  id="hash-input"
-                  value={input}
-                  onChange={setInput}
-                  placeholder="Enter text to generate hashes…"
-                  rows={4}
-                />
-              )}
-              <Inline gap="2" align="center">
-                <FilePicker onFiles={(files) => void openFile(files[0])}>
-                  {(open) => (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      leftIcon={<IconUpload size="sm" />}
-                      onClick={open}
-                    >
-                      Hash a file
-                    </Button>
-                  )}
-                </FilePicker>
-                <Text size="xs" tone="muted">
-                  Files are hashed on this device.
-                </Text>
-              </Inline>
-              {fileError && (
-                <Alert status="danger">
-                  <AlertDescription>{fileError}</AlertDescription>
-                </Alert>
-              )}
-              {!input && !file && (
-                <Inline gap="2" align="center">
-                  <Switch
-                    id="hash-empty"
-                    checked={hashEmpty}
-                    onCheckedChange={setHashEmpty}
-                    aria-label="Hash an empty message"
-                  />
-                  <Label htmlFor="hash-empty">Hash an empty message</Label>
-                </Inline>
-              )}
+              ))}
             </Stack>
-
-            <Stack gap="2">
-              <Label htmlFor="hash-algo">Hash algorithm</Label>
-              <Select
-                id="hash-algo"
-                value={selected}
-                onValueChange={setSelected}
-                items={items}
-                aria-label="Hash algorithm"
-              />
-            </Stack>
-
-            {wantsHmac && (
-              <Stack gap="2">
-                <Label htmlFor="hmac-key">HMAC secret key</Label>
-                <Inline gap="2" align="center" wrap={false}>
-                  <Input
-                    id="hmac-key"
-                    value={hmacKey}
-                    onChange={setHmacKey}
-                    placeholder="Secret key used for HMAC only"
-                    autoComplete="off"
-                    spellCheck={false}
-                    invalid={!!key.error}
-                  />
-                  <div className="w-40 shrink-0">
-                    <Select
-                      value={keyFormat}
-                      onValueChange={(v) => setKeyFormat(v as KeyFormat)}
-                      items={KEY_FORMATS}
-                      aria-label="HMAC key format"
-                    />
-                  </div>
-                </Inline>
-                <Text size="sm" tone="subtle">
-                  HMAC values are only computed when you enter a key. The key
-                  never leaves your browser.
-                </Text>
-              </Stack>
-            )}
+            <SegmentedControl<DigestFormat>
+              label="Output format"
+              value={settings.output}
+              onChange={(v) => update({ output: v })}
+              options={DIGEST_FORMATS}
+              size="sm"
+            />
           </Stack>
         </CardBody>
       </Card>
 
-      {key.error && (
-        <Alert status="danger">
-          <AlertDescription>{key.error}</AlertDescription>
-        </Alert>
-      )}
-
-      {!hasInput ? (
-        <Alert status="info">
-          <AlertDescription>
-            Enter text above to generate hash values.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <Stack gap="3">
-          <Heading level={2} size="lg">
-            Hash results
-          </Heading>
-          {wantsHmac && !hmacKey && (
-            <Alert status="info">
-              <AlertDescription>
-                Enter an HMAC secret key to compute HMAC values.
-              </AlertDescription>
-            </Alert>
-          )}
-          {results.map(({ id, name, value, error }) => {
-            const isCopied = copiedKey === id;
-            return (
-              <Card key={id}>
-                <CardHeader>
-                  <Inline justify="between" align="center">
-                    <CardTitle as="h3">{name}</CardTitle>
-                    <Button
-                      variant={isCopied ? 'primary' : 'secondary'}
-                      size="sm"
-                      disabled={value === undefined}
-                      aria-label={`Copy ${name}`}
-                      leftIcon={
-                        isCopied ? (
-                          <IconCheck size="sm" />
-                        ) : (
-                          <IconCopy size="sm" />
-                        )
-                      }
-                      onClick={() => value && void copy(value, id)}
-                    >
-                      {isCopied ? 'Copied' : 'Copy'}
-                    </Button>
-                  </Inline>
-                </CardHeader>
-                <CardBody>
-                  {error !== undefined ? (
-                    <Alert status="danger">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  ) : (
-                    <Code block data-testid={`hash-${id}`}>
-                      {value}
-                    </Code>
-                  )}
-                </CardBody>
-              </Card>
-            );
-          })}
-        </Stack>
-      )}
+      <Tabs
+        value={shownTab}
+        onValueChange={(v) => setTab(v as 'text' | 'files')}
+        variant="soft"
+      >
+        <TabsList aria-label="Input">
+          <TabsTrigger value="text">Text</TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
+        </TabsList>
+        <TabsContent value="text">
+          <Stack gap="4" className="pt-4">
+            <TextHash
+              selected={selected}
+              output={settings.output}
+              inputEncoding={settings.inputEncoding}
+              onInputEncoding={(e) => update({ inputEncoding: e })}
+              onMessage={onMessage}
+            />
+            <HmacCard
+              message={message}
+              alg={settings.hmacAlg}
+              onAlg={(a) => update({ hmacAlg: a })}
+              output={settings.output}
+            />
+          </Stack>
+        </TabsContent>
+        <TabsContent value="files">
+          <div className="pt-4">
+            <FileHashes
+              selected={selected}
+              output={settings.output}
+              incoming={files}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+      <PrivacyNote variant="local" />
     </Stack>
   );
 };

@@ -99,31 +99,44 @@ export function computeHmac(
 }
 
 /**
- * The key's bytes: UTF-8 text, hex (whitespace ignored, any case) or
- * Base64 (standard or URL-safe).
+ * Text as bytes in the chosen input encoding: UTF-8 text, hex (whitespace
+ * and an optional `0x` ignored, any case) or Base64 (standard or URL-safe).
+ * `what` names the field in error messages.
  */
-export function parseKey(key: string, format: KeyFormat): Uint8Array {
-  if (format === 'text') return utf8ToBytes(key);
+export function bytesFrom(
+  text: string,
+  format: KeyFormat,
+  what = 'The input',
+): Uint8Array {
+  if (format === 'text') return utf8ToBytes(text);
   if (format === 'base64') {
     try {
-      return base64ToBytes(key);
+      return base64ToBytes(text);
     } catch (cause) {
-      throw new ToolError('INVALID_INPUT', 'The HMAC key is not valid Base64', {
+      throw new ToolError('INVALID_INPUT', `${what} is not valid Base64`, {
         cause,
       });
     }
   }
-  const clean = key.replace(/\s+/g, '');
+  const clean = text.replace(/\s+/g, '').replace(/^0x/i, '');
   if (clean.length % 2 !== 0 || /[^0-9a-f]/i.test(clean)) {
     throw new ToolError(
       'INVALID_INPUT',
-      'The HMAC key is not valid hex (use pairs of 0-9 and a-f)',
+      `${what} is not valid hex (use pairs of 0-9 and a-f)`,
     );
   }
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++)
     out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
   return out;
+}
+
+/**
+ * The key's bytes: UTF-8 text, hex (whitespace ignored, any case) or
+ * Base64 (standard or URL-safe).
+ */
+export function parseKey(key: string, format: KeyFormat): Uint8Array {
+  return bytesFrom(key, format, 'The HMAC key');
 }
 
 /** `parseKey` under its phase-6 name. */
@@ -287,3 +300,18 @@ export async function hmac(
   if (!fn) throw unknown(`HMAC-${id}`);
   return bytesToHex(nobleHmac(fn, key, bytes));
 }
+
+/** The table entry for `id`. */
+export function digestInfo(id: DigestId): DigestInfo {
+  const info = DIGESTS.find((d) => d.id === id);
+  if (!info) throw unknown(id);
+  return info;
+}
+
+/** Digest ids HMAC accepts: the cryptographic ones, in table order. */
+export const HMAC_DIGEST_IDS: readonly DigestId[] = DIGESTS.filter(
+  (d) => CRYPTO[d.id],
+).map((d) => d.id);
+
+export const isDigestId = (id: unknown): id is DigestId =>
+  DIGESTS.some((d) => d.id === id);

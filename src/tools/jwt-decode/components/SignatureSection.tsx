@@ -23,12 +23,14 @@ import {
   Code,
   Inline,
   Label,
+  SegmentedControl,
   Select,
   Stack,
   Text,
   Textarea,
 } from '@/shared/ui';
 import type { KeyKind, SecretEncoding, SignatureStatus } from '../types';
+import { listJwksKeys } from '../lib/jwks';
 import {
   KEY_TYPES,
   SAMPLE_JWT,
@@ -51,6 +53,10 @@ interface SignatureSectionProps {
   setKeyText: (text: string) => void;
   sigStatus: SignatureStatus;
   handleVerify: () => Promise<void>;
+  /** A JWKS with several keys and a token without kid: pick one. */
+  pickNeeded: boolean;
+  jwksIndex: number | null;
+  setJwksIndex: (i: number | null) => void;
   copiedKey: string | null;
   copy: (text: string, key?: string) => Promise<boolean>;
 }
@@ -69,6 +75,9 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
   setKeyText,
   sigStatus,
   handleVerify,
+  pickNeeded,
+  jwksIndex,
+  setJwksIndex,
   copiedKey,
   copy,
 }) => (
@@ -112,17 +121,13 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
         <CardBody>
           <Stack gap="3">
             <Inline gap="3" wrap align="end">
-              <Stack gap="1">
-                <Label htmlFor="jwt-key-type">Key type</Label>
-                <div className="w-48">
-                  <Select
-                    id="jwt-key-type"
-                    value={keyKind}
-                    onValueChange={(v) => setKeyKind(v as KeyKind)}
-                    items={KEY_TYPES}
-                  />
-                </div>
-              </Stack>
+              <SegmentedControl<KeyKind>
+                label="Key type"
+                value={keyKind}
+                onChange={setKeyKind}
+                options={KEY_TYPES as { value: KeyKind; label: string }[]}
+                size="sm"
+              />
               {keyKind === 'secret' && (
                 <Stack gap="1">
                   <Label htmlFor="jwt-secret-encoding">Secret encoding</Label>
@@ -155,6 +160,25 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
                     : 'JWK or JWKS JSON'
               }
             />
+            {pickNeeded && (
+              <Stack gap="1">
+                <Label htmlFor="jwt-jwks-pick">Key from the set</Label>
+                <Select
+                  id="jwt-jwks-pick"
+                  value={jwksIndex === null ? '' : String(jwksIndex)}
+                  onValueChange={(v) =>
+                    setJwksIndex(v === '' ? null : Number(v))
+                  }
+                  items={[
+                    { value: '', label: 'Choose a key (the token has no kid)' },
+                    ...listJwksKeys(keyText).map((k) => ({
+                      value: String(k.index),
+                      label: k.label,
+                    })),
+                  ]}
+                />
+              </Stack>
+            )}
             <Inline justify="between" align="center" gap="2" wrap>
               <Text size="sm" tone="subtle">
                 {hmacAlg

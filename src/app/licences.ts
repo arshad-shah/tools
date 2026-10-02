@@ -75,4 +75,16 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/micromark/micromark-extension-gfm',
     note: 'GitHub Flavored Markdown for the Markdown Editor',
   },
+  {
+    name: 'EFF large wordlist',
+    licence: 'CC-BY-3.0-US',
+    url: 'https://www.eff.org/dice',
+    note: 'Passphrase words (7,776), Electronic Frontier Foundation',
+  },
+  {
+    name: '@zxcvbn-ts/core, language-common, language-en',
+    licence: 'MIT',
+    url: 'https://github.com/zxcvbn-ts/zxcvbn',
+    note: 'Password strength checker (loaded on first use)',
+  },
 ];

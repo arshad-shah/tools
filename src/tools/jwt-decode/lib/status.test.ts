@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { SIGNATURE_TEXT, sameKey, timeText } from './status';
+import {
+  formatDuration,
+  relative,
+  SIGNATURE_TEXT,
+  sameKey,
+  timeText,
+} from './status';
 
 describe('sameKey', () => {
   it('compares kind, value and secret encoding', () => {
@@ -31,5 +37,15 @@ describe('timeText', () => {
   it('has text for every signature state', () => {
     expect(SIGNATURE_TEXT.verified.tone).toBe('success');
     expect(SIGNATURE_TEXT.unverified.title).toBe('Signature not verified');
+  });
+});
+
+describe('live durations', () => {
+  it('formats and counts down', () => {
+    expect(formatDuration(252)).toBe('4 min 12 s');
+    expect(formatDuration(7500)).toBe('2 h 5 min');
+    expect(formatDuration(90_000)).toBe('1 d 1 h');
+    expect(relative(1000, 748, 'expires')).toBe('expires in 4 min 12 s');
+    expect(relative(1000, 1003, 'expired')).toBe('expired 3 s ago');
   });
 });

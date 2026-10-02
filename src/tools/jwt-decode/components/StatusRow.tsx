@@ -8,7 +8,9 @@ export const StatusRow: React.FC<{
   detail: string;
   tone: Tone;
   icon: React.ReactNode;
-}> = ({ label, title, detail, tone, icon }) => (
+  /** The detail changes every second (live countdown). */
+  live?: boolean;
+}> = ({ label, title, detail, tone, icon, live }) => (
   <Inline align="start" gap="3">
     <Box className="pt-0.5">{icon}</Box>
     <Stack gap="1" className="min-w-0 flex-1">
@@ -21,7 +23,7 @@ export const StatusRow: React.FC<{
         </Badge>
       </Inline>
       {detail && (
-        <Text size="sm" tone="subtle">
+        <Text size="sm" tone="subtle" data-dynamic={live ? '' : undefined}>
           {detail}
         </Text>
       )}

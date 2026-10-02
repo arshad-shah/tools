@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { utf8Encode } from '../encoding';
-import { createDigest, digest, DIGESTS, hmac, type DigestId } from './digest';
+import {
+  bytesFrom,
+  createDigest,
+  digest,
+  digestInfo,
+  DIGESTS,
+  HMAC_DIGEST_IDS,
+  hmac,
+  isDigestId,
+  type DigestId,
+} from './digest';
 
 const te = utf8Encode;
 
@@ -61,5 +71,24 @@ describe('digest', () => {
     await expect(hmac('crc32', te('k'), te('x'))).rejects.toMatchObject({
       code: 'INVALID_INPUT',
     });
+  });
+});
+
+describe('digest helpers', () => {
+  it('bytesFrom reads text, hex and Base64', () => {
+    expect([...bytesFrom('hi', 'text')]).toEqual([0x68, 0x69]);
+    expect([...bytesFrom('0x00 FF', 'hex')]).toEqual([0, 255]);
+    expect([...bytesFrom('AP8=', 'base64')]).toEqual([0, 255]);
+    expect(() => bytesFrom('abc', 'hex')).toThrow(/The input is not valid hex/);
+    expect(() => bytesFrom('*', 'base64', 'The message')).toThrow(
+      /The message is not valid Base64/,
+    );
+  });
+  it('digestInfo and the HMAC list', () => {
+    expect(digestInfo('sha256').hexLength).toBe(64);
+    expect(HMAC_DIGEST_IDS).toContain('blake3');
+    expect(HMAC_DIGEST_IDS).not.toContain('crc32');
+    expect(isDigestId('md5')).toBe(true);
+    expect(isDigestId('nope')).toBe(false);
   });
 });

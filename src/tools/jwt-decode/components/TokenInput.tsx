@@ -1,104 +1,34 @@
 import React from 'react';
-import {
-  IconCheckCircle,
-  IconCopy,
-  IconFileJson,
-  IconLock,
-  IconRefreshCw,
-  IconTrash2,
-} from '@/shared/ui/icons';
-
-import {
-  Box,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Inline,
-  Label,
-  Stack,
-  Textarea,
-} from '@/shared/ui';
+import { TextInputPanel } from '@/shared/ui';
+import { SAMPLE_JWT } from '../lib/constants';
+import { isTokenHandoff } from '../lib/handoffs';
 
 interface TokenInputProps {
   jwt: string;
   setJwt: (jwt: string) => void;
-  clear: () => void;
-  handleSample: () => void;
-  handleCopyJwt: () => void;
-  copiedKey: string | null;
+  /** Label of the panel (a second one compares tokens). */
+  label?: string;
+  /** Accept an application/jwt hand-off into this panel. */
+  acceptHandoff?: boolean;
 }
 
+/** The token source: paste, open, drop, sample or a hand-off. */
 export const TokenInput: React.FC<TokenInputProps> = ({
   jwt,
   setJwt,
-  clear,
-  handleSample,
-  handleCopyJwt,
-  copiedKey,
+  label = 'JWT token',
+  acceptHandoff = true,
 }) => (
-  <Card>
-    <CardHeader>
-      <Inline justify="between" align="center" gap="2" wrap>
-        <Inline gap="2" align="center">
-          <IconLock size="lg" />
-          <Label>JWT token</Label>
-        </Inline>
-        <Inline gap="2" wrap>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconFileJson size="sm" />}
-            onClick={handleSample}
-          >
-            Sample
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={
-              copiedKey === 'jwt' ? (
-                <IconCheckCircle size="sm" />
-              ) : (
-                <IconCopy size="sm" />
-              )
-            }
-            onClick={handleCopyJwt}
-          >
-            {copiedKey === 'jwt' ? 'Copied' : 'Copy'}
-          </Button>
-        </Inline>
-      </Inline>
-    </CardHeader>
-    <CardBody>
-      <Stack gap="3">
-        <Textarea
-          value={jwt}
-          onChange={setJwt}
-          placeholder="Paste your JWT token here…"
-          rows={4}
-          aria-label="JWT token"
-        />
-        <Inline gap="2" wrap>
-          <Box className="flex-1">
-            <Button
-              variant="primary"
-              leftIcon={<IconRefreshCw size="sm" />}
-              onClick={() => setJwt(jwt)}
-              className="w-full"
-            >
-              Decode token
-            </Button>
-          </Box>
-          <Button
-            variant="secondary"
-            leftIcon={<IconTrash2 size="sm" />}
-            onClick={clear}
-          >
-            Clear
-          </Button>
-        </Inline>
-      </Stack>
-    </CardBody>
-  </Card>
+  <TextInputPanel
+    label={label}
+    value={jwt}
+    onChange={setJwt}
+    language="plain"
+    wrap
+    samples={[{ label: 'Sample token', value: SAMPLE_JWT }]}
+    handoff={acceptHandoff ? isTokenHandoff : undefined}
+    placeholder="Paste a JWT (a Bearer prefix, quotes and spaces are removed)"
+    minHeight={96}
+    maxHeight={240}
+  />
 );
