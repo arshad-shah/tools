@@ -35,12 +35,19 @@ export interface HubProps {
   category: CategoryDef;
   /** Hub-specific drop routing (the PDF hub). */
   route?: HubDropZoneProps['route'];
+  /** Shown under the drop zone (the PDF hub's detected-document card). */
+  dropAddon?: React.ReactNode;
   /** Extra card groups after the tool groups (the PDF hub's workspace modes). */
   extraGroups?: { id: string; label: string; children: React.ReactNode[] }[];
 }
 
 /** One layout for every category hub (spec §5.3). */
-export function Hub({ category, route, extraGroups = [] }: HubProps) {
+export function Hub({
+  category,
+  route,
+  dropAddon,
+  extraGroups = [],
+}: HubProps) {
   const { isFavorite, toggle } = useFavorites();
   useBreadcrumb([{ label: category.label }]);
   const groups = groupTools(category, hubTools(TOOLS, category.id));
@@ -51,7 +58,10 @@ export function Hub({ category, route, extraGroups = [] }: HubProps) {
       blurb={category.blurb}
       dropZone={
         category.fileBased ? (
-          <HubDropZone category={category} route={route} />
+          <div className="flex flex-col gap-3">
+            <HubDropZone category={category} route={route} />
+            {dropAddon}
+          </div>
         ) : undefined
       }
       groups={[

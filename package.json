@@ -86,6 +86,7 @@
     "@axe-core/playwright": "^4.13.0",
     "@cloudflare/vite-plugin": "^1.39.0",
     "@eslint/js": "^10.0.1",
+    "@fontsource/noto-sans-symbols-2": "^5.3.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.2",
     "@testing-library/dom": "^10.4.2",

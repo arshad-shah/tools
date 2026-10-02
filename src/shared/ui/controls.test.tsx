@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Checkbox, Progress, Slider, Switch } from './controls';
+import { Checkbox, NumberInput, Progress, Slider, Switch } from './controls';
 import { StatusDot } from './status-dot';
 import { Swatch } from './swatch';
 import { Tabs, TabsList, TabsTrigger } from './tabs';
@@ -66,5 +66,21 @@ describe('non-text contrast roles', () => {
     expect(screen.getByRole('tab').className).toContain(
       'border-accent-indicator',
     );
+  });
+});
+
+describe('NumberInput size', () => {
+  it('lg makes the field and its steppers 44px', () => {
+    render(
+      <NumberInput
+        value={11}
+        onValueChange={() => {}}
+        size="lg"
+        aria-label="Text size"
+      />,
+    );
+    const dec = screen.getByRole('button', { name: 'Decrement' });
+    expect(dec.className).toContain('w-11');
+    expect(dec.parentElement!.className).toContain('h-11');
   });
 });

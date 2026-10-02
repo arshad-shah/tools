@@ -172,6 +172,13 @@ export { SelectionFrame, type SelectionFrameProps } from './selection-frame';
 export { HitArea, type HitAreaProps } from './hit-area';
 export { DrawRectLayer, type DrawRectLayerProps } from './draw-rect-layer';
 export { Highlight, type HighlightProps } from './highlight';
+export { FieldBox, type FieldBoxProps, type FieldBoxState } from './field-box';
+export { PageText, type PageTextProps } from './page-text';
+export {
+  PointerLayer,
+  type PointerLayerProps,
+  type PagePoint,
+} from './pointer-layer';
 export { ProgressOverlay, type ProgressOverlayProps } from './progress-overlay';
 export { SidePanel, type SidePanelProps } from './side-panel';
 export {

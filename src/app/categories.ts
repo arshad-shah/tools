@@ -53,12 +53,7 @@ export const CATEGORIES = [
       {
         id: 'more',
         label: 'More PDF tools',
-        toolIds: [
-          'pdf-sign',
-          'pdf-fill-form',
-          'pdf-watermark',
-          'pdf-page-numbers',
-        ],
+        toolIds: ['pdf-watermark', 'pdf-page-numbers'],
       },
     ],
   },

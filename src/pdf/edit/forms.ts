@@ -7,16 +7,21 @@ import {
   PDFName,
   PDFOptionList,
   PDFRadioGroup,
+  PDFRef,
   PDFSignature,
   PDFString,
   PDFTextField,
   StandardFonts,
   type PDFDocument,
   type PDFField,
+  type PDFFont,
+  type PDFForm,
 } from 'pdf-lib';
 import { ToolError } from '@/shared/lib/errors';
+import type { Box } from './draw';
 import { unsupportedChars } from './fonts';
 import { loadPdf } from './load';
+import { XFA_MESSAGE } from './messages';
 
 /**
  * `name` is the fully qualified field name; `label` is the field's alternate
@@ -75,8 +80,7 @@ export type FormField =
 
 export type FormValue = string | boolean | string[];
 
-export const XFA_MESSAGE =
-  'This PDF uses an XFA form, which is not supported. Only standard (AcroForm) forms can be filled.';
+export { XFA_MESSAGE };
 
 /** Must run before doc.getForm(): pdf-lib deletes XFA data when it builds the form. */
 function hasXfa(doc: PDFDocument): boolean {
@@ -166,9 +170,135 @@ function describe(field: PDFField): FormField {
   };
 }
 
+/** One widget of a form field, in page space (radios have one per option). */
+export interface FormWidget {
+  fieldName: string;
+  kind: FormField['kind'];
+  pageIndex: number;
+  rect: Box;
+  readOnly: boolean;
+  /** A checkbox's or radio option's on-state value. */
+  onValue?: string;
+}
+
+/**
+ * Every widget of every field with its page and /Rect. The page comes from
+ * the widget's /P or, when that is missing, from the page whose /Annots
+ * lists the widget. Widgets on no page are skipped.
+ */
+export async function listFormWidgets(
+  bytes: Uint8Array,
+): Promise<FormWidget[]> {
+  const { doc, form } = await loadForm(bytes);
+  const pages = doc.getPages();
+  const byPageRef = new Map(pages.map((p, i) => [p.ref.toString(), i]));
+  const annotPage = new Map<string, number>();
+  pages.forEach((p, i) => {
+    const annots = p.node.Annots();
+    if (!annots) return;
+    for (let k = 0; k < annots.size(); k++) {
+      const ref = annots.get(k);
+      if (ref instanceof PDFRef) annotPage.set(ref.toString(), i);
+    }
+  });
+  const out: FormWidget[] = [];
+  for (const field of form.getFields()) {
+    const kind = describe(field).kind;
+    const readOnly = field.isReadOnly();
+    // Radio on-states may be indices into /Opt; getOptions maps them back.
+    const options = field instanceof PDFRadioGroup ? field.getOptions() : null;
+    for (const [w, widget] of field.acroField.getWidgets().entries()) {
+      const p = widget.P();
+      const ref = doc.context.getObjectRef(widget.dict);
+      const pageIndex =
+        (p ? byPageRef.get(p.toString()) : undefined) ??
+        (ref ? annotPage.get(ref.toString()) : undefined);
+      if (pageIndex === undefined) continue;
+      const r = widget.getRectangle();
+      const on = options?.[w] ?? widget.getOnValue()?.decodeText();
+      out.push({
+        fieldName: field.getName(),
+        kind,
+        pageIndex,
+        rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+        readOnly,
+        ...(on !== undefined && (kind === 'checkbox' || kind === 'radio')
+          ? { onValue: on }
+          : {}),
+      });
+    }
+  }
+  return out;
+}
+
 export async function listFormFields(bytes: Uint8Array): Promise<FormField[]> {
   const { form } = await loadForm(bytes);
   return form.getFields().map(describe);
+}
+
+/**
+ * Sets one field's value (the per-field body of fillForm, shared by the
+ * workspace's form.setValue writer). Read-only fields are left alone.
+ * Throws INVALID_INPUT naming the field for a value it can't take.
+ */
+export function setFieldValue(
+  form: PDFForm,
+  name: string,
+  value: FormValue,
+  font: PDFFont,
+): void {
+  let field: PDFField;
+  try {
+    field = form.getField(name);
+  } catch {
+    throw new ToolError(
+      'INVALID_INPUT',
+      `There is no form field called "${name}"`,
+    );
+  }
+  if (field.isReadOnly()) return;
+  const fail = (m: string) => new ToolError('INVALID_INPUT', `"${name}": ${m}`);
+  const checkChars = (s: string) => {
+    const bad = unsupportedChars(font, s.replace(/[\r\n]/g, ''));
+    if (bad.length) throw fail(`the form font can't draw ${bad.join(' ')}`);
+  };
+  const asList = (v: FormValue): string[] => {
+    if (typeof v === 'string') return v ? [v] : [];
+    if (Array.isArray(v)) return v;
+    throw fail('expected a choice');
+  };
+  if (field instanceof PDFTextField) {
+    if (typeof value !== 'string') throw fail('expected text');
+    const max = field.getMaxLength();
+    if (max !== undefined && value.length > max)
+      throw fail(`at most ${max} characters`);
+    checkChars(value);
+    field.setText(value || undefined);
+  } else if (field instanceof PDFCheckBox) {
+    if (typeof value !== 'boolean') throw fail('expected checked or unchecked');
+    if (value) field.check();
+    else field.uncheck();
+  } else if (field instanceof PDFRadioGroup) {
+    if (typeof value !== 'string') throw fail('expected one option');
+    if (!value) field.clear();
+    else if (!field.getOptions().includes(value))
+      throw fail(`"${value}" is not one of the options`);
+    else field.select(value);
+  } else if (field instanceof PDFDropdown || field instanceof PDFOptionList) {
+    const list = asList(value);
+    const editable = field instanceof PDFDropdown && field.isEditable();
+    for (const v of list) {
+      if (!editable && !field.getOptions().includes(v))
+        throw fail(`"${v}" is not one of the options`);
+      checkChars(v);
+    }
+    if (list.length > 1 && !field.isMultiselect())
+      throw fail('only one choice is allowed');
+    if (list.length === 0) field.clear();
+    else field.select(list.length === 1 ? list[0] : list);
+  } else {
+    throw fail('this kind of field cannot be filled here');
+  }
 }
 
 export async function fillForm(
@@ -178,60 +308,8 @@ export async function fillForm(
 ): Promise<Uint8Array> {
   const { doc, form } = await loadForm(bytes);
   const font = await doc.embedFont(StandardFonts.Helvetica);
-  const byName = new Map(form.getFields().map((f) => [f.getName(), f]));
-  for (const [name, value] of Object.entries(values)) {
-    const field = byName.get(name);
-    if (!field)
-      throw new ToolError(
-        'INVALID_INPUT',
-        `There is no form field called "${name}"`,
-      );
-    if (field.isReadOnly()) continue;
-    const fail = (m: string) =>
-      new ToolError('INVALID_INPUT', `"${name}": ${m}`);
-    const checkChars = (s: string) => {
-      const bad = unsupportedChars(font, s.replace(/[\r\n]/g, ''));
-      if (bad.length) throw fail(`the form font can't draw ${bad.join(' ')}`);
-    };
-    const asList = (v: FormValue): string[] => {
-      if (typeof v === 'string') return v ? [v] : [];
-      if (Array.isArray(v)) return v;
-      throw fail('expected a choice');
-    };
-    if (field instanceof PDFTextField) {
-      if (typeof value !== 'string') throw fail('expected text');
-      const max = field.getMaxLength();
-      if (max !== undefined && value.length > max)
-        throw fail(`at most ${max} characters`);
-      checkChars(value);
-      field.setText(value || undefined);
-    } else if (field instanceof PDFCheckBox) {
-      if (typeof value !== 'boolean')
-        throw fail('expected checked or unchecked');
-      if (value) field.check();
-      else field.uncheck();
-    } else if (field instanceof PDFRadioGroup) {
-      if (typeof value !== 'string') throw fail('expected one option');
-      if (!value) field.clear();
-      else if (!field.getOptions().includes(value))
-        throw fail(`"${value}" is not one of the options`);
-      else field.select(value);
-    } else if (field instanceof PDFDropdown || field instanceof PDFOptionList) {
-      const list = asList(value);
-      const editable = field instanceof PDFDropdown && field.isEditable();
-      for (const v of list) {
-        if (!editable && !field.getOptions().includes(v))
-          throw fail(`"${v}" is not one of the options`);
-        checkChars(v);
-      }
-      if (list.length > 1 && !field.isMultiselect())
-        throw fail('only one choice is allowed');
-      if (list.length === 0) field.clear();
-      else field.select(list.length === 1 ? list[0] : list);
-    } else {
-      throw fail('this kind of field cannot be filled here');
-    }
-  }
+  for (const [name, value] of Object.entries(values))
+    setFieldValue(form, name, value, font);
   // Redraw only what needs it: the fields just changed (their values were
   // checked above) and, when flattening, untouched fields that have no
   // appearance yet (forms relying on NeedAppearances). Anything else keeps
@@ -253,4 +331,52 @@ export async function fillForm(
   }
   if (flatten) form.flatten({ updateFieldAppearances: false });
   return doc.save({ useObjectStreams: true, updateFieldAppearances: false });
+}
+
+export type FormValues = Record<string, FormValue>;
+
+/** A fillable field's current value, in the shape its control edits. */
+function currentValue(field: FormField): FormValue | undefined {
+  switch (field.kind) {
+    case 'text':
+      return field.value;
+    case 'checkbox':
+      return field.checked;
+    case 'radio':
+      return field.selected ?? '';
+    case 'dropdown':
+    case 'optionlist':
+      return field.multiSelect ? field.selected : (field.selected[0] ?? '');
+    case 'unsupported':
+      return undefined;
+  }
+}
+
+export function initialValues(fields: FormField[]): FormValues {
+  const out: FormValues = {};
+  for (const f of fields) {
+    const v = currentValue(f);
+    if (v !== undefined) out[f.name] = v;
+  }
+  return out;
+}
+
+const same = (a: FormValue | undefined, b: FormValue | undefined) =>
+  Array.isArray(a) && Array.isArray(b)
+    ? a.length === b.length && a.every((v, i) => v === b[i])
+    : a === b;
+
+/** Only fields the user changed; read-only and unsupported fields never. */
+export function changedValues(
+  fields: FormField[],
+  values: FormValues,
+  initial: FormValues,
+): FormValues {
+  const out: FormValues = {};
+  for (const f of fields) {
+    if (f.kind === 'unsupported' || f.readOnly) continue;
+    const v = values[f.name];
+    if (v !== undefined && !same(v, initial[f.name])) out[f.name] = v;
+  }
+  return out;
 }

@@ -82,6 +82,10 @@ export interface DocumentApi {
     opts?: { title: string; confirm?: string },
   ): Promise<CheckpointReport | null>;
   addAsset(bytes: Uint8Array, mime: string): AssetId;
+  /** Steps back one undo step (a mode cancelling its own preparation). */
+  undo(): void;
+  /** Stores flat-form detection results with the document (not undoable). */
+  setDetection(detection: unknown): void;
   /** Opens in the render worker and stores the blob. */
   addSource(bytes: Uint8Array, name: string): Promise<SourceId>;
   render: PdfRender;

@@ -18,6 +18,7 @@ import { MediaSection } from './sections/MediaSection';
 import { NavigationSection } from './sections/NavigationSection';
 import { OverlaysSection } from './sections/OverlaysSection';
 import { PageOverlaysSection } from './sections/PageOverlaysSection';
+import { FormFieldsSection } from './sections/FormFieldsSection';
 import { PanelsSection } from './sections/PanelsSection';
 import { WorkspaceBarsSection } from './sections/WorkspaceBarsSection';
 import { DocumentSection } from './sections/DocumentSection';
@@ -66,6 +67,7 @@ export default function KitGallery() {
       <MediaSection />
       <KeysSection />
       <PageOverlaysSection />
+      <FormFieldsSection />
       <PanelsSection />
       <WorkspaceBarsSection />
       <DocumentSection />

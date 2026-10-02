@@ -3,6 +3,7 @@ import { redactManifest } from './redact';
 import { convertManifest } from './convert';
 import { protectManifest } from './protect';
 import { optimizeManifest } from './optimize';
+import { fillSignManifest } from './fill-sign';
 import type { ModeManifest } from './types';
 
 export { MODE_ORDER, shortcutFor } from './registry-order';
@@ -13,6 +14,7 @@ export { MODE_ORDER, shortcutFor } from './registry-order';
  */
 export const MODES: readonly ModeManifest[] = [
   organizeManifest,
+  fillSignManifest,
   redactManifest,
   convertManifest,
   protectManifest,

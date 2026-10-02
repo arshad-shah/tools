@@ -5,3 +5,6 @@
  */
 export const ENCRYPTED_MESSAGE =
   'This PDF is password-protected and must be unlocked first.';
+
+export const XFA_MESSAGE =
+  'This PDF uses an XFA form, which is not supported. Only standard (AcroForm) forms can be filled.';

@@ -21,6 +21,7 @@ const SECTIONS = [
   'colour',
   'panes',
   'widgets',
+  'form-fields',
 ];
 
 /** Phase-6 sections whose layout changes at phone width. */

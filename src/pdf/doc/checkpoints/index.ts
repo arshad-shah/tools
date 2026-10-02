@@ -3,6 +3,7 @@ import { redactApplyRunner } from './redact';
 import { optimizeCompressRunner, optimizeRepairRunner } from './optimize';
 import { registerCheckpointRunners, type CheckpointRunner } from './registry';
 import { sanitizeRunner } from './sanitize';
+import { FILL_SIGN_RUNNERS } from './fill-sign';
 
 /** Every checkpoint runner. Append-only: later Parts add one spread each. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -12,6 +13,7 @@ export const ALL_RUNNERS: readonly CheckpointRunner<any>[] = [
   sanitizeRunner,
   optimizeCompressRunner,
   optimizeRepairRunner,
+  ...FILL_SIGN_RUNNERS,
 ];
 
 /** Registers every runner on the main thread (where checkpoints run, G5). */

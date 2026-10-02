@@ -17,7 +17,9 @@ export type DropDecision =
     }
   | { type: 'error'; error: ToolError }
   /** PDFs and images together: convert the images and merge (asks first). */
-  | { type: 'confirm-merge'; message: string; path: string; files: File[] };
+  | { type: 'confirm-merge'; message: string; path: string; files: File[] }
+  /** The hub took the files itself (the PDF hub's detected-document card). */
+  | { type: 'handled' };
 
 const KIND_LABEL: Record<AcceptKind, string> = {
   pdf: 'PDF',

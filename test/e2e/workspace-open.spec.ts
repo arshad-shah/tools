@@ -35,6 +35,8 @@ test('one PDF dropped on the PDF hub opens in the workspace', async ({
     .locator('input[type=file]')
     .first()
     .setInputFiles(`${GEN}/text-3.pdf`);
+  // The detected-document card offers it at once, probe or not (spec §5.3).
+  await page.getByRole('button', { name: 'Open in editor' }).click();
   await expect(page).toHaveURL(/\/pdf\/edit/);
   await expect(firstPage(page)).toBeAttached();
   await expect(

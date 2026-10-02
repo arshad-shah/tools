@@ -37,5 +37,7 @@ dist-ssr
 playwright-report
 test-results
 test/fixtures/generated
+# Owner's private detection samples (never committed)
+test/fixtures/private/
 public/pdfjs
 public/ocr

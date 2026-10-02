@@ -11,19 +11,12 @@ const TOOLS = [
   'pdf-to-text',
   'pdf-watermark',
   'pdf-page-numbers',
-  'pdf-sign',
-  'pdf-fill-form',
   'pdf-compressor',
   'pdf-protect',
 ];
 
 /** Proof that the tool really worked on the decrypted bytes. */
-const PROCESSED: Record<string, (page: Page) => Promise<void>> = {
-  'pdf-fill-form': (page) =>
-    expect(
-      page.getByText('This PDF has no fillable form fields.'),
-    ).toBeVisible(),
-};
+const PROCESSED: Record<string, (page: Page) => Promise<void>> = {};
 const rendered = (page: Page) =>
   expect(page.locator('canvas[data-rendered="true"]').first()).toBeAttached();
 

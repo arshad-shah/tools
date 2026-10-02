@@ -30,7 +30,6 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
   '/pdf/to-text',
   '/pdf/watermark',
   '/pdf/page-numbers',
-  '/pdf/sign',
   '/pdf/compress',
   '/pdf/protect',
   // Image tools show <img> previews rather than pdf.js canvases.
@@ -39,11 +38,11 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
     fixture: 'test/fixtures/generated/photo.png',
     ready: 'li[data-sortable-item] img',
   },
-  // Fill Form renders no page canvas: it lists the form's fields.
+  // Fill & Sign: the mode's chunk and the render worker's detection.
   {
-    route: '/pdf/fill-form',
-    fixture: 'test/fixtures/generated/form.pdf',
-    ready: 'label[for="field-0"]',
+    route: '/pdf/edit/fill-sign',
+    fixture: 'test/fixtures/generated/flat-form-word.pdf',
+    ready: '[data-testid^="field-"]',
   },
   // Unlock takes the encrypted file as it is and asks for its password.
   {

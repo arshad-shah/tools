@@ -71,10 +71,16 @@ export {
 } from './stamp';
 export {
   listFormFields,
+  listFormWidgets,
   fillForm,
+  setFieldValue,
+  initialValues,
+  changedValues,
   XFA_MESSAGE,
   type FormField,
   type FormValue,
+  type FormValues,
+  type FormWidget,
 } from './forms';
 export {
   layoutInk,
