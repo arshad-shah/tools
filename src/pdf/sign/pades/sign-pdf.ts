@@ -12,6 +12,7 @@ import {
 import { ToolError } from '@/shared/lib/errors';
 import { FontCache, loadNotoSans } from '@/pdf/edit/font-cache';
 import type { Box } from '@/pdf/edit/draw';
+import { uprightFrame } from '@/pdf/edit/draw-signature';
 import { drawSignatureContent } from '@/pdf/doc/materialize/fill-sign-signature';
 import type { SignatureContent } from '@/pdf/doc/ops/sign-params';
 import { buildAppearance, type PaintVisual } from './appearance';
@@ -31,8 +32,10 @@ import { readTail } from './tail';
 
 export interface SignPlacement {
   pageIndex: number;
-  /** Page space (PDF user space, points). */
+  /** Page space (PDF user space, points), as the placed signature's rect. */
   rect: Box;
+  /** The placed signature's own rotation, degrees clockwise on screen. */
+  rotate?: number;
   visual: SignatureContent | null;
   /** Reuse this existing unsigned /Sig field. */
   fieldName?: string;
@@ -153,8 +156,15 @@ export async function prepareSignature(
 
   const assets = req.assets ?? {};
   const paint: PaintVisual | null = placement?.visual
-    ? async (p, box) => {
+    ? async (p, area) => {
         const draw = { doc, fonts: new FontCache(doc, loadNotoSans) };
+        // Upright on a rotated page, turned by the placement's own rotation,
+        // exactly as the page-content writer lays it out.
+        const { box, rotate } = uprightFrame(
+          area,
+          page.getRotation().angle,
+          placement.rotate ?? 0,
+        );
         await drawSignatureContent(
           {
             doc,
@@ -174,7 +184,7 @@ export async function prepareSignature(
           p,
           placement.visual!,
           box,
-          0,
+          rotate,
         );
       }
     : null;

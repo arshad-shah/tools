@@ -11,6 +11,7 @@ import {
 } from '@/pdf/doc/materialize/materialize';
 import { ocrHandlers } from './ocr';
 import { formHandlers } from './forms';
+import { signHandlers } from './sign';
 
 const materializeHandlers = {
   async materialize(
@@ -46,6 +47,7 @@ export const editHandlers = {
   ...protectHandlers,
   ...optimizeHandlers,
   ...formHandlers,
+  ...signHandlers,
 };
 
 export type EditHandlers = typeof editHandlers;

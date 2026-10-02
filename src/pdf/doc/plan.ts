@@ -3,7 +3,7 @@ import type { MaterializePlan } from './materialize/materialize';
 import type { DocumentModel } from './model';
 import { remapPageLabels } from './page-map';
 import { getOperation } from './registry';
-import type { AssetId, OverlayItem, PageId, SourceId } from './types';
+import type { AssetId, OpId, OverlayItem, PageId, SourceId } from './types';
 
 /**
  * What the edit worker needs to write the current view (spec §6.4): the
@@ -11,11 +11,13 @@ import type { AssetId, OverlayItem, PageId, SourceId } from './types';
  * overlays reference, the page map, labels and the overlays that have a
  * writer, in log order. `onlyPages` keeps just those pages (extract, preview
  * as exported), each with the page label it shows in the view.
+ * `excludeOverlays` leaves those ops out of the page content (a placed
+ * signature that becomes a digital signature's appearance, plan H-11).
  */
 export async function planFor(
   model: DocumentModel,
   blobs: BlobSource,
-  opts: { onlyPages?: PageId[] } = {},
+  opts: { onlyPages?: PageId[]; excludeOverlays?: OpId[] } = {},
 ): Promise<MaterializePlan> {
   const view = model.getView();
   const state = model.getState();
@@ -23,8 +25,11 @@ export async function planFor(
   const only = opts.onlyPages ? new Set(opts.onlyPages) : null;
   const pages = view.pages.filter((p) => !only || only.has(p.id));
   const order = new Map(state.log.map((op, i) => [op.id, i]));
+  const excluded = new Set(opts.excludeOverlays ?? []);
   const writes = (o: OverlayItem) =>
-    !view.hidden.has(o.opId) && !getOperation(o.type).noOutput;
+    !view.hidden.has(o.opId) &&
+    !excluded.has(o.opId) &&
+    !getOperation(o.type).noOutput;
   const overlays = [
     ...view.docOverlays,
     ...pages.flatMap((p) => view.overlays.get(p.id) ?? []),
