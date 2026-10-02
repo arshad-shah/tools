@@ -56,7 +56,10 @@ export const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
       <CardBody>
         <Stack gap="4">
           <Stack gap="2">
-            <HighlightedPassword password={password} hidden={hidden} />
+            {/* Random on every generation: masked in visual baselines. */}
+            <div data-dynamic="">
+              <HighlightedPassword password={password} hidden={hidden} />
+            </div>
             <Inline justify="between" align="center" gap="3" wrap>
               <CharLegend />
               <Button
@@ -75,7 +78,7 @@ export const PasswordDisplay: React.FC<PasswordDisplayProps> = ({
               </Button>
             </Inline>
           </Stack>
-          <Inline gap="2" wrap>
+          <Inline gap="2" wrap data-dynamic="">
             {counts.uppercase > 0 && (
               <Badge variant="soft" tone="warning" size="sm">
                 {counts.uppercase} uppercase

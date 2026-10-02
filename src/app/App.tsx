@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { LoadingState } from '@/shared/ui';
+import { LoadingState, Toaster } from '@/shared/ui';
 import ErrorBoundary from './ErrorBoundary';
 import { getEnabledTools } from './registry';
 import { toolPath } from './routes';
@@ -28,7 +28,17 @@ const App: React.FC = () => (
     <BrowserRouter>
       <Suspense fallback={<LoadingState label="Loading" />}>
         <Routes>
-          {KitGallery ? <Route path="/__kit" element={<KitGallery />} /> : null}
+          {KitGallery ? (
+            <Route
+              path="/__kit"
+              element={
+                <>
+                  <Toaster />
+                  <KitGallery />
+                </>
+              }
+            />
+          ) : null}
           <Route element={<AppFrame />}>
             <Route path="/" element={<Home />} />
             <Route path="/:category" element={<HubRoute />} />

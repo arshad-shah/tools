@@ -140,7 +140,11 @@ export function InputsSection() {
             { value: 'l', label: 'Large' },
           ]}
         />
-        <FontSample family="Sign Caveat" color="#1e3a8a" className="text-2xl">
+        <FontSample
+          family="Sign Caveat"
+          color="#1e3a8a"
+          className="rounded-md border border-line bg-white px-3 py-2 text-2xl"
+        >
           Ada Lovelace
         </FontSample>
       </Row>
