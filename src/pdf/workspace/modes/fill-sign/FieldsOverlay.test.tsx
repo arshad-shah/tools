@@ -163,6 +163,21 @@ describe('FieldsOverlay', () => {
   });
 });
 
+describe('marquee selection', () => {
+  it('takes the empty page only while Shift is held', () => {
+    setup();
+    expect(screen.queryByTestId('object-layer-background')).toBeNull();
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Shift', shiftKey: true });
+    });
+    expect(screen.getByTestId('object-layer-background')).toBeTruthy();
+    act(() => {
+      fireEvent.keyUp(window, { key: 'Shift' });
+    });
+    expect(screen.queryByTestId('object-layer-background')).toBeNull();
+  });
+});
+
 describe('text settings still settling', () => {
   it('go in with the value when Enter commits first', () => {
     const model = setup();

@@ -86,8 +86,10 @@ export interface ObjectLayerProps {
   /**
    * The empty page takes part: a click clears the selection and a mouse or
    * pen drag draws a selection rectangle (touch keeps scrolling the page).
+   * 'shift': only while Shift is held, so the empty page stays with what
+   * lies under the layer (e.g. form fields) otherwise.
    */
-  marquee?: boolean;
+  marquee?: boolean | 'shift';
   'data-testid'?: string;
 }
 
@@ -222,6 +224,22 @@ export function ObjectLayer({
     ids: string[];
   } | null>(null);
   const descId = React.useId();
+  const [shiftHeld, setShiftHeld] = React.useState(false);
+  React.useEffect(() => {
+    if (marquee !== 'shift') return;
+    const on = (e: KeyboardEvent) => setShiftHeld(e.shiftKey);
+    const off = () => setShiftHeld(false);
+    window.addEventListener('keydown', on);
+    window.addEventListener('keyup', on);
+    window.addEventListener('blur', off);
+    return () => {
+      window.removeEventListener('keydown', on);
+      window.removeEventListener('keyup', on);
+      window.removeEventListener('blur', off);
+    };
+  }, [marquee]);
+  // A band being drawn keeps its background even if Shift is let go.
+  const background = marquee === true || shiftHeld || !!band;
 
   const byId = new Map(objects.map((o) => [o.id, o]));
   const current = (id: string): ObjectChange => {
@@ -683,7 +701,7 @@ export function ObjectLayer({
       width={width}
       height={height}
       label={label}
-      interactive={marquee}
+      interactive={background}
       data-testid={testId}
     >
       <div
@@ -696,7 +714,7 @@ export function ObjectLayer({
           Arrows move, Shift moves further, Alt with arrows resizes, Delete
           removes, Enter edits, Escape deselects, Shift F10 opens the menu.
         </span>
-        {marquee ? (
+        {background ? (
           <div
             className="absolute inset-0"
             data-testid="object-layer-background"

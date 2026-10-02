@@ -286,6 +286,23 @@ describe('ObjectLayer', () => {
     expect(obj('Image').getAttribute('aria-pressed')).toBe('false');
   });
 
+  it('marquee "shift": the empty page takes part only while Shift is held', () => {
+    render(<Harness marquee="shift" />);
+    expect(screen.queryByTestId('object-layer-background')).toBeNull();
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Shift', shiftKey: true });
+    });
+    const bg = screen.getByTestId('object-layer-background');
+    down(bg, 280, 280, { shiftKey: true });
+    move(bg, 350, 350);
+    up(bg, 350, 350);
+    expect(obj('Image').getAttribute('aria-pressed')).toBe('true');
+    act(() => {
+      fireEvent.keyUp(window, { key: 'Shift' });
+    });
+    expect(screen.queryByTestId('object-layer-background')).toBeNull();
+  });
+
   it('hit areas are at least 16px and follow the object rotation', () => {
     render(
       <ObjectLayer
