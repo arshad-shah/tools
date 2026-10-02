@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  IconCamera,
   IconSignatureDraw,
   IconSignatureType,
   IconSignatureUpload,
@@ -25,7 +26,9 @@ import {
 import { layoutInk } from '@/pdf/edit/text-fit';
 import type { ModeProps } from '../types';
 import { fitAspect, placeSignature } from './actions';
+import { targetBox } from './sign-places';
 import { SignatureDraw } from './SignatureDraw';
+import { SignaturePhoto } from './SignaturePhoto';
 import { SignatureType } from './SignatureType';
 import { SignatureUpload } from './SignatureUpload';
 import { fillSign, useFillSign, type ReadySignature } from './store';
@@ -35,13 +38,14 @@ async function prepare(
   ctx: ModeProps,
   source: SignatureSource,
 ): Promise<ReadySignature> {
-  if (source.kind === 'ink') {
-    // The vector travels in the op itself: nothing to store.
-    const { vector, color } = source;
+  if (source.kind === 'ink' || source.kind === 'trace') {
+    // The vector travels in the op itself: nothing to store. Traced photos
+    // fill even-odd so the holes in loops stay open.
+    const { kind, vector, color } = source;
     return {
-      content: { kind: 'ink', vector, color },
+      content: { kind, vector, color },
       aspect: vector.width / vector.height,
-      preview: { kind: 'ink', vector, color },
+      preview: { kind: 'ink', vector, color, evenOdd: kind === 'trace' },
     };
   }
   if (source.kind === 'image') {
@@ -149,6 +153,10 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
             <IconSignatureUpload size="sm" />
             Upload
           </TabsTrigger>
+          <TabsTrigger value="photo">
+            <IconCamera size="sm" />
+            Photo
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="draw">
           <SignatureDraw onChange={setSource} disabled={busy} />
@@ -158,6 +166,9 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
         </TabsContent>
         <TabsContent value="upload">
           <SignatureUpload onChange={setSource} disabled={busy} />
+        </TabsContent>
+        <TabsContent value="photo">
+          <SignaturePhoto onChange={setSource} disabled={busy} />
         </TabsContent>
       </Tabs>
       <Text size="sm" tone="muted">
@@ -175,7 +186,9 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
               placeSignature(
                 ctx,
                 target.pageId,
-                fitAspect(target.rect, sig.aspect),
+                target.target
+                  ? targetBox(target.target, sig.aspect)
+                  : fitAspect(target.rect, sig.aspect),
                 sig,
                 role,
               );

@@ -14,6 +14,7 @@ import { FillSignInspector } from './FillSignInspector';
 import { FillSignToolbar } from './FillSignToolbar';
 import { openMyDetails } from './my-details-flow';
 import { FillSignRailBadge } from './RailBadge';
+import { nextPlaceToSign } from './sign-places';
 import { fillSign } from './store';
 
 const GROUP = 'Fill & Sign';
@@ -36,6 +37,13 @@ function commands(ctx: ModeContext): Command[] {
       run: () => {
         advance(ctx, currentFields(ctx.doc), fillSign.get().focusKey);
       },
+    },
+    {
+      id: 'fill-sign-next-sign-target',
+      label: 'Next place to sign',
+      group: GROUP,
+      keywords: ['signature', 'smart placement'],
+      run: () => void nextPlaceToSign(ctx),
     },
     {
       id: 'fill-sign-my-details',

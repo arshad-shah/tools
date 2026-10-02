@@ -3,6 +3,7 @@ import type { ToolError } from '@/shared/lib/errors';
 import type { Box, PageId } from '@/pdf/doc/types';
 import type { FormInfo } from '@/pdf/render/form-info';
 import type { SignatureContent } from '@/pdf/doc/ops/fill-sign';
+import type { SignTarget } from '@/pdf/detect';
 import type { InkVector } from '@/pdf/sign/ink';
 import type { AutofillRow } from './AutofillPreview';
 import type { FieldStyle } from './text-style';
@@ -72,8 +73,11 @@ export interface FillSignState {
   ready: { signature: ReadySignature | null; initials: ReadySignature | null };
   /** What the signature panel makes. */
   panelRole: 'signature' | 'initials';
-  /** The signature field the panel was opened from: Place fills it. */
-  signTarget: { pageId: PageId; rect: Box } | null;
+  /**
+   * The signature field or place to sign the panel was opened from: Place
+   * fills it (snapped to `target` when it came from smart placement).
+   */
+  signTarget: { pageId: PageId; rect: Box; target?: SignTarget } | null;
   /** A signature just placed: its frame takes focus (arrow keys nudge it). */
   justPlaced: string | null;
   /** Placing a signature: it follows the pointer until a click places it. */
@@ -87,6 +91,12 @@ export interface FillSignState {
   crashed: ReadonlySet<string>;
   /** Table cells per page key, for click-anywhere snapping. */
   cells: Record<string, Box[]>;
+  /** Detected places to sign per page key (smart placement). */
+  signTargets: Record<string, SignTarget[]>;
+  /** The place "Next place to sign" went to last. */
+  signCursor: string | null;
+  /** Scrolls the canvas to a page (set by the toolbar for commands). */
+  goToPage: ((id: PageId) => void) | null;
 }
 
 const initial: FillSignState = {
@@ -113,6 +123,9 @@ const initial: FillSignState = {
   progress: null,
   crashed: new Set(),
   cells: {},
+  signTargets: {},
+  signCursor: null,
+  goToPage: null,
 };
 
 /** UI state shared by the mode's toolbar, overlays, inspector and badges. */
@@ -129,5 +142,6 @@ export const fillSign = {
       // Previews and made signatures outlive a mode switch.
       previews: useFillSign.getState().previews,
       ready: useFillSign.getState().ready,
+      goToPage: useFillSign.getState().goToPage,
     }),
 };

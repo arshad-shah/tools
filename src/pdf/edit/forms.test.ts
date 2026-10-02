@@ -6,6 +6,11 @@ import {
   makeXfaPdf,
   pdfPageTexts,
 } from '../../../test/fixtures/builders';
+import {
+  makeSigFieldPdf,
+  SIG_FIELD_NAME,
+  SIG_FIELD_RECT,
+} from '../../../test/fixtures/sig-field';
 import { fillForm, listFormFields, listFormWidgets } from './forms';
 
 describe('listFormFields', () => {
@@ -157,6 +162,24 @@ describe('listFormWidgets', () => {
       height: 17,
     });
     expect(widgets.at(-1)).toMatchObject({ fieldName: 'ref', readOnly: true });
+  });
+  it('lists /Sig fields as signature widgets, signed or not', async () => {
+    expect(await listFormWidgets(await makeSigFieldPdf())).toEqual([
+      {
+        fieldName: SIG_FIELD_NAME,
+        kind: 'signature',
+        pageIndex: 0,
+        rect: SIG_FIELD_RECT,
+        readOnly: false,
+        signed: false,
+      },
+    ]);
+    const [signed] = await listFormWidgets(
+      await makeSigFieldPdf({ signed: true }),
+    );
+    expect(signed).toMatchObject({ kind: 'signature', signed: true });
+    const [text] = await listFormWidgets(await makeFormPdf());
+    expect(text.signed).toBe(false);
   });
   it('finds the page through /Annots when a widget has no /P', async () => {
     const doc = await PDFDocument.create();
