@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { cn } from '@/shared/lib/cn';
 import type { IconComponent } from './icons';
+import { useScrollRow } from './use-scroll-row';
 
 export interface SegmentedOption<V extends string> {
   value: V;
@@ -33,6 +34,7 @@ export function SegmentedControl<V extends string>({
   className,
 }: SegmentedControlProps<V>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const scroller = useScrollRow<HTMLDivElement>('x');
   const enabled = options
     .map((o, i) => (o.disabled ? -1 : i))
     .filter((i) => i >= 0);
@@ -71,10 +73,16 @@ export function SegmentedControl<V extends string>({
 
   return (
     <div
+      ref={scroller}
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={cn('inline-flex gap-1 rounded-lg bg-surface-2 p-1', className)}
+      className={cn(
+        // Never wider than its container: on a narrow screen the options
+        // scroll sideways (edge fade) instead of pushing the page wide.
+        'inline-flex max-w-full gap-1 overflow-x-auto overscroll-x-contain rounded-lg bg-surface-2 p-1 scrollbar-none scroll-fade-x',
+        className,
+      )}
     >
       {options.map((o, i) => {
         const checked = i === current;
@@ -92,9 +100,10 @@ export function SegmentedControl<V extends string>({
             tabIndex={i === tabStop ? 0 : -1}
             onClick={() => select(i)}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors duration-fast ease-out-soft',
+              'inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md font-medium transition-colors duration-fast ease-out-soft',
               'disabled:pointer-events-none disabled:opacity-50',
               size === 'sm' ? 'h-7 px-2.5 text-xs' : 'h-8 px-3 text-sm',
+              'pointer-coarse:h-11',
               checked
                 ? 'bg-surface text-fg shadow-e1'
                 : 'text-fg-muted hover:text-fg',

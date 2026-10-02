@@ -50,8 +50,8 @@ export function SavedPalettes({
       <Heading level={3} size="md">
         Saved palettes
       </Heading>
-      <Inline gap="2" align="end">
-        <Stack gap="1">
+      <Inline gap="2" align="end" wrap>
+        <Stack gap="1" className="min-w-48 flex-1">
           <Label htmlFor={`${id}-name`}>Palette name</Label>
           <Input
             id={`${id}-name`}

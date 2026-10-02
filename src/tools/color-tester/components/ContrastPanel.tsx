@@ -88,8 +88,9 @@ export function ContrastPanel({
 
   return (
     <Stack gap="4">
-      <Inline gap="3" align="end">
+      <Inline gap="3" align="end" wrap>
         <ColorField
+          className="min-w-48 flex-1"
           label="Foreground"
           value={fg}
           onChange={(css) => onFg(css)}
@@ -104,6 +105,7 @@ export function ContrastPanel({
           Swap
         </Button>
         <ColorField
+          className="min-w-48 flex-1"
           label="Background"
           value={bg}
           onChange={(css) => onBg(css)}
@@ -113,7 +115,7 @@ export function ContrastPanel({
 
       {view ? (
         <>
-          <Inline gap="4" align="baseline">
+          <Inline gap="4" align="baseline" wrap>
             <Text size="lg" weight="semibold" mono>
               {`Ratio ${view.summary.ratio.toFixed(2)}:1`}
             </Text>
@@ -122,7 +124,7 @@ export function ContrastPanel({
           <Text size="sm" tone="muted">
             {view.summary.apcaHint}
           </Text>
-          <Inline gap="2" aria-label="WCAG 2.2 results" role="group">
+          <Inline gap="2" wrap aria-label="WCAG 2.2 results" role="group">
             <Level name="AA normal" pass={view.summary.levels.normalAA} />
             <Level name="AAA normal" pass={view.summary.levels.normalAAA} />
             <Level name="AA large" pass={view.summary.levels.largeAA} />
@@ -130,7 +132,7 @@ export function ContrastPanel({
             <Level name="UI" pass={view.summary.levels.uiAA} />
           </Inline>
 
-          <Inline gap="2" align="center">
+          <Inline gap="2" align="center" wrap>
             <SegmentedControl<`${ContrastTarget}`>
               label="Target ratio"
               size="sm"

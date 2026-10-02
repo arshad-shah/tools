@@ -49,7 +49,7 @@ export function AppShell({
       <div
         data-layout={layout}
         className={cn(
-          'grid min-h-dvh grid-rows-[auto_1fr] bg-canvas text-fg',
+          'grid min-h-dvh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] bg-canvas text-fg',
           className,
         )}
       >

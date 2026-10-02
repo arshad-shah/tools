@@ -106,7 +106,7 @@ export function PalettePanel({
             size="lg"
           />
         ) : (
-          <Inline gap="1" role="group" aria-label="Tonal scale 50 to 950">
+          <Inline gap="1" wrap role="group" aria-label="Tonal scale 50 to 950">
             {entries.map((e) => (
               <Swatch
                 key={e.label}
@@ -152,7 +152,7 @@ export function PalettePanel({
             <Text size="sm" tone="muted">
               {h.label}
             </Text>
-            <Inline gap="3">
+            <Inline gap="3" wrap>
               {h.colors.map((hex, i) => (
                 <CopySwatch
                   key={`${h.kind}-${i}`}
@@ -169,7 +169,7 @@ export function PalettePanel({
       </Stack>
 
       <Stack gap="3">
-        <Inline gap="2" justify="between" align="center">
+        <Inline gap="2" justify="between" align="center" wrap>
           <Heading level={3} size="md">
             Working palette
           </Heading>
@@ -186,7 +186,7 @@ export function PalettePanel({
             Empty. Add the base colour or colours extracted from an image.
           </Text>
         ) : (
-          <Inline gap="3" role="list" aria-label="Working palette">
+          <Inline gap="3" wrap role="list" aria-label="Working palette">
             {palette.map((hex) => (
               <Inline key={hex} gap="1" align="center" role="listitem">
                 <Swatch

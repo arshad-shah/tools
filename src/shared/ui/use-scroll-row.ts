@@ -26,7 +26,8 @@ export function fadeEnds(
 }
 
 /** The item a bar should keep visible: focused first, else the active one. */
-const ACTIVE = '[aria-pressed="true"], [aria-selected="true"]';
+const ACTIVE =
+  '[aria-pressed="true"], [aria-selected="true"], [aria-checked="true"]';
 
 function reveal(el: Element) {
   // jsdom and old engines have no scrollIntoView options.

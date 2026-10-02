@@ -54,8 +54,8 @@ export const NextRuns: React.FC<NextRunsProps> = ({
 
   return (
     <Stack gap="3">
-      <Inline gap="4" align="end">
-        <Stack gap="1" className="min-w-64">
+      <Inline gap="4" align="end" wrap>
+        <Stack gap="1" className="w-full sm:w-auto sm:min-w-64">
           <Label htmlFor="cron-zone">Time zone</Label>
           <Select
             id="cron-zone"

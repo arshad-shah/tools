@@ -82,7 +82,7 @@ export function ColorField({
           aria-expanded={open}
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
-          className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex size-9 shrink-0 items-center justify-center rounded-md border pointer-coarse:size-11 border-line-strong bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span aria-hidden className="flex">
             <Swatch color={swatchColor} label={label} />
