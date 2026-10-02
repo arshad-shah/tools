@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   Alert,
   AlertDescription,
+  Button,
   HitArea,
   OverlayLayer,
   SelectionFrame,
@@ -14,6 +15,7 @@ import type { Box } from '@/pdf/doc/types';
 import type { PageOverlayProps } from '../types';
 import { selectionQuads } from '../../selection-quads';
 import { ensureOverlayFonts } from '../../overlay-fonts';
+import { useGoToMode } from '../../workspace-context';
 import { DrawLayer } from './DrawLayer';
 import { ExistingLayer } from './ExistingLayer';
 import { useExistingAnnotations, usePageText } from './existing';
@@ -41,6 +43,7 @@ const MOVABLE = new Set(['annot.freetext', 'annot.shape', 'annot.stamp']);
 export function AnnotationsOverlay(props: PageOverlayProps) {
   const { doc, page, pageNumber, viewport, width, height, selection } = props;
   const ui = useAnnotateUi();
+  const goToMode = useGoToMode();
   const tool = activeTool(props.tool.id);
   const slot = useRef<HTMLDivElement>(null);
   const existing = useExistingAnnotations(doc, page) ?? [];
@@ -224,6 +227,17 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
             <AlertDescription>
               No text here. Run OCR to make it selectable.
             </AlertDescription>
+            {goToMode ? (
+              <div className="mt-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => goToMode('ocr')}
+                >
+                  Run OCR
+                </Button>
+              </div>
+            ) : null}
           </Alert>
         </div>
       ) : null}

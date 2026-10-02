@@ -22,3 +22,4 @@ export * from './custom/fill-sign';
 export * from './custom/tools-p6';
 export * from './custom/annotate';
 export * from './custom/edit';
+export * from './custom/ocr';

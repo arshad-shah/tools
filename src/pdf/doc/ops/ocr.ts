@@ -9,6 +9,8 @@ export interface OcrTextLayerParams {
   langs: OcrLanguage[];
   /** auto: pages without text; force: every page; or these pages. */
   pages: 'auto' | 'force' | PageId[];
+  /** Recognised first (the pages on screen, spec 11); order only. */
+  first?: PageId[];
 }
 
 const bad = (m: string) => new ToolError('INVALID_INPUT', m);
@@ -32,7 +34,12 @@ export const ocrTextLayer = defineOperation<OcrTextLayerParams>({
       throw bad('OCR: choose one to three languages');
     const pages =
       o.pages === 'auto' || o.pages === 'force' ? o.pages : ids(o.pages, 'OCR');
-    return { langs: langs as OcrLanguage[], pages };
+    const first = o.first === undefined ? undefined : ids(o.first, 'OCR');
+    return {
+      langs: langs as OcrLanguage[],
+      pages,
+      ...(first ? { first } : {}),
+    };
   },
   label: (p, ctx) =>
     p.pages === 'auto'

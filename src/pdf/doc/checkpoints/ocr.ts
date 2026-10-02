@@ -29,6 +29,18 @@ export interface OcrPageReport {
 const pct = (n: number) => `${Math.round(n)}%`;
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
+/** `CheckpointReport.details` of an OCR run (rail badges, report panel). */
+export interface OcrReportDetails {
+  kind: 'ocr';
+  pages: OcrPageReport[];
+}
+
+export const isOcrDetails = (d: unknown): d is OcrReportDetails =>
+  !!d &&
+  typeof d === 'object' &&
+  (d as { kind?: unknown }).kind === 'ocr' &&
+  Array.isArray((d as { pages?: unknown }).pages);
+
 /** The checkpoint's report: one line per page, warnings for weak results. */
 export function ocrReport(pages: readonly OcrPageReport[]): CheckpointReport {
   const lines: string[] = [];
@@ -52,10 +64,12 @@ export function ocrReport(pages: readonly OcrPageReport[]): CheckpointReport {
         `Page ${p.page}: ${plural(p.skippedChars, 'character')} could not be added to the text layer`,
       );
   }
+  const details: OcrReportDetails = { kind: 'ocr', pages: [...pages] };
   return {
     title: `Text layer added to ${plural(pages.length, 'page')}`,
     lines,
     warnings,
+    details,
   };
 }
 
@@ -76,9 +90,22 @@ function modeFor(
   });
 }
 
+/** `indices` with the `first` page ids (when among them) moved to the front. */
+function priorityOrder(
+  indices: number[],
+  first: OcrTextLayerParams['first'],
+  input: CheckpointInput<OcrTextLayerParams>,
+): number[] {
+  const front = (first ?? [])
+    .map((id) => input.view.pages.findIndex((p) => p.id === id))
+    .filter((i) => indices.includes(i));
+  return [...new Set([...front, ...indices])];
+}
+
 async function recognisePages(
   docId: string,
   indices: number[],
+  order: number[],
   pool: OcrPool,
   env: CheckpointEnv,
   concurrency: number,
@@ -88,7 +115,7 @@ async function recognisePages(
     number,
     { words: PageWords; meanConfidence: number; capped: boolean }
   >();
-  const queue = [...indices];
+  const queue = [...order];
   let done = 0;
   const label = () =>
     `Recognising text, page ${Math.min(done + 1, indices.length)} of ${indices.length}`;
@@ -170,7 +197,14 @@ async function run(
         label: 'Downloading OCR data',
       }),
     );
-    const recognised = await recognisePages(doc.docId, indices, pool, env, 2);
+    const recognised = await recognisePages(
+      doc.docId,
+      indices,
+      priorityOrder(indices, input.params.first, input),
+      pool,
+      env,
+      2,
+    );
 
     const copy = input.bytes.slice();
     const written = await services.edit.call(

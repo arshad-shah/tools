@@ -21,6 +21,7 @@ export { OPTIMIZE_OPS } from './optimize';
 export { FILL_SIGN_OPS } from './fill-sign';
 export { ANNOTATE_OPS, currentAuthor } from './annotate';
 export { EDIT_CONTENT_OPS } from './edit';
+export { OCR_OPS } from './ocr';
 export { MARKUP_OPS } from './markup';
 export { COVER_OPS } from './cover';
 
