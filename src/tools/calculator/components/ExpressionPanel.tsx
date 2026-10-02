@@ -23,7 +23,7 @@ import {
 import type { CalculatorState } from '../hooks/useCalculator';
 import { checkParenthesesBalance } from '../lib/expression';
 import { CalcKey } from './CalcKey';
-import { PlotlyGraphDisplay } from './GraphDisplay';
+import { GraphDisplay } from './GraphDisplay';
 
 type ExpressionPanelProps = Pick<
   CalculatorState,
@@ -95,7 +95,7 @@ export const ExpressionPanel: React.FC<ExpressionPanelProps> = ({
       {showGraph && (
         <Card>
           <CardBody>
-            <PlotlyGraphDisplay expression={display} angleUnit={angleUnit} />
+            <GraphDisplay expression={display} angleUnit={angleUnit} />
           </CardBody>
         </Card>
       )}

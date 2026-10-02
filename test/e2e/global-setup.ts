@@ -73,7 +73,7 @@ async function warmUp(baseURL: string) {
   try {
     const page = await browser.newPage({ baseURL });
     await page.goto('/', { waitUntil: 'load', timeout: COLD_TIMEOUT });
-    // Load every tool once so cold dependency optimisation (plotly, xyflow,
+    // Load every tool once so cold dependency optimisation (xyflow,
     // rive) can't reload a page mid-test.
     for (const tool of toolRoutes().filter((t) => t.enabled)) {
       await page.goto(tool.path, {

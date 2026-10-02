@@ -1,16 +1,10 @@
 /** @vitest-environment jsdom */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { resetThemeForTests, writeThemePreference } from '@/shared/lib/theme';
 
 const received: Record<string, unknown> = {};
 
-vi.mock('react-plotly.js', () => ({
-  default: (props: Record<string, unknown>) => {
-    received.plot = props;
-    return <div data-testid="plot" />;
-  },
-}));
 vi.mock('@xyflow/react', () => ({
   ReactFlow: (props: Record<string, unknown>) => {
     received.flow = props;
@@ -41,41 +35,17 @@ vi.mock('qrcode.react', () => ({
   },
 }));
 
-const { Chart } = await import('./Chart');
 const { FlowCanvas } = await import('./FlowCanvas');
 const { CodeEditor } = await import('./CodeEditor');
 const { QrCode } = await import('./QrCode');
 const { RivePlayer } = await import('./RivePlayer');
 
-beforeEach(() => {
-  document.documentElement.style.setProperty('--surface', '#123456');
-  document.documentElement.style.setProperty('--fg', '#abcdef');
-  document.documentElement.style.setProperty('--accent-fg', '#0b794f');
-});
 afterEach(() => {
   resetThemeForTests();
   localStorage.clear();
 });
 
 describe('kit adapters', () => {
-  it('Chart is a labelled region painted from tokens', () => {
-    render(
-      <Chart
-        label="Plot of f(x)"
-        data={[{ type: 'scatter', x: [1], y: [2] }]}
-      />,
-    );
-    expect(screen.getByRole('img', { name: 'Plot of f(x)' })).toBeTruthy();
-    const props = received.plot as {
-      layout: { paper_bgcolor: string; font: { color: string } };
-      data: { line: { color: string } }[];
-      config: { displaylogo: boolean };
-    };
-    expect(props.layout.paper_bgcolor).toBe('#123456');
-    expect(props.layout.font.color).toBe('#abcdef');
-    expect(props.data[0].line.color).toBe('#0b794f');
-    expect(props.config.displaylogo).toBe(false);
-  });
   it('FlowCanvas follows the theme colour mode', () => {
     writeThemePreference('dark');
     render(<FlowCanvas label="Data map" nodes={[]} edges={[]} />);
