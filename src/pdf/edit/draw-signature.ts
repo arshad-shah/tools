@@ -10,7 +10,7 @@ import { rotated } from './draw-core';
 import { assertBox } from './draw-fit';
 import type { Box, DrawCtx } from './draw';
 import { assertDrawable } from './fonts';
-import { fitInk, layoutInk } from './text-fit';
+import { fitInk, layoutInk, slantInk } from './text-fit';
 
 export interface SignatureText {
   text: string;
@@ -18,13 +18,17 @@ export interface SignatureText {
   fontKey: string;
   fontBytes: Uint8Array;
   color: string;
+  /** Degrees; positive leans right (sheared about the baseline). */
+  slant?: number;
+  /** Points, at most what fits; 'fit' (the default) fills the box. */
+  size?: 'fit' | number;
 }
 
 /**
- * A typed signature: the real ink (flourishes included) is fitted inside
- * `box`, centred, exactly as the on-screen preview sizes it, then turned by
- * `rotate` degrees counterclockwise about the box centre. The font is
- * embedded as a subset through the document's font cache.
+ * A typed signature: the real ink (flourishes included, slant applied) is
+ * fitted inside `box`, centred, exactly as the on-screen preview sizes it,
+ * then turned by `rotate` degrees counterclockwise about the box centre.
+ * The font is embedded as a subset through the document's font cache.
  */
 export async function drawSignatureText(
   ctx: DrawCtx,
@@ -41,17 +45,27 @@ export async function drawSignatureText(
   });
   assertDrawable(font, text, 'Your name');
   const { default: fontkit } = await import('@pdf-lib/fontkit');
+  const slant = content.slant ?? 0;
   const fit = fitInk(
     box,
-    layoutInk(fontkit.create(content.fontBytes), text).ink,
+    slantInk(layoutInk(fontkit.create(content.fontBytes), text).ink, slant),
+    typeof content.size === 'number' ? content.size : Infinity,
   );
   const color = hexToRgb(content.color);
   const matrix = rotated(box, rotate);
+  const baseline = box.y + fit.y;
   page.pushOperators(pushGraphicsState());
   if (matrix) page.pushOperators(concatTransformationMatrix(...matrix));
+  if (slant) {
+    // Shear about the baseline: x moves by tan * (y - baseline).
+    const t = Math.tan((slant * Math.PI) / 180);
+    page.pushOperators(
+      concatTransformationMatrix(1, 0, t, 1, -t * baseline, 0),
+    );
+  }
   page.drawText(text, {
     x: box.x + fit.x,
-    y: box.y + fit.y,
+    y: baseline,
     size: fit.size,
     font,
     color: rgb(color.r, color.g, color.b),

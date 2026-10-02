@@ -85,6 +85,7 @@ export {
 export {
   layoutInk,
   fitInk,
+  slantInk,
   type InkBox,
   type InkFont,
   type InkLayout,
