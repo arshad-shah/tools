@@ -1,6 +1,13 @@
 import React from 'react';
 import { IconClock, IconColumns } from '@/shared/ui/icons';
-import { Button, Inline, SendToMenu, Stack } from '@/shared/ui';
+import {
+  Button,
+  Inline,
+  SendToMenu,
+  Stack,
+  ToolActions,
+  Tooltip,
+} from '@/shared/ui';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import { claimToEpoch, payloadToJson } from '../lib/handoffs';
 import type { DecodedJWT } from '../types';
@@ -35,15 +42,17 @@ export const DecodeActions: React.FC<DecodeActionsProps> = ({
   onEpoch,
 }) => (
   <Stack gap="3">
-    <Inline gap="2" wrap>
+    <ToolActions>
       <SendToMenu
         payload={() => payloadToJson(decoded)}
         sourceTool="jwt-decode"
         label="Send payload to"
         size="sm"
       />
+    </ToolActions>
+    <Inline gap="1" wrap>
       <Button
-        variant="secondary"
+        variant="ghost"
         size="sm"
         leftIcon={<IconColumns size="sm" />}
         onClick={() => onCompareOpen(!compareOpen)}
@@ -54,15 +63,17 @@ export const DecodeActions: React.FC<DecodeActionsProps> = ({
       {(['exp', 'iat'] as const).map((c) => {
         const p = claimToEpoch(decoded, c);
         return p ? (
-          <Button
-            key={c}
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconClock size="sm" />}
-            onClick={() => onEpoch(p)}
-          >
-            Open {c} in Epoch Converter
-          </Button>
+          <Tooltip key={c} content={`Open ${c} in Epoch Converter`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<IconClock size="sm" />}
+              aria-label={`Open ${c} in Epoch Converter`}
+              onClick={() => onEpoch(p)}
+            >
+              {c === 'exp' ? 'Expiry time' : 'Issued time'}
+            </Button>
+          </Tooltip>
         ) : null;
       })}
     </Inline>
