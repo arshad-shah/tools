@@ -18,13 +18,14 @@ export function CvdToggle({
   onChange(v: CvdMode): void;
 }) {
   return (
-    <Inline gap="2" align="center" wrap={false}>
+    <Inline gap="2" align="center" wrap={false} className="min-w-0 max-w-full">
       <Text as="span" size="sm" tone="muted" aria-hidden>
         Vision
       </Text>
       <SegmentedControl
         label="Simulate colour vision"
         size="sm"
+        className="min-w-0"
         value={value}
         onChange={onChange}
         options={OPTIONS}

@@ -17,8 +17,6 @@ import {
   CardHeader,
   CardTitle,
   Inline,
-  List,
-  ListItem,
   Spinner,
   Text,
 } from '@/shared/ui';
@@ -138,46 +136,51 @@ export const EstimateCard: React.FC<EstimateCardProps> = ({
             {job.error.message}
           </Text>
         ) : (
-          <List aria-label="Size estimate by format">
+          <ul
+            aria-label="Size estimate by format"
+            className="-my-2 flex flex-col divide-y divide-line"
+          >
             {rows.map((r) => (
-              <ListItem key={r.encoding}>
-                <Inline gap="2" align="center" justify="between" wrap>
-                  <Inline gap="2" align="center">
-                    <Text size="sm" weight="medium">
-                      {ENCODING_LABELS[r.encoding]}
-                    </Text>
-                    {r.encoding === best && (
-                      <Badge tone="success" variant="soft" size="sm">
-                        Smallest
-                      </Badge>
-                    )}
-                  </Inline>
-                  <Inline gap="2" align="center">
-                    <Text
-                      size="sm"
-                      tone={r.bytes === null ? 'subtle' : undefined}
-                    >
-                      {r.bytes !== null
-                        ? `${formatBytes(r.bytes)} estimate`
-                        : r.failed
-                          ? 'Could not estimate'
-                          : 'Not supported in this browser'}
-                    </Text>
-                    {r.bytes !== null && r.encoding !== current && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        aria-label={`Use ${ENCODING_LABELS[r.encoding]}`}
-                        onClick={() => onUse(r.encoding)}
-                      >
-                        Use
-                      </Button>
-                    )}
-                  </Inline>
+              <li
+                key={r.encoding}
+                className="flex min-h-10 items-center justify-between gap-2 py-1.5"
+              >
+                <Inline gap="2" align="center" wrap={false}>
+                  <Text size="sm" weight="medium">
+                    {ENCODING_LABELS[r.encoding]}
+                  </Text>
+                  {r.encoding === best && (
+                    <Badge tone="success" variant="soft" size="sm">
+                      Smallest
+                    </Badge>
+                  )}
                 </Inline>
-              </ListItem>
+                <Inline gap="1" align="center" wrap={false}>
+                  <Text
+                    size="sm"
+                    tone={r.bytes === null ? 'subtle' : 'muted'}
+                    className="tabular-nums"
+                  >
+                    {r.bytes !== null
+                      ? `${formatBytes(r.bytes)} estimate`
+                      : r.failed
+                        ? 'Could not estimate'
+                        : 'Not supported in this browser'}
+                  </Text>
+                  {r.bytes !== null && r.encoding !== current && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Use ${ENCODING_LABELS[r.encoding]}`}
+                      onClick={() => onUse(r.encoding)}
+                    >
+                      Use
+                    </Button>
+                  )}
+                </Inline>
+              </li>
             ))}
-          </List>
+          </ul>
         )}
       </CardBody>
     </Card>

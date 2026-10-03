@@ -40,39 +40,44 @@ export function ToolPage({ tool, children }: ToolPageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-      <header className="flex flex-wrap items-start gap-x-4 gap-y-3">
+      <header className="flex items-start gap-4">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-surface text-accent-fg shadow-e1">
           <Icon size="lg" />
         </span>
-        <div className="flex min-w-0 flex-1 basis-[26rem] flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
-              {tool.name}
-            </h1>
-            {tool.isNew ? (
-              <Badge size="xs" tone="accent">
-                new
-              </Badge>
-            ) : null}
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          {/* Title and page-level actions share a line; the actions wrap
+              under the title when the line is too short for both. On
+              phones the star stays beside the title and the actions take
+              their own row. */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
+              <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-fg">
+                {tool.name}
+              </h1>
+              {tool.isNew ? (
+                <Badge size="xs" tone="accent">
+                  new
+                </Badge>
+              ) : null}
+            </div>
+            <div
+              ref={setActions}
+              data-tool-actions
+              className="order-3 flex w-full min-w-0 flex-wrap items-center gap-2 empty:hidden sm:order-none sm:ms-auto sm:w-auto sm:justify-end"
+            />
+            <IconButton
+              variant="ghost"
+              label={`Add ${tool.name} to favourites`}
+              aria-pressed={favourite}
+              tone={favourite ? 'accent' : undefined}
+              icon={favourite ? IconStarFilled : IconStar}
+              onClick={() => toggle(tool.id)}
+              className="order-2 shrink-0 sm:order-none"
+            />
           </div>
           <p className="max-w-2xl text-base text-fg-muted">
             {tool.description}
           </p>
-        </div>
-        <div className="ms-auto flex shrink-0 items-center gap-2 sm:pt-1">
-          <div
-            ref={setActions}
-            data-tool-actions
-            className="flex flex-wrap items-center justify-end gap-2 empty:hidden"
-          />
-          <IconButton
-            variant="ghost"
-            label={`Add ${tool.name} to favourites`}
-            aria-pressed={favourite}
-            tone={favourite ? 'accent' : undefined}
-            icon={favourite ? IconStarFilled : IconStar}
-            onClick={() => toggle(tool.id)}
-          />
         </div>
       </header>
       <ToolErrorBoundary

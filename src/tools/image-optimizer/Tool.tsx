@@ -19,6 +19,7 @@ import {
   Inline,
   Progress,
   Stack,
+  ToolActions,
   Statistic,
 } from '@/shared/ui';
 import { IconDownload, IconShieldCheck, IconX } from '@/shared/ui/icons';
@@ -174,38 +175,36 @@ const ImageCompressor: React.FC = () => {
         <Stack gap="4" className="sm:col-span-1 lg:col-span-2">
           {hasEntries && (
             <>
-              <Inline gap="2" wrap justify="between" align="center">
-                <Inline gap="2" wrap>
+              <ToolActions>
+                {running && (
                   <Button
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
-                    leftIcon={<IconDownload size="sm" />}
-                    disabled={done.length === 0}
-                    onClick={() => void downloadZip()}
+                    leftIcon={<IconX size="sm" />}
+                    onClick={cancel}
                   >
-                    Download all as ZIP
+                    Cancel all
                   </Button>
-                  {running && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      leftIcon={<IconX size="sm" />}
-                      onClick={cancel}
-                    >
-                      Cancel all
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={clearAll}>
-                    Clear
-                  </Button>
-                </Inline>
+                )}
+                <Button variant="ghost" size="sm" onClick={clearAll}>
+                  Clear
+                </Button>
                 {done.length > 0 && (
                   <HandoffActions
                     outputs={() => done.map(outputFile)}
                     originals={entries.map((e) => e.file)}
                   />
                 )}
-              </Inline>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<IconDownload size="sm" />}
+                  disabled={done.length === 0}
+                  onClick={() => void downloadZip()}
+                >
+                  Download all as ZIP
+                </Button>
+              </ToolActions>
 
               {running && (
                 <Progress
