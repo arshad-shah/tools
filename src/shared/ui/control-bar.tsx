@@ -8,6 +8,8 @@ export interface ControlBarProps {
   end?: React.ReactNode;
   /** Extra content below the row (a hint for the current choice). */
   footer?: React.ReactNode;
+  /** raised: a card of its own (default). inset: inside a card. */
+  tone?: 'raised' | 'inset';
   className?: string;
   'aria-label'?: string;
 }
@@ -21,6 +23,7 @@ export function ControlBar({
   start,
   end,
   footer,
+  tone = 'raised',
   className,
   'aria-label': ariaLabel,
 }: ControlBarProps) {
@@ -29,7 +32,8 @@ export function ControlBar({
       role={ariaLabel ? 'group' : undefined}
       aria-label={ariaLabel}
       className={cn(
-        'flex flex-col gap-2 rounded-lg bg-surface p-2 shadow-e1',
+        'flex flex-col gap-2 rounded-lg p-2',
+        tone === 'inset' ? 'bg-surface-2' : 'bg-surface shadow-e1',
         className,
       )}
     >

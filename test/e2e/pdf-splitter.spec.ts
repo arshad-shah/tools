@@ -14,7 +14,7 @@ test('splits by ranges into a zip of documents', async ({ page }) => {
     page.getByRole('img', { name: 'Page 1', exact: true }),
   ).toBeVisible();
 
-  await page.getByRole('button', { name: 'Page ranges' }).click();
+  await page.getByRole('radio', { name: 'Page ranges' }).click();
   await page.getByLabel('Ranges').fill('1-3, 10-');
   await page.getByRole('button', { name: 'Split PDF' }).click();
 
@@ -68,7 +68,7 @@ test('shows a precise error for a bad range', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  await page.getByRole('button', { name: 'Page ranges' }).click();
+  await page.getByRole('radio', { name: 'Page ranges' }).click();
   await page.getByLabel('Ranges').fill('2-9');
   await page.getByRole('button', { name: 'Split PDF' }).click();
   await expect(
@@ -81,12 +81,12 @@ test('stale results disappear when settings change', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');
-  await page.getByRole('button', { name: 'Page ranges' }).click();
+  await page.getByRole('radio', { name: 'Page ranges' }).click();
   await page.getByLabel('Ranges').fill('1-3, 10-');
   await page.getByRole('button', { name: 'Split PDF' }).click();
   const zipButton = page.getByRole('button', { name: 'Download all (ZIP)' });
   await expect(zipButton).toBeVisible();
-  await page.getByRole('button', { name: 'Every page' }).click();
+  await page.getByRole('radio', { name: 'Every page' }).click();
   await expect(zipButton).toHaveCount(0);
 });
 
