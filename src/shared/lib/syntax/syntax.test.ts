@@ -125,6 +125,96 @@ describe('CSS', () => {
 });
 
 describe('XML and HTML', () => {
+  it('HTML colours script and style bodies with the JS and CSS tokenisers', () => {
+    const one = '<script>const a = 1;</script>';
+    expect(kindsOf('html', one)).toEqual([
+      ['<', 'punct'],
+      ['script', 'tag'],
+      ['>', 'punct'],
+      ['const', 'keyword'],
+      ['a', 'plain'],
+      ['=', 'punct'],
+      ['1', 'number'],
+      [';', 'punct'],
+      ['</', 'punct'],
+      ['script', 'tag'],
+      ['>', 'punct'],
+    ]);
+    const doc = [
+      '<STYLE media="print">',
+      '  a { color: red; }',
+      '</style><p class="x">',
+    ].join('\n');
+    expect(kindOf('html', doc, 'color')).toBe('attr');
+    expect(kindOf('html', doc, 'p')).toBe('tag');
+    expect(kindOf('html', doc, 'class')).toBe('attr');
+  });
+
+  it('HTML carries an open script start tag and a script body across lines', () => {
+    const doc = [
+      '<script',
+      '  type="module">',
+      'let x = `a',
+      'b`;</script>',
+    ].join('\n');
+    expect(kindOf('html', doc, 'let')).toBe('keyword');
+    expect(kindOf('html', doc, 'b`')).toBe('string');
+    // Comments and other tags do not start a script body.
+    expect(kindOf('html', '<!-- <script> --> let', 'let')).toBeUndefined();
+    expect(kindOf('html', '<scripts>let</scripts>', 'let')).toBeUndefined();
+  });
+
+  it('HTML tokens stay in order, inside the line and non-empty (fuzz)', () => {
+    const parts = [
+      '<script>',
+      '</script>',
+      '<style',
+      '>',
+      '</style>',
+      '<p a="',
+      '"',
+      "'",
+      '`',
+      '/*',
+      '*/',
+      '<!--',
+      '-->',
+      ' x = 1;',
+      '{',
+      '}',
+      '\n',
+      '<SCRIPT type=x>',
+      '//',
+      '${',
+      'a: b;',
+    ];
+    let seed = 7;
+    const rand = (n: number) => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed % n;
+    };
+    for (let doc = 0; doc < 400; doc++) {
+      const text = Array.from(
+        { length: 12 },
+        () => parts[rand(parts.length)],
+      ).join('');
+      const lines = text.split('\n');
+      tokenize('html', text).forEach((tokens, n) => {
+        let last = 0;
+        for (const t of tokens) {
+          expect(t.start).toBeGreaterThanOrEqual(last);
+          expect(t.end).toBeGreaterThan(t.start);
+          expect(t.end).toBeLessThanOrEqual(lines[n].length);
+          last = t.end;
+        }
+      });
+    }
+  });
+
+  it('XML keeps script and style element bodies as text', () => {
+    expect(kindOf('xml', '<script>const a</script>', 'const')).toBeUndefined();
+  });
+
   it('finds tags, attributes and strings', () => {
     expect(kindsOf('xml', '<a href="x" id=y>t</a>')).toEqual([
       ['<', 'punct'],

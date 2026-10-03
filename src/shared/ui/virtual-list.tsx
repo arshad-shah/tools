@@ -21,6 +21,7 @@ import {
   type SizeModel,
   type VirtualStickyHeader,
 } from './virtual-list-offsets';
+import { scrollScale } from './virtual-list-scale';
 import { StickyOverlay } from './virtual-list-sticky';
 
 export type {
@@ -132,8 +133,9 @@ const rowSelector = (i: number) => `[data-vl-row][data-index="${i}"]`;
  * that calls `preventDefault` first wins over the built-in movement.
  *
  * Sizing: give the region a size via `height`, `maxHeight` or `className`
- * (for example `h-full`). Very tall lists are bound by the browser's maximum
- * element height (about 17 million px in Firefox).
+ * (for example `h-full`). Lists taller than the browser's maximum element
+ * height (about 17 million px in Firefox) scroll through a capped spacer
+ * with scaled positions (see `scrollScale`).
  *
  * Sticky headers are rows too; the current one is also drawn as an inert,
  * aria-hidden overlay pinned to the top that the next header pushes away.
@@ -183,8 +185,10 @@ export function VirtualList<T>({
     setSizing({ items, estimateKey, epoch, model });
   }
 
+  /** Logical scrollTop: an offset into the content (see scrollScale). */
   const [scrollTop, setScrollTop] = useState(0);
   const [viewport, setViewport] = useState(0);
+  const scale = scrollScale(model.total(), viewport);
   const [hasFocus, setHasFocus] = useState(false);
   const [activeState, setActiveState] = useState(defaultActiveIndex);
   const rawActive = activeProp ?? activeState;
@@ -200,20 +204,27 @@ export function VirtualList<T>({
   const visible = visibleRange(model, scrollTop, viewport);
   const rendered = withOverscan(visible, overscan, count);
 
+  /** Scrolls to logical offset `top` (clamped to the content). */
   const applyScroll = useCallback((top: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTop = top;
-    setScrollTop(el.scrollTop);
+    const { model: m, viewport: v } = live.current;
+    const next = Math.min(Math.max(0, m.total() - v), Math.max(0, top));
+    el.scrollTop = scrollScale(m.total(), v).toPhysical(next);
+    setScrollTop(next);
   }, []);
+
+  const shiftBy = useCallback(
+    (delta: number) => applyScroll(live.current.scrollTop + delta),
+    [applyScroll],
+  );
 
   const scrollToIndex = useCallback(
     (index: number, align: ScrollAlign = 'auto') => {
-      const { model: m, viewport: v } = live.current;
-      const el = scrollRef.current;
-      if (!el || m.count === 0) return;
+      const { model: m, viewport: v, scrollTop: top } = live.current;
+      if (!scrollRef.current || m.count === 0) return;
       const i = Math.min(m.count - 1, Math.max(0, index));
-      applyScroll(scrollTopForIndex(m, i, align, el.scrollTop, v));
+      applyScroll(scrollTopForIndex(m, i, align, top, v));
     },
     [applyScroll],
   );
@@ -282,7 +293,7 @@ export function VirtualList<T>({
     live,
     scrollRef,
     model,
-    onScrollAdjusted: setScrollTop,
+    onAnchorShift: shiftBy,
     onSizesChanged: bump,
   });
 
@@ -325,6 +336,9 @@ export function VirtualList<T>({
   // treegrid; grid rows carry aria-rowindex (set by the consumer) instead.
   const positioned = !presentational && childRole !== 'row';
 
+  // Past the height cap the spacer is shorter than the content: rows are
+  // drawn relative to where the scaled scroll position puts the viewport.
+  const shift = scrollTop - scale.toPhysical(scrollTop);
   const renderRow = (i: number) => {
     const item = items[i];
     const extra = rowProps?.(item, i);
@@ -346,7 +360,7 @@ export function VirtualList<T>({
         )}
         style={{
           ...extra?.style,
-          transform: `translateY(${model.offsetOf(i)}px)`,
+          transform: `translateY(${model.offsetOf(i) - shift}px)`,
           height: measure ? undefined : model.sizeOf(i),
         }}
       >
@@ -373,7 +387,7 @@ export function VirtualList<T>({
         className,
       )}
       style={{ height, maxHeight }}
-      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+      onScroll={(e) => setScrollTop(scale.toLogical(e.currentTarget.scrollTop))}
       onKeyDown={onKeyDown}
       onFocus={onFocus}
       onBlur={onBlur}
@@ -387,7 +401,7 @@ export function VirtualList<T>({
         data-vl-spacer=""
         role="presentation"
         className="relative w-full"
-        style={{ height: model.total() }}
+        style={{ height: scale.height }}
       >
         {indices.map(renderRow)}
       </div>

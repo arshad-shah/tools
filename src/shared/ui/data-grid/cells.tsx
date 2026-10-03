@@ -72,6 +72,10 @@ export function RowCells<R>(p: RowCellsProps<R>) {
             onCommit={p.onCommit}
             onCancel={p.onCancel}
           />
+        ) : c.render ? (
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {c.render(p.row)}
+          </div>
         ) : (
           <span className="truncate" onPointerEnter={titleIfClipped(text)}>
             {highlight(text, p.search)}

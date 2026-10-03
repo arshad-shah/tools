@@ -1,4 +1,12 @@
-import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { announce } from '@/shared/lib/announce';
 import { copyText } from '@/shared/lib/clipboard';
 import { cn } from '@/shared/lib/cn';
@@ -40,7 +48,7 @@ import {
   headerMinWidth,
   MAX_ROWS,
   NARROW_WIDTH,
-  OVERLAY_SCROLLBAR,
+  scrollbarStrip,
   type Measure,
 } from './sizing';
 import { nextSort } from './sort';
@@ -69,6 +77,11 @@ export interface DataGridProps<R> {
   search?: string;
   /** `cell-range`: Shift extends a range and Mod+C copies it as TSV. */
   selection?: 'cell-range';
+  /**
+   * Indices into `rows` of the rows under the selection (the cell range, or
+   * the active cell's row), in view order. Called when they change.
+   */
+  onSelectedRowsChange?(rows: number[]): void;
   /** Enter or Space on a row opens these details in a drawer. */
   renderDetails?(row: R): React.ReactNode;
   editable?(column: GridColumn<R>): boolean;
@@ -127,6 +140,7 @@ export function DataGrid<R>({
   onFiltersChange,
   search = '',
   selection,
+  onSelectedRowsChange,
   renderDetails,
   editable,
   onCellEdit,
@@ -195,6 +209,16 @@ export function DataGrid<R>({
   const rangeSelect = selection === 'cell-range';
   const cellRange = rangeSelect && anchor ? rangeOf(anchor, active) : null;
   const win = columnWindow(layout, view.left, view.width);
+
+  const selTop = n === 0 ? 0 : (cellRange?.top ?? active.row);
+  const selBottom = n === 0 ? -1 : (cellRange?.bottom ?? active.row);
+  const reportSelected = useEffectEvent(() => {
+    const out: number[] = [];
+    for (let v = selTop; v <= selBottom; v++) out.push(order ? order[v] : v);
+    onSelectedRowsChange?.(out);
+  });
+  // Called when the rows under the selection change, not on every move.
+  useEffect(() => reportSelected(), [selTop, selBottom, order]);
 
   const gridEl = () => listRef.current?.getScrollElement() ?? null;
   const focusGrid = () => gridEl()?.focus({ preventScroll: true });
@@ -348,9 +372,9 @@ export function DataGrid<R>({
     win.includes(active.col);
 
   // The horizontal bar sits below the rows: its height is added, never taken
-  // from them. Overlay scrollbars report 0, so keep a strip for them.
+  // from them (overlay scrollbars report 0; see scrollbarStrip).
   const overflowX = view.width > 0 && layout.total > view.width;
-  const bar = overflowX ? Math.max(view.scrollbar, OVERLAY_SCROLLBAR) : 0;
+  const bar = scrollbarStrip(overflowX, view.scrollbar, n, maxRows);
   const minHeight = gridHeight(1, rowHeight, 1, bar);
 
   return (

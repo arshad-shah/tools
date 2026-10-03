@@ -1,5 +1,3 @@
-import React from 'react';
-import { IconButton } from './button';
 import { FilePicker } from './file-upload';
 import {
   IconClipboard,
@@ -8,18 +6,10 @@ import {
   IconEraser,
   IconFileText,
   IconFolderOpen,
-  type IconComponent,
 } from './icons';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './menu';
 import { Select } from './select';
 import { ENCODING_LABELS, type TextEncodingId } from './text-input-lib';
-import { Tooltip } from './tooltip';
-import { useScrollRow } from './use-scroll-row';
+import { Toolbar, type ToolGroup, type ToolItem } from './toolbar';
 
 export interface TextSample {
   label: string;
@@ -28,31 +18,6 @@ export interface TextSample {
 
 export const OPEN_SHORTCUT = 'Mod+O';
 export const DOWNLOAD_SHORTCUT = 'Mod+S';
-
-const ToolButton = React.forwardRef<
-  HTMLButtonElement,
-  {
-    label: string;
-    icon: IconComponent;
-    shortcut?: string;
-    onClick(): void;
-    disabled?: boolean;
-  }
->(({ label, icon, shortcut, onClick, disabled }, ref) => (
-  <Tooltip content={label} shortcut={shortcut} side="bottom">
-    <IconButton
-      ref={ref}
-      size="sm"
-      variant="ghost"
-      label={label}
-      icon={icon}
-      showLabel="desktop"
-      onClick={onClick}
-      disabled={disabled}
-    />
-  </Tooltip>
-));
-ToolButton.displayName = 'ToolButton';
 
 export interface TextInputToolbarProps {
   readOnly: boolean;
@@ -68,14 +33,17 @@ export interface TextInputToolbarProps {
   onClear(): void;
   onCopy?(): void;
   onDownload?(): void;
-  openRef: React.Ref<HTMLButtonElement>;
-  downloadRef: React.Ref<HTMLButtonElement>;
+  openRef: React.RefObject<HTMLButtonElement | null>;
+  downloadRef: React.RefObject<HTMLButtonElement | null>;
+  /** Names the toolbar (for example "Input actions"). */
+  label: string;
 }
 
 /**
- * The TextInputPanel's actions: each a named icon button with a tooltip,
- * labelled with words on desktop (6-H). Like the kit Toolbar, it stays one
- * row that scrolls sideways (edge fade) on narrow screens.
+ * The TextInputPanel's actions as a kit Toolbar: one Tab stop with roving
+ * arrows, a named icon button and tooltip per action, labelled with words on
+ * desktop. Like every kit Toolbar it stays one row that scrolls sideways
+ * (edge fade) on narrow screens.
  */
 export function TextInputToolbar({
   readOnly,
@@ -93,96 +61,122 @@ export function TextInputToolbar({
   onDownload,
   openRef,
   downloadRef,
+  label,
 }: TextInputToolbarProps) {
-  const many = (samples?.length ?? 0) > 1;
-  const row = useScrollRow<HTMLDivElement>('x');
+  const empty = hasValue ? undefined : 'Nothing to act on yet';
+  const output = (): ToolItem[] => [
+    ...(readOnly
+      ? [
+          {
+            id: 'copy',
+            label: 'Copy',
+            icon: IconCopy,
+            kind: 'button' as const,
+            disabled: empty,
+            onSelect: () => onCopy?.(),
+          },
+        ]
+      : []),
+    ...(onDownload
+      ? [
+          {
+            id: 'download',
+            label: 'Download',
+            icon: IconDownload,
+            kind: 'button' as const,
+            shortcut: DOWNLOAD_SHORTCUT,
+            disabled: empty,
+            onSelect: onDownload,
+            anchor: downloadRef,
+          },
+        ]
+      : []),
+  ];
+  const input = (open: () => void): ToolItem[] => [
+    {
+      id: 'paste',
+      label: 'Paste',
+      icon: IconClipboard,
+      kind: 'button',
+      onSelect: onPaste,
+    },
+    {
+      id: 'open',
+      label: 'Open file',
+      icon: IconFolderOpen,
+      kind: 'button',
+      shortcut: OPEN_SHORTCUT,
+      onSelect: open,
+      anchor: openRef,
+    },
+    ...(samples?.length === 1
+      ? [
+          {
+            id: 'sample',
+            label: 'Load sample',
+            icon: IconFileText,
+            kind: 'button' as const,
+            onSelect: () => onSample(samples[0]),
+          },
+        ]
+      : samples && samples.length > 1
+        ? [
+            {
+              id: 'samples',
+              label: 'Load a sample',
+              icon: IconFileText,
+              kind: 'menu' as const,
+              menu: samples.map((sm) => ({
+                id: sm.label,
+                label: sm.label,
+                onSelect: () => onSample(sm),
+              })),
+            },
+          ]
+        : []),
+    {
+      id: 'clear',
+      label: 'Clear',
+      icon: IconEraser,
+      kind: 'button',
+      disabled: empty,
+      onSelect: onClear,
+    },
+  ];
+  const encodingSelect =
+    encodingOptions?.length && !readOnly ? (
+      <div className="w-44">
+        <Select
+          aria-label="Encoding"
+          value={encoding}
+          onValueChange={(v) => onEncoding(v as TextEncodingId)}
+          items={encodingOptions.map((e) => ({
+            value: e,
+            label: ENCODING_LABELS[e],
+          }))}
+          size="sm"
+        />
+      </div>
+    ) : undefined;
+  const bar = (open: () => void) => {
+    const groups: ToolGroup[] = [];
+    if (!readOnly)
+      groups.push({ id: 'input', label: 'Fill and clear', items: input(open) });
+    const out = output();
+    if (out.length) groups.push({ id: 'output', label: 'Export', items: out });
+    return (
+      <Toolbar
+        label={label}
+        groups={groups}
+        trailing={encodingSelect}
+        labelled
+      />
+    );
+  };
+  if (readOnly) return bar(() => {});
   return (
-    <div
-      ref={row}
-      className="flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto overscroll-x-contain p-0.5 scrollbar-none scroll-fade-x [&>*]:shrink-0"
-    >
-      {encodingOptions?.length && !readOnly ? (
-        <div className="w-44">
-          <Select
-            aria-label="Encoding"
-            value={encoding}
-            onValueChange={(v) => onEncoding(v as TextEncodingId)}
-            items={encodingOptions.map((e) => ({
-              value: e,
-              label: ENCODING_LABELS[e],
-            }))}
-            size="sm"
-          />
-        </div>
-      ) : null}
-      {readOnly ? (
-        <ToolButton
-          label="Copy"
-          icon={IconCopy}
-          onClick={() => onCopy?.()}
-          disabled={!hasValue}
-        />
-      ) : (
-        <>
-          <ToolButton label="Paste" icon={IconClipboard} onClick={onPaste} />
-          <FilePicker accept={accept} onFiles={(files) => onFile(files[0])}>
-            {(open) => (
-              <ToolButton
-                ref={openRef}
-                label="Open file"
-                icon={IconFolderOpen}
-                shortcut={OPEN_SHORTCUT}
-                onClick={open}
-              />
-            )}
-          </FilePicker>
-          {samples?.length === 1 ? (
-            <ToolButton
-              label="Load sample"
-              icon={IconFileText}
-              onClick={() => onSample(samples[0])}
-            />
-          ) : null}
-          {many ? (
-            <DropdownMenu>
-              <Tooltip content="Load a sample" side="bottom">
-                <DropdownMenuTrigger>
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    label="Load a sample"
-                    icon={IconFileText}
-                    showLabel="desktop"
-                  />
-                </DropdownMenuTrigger>
-              </Tooltip>
-              <DropdownMenuContent aria-label="Samples">
-                {samples!.map((s) => (
-                  <DropdownMenuItem key={s.label} onClick={() => onSample(s)}>
-                    {s.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-          <ToolButton
-            label="Clear"
-            icon={IconEraser}
-            onClick={onClear}
-            disabled={!hasValue}
-          />
-        </>
-      )}
-      {onDownload ? (
-        <ToolButton
-          ref={downloadRef}
-          label="Download"
-          icon={IconDownload}
-          shortcut={DOWNLOAD_SHORTCUT}
-          onClick={onDownload}
-          disabled={!hasValue}
-        />
-      ) : null}
-    </div>
+    <FilePicker accept={accept} onFiles={(files) => onFile(files[0])}>
+      {bar}
+    </FilePicker>
   );
 }

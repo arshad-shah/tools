@@ -69,6 +69,7 @@ export default function CsvViewer() {
   const [sort, setSort] = useState<SortKey[]>([]);
   const [search, setSearch] = useState('');
   const [hidden, setHidden] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
 
   const resetView = () => {
     setFilters({});
@@ -327,6 +328,7 @@ export default function CsvViewer() {
                 onRedo={csv.redo}
                 onEdit={csv.apply}
                 rowCount={table.rows.length}
+                selectedRows={selectedRows}
               />
               <SwitchField
                 label="Compact rows"
@@ -353,6 +355,7 @@ export default function CsvViewer() {
               onCellEdit={(row, col, value) =>
                 csv.apply({ kind: 'set-cell', row, col, value })
               }
+              onSelectedRowsChange={setSelectedRows}
             />
           </Stack>
         </TabsContent>

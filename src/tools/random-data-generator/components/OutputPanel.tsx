@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { copyText } from '@/shared/lib/clipboard';
 import { flattenObject, type SqlDialect } from '@/shared/lib/data-formats';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
@@ -21,7 +22,7 @@ import {
   TextInputPanel,
   type GridColumn,
 } from '@/shared/ui';
-import { IconDownload, IconSendTo } from '@/shared/ui/icons';
+import { IconCopy, IconDownload, IconSendTo } from '@/shared/ui/icons';
 import type { Row } from '../lib/engine';
 import {
   exportRows,
@@ -72,6 +73,17 @@ export function OutputPanel({ tables }: OutputPanelProps) {
     [rows],
   );
 
+  const copy = () => {
+    try {
+      const f = exportRows(rows, format, { name, sqlDialect: dialect });
+      void copyText(f.text).then(
+        () => notify.success('Copied'),
+        (e) => notify.error(toToolError(e)),
+      );
+    } catch (e) {
+      notify.error(toToolError(e));
+    }
+  };
   const download = () => {
     try {
       const f = exportRows(rows, format, { name, sqlDialect: dialect });
@@ -146,6 +158,14 @@ export function OutputPanel({ tables }: OutputPanelProps) {
             />
           </>
         )}
+        <Button
+          size="sm"
+          variant="secondary"
+          leftIcon={<IconCopy size="sm" />}
+          onClick={copy}
+        >
+          Copy
+        </Button>
         <Button
           size="sm"
           leftIcon={<IconDownload size="sm" />}

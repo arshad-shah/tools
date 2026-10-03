@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react';
+import { createContext, useContext, useId, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
   DataGrid,
+  IconButton,
   Inline,
   Label,
   List,
@@ -44,6 +45,23 @@ function statusText(e: ExifEntry): string {
   }
 }
 
+/** The row download reaches the cells through context (COLUMNS stays one constant). */
+const Download = createContext<((e: ExifEntry) => void) | null>(null);
+
+function RowDownload({ entry }: { entry: ExifEntry }) {
+  const download = useContext(Download);
+  if (!download || entry.status !== 'done' || !entry.output) return null;
+  return (
+    <IconButton
+      size="sm"
+      variant="ghost"
+      icon={IconFileDown}
+      label={`Download ${entry.file.name}`}
+      onClick={() => download(entry)}
+    />
+  );
+}
+
 const COLUMNS: GridColumn<ExifEntry>[] = [
   {
     id: 'name',
@@ -72,6 +90,12 @@ const COLUMNS: GridColumn<ExifEntry>[] = [
     header: 'Size after',
     accessor: (e) => (e.output ? formatBytes(e.output.byteLength) : ''),
   },
+  {
+    id: 'download',
+    header: 'Download',
+    accessor: (e) => (e.status === 'done' && e.output ? 'Download' : ''),
+    render: (e) => <RowDownload entry={e} />,
+  },
 ];
 
 export interface StripPanelProps {
@@ -89,13 +113,11 @@ export function StripPanel({
   const navigate = useNavigate();
   const iccId = useId();
   const orientationId = useId();
-  const { entries, selected, running, doneEntries } = files;
+  const { entries, running, doneEntries } = files;
   const failures = useMemo(
     () => entries.filter((e) => e.status === 'error'),
     [entries],
   );
-  const selectedDone =
-    selected?.status === 'done' && selected.output ? selected : null;
   const toCompressor = () =>
     sendTo(navigate, 'image-optimizer', {
       kind: 'files',
@@ -140,13 +162,15 @@ export function StripPanel({
             </Inline>
           </Inline>
 
-          <DataGrid
-            rows={entries}
-            columns={COLUMNS}
-            rowKey={(e) => e.id}
-            ariaLabel="Files to clean"
-            emptyLabel="No files yet"
-          />
+          <Download value={files.downloadOne}>
+            <DataGrid
+              rows={entries}
+              columns={COLUMNS}
+              rowKey={(e) => e.id}
+              ariaLabel="Files to clean"
+              emptyLabel="No files yet"
+            />
+          </Download>
 
           {failures.length > 0 ? (
             <Alert status="danger">
@@ -181,15 +205,6 @@ export function StripPanel({
               onClick={() => void files.downloadZip()}
             >
               Download ZIP
-            </Button>
-            <Button
-              leftIcon={<IconFileDown size="sm" />}
-              disabled={!selectedDone || running}
-              onClick={() => selectedDone && files.downloadOne(selectedDone)}
-            >
-              {selectedDone
-                ? `Download ${selectedDone.file.name}`
-                : 'Download file'}
             </Button>
             <Button
               variant="ghost"

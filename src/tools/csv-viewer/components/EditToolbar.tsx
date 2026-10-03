@@ -23,6 +23,7 @@ import {
   IconChevronDown,
   IconPlus,
   IconRedo,
+  IconTrash,
   IconUndo,
 } from '@/shared/ui/icons';
 import type { EditOp } from '../lib/edit';
@@ -38,6 +39,8 @@ interface EditToolbarProps {
   /** Applies an edit; false keeps the dialog open (the error shows). */
   onEdit(op: EditOp): boolean;
   rowCount: number;
+  /** Indices into the table's rows under the grid selection. */
+  selectedRows: readonly number[];
 }
 
 /** Undo, redo, row and column operations, dedupe, trim, find and replace. */
@@ -49,6 +52,7 @@ export function EditToolbar({
   onRedo,
   onEdit,
   rowCount,
+  selectedRows,
 }: EditToolbarProps) {
   const [open, setOpen] = useState<DialogKind>(null);
   const [col, setCol] = useState('');
@@ -127,6 +131,17 @@ export function EditToolbar({
         onClick={() => onEdit({ kind: 'add-row', at: rowCount })}
       >
         Add row
+      </Button>
+      <Button
+        size="sm"
+        variant="secondary"
+        leftIcon={<IconTrash size="sm" />}
+        disabled={selectedRows.length === 0}
+        onClick={() => onEdit({ kind: 'delete-rows', rows: [...selectedRows] })}
+      >
+        {selectedRows.length > 1
+          ? `Delete ${selectedRows.length.toLocaleString('en-US')} rows`
+          : 'Delete row'}
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger>

@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { createRef, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { VirtualList, type VirtualListHandle } from './virtual-list';
+import { MAX_SCROLL_HEIGHT } from './virtual-list-scale';
 
 type Entry = { target: Element; borderBoxSize?: { blockSize: number }[] };
 
@@ -272,5 +273,35 @@ describe('VirtualList', () => {
     expect(screen.getAllByRole('article')[0].hasAttribute('tabindex')).toBe(
       false,
     );
+  });
+
+  it('scales scrolling past the browser height cap and still reaches the last row', () => {
+    const listRef = createRef<VirtualListHandle>();
+    const onRangeChange = vi.fn();
+    render(
+      <Basic
+        count={2_000_000}
+        listRef={listRef}
+        onRangeChange={onRangeChange}
+      />,
+    );
+    const el = listRef.current!.getScrollElement()!;
+    const spacer = el.querySelector<HTMLElement>('[data-vl-spacer]')!;
+    expect(spacer.style.height).toBe(`${MAX_SCROLL_HEIGHT}px`);
+
+    act(() => listRef.current!.scrollToIndex(1_999_999, 'auto'));
+    expect(el.scrollTop).toBeCloseTo(MAX_SCROLL_HEIGHT - VIEWPORT);
+    const last = el.querySelector<HTMLElement>('[data-index="1999999"]')!;
+    const y = Number(
+      /translateY\(([-\d.]+)px\)/.exec(last.style.transform)![1],
+    );
+    // Drawn at the bottom of the viewport, in the spacer's coordinates.
+    expect(y - el.scrollTop).toBeCloseTo(VIEWPORT - 20);
+
+    // A physical scroll to the middle shows the logical middle.
+    el.scrollTop = (MAX_SCROLL_HEIGHT - VIEWPORT) / 2;
+    fireEvent.scroll(el);
+    const [start] = onRangeChange.mock.lastCall!;
+    expect(Math.abs(start - (2_000_000 - VIEWPORT / 20) / 2)).toBeLessThan(2);
   });
 });

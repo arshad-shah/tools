@@ -135,7 +135,7 @@ for (const viewport of VIEWPORTS) {
           },
         ]);
       const grid = page.getByRole('grid', { name: 'File hashes' });
-      await expect(grid.getByText('notes.txt')).toBeVisible();
+      await expect(grid.getByText('notes.txt', { exact: true })).toBeVisible();
       const headers = await grid.evaluate((g) =>
         [...g.parentElement!.querySelectorAll('[data-grid-header-label]')].map(
           (l) => l.textContent ?? '',
@@ -163,6 +163,7 @@ for (const viewport of VIEWPORTS) {
         'Size after',
         'Saving',
         'Status',
+        'Actions',
       ]);
     });
 
@@ -181,6 +182,7 @@ for (const viewport of VIEWPORTS) {
         'Risks',
         'Size before',
         'Size after',
+        'Download',
       ]);
     });
   });

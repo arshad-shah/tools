@@ -7,6 +7,7 @@ import {
   Meter,
   PrivacyNote,
   SandboxedHtml,
+  SecretInput,
   SecretText,
   SendToMenu,
   ShareButton,
@@ -126,6 +127,16 @@ export function WidgetsSection() {
             revealed={masked}
             onRevealedChange={setMasked}
             label="API key"
+          />
+        </div>
+      </Row>
+      <Row label="SecretInput: masked until revealed">
+        <div className="w-72">
+          <SecretInput
+            aria-label="HMAC key"
+            value={DEMO_SECRET}
+            onChange={() => {}}
+            label="key"
           />
         </div>
       </Row>

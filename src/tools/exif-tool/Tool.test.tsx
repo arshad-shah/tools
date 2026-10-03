@@ -101,7 +101,9 @@ describe('ExifTool', () => {
     expect(
       screen.getByRole('button', { name: 'Download ZIP' }),
     ).not.toHaveProperty('disabled', true);
-    fireEvent.click(screen.getByRole('button', { name: 'Download photo.jpg' }));
+    fireEvent.click(
+      within(grid).getByRole('button', { name: 'Download photo.jpg' }),
+    );
     expect(vi.mocked(saveBlob).mock.calls[0][1]).toBe('photo.clean.jpg');
   });
 
