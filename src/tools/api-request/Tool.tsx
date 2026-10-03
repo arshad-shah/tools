@@ -13,6 +13,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  ToolActions,
   EmptyState,
   ErrorState,
   Inline,
@@ -137,42 +138,18 @@ export default function HttpClient() {
       <CardHeader>
         <Inline gap="2" align="center" justify="between" wrap>
           <CardTitle as="h2">Request</CardTitle>
-          <Inline gap="2" align="center" wrap>
-            <SegmentedControl
-              label="Request type"
-              size="sm"
-              value={request.mode}
-              onChange={(mode) =>
-                setRequest({ ...request, mode: mode as 'rest' | 'graphql' })
-              }
-              options={[
-                { value: 'rest', label: 'REST' },
-                { value: 'graphql', label: 'GraphQL' },
-              ]}
-            />
-            <EnvironmentMenu
-              environments={c.environments}
-              activeId={c.settings.activeEnv}
-              onActiveChange={(activeEnv) => c.update({ activeEnv })}
-              onSave={c.saveEnvironments}
-            />
-            <Button
-              size="sm"
-              variant="ghost"
-              leftIcon={<IconCode size="sm" />}
-              onClick={() => setSnippetOpen(true)}
-            >
-              Code
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconSave size="sm" />}
-              onClick={save}
-            >
-              Save
-            </Button>
-          </Inline>
+          <SegmentedControl
+            label="Request type"
+            size="sm"
+            value={request.mode}
+            onChange={(mode) =>
+              setRequest({ ...request, mode: mode as 'rest' | 'graphql' })
+            }
+            options={[
+              { value: 'rest', label: 'REST' },
+              { value: 'graphql', label: 'GraphQL' },
+            ]}
+          />
         </Inline>
       </CardHeader>
       <CardBody>
@@ -283,6 +260,30 @@ export default function HttpClient() {
         onOpened={() => tab.show('request')}
       />
 
+      <ToolActions>
+        <EnvironmentMenu
+          environments={c.environments}
+          activeId={c.settings.activeEnv}
+          onActiveChange={(activeEnv) => c.update({ activeEnv })}
+          onSave={c.saveEnvironments}
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          leftIcon={<IconCode size="sm" />}
+          onClick={() => setSnippetOpen(true)}
+        >
+          Code
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          leftIcon={<IconSave size="sm" />}
+          onClick={save}
+        >
+          Save
+        </Button>
+      </ToolActions>
       <Stack gap="4" className="min-w-0">
         <PrivacyNote variant="network" />
         <PaneTabs
