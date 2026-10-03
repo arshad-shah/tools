@@ -42,6 +42,7 @@ import { ExportMenu } from './components/ExportMenu';
 import { GridView } from './components/GridView';
 import { InputScreen } from './components/InputScreen';
 import { ParseOptions } from './components/ParseOptions';
+import { DELIMITER_LABEL } from './lib/parse';
 import { ProfilePanel } from './components/ProfilePanel';
 import { WarningsAlert } from './components/WarningsAlert';
 import { useCsvTable } from './hooks/useCsvTable';
@@ -243,6 +244,11 @@ export default function CsvViewer() {
           <Badge variant="soft" tone="accent" size="sm">
             {`${table.columns.length} columns`}
           </Badge>
+          {csv.choices.delimiter === 'auto' && (
+            <Badge variant="soft" tone="neutral" size="sm">
+              {`Detected: ${DELIMITER_LABEL[loaded.delimiter]}`}
+            </Badge>
+          )}
           {csv.modified && (
             <Badge variant="soft" tone="warning" size="sm">
               Modified

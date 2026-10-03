@@ -508,8 +508,7 @@ test.describe('QR Scanner', () => {
 
   test('Make QR', async ({ page }) => {
     await scan(page);
-    await page.getByRole('button', { name: 'Open in' }).click();
-    await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
+    await page.getByRole('button', { name: 'Make QR' }).click();
     await atTool(page, 'qr-code-generator');
     // The generator remembers its last tab (Export, from making the code).
     await tab(page, 'Content');

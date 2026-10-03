@@ -70,10 +70,7 @@ export function ParseOptions({
             items={[
               {
                 value: 'auto',
-                label:
-                  detected && choices.delimiter === 'auto'
-                    ? `Auto (${DELIMITER_LABEL[detected.delimiter]})`
-                    : 'Auto-detect',
+                label: 'Auto-detect',
               },
               ...DELIMITERS.map((d) => ({
                 value: d,
