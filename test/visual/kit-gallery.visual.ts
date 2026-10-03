@@ -95,6 +95,8 @@ for (const theme of ['light', 'dark'] as const) {
       ['focus-overlay', 'Open focus view'],
     ] as const) {
       test(name, async ({ page }) => {
+        // axe scans the whole gallery behind the modal, which takes a while.
+        test.slow();
         await page.getByRole('button', { name: button }).click();
         await expect(page.getByRole('dialog')).toBeVisible();
         await expect(page).toHaveScreenshot(`${name}-${theme}.png`);

@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { chromium, type FullConfig } from '@playwright/test';
+import { chromium, type FullConfig, type Page } from '@playwright/test';
 import { toolRoutes } from './tool-routes';
 
 const FIXTURE = 'test/fixtures/generated/text-3.pdf';
@@ -61,19 +61,29 @@ const COLD_TIMEOUT = 120_000;
  */
 async function warmUp(baseURL: string) {
   const browser = await chromium.launch();
-  try {
+  // A fresh tab per visit: a dev-server page holds a file descriptor for each
+  // of its ~400 module responses until the old document is collected, so ~40
+  // navigations in one tab exhaust the descriptor limit
+  // (net::ERR_INSUFFICIENT_RESOURCES). Closing the tab releases them.
+  const visit = async (route: string, step: (page: Page) => Promise<void>) => {
     const page = await browser.newPage({ baseURL });
-    await page.goto('/', { waitUntil: 'load', timeout: COLD_TIMEOUT });
+    try {
+      await page.goto(route, { waitUntil: 'load', timeout: COLD_TIMEOUT });
+      await step(page);
+    } finally {
+      await page.close();
+    }
+  };
+  try {
+    await visit('/', async () => {});
     // Load every tool once so cold dependency optimisation (xyflow,
     // rive) can't reload a page mid-test.
     for (const tool of toolRoutes().filter((t) => t.enabled)) {
-      await page.goto(tool.path, {
-        waitUntil: 'load',
-        timeout: COLD_TIMEOUT,
-      });
-      await page
-        .getByText(`Loading ${tool.name}`, { exact: true })
-        .waitFor({ state: 'detached', timeout: COLD_TIMEOUT });
+      await visit(tool.path, (page) =>
+        page
+          .getByText(`Loading ${tool.name}`, { exact: true })
+          .waitFor({ state: 'detached', timeout: COLD_TIMEOUT }),
+      );
     }
     // Non-PDF runs can skip the pdf.js warm-up (it times out in cloud
     // sandbox containers): E2E_SKIP_PDF_WARMUP=1.
@@ -82,15 +92,16 @@ async function warmUp(baseURL: string) {
       const { route, fixture, ready } =
         typeof entry === 'string' ? pdfRoute(entry) : entry;
       try {
-        await page.goto(route, { waitUntil: 'load', timeout: COLD_TIMEOUT });
-        await page
-          .locator('input[type=file]')
-          .first()
-          .setInputFiles(fixture, { timeout: COLD_TIMEOUT });
-        await page
-          .locator(ready)
-          .first()
-          .waitFor({ state: 'attached', timeout: COLD_TIMEOUT });
+        await visit(route, async (page) => {
+          await page
+            .locator('input[type=file]')
+            .first()
+            .setInputFiles(fixture, { timeout: COLD_TIMEOUT });
+          await page
+            .locator(ready)
+            .first()
+            .waitFor({ state: 'attached', timeout: COLD_TIMEOUT });
+        });
       } catch (cause) {
         throw new Error(
           `E2E warm-up failed: ${route} did not render ${fixture} (${ready}) at ${baseURL}. Is the dev server healthy?`,
