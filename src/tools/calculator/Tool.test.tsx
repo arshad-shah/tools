@@ -99,7 +99,8 @@ describe('Calculator', () => {
     renderTool();
     fireEvent.change(line(1), { target: { value: '0.1 + 0.2' } });
     expect(result(1)).toBe('0.3');
-    fireEvent.click(screen.getByLabelText('Exact decimals (BigNumber)'));
+    fireEvent.click(screen.getByRole('button', { name: /Options/ }));
+    fireEvent.click(screen.getByLabelText('Exact decimals'));
     expect(result(1)).toBe('0.3');
     fireEvent.change(line(1), { target: { value: 'sin(30)' } });
     expect(result(1)).toBe('0.5');

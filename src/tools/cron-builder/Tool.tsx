@@ -9,6 +9,7 @@ import {
   Inline,
   SegmentedControl,
   ShareButton,
+  ToolActions,
   Stack,
   Text,
 } from '@/shared/ui';
@@ -106,23 +107,26 @@ const CronBuilder: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Inline justify="between" align="center">
-        <SegmentedControl
-          label="Cron flavour"
-          value={flavour}
-          onChange={switchFlavour}
-          options={FLAVOURS}
-        />
+      <ToolActions>
         <ShareButton share={shareState} />
-      </Inline>
+      </ToolActions>
       <Card>
         <CardBody>
           <Stack gap="3">
-            <Inline gap="2" align="end" wrap={false}>
+            <Inline justify="between" align="center">
+              <Text as="span" size="sm" weight="medium">
+                Expression
+              </Text>
+              <SegmentedControl
+                label="Cron flavour"
+                size="sm"
+                value={flavour}
+                onChange={switchFlavour}
+                options={FLAVOURS}
+              />
+            </Inline>
+            <Inline gap="2" align="center" wrap={false}>
               <Stack gap="1" className="min-w-0 flex-1">
-                <Text as="span" size="sm" weight="medium">
-                  Expression
-                </Text>
                 <CodeSurface
                   value={expr}
                   onChange={setExpr}

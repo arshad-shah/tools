@@ -345,3 +345,10 @@ export {
   type ChoiceOption,
 } from './choice-grid';
 export { FontPreview, type FontPreviewProps } from './font-preview';
+export {
+  ToolActions,
+  ToolActionsSlot,
+  type ToolActionsProps,
+} from './tool-actions';
+export { ControlBar, type ControlBarProps } from './control-bar';
+export { OptionsMenu, type OptionsMenuProps } from './options-menu';

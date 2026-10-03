@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Inline,
   ShareButton,
+  ToolActions,
   Stack,
   Tabs,
   TabsContent,
@@ -67,7 +67,7 @@ const EpochConverter: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Inline justify="end">
+      <ToolActions>
         <ShareButton
           share={{
             ...shareState,
@@ -76,7 +76,7 @@ const EpochConverter: React.FC = () => {
               instant === null ? 'Enter a time to share it' : shareState.reason,
           }}
         />
-      </Inline>
+      </ToolActions>
       <NowPanel now={now} onUse={(ms) => setText(String(ms))} />
       <Tabs value={tab} onValueChange={setTab} variant="soft">
         <TabsList aria-label="Converter sections">
