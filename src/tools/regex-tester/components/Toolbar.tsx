@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
   Inline,
   ShareButton,
+  ToolActions,
   type ShareControl,
 } from '@/shared/ui';
 
@@ -50,7 +51,7 @@ const Item: React.FC<{
   </DropdownMenuItem>
 );
 
-/** Templates, cheat sheet, Share and the Actions menu. */
+/** Templates, cheat sheet, the Actions menu and Share, in the tool header. */
 export const RegexToolbar: React.FC<RegexToolbarProps> = ({
   share,
   onOpenTemplates,
@@ -63,65 +64,61 @@ export const RegexToolbar: React.FC<RegexToolbarProps> = ({
   onUseAsLogFormat,
   onClearAll,
 }) => (
-  <Inline justify="between" align="center" gap="2" wrap>
-    <Inline gap="2" wrap>
-      <Button
-        variant="secondary"
-        size="sm"
-        leftIcon={<IconLayers size="sm" />}
-        onClick={onOpenTemplates}
-      >
-        Templates
-      </Button>
-      <Button
-        variant="secondary"
-        size="sm"
-        leftIcon={<IconBookOpen size="sm" />}
-        aria-pressed={cheatSheetOpen}
-        onClick={onToggleCheatSheet}
-      >
-        Cheat sheet
-      </Button>
-    </Inline>
-    <Inline gap="2" wrap>
-      <ShareButton share={share} />
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<IconSettings size="sm" />}
-            rightIcon={<IconChevronDown size="sm" />}
-          >
-            Actions
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <Item
-            icon={<IconCodeXml size="sm" />}
-            label="Copy as JavaScript"
-            onClick={onCopyAsJs}
-            disabled={!canCopyJs}
-          />
-          <Item
-            icon={<IconZap size="sm" />}
-            label="Load sample text"
-            onClick={onLoadSample}
-          />
-          <Item
-            icon={<IconSendTo size="sm" />}
-            label="Use as log format"
-            onClick={onUseAsLogFormat}
-            disabled={!canUseAsLogFormat}
-          />
-          <DropdownMenuSeparator />
-          <Item
-            icon={<IconX size="sm" />}
-            label="Clear all"
-            onClick={onClearAll}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </Inline>
-  </Inline>
+  <ToolActions>
+    <Button
+      variant="ghost"
+      size="sm"
+      leftIcon={<IconLayers size="sm" />}
+      onClick={onOpenTemplates}
+    >
+      Templates
+    </Button>
+    <Button
+      variant="ghost"
+      size="sm"
+      leftIcon={<IconBookOpen size="sm" />}
+      aria-pressed={cheatSheetOpen}
+      onClick={onToggleCheatSheet}
+    >
+      Cheat sheet
+    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<IconSettings size="sm" />}
+          rightIcon={<IconChevronDown size="sm" />}
+        >
+          Actions
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <Item
+          icon={<IconCodeXml size="sm" />}
+          label="Copy as JavaScript"
+          onClick={onCopyAsJs}
+          disabled={!canCopyJs}
+        />
+        <Item
+          icon={<IconZap size="sm" />}
+          label="Load sample text"
+          onClick={onLoadSample}
+        />
+        <Item
+          icon={<IconSendTo size="sm" />}
+          label="Use as log format"
+          onClick={onUseAsLogFormat}
+          disabled={!canUseAsLogFormat}
+        />
+        <DropdownMenuSeparator />
+        <Item
+          icon={<IconX size="sm" />}
+          label="Clear all"
+          onClick={onClearAll}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
+    <ShareButton share={share} />
+  </ToolActions>
 );

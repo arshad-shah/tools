@@ -88,7 +88,12 @@ export const PatternBar: React.FC<PatternBarProps> = ({
             />
           </Inline>
           <Inline gap="3" align="center" justify="between" wrap>
-            <FlagToggles flags={flags} onToggle={onToggleFlag} />
+            <Inline gap="2" align="center" wrap={false}>
+              <Text as="span" size="sm" tone="muted" aria-hidden>
+                Flags
+              </Text>
+              <FlagToggles flags={flags} onToggle={onToggleFlag} />
+            </Inline>
             {pattern ? (
               <Badge
                 variant="soft"

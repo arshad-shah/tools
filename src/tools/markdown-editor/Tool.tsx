@@ -21,6 +21,8 @@ import {
   MetaList,
   PaneTabs,
   Stack,
+  ControlBar,
+  ToolActions,
   SwitchField,
   TextInputPanel,
   usePaneTab,
@@ -242,14 +244,17 @@ export default function MarkdownEditor({ definition }: ToolProps) {
 
   const editPane = (
     <Stack gap="2">
-      <Inline gap="2" wrap justify="between">
-        <FormatToolbar onFormat={format} />
-        <SwitchField
-          label="Wrap lines"
-          checked={settings.wrap}
-          onCheckedChange={(wrap) => update({ wrap })}
-        />
-      </Inline>
+      <ControlBar
+        className="py-1"
+        start={<FormatToolbar onFormat={format} />}
+        end={
+          <SwitchField
+            label="Wrap lines"
+            checked={settings.wrap}
+            onCheckedChange={(wrap) => update({ wrap })}
+          />
+        }
+      />
       <TextInputPanel
         editorRef={editor}
         value={text}
@@ -294,25 +299,23 @@ export default function MarkdownEditor({ definition }: ToolProps) {
           </Inline>
         </Alert>
       ) : null}
+      <ToolActions>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          leftIcon={<IconList size="sm" />}
+          onClick={() => setOutlineOpen(true)}
+        >
+          Outline
+        </Button>
+        <ExportMenu actions={actions} disabled={text === ''} />
+      </ToolActions>
       <PaneTabs
         id="markdown-editor"
         label="Markdown panes"
         value={tab.value}
         onValueChange={tab.show}
-        actions={
-          <>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconList size="sm" />}
-              onClick={() => setOutlineOpen(true)}
-            >
-              Outline
-            </Button>
-            <ExportMenu actions={actions} disabled={text === ''} />
-          </>
-        }
         panes={[
           { id: 'edit', label: 'Edit', content: editPane },
           {

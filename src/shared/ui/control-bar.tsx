@@ -40,7 +40,7 @@ export function ControlBar({
           </div>
         ) : null}
         {end ? (
-          <div className="ms-auto flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-2">
+          <div className="ms-auto flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-2 pe-1">
             {end}
           </div>
         ) : null}

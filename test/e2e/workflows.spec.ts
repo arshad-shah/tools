@@ -254,7 +254,8 @@ test.describe('URL Inspector', () => {
 
   test('Send to HTTP Client', async ({ page }) => {
     await inspect(page);
-    await page.getByRole('button', { name: 'Send to HTTP Client' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'HTTP Client' }).click();
     await atTool(page, 'api-request');
     await expect(
       page.getByRole('textbox', { name: 'Request URL' }),
@@ -263,7 +264,8 @@ test.describe('URL Inspector', () => {
 
   test('Make QR', async ({ page }) => {
     await inspect(page);
-    await page.getByRole('button', { name: 'Make QR' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
     await atTool(page, 'qr-code-generator');
     await expect(
       page.getByText('https://example.com/search').first(),
@@ -503,7 +505,8 @@ test.describe('QR Scanner', () => {
 
   test('Make QR', async ({ page }) => {
     await scan(page);
-    await page.getByRole('button', { name: 'Make QR' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
     await atTool(page, 'qr-code-generator');
     // The generator remembers its last tab (Export, from making the code).
     await tab(page, 'Content');
