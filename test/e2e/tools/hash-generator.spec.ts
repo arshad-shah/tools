@@ -31,6 +31,7 @@ test('computes HMAC only with the key the user enters', async ({ page }) => {
 
 test('offers FIPS 202 SHA3-256 and a labelled Keccak-256', async ({ page }) => {
   await page.goto(pathOf('hash-generator'));
+  await page.getByRole('button', { name: /Algorithms/ }).click();
   await page.getByRole('checkbox', { name: 'SHA3-256' }).click();
   await page.getByRole('checkbox', { name: 'Keccak-256 (Ethereum)' }).click();
   await typeMessage(page, 'abc');

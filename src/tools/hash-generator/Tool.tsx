@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Card,
-  CardBody,
   Checkbox,
+  OptionsMenu,
+  ControlBar,
   Inline,
   Label,
   PrivacyNote,
@@ -54,51 +54,71 @@ const HashGenerator: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Card>
-        <CardBody>
-          <Stack gap="4">
-            <Stack gap="2" role="group" aria-label="Algorithms">
-              {GROUPS.map((g) => (
-                <Inline key={g.id} gap="4" align="center" wrap>
-                  <Text size="sm" weight="semibold" className="w-24">
-                    {g.label}
-                  </Text>
-                  {DIGESTS.filter((d) => d.group === g.id).map((d) => (
-                    <Inline key={d.id} gap="2" align="center">
-                      <Checkbox
-                        id={`alg-${d.id}`}
-                        checked={settings.selected.includes(d.id)}
-                        onCheckedChange={(on) => toggle(d.id, on)}
-                        aria-label={d.name}
-                        size="sm"
-                      />
-                      <Label htmlFor={`alg-${d.id}`}>{d.name}</Label>
-                      <DigestBadges info={d} />
-                    </Inline>
-                  ))}
-                </Inline>
-              ))}
-            </Stack>
-            <SegmentedControl<DigestFormat>
-              label="Output format"
-              value={settings.output}
-              onChange={(v) => update({ output: v })}
-              options={DIGEST_FORMATS}
-              size="sm"
-            />
-          </Stack>
-        </CardBody>
-      </Card>
-
       <Tabs
         value={shownTab}
         onValueChange={(v) => setTab(v as 'text' | 'files')}
         variant="soft"
       >
-        <TabsList aria-label="Hash source">
-          <TabsTrigger value="text">Text</TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
-        </TabsList>
+        <ControlBar
+          start={
+            <TabsList aria-label="Hash source">
+              <TabsTrigger value="text">Text</TabsTrigger>
+              <TabsTrigger value="files">Files</TabsTrigger>
+            </TabsList>
+          }
+          end={
+            <>
+              <Inline gap="2" align="center" wrap={false}>
+                <Text as="span" size="sm" tone="muted" aria-hidden>
+                  Output
+                </Text>
+                <SegmentedControl<DigestFormat>
+                  label="Output format"
+                  value={settings.output}
+                  onChange={(v) => update({ output: v })}
+                  options={DIGEST_FORMATS}
+                  size="sm"
+                />
+              </Inline>
+              <OptionsMenu
+                label="Algorithms"
+                title="Algorithms"
+                changed={settings.selected.length}
+                width="w-[34rem]"
+              >
+                <Stack gap="3" role="group" aria-label="Algorithms">
+                  {GROUPS.map((g) => (
+                    <Stack key={g.id} gap="1">
+                      <Text size="xs" weight="semibold" tone="subtle">
+                        {g.label}
+                      </Text>
+                      <Inline gap="3" align="center" wrap>
+                        {DIGESTS.filter((d) => d.group === g.id).map((d) => (
+                          <Inline
+                            key={d.id}
+                            gap="2"
+                            align="center"
+                            wrap={false}
+                          >
+                            <Checkbox
+                              id={`alg-${d.id}`}
+                              checked={settings.selected.includes(d.id)}
+                              onCheckedChange={(on) => toggle(d.id, on)}
+                              aria-label={d.name}
+                              size="sm"
+                            />
+                            <Label htmlFor={`alg-${d.id}`}>{d.name}</Label>
+                            <DigestBadges info={d} />
+                          </Inline>
+                        ))}
+                      </Inline>
+                    </Stack>
+                  ))}
+                </Stack>
+              </OptionsMenu>
+            </>
+          }
+        />
         <TabsContent value="text">
           <Stack gap="4" className="pt-4">
             <TextHash
