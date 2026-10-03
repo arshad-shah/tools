@@ -2,8 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { IconArrowRightLeft, IconX } from '@/shared/ui/icons';
 import {
   Button,
-  Card,
-  CardBody,
   ErrorState,
   Inline,
   PaneTabs,
@@ -11,6 +9,7 @@ import {
   SegmentedControl,
   Stack,
   SwitchField,
+  ControlBar,
   Text,
   TextInputPanel,
   usePaneTab,
@@ -217,11 +216,12 @@ const Base64Converter: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Card>
-        <CardBody>
-          <Inline justify="between" align="center" wrap gap="3">
+      <ControlBar
+        start={
+          <>
             <SegmentedControl<Mode>
               label="Mode"
+              size="sm"
               value={mode}
               onChange={setMode}
               options={[
@@ -229,45 +229,45 @@ const Base64Converter: React.FC = () => {
                 { value: 'decode', label: 'Decode' },
               ]}
             />
-            {mode === 'encode' && (
-              <Inline gap="4" align="center" wrap>
-                <SwitchField
-                  label="URL-safe"
-                  checked={urlSafe}
-                  onCheckedChange={(v) => update({ urlSafe: v, padding: !v })}
-                />
-                <SwitchField
-                  label="Padding"
-                  checked={padding}
-                  onCheckedChange={(v) => update({ padding: v })}
-                />
-                <SwitchField
-                  label="Wrap at 76"
-                  checked={wrap76}
-                  onCheckedChange={(v) => update({ wrap76: v })}
-                />
-              </Inline>
-            )}
-          </Inline>
-        </CardBody>
-      </Card>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<IconArrowRightLeft size="sm" />}
+              onClick={swap}
+              disabled={!output.text}
+            >
+              Swap
+            </Button>
+          </>
+        }
+        end={
+          mode === 'encode' ? (
+            <>
+              <SwitchField
+                label="URL-safe"
+                checked={urlSafe}
+                onCheckedChange={(v) => update({ urlSafe: v, padding: !v })}
+              />
+              <SwitchField
+                label="Padding"
+                checked={padding}
+                onCheckedChange={(v) => update({ padding: v })}
+              />
+              <SwitchField
+                label="Wrap at 76"
+                checked={wrap76}
+                onCheckedChange={(v) => update({ wrap76: v })}
+              />
+            </>
+          ) : null
+        }
+      />
 
       <PaneTabs
         id="base64-converter"
         label="Base64 panes"
         value={tab.value}
         onValueChange={tab.show}
-        actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<IconArrowRightLeft size="sm" />}
-            onClick={swap}
-            disabled={!output.text}
-          >
-            Swap
-          </Button>
-        }
         panes={[
           { id: 'input', label: 'Input', content: inputPane },
           {

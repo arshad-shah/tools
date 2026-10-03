@@ -16,6 +16,7 @@ import {
   PaneTabs,
   Select,
   Stack,
+  ControlBar,
   TextInputPanel,
   usePaneTab,
   type CodeMarker,
@@ -269,68 +270,78 @@ export default function CodeFormatter() {
 
   return (
     <Stack gap="4">
-      <Inline gap="3" align="center" wrap>
-        <Inline gap="2" align="center" wrap={false}>
-          <Label htmlFor="code-formatter-language">Language</Label>
-          <Select
-            id="code-formatter-language"
-            value={choice}
-            onValueChange={(v) => {
-              update({ language: v });
-              setResult(null);
-              setError(null);
-            }}
-            items={[
-              { value: 'auto', label: `Auto (${LANGUAGE_LABEL[detected]})` },
-              ...FORMAT_LANGUAGES.map((l) => ({
-                value: l,
-                label: LANGUAGE_LABEL[l],
-              })),
-            ]}
-          />
-        </Inline>
-        <Button
-          size="sm"
-          variant="primary"
-          leftIcon={<IconWand2 size="sm" />}
-          onClick={() => void run('format')}
-          disabled={!input.trim()}
-          loading={busy && result === null}
-          aria-keyshortcuts="Control+Shift+F"
-        >
-          Format
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          leftIcon={<IconMinimize2 size="sm" />}
-          onClick={() => void run('minify')}
-          disabled={!input.trim() || !canMinify}
-          aria-keyshortcuts="Control+Shift+M"
-        >
-          Minify
-        </Button>
-        {result && (
-          <Button
-            size="sm"
-            variant="ghost"
-            leftIcon={<IconSendTo size="sm" />}
-            onClick={showChanges}
-          >
-            Show changes
-          </Button>
-        )}
-      </Inline>
-
-      <OptionsPanel
-        language={language}
-        options={options}
-        onChange={(patch) => {
-          update(withOptions(settings, language, patch));
-          setResult(null);
-        }}
-        mangle={settings.mangle}
-        onMangleChange={(mangle) => update({ mangle })}
+      <ControlBar
+        start={
+          <>
+            <Inline gap="2" align="center" wrap={false}>
+              <Label htmlFor="code-formatter-language">Language</Label>
+              <Select
+                id="code-formatter-language"
+                value={choice}
+                onValueChange={(v) => {
+                  update({ language: v });
+                  setResult(null);
+                  setError(null);
+                }}
+                items={[
+                  {
+                    value: 'auto',
+                    label: `Auto (${LANGUAGE_LABEL[detected]})`,
+                  },
+                  ...FORMAT_LANGUAGES.map((l) => ({
+                    value: l,
+                    label: LANGUAGE_LABEL[l],
+                  })),
+                ]}
+              />
+            </Inline>
+          </>
+        }
+        end={
+          <>
+            {result && (
+              <Button
+                size="sm"
+                variant="ghost"
+                leftIcon={<IconSendTo size="sm" />}
+                onClick={showChanges}
+              >
+                Show changes
+              </Button>
+            )}
+            <OptionsPanel
+              language={language}
+              options={options}
+              onChange={(patch) => {
+                update(withOptions(settings, language, patch));
+                setResult(null);
+              }}
+              mangle={settings.mangle}
+              onMangleChange={(mangle) => update({ mangle })}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<IconMinimize2 size="sm" />}
+              onClick={() => void run('minify')}
+              disabled={!input.trim() || !canMinify}
+              aria-keyshortcuts="Control+Shift+M"
+            >
+              Minify
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              leftIcon={<IconWand2 size="sm" />}
+              onClick={() => void run('format')}
+              disabled={!input.trim()}
+              loading={busy && result === null}
+              aria-keyshortcuts="Control+Shift+F"
+            >
+              Format
+            </Button>
+          </>
+        }
       />
 
       {error && !(error instanceof CodeError) && (
