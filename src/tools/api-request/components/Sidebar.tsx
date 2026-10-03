@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Box,
+  Button,
   Card,
   CardBody,
   IconButton,
@@ -44,20 +45,20 @@ export function Sidebar({
           </TabsList>
           <TabsContent value="collections">
             <Stack gap="2" className="pt-3">
-              <Inline gap="1" wrap>
-                <IconButton
+              <Inline gap="1" wrap={false}>
+                <Button
                   size="sm"
-                  variant="ghost"
-                  label="New request"
-                  showLabel="desktop"
-                  icon={<IconFilePlus size="sm" />}
+                  variant="secondary"
+                  className="flex-1"
+                  leftIcon={<IconFilePlus size="sm" />}
                   onClick={onNewRequest}
-                />
+                >
+                  New request
+                </Button>
                 <IconButton
                   size="sm"
                   variant="ghost"
                   label="New collection"
-                  showLabel="desktop"
                   icon={<IconFolderPlus size="sm" />}
                   onClick={onNewCollection}
                 />

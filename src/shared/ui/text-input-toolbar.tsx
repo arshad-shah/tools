@@ -20,6 +20,8 @@ export const OPEN_SHORTCUT = 'Mod+O';
 export const DOWNLOAD_SHORTCUT = 'Mod+S';
 
 export interface TextInputToolbarProps {
+  /** Tool-specific groups shown first (Undo and Redo, say). */
+  groups?: ToolGroup[];
   readOnly: boolean;
   hasValue: boolean;
   accept?: string;
@@ -46,6 +48,7 @@ export interface TextInputToolbarProps {
  * (edge fade) on narrow screens.
  */
 export function TextInputToolbar({
+  groups: extra,
   readOnly,
   hasValue,
   accept,
@@ -159,7 +162,7 @@ export function TextInputToolbar({
       </div>
     ) : undefined;
   const bar = (open: () => void) => {
-    const groups: ToolGroup[] = [];
+    const groups: ToolGroup[] = [...(extra ?? [])];
     if (!readOnly)
       groups.push({ id: 'input', label: 'Fill and clear', items: input(open) });
     const out = output();

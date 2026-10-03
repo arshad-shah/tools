@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { IconLock, IconUnlock } from '@/shared/ui/icons';
 import {
   Button,
+  CardBody,
+  Card,
   ErrorState,
   Inline,
   LoadingState,
@@ -88,52 +90,27 @@ export const TextMode: React.FC<TextModeProps> = ({
 
   return (
     <Stack gap="4">
-      <SegmentedControl<Direction>
-        label="Direction"
-        value={direction}
-        onChange={(d) => {
-          setDirection(d);
-          setResult({});
-          job.reset();
-        }}
-        options={[
-          { value: 'encrypt', label: 'Encrypt' },
-          { value: 'decrypt', label: 'Decrypt' },
-        ]}
-      />
-      <PassphraseFields
-        value={passphrase}
-        onChange={onPassphrase}
-        confirm={
-          encrypting ? { value: confirm, onChange: setConfirm } : undefined
-        }
-        onGenerate={encrypting ? onGenerate : undefined}
-      />
-      <Inline gap="2" align="center">
-        <Button
-          variant="primary"
-          leftIcon={
-            encrypting ? <IconLock size="sm" /> : <IconUnlock size="sm" />
-          }
-          disabled={!canRun}
-          onClick={() => void run()}
-        >
-          {encrypting ? 'Encrypt' : 'Decrypt'}
-        </Button>
-        {job.status === 'running' && (
-          <>
-            <LoadingState label={job.progress?.label ?? 'Working'} />
-            <Button variant="ghost" size="sm" onClick={job.cancel}>
-              Cancel
-            </Button>
-          </>
-        )}
-      </Inline>
       <PaneTabs
         id="text-encrypt"
         label="Message panes"
         value={tab.value}
         onValueChange={tab.show}
+        actions={
+          <SegmentedControl<Direction>
+            label="Direction"
+            size="sm"
+            value={direction}
+            onChange={(d) => {
+              setDirection(d);
+              setResult({});
+              job.reset();
+            }}
+            options={[
+              { value: 'encrypt', label: 'Encrypt' },
+              { value: 'decrypt', label: 'Decrypt' },
+            ]}
+          />
+        }
         panes={[
           {
             id: 'input',
@@ -187,6 +164,42 @@ export const TextMode: React.FC<TextModeProps> = ({
           },
         ]}
       />
+      <Card>
+        <CardBody>
+          <Stack gap="3">
+            <PassphraseFields
+              value={passphrase}
+              onChange={onPassphrase}
+              confirm={
+                encrypting
+                  ? { value: confirm, onChange: setConfirm }
+                  : undefined
+              }
+              onGenerate={encrypting ? onGenerate : undefined}
+            />
+            <Inline gap="2" align="center">
+              <Button
+                variant="primary"
+                leftIcon={
+                  encrypting ? <IconLock size="sm" /> : <IconUnlock size="sm" />
+                }
+                disabled={!canRun}
+                onClick={() => void run()}
+              >
+                {encrypting ? 'Encrypt' : 'Decrypt'}
+              </Button>
+              {job.status === 'running' && (
+                <>
+                  <LoadingState label={job.progress?.label ?? 'Working'} />
+                  <Button variant="ghost" size="sm" onClick={job.cancel}>
+                    Cancel
+                  </Button>
+                </>
+              )}
+            </Inline>
+          </Stack>
+        </CardBody>
+      </Card>
     </Stack>
   );
 };

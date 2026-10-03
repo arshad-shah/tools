@@ -3,7 +3,7 @@ import {
   Card,
   CardBody,
   CardHeader,
-  CardTitle,
+  Text,
   Grid,
   Label,
   NumberInput,
@@ -11,6 +11,8 @@ import {
   SegmentedControl,
   Select,
   ShareButton,
+  ToolActions,
+  OptionsMenu,
   Stack,
 } from '@/shared/ui';
 import { useClipboard } from '@/shared/lib/clipboard';
@@ -92,15 +94,14 @@ const UnitConverter: React.FC = () => {
         </CardBody>
       </Card>
 
+      <ToolActions>
+        <ShareButton share={shareState} />
+      </ToolActions>
       <Grid cols={{ base: 1, lg: 3 }} gap="6">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <Stack gap="3">
-              <Inline justify="between" align="center">
-                <CardTitle as="h2">{category.label}</CardTitle>
-                <ShareButton share={shareState} />
-              </Inline>
-              <Stack gap="1">
+            <Inline justify="between" align="end" gap="3">
+              <Stack gap="1" className="min-w-0 flex-1 sm:max-w-xs">
                 <Label htmlFor="unit-category">Category</Label>
                 <Select
                   id="unit-category"
@@ -112,7 +113,47 @@ const UnitConverter: React.FC = () => {
                   }))}
                 />
               </Stack>
-            </Stack>
+              <OptionsMenu title="Number display">
+                <Stack gap="1">
+                  <Label htmlFor="unit-precision">Significant digits</Label>
+                  <NumberInput
+                    id="unit-precision"
+                    value={settings.precision}
+                    min={3}
+                    max={17}
+                    onValueChange={(precision) => update({ precision })}
+                  />
+                </Stack>
+                <Stack gap="1">
+                  <Text as="span" size="sm" weight="medium">
+                    Decimal mark
+                  </Text>
+                  <SegmentedControl<UnitSettings['locale']>
+                    label="Decimal mark"
+                    size="sm"
+                    value={settings.locale}
+                    onChange={(locale) => update({ locale })}
+                    options={[
+                      { value: 'auto', label: 'Browser' },
+                      { value: 'dot', label: 'Point' },
+                      { value: 'comma', label: 'Comma' },
+                    ]}
+                  />
+                </Stack>
+                {category.id === 'typography' && (
+                  <Stack gap="1">
+                    <Label htmlFor="unit-base-px">Base font size (px)</Label>
+                    <NumberInput
+                      id="unit-base-px"
+                      value={settings.basePx}
+                      min={1}
+                      max={200}
+                      onValueChange={(basePx) => update({ basePx })}
+                    />
+                  </Stack>
+                )}
+              </OptionsMenu>
+            </Inline>
           </CardHeader>
           <CardBody>
             <AllUnits
@@ -130,48 +171,6 @@ const UnitConverter: React.FC = () => {
         </Card>
 
         <Stack gap="6">
-          <Card>
-            <CardHeader>
-              <CardTitle as="h2">Options</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <Stack gap="3">
-                <Stack gap="1">
-                  <Label htmlFor="unit-precision">Significant digits</Label>
-                  <NumberInput
-                    id="unit-precision"
-                    value={settings.precision}
-                    min={3}
-                    max={17}
-                    onValueChange={(precision) => update({ precision })}
-                  />
-                </Stack>
-                <SegmentedControl<UnitSettings['locale']>
-                  label="Decimal mark"
-                  size="sm"
-                  value={settings.locale}
-                  onChange={(locale) => update({ locale })}
-                  options={[
-                    { value: 'auto', label: 'Browser' },
-                    { value: 'dot', label: 'Point' },
-                    { value: 'comma', label: 'Comma' },
-                  ]}
-                />
-                {category.id === 'typography' && (
-                  <Stack gap="1">
-                    <Label htmlFor="unit-base-px">Base font size (px)</Label>
-                    <NumberInput
-                      id="unit-base-px"
-                      value={settings.basePx}
-                      min={1}
-                      max={200}
-                      onValueChange={(basePx) => update({ basePx })}
-                    />
-                  </Stack>
-                )}
-              </Stack>
-            </CardBody>
-          </Card>
           <HistoryList
             history={settings.history}
             precision={settings.precision}

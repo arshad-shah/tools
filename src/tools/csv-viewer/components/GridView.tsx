@@ -35,6 +35,10 @@ export interface GridViewProps {
   onCellEdit(row: number, column: string, value: unknown): void;
   /** Indices into `table.rows` under the grid selection. */
   onSelectedRowsChange(rows: number[]): void;
+  /** Edit actions, first in the row above the grid. */
+  toolbar?: React.ReactNode;
+  /** View settings after the search box. */
+  trailing?: React.ReactNode;
 }
 
 /** The table: typed columns, multi-sort, filters, search and editing. */
@@ -54,6 +58,8 @@ export function GridView({
   compact,
   onCellEdit,
   onSelectedRowsChange,
+  toolbar,
+  trailing,
 }: GridViewProps) {
   // Identity follows the column names, types and hiding only, so edits
   // never reset column order or widths.
@@ -85,25 +91,31 @@ export function GridView({
   return (
     <Stack gap="3">
       <Inline gap="3" align="center" justify="between" wrap>
-        <div className="w-72 max-w-full">
-          <SearchInput
-            value={search}
-            onChange={onSearchChange}
-            placeholder="Search all columns"
-            aria-label="Search all columns"
-          />
-        </div>
+        {toolbar}
+        <Inline gap="3" align="center" wrap className="ms-auto">
+          <div className="w-64 max-w-full">
+            <SearchInput
+              value={search}
+              onChange={onSearchChange}
+              placeholder="Search all columns"
+              aria-label="Search all columns"
+            />
+          </div>
+          {trailing}
+        </Inline>
+      </Inline>
+      <Inline gap="3" align="center" justify="between" wrap>
+        <MetaList
+          items={table.columns.map((c) => (
+            <Badge key={c} variant="soft" size="sm">
+              {`${c}: ${COLUMN_TYPE_LABEL[types[c] ?? 'text']}`}
+            </Badge>
+          ))}
+        />
         <Text size="sm" tone="subtle" aria-live="polite">
           {`${indices.length.toLocaleString('en-US')} of ${table.rows.length.toLocaleString('en-US')} rows`}
         </Text>
       </Inline>
-      <MetaList
-        items={table.columns.map((c) => (
-          <Badge key={c} variant="soft" size="sm">
-            {`${c}: ${COLUMN_TYPE_LABEL[types[c] ?? 'text']}`}
-          </Badge>
-        ))}
-      />
       {errors.length > 0 && (
         <Alert status="warning">
           <AlertDescription>

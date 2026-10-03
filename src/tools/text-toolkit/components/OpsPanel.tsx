@@ -6,6 +6,7 @@ import {
   Input,
   Label,
   NumberInput,
+  OptionsMenu,
   Select,
   Stack,
   SwitchField,
@@ -33,7 +34,7 @@ function Field({
 }) {
   const id = useId();
   return (
-    <Stack gap="1" className="min-w-28 flex-1">
+    <Stack gap="1" className="min-w-0">
       <Label htmlFor={id}>{label}</Label>
       {children(id)}
     </Stack>
@@ -47,8 +48,8 @@ function LineOptions({
   onFilter,
 }: Omit<OpsPanelProps, 'ops' | 'onRun'>) {
   return (
-    <Stack gap="3" className="rounded-md border border-line p-3">
-      <Inline gap="3" wrap>
+    <Stack gap="3">
+      <Stack gap="2">
         <SwitchField
           label="Duplicates ignore case"
           checked={s.dedupeCaseInsensitive}
@@ -59,8 +60,8 @@ function LineOptions({
           checked={s.filterInvert}
           onCheckedChange={(v) => update({ filterInvert: v })}
         />
-      </Inline>
-      <Inline gap="3" wrap align="start">
+      </Stack>
+      <div className="grid grid-cols-2 gap-3">
         <Field label="Keep duplicate">
           {(id) => (
             <Select
@@ -94,8 +95,6 @@ function LineOptions({
             />
           )}
         </Field>
-      </Inline>
-      <Inline gap="3" wrap align="start">
         <Field label="Prefix">
           {(id) => (
             <Input
@@ -135,7 +134,7 @@ function LineOptions({
         <Field label="Filter text">
           {(id) => <Input id={id} value={filter} onChange={onFilter} />}
         </Field>
-      </Inline>
+      </div>
     </Stack>
   );
 }
@@ -185,15 +184,33 @@ export function OpsPanel(props: OpsPanelProps) {
   const { ops, onRun } = props;
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
+    <section aria-labelledby={headingId} className="flex flex-col gap-5">
       <Heading level={2} size="md" id={headingId}>
         Operations
       </Heading>
       {GROUPS.map((group) => (
         <Stack key={group} gap="2" role="group" aria-label={group}>
-          <Heading level={3} size="sm" className="text-fg-muted">
-            {group}
-          </Heading>
+          <Inline justify="between" align="center" gap="2">
+            <Heading level={3} size="sm" className="text-fg-muted">
+              {group}
+            </Heading>
+            <OptionsMenu
+              variant="ghost"
+              label={`${group} options`}
+              title={`${group} options`}
+              width={group === 'Lines' ? 'w-96' : 'w-64'}
+            >
+              {group === 'Lines' ? (
+                <LineOptions {...props} />
+              ) : (
+                <OtherOptions
+                  group={group}
+                  settings={props.settings}
+                  update={props.update}
+                />
+              )}
+            </OptionsMenu>
+          </Inline>
           <Inline gap="2" wrap>
             {ops
               .filter((o) => o.group === group)
@@ -209,15 +226,6 @@ export function OpsPanel(props: OpsPanelProps) {
                 </Button>
               ))}
           </Inline>
-          {group === 'Lines' ? (
-            <LineOptions {...props} />
-          ) : (
-            <OtherOptions
-              group={group}
-              settings={props.settings}
-              update={props.update}
-            />
-          )}
         </Stack>
       ))}
     </section>

@@ -29,7 +29,8 @@ test('downloads a CSV with 100 lines', async ({ page }) => {
   await page.getByLabel('How many').fill('100');
   await expect(ids(page)).toHaveValue(/(\n[^\n]+){99}/);
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download .csv' }).click();
+  await page.getByRole('button', { name: 'Download', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Download .csv' }).click();
   const file = await download;
   expect(file.suggestedFilename()).toBe('ids.csv');
   const lines = (await readFile(await file.path(), 'utf8')).trim().split('\n');

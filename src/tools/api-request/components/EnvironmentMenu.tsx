@@ -5,6 +5,7 @@ import {
   AlertDescription,
   Button,
   Dialog,
+  IconButton,
   DialogBody,
   DialogFooter,
   DialogHeader,
@@ -79,22 +80,22 @@ export function EnvironmentMenu({
     <Inline gap="2" align="center">
       <Select
         aria-label="Environment"
+        size="sm"
         value={activeId}
         onValueChange={onActiveChange}
         items={[
           { value: '', label: 'No environment' },
           ...environments.map((e) => ({ value: e.id, label: e.name })),
         ]}
-        className="min-w-40"
+        className="sm:min-w-40"
       />
-      <Button
+      <IconButton
         size="sm"
         variant="ghost"
-        leftIcon={<IconSettings size="sm" />}
+        label="Environments"
+        icon={IconSettings}
         onClick={() => setOpen(true)}
-      >
-        Environments
-      </Button>
+      />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogHeader>
           <DialogTitle>Environments</DialogTitle>

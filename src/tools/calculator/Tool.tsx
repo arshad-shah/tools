@@ -7,6 +7,7 @@ import {
   Inline,
   SegmentedControl,
   ShareButton,
+  ToolActions,
   Stack,
 } from '@/shared/ui';
 import { IconInfo } from '@/shared/ui/icons';
@@ -143,7 +144,7 @@ const Calculator: React.FC = () => {
   };
 
   return (
-    <Container size="lg">
+    <Container size="full" className="px-0 sm:px-0">
       <Stack gap="4">
         <Inline justify="between" align="center" gap="2" wrap>
           <SegmentedControl
@@ -152,27 +153,27 @@ const Calculator: React.FC = () => {
             onChange={(m) => update({ mode: m })}
             options={MODES}
           />
-          <Inline gap="2">
-            <ShareButton share={shareState} />
-            <IconButton
-              variant="secondary"
-              size="sm"
-              label="Calculator keys"
-              showLabel="desktop"
-              icon={IconInfo}
-              onClick={() => setHelpOpen(true)}
-            />
-          </Inline>
+          {sheetMode ? (
+            <SheetSettings settings={settings} onChange={update} />
+          ) : null}
         </Inline>
+        <ToolActions>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            label="Calculator keys"
+            showLabel="desktop"
+            icon={IconInfo}
+            onClick={() => setHelpOpen(true)}
+          />
+          <ShareButton share={shareState} />
+        </ToolActions>
 
         {sheetMode && (
           <>
             <Card>
               <CardBody>
-                <Stack gap="4">
-                  <SheetSettings settings={settings} onChange={update} />
-                  <Sheet sheet={sheet} />
-                </Stack>
+                <Sheet sheet={sheet} />
               </CardBody>
             </Card>
             <Card>

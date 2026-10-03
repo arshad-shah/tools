@@ -21,6 +21,12 @@ import {
   Input,
   Label,
   ShareButton,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuContent,
+  DropdownMenu,
+  IconButton,
+  ToolActions,
   Stack,
   Tabs,
   TabsContent,
@@ -28,9 +34,11 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 import {
+  IconChevronDown,
   IconClipboard,
   IconQrCode,
   IconSend,
+  IconSendTo,
   IconType,
 } from '@/shared/ui/icons';
 import { AnatomyStrip } from './components/AnatomyStrip';
@@ -159,23 +167,63 @@ export default function UrlInspector() {
 
   return (
     <Stack gap="4">
+      <ToolActions>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<IconSendTo size="sm" />}
+              rightIcon={<IconChevronDown size="sm" />}
+              disabled={!text}
+            >
+              Open in
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled={!canSendHttp} onClick={sendHttp}>
+              <IconSend size="sm" aria-hidden />
+              HTTP Client
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!model} onClick={makeQr}>
+              <IconQrCode size="sm" aria-hidden />
+              QR Code Generator
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!text} onClick={openEncoder}>
+              <IconType size="sm" aria-hidden />
+              Text Encoder
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <ShareButton share={share} />
+      </ToolActions>
       <Card>
         <CardBody>
           <Stack gap="3">
             <Label htmlFor="url-input">URL</Label>
-            <Input
-              id="url-input"
-              inputMode="url"
-              autoCapitalize="none"
-              autoCorrect="off"
-              value={text}
-              onChange={(v) => fromText(v)}
-              invalid={!!parsed.error}
-              spellCheck={false}
-              className="font-mono"
-              placeholder="https://example.com/path?query=value"
-              aria-describedby={parsed.error ? 'url-error' : undefined}
-            />
+            <Inline gap="2" align="center" wrap={false}>
+              <Input
+                id="url-input"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                value={text}
+                onChange={(v) => fromText(v)}
+                invalid={!!parsed.error}
+                spellCheck={false}
+                className="font-mono"
+                placeholder="https://example.com/path?query=value"
+                aria-describedby={parsed.error ? 'url-error' : undefined}
+              />
+              <IconButton
+                size="md"
+                variant="ghost"
+                label="Paste"
+                icon={IconClipboard}
+                onClick={() => void paste()}
+              />
+              <CopyButton label="URL" value={text} />
+            </Inline>
             {parsed.error && (
               <Alert status="danger" size="sm" id="url-error">
                 <AlertDescription>{parsed.error.message}</AlertDescription>
@@ -199,45 +247,6 @@ export default function UrlInspector() {
                 placeholder="https://example.com/docs/"
               />
             </Stack>
-            <Inline gap="2" wrap>
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconClipboard size="sm" />}
-                onClick={() => void paste()}
-              >
-                Paste
-              </Button>
-              <CopyButton variant="text" label="URL" value={text} />
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconSend size="sm" />}
-                disabled={!canSendHttp}
-                onClick={sendHttp}
-              >
-                Send to HTTP Client
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconQrCode size="sm" />}
-                disabled={!model}
-                onClick={makeQr}
-              >
-                Make QR
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconType size="sm" />}
-                disabled={!text}
-                onClick={openEncoder}
-              >
-                Open in Text Encoder
-              </Button>
-              <ShareButton share={share} />
-            </Inline>
             {secrets.length > 0 && (
               <Alert status="warning">
                 <AlertTitle>This URL may hold secrets</AlertTitle>

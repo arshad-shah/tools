@@ -2,8 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { IconScissors } from '@/shared/ui/icons';
 import {
   Button,
-  ButtonGroup,
   Card,
+  ControlBar,
+  Inline,
+  SegmentedControl,
   CardBody,
   Input,
   Label,
@@ -155,71 +157,70 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
           />
           {file && doc && (
             <>
-              <ButtonGroup aria-label="Split mode" className="flex-wrap">
-                {MODES.map((m) => (
-                  <Button
-                    key={m.value}
+              <ControlBar
+                tone="inset"
+                start={
+                  <SegmentedControl<SplitMode>
+                    label="Split mode"
                     size="sm"
-                    variant={mode === m.value ? 'primary' : 'secondary'}
-                    aria-pressed={mode === m.value}
-                    onClick={() => changeMode(m.value)}
-                  >
-                    {m.label}
-                  </Button>
-                ))}
-              </ButtonGroup>
-              {mode === 'ranges' && (
-                <Stack gap="2">
-                  <Label htmlFor="split-ranges">Ranges</Label>
-                  <Input
-                    id="split-ranges"
-                    value={rangeText}
-                    onChange={changeRangeText}
-                    placeholder="e.g. 1-3, 4-6, 10-"
+                    value={mode}
+                    onChange={changeMode}
+                    options={MODES}
                   />
+                }
+                end={
+                  mode === 'ranges' ? (
+                    <Inline gap="2" align="center" wrap={false}>
+                      <Label htmlFor="split-ranges">Ranges</Label>
+                      <div className="w-56">
+                        <Input
+                          id="split-ranges"
+                          value={rangeText}
+                          onChange={changeRangeText}
+                          placeholder="e.g. 1-3, 4-6, 10-"
+                        />
+                      </div>
+                    </Inline>
+                  ) : mode === 'every-n' ? (
+                    <Inline gap="2" align="center" wrap={false}>
+                      <Label htmlFor="split-every">Pages per file</Label>
+                      <NumberInput
+                        id="split-every"
+                        className="w-32"
+                        value={everyN}
+                        onValueChange={changeEveryN}
+                        min={1}
+                        max={doc.pageCount}
+                      />
+                    </Inline>
+                  ) : mode === 'selection' ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={selected.size === 0}
+                        onClick={clearSelection}
+                      >
+                        Clear selection
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={selectAll}>
+                        Select all
+                      </Button>
+                    </>
+                  ) : null
+                }
+                footer={
                   <Text size="sm" tone="muted">
-                    Each range becomes its own file. {doc.pageCount} pages in
-                    total.
+                    {mode === 'ranges'
+                      ? `Each range becomes its own file. ${doc.pageCount} pages in total.`
+                      : mode === 'every-n'
+                        ? `Every ${everyN} ${everyN === 1 ? 'page becomes' : 'pages become'} a file.`
+                        : mode === 'individual'
+                          ? `Creates ${doc.pageCount} single-page files.`
+                          : `Click pages to select them (Shift-click selects a range). They are extracted into one new PDF (${selected.size} selected).`}
                   </Text>
-                </Stack>
-              )}
-              {mode === 'every-n' && (
-                <Stack gap="2">
-                  <Label htmlFor="split-every">Pages per file</Label>
-                  <NumberInput
-                    id="split-every"
-                    value={everyN}
-                    onValueChange={changeEveryN}
-                    min={1}
-                    max={doc.pageCount}
-                  />
-                </Stack>
-              )}
-              {mode === 'individual' && (
-                <Text size="sm" tone="muted">
-                  Creates {doc.pageCount} single-page files.
-                </Text>
-              )}
-              {mode === 'selection' && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <Text size="sm" tone="muted">
-                    Click pages to select them (Shift-click selects a range).
-                    They are extracted into one new PDF ({selected.size}{' '}
-                    selected).
-                  </Text>
-                  <Button size="sm" variant="secondary" onClick={selectAll}>
-                    Select all
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={selected.size === 0}
-                    onClick={clearSelection}
-                  >
-                    Clear selection
-                  </Button>
-                </div>
-              )}
+                }
+              />
               <PageGrid
                 doc={doc}
                 tiles={tiles}
@@ -228,6 +229,7 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
               />
               <Button
                 variant="primary"
+                className="self-start"
                 leftIcon={<IconScissors size="sm" />}
                 disabled={job.status === 'running'}
                 onClick={() =>

@@ -47,7 +47,7 @@ export function FilterBar({
   const text = filter.text ?? { value: '', regex: false };
 
   return (
-    <Stack gap="3">
+    <Stack gap="3" className="rounded-lg bg-surface p-3 shadow-e1">
       <Inline gap="2" wrap role="group" aria-label="Levels">
         {orderLevels(levels).map((l) => {
           const on = filter.levels.has(l);
@@ -68,8 +68,8 @@ export function FilterBar({
           );
         })}
       </Inline>
-      <Grid cols={{ base: 1, md: 3 }} gap="3">
-        <Stack gap="1">
+      <Grid cols={{ base: 1, md: 4 }} gap="3">
+        <Stack gap="1" className="md:col-span-2">
           <Inline gap="2" wrap={false}>
             <SearchInput
               className="flex-1"
@@ -82,6 +82,7 @@ export function FilterBar({
               onChange={(value) => set({ text: { ...text, value } })}
             />
             <SwitchField
+              className="shrink-0"
               label="Regex"
               checked={text.regex}
               onCheckedChange={(regex) => set({ text: { ...text, regex } })}

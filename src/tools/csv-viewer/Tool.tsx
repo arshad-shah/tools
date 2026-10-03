@@ -13,11 +13,12 @@ import {
   Alert,
   AlertDescription,
   Badge,
-  Button,
   ErrorState,
   Heading,
   Inline,
   SendToMenu,
+  IconButton,
+  ToolActions,
   Stack,
   SwitchField,
   Tabs,
@@ -40,6 +41,7 @@ import { ExportMenu } from './components/ExportMenu';
 import { GridView } from './components/GridView';
 import { InputScreen } from './components/InputScreen';
 import { ParseOptions } from './components/ParseOptions';
+import { DELIMITER_LABEL } from './lib/parse';
 import { ProfilePanel } from './components/ProfilePanel';
 import { WarningsAlert } from './components/WarningsAlert';
 import { useCsvTable } from './hooks/useCsvTable';
@@ -202,6 +204,34 @@ export default function CsvViewer() {
 
   return (
     <Stack gap="4">
+      <ToolActions>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            csv.clear();
+            setPaste('');
+            lastPaste.current = '';
+          }}
+          label="New data"
+          showLabel="desktop"
+          icon={IconRefreshCw}
+        />
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label="Generate more like this"
+          icon={IconSparkles}
+          onClick={generateMore}
+        />
+        <ExportMenu
+          table={() => ({ columns: visibleColumns, rows: viewRows })}
+          filteredRows={filtered}
+          sourceName={loaded.name}
+          settings={settings}
+          onSettings={updateSettings}
+        />
+      </ToolActions>
       <Inline justify="between" align="center" wrap gap="3">
         <Inline align="center" gap="2" wrap>
           <Heading level={2} size="lg">
@@ -213,6 +243,11 @@ export default function CsvViewer() {
           <Badge variant="soft" tone="accent" size="sm">
             {`${table.columns.length} columns`}
           </Badge>
+          {csv.choices.delimiter === 'auto' && (
+            <Badge variant="soft" tone="neutral" size="sm">
+              {`Detected: ${DELIMITER_LABEL[loaded.delimiter]}`}
+            </Badge>
+          )}
           {csv.modified && (
             <Badge variant="soft" tone="warning" size="sm">
               Modified
@@ -220,13 +255,6 @@ export default function CsvViewer() {
           )}
         </Inline>
         <Inline align="center" gap="2" wrap>
-          <ExportMenu
-            table={() => ({ columns: visibleColumns, rows: viewRows })}
-            filteredRows={filtered}
-            sourceName={loaded.name}
-            settings={settings}
-            onSettings={updateSettings}
-          />
           <SendToMenu
             sourceTool={TOOL_ID}
             label="Send JSON to"
@@ -241,43 +269,25 @@ export default function CsvViewer() {
               csvTextPayload(viewRows, visibleColumns, loaded.name)
             }
           />
-          <Button
-            size="sm"
-            variant="secondary"
-            leftIcon={<IconSparkles size="sm" />}
-            onClick={generateMore}
-          >
-            Generate more like this
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconRefreshCw size="sm" />}
-            onClick={() => {
-              csv.clear();
-              setPaste('');
-              lastPaste.current = '';
+          <ParseOptions
+            choices={csv.choices}
+            onChange={(patch) => {
+              if (patch.delimiter)
+                updateSettings({ delimiterChoice: patch.delimiter });
+              if (patch.encoding) updateSettings({ encoding: patch.encoding });
+              resetView();
+              csv.changeChoices(patch);
             }}
-          >
-            New data
-          </Button>
+            detected={{
+              delimiter: loaded.delimiter,
+              encoding: loaded.encoding,
+            }}
+            fromFile={csv.source?.kind === 'file'}
+            columns={loaded.columns}
+            disabled={csv.job.status === 'running'}
+          />
         </Inline>
       </Inline>
-
-      <ParseOptions
-        choices={csv.choices}
-        onChange={(patch) => {
-          if (patch.delimiter)
-            updateSettings({ delimiterChoice: patch.delimiter });
-          if (patch.encoding) updateSettings({ encoding: patch.encoding });
-          resetView();
-          csv.changeChoices(patch);
-        }}
-        detected={{ delimiter: loaded.delimiter, encoding: loaded.encoding }}
-        fromFile={csv.source?.kind === 'file'}
-        columns={loaded.columns}
-        disabled={csv.job.status === 'running'}
-      />
 
       {loaded.warnings.length > 0 && (
         <WarningsAlert warnings={loaded.warnings} />
@@ -319,26 +329,28 @@ export default function CsvViewer() {
 
         <TabsContent value="table">
           <Stack gap="3" className="pt-4">
-            <Inline justify="between" align="center" gap="3" wrap>
-              <EditToolbar
-                columns={table.columns}
-                canUndo={csv.canUndo}
-                canRedo={csv.canRedo}
-                onUndo={csv.undo}
-                onRedo={csv.redo}
-                onEdit={csv.apply}
-                rowCount={table.rows.length}
-                selectedRows={selectedRows}
-              />
-              <SwitchField
-                label="Compact rows"
-                checked={settings.density === 'compact'}
-                onCheckedChange={(c) =>
-                  updateSettings({ density: c ? 'compact' : 'comfortable' })
-                }
-              />
-            </Inline>
             <GridView
+              toolbar={
+                <EditToolbar
+                  columns={table.columns}
+                  canUndo={csv.canUndo}
+                  canRedo={csv.canRedo}
+                  onUndo={csv.undo}
+                  onRedo={csv.redo}
+                  onEdit={csv.apply}
+                  rowCount={table.rows.length}
+                  selectedRows={selectedRows}
+                />
+              }
+              trailing={
+                <SwitchField
+                  label="Compact rows"
+                  checked={settings.density === 'compact'}
+                  onCheckedChange={(c) =>
+                    updateSettings({ density: c ? 'compact' : 'comfortable' })
+                  }
+                />
+              }
               table={table}
               types={types}
               indices={view.indices}

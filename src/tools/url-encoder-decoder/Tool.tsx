@@ -7,8 +7,6 @@ import {
   AccordionTrigger,
   Badge,
   Button,
-  Card,
-  CardBody,
   ErrorState,
   Inline,
   Label,
@@ -19,6 +17,7 @@ import {
   SendToMenu,
   Stack,
   SwitchField,
+  ControlBar,
   Text,
   TextInputPanel,
   usePaneTab,
@@ -177,72 +176,74 @@ const TextEncoderTool: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Card>
-        <CardBody>
-          <Stack gap="4">
-            <Inline gap="4" align="end" wrap>
-              <Stack gap="1">
-                <Label htmlFor="text-codec">Codec</Label>
-                <div className="w-64">
-                  <Select
-                    id="text-codec"
-                    value={codec.id}
-                    onValueChange={(v) => {
-                      setStable(null);
-                      update({ codec: v as CodecId });
-                    }}
-                    items={CODECS.map((c) => ({ value: c.id, label: c.label }))}
-                  />
-                </div>
-              </Stack>
-              <SegmentedControl<Direction>
-                label="Direction"
-                value={direction}
-                onChange={(d) => {
-                  setStable(null);
-                  update({ direction: d });
-                }}
-                options={[
-                  { value: 'encode', label: 'Encode' },
-                  { value: 'decode', label: 'Decode' },
-                ]}
-              />
-              <SwitchField
-                label="Each line separately"
-                checked={lines}
-                onCheckedChange={(v) => update({ perLine: v })}
-              />
+      <ControlBar
+        start={
+          <>
+            <Inline gap="2" align="center" wrap={false}>
+              <Label htmlFor="text-codec">Codec</Label>
+              <div className="w-56">
+                <Select
+                  id="text-codec"
+                  size="sm"
+                  value={codec.id}
+                  onValueChange={(v) => {
+                    setStable(null);
+                    update({ codec: v as CodecId });
+                  }}
+                  items={CODECS.map((c) => ({ value: c.id, label: c.label }))}
+                />
+              </div>
             </Inline>
-            <Inline gap="2" align="center" wrap>
+            <SegmentedControl<Direction>
+              label="Direction"
+              size="sm"
+              value={direction}
+              onChange={(d) => {
+                setStable(null);
+                update({ direction: d });
+              }}
+              options={[
+                { value: 'encode', label: 'Encode' },
+                { value: 'decode', label: 'Decode' },
+              ]}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<IconArrowRightLeft size="sm" />}
+              onClick={swap}
+              disabled={!output}
+            >
+              Swap
+            </Button>
+          </>
+        }
+        end={
+          <>
+            {shownStable && (
+              <Badge variant="soft" tone="accent" size="sm">
+                {`Decoded in ${shownStable.rounds} round${shownStable.rounds === 1 ? '' : 's'}`}
+              </Badge>
+            )}
+            {direction === 'decode' && (
               <Button
                 variant="secondary"
                 size="sm"
-                leftIcon={<IconArrowRightLeft size="sm" />}
-                onClick={swap}
-                disabled={!output}
+                leftIcon={<IconRefreshCw size="sm" />}
+                onClick={runStable}
+                disabled={!input || !!result.error}
               >
-                Swap
+                Decode until stable
               </Button>
-              {direction === 'decode' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<IconRefreshCw size="sm" />}
-                  onClick={runStable}
-                  disabled={!input || !!result.error}
-                >
-                  Decode until stable
-                </Button>
-              )}
-              {shownStable && (
-                <Badge variant="soft" tone="accent" size="sm">
-                  {`Decoded in ${shownStable.rounds} round${shownStable.rounds === 1 ? '' : 's'}`}
-                </Badge>
-              )}
-            </Inline>
-          </Stack>
-        </CardBody>
-      </Card>
+            )}
+            <SwitchField
+              label="Each line separately"
+              checked={lines}
+              onCheckedChange={(v) => update({ perLine: v })}
+            />
+          </>
+        }
+      />
 
       <PaneTabs
         id="url-encoder-decoder"

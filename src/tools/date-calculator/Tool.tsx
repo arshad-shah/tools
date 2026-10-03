@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Inline,
   ShareButton,
+  ToolActions,
   Stack,
   Tabs,
   TabsContent,
@@ -86,9 +86,9 @@ const DateCalculator: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Inline justify="end">
+      <ToolActions>
         <ShareButton share={shareState} />
-      </Inline>
+      </ToolActions>
       <Tabs
         value={tab}
         onValueChange={(v) => setTab(v as DateTab)}

@@ -14,6 +14,7 @@ import {
   PaneTabs,
   SegmentedControl,
   ShareButton,
+  ToolActions,
   Stack,
   usePaneTab,
 } from '@/shared/ui';
@@ -220,63 +221,69 @@ export default function QrCodeGenerator() {
   // One pane at a time (ruling R41); Preview gets a dot when the code
   // changes while another pane is shown.
   return (
-    <PaneTabs
-      id="qr-code-generator"
-      label="QR panes"
-      value={tab.value}
-      onValueChange={tab.show}
-      actions={SECRET_TYPES.has(type) ? null : <ShareButton share={share} />}
-      panes={[
-        {
-          id: 'content',
-          label: 'Content',
-          content: (
-            <ContentForm
-              type={type}
-              onTypeChange={setType}
-              fields={fields}
-              onFieldChange={setField}
-            />
-          ),
-        },
-        {
-          id: 'style',
-          label: 'Style',
-          content: (
-            <StylePanel
-              settings={settings}
-              update={update}
-              logo={logo}
-              onLogoChange={setLogo}
-            />
-          ),
-        },
-        {
-          id: 'preview',
-          label: 'Preview',
-          changeKey: `${value}|${JSON.stringify(style)}`,
-          content: previewPane,
-        },
-        {
-          id: 'export',
-          label: 'Export',
-          content: (
-            <ExportPanel
-              value={value}
-              qrStyle={style}
-              settings={settings}
-              update={update}
-              baseName={`qr-${type}`}
-              disabled={empty}
-            />
-          ),
-        },
-        {
-          id: 'batch',
-          label: 'Batch',
-          content: <BatchPanel qrStyle={style} />,
-        },
-      ]}
-    />
+    <>
+      {SECRET_TYPES.has(type) ? null : (
+        <ToolActions>
+          <ShareButton share={share} />
+        </ToolActions>
+      )}
+      <PaneTabs
+        id="qr-code-generator"
+        label="QR panes"
+        value={tab.value}
+        onValueChange={tab.show}
+        panes={[
+          {
+            id: 'content',
+            label: 'Content',
+            content: (
+              <ContentForm
+                type={type}
+                onTypeChange={setType}
+                fields={fields}
+                onFieldChange={setField}
+              />
+            ),
+          },
+          {
+            id: 'style',
+            label: 'Style',
+            content: (
+              <StylePanel
+                settings={settings}
+                update={update}
+                logo={logo}
+                onLogoChange={setLogo}
+              />
+            ),
+          },
+          {
+            id: 'preview',
+            label: 'Preview',
+            changeKey: `${value}|${JSON.stringify(style)}`,
+            content: previewPane,
+          },
+          {
+            id: 'export',
+            label: 'Export',
+            content: (
+              <ExportPanel
+                value={value}
+                qrStyle={style}
+                settings={settings}
+                update={update}
+                baseName={`qr-${type}`}
+                disabled={empty}
+              />
+            ),
+          },
+          {
+            id: 'batch',
+            label: 'Batch',
+            content: <BatchPanel qrStyle={style} />,
+          },
+        ]}
+      />
+    </>
   );
 }

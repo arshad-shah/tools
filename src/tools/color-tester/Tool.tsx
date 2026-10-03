@@ -18,6 +18,7 @@ import {
   IconButton,
   Inline,
   ShareButton,
+  ToolActions,
   Stack,
 } from '@/shared/ui';
 import { IconX } from '@/shared/ui/icons';
@@ -134,10 +135,10 @@ const ColorTester = () => {
   return (
     <Box data-cvd={cvd} className="min-w-0">
       <Stack gap="4">
-        <Inline gap="3" justify="between" align="center" wrap>
+        <ToolActions>
           <CvdToggle value={cvd} onChange={setCvd} />
           <ShareButton share={share} />
-        </Inline>
+        </ToolActions>
         {showLoaded && (
           <Alert status="info">
             <Inline gap="2" justify="between" align="center" wrap={false}>

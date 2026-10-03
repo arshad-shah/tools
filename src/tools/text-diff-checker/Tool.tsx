@@ -1,17 +1,23 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { IconArrowRightLeft } from '@/shared/ui/icons';
+import {
+  IconArrowRightLeft,
+  IconChevronDown,
+  IconChevronUp,
+} from '@/shared/ui/icons';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Button,
   ErrorState,
   Inline,
   Kbd,
   PaneTabs,
   SegmentedControl,
   ShareButton,
+  IconButton,
+  ToolActions,
+  ControlBar,
   Stack,
   Text,
   TextInputPanel,
@@ -239,32 +245,38 @@ const TextDiff: React.FC = () => {
   const stats = job.result?.stats;
   return (
     <Stack gap="4">
-      <Inline gap="3" wrap justify="between">
-        <SegmentedControl<DiffMode>
-          label="Comparison"
-          value={settings.mode}
-          onChange={(mode) => update({ mode })}
-          options={[
-            { value: 'text', label: 'Text' },
-            { value: 'json', label: 'JSON' },
-            { value: 'csv', label: 'CSV' },
-            { value: 'ignore-order', label: 'Ignore order' },
-          ]}
+      <ToolActions>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          label="Swap"
+          showLabel="desktop"
+          icon={IconArrowRightLeft}
+          onClick={swap}
+          disabled={!left && !right}
         />
-        <Inline gap="2">
-          <Button
-            variant="secondary"
+        <ExportMenu result={job.result} texts={texts} names={names} />
+        <ShareButton share={share} />
+      </ToolActions>
+      <ControlBar
+        start={
+          <SegmentedControl<DiffMode>
+            label="Comparison"
             size="sm"
-            onClick={swap}
-            disabled={!left && !right}
-          >
-            <IconArrowRightLeft size="sm" aria-hidden />
-            Swap
-          </Button>
-          <ExportMenu result={job.result} texts={texts} names={names} />
-          <ShareButton share={share} />
-        </Inline>
-      </Inline>
+            value={settings.mode}
+            onChange={(mode) => update({ mode })}
+            options={[
+              { value: 'text', label: 'Text' },
+              { value: 'json', label: 'JSON' },
+              { value: 'csv', label: 'CSV' },
+              { value: 'ignore-order', label: 'Ignore order' },
+            ]}
+          />
+        }
+        end={
+          textMode ? <DiffOptions settings={settings} update={update} /> : null
+        }
+      />
       <PaneTabs
         id="text-diff-checker"
         label="Texts to compare"
@@ -287,7 +299,6 @@ const TextDiff: React.FC = () => {
       />
       {textMode ? (
         <>
-          <DiffOptions settings={settings} update={update} />
           {job.error && (
             <ErrorState error={job.error} title="Could not compare" />
           )}
@@ -300,28 +311,33 @@ const TextDiff: React.FC = () => {
                     : `${stats.added} added, ${stats.removed} removed, ${stats.changed} changed`}
                   {job.pending ? ' (updating)' : ''}
                 </Text>
-                <Inline gap="2">
-                  <Button
+                <Inline gap="1" align="center" wrap={false}>
+                  <IconButton
                     size="sm"
                     variant="secondary"
+                    label="Previous change"
+                    icon={IconChevronUp}
                     onClick={() => go('prev')}
                     disabled={anchors.length === 0}
+                  />
+                  <Text
+                    size="sm"
+                    tone="muted"
+                    aria-live="polite"
+                    className="min-w-16 text-center tabular-nums"
                   >
-                    Previous change
-                  </Button>
-                  <Text size="sm" aria-live="polite">
                     {anchors.length === 0
                       ? 'No changes'
                       : `${position + 1 || '-'} of ${anchors.length}`}
                   </Text>
-                  <Button
+                  <IconButton
                     size="sm"
                     variant="secondary"
+                    label="Next change"
+                    icon={IconChevronDown}
                     onClick={() => go('next')}
                     disabled={anchors.length === 0}
-                  >
-                    Next change
-                  </Button>
+                  />
                 </Inline>
               </Inline>
               <ChangeStrip

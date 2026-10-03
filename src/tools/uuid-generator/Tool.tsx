@@ -7,13 +7,13 @@ import {
   ErrorState,
   Inline,
   Input,
-  Kbd,
   Label,
   NumberInput,
   SegmentedControl,
   Select,
   Stack,
   Text,
+  Tooltip,
   TextInputPanel,
 } from '@/shared/ui';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
@@ -150,16 +150,30 @@ const UuidGenerator: React.FC = () => {
       <Card>
         <CardBody>
           <Stack gap="4">
-            <SegmentedControl<Family>
-              label="Kind"
-              value={family}
-              onChange={(f) => update({ kind: f === 'uuid' ? 'v4' : f })}
-              options={[
-                { value: 'uuid', label: 'UUID' },
-                { value: 'ulid', label: 'ULID' },
-                { value: 'nanoid', label: 'NanoID' },
-              ]}
-            />
+            <Inline justify="between" align="center" gap="3">
+              <SegmentedControl<Family>
+                label="Kind"
+                size="sm"
+                value={family}
+                onChange={(f) => update({ kind: f === 'uuid' ? 'v4' : f })}
+                options={[
+                  { value: 'uuid', label: 'UUID' },
+                  { value: 'ulid', label: 'ULID' },
+                  { value: 'nanoid', label: 'NanoID' },
+                ]}
+              />
+              <Tooltip content="Generate new IDs" shortcut="Mod+Enter">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<IconRefreshCw size="sm" />}
+                  aria-keyshortcuts="Control+Enter"
+                  onClick={() => setNonce((n) => n + 1)}
+                >
+                  Generate
+                </Button>
+              </Tooltip>
+            </Inline>
             <Inline gap="4" align="end" wrap>
               {family === 'uuid' && (
                 <Stack gap="1">
@@ -294,28 +308,6 @@ const UuidGenerator: React.FC = () => {
       </Card>
 
       {error && <ErrorState title="Could not generate IDs" error={error} />}
-      <Inline gap="2" align="center" wrap>
-        <Button
-          variant="primary"
-          leftIcon={<IconRefreshCw size="sm" />}
-          onClick={() => setNonce((n) => n + 1)}
-        >
-          Generate
-        </Button>
-        <Kbd keys="Mod+Enter" />
-        {(['txt', 'csv', 'json'] as const).map((f) => (
-          <Button
-            key={f}
-            variant="secondary"
-            size="sm"
-            leftIcon={<IconDownload size="sm" />}
-            disabled={ids.length === 0}
-            onClick={() => download(f)}
-          >
-            Download .{f}
-          </Button>
-        ))}
-      </Inline>
       <div data-dynamic="">
         <TextInputPanel
           label="Generated IDs"
@@ -323,6 +315,27 @@ const UuidGenerator: React.FC = () => {
           onChange={() => {}}
           language="plain"
           readOnly
+          toolGroups={[
+            {
+              id: 'download',
+              label: 'Download',
+              items: [
+                {
+                  id: 'download',
+                  label: 'Download',
+                  icon: IconDownload,
+                  kind: 'menu',
+                  disabled:
+                    ids.length === 0 ? 'Nothing to download yet' : undefined,
+                  menu: (['txt', 'csv', 'json'] as const).map((f) => ({
+                    id: f,
+                    label: `Download .${f}`,
+                    onSelect: () => download(f),
+                  })),
+                },
+              ],
+            },
+          ]}
           minHeight={120}
           maxHeight={420}
           placeholder={s.kind === 'v5' ? 'Enter a name' : ''}

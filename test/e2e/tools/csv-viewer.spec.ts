@@ -54,6 +54,7 @@ test('the Windows-1252 fixture shows the euro sign with encoding auto', async ({
   );
   const euro = String.fromCodePoint(0x20ac);
   await expect(cell(page, `3,50 ${euro}`)).toBeVisible();
+  await page.getByRole('button', { name: /Parse options/ }).click();
   await expect(page.getByLabel('Encoding')).toContainText(
     'Auto (Windows-1252)',
   );

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+  Divider,
   Inline,
   Input,
   Label,
@@ -51,7 +52,18 @@ export const PassphraseTab: React.FC<PassphraseTabProps> = ({
   }, [list, key, nonce]);
 
   return (
-    <Stack gap="4">
+    <Stack gap="5">
+      {list ? (
+        <ResultCard
+          value={value}
+          bits={passphraseEntropy(s.words, list.length, opts)}
+          label="passphrase"
+          onRegenerate={onRegenerate}
+        />
+      ) : (
+        <LoadingState label="Loading the word list" />
+      )}
+      <Divider />
       <Stack gap="1">
         <Inline justify="between" align="center">
           <Label htmlFor="pp-words">Words</Label>
@@ -103,16 +115,6 @@ export const PassphraseTab: React.FC<PassphraseTabProps> = ({
           onCheckedChange={(v) => update({ addSymbol: v })}
         />
       </Inline>
-      {list ? (
-        <ResultCard
-          value={value}
-          bits={passphraseEntropy(s.words, list.length, opts)}
-          label="passphrase"
-          onRegenerate={onRegenerate}
-        />
-      ) : (
-        <LoadingState label="Loading the word list" />
-      )}
       <Text size="xs" tone="subtle">
         Words from the EFF large wordlist (7,776 words, CC BY 3.0 US).
       </Text>

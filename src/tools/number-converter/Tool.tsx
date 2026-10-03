@@ -6,8 +6,8 @@ import {
   AccordionTrigger,
   Card,
   CardBody,
-  Inline,
   ShareButton,
+  ToolActions,
   Stack,
   Text,
 } from '@/shared/ui';
@@ -144,9 +144,9 @@ const NumberConverter: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Inline justify="end">
+      <ToolActions>
         <ShareButton share={shareState} />
-      </Inline>
+      </ToolActions>
       <Card>
         <CardBody>
           <BaseFields

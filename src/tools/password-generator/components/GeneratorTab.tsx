@@ -4,6 +4,8 @@ import {
   AlertDescription,
   Inline,
   Input,
+  OptionsMenu,
+  Divider,
   Label,
   NumberInput,
   Slider,
@@ -54,7 +56,20 @@ export const GeneratorTab: React.FC<GeneratorTabProps> = ({
   const bits = entropyBits(poolSizeFor(opts), opts.length);
 
   return (
-    <Stack gap="4">
+    <Stack gap="5">
+      {generated.error ? (
+        <Alert status="danger">
+          <AlertDescription>{generated.error}</AlertDescription>
+        </Alert>
+      ) : (
+        <ResultCard
+          value={generated.value!}
+          bits={bits}
+          label={pin ? 'PIN' : 'password'}
+          onRegenerate={onRegenerate}
+        />
+      )}
+      <Divider />
       {pin ? (
         <Stack gap="3">
           <Inline gap="2" align="center">
@@ -139,52 +154,49 @@ export const GeneratorTab: React.FC<GeneratorTabProps> = ({
               checked={s.noLeadingSymbol}
               onCheckedChange={(v) => update({ noLeadingSymbol: v })}
             />
-          </Inline>
-          <Inline gap="4" wrap align="end">
-            <Stack gap="1">
-              <Label htmlFor="pw-min">At least this many of each</Label>
-              <NumberInput
-                id="pw-min"
-                value={s.minPerClass}
-                onValueChange={(v) => update({ minPerClass: v })}
-                min={0}
-                max={10}
-              />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor="pw-include">Also use</Label>
-              <Input
-                id="pw-include"
-                value={s.includeChars}
-                onChange={(v) => update({ includeChars: v })}
-                placeholder="Extra characters"
-                spellCheck={false}
-              />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor="pw-exclude">Never use</Label>
-              <Input
-                id="pw-exclude"
-                value={s.excludeChars}
-                onChange={(v) => update({ excludeChars: v })}
-                placeholder="Characters to leave out"
-                spellCheck={false}
-              />
-            </Stack>
+            <OptionsMenu
+              label="Custom characters"
+              title="Custom characters"
+              align="start"
+              changed={
+                Number(s.minPerClass !== 1) +
+                Number(s.includeChars !== '') +
+                Number(s.excludeChars !== '')
+              }
+            >
+              <Stack gap="1">
+                <Label htmlFor="pw-min">At least this many of each</Label>
+                <NumberInput
+                  id="pw-min"
+                  value={s.minPerClass}
+                  onValueChange={(v) => update({ minPerClass: v })}
+                  min={0}
+                  max={10}
+                />
+              </Stack>
+              <Stack gap="1">
+                <Label htmlFor="pw-include">Also use</Label>
+                <Input
+                  id="pw-include"
+                  value={s.includeChars}
+                  onChange={(v) => update({ includeChars: v })}
+                  placeholder="Extra characters"
+                  spellCheck={false}
+                />
+              </Stack>
+              <Stack gap="1">
+                <Label htmlFor="pw-exclude">Never use</Label>
+                <Input
+                  id="pw-exclude"
+                  value={s.excludeChars}
+                  onChange={(v) => update({ excludeChars: v })}
+                  placeholder="Characters to leave out"
+                  spellCheck={false}
+                />
+              </Stack>
+            </OptionsMenu>
           </Inline>
         </Stack>
-      )}
-      {generated.error ? (
-        <Alert status="danger">
-          <AlertDescription>{generated.error}</AlertDescription>
-        </Alert>
-      ) : (
-        <ResultCard
-          value={generated.value!}
-          bits={bits}
-          label={pin ? 'PIN' : 'password'}
-          onRegenerate={onRegenerate}
-        />
       )}
     </Stack>
   );

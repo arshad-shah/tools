@@ -1,12 +1,14 @@
 import {
   Button,
+  ControlBar,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Inline,
+  IconButton,
   Select,
   SwitchField,
+  ToolActions,
   Tooltip,
 } from '@/shared/ui';
 import {
@@ -61,51 +63,13 @@ export function ViewToolbar({
 }: ViewToolbarProps) {
   const { items, groups } = formatOptions(customFormats);
   return (
-    <Inline gap="2" wrap>
-      <div className="w-48">
-        <Select
-          aria-label="Log format"
-          size="sm"
-          value={format}
-          onValueChange={onFormat}
-          items={items}
-          groups={groups}
-        />
-      </div>
-      <Button
-        size="sm"
-        variant="ghost"
-        leftIcon={<IconPlus size="sm" />}
-        onClick={onNewFormat}
-      >
-        Custom format
-      </Button>
-      <SwitchField label="Wrap lines" checked={wrap} onCheckedChange={onWrap} />
-      <ColumnMenu columns={columns} onColumns={onColumns} />
-      <Inline gap="2" wrap className="ml-auto">
-        <Tooltip content="Jump to next error" shortcut="e">
-          <Button
-            size="sm"
-            leftIcon={<IconAlertTriangle size="sm" />}
-            disabled={!hasLog}
-            onClick={onNextError}
-          >
-            Jump to next error
-          </Button>
-        </Tooltip>
-        <Button
-          size="sm"
-          leftIcon={<IconSplit size="sm" />}
-          disabled={selectedCount !== 2}
-          onClick={onCompare}
-        >
-          Compare selected
-          {selectedCount > 0 ? ` (${selectedCount} of 2)` : ''}
-        </Button>
+    <>
+      <ToolActions>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Button
               size="sm"
+              variant="secondary"
               disabled={!hasLog}
               leftIcon={<IconDownload size="sm" />}
               rightIcon={<IconChevronDown size="sm" />}
@@ -113,7 +77,7 @@ export function ViewToolbar({
               Export
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent aria-label="Export formats">
+          <DropdownMenuContent align="end" aria-label="Export formats">
             {EXPORT_FORMATS.map((e) => (
               <DropdownMenuItem key={e.fmt} onClick={() => onExport(e.fmt)}>
                 {e.label}
@@ -121,7 +85,61 @@ export function ViewToolbar({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      </Inline>
-    </Inline>
+      </ToolActions>
+      <ControlBar
+        start={
+          <>
+            <div className="w-48">
+              <Select
+                aria-label="Log format"
+                size="sm"
+                value={format}
+                onValueChange={onFormat}
+                items={items}
+                groups={groups}
+              />
+            </div>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              label="Custom format"
+              icon={IconPlus}
+              onClick={onNewFormat}
+            />
+            <ColumnMenu columns={columns} onColumns={onColumns} />
+            <SwitchField
+              label="Wrap lines"
+              checked={wrap}
+              onCheckedChange={onWrap}
+            />
+          </>
+        }
+        end={
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={<IconSplit size="sm" />}
+              disabled={selectedCount !== 2}
+              onClick={onCompare}
+            >
+              Compare selected
+              {selectedCount > 0 ? ` (${selectedCount} of 2)` : ''}
+            </Button>
+            <Tooltip content="Jump to next error" shortcut="e">
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<IconAlertTriangle size="sm" />}
+                disabled={!hasLog}
+                onClick={onNextError}
+              >
+                Next error
+              </Button>
+            </Tooltip>
+          </>
+        }
+      />
+    </>
   );
 }

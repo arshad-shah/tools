@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { IconMenu } from '@/shared/ui/icons';
-import { Box, Button, Center, Container, Inline, Stack } from '@/shared/ui';
+import {
+  Box,
+  Button,
+  Center,
+  Container,
+  Stack,
+  ToolActions,
+} from '@/shared/ui';
 import { MenuDrawer } from './components/MenuDrawer';
 import { TimerCard } from './components/TimerCard';
 
@@ -8,9 +15,9 @@ import { TimerCard } from './components/TimerCard';
 const Pomodoro: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <Container size="md">
+    <Container size="md" className="px-0 sm:px-0">
       <Stack gap="4">
-        <Inline justify="end">
+        <ToolActions>
           <Button
             variant="secondary"
             size="sm"
@@ -19,7 +26,7 @@ const Pomodoro: React.FC = () => {
           >
             Menu
           </Button>
-        </Inline>
+        </ToolActions>
         <Center>
           <Box className="w-full">
             <TimerCard />

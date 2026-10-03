@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Card,
-  CardBody,
   PrivacyNote,
   Stack,
+  Text,
+  ControlBar,
   Tabs,
   TabsContent,
   TabsList,
@@ -16,6 +16,7 @@ import {
 } from '@/tools/password-generator/lib/passphrase';
 import { FileMode } from './components/FileMode';
 import { KdfOptions } from './components/KdfOptions';
+import { kdfHint } from './lib/kdf-hint';
 import { TextMode } from './components/TextMode';
 import { useCryptoJob } from './hooks/useCryptoJob';
 import { encryptSettings } from './settings';
@@ -76,23 +77,30 @@ const TextEncrypt: React.FC = () => {
 
   return (
     <Stack gap="4">
-      <Card>
-        <CardBody>
-          <KdfOptions
-            value={settings.kdf}
-            onChange={(kdf) => update({ kdf })}
-          />
-        </CardBody>
-      </Card>
       <Tabs
         value={tab}
         onValueChange={(v) => setTab(v as 'text' | 'file')}
         variant="soft"
       >
-        <TabsList aria-label="Mode">
-          <TabsTrigger value="text">Text</TabsTrigger>
-          <TabsTrigger value="file">File</TabsTrigger>
-        </TabsList>
+        <ControlBar
+          start={
+            <TabsList aria-label="Mode">
+              <TabsTrigger value="text">Text</TabsTrigger>
+              <TabsTrigger value="file">File</TabsTrigger>
+            </TabsList>
+          }
+          end={
+            <KdfOptions
+              value={settings.kdf}
+              onChange={(kdf) => update({ kdf })}
+            />
+          }
+          footer={
+            <Text size="xs" tone="subtle">
+              {kdfHint(settings.kdf)}
+            </Text>
+          }
+        />
         <TabsContent value="text">
           <div className="pt-4">
             <TextMode {...shared} />

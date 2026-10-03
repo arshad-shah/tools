@@ -38,6 +38,7 @@ describe('HashGenerator', () => {
       expect(screen.getByTestId('hash-sha256').textContent).toBe(ABC_SHA256),
     );
     expect(screen.queryByTestId('hash-blake3')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Algorithms/ }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'BLAKE3' }));
     await waitFor(() =>
       expect(screen.getByTestId('hash-blake3').textContent).toMatch(

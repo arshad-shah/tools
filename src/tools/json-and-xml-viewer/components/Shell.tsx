@@ -16,6 +16,7 @@ import {
   PaneTabs,
   SegmentedControl,
   SendToMenu,
+  ToolActions,
   Stack,
   Text,
   TextInputPanel,
@@ -210,43 +211,35 @@ export function Shell() {
         }
       : null;
 
+  const formatSwitch = (
+    <SegmentedControl<DocFormat>
+      label="Format"
+      size="sm"
+      value={format}
+      onChange={setManual}
+      options={FORMATS}
+    />
+  );
   const toolbar = (
-    <Inline justify="between" gap="2" wrap>
-      <SegmentedControl<DocFormat>
-        label="Format"
-        size="sm"
-        value={format}
-        onChange={setManual}
-        options={FORMATS}
-      />
-      <Inline gap="2" wrap>
-        <Button
+    <ToolActions>
+      <SendToMenu size="sm" sourceTool={TOOL_ID} payload={docPayload} />
+      {doc && isTabular(value) ? (
+        <SendToMenu
           size="sm"
-          variant="secondary"
-          disabled={!doc}
-          onClick={download}
-        >
-          Download
-        </Button>
-        <SendToMenu size="sm" sourceTool={TOOL_ID} payload={docPayload} />
-        {doc && isTabular(value) ? (
-          <SendToMenu
-            size="sm"
-            label="Send as CSV"
-            sourceTool={TOOL_ID}
-            payload={csvPayload}
-          />
-        ) : null}
-        {doc && !xml ? (
-          <SendToMenu
-            size="sm"
-            label="Send schema"
-            sourceTool={TOOL_ID}
-            payload={schemaPayload}
-          />
-        ) : null}
-      </Inline>
-    </Inline>
+          label="Send as CSV"
+          sourceTool={TOOL_ID}
+          payload={csvPayload}
+        />
+      ) : null}
+      {doc && !xml ? (
+        <SendToMenu
+          size="sm"
+          label="Send schema"
+          sourceTool={TOOL_ID}
+          payload={schemaPayload}
+        />
+      ) : null}
+    </ToolActions>
   );
 
   const sourcePane = (
@@ -364,6 +357,7 @@ export function Shell() {
         label="Viewer panes"
         value={settings.tab}
         onValueChange={(t) => update({ tab: t as ViewerTab })}
+        actions={formatSwitch}
         panes={TAB_ORDER.map((t) => ({
           id: t,
           label: TAB_LABEL[t],

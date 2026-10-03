@@ -185,7 +185,7 @@ export const DropdownMenuItem: React.FC<ItemProps> = ({
         ctx.setOpen(false);
       }}
       className={cn(
-        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors duration-fast hover:bg-surface-2 focus-visible:bg-surface-2',
+        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors duration-fast hover:bg-surface-2 focus-visible:bg-surface-2 disabled:pointer-events-none disabled:opacity-50',
         destructive ? 'text-danger' : 'text-fg',
         className,
       )}

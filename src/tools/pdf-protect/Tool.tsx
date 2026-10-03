@@ -6,6 +6,7 @@ import {
   CardBody,
   Checkbox,
   Inline,
+  Heading,
   Input,
   Label,
   Select,
@@ -184,85 +185,95 @@ const ProtectTool: React.FC<ToolProps> = () => {
                     ' · its current protection is replaced by the new password'}
                 </Text>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Stack gap="2">
-                  <Label htmlFor="pp-user">Password to open</Label>
-                  <Input
-                    id="pp-user"
-                    type="password"
-                    autoComplete="new-password"
-                    value={passwords.userPassword}
-                    onChange={(v) => setPassword('userPassword', v)}
-                  />
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Stack gap="4" role="group" aria-labelledby="pp-pw-heading">
+                  <Heading level={2} size="sm" id="pp-pw-heading">
+                    Passwords
+                  </Heading>
+                  <Stack gap="2">
+                    <Label htmlFor="pp-user">Password to open</Label>
+                    <Input
+                      id="pp-user"
+                      type="password"
+                      autoComplete="new-password"
+                      value={passwords.userPassword}
+                      onChange={(v) => setPassword('userPassword', v)}
+                    />
+                  </Stack>
+                  <Stack gap="2">
+                    <Label htmlFor="pp-confirm">Confirm password</Label>
+                    <Input
+                      id="pp-confirm"
+                      type="password"
+                      autoComplete="new-password"
+                      value={passwords.confirmPassword}
+                      onChange={(v) => setPassword('confirmPassword', v)}
+                    />
+                  </Stack>
+                  <Stack gap="2">
+                    <Label htmlFor="pp-owner">
+                      Permissions password (optional)
+                    </Label>
+                    <Input
+                      id="pp-owner"
+                      type="password"
+                      autoComplete="new-password"
+                      value={passwords.ownerPassword}
+                      onChange={(v) => setPassword('ownerPassword', v)}
+                    />
+                    <Text size="sm" tone="muted">
+                      Leave blank to lock the permissions with a random password
+                      nobody knows.
+                    </Text>
+                  </Stack>
+                  {showProblem && (
+                    <Text size="sm" className="text-danger" role="status">
+                      {problem.message}
+                    </Text>
+                  )}
                 </Stack>
-                <Stack gap="2">
-                  <Label htmlFor="pp-confirm">Confirm password</Label>
-                  <Input
-                    id="pp-confirm"
-                    type="password"
-                    autoComplete="new-password"
-                    value={passwords.confirmPassword}
-                    onChange={(v) => setPassword('confirmPassword', v)}
-                  />
-                </Stack>
-                <Stack gap="2">
-                  <Label htmlFor="pp-owner">
-                    Permissions password (optional)
-                  </Label>
-                  <Input
-                    id="pp-owner"
-                    type="password"
-                    autoComplete="new-password"
-                    value={passwords.ownerPassword}
-                    onChange={(v) => setPassword('ownerPassword', v)}
-                  />
-                  <Text size="sm" tone="muted">
-                    Leave blank to lock the permissions with a random password
-                    nobody knows.
-                  </Text>
+                <Stack gap="4" role="group" aria-labelledby="pp-perm-heading">
+                  <Heading level={2} size="sm" id="pp-perm-heading">
+                    Permissions
+                  </Heading>
+                  <Stack gap="3">
+                    <Stack gap="2">
+                      <Label htmlFor="pp-print">Printing</Label>
+                      <Select
+                        id="pp-print"
+                        value={choices.printing}
+                        items={PRINT_ITEMS}
+                        onValueChange={(v) =>
+                          setPermission({
+                            printing: v as PermissionChoices['printing'],
+                          })
+                        }
+                        className="sm:max-w-64"
+                      />
+                    </Stack>
+                    {FLAGS.map(({ key, id, label }) => {
+                      // Comments imply form filling in PDF readers.
+                      const implied = key === 'fillForms' && choices.annotate;
+                      return (
+                        <Inline key={key} gap="2" align="center" wrap>
+                          <Checkbox
+                            id={id}
+                            checked={choices[key] || implied}
+                            disabled={implied}
+                            onCheckedChange={(v) => setPermission({ [key]: v })}
+                          />
+                          <Label htmlFor={id}>{label}</Label>
+                          {implied && (
+                            <Text size="sm" tone="muted">
+                              Included when comments are allowed.
+                            </Text>
+                          )}
+                        </Inline>
+                      );
+                    })}
+                  </Stack>
                 </Stack>
               </div>
-              {showProblem && (
-                <Text size="sm" className="text-danger" role="status">
-                  {problem.message}
-                </Text>
-              )}
-              <Stack gap="3">
-                <Stack gap="2">
-                  <Label htmlFor="pp-print">Printing</Label>
-                  <Select
-                    id="pp-print"
-                    value={choices.printing}
-                    items={PRINT_ITEMS}
-                    onValueChange={(v) =>
-                      setPermission({
-                        printing: v as PermissionChoices['printing'],
-                      })
-                    }
-                    className="max-w-64"
-                  />
-                </Stack>
-                {FLAGS.map(({ key, id, label }) => {
-                  // Comments imply form filling in PDF readers.
-                  const implied = key === 'fillForms' && choices.annotate;
-                  return (
-                    <Inline key={key} gap="2" align="center" wrap>
-                      <Checkbox
-                        id={id}
-                        checked={choices[key] || implied}
-                        disabled={implied}
-                        onCheckedChange={(v) => setPermission({ [key]: v })}
-                      />
-                      <Label htmlFor={id}>{label}</Label>
-                      {implied && (
-                        <Text size="sm" tone="muted">
-                          Included when comments are allowed.
-                        </Text>
-                      )}
-                    </Inline>
-                  );
-                })}
-              </Stack>
               <Text size="sm" tone="muted">
                 Uses AES-256. PDF readers enforce the permissions; the file
                 itself cannot stop a determined user from ignoring them.

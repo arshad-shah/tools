@@ -1,5 +1,12 @@
 import { useId } from 'react';
-import { Inline, Label, NumberInput, Select, SwitchField } from '@/shared/ui';
+import {
+  Label,
+  NumberInput,
+  OptionsMenu,
+  Select,
+  Stack,
+  SwitchField,
+} from '@/shared/ui';
 import {
   SQL_DIALECT_LABEL,
   SQL_DIALECTS,
@@ -22,7 +29,7 @@ interface OptionsPanelProps {
   onMangleChange(mangle: boolean): void;
 }
 
-/** Options for the chosen language (Prettier subset, SQL, minifier). */
+/** Options for the chosen language (Prettier subset, SQL, minifier), behind one button. */
 export function OptionsPanel({
   language,
   options,
@@ -39,47 +46,37 @@ export function OptionsPanel({
   const sql = language === 'sql';
   const prettier = !sql && language !== 'xml';
   return (
-    <Inline gap="4" align="center" wrap>
-      <Inline gap="2" align="center" wrap={false}>
-        <Label htmlFor={indentId}>Indent</Label>
-        <Select
-          id={indentId}
-          value={String(options.indent)}
-          onValueChange={(v) =>
-            onChange({ indent: v === 'tab' ? 'tab' : (Number(v) as 2 | 4) })
-          }
-          items={[
-            { value: '2', label: '2 spaces' },
-            { value: '4', label: '4 spaces' },
-            { value: 'tab', label: 'Tab' },
-          ]}
-        />
-      </Inline>
-      {prettier && (
-        <Inline gap="2" align="center" wrap={false}>
-          <Label htmlFor={widthId}>Print width</Label>
-          <NumberInput
-            id={widthId}
-            value={options.printWidth}
-            min={20}
-            max={320}
-            onValueChange={(v) => onChange({ printWidth: v })}
+    <OptionsMenu title="Formatting options" width="w-96">
+      <div className="grid grid-cols-2 gap-3">
+        <Stack gap="1">
+          <Label htmlFor={indentId}>Indent</Label>
+          <Select
+            id={indentId}
+            value={String(options.indent)}
+            onValueChange={(v) =>
+              onChange({ indent: v === 'tab' ? 'tab' : (Number(v) as 2 | 4) })
+            }
+            items={[
+              { value: '2', label: '2 spaces' },
+              { value: '4', label: '4 spaces' },
+              { value: 'tab', label: 'Tab' },
+            ]}
           />
-        </Inline>
-      )}
-      {js && (
-        <>
-          <SwitchField
-            label="Single quotes"
-            checked={options.singleQuote}
-            onCheckedChange={(v) => onChange({ singleQuote: v })}
-          />
-          <SwitchField
-            label="Semicolons"
-            checked={options.semi}
-            onCheckedChange={(v) => onChange({ semi: v })}
-          />
-          <Inline gap="2" align="center" wrap={false}>
+        </Stack>
+        {prettier && (
+          <Stack gap="1">
+            <Label htmlFor={widthId}>Print width</Label>
+            <NumberInput
+              id={widthId}
+              value={options.printWidth}
+              min={20}
+              max={320}
+              onValueChange={(v) => onChange({ printWidth: v })}
+            />
+          </Stack>
+        )}
+        {js && (
+          <Stack gap="1">
             <Label htmlFor={commaId}>Trailing commas</Label>
             <Select
               id={commaId}
@@ -93,7 +90,54 @@ export function OptionsPanel({
                 { value: 'none', label: 'None' },
               ]}
             />
-          </Inline>
+          </Stack>
+        )}
+        {sql && (
+          <>
+            <Stack gap="1">
+              <Label htmlFor={dialectId}>Dialect</Label>
+              <Select
+                id={dialectId}
+                value={options.sqlDialect}
+                onValueChange={(v) =>
+                  onChange({ sqlDialect: v as FormatOptions['sqlDialect'] })
+                }
+                items={SQL_DIALECTS.map((d) => ({
+                  value: d,
+                  label: SQL_DIALECT_LABEL[d],
+                }))}
+              />
+            </Stack>
+            <Stack gap="1">
+              <Label htmlFor={caseId}>Keywords</Label>
+              <Select
+                id={caseId}
+                value={options.keywordCase}
+                onValueChange={(v) =>
+                  onChange({ keywordCase: v as FormatOptions['keywordCase'] })
+                }
+                items={[
+                  { value: 'upper', label: 'Upper case' },
+                  { value: 'lower', label: 'Lower case' },
+                  { value: 'preserve', label: 'As written' },
+                ]}
+              />
+            </Stack>
+          </>
+        )}
+      </div>
+      {js && (
+        <>
+          <SwitchField
+            label="Single quotes"
+            checked={options.singleQuote}
+            onCheckedChange={(v) => onChange({ singleQuote: v })}
+          />
+          <SwitchField
+            label="Semicolons"
+            checked={options.semi}
+            onCheckedChange={(v) => onChange({ semi: v })}
+          />
         </>
       )}
       {prettier && (
@@ -103,39 +147,6 @@ export function OptionsPanel({
           onCheckedChange={(v) => onChange({ bracketSpacing: v })}
         />
       )}
-      {sql && (
-        <>
-          <Inline gap="2" align="center" wrap={false}>
-            <Label htmlFor={dialectId}>Dialect</Label>
-            <Select
-              id={dialectId}
-              value={options.sqlDialect}
-              onValueChange={(v) =>
-                onChange({ sqlDialect: v as FormatOptions['sqlDialect'] })
-              }
-              items={SQL_DIALECTS.map((d) => ({
-                value: d,
-                label: SQL_DIALECT_LABEL[d],
-              }))}
-            />
-          </Inline>
-          <Inline gap="2" align="center" wrap={false}>
-            <Label htmlFor={caseId}>Keywords</Label>
-            <Select
-              id={caseId}
-              value={options.keywordCase}
-              onValueChange={(v) =>
-                onChange({ keywordCase: v as FormatOptions['keywordCase'] })
-              }
-              items={[
-                { value: 'upper', label: 'Upper case' },
-                { value: 'lower', label: 'Lower case' },
-                { value: 'preserve', label: 'As written' },
-              ]}
-            />
-          </Inline>
-        </>
-      )}
       {language === 'javascript' && (
         <SwitchField
           label="Mangle names"
@@ -143,6 +154,6 @@ export function OptionsPanel({
           onCheckedChange={onMangleChange}
         />
       )}
-    </Inline>
+    </OptionsMenu>
   );
 }

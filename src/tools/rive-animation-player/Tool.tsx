@@ -126,7 +126,7 @@ export default function RiveAnimationPlayer() {
   ]);
 
   return (
-    <Container size="full">
+    <Container size="full" className="px-0 sm:px-0">
       <Grid max={3} gap="4">
         <Box className="lg:col-span-2">
           <Card>
@@ -247,9 +247,6 @@ export default function RiveAnimationPlayer() {
                 setBooleanValues={player.setBooleanValues}
                 numberValues={player.numberValues}
                 handleInputChange={player.handleInputChange}
-                status={status}
-                isPlaying={isPlaying}
-                togglePlayback={player.togglePlayback}
               />,
             ],
             stage: [

@@ -254,7 +254,8 @@ test.describe('URL Inspector', () => {
 
   test('Send to HTTP Client', async ({ page }) => {
     await inspect(page);
-    await page.getByRole('button', { name: 'Send to HTTP Client' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'HTTP Client' }).click();
     await atTool(page, 'api-request');
     await expect(
       page.getByRole('textbox', { name: 'Request URL' }),
@@ -263,7 +264,8 @@ test.describe('URL Inspector', () => {
 
   test('Make QR', async ({ page }) => {
     await inspect(page);
-    await page.getByRole('button', { name: 'Make QR' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
     await atTool(page, 'qr-code-generator');
     await expect(
       page.getByText('https://example.com/search').first(),
@@ -303,7 +305,8 @@ test('Regex Use as log format opens the Log Viewer format dialog', async ({
 
 test('Password Hash this', async ({ page }) => {
   await go(page, 'password-generator');
-  await page.getByRole('button', { name: 'Hash this' }).click();
+  await page.getByRole('button', { name: 'Use in' }).click();
+  await page.getByRole('menuitem', { name: 'Hash this' }).click();
   await atTool(page, 'hash-generator');
   await tab(page, 'Input');
   await expect(page.getByRole('textbox').first()).not.toHaveValue('');
@@ -311,8 +314,9 @@ test('Password Hash this', async ({ page }) => {
 
 test('Password Use as passphrase in Text Encrypt', async ({ page }) => {
   await go(page, 'password-generator');
+  await page.getByRole('button', { name: 'Use in' }).click();
   await page
-    .getByRole('button', { name: /Use as passphrase in Text Encrypt/ })
+    .getByRole('menuitem', { name: /Use as passphrase in Text Encrypt/ })
     .click();
   await atTool(page, 'text-encrypt');
   await expect(page.getByLabel('Passphrase', { exact: true })).not.toHaveValue(
@@ -324,7 +328,8 @@ test('Password Use for PDF Protect fills the protect password', async ({
   page,
 }) => {
   await go(page, 'password-generator');
-  await page.getByRole('button', { name: /PDF Protect|Protect PDF/ }).click();
+  await page.getByRole('button', { name: 'Use in' }).click();
+  await page.getByRole('menuitem', { name: /PDF Protect|Protect PDF/ }).click();
   await atTool(page, 'pdf-protect');
   await page
     .locator('input[type=file]')

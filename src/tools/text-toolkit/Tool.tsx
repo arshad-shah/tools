@@ -5,12 +5,10 @@ import { notify } from '@/shared/lib/notify';
 import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
 import {
   Grid,
-  IconButton,
-  Inline,
   SendToMenu,
+  ToolActions,
   Stack,
   TextInputPanel,
-  Tooltip,
 } from '@/shared/ui';
 import { IconRedo, IconUndo } from '@/shared/ui/icons';
 import { createRegexRunner } from '@/tools/regex-tester/lib/runner';
@@ -111,29 +109,7 @@ export default function TextToolkit({ definition }: ToolProps) {
 
   return (
     <Stack gap="6">
-      <Inline gap="2" wrap justify="end">
-        <Tooltip content="Undo" shortcut={UNDO_SHORTCUT}>
-          <IconButton
-            label="Undo"
-            showLabel="desktop"
-            icon={IconUndo}
-            size="sm"
-            variant="ghost"
-            disabled={!canUndo}
-            onClick={onUndo}
-          />
-        </Tooltip>
-        <Tooltip content="Redo" shortcut={REDO_SHORTCUT}>
-          <IconButton
-            label="Redo"
-            showLabel="desktop"
-            icon={IconRedo}
-            size="sm"
-            variant="ghost"
-            disabled={!canRedo}
-            onClick={redo}
-          />
-        </Tooltip>
+      <ToolActions>
         <SendToMenu
           sourceTool={definition.id}
           payload={() =>
@@ -147,7 +123,7 @@ export default function TextToolkit({ definition }: ToolProps) {
                 }
           }
         />
-      </Inline>
+      </ToolActions>
       <TextInputPanel
         value={text}
         onChange={doc.set}
@@ -155,6 +131,32 @@ export default function TextToolkit({ definition }: ToolProps) {
         label="Text"
         samples={SAMPLES}
         downloadName="text.txt"
+        toolGroups={[
+          {
+            id: 'history',
+            label: 'History',
+            items: [
+              {
+                id: 'undo',
+                label: 'Undo',
+                icon: IconUndo,
+                kind: 'button',
+                shortcut: UNDO_SHORTCUT,
+                disabled: !canUndo,
+                onSelect: onUndo,
+              },
+              {
+                id: 'redo',
+                label: 'Redo',
+                icon: IconRedo,
+                kind: 'button',
+                shortcut: REDO_SHORTCUT,
+                disabled: !canRedo,
+                onSelect: redo,
+              },
+            ],
+          },
+        ]}
         handoff={acceptsText}
         placeholder="Type or paste text"
         wrap

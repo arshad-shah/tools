@@ -19,9 +19,16 @@ import {
   Inline,
   Progress,
   Stack,
+  IconButton,
+  ToolActions,
   Statistic,
 } from '@/shared/ui';
-import { IconDownload, IconShieldCheck, IconX } from '@/shared/ui/icons';
+import {
+  IconDownload,
+  IconShieldCheck,
+  IconTrash,
+  IconX,
+} from '@/shared/ui/icons';
 import { BatchTable } from './components/BatchTable';
 import { ComparePanel } from './components/ComparePanel';
 import { EstimateCard } from './components/EstimateCard';
@@ -174,38 +181,35 @@ const ImageCompressor: React.FC = () => {
         <Stack gap="4" className="sm:col-span-1 lg:col-span-2">
           {hasEntries && (
             <>
-              <Inline gap="2" wrap justify="between" align="center">
-                <Inline gap="2" wrap>
+              <ToolActions>
+                {running && (
                   <Button
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
-                    leftIcon={<IconDownload size="sm" />}
-                    disabled={done.length === 0}
-                    onClick={() => void downloadZip()}
+                    leftIcon={<IconX size="sm" />}
+                    onClick={cancel}
                   >
-                    Download all as ZIP
+                    Cancel all
                   </Button>
-                  {running && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      leftIcon={<IconX size="sm" />}
-                      onClick={cancel}
-                    >
-                      Cancel all
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={clearAll}>
-                    Clear
-                  </Button>
-                </Inline>
-                {done.length > 0 && (
-                  <HandoffActions
-                    outputs={() => done.map(outputFile)}
-                    originals={entries.map((e) => e.file)}
-                  />
                 )}
-              </Inline>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  label="Clear"
+                  showLabel="desktop"
+                  icon={IconTrash}
+                  onClick={clearAll}
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<IconDownload size="sm" />}
+                  disabled={done.length === 0}
+                  onClick={() => void downloadZip()}
+                >
+                  Download all as ZIP
+                </Button>
+              </ToolActions>
 
               {running && (
                 <Progress
@@ -248,7 +252,7 @@ const ImageCompressor: React.FC = () => {
               </Box>
 
               {done.length > 0 && (
-                <Inline gap="2">
+                <Inline gap="2" justify="between" align="center">
                   <Badge
                     tone="success"
                     variant="soft"
@@ -256,6 +260,10 @@ const ImageCompressor: React.FC = () => {
                   >
                     Metadata removed (EXIF, GPS)
                   </Badge>
+                  <HandoffActions
+                    outputs={() => done.map(outputFile)}
+                    originals={entries.map((e) => e.file)}
+                  />
                 </Inline>
               )}
 

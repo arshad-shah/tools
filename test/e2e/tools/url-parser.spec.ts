@@ -27,7 +27,8 @@ test('Clean URL removes utm_* params', async ({ page }) => {
 test('Send to HTTP Client prefills the GET with params', async ({ page }) => {
   await page.goto(pathOf('url-parser'));
   await input(page).fill('https://api.tools.test/items?q=1&lang=en');
-  await page.getByRole('button', { name: 'Send to HTTP Client' }).click();
+  await page.getByRole('button', { name: 'Open in' }).click();
+  await page.getByRole('menuitem', { name: 'HTTP Client' }).click();
   await expect(page).toHaveURL(new RegExp(pathOf('api-request')));
   await expect(page.getByRole('textbox', { name: 'Request URL' })).toHaveValue(
     'https://api.tools.test/items',
@@ -40,7 +41,8 @@ test('Send to HTTP Client prefills the GET with params', async ({ page }) => {
 test('Make QR opens the generator with the URL', async ({ page }) => {
   await page.goto(pathOf('url-parser'));
   await input(page).fill('https://example.org/qr');
-  await page.getByRole('button', { name: 'Make QR' }).click();
+  await page.getByRole('button', { name: 'Open in' }).click();
+  await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
   await expect(page).toHaveURL(new RegExp(pathOf('qr-code-generator')));
   await expect(page.getByLabel('Encoded text')).toHaveText(
     'https://example.org/qr',

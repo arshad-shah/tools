@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import React, { useId } from 'react';
 import {
   MOCK_LOCALES,
   type MockLocale,
@@ -27,6 +27,8 @@ import { LOCALE_LABEL } from '../lib/locales';
 import { memoryEstimate, newSeed } from '../lib/seed';
 
 interface GeneratePanelProps {
+  /** The preset picker, first in the row. */
+  preset?: React.ReactNode;
   count: number;
   onCount(n: number): void;
   seed: string;
@@ -46,7 +48,8 @@ export function GeneratePanel(p: GeneratePanelProps) {
   const over = p.count > MAX_COUNT;
   return (
     <Stack gap="3">
-      <Grid max={3} gap="3">
+      <Grid cols={{ base: 1, sm: 2, lg: 4 }} gap="3">
+        {p.preset}
         <Stack gap="1">
           <Label htmlFor={ids.count}>Rows</Label>
           <NumberInput
