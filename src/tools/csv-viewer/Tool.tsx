@@ -18,6 +18,8 @@ import {
   Heading,
   Inline,
   SendToMenu,
+  IconButton,
+  ToolActions,
   Stack,
   SwitchField,
   Tabs,
@@ -202,6 +204,34 @@ export default function CsvViewer() {
 
   return (
     <Stack gap="4">
+      <ToolActions>
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<IconRefreshCw size="sm" />}
+          onClick={() => {
+            csv.clear();
+            setPaste('');
+            lastPaste.current = '';
+          }}
+        >
+          New data
+        </Button>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label="Generate more like this"
+          icon={IconSparkles}
+          onClick={generateMore}
+        />
+        <ExportMenu
+          table={() => ({ columns: visibleColumns, rows: viewRows })}
+          filteredRows={filtered}
+          sourceName={loaded.name}
+          settings={settings}
+          onSettings={updateSettings}
+        />
+      </ToolActions>
       <Inline justify="between" align="center" wrap gap="3">
         <Inline align="center" gap="2" wrap>
           <Heading level={2} size="lg">
@@ -220,13 +250,6 @@ export default function CsvViewer() {
           )}
         </Inline>
         <Inline align="center" gap="2" wrap>
-          <ExportMenu
-            table={() => ({ columns: visibleColumns, rows: viewRows })}
-            filteredRows={filtered}
-            sourceName={loaded.name}
-            settings={settings}
-            onSettings={updateSettings}
-          />
           <SendToMenu
             sourceTool={TOOL_ID}
             label="Send JSON to"
@@ -241,43 +264,25 @@ export default function CsvViewer() {
               csvTextPayload(viewRows, visibleColumns, loaded.name)
             }
           />
-          <Button
-            size="sm"
-            variant="secondary"
-            leftIcon={<IconSparkles size="sm" />}
-            onClick={generateMore}
-          >
-            Generate more like this
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconRefreshCw size="sm" />}
-            onClick={() => {
-              csv.clear();
-              setPaste('');
-              lastPaste.current = '';
+          <ParseOptions
+            choices={csv.choices}
+            onChange={(patch) => {
+              if (patch.delimiter)
+                updateSettings({ delimiterChoice: patch.delimiter });
+              if (patch.encoding) updateSettings({ encoding: patch.encoding });
+              resetView();
+              csv.changeChoices(patch);
             }}
-          >
-            New data
-          </Button>
+            detected={{
+              delimiter: loaded.delimiter,
+              encoding: loaded.encoding,
+            }}
+            fromFile={csv.source?.kind === 'file'}
+            columns={loaded.columns}
+            disabled={csv.job.status === 'running'}
+          />
         </Inline>
       </Inline>
-
-      <ParseOptions
-        choices={csv.choices}
-        onChange={(patch) => {
-          if (patch.delimiter)
-            updateSettings({ delimiterChoice: patch.delimiter });
-          if (patch.encoding) updateSettings({ encoding: patch.encoding });
-          resetView();
-          csv.changeChoices(patch);
-        }}
-        detected={{ delimiter: loaded.delimiter, encoding: loaded.encoding }}
-        fromFile={csv.source?.kind === 'file'}
-        columns={loaded.columns}
-        disabled={csv.job.status === 'running'}
-      />
 
       {loaded.warnings.length > 0 && (
         <WarningsAlert warnings={loaded.warnings} />
@@ -319,26 +324,28 @@ export default function CsvViewer() {
 
         <TabsContent value="table">
           <Stack gap="3" className="pt-4">
-            <Inline justify="between" align="center" gap="3" wrap>
-              <EditToolbar
-                columns={table.columns}
-                canUndo={csv.canUndo}
-                canRedo={csv.canRedo}
-                onUndo={csv.undo}
-                onRedo={csv.redo}
-                onEdit={csv.apply}
-                rowCount={table.rows.length}
-                selectedRows={selectedRows}
-              />
-              <SwitchField
-                label="Compact rows"
-                checked={settings.density === 'compact'}
-                onCheckedChange={(c) =>
-                  updateSettings({ density: c ? 'compact' : 'comfortable' })
-                }
-              />
-            </Inline>
             <GridView
+              toolbar={
+                <EditToolbar
+                  columns={table.columns}
+                  canUndo={csv.canUndo}
+                  canRedo={csv.canRedo}
+                  onUndo={csv.undo}
+                  onRedo={csv.redo}
+                  onEdit={csv.apply}
+                  rowCount={table.rows.length}
+                  selectedRows={selectedRows}
+                />
+              }
+              trailing={
+                <SwitchField
+                  label="Compact rows"
+                  checked={settings.density === 'compact'}
+                  onCheckedChange={(c) =>
+                    updateSettings({ density: c ? 'compact' : 'comfortable' })
+                  }
+                />
+              }
               table={table}
               types={types}
               indices={view.indices}

@@ -15,6 +15,7 @@ import {
   Select,
   Stack,
   Text,
+  ToolActions,
 } from '@/shared/ui';
 import { IconImage, IconTrash } from '@/shared/ui/icons';
 import { MetaTables } from './components/MetaTables';
@@ -72,10 +73,25 @@ export default function ExifTool() {
 
         {selected ? (
           <>
+            <ToolActions>
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<IconTrash size="sm" />}
+                onClick={files.clear}
+              >
+                Clear all
+              </Button>
+            </ToolActions>
+            <StripPanel
+              files={files}
+              options={options}
+              onOptionsChange={setOptions}
+            />
             <Inline gap="3" align="end" wrap>
               <Box className="min-w-64 flex-1">
                 <Stack gap="1">
-                  <Label htmlFor="exif-file">File</Label>
+                  <Label htmlFor="exif-file">Metadata for</Label>
                   <Select
                     id="exif-file"
                     value={selected.id}
@@ -87,13 +103,6 @@ export default function ExifTool() {
                   />
                 </Stack>
               </Box>
-              <Button
-                variant="ghost"
-                leftIcon={<IconTrash size="sm" />}
-                onClick={files.clear}
-              >
-                Clear
-              </Button>
             </Inline>
 
             <Grid max={3} gap="4">
@@ -118,12 +127,6 @@ export default function ExifTool() {
                 ) : null}
               </Stack>
             </Grid>
-
-            <StripPanel
-              files={files}
-              options={options}
-              onOptionsChange={setOptions}
-            />
           </>
         ) : null}
       </Stack>

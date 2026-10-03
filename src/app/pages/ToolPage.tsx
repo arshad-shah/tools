@@ -44,7 +44,7 @@ export function ToolPage({ tool, children }: ToolPageProps) {
         <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-surface text-accent-fg shadow-e1">
           <Icon size="lg" />
         </span>
-        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 basis-[26rem] flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight text-fg">
               {tool.name}
