@@ -21,8 +21,45 @@ export async function setTheme(page: Page, theme: Theme): Promise<void> {
     }
     document.documentElement.dataset.theme = t;
     document.documentElement.style.colorScheme = t;
+    // The theme store reads storage on its next render, so the header and
+    // footer theme controls flipped only if something happened to re-render
+    // before the shot. Its cross-tab sync re-renders them now, every run.
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'tools:theme', newValue: t }),
+    );
   }, theme);
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+}
+
+/**
+ * The PDF workspace starts work on open (field detection, whose results are
+ * saved with the document, the size breakdown, signature checks) and
+ * autosaves every change, flipping the top bar between "Saving" and "Saved".
+ * Waits until the page has been quiet across two checks 1.5 s apart.
+ */
+export async function workspaceQuiet(page: Page): Promise<void> {
+  const busy = page
+    .getByText(
+      /^(Detecting fields, page|Measuring the document|Checking signatures)/,
+    )
+    .or(page.getByText('Saving', { exact: true }))
+    .or(page.getByRole('img', { name: 'Saving', exact: true }));
+  const saved = page
+    .getByText('Saved on this device')
+    .or(page.getByRole('img', { name: 'Saved on this device' }))
+    .first();
+  const quiet = async () =>
+    (await busy.count()) === 0 && (await saved.isVisible());
+  await expect
+    .poll(
+      async () => {
+        if (!(await quiet())) return false;
+        await page.waitForTimeout(1_500);
+        return quiet();
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true);
 }
 
 /** Waits for fonts, stops caret and transitions, masks [data-dynamic]. */

@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { makeFlatFormWord } from '../fixtures/flat-form';
-import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
+import {
+  expectAxeClean,
+  setTheme,
+  stabilise,
+  VIEWPORTS,
+  workspaceQuiet,
+} from './helpers';
 
 /*
  * Fill & Sign (plan C-14): detected fields on page 1 of the Word-like flat
@@ -26,15 +32,7 @@ async function openForm(page: Page, theme: 'light' | 'dark') {
   await expect
     .poll(() => fieldsOnPage1(page).count(), { timeout: 15_000 })
     .toBeGreaterThanOrEqual(10);
-  await expect(page.getByText(/^Detecting fields, page/)).toHaveCount(0, {
-    timeout: 20_000,
-  });
-  await expect(
-    page
-      .getByText('Saved on this device')
-      .or(page.getByRole('img', { name: 'Saved on this device' }))
-      .first(),
-  ).toBeVisible();
+  await workspaceQuiet(page);
   await stabilise(page);
 }
 
@@ -53,6 +51,7 @@ for (const theme of ['light', 'dark'] as const) {
         .first()
         .click();
       await page.getByRole('textbox', { name: 'Surname' }).fill('Doe');
+      await workspaceQuiet(page);
       await expect(page).toHaveScreenshot(`fill-sign-editor-${theme}.png`);
     });
 
@@ -95,6 +94,7 @@ for (const theme of ['light', 'dark'] as const) {
       await bar.getByRole('button', { name: 'Character boxes' }).click();
       await input.click();
       await input.fill('DOE');
+      await workspaceQuiet(page);
       await expect(page).toHaveScreenshot(
         `fill-sign-text-settings-${theme}.png`,
       );
@@ -111,6 +111,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(
         page.getByRole('toolbar', { name: 'Text settings' }),
       ).toBeVisible();
+      await workspaceQuiet(page);
       await expect(page).toHaveScreenshot(`fill-sign-text-bar-${theme}.png`);
       await expectAxeClean(page);
     });
@@ -125,6 +126,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByRole('textbox', { name: 'Surname' }).fill('Doe');
       const bar = page.getByRole('toolbar', { name: 'Text settings' });
       await expect(bar).toBeVisible();
+      await workspaceQuiet(page);
       await expect(page).toHaveScreenshot(
         `fill-sign-text-bar-phone-${theme}.png`,
       );

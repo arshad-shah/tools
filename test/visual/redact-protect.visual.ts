@@ -1,7 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { makeImageHeavyPdf, makeTextPdf } from '../fixtures/builders';
 import { makeRedactBasic, REDACT_TERM } from '../fixtures/redact';
-import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
+import {
+  expectAxeClean,
+  setTheme,
+  stabilise,
+  VIEWPORTS,
+  workspaceQuiet,
+} from './helpers';
 
 /*
  * Plan E-13 step 2: Redact (marks, search panel, apply confirmation,
@@ -30,6 +36,12 @@ async function openIn(
     .first()
     .setInputFiles(await file);
   await expect(rendered(page)).toBeAttached();
+  await settle(page);
+}
+
+/** Autosave settled ("Saving" otherwise races the shot), then stabilised. */
+async function settle(page: Page) {
+  await workspaceQuiet(page);
   await stabilise(page);
 }
 
@@ -48,7 +60,7 @@ for (const theme of ['light', 'dark'] as const) {
       await markTerm(page);
       await page.getByRole('button', { name: 'Mark all' }).click();
       await expect(page.getByTestId('redact-mark').first()).toBeAttached();
-      await stabilise(page);
+      await settle(page);
       await expect(page).toHaveScreenshot(`redact-marks-${theme}.png`);
       await expectAxeClean(page);
     });
@@ -65,13 +77,14 @@ for (const theme of ['light', 'dark'] as const) {
         .click();
       const confirm = page.getByRole('dialog', { name: 'Apply redactions' });
       await expect(confirm).toBeVisible();
+      await settle(page);
       await expect(page).toHaveScreenshot(`redact-confirm-${theme}.png`);
       await confirm.getByRole('button', { name: 'Apply redactions' }).click();
       await expect(page.getByLabel('Redaction report')).toContainText(
         'verified',
         { timeout: 60_000 },
       );
-      await stabilise(page);
+      await settle(page);
       await expect(page).toHaveScreenshot(`redact-report-${theme}.png`);
       await expectAxeClean(page);
     });
@@ -83,7 +96,7 @@ for (const theme of ['light', 'dark'] as const) {
         .first()
         .click();
       await page.getByRole('switch', { name: 'Password protection' }).click();
-      await stabilise(page);
+      await settle(page);
       await expect(page).toHaveScreenshot(`protect-permissions-${theme}.png`);
       await page.getByRole('button', { name: 'Sanitise' }).first().click();
       await expect(page.getByRole('dialog')).toBeVisible();

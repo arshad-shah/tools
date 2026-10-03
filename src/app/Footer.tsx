@@ -37,8 +37,10 @@ export default function Footer({ tool }: { tool?: ToolDefinition }) {
           <div className="flex flex-col gap-2">
             <Logo className="h-4 self-start" />
             <p className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">
-              <StatusDot tone="accent" decorative />
-              Your files are processed on this device and never uploaded.
+              <span className="flex items-center gap-2">
+                <StatusDot tone="accent" decorative />
+                Your files are processed on this device and never uploaded.
+              </span>
               <Button
                 variant="ghost"
                 size="sm"

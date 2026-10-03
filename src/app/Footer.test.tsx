@@ -32,6 +32,16 @@ describe('Footer', () => {
     ).toBeTruthy();
   });
 
+  it('keeps the status dot with the local-processing note when the line wraps', () => {
+    render(<Footer />);
+    // A bare text node in the wrapping row would drop below the dot on phones.
+    const note = screen.getByText(
+      'Your files are processed on this device and never uploaded.',
+    );
+    expect(note.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(note.querySelector('button')).toBeNull();
+  });
+
   it('links issues without a tool context, name starting with the visible text', () => {
     render(<Footer />);
     const link = screen.getByRole('link', { name: 'issues: report a problem' });

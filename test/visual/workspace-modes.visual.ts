@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { makeTextPdf } from '../fixtures/builders';
-import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
+import {
+  expectAxeClean,
+  setTheme,
+  stabilise,
+  VIEWPORTS,
+  workspaceQuiet,
+} from './helpers';
 
 /*
  * The spec §15 matrix for the workspace (plan G-5): every mode in Standard
@@ -34,12 +40,7 @@ async function openMode(page: Page, mode: string, theme: 'light' | 'dark') {
       buffer: Buffer.from(await makeTextPdf({ pages: 3, label: 'Alpha' })),
     });
   await expect(rendered(page)).toBeAttached();
-  await expect(
-    page
-      .getByText('Saved on this device')
-      .or(page.getByRole('img', { name: 'Saved on this device' }))
-      .first(),
-  ).toBeVisible();
+  await workspaceQuiet(page);
   await stabilise(page);
 }
 

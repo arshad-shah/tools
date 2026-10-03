@@ -130,7 +130,11 @@ for (const theme of ['light', 'dark'] as const) {
       });
     });
 
-    test('axe', async ({ page }) => expectAxeClean(page));
+    test('axe', async ({ page }) => {
+      // The whole gallery is one page: axe takes a while over it.
+      test.slow();
+      await expectAxeClean(page);
+    });
   });
 
   // FIX-COLOUR: the picker inline, in its desktop popover and in the phone
