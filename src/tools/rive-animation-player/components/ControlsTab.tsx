@@ -1,6 +1,5 @@
 import React from 'react';
 import { StateMachineInput } from '@/shared/ui/adapters/rive-runtime';
-import { IconPause, IconPlay } from '@/shared/ui/icons';
 
 import {
   Button,
@@ -15,15 +14,13 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 import {
-  PlayerState,
   type RiveAnimations,
   type RiveController,
   type RiveStateMachines,
-  type Status,
 } from '../types';
 import { InputsPanel } from './InputsPanel';
 
-/** Animation / state-machine pickers, their inputs and the play button. */
+/** Animation / state-machine pickers and their inputs (play is beside the preview). */
 export function ControlsTab({
   controller,
   setControllerState,
@@ -39,9 +36,6 @@ export function ControlsTab({
   setBooleanValues,
   numberValues,
   handleInputChange,
-  status,
-  isPlaying,
-  togglePlayback,
 }: {
   controller: RiveController;
   setControllerState: (state: 'animations' | 'state-machines') => void;
@@ -62,9 +56,6 @@ export function ControlsTab({
     input: StateMachineInput,
     value: boolean | number,
   ) => void;
-  status: Status;
-  isPlaying: boolean;
-  togglePlayback: () => void;
 }) {
   return (
     <Stack gap="4">
@@ -156,24 +147,6 @@ export function ControlsTab({
           </Stack>
         </TabsContent>
       </Tabs>
-
-      {controller.active === 'animations' && (
-        <Button
-          variant="secondary"
-          fullWidth
-          disabled={status.current !== PlayerState.Active}
-          leftIcon={
-            isPlaying ? <IconPause size="sm" /> : <IconPlay size="sm" />
-          }
-          onClick={togglePlayback}
-        >
-          {status.current !== PlayerState.Active
-            ? 'Play / Pause'
-            : isPlaying
-              ? 'Pause'
-              : 'Play'}
-        </Button>
-      )}
     </Stack>
   );
 }

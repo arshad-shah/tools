@@ -247,9 +247,6 @@ export default function RiveAnimationPlayer() {
                 setBooleanValues={player.setBooleanValues}
                 numberValues={player.numberValues}
                 handleInputChange={player.handleInputChange}
-                status={status}
-                isPlaying={isPlaying}
-                togglePlayback={player.togglePlayback}
               />,
             ],
             stage: [
