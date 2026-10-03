@@ -54,7 +54,8 @@ jobs:
   e2e:
     name: E2E (Chromium)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # ~600 specs take about 22 minutes on the runner's two workers.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -74,7 +75,8 @@ jobs:
   visual:
     name: Visual (kit gallery, Linux)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # ~390 shots take about 25 minutes on two workers.
+    timeout-minutes: 45
     # Linux baselines are produced with workflow_dispatch (update) first;
     # until they exist this job reports without blocking (decision G8).
     continue-on-error: true

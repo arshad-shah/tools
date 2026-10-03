@@ -204,7 +204,9 @@ test('a long break follows the 4th completed work session', async ({
   // The countdown worker runs on real time, but the store recomputes a
   // running session from its wall-clock end on load: fast-forward the page
   // clock past each session's end and reload, and the session completes.
-  await page.clock.install();
+  // A fixed morning start: the ~2 h of sessions must stay on one local day,
+  // or the history splits them across midnight.
+  await page.clock.install({ time: new Date(2026, 0, 15, 9, 0, 0) });
   await page.goto(pathOf('pomodoro'));
   const heading = (name: string) =>
     page.getByRole('heading', { level: 2, name });

@@ -375,6 +375,10 @@ test.describe('Fill & Sign objects', () => {
     const dialog = page.getByRole('dialog', { name: 'Signature' });
     await dialog.getByRole('tab', { name: 'Type' }).click();
     await dialog.getByLabel('Your name').fill('Jane Doe');
+    // The typed signature is ready once its font has loaded and been checked.
+    await expect(
+      dialog.getByRole('button', { name: 'Place at page centre' }),
+    ).toBeEnabled();
     return dialog;
   }
 
