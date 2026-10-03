@@ -63,6 +63,8 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(
         page.getByRole('listbox', { name: 'Pages' }).getByText('Text added'),
       ).toBeVisible();
+      // The text layer is a document change: autosave runs after it.
+      await workspaceQuiet(page);
       await stabilise(page);
       await expect(page).toHaveScreenshot(`ocr-report-${theme}.png`);
       await expectAxeClean(page);

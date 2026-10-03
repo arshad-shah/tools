@@ -29,9 +29,23 @@ export function fadeEnds(
 const ACTIVE =
   '[aria-pressed="true"], [aria-selected="true"], [aria-checked="true"]';
 
-function reveal(el: Element) {
-  // jsdom and old engines have no scrollIntoView options.
-  el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+/**
+ * Scrolls `row` itself just enough to show `item`. Not scrollIntoView: that
+ * also scrolls every ancestor, so a bar low on the page dragged the window
+ * down to it on mount.
+ */
+function reveal(row: HTMLElement, item: Element, axis: ScrollAxis) {
+  const r = row.getBoundingClientRect();
+  const i = item.getBoundingClientRect();
+  const [start, end, itemStart, itemEnd] =
+    axis === 'x'
+      ? [r.left, r.right, i.left, i.right]
+      : [r.top, r.bottom, i.top, i.bottom];
+  const delta =
+    itemStart < start ? itemStart - start : itemEnd > end ? itemEnd - end : 0;
+  if (!delta) return;
+  if (axis === 'x') row.scrollLeft += delta;
+  else row.scrollTop += delta;
 }
 
 /**
@@ -53,11 +67,12 @@ export function useScrollRow<T extends HTMLElement>(axis: ScrollAxis = 'x') {
       else delete el.dataset.fade;
     };
     const onFocus = (e: FocusEvent) => {
-      if (e.target instanceof Element && e.target !== el) reveal(e.target);
+      if (e.target instanceof Element && e.target !== el)
+        reveal(el, e.target, axis);
     };
     update();
     const active = el.querySelector(ACTIVE);
-    if (active) reveal(active);
+    if (active) reveal(el, active, axis);
     el.addEventListener('scroll', update, { passive: true });
     el.addEventListener('focusin', onFocus);
     const ro =

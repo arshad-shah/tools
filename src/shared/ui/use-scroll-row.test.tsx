@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fadeEnds, useScrollRow } from './use-scroll-row';
 
 const box = (scrollLeft: number, clientWidth = 100, scrollWidth = 300) => ({
@@ -58,14 +58,69 @@ function Row() {
 }
 
 describe('useScrollRow', () => {
-  it('scrolls the active item and every focused item into view', () => {
-    const seen: string[] = [];
-    HTMLElement.prototype.scrollIntoView = function (this: HTMLElement) {
-      seen.push(this.textContent ?? '');
+  const rects: Record<string, [number, number]> = {
+    row: [0, 100],
+    a: [-50, -10],
+    b: [150, 200],
+  };
+  const proto = HTMLElement.prototype;
+  const saved = {
+    rect: proto.getBoundingClientRect,
+    intoView: proto.scrollIntoView,
+    scrollLeft: Object.getOwnPropertyDescriptor(
+      Element.prototype,
+      'scrollLeft',
+    ),
+  };
+  const scrolled = new WeakMap<Element, number>();
+
+  beforeEach(() => {
+    proto.getBoundingClientRect = function (this: HTMLElement) {
+      const key = this.dataset.testid ?? this.textContent ?? '';
+      const [left, right] = rects[key] ?? [0, 0];
+      const shift = this.dataset.testid
+        ? 0
+        : -(scrolled.get(this.parentElement!) ?? 0);
+      return {
+        left: left + shift,
+        right: right + shift,
+        top: 0,
+        bottom: 40,
+        width: right - left,
+        height: 40,
+        x: left + shift,
+        y: 0,
+        toJSON: () => ({}),
+      } as DOMRect;
     };
-    const { getByText } = render(<Row />);
-    expect(seen).toEqual(['b']);
+    Object.defineProperty(Element.prototype, 'scrollLeft', {
+      configurable: true,
+      get(this: Element) {
+        return scrolled.get(this) ?? 0;
+      },
+      set(this: Element, v: number) {
+        scrolled.set(this, v);
+      },
+    });
+  });
+  afterEach(() => {
+    proto.getBoundingClientRect = saved.rect;
+    proto.scrollIntoView = saved.intoView;
+    if (saved.scrollLeft)
+      Object.defineProperty(Element.prototype, 'scrollLeft', saved.scrollLeft);
+  });
+
+  it('scrolls only the row (never the page) to the active and focused items', () => {
+    const intoView = vi.fn();
+    proto.scrollIntoView = intoView;
+    const { getByTestId, getByText } = render(<Row />);
+    const row = getByTestId('row');
+    // b (150..200) is past the right edge (100): the row scrolls by 100.
+    expect(row.scrollLeft).toBe(100);
+    // a sits at -150..-110 once scrolled: the row scrolls back to show it.
     getByText('a').focus();
-    expect(seen).toEqual(['b', 'a']);
+    expect(row.scrollLeft).toBe(-50);
+    // scrollIntoView would also scroll the window to the bar.
+    expect(intoView).not.toHaveBeenCalled();
   });
 });
