@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { makeScanForm } from '../fixtures/flat-form';
-import { expectAxeClean, setTheme, stabilise } from './helpers';
+import { expectAxeClean, setTheme, stabilise, workspaceQuiet } from './helpers';
 
 /*
  * Plan F-8 step 3: OCR consent card, download progress and the report, in
@@ -28,6 +28,7 @@ async function openOcr(page: Page, theme: 'light' | 'dark') {
     page.getByRole('heading', { name: 'Make this document searchable' }),
   ).toBeVisible();
   await expect(page.getByText(/MB download/)).toBeVisible();
+  await workspaceQuiet(page);
   await stabilise(page);
 }
 

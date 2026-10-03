@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { makeAesEncryptedPdf, makeTextPdf } from '../fixtures/builders';
-import { expectAxeClean, setTheme, stabilise, VIEWPORTS } from './helpers';
+import {
+  VIEWPORTS,
+  expectAxeClean,
+  setTheme,
+  stabilise,
+  workspaceQuiet,
+} from './helpers';
 
 /*
  * The PDF workspace (plan B-18): Standard, Focus and phone layouts in
@@ -29,12 +35,7 @@ async function openDoc(page: Page, theme: 'light' | 'dark') {
   await expect(rendered(page)).toBeAttached();
   // Thumbnails and the saved state settle before the shot.
   // Text from lg up; a labelled status dot on compact layouts.
-  await expect(
-    page
-      .getByText('Saved on this device')
-      .or(page.getByRole('img', { name: 'Saved on this device' }))
-      .first(),
-  ).toBeVisible();
+  await workspaceQuiet(page);
   await stabilise(page);
 }
 

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { makeTextPdf } from '../fixtures/builders';
 import { makeAnnotatedPdf } from '../fixtures/annotated';
-import { expectAxeClean, setTheme, stabilise } from './helpers';
+import { expectAxeClean, setTheme, stabilise, workspaceQuiet } from './helpers';
 
 /*
  * Annotate and Edit modes (plan D-10 step 4): both themes on desktop, Focus,
@@ -45,12 +45,7 @@ async function dispatch(page: Page, ops: object[]) {
 /** No hover tooltips, and autosave settled, before the shot. */
 async function settle(page: Page) {
   await page.mouse.move(1, 1);
-  await expect(
-    page
-      .getByText('Saved on this device')
-      .or(page.getByRole('img', { name: 'Saved on this device' }))
-      .first(),
-  ).toBeVisible();
+  await workspaceQuiet(page);
   await stabilise(page);
 }
 
