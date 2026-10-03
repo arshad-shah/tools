@@ -31,6 +31,7 @@ import {
   TabsTrigger,
   Text,
   usePaneTab,
+  IconButton,
 } from '@/shared/ui';
 import { IconCode, IconSave, IconSend } from '@/shared/ui/icons';
 import { AuthTab } from './components/AuthTab';
@@ -267,14 +268,14 @@ export default function HttpClient() {
           onActiveChange={(activeEnv) => c.update({ activeEnv })}
           onSave={c.saveEnvironments}
         />
-        <Button
+        <IconButton
           size="sm"
           variant="ghost"
-          leftIcon={<IconCode size="sm" />}
+          label="Code"
+          showLabel="desktop"
+          icon={IconCode}
           onClick={() => setSnippetOpen(true)}
-        >
-          Code
-        </Button>
+        />
         <Button
           size="sm"
           variant="secondary"

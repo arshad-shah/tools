@@ -20,6 +20,7 @@ import {
   ShareButton,
   ToolActions,
   type ShareControl,
+  IconButton,
 } from '@/shared/ui';
 
 interface RegexToolbarProps {
@@ -65,23 +66,23 @@ export const RegexToolbar: React.FC<RegexToolbarProps> = ({
   onClearAll,
 }) => (
   <ToolActions>
-    <Button
+    <IconButton
       variant="ghost"
       size="sm"
-      leftIcon={<IconLayers size="sm" />}
       onClick={onOpenTemplates}
-    >
-      Templates
-    </Button>
-    <Button
+      label="Templates"
+      showLabel="desktop"
+      icon={IconLayers}
+    />
+    <IconButton
       variant="ghost"
       size="sm"
-      leftIcon={<IconBookOpen size="sm" />}
       aria-pressed={cheatSheetOpen}
       onClick={onToggleCheatSheet}
-    >
-      Cheat sheet
-    </Button>
+      label="Cheat sheet"
+      showLabel="desktop"
+      icon={IconBookOpen}
+    />
     <DropdownMenu>
       <DropdownMenuTrigger>
         <Button

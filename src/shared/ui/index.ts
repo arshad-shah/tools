@@ -349,3 +349,4 @@ export { ToolActions, type ToolActionsProps } from './tool-actions';
 export { ToolActionsSlot } from './tool-actions-slot';
 export { ControlBar, type ControlBarProps } from './control-bar';
 export { OptionsMenu, type OptionsMenuProps } from './options-menu';
+export { useScrollFade } from './use-scroll-row';

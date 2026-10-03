@@ -19,10 +19,16 @@ import {
   Inline,
   Progress,
   Stack,
+  IconButton,
   ToolActions,
   Statistic,
 } from '@/shared/ui';
-import { IconDownload, IconShieldCheck, IconX } from '@/shared/ui/icons';
+import {
+  IconDownload,
+  IconShieldCheck,
+  IconTrash,
+  IconX,
+} from '@/shared/ui/icons';
 import { BatchTable } from './components/BatchTable';
 import { ComparePanel } from './components/ComparePanel';
 import { EstimateCard } from './components/EstimateCard';
@@ -186,15 +192,14 @@ const ImageCompressor: React.FC = () => {
                     Cancel all
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={clearAll}>
-                  Clear
-                </Button>
-                {done.length > 0 && (
-                  <HandoffActions
-                    outputs={() => done.map(outputFile)}
-                    originals={entries.map((e) => e.file)}
-                  />
-                )}
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  label="Clear"
+                  showLabel="desktop"
+                  icon={IconTrash}
+                  onClick={clearAll}
+                />
                 <Button
                   variant="primary"
                   size="sm"
@@ -247,7 +252,7 @@ const ImageCompressor: React.FC = () => {
               </Box>
 
               {done.length > 0 && (
-                <Inline gap="2">
+                <Inline gap="2" justify="between" align="center">
                   <Badge
                     tone="success"
                     variant="soft"
@@ -255,6 +260,10 @@ const ImageCompressor: React.FC = () => {
                   >
                     Metadata removed (EXIF, GPS)
                   </Badge>
+                  <HandoffActions
+                    outputs={() => done.map(outputFile)}
+                    originals={entries.map((e) => e.file)}
+                  />
                 </Inline>
               )}
 

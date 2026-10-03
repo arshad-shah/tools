@@ -13,7 +13,6 @@ import {
   Alert,
   AlertDescription,
   Badge,
-  Button,
   ErrorState,
   Heading,
   Inline,
@@ -206,18 +205,18 @@ export default function CsvViewer() {
   return (
     <Stack gap="4">
       <ToolActions>
-        <Button
+        <IconButton
           variant="ghost"
           size="sm"
-          leftIcon={<IconRefreshCw size="sm" />}
           onClick={() => {
             csv.clear();
             setPaste('');
             lastPaste.current = '';
           }}
-        >
-          New data
-        </Button>
+          label="New data"
+          showLabel="desktop"
+          icon={IconRefreshCw}
+        />
         <IconButton
           size="sm"
           variant="ghost"

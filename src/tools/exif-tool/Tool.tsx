@@ -3,7 +3,6 @@ import { useHandoffFiles } from '@/shared/lib/handoff';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
   Box,
-  Button,
   Container,
   DropZone,
   ErrorState,
@@ -16,6 +15,7 @@ import {
   Stack,
   Text,
   ToolActions,
+  IconButton,
 } from '@/shared/ui';
 import { IconImage, IconTrash } from '@/shared/ui/icons';
 import { MetaTables } from './components/MetaTables';
@@ -74,14 +74,14 @@ export default function ExifTool() {
         {selected ? (
           <>
             <ToolActions>
-              <Button
+              <IconButton
                 variant="ghost"
                 size="sm"
-                leftIcon={<IconTrash size="sm" />}
                 onClick={files.clear}
-              >
-                Clear all
-              </Button>
+                label="Clear all"
+                showLabel="desktop"
+                icon={IconTrash}
+              />
             </ToolActions>
             <StripPanel
               files={files}

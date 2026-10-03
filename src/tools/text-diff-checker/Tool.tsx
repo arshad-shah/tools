@@ -9,7 +9,6 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-  Button,
   ErrorState,
   Inline,
   Kbd,
@@ -247,15 +246,15 @@ const TextDiff: React.FC = () => {
   return (
     <Stack gap="4">
       <ToolActions>
-        <Button
+        <IconButton
           variant="ghost"
           size="sm"
+          label="Swap"
+          showLabel="desktop"
+          icon={IconArrowRightLeft}
           onClick={swap}
           disabled={!left && !right}
-        >
-          <IconArrowRightLeft size="sm" aria-hidden />
-          Swap
-        </Button>
+        />
         <ExportMenu result={job.result} texts={texts} names={names} />
         <ShareButton share={share} />
       </ToolActions>

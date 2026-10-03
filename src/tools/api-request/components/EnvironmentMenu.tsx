@@ -87,7 +87,7 @@ export function EnvironmentMenu({
           { value: '', label: 'No environment' },
           ...environments.map((e) => ({ value: e.id, label: e.name })),
         ]}
-        className="min-w-40"
+        className="sm:min-w-40"
       />
       <IconButton
         size="sm"

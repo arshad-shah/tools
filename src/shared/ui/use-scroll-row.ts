@@ -88,3 +88,39 @@ export function useScrollRow<T extends HTMLElement>(axis: ScrollAxis = 'x') {
 
   return ref;
 }
+
+/**
+ * The edge fade of useScrollRow for a row whose items arrive later (a
+ * portal target such as the tool header's actions): it also watches for
+ * added and removed children.
+ */
+export function useScrollFade(el: HTMLElement | null, axis: ScrollAxis = 'x') {
+  React.useLayoutEffect(() => {
+    if (!el) return;
+    const update = () => {
+      const ends = fadeEnds(el, axis);
+      if (ends) el.dataset.fade = ends;
+      else delete el.dataset.fade;
+    };
+    const ro =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    const observeChildren = () => {
+      ro?.disconnect();
+      ro?.observe(el);
+      for (const child of Array.from(el.children)) ro?.observe(child);
+      update();
+    };
+    const mo =
+      typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(observeChildren)
+        : null;
+    mo?.observe(el, { childList: true });
+    observeChildren();
+    el.addEventListener('scroll', update, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro?.disconnect();
+      mo?.disconnect();
+    };
+  }, [el, axis]);
+}
