@@ -14,6 +14,7 @@ export interface OptionsMenuProps {
   /** How many options differ from their defaults; shown on the button. */
   changed?: number;
   size?: 'sm' | 'md';
+  variant?: 'secondary' | 'ghost';
   align?: 'start' | 'end';
   disabled?: boolean;
   /** Panel width class (default w-80). */
@@ -32,6 +33,7 @@ export function OptionsMenu({
   title,
   changed,
   size = 'sm',
+  variant = 'secondary',
   align = 'end',
   disabled,
   width = 'w-80',
@@ -46,7 +48,7 @@ export function OptionsMenu({
         ref={anchor}
         type="button"
         size={size}
-        variant="secondary"
+        variant={variant}
         disabled={disabled}
         leftIcon={<IconSettings2 size="sm" />}
         rightIcon={<IconChevronDown size="sm" />}

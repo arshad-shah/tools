@@ -30,6 +30,7 @@ import {
   TextInputToolbar,
   type TextSample,
 } from './text-input-toolbar';
+import type { ToolGroup } from './toolbar';
 import { useThrottled } from './use-throttled';
 
 export type { TextSample } from './text-input-toolbar';
@@ -51,6 +52,8 @@ export interface TextInputPanelProps {
   samples?: readonly TextSample[];
   /** Adds Download, saving the text under this name. */
   downloadName?: string;
+  /** Tool-specific toolbar groups shown before Paste (Undo and Redo, say). */
+  toolGroups?: ToolGroup[];
   /** Adds an encoding picker for opened and dropped files (first is default). */
   encodingOptions?: readonly TextEncodingId[];
   /** Accepts a text hand-off (`?handoff=`) this predicate matches, once. */
@@ -98,6 +101,7 @@ export function TextInputPanel({
   accept,
   samples,
   downloadName,
+  toolGroups,
   encodingOptions,
   handoff,
   maxBytes,
@@ -253,6 +257,7 @@ export function TextInputPanel({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-medium text-fg">{label}</span>
         <TextInputToolbar
+          groups={toolGroups}
           readOnly={readOnly}
           hasValue={value.length > 0}
           accept={accept}
