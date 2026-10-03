@@ -1,4 +1,8 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useContext, useEffect, useEffectEvent, useRef, useState } from 'react';
+import {
+  UNSAFE_LocationContext,
+  UNSAFE_NavigationContext,
+} from 'react-router-dom';
 import { getTool } from '@/app/registry';
 import { toolPath } from '@/app/routes';
 import { ToolError } from './errors';
@@ -114,36 +118,66 @@ export function sendTo(
   navigate(`${toolPath(tool)}?${HANDOFF_PARAM}=${putHandoff(payload)}`);
 }
 
-function stripParam(): void {
-  const url = new URL(window.location.href);
-  url.searchParams.delete(HANDOFF_PARAM);
+/** The search string without the hand-off param ('' or '?…'). */
+function withoutParam(search: string): string {
+  const params = new URLSearchParams(search);
+  params.delete(HANDOFF_PARAM);
+  const rest = params.toString();
+  return rest ? `?${rest}` : '';
+}
+
+function stripWindowParam(): void {
+  const { pathname, search, hash } = window.location;
   window.history.replaceState(
     window.history.state,
     '',
-    url.pathname + url.search + url.hash,
+    pathname + withoutParam(search) + hash,
   );
 }
 
 /**
  * Reads `?handoff=<id>` once per mount. A payload `match` accepts is taken
- * and the param removed with replaceState (no navigation); one it rejects is
- * left for another reader on the page (Text Diff's two panels). An unknown
- * or expired id is just removed: the tool shows its normal empty state.
+ * and the param removed without a navigation; one it rejects is left for
+ * another reader on the page (Text Diff's two panels). An unknown or
+ * expired id is just removed: the tool shows its normal empty state.
+ *
+ * Inside a router the param is read from, and removed through, the router
+ * (a replace), so `useLocation()` never shows a stale `?handoff`. The
+ * contexts are read directly because the kit also renders outside a router
+ * (tests, the gallery), where `useSearchParams` would throw; there the
+ * window URL is used.
  */
 function useHandoffReader(
   match: (p: HandoffPayload) => boolean,
   onRead: (p: HandoffPayload) => void,
 ): void {
-  const latest = useRef({ match, onRead });
+  const router = useContext(UNSAFE_LocationContext)?.location;
+  const navigator = useContext(UNSAFE_NavigationContext)?.navigator;
+  const latest = useRef({ match, onRead, router, navigator });
   useEffect(() => {
-    latest.current = { match, onRead };
+    latest.current = { match, onRead, router, navigator };
   });
   useEffect(() => {
-    const id = new URL(window.location.href).searchParams.get(HANDOFF_PARAM);
+    const { router: loc, navigator: nav } = latest.current;
+    const fromRouter = loc
+      ? new URLSearchParams(loc.search).get(HANDOFF_PARAM)
+      : null;
+    const id =
+      fromRouter ??
+      new URL(window.location.href).searchParams.get(HANDOFF_PARAM);
     if (id === null) return;
     const payload = peekHandoff(id);
     if (payload && !latest.current.match(payload)) return;
-    stripParam();
+    if (fromRouter !== null && loc && nav)
+      nav.replace(
+        {
+          pathname: loc.pathname,
+          search: withoutParam(loc.search),
+          hash: loc.hash,
+        },
+        loc.state,
+      );
+    else stripWindowParam();
     if (payload) latest.current.onRead(takeHandoff(id) ?? payload);
   }, []);
 }

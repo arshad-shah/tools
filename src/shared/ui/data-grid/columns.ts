@@ -2,6 +2,7 @@
  * Column model for `DataGrid`: types, ordering and widths, and the
  * horizontal window (which columns to mount for a scroll position).
  */
+import type { ReactNode } from 'react';
 
 export type ColumnType = 'text' | 'number' | 'date' | 'boolean';
 
@@ -16,6 +17,12 @@ export interface GridColumn<R> {
   hidden?: boolean;
   /** Pinned columns stay at the start and stick while scrolling sideways. */
   pinned?: 'start';
+  /**
+   * Custom cell content, such as a Meter or row actions. `accessor` still
+   * drives sorting, filters, search, copy and auto width, so give it the
+   * cell's plain text. Controls inside the cell stay reachable with Tab.
+   */
+  render?(row: R): ReactNode;
 }
 
 export interface SortKey {

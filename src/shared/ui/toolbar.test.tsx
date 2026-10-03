@@ -242,4 +242,46 @@ describe('Toolbar labelled (6-H)', () => {
     expect(undo.textContent).toContain('Undo');
     expect(undo.className).toContain('desk:w-auto');
   });
+
+  it('a menu item opens its menu and runs the chosen entry', () => {
+    const pick = vi.fn();
+    render(
+      <Toolbar
+        label="Tools"
+        groups={[
+          {
+            id: 'g',
+            label: 'Samples',
+            items: [
+              {
+                id: 'samples',
+                label: 'Load a sample',
+                icon: IconPen,
+                kind: 'menu',
+                menu: [
+                  { id: 'a', label: 'Small', onSelect: vi.fn() },
+                  { id: 'b', label: 'Nested', onSelect: pick },
+                ],
+              },
+              {
+                id: 'undo',
+                label: 'Undo',
+                icon: IconUndo,
+                kind: 'button',
+                onSelect: vi.fn(),
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: 'Load a sample' });
+    expect(trigger.tabIndex).toBe(0);
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+    fireEvent.keyDown(trigger, { key: 'ArrowRight' });
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Undo');
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Nested' }));
+    expect(pick).toHaveBeenCalled();
+  });
 });

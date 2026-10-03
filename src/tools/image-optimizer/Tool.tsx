@@ -20,7 +20,6 @@ import {
   Progress,
   Stack,
   Statistic,
-  Text,
 } from '@/shared/ui';
 import { IconDownload, IconShieldCheck, IconX } from '@/shared/ui/icons';
 import { BatchTable } from './components/BatchTable';
@@ -216,7 +215,15 @@ const ImageCompressor: React.FC = () => {
                 />
               )}
 
-              <BatchTable rows={rows} onSelect={setSelectedId} />
+              <BatchTable
+                rows={rows}
+                onSelect={setSelectedId}
+                onDownload={(id) => {
+                  const e = done.find((d) => d.row.id === id);
+                  if (e) downloadOne(e);
+                }}
+                onKeepOriginal={setKeepOriginal}
+              />
 
               <Box role="group" aria-label="Totals">
                 <Grid cols={{ base: 2, md: 4 }} gap="3">
@@ -256,34 +263,10 @@ const ImageCompressor: React.FC = () => {
                 <Alert status="warning">
                   <AlertTitle>Not smaller than the original</AlertTitle>
                   <AlertDescription>
-                    Try another format or a lower quality, or keep the original
-                    for these files.
+                    Try another format or a lower quality, or choose Keep
+                    original in the file list for{' '}
+                    {larger.map((e) => e.row.name).join(', ')}.
                   </AlertDescription>
-                  <Stack gap="2" className="mt-2">
-                    {larger.map((e) => (
-                      <Inline key={e.row.id} gap="2" align="center" wrap>
-                        <Text size="sm" weight="medium">
-                          {e.row.name}
-                        </Text>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          aria-label={`${
-                            e.row.keepOriginal
-                              ? 'Use compressed for'
-                              : 'Keep original for'
-                          } ${e.row.name}`}
-                          onClick={() =>
-                            setKeepOriginal(e.row.id, !e.row.keepOriginal)
-                          }
-                        >
-                          {e.row.keepOriginal
-                            ? 'Use compressed'
-                            : 'Keep original'}
-                        </Button>
-                      </Inline>
-                    ))}
-                  </Stack>
                 </Alert>
               )}
 

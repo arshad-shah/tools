@@ -276,6 +276,7 @@ export function TextInputPanel({
           }
           openRef={openRef}
           downloadRef={downloadRef}
+          label={`${label} actions`}
         />
       </div>
       {notice ? (

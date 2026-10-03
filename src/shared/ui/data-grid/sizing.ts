@@ -140,6 +140,24 @@ export function gridHeight(
   return HEADER_HEIGHT + shown * rowHeight + scrollbar + 2;
 }
 
+/**
+ * Height kept below the rows for the horizontal scrollbar. A classic bar
+ * keeps its measured height. An overlay bar (measured 0) gets
+ * OVERLAY_SCROLLBAR only when every row fits, so its thumb never covers the
+ * last row; a capped grid scrolls, and a strip there would only show a
+ * sliver of the next row.
+ */
+export function scrollbarStrip(
+  overflowX: boolean,
+  measured: number,
+  rows: number,
+  maxRows: number,
+): number {
+  if (!overflowX) return 0;
+  if (measured > 0) return measured;
+  return rows > maxRows ? 0 : OVERLAY_SCROLLBAR;
+}
+
 const FONT_SIZE: Record<TextFont, number> = {
   header: 12,
   badge: 12,

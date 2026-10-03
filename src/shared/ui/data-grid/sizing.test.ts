@@ -9,7 +9,9 @@ import {
   gridHeight,
   HEADER_HEIGHT,
   headerMinWidth,
+  OVERLAY_SCROLLBAR,
   sampleIndices,
+  scrollbarStrip,
   type Measure,
 } from './sizing';
 
@@ -135,5 +137,23 @@ describe('gridHeight', () => {
 
   it('keeps room for one row when empty', () => {
     expect(gridHeight(0, 32, 12, 0)).toBe(HEADER_HEIGHT + 32 + 2);
+  });
+});
+
+describe('scrollbarStrip', () => {
+  it('keeps a classic scrollbar its measured height', () => {
+    expect(scrollbarStrip(true, 15, 40, 12)).toBe(15);
+    expect(scrollbarStrip(true, 15, 3, 12)).toBe(15);
+  });
+
+  it('keeps room for an overlay bar only when every row fits', () => {
+    expect(scrollbarStrip(true, 0, 3, 12)).toBe(OVERLAY_SCROLLBAR);
+    expect(scrollbarStrip(true, 0, 12, 12)).toBe(OVERLAY_SCROLLBAR);
+    // A capped grid scrolls: a strip would show a sliver of the next row.
+    expect(scrollbarStrip(true, 0, 13, 12)).toBe(0);
+  });
+
+  it('is 0 without sideways overflow', () => {
+    expect(scrollbarStrip(false, 15, 3, 12)).toBe(0);
   });
 });

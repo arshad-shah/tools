@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { makeScanForm } from '../fixtures/flat-form';
 import { expectAxeClean, setTheme, stabilise } from './helpers';
 
 /*
@@ -7,18 +7,22 @@ import { expectAxeClean, setTheme, stabilise } from './helpers';
  * both themes. The language download is held so the progress overlay can be
  * captured; its figures are masked.
  */
-const SCAN = {
+// Built in memory: the visual job does not run the fixture generator.
+const SCAN = async () => ({
   name: 'scan-form.pdf',
   mimeType: 'application/pdf',
-  buffer: readFileSync('test/fixtures/generated/scan-form.pdf'),
-};
+  buffer: Buffer.from(await makeScanForm()),
+});
 const rendered = (page: Page) =>
   page.locator('[data-testid="page-slot-1"] canvas[data-rendered="true"]');
 
 async function openOcr(page: Page, theme: 'light' | 'dark') {
   await page.goto('/pdf/edit/ocr');
   await setTheme(page, theme);
-  await page.locator('input[type=file]').first().setInputFiles(SCAN);
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles(await SCAN());
   await expect(rendered(page)).toBeAttached();
   await expect(
     page.getByRole('heading', { name: 'Make this document searchable' }),

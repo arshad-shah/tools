@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import {
   Alert,
   AlertDescription,
@@ -33,6 +33,8 @@ export interface GridViewProps {
   onHiddenChange(hidden: string[]): void;
   compact: boolean;
   onCellEdit(row: number, column: string, value: unknown): void;
+  /** Indices into `table.rows` under the grid selection. */
+  onSelectedRowsChange(rows: number[]): void;
 }
 
 /** The table: typed columns, multi-sort, filters, search and editing. */
@@ -51,6 +53,7 @@ export function GridView({
   onHiddenChange,
   compact,
   onCellEdit,
+  onSelectedRowsChange,
 }: GridViewProps) {
   // Identity follows the column names, types and hiding only, so edits
   // never reset column order or widths.
@@ -67,6 +70,17 @@ export function GridView({
     [indices, table.rows],
   );
   const errors = Object.entries(filterErrors);
+  // The grid reports view positions; map them again whenever the rows
+  // behind them change (an edit, a filter), so the table indices stay true.
+  const [viewSelection, setViewSelection] = useState<number[]>([]);
+  const report = useEffectEvent(onSelectedRowsChange);
+  useEffect(
+    () =>
+      report(
+        viewSelection.filter((i) => i < indices.length).map((i) => indices[i]),
+      ),
+    [viewSelection, indices],
+  );
 
   return (
     <Stack gap="3">
@@ -112,6 +126,7 @@ export function GridView({
         }
         search={search}
         selection="cell-range"
+        onSelectedRowsChange={setViewSelection}
         rowHeight={compact ? 26 : 32}
         editable={() => true}
         onCellEdit={(i, col, value) => onCellEdit(indices[i], col, value)}

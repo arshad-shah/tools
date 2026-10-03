@@ -80,6 +80,66 @@ test('markdown-editor downloads a standalone HTML file', async ({ page }) => {
   expect(html).toContain('<h1 id="report"');
 });
 
+test('markdown-editor prints through a script-free frame it can reach', async ({
+  page,
+}) => {
+  const dialogs: string[] = [];
+  page.on('dialog', (d) => {
+    dialogs.push(d.type());
+    void d.dismiss();
+  });
+  await page.goto(pathOf('markdown-editor'));
+  await editor(page).fill(
+    '# Printable\n\n<script>alert(1)</script>\n\n<img src=x onerror="alert(2)">\n\nBody text.',
+  );
+  // Record the print call instead of opening the system dialog: the parent
+  // reaching the frame's window is what the allow-same-origin sandbox is for.
+  await page.evaluate(() => {
+    const w = window as unknown as { printed: string[] };
+    w.printed = [];
+    const get = Object.getOwnPropertyDescriptor(
+      HTMLIFrameElement.prototype,
+      'contentWindow',
+    )!.get!;
+    Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+      configurable: true,
+      get(this: HTMLIFrameElement) {
+        const win = get.call(this) as Window | null;
+        if (win && this.title === 'Print')
+          win.print = () => {
+            w.printed.push(this.getAttribute('sandbox') ?? '');
+            w.printed.push(win.document.body.textContent ?? '');
+          };
+        return win;
+      },
+    });
+  });
+  await page.getByRole('button', { name: 'Export' }).click();
+  await page.getByRole('menuitem', { name: 'Print' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as { printed: string[] }).printed.length,
+      ),
+    )
+    .toBe(2);
+  const [sandbox, text] = await page.evaluate(
+    () => (window as unknown as { printed: string[] }).printed,
+  );
+  expect(sandbox.split(' ').sort()).toEqual([
+    'allow-modals',
+    'allow-same-origin',
+  ]);
+  expect(text).toContain('Printable');
+  expect(text).toContain('Body text.');
+  await page.waitForTimeout(500);
+  expect(dialogs).toEqual([]);
+  // The temporary frame goes away afterwards.
+  await expect(page.locator('iframe[title="Print"]')).toHaveCount(0, {
+    timeout: 5000,
+  });
+});
+
 test('markdown-editor outline scrolls the preview to the heading', async ({
   page,
 }) => {

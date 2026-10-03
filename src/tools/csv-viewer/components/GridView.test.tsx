@@ -17,7 +17,13 @@ const table: Table = {
 };
 const types = { name: 'text', n: 'integer' } as const;
 
-function Harness({ initial = {} }: { initial?: GridFilters }) {
+function Harness({
+  initial = {},
+  onSelectedRowsChange,
+}: {
+  initial?: GridFilters;
+  onSelectedRowsChange?(rows: number[]): void;
+}) {
   const [filters, setFilters] = useState<GridFilters>(initial);
   const [sort, setSort] = useState<SortKey[]>([]);
   const [search, setSearch] = useState('');
@@ -38,6 +44,7 @@ function Harness({ initial = {} }: { initial?: GridFilters }) {
       onHiddenChange={() => {}}
       compact={false}
       onCellEdit={() => {}}
+      onSelectedRowsChange={onSelectedRowsChange ?? (() => {})}
     />
   );
 }
@@ -78,5 +85,25 @@ describe('GridView', () => {
     render(<Harness />);
     expect(screen.getByText('n: Integer')).toBeTruthy();
     expect(screen.getByText('name: Text')).toBeTruthy();
+  });
+
+  it('reports the selected rows as table row indices', () => {
+    const onSelectedRowsChange = vi.fn();
+    render(
+      <Harness
+        initial={{ n: { kind: 'range', min: 10, max: 20 } }}
+        onSelectedRowsChange={onSelectedRowsChange}
+      />,
+    );
+    // The filter leaves rows 1, 3 and 5; the first one starts selected.
+    expect(onSelectedRowsChange).toHaveBeenLastCalledWith([1]);
+    const g = screen.getByRole('grid', { name: 'Table data' });
+    g.focus();
+    fireEvent.keyDown(g, { key: 'ArrowDown', shiftKey: true });
+    expect(onSelectedRowsChange).toHaveBeenLastCalledWith([1, 3]);
+    // Sorting keeps the view positions and maps them to the new rows.
+    fireEvent.click(screen.getByRole('button', { name: 'n' }));
+    fireEvent.click(screen.getByRole('button', { name: 'n' }));
+    expect(onSelectedRowsChange).toHaveBeenLastCalledWith([5, 3]);
   });
 });

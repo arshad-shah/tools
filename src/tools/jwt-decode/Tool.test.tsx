@@ -114,4 +114,18 @@ describe('JWTDecoder', () => {
         .getAttribute('aria-selected'),
     ).toBe('true');
   });
+
+  it('masks a shared secret; public keys stay a plain multi-line field', () => {
+    renderTool();
+    enter(token({ sub: 'x' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Signature' }));
+    const secret = screen.getByLabelText('Secret or public key');
+    expect((secret as HTMLInputElement).type).toBe('password');
+    fireEvent.click(screen.getByRole('button', { name: 'Reveal secret' }));
+    expect((secret as HTMLInputElement).type).toBe('text');
+    fireEvent.click(screen.getByRole('radio', { name: 'PEM public key' }));
+    expect(screen.getByLabelText('Secret or public key').tagName).toBe(
+      'TEXTAREA',
+    );
+  });
 });

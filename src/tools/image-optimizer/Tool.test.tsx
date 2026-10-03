@@ -41,6 +41,11 @@ vi.mock('@/shared/workers/image-client', () => ({
     terminate: () => {},
   }),
 }));
+const saveBlob = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/download', async (orig) => ({
+  ...(await orig<typeof import('@/shared/lib/download')>()),
+  saveBlob,
+}));
 vi.mock('@/shared/lib/notify', () => ({
   notify: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }));
@@ -144,6 +149,8 @@ describe('ImageCompressor', () => {
     const keep = await screen.findByRole('button', {
       name: 'Keep original for big.png',
     });
+    const grid = screen.getByRole('grid', { name: 'Files' });
+    expect(grid.contains(keep)).toBe(true);
     expect(cellTexts()).toContain('Not smaller');
     expect(totals().getByText(formatBytes(file.size + 100))).toBeTruthy();
 
@@ -155,5 +162,24 @@ describe('ImageCompressor', () => {
     ).toBeTruthy();
     expect(totals().getByText('0.0%')).toBeTruthy();
     expect(totals().getAllByText(formatBytes(file.size))).toHaveLength(2);
+  });
+
+  it('downloads one finished file from its grid row', async () => {
+    const file = png('small.png');
+    h.process = vi.fn(() => Promise.resolve(result(10)));
+    setup([file]);
+
+    const download = await screen.findByRole('button', {
+      name: 'Download small.png',
+    });
+    expect(screen.getByRole('grid', { name: 'Files' }).contains(download)).toBe(
+      true,
+    );
+    fireEvent.click(download);
+    expect(saveBlob).toHaveBeenCalledWith(
+      expect.any(File),
+      'small.webp',
+      'image/webp',
+    );
   });
 });

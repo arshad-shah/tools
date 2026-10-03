@@ -20,12 +20,14 @@ export interface ToolItem {
   shortLabel?: string;
   icon: IconComponent;
   shortcut?: string;
-  kind: 'button' | 'toggle' | 'split';
+  /** `menu`: the button only opens `menu` (no action of its own). */
+  kind: 'button' | 'toggle' | 'split' | 'menu';
   pressed?: boolean;
   /** true, or the reason it is unavailable (shown in the tooltip). */
   disabled?: boolean | string;
-  onSelect(): void;
-  /** Split button menu. */
+  /** The action (unused by `menu` items). */
+  onSelect?(): void;
+  /** Split and menu item entries. */
   menu?: { id: string; label: string; onSelect(): void }[];
   /** Receives the item's button, e.g. to anchor a Popover it opens. */
   anchor?: React.RefObject<HTMLButtonElement | null>;
@@ -158,7 +160,7 @@ export function Toolbar({
         onFocus={() => setActiveId(item.id)}
         onKeyDown={(e) => onKeyDown(e, item)}
         onClick={() => {
-          if (!disabled) item.onSelect();
+          if (!disabled) item.onSelect?.();
         }}
         className={cn(
           'shrink-0',
@@ -179,6 +181,27 @@ export function Toolbar({
         {button}
       </Tooltip>
     );
+    const entries = (item.menu ?? []).map((m) => (
+      <DropdownMenuItem key={m.id} onClick={m.onSelect}>
+        {m.label}
+      </DropdownMenuItem>
+    ));
+    // A disabled menu item stays a plain (aria-disabled) button.
+    if (item.kind === 'menu' && !disabled)
+      return (
+        <DropdownMenu key={item.id} className="shrink-0">
+          <Tooltip
+            content={reason ?? item.label}
+            shortcut={reason ? undefined : item.shortcut}
+            side={vertical ? 'bottom' : 'top'}
+          >
+            <DropdownMenuTrigger>{button}</DropdownMenuTrigger>
+          </Tooltip>
+          <DropdownMenuContent align="start" aria-label={item.label}>
+            {entries}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     if (item.kind !== 'split') return tip;
     return (
       <DropdownMenu
@@ -206,11 +229,7 @@ export function Toolbar({
           />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" aria-label={item.label}>
-          {(item.menu ?? []).map((m) => (
-            <DropdownMenuItem key={m.id} onClick={m.onSelect}>
-              {m.label}
-            </DropdownMenuItem>
-          ))}
+          {entries}
         </DropdownMenuContent>
       </DropdownMenu>
     );

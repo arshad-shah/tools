@@ -61,6 +61,56 @@ function view(bytes: Uint8Array): DataView {
 const r64 = (d: DataView, o: number) => d.getBigUint64(o, true);
 const r32 = (d: DataView, o: number) => BigInt(d.getUint32(o, true));
 
+// The hot loops (XXH64 rounds, XXH3 accumulate and scramble) run on 64-bit
+// lanes held as [lo, hi] uint32 pairs, about ten times faster than BigInt;
+// the short paths and finalisation stay on BigInt.
+
+/** Result of the last mul64 / mul32 (no allocation in the hot loops). */
+let mLo = 0;
+let mHi = 0;
+
+/** Low 64 bits of (aHi:aLo) * (bHi:bLo), into mLo and mHi. */
+function mul64(aLo: number, aHi: number, bLo: number, bHi: number): void {
+  mul32(aLo, bLo);
+  mHi = (mHi + Math.imul(aLo, bHi) + Math.imul(aHi, bLo)) >>> 0;
+}
+
+/** The full 64-bit product of two uint32s, into mLo and mHi. */
+function mul32(a: number, b: number): void {
+  const a0 = a & 0xffff;
+  const a1 = a >>> 16;
+  const b0 = b & 0xffff;
+  const b1 = b >>> 16;
+  const p00 = a0 * b0;
+  const p01 = a0 * b1;
+  const p10 = a1 * b0;
+  const mid = (p00 >>> 16) + (p01 & 0xffff) + (p10 & 0xffff);
+  mLo = ((mid << 16) | (p00 & 0xffff)) >>> 0;
+  mHi = (a1 * b1 + (p01 >>> 16) + (p10 >>> 16) + (mid >>> 16)) >>> 0;
+}
+
+/** lanes[i] += (lo, hi), wrapping at 64 bits. */
+function addLane(lanes: Uint32Array, i: number, lo: number, hi: number): void {
+  const l = (lanes[2 * i] + lo) >>> 0;
+  lanes[2 * i + 1] = (lanes[2 * i + 1] + hi + (l < lo ? 1 : 0)) >>> 0;
+  lanes[2 * i] = l;
+}
+
+const laneOf = (lanes: Uint32Array, i: number) =>
+  (BigInt(lanes[2 * i + 1]) << 32n) | BigInt(lanes[2 * i]);
+
+function lanesOf(values: readonly bigint[]): Uint32Array {
+  const out = new Uint32Array(values.length * 2);
+  values.forEach((v, i) => {
+    out[2 * i] = Number(v & M32);
+    out[2 * i + 1] = Number(v >> 32n);
+  });
+  return out;
+}
+
+const loOf = (v: bigint) => Number(v & M32);
+const hiOf = (v: bigint) => Number(v >> 32n);
+
 function concat(a: Uint8Array, b: Uint8Array): Uint8Array {
   if (a.length === 0) return b;
   const out = new Uint8Array(a.length + b.length);
@@ -82,8 +132,29 @@ function avalanche64(h: bigint): bigint {
   return h ^ (h >> 32n);
 }
 
+const P1_LO = loOf(P64_1);
+const P1_HI = hiOf(P64_1);
+const P2_LO = loOf(P64_2);
+const P2_HI = hiOf(P64_2);
+
+/** round64 on lane `i`: rotl(acc + input * P2, 31) * P1. */
+function roundLane(v: Uint32Array, i: number, inLo: number, inHi: number) {
+  mul64(inLo, inHi, P2_LO, P2_HI);
+  addLane(v, i, mLo, mHi);
+  const lo = v[2 * i];
+  const hi = v[2 * i + 1];
+  mul64(
+    ((lo << 31) | (hi >>> 1)) >>> 0,
+    ((hi << 31) | (lo >>> 1)) >>> 0,
+    P1_LO,
+    P1_HI,
+  );
+  v[2 * i] = mLo;
+  v[2 * i + 1] = mHi;
+}
+
 export function createXxh64(): Checksum {
-  const v = [add(P64_1, P64_2), P64_2, 0n, (0n - P64_1) & M64];
+  const lanes = lanesOf([add(P64_1, P64_2), P64_2, 0n, (0n - P64_1) & M64]);
   let pending: Uint8Array = new Uint8Array(0);
   let total = 0;
   return {
@@ -93,10 +164,17 @@ export function createXxh64(): Checksum {
       const d = view(data);
       let o = 0;
       for (; o + 32 <= data.length; o += 32)
-        for (let i = 0; i < 4; i++) v[i] = round64(v[i], r64(d, o + i * 8));
+        for (let i = 0; i < 4; i++)
+          roundLane(
+            lanes,
+            i,
+            d.getUint32(o + i * 8, true),
+            d.getUint32(o + i * 8 + 4, true),
+          );
       pending = data.slice(o);
     },
     digestHex() {
+      const v = [0, 1, 2, 3].map((i) => laneOf(lanes, i));
       let h: bigint;
       if (total >= 32) {
         h = add(
@@ -230,22 +308,30 @@ function xxh3Short(input: Uint8Array): bigint {
   return avalanche3(acc);
 }
 
-function accumulate512(acc: bigint[], d: DataView, o: number, so: number) {
+function accumulate512(acc: Uint32Array, d: DataView, o: number, so: number) {
   for (let i = 0; i < 8; i++) {
-    const val = r64(d, o + 8 * i);
-    const key = val ^ s64(so + 8 * i);
-    acc[i ^ 1] = add(acc[i ^ 1], val);
-    acc[i] = add(acc[i], (key & M32) * (key >> 32n));
+    const vLo = d.getUint32(o + 8 * i, true);
+    const vHi = d.getUint32(o + 8 * i + 4, true);
+    addLane(acc, i ^ 1, vLo, vHi);
+    mul32(
+      (vLo ^ S.getUint32(so + 8 * i, true)) >>> 0,
+      (vHi ^ S.getUint32(so + 8 * i + 4, true)) >>> 0,
+    );
+    addLane(acc, i, mLo, mHi);
   }
 }
 
-function scramble(acc: bigint[]) {
+const P32_1_NUM = Number(P32_1);
+
+function scramble(acc: Uint32Array) {
   const so = SECRET.length - STRIPE;
   for (let i = 0; i < 8; i++) {
-    let a = acc[i];
-    a ^= a >> 47n;
-    a ^= s64(so + 8 * i);
-    acc[i] = mul(a, P32_1);
+    const hi = acc[2 * i + 1];
+    // a ^= a >> 47; a ^= secret; a *= P32_1.
+    const lo = (acc[2 * i] ^ (hi >>> 15) ^ S.getUint32(so + 8 * i, true)) >>> 0;
+    mul64(lo, (hi ^ S.getUint32(so + 8 * i + 4, true)) >>> 0, P32_1_NUM, 0);
+    acc[2 * i] = mLo;
+    acc[2 * i + 1] = mHi;
   }
 }
 
@@ -254,7 +340,7 @@ function scramble(acc: bigint[]) {
  * known to exist, because the reference treats the final stripe separately.
  */
 export function createXxh3(): Checksum {
-  const acc = [P32_3, P64_1, P64_2, P64_3, P64_4, P32_2, P64_5, P32_1];
+  const acc = lanesOf([P32_3, P64_1, P64_2, P64_3, P64_4, P32_2, P64_5, P32_1]);
   let head: Uint8Array = new Uint8Array(0); // first MIDSIZE_MAX + 1 bytes
   let pending: Uint8Array = new Uint8Array(0);
   let last: Uint8Array = new Uint8Array(0); // last STRIPE bytes seen
@@ -281,8 +367,9 @@ export function createXxh3(): Checksum {
     },
     digestHex() {
       if (total <= MIDSIZE_MAX) return hex64(xxh3Short(head));
-      const a = [...acc];
-      accumulate512(a, view(last), 0, SECRET.length - STRIPE - 7);
+      const lanes = acc.slice();
+      accumulate512(lanes, view(last), 0, SECRET.length - STRIPE - 7);
+      const a = Array.from({ length: 8 }, (_, i) => laneOf(lanes, i));
       let h = mul(BigInt(total), P64_1);
       for (let i = 0; i < 4; i++)
         h = add(

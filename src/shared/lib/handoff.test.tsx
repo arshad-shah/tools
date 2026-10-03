@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StrictMode, useEffect } from 'react';
 import { render, renderHook } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import {
   HANDOFF_MAX,
   putHandoff,
@@ -164,5 +165,25 @@ describe('handoff (text payloads)', () => {
     expect(() => sendTo(navigate, 'no-such-tool', text)).toThrow(
       /no-such-tool/,
     );
+  });
+
+  it('inside a router, reads the router location and strips the param through it', () => {
+    const id = putHandoff(text);
+    const seen: string[] = [];
+    const got: (HandoffPayload | null)[] = [];
+    function Reader() {
+      got.push(useHandoff((p) => p.kind === 'text'));
+      seen.push(useLocation().search);
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={[`/text/diff?handoff=${id}&a=1#h`]}>
+        <Reader />
+      </MemoryRouter>,
+    );
+    expect(got.at(-1)).toMatchObject({ text: '{}' });
+    // useLocation no longer shows a stale ?handoff.
+    expect(seen.at(-1)).toBe('?a=1');
+    expect(takeHandoff(id)).toBeNull();
   });
 });

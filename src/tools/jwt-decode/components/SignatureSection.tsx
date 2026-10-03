@@ -21,6 +21,7 @@ import {
   Inline,
   Label,
   SegmentedControl,
+  SecretInput,
   Select,
   Stack,
   Text,
@@ -139,21 +140,29 @@ export const SignatureSection: React.FC<SignatureSectionProps> = ({
               )}
             </Inline>
             <Label htmlFor="jwt-verify-key">Secret or public key</Label>
-            <Textarea
-              id="jwt-verify-key"
-              value={keyText}
-              onChange={setKeyText}
-              rows={4}
-              spellCheck={false}
-              autoComplete="off"
-              placeholder={
-                keyKind === 'secret'
-                  ? 'The shared secret used for HS256, HS384 or HS512'
-                  : keyKind === 'pem'
+            {keyKind === 'secret' ? (
+              <SecretInput
+                id="jwt-verify-key"
+                value={keyText}
+                onChange={setKeyText}
+                label="secret"
+                placeholder="The shared secret used for HS256, HS384 or HS512"
+              />
+            ) : (
+              <Textarea
+                id="jwt-verify-key"
+                value={keyText}
+                onChange={setKeyText}
+                rows={4}
+                spellCheck={false}
+                autoComplete="off"
+                placeholder={
+                  keyKind === 'pem'
                     ? 'PEM public key (BEGIN PUBLIC KEY)'
                     : 'JWK or JWKS JSON'
-              }
-            />
+                }
+              />
+            )}
             {pickNeeded && (
               <Stack gap="1">
                 <Label htmlFor="jwt-jwks-pick">Key from the set</Label>

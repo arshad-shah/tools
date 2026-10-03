@@ -6,6 +6,7 @@ import {
   Button,
   DataGrid,
   DropZone,
+  IconButton,
   Inline,
   Meter,
   Select,
@@ -35,6 +36,17 @@ interface FileRow extends ChecksumRow {
   done: number;
   error?: string;
 }
+
+const STATUS_TEXT = {
+  done: 'Done',
+  error: 'Failed',
+  cancelled: 'Cancelled',
+} as const;
+
+const progressText = (r: FileRow) =>
+  r.status === 'hashing'
+    ? `${formatBytes(r.done)} of ${formatBytes(r.size)}`
+    : STATUS_TEXT[r.status];
 
 interface FileHashesProps {
   selected: DigestId[];
@@ -124,6 +136,34 @@ export const FileHashes: React.FC<FileHashesProps> = ({
         header: 'Size',
         accessor: (r) => formatBytes(r.size),
       },
+      {
+        id: 'progress',
+        header: 'Progress',
+        accessor: progressText,
+        minWidth: 200,
+        render: (r) =>
+          r.status === 'hashing' ? (
+            <>
+              <Meter
+                className="min-w-0 flex-1"
+                label={`Hashing ${r.name}`}
+                value={r.size ? r.done / r.size : 0}
+                valueText={progressText(r)}
+                tone="ok"
+                hideLabel
+              />
+              <IconButton
+                size="sm"
+                variant="ghost"
+                icon={IconX}
+                label={`Cancel ${r.name}`}
+                onClick={() => jobs.current.get(r.id)?.abort()}
+              />
+            </>
+          ) : (
+            <span className="truncate">{progressText(r)}</span>
+          ),
+      },
       ...selected.map((d) => ({
         id: d,
         header: digestInfo(d).name,
@@ -140,7 +180,6 @@ export const FileHashes: React.FC<FileHashesProps> = ({
     [selected, output],
   );
 
-  const running = rows.filter((r) => r.status === 'hashing');
   const done = rows.filter((r) => r.status === 'done');
   const checksums = alg ? toChecksumFile(done, alg) : '';
 
@@ -154,27 +193,6 @@ export const FileHashes: React.FC<FileHashesProps> = ({
         hint="Any size: files are read in 4 MB slices on this device."
         chooseLabel="Choose files"
       />
-      {running.map((r) => (
-        <Inline key={r.id} gap="3" align="center" wrap={false}>
-          <div className="min-w-0 flex-1">
-            <Meter
-              label={`Hashing ${r.name}`}
-              value={r.size ? r.done / r.size : 0}
-              valueText={`${formatBytes(r.done)} of ${formatBytes(r.size)}`}
-              tone="ok"
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconX size="sm" />}
-            onClick={() => jobs.current.get(r.id)?.abort()}
-            aria-label={`Cancel ${r.name}`}
-          >
-            Cancel
-          </Button>
-        </Inline>
-      ))}
       {rows.some((r) => r.status === 'error') && (
         <Alert status="danger">
           <AlertDescription>
@@ -187,12 +205,6 @@ export const FileHashes: React.FC<FileHashesProps> = ({
       )}
       {rows.length > 0 && (
         <>
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            rowKey={(r) => r.id}
-            ariaLabel="File hashes"
-          />
           <Inline gap="2" align="center" wrap>
             <div className="w-48">
               <Select
@@ -237,6 +249,12 @@ export const FileHashes: React.FC<FileHashesProps> = ({
               Clear list
             </Button>
           </Inline>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            rowKey={(r) => r.id}
+            ariaLabel="File hashes"
+          />
           {done.length === 0 && (
             <Text size="sm" tone="subtle">
               Checksum files list finished files only.

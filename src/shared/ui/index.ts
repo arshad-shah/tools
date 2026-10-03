@@ -277,6 +277,7 @@ export {
 export * from './split-pane';
 export * from './bit-grid';
 export * from './meter';
+export * from './secret-input';
 export * from './secret-text';
 export * from './focus-overlay';
 export * from './device-frame';

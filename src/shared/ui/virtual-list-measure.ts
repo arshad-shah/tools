@@ -7,7 +7,8 @@ interface MeasurerOptions {
   scrollRef: RefObject<HTMLDivElement | null>;
   /** The current model; mounted rows are re-measured when it is rebuilt. */
   model: SizeModel;
-  onScrollAdjusted(top: number): void;
+  /** Rows above the viewport grew or shrank by `delta` px: keep the view. */
+  onAnchorShift(delta: number): void;
   onSizesChanged(): void;
 }
 
@@ -21,13 +22,13 @@ export function useRowMeasurer({
   live,
   scrollRef,
   model,
-  onScrollAdjusted,
+  onAnchorShift,
   onSizesChanged,
 }: MeasurerOptions) {
   const observer = useRef<ResizeObserver | null>(null);
-  const callbacks = useRef({ onScrollAdjusted, onSizesChanged });
+  const callbacks = useRef({ onAnchorShift, onSizesChanged });
   useEffect(() => {
-    callbacks.current = { onScrollAdjusted, onSizesChanged };
+    callbacks.current = { onAnchorShift, onSizesChanged };
   });
 
   // Re-measure mounted rows against a freshly built size model.
@@ -63,11 +64,8 @@ export function useRowMeasurer({
             if (delta !== 0) changed = true;
             if (i < first) anchor += delta;
           }
-          const el = scrollRef.current;
-          if (anchor !== 0 && el) {
-            el.scrollTop += anchor;
-            callbacks.current.onScrollAdjusted(el.scrollTop);
-          }
+          if (anchor !== 0 && scrollRef.current)
+            callbacks.current.onAnchorShift(anchor);
           if (changed) callbacks.current.onSizesChanged();
         });
       }
