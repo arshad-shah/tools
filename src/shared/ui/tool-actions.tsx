@@ -1,13 +1,7 @@
-import React, { createContext, useContext } from 'react';
+import React, { useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/shared/lib/cn';
-
-/**
- * The element in the tool page header that holds page-level actions (Share,
- * Export, Send to). ToolPage provides it; a tool rendered elsewhere (tests,
- * a hub preview) has none and its actions render in place.
- */
-export const ToolActionsSlot = createContext<HTMLElement | null>(null);
+import { ToolActionsSlot } from './tool-actions-slot';
 
 export interface ToolActionsProps {
   children: React.ReactNode;

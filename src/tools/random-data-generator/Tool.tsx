@@ -21,6 +21,7 @@ import {
   Inline,
   PaneTabs,
   ShareButton,
+  ToolActions,
   Stack,
   usePaneTab,
 } from '@/shared/ui';
@@ -29,7 +30,7 @@ import { FieldEditor } from './components/FieldEditor';
 import { GeneratePanel } from './components/GeneratePanel';
 import { newSeed } from './lib/seed';
 import { OutputPanel } from './components/OutputPanel';
-import { SchemaIO } from './components/SchemaIO';
+import { PresetPicker, SchemaIO } from './components/SchemaIO';
 import { TableBar } from './components/TableBar';
 import { useMockGenerator } from './hooks/useMockGenerator';
 import type { PresetId } from './lib/presets';
@@ -258,34 +259,41 @@ function Generator({
           </AlertDescription>
         </Alert>
       )}
-      <Inline justify="between" align="center" gap="3" wrap>
+      <ToolActions>
         <SchemaIO
           schema={clean(schema)}
           lastPreset={lastPreset}
           onSchema={replaceSchema}
         />
         <ShareButton share={share} />
-      </Inline>
+      </ToolActions>
 
-      <GeneratePanel
-        count={count}
-        onCount={(n) => {
-          setCount(n);
-          update({ count: n });
-        }}
-        seed={seed}
-        onSeed={setSeed}
-        locale={locale}
-        onLocale={(l) => {
-          setLocale(l);
-          update({ locale: l });
-        }}
-        fieldCount={table.fields.length}
-        running={job.status === 'running'}
-        progress={job.progress}
-        onGenerate={generate}
-        onCancel={job.cancel}
-      />
+      <Card>
+        <CardBody>
+          <GeneratePanel
+            preset={
+              <PresetPicker lastPreset={lastPreset} onSchema={replaceSchema} />
+            }
+            count={count}
+            onCount={(n) => {
+              setCount(n);
+              update({ count: n });
+            }}
+            seed={seed}
+            onSeed={setSeed}
+            locale={locale}
+            onLocale={(l) => {
+              setLocale(l);
+              update({ locale: l });
+            }}
+            fieldCount={table.fields.length}
+            running={job.status === 'running'}
+            progress={job.progress}
+            onGenerate={generate}
+            onCancel={job.cancel}
+          />
+        </CardBody>
+      </Card>
 
       <PaneTabs
         id={TOOL_ID}

@@ -14,12 +14,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Inline,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Label,
   Select,
+  Stack,
   TextInputPanel,
 } from '@/shared/ui';
-import { IconDownload, IconFileUp, IconSparkles } from '@/shared/ui/icons';
+import {
+  IconChevronDown,
+  IconDownload,
+  IconFileJson,
+  IconFileUp,
+  IconSparkles,
+} from '@/shared/ui/icons';
 import {
   isPresetId,
   PRESET_IDS,
@@ -46,9 +56,30 @@ interface SchemaIOProps {
   onSchema(schema: MockSchema, preset: PresetId | null): void;
 }
 
-/** Presets, schema import and export, and inference from a JSON sample. */
-export function SchemaIO({ schema, lastPreset, onSchema }: SchemaIOProps) {
+/** The preset picker: a starting schema for the common shapes. */
+export function PresetPicker({
+  lastPreset,
+  onSchema,
+}: Omit<SchemaIOProps, 'schema'>) {
   const presetId = useId();
+  return (
+    <Stack gap="1">
+      <Label htmlFor={presetId}>Preset</Label>
+      <Select
+        id={presetId}
+        value={lastPreset ?? ''}
+        onValueChange={(v) => isPresetId(v) && onSchema(PRESETS[v], v)}
+        items={[
+          { value: '', label: 'Custom' },
+          ...PRESET_IDS.map((p) => ({ value: p, label: PRESET_LABEL[p] })),
+        ]}
+      />
+    </Stack>
+  );
+}
+
+/** Schema import and export, and inference from a JSON sample. */
+export function SchemaIO({ schema, onSchema }: SchemaIOProps) {
   const [mode, setMode] = useState<Mode>(null);
   const [text, setText] = useState('');
   const [error, setError] = useState<ToolError | null>(null);
@@ -76,47 +107,41 @@ export function SchemaIO({ schema, lastPreset, onSchema }: SchemaIOProps) {
   };
 
   return (
-    <Inline gap="2" align="center" wrap>
-      <Label htmlFor={presetId}>Preset</Label>
-      <Select
-        id={presetId}
-        value={lastPreset ?? ''}
-        onValueChange={(v) => isPresetId(v) && onSchema(PRESETS[v], v)}
-        items={[
-          { value: '', label: 'Custom' },
-          ...PRESET_IDS.map((p) => ({ value: p, label: PRESET_LABEL[p] })),
-        ]}
-      />
-      <Button
-        size="sm"
-        variant="secondary"
-        leftIcon={<IconSparkles size="sm" />}
-        onClick={() => open('infer')}
-      >
-        Infer from JSON sample
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        leftIcon={<IconFileUp size="sm" />}
-        onClick={() => open('import')}
-      >
-        Import schema
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        leftIcon={<IconDownload size="sm" />}
-        onClick={() =>
-          saveBlob(
-            new TextEncoder().encode(schemaToJson(schema)),
-            'mock-schema.json',
-            'application/json',
-          )
-        }
-      >
-        Export schema
-      </Button>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Button
+            size="sm"
+            variant="secondary"
+            leftIcon={<IconFileJson size="sm" />}
+            rightIcon={<IconChevronDown size="sm" />}
+          >
+            Schema
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => open('infer')}>
+            <IconSparkles size="sm" aria-hidden />
+            Infer from JSON sample
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => open('import')}>
+            <IconFileUp size="sm" aria-hidden />
+            Import schema
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              saveBlob(
+                new TextEncoder().encode(schemaToJson(schema)),
+                'mock-schema.json',
+                'application/json',
+              )
+            }
+          >
+            <IconDownload size="sm" aria-hidden />
+            Export schema
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Dialog
         open={mode !== null}
         onOpenChange={(o) => !o && setMode(null)}
@@ -152,6 +177,6 @@ export function SchemaIO({ schema, lastPreset, onSchema }: SchemaIOProps) {
           </Button>
         </DialogFooter>
       </Dialog>
-    </Inline>
+    </>
   );
 }
