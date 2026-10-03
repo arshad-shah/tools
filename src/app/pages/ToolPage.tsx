@@ -50,7 +50,7 @@ export function ToolPage({ tool, children }: ToolPageProps) {
               phones the star stays beside the title and the actions take
               their own row. */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:me-auto sm:flex-none">
               <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-fg">
                 {tool.name}
               </h1>
@@ -63,7 +63,7 @@ export function ToolPage({ tool, children }: ToolPageProps) {
             <div
               ref={setActions}
               data-tool-actions
-              className="order-3 flex w-full min-w-0 flex-wrap items-center gap-2 empty:hidden sm:order-none sm:ms-auto sm:w-auto sm:justify-end"
+              className="order-3 flex w-full min-w-0 flex-wrap items-center gap-2 empty:hidden sm:order-none sm:w-auto sm:justify-end"
             />
             <IconButton
               variant="ghost"
