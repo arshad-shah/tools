@@ -15,6 +15,7 @@ import {
   Label,
   Stack,
   Text,
+  ToolActions,
 } from '@/shared/ui';
 import { IconDownload } from '@/shared/ui/icons';
 
@@ -79,9 +80,10 @@ export function ExportPanel(p: ExportPanelProps) {
               defaultFormat="hex"
             />
           </Inline>
-          <Inline gap="2" wrap>
+          <ToolActions>
             <Button
               variant="primary"
+              size="sm"
               leftIcon={<IconDownload size="sm" />}
               disabled={!p.canDownload}
               loading={p.downloading}
@@ -89,22 +91,19 @@ export function ExportPanel(p: ExportPanelProps) {
             >
               Download ZIP
             </Button>
-            <CopyButton
-              variant="text"
-              size="md"
-              label="snippet"
-              value={p.snippet}
-            />
-          </Inline>
+          </ToolActions>
           {p.error ? (
             <Alert status="danger">
               <AlertDescription>{p.error}</AlertDescription>
             </Alert>
           ) : null}
           <Stack gap="1">
-            <Text size="sm" weight="medium">
-              HTML for the page head
-            </Text>
+            <Inline justify="between" align="center" gap="2">
+              <Text size="sm" weight="medium">
+                HTML for the page head
+              </Text>
+              <CopyButton variant="text" label="snippet" value={p.snippet} />
+            </Inline>
             <Code block aria-label="HTML snippet" data-testid="html-snippet">
               {p.snippet}
             </Code>

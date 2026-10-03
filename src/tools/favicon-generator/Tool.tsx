@@ -140,7 +140,7 @@ export default function FaviconGenerator() {
   ]);
 
   return (
-    <Container size="full">
+    <Container size="full" className="px-0 sm:px-0">
       <Stack gap="4">
         <PaneTabs
           id="favicon-generator"

@@ -144,7 +144,7 @@ const Calculator: React.FC = () => {
   };
 
   return (
-    <Container size="lg">
+    <Container size="full" className="px-0 sm:px-0">
       <Stack gap="4">
         <Inline justify="between" align="center" gap="2" wrap>
           <SegmentedControl

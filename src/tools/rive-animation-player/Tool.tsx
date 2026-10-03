@@ -126,7 +126,7 @@ export default function RiveAnimationPlayer() {
   ]);
 
   return (
-    <Container size="full">
+    <Container size="full" className="px-0 sm:px-0">
       <Grid max={3} gap="4">
         <Box className="lg:col-span-2">
           <Card>

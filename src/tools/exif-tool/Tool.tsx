@@ -55,7 +55,7 @@ export default function ExifTool() {
   ]);
 
   return (
-    <Container size="full">
+    <Container size="full" className="px-0 sm:px-0">
       <Stack gap="4">
         <DropZone
           variant={entries.length ? 'inline' : 'hero'}
