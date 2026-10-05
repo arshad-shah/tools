@@ -31,13 +31,13 @@ jobs:
       # global-setup generates the fixtures (large-300.pdf included).
       - name: Performance budgets
         run: pnpm test:e2e --grep @perf
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: perf
           path: test-results/perf.json
           if-no-files-found: warn
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: perf-playwright-report
