@@ -3,11 +3,13 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SignatureSource } from '@/pdf/sign';
 import { SignatureInk } from './SignatureInk';
+import { fillSign } from './store';
 
 beforeEach(() => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
     setTransform: vi.fn(),
     clearRect: vi.fn(),
+    scale: vi.fn(),
     fill: vi.fn(),
     fillStyle: '',
   } as unknown as CanvasRenderingContext2D);
@@ -19,6 +21,7 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  fillSign.set({ drawing: { strokes: [], ink: null, weight: 'medium' } });
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

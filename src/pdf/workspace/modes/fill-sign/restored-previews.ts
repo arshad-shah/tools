@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { ensureFontFace, fontById } from '@/pdf/sign';
+import { ensureFontFace, fontById, loadSignatureFont } from '@/pdf/sign';
+import { typedVector } from '@/pdf/sign/typed';
 import type { SignPlaceParams } from '@/pdf/doc/ops/fill-sign';
 import type { DocumentApi } from '../types';
 import { fillSign, type SignaturePreview } from './store';
@@ -52,6 +53,18 @@ export function useRestoredPreviews(doc: DocumentApi): void {
           color: c.color,
           slant: c.slant,
         });
+        // Then the glyph outlines the writer fits, as a fresh one shows.
+        loadSignatureFont(c.fontId).then(
+          (font) => {
+            if (live)
+              addPreview(c.fontAsset, {
+                kind: 'ink',
+                vector: typedVector(font, c.text, c.slant ?? 0),
+                color: c.color,
+              });
+          },
+          () => {},
+        );
         continue;
       }
       if (c.kind !== 'image') continue;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clampToPage, markBox, snapToCell } from './snap';
+import { overlayLayout } from './text-style';
 
 const label = { x: 50, y: 700, width: 160, height: 22 };
 const value = { x: 210, y: 700, width: 340, height: 22 };
@@ -14,13 +15,16 @@ describe('snapToCell', () => {
     expect(box.y + box.height).toBeLessThanOrEqual(label.y + label.height);
   });
 
-  it('outside cells, sits on the click baseline', () => {
-    expect(snapToCell({ x: 100, y: 300 }, [label]).box).toEqual({
-      x: 100,
-      y: 300,
-      width: 160,
-      height: 13.75,
+  it('outside cells, the text sits on the clicked line', () => {
+    const { box } = snapToCell({ x: 100, y: 300 }, [label]);
+    expect(box).toMatchObject({ x: 100, width: 160, height: 13.75 });
+    const { baseline } = overlayLayout('Hello', box, {
+      size: 11,
+      color: '#000000',
+      spacing: 0,
+      comb: 0,
     });
+    expect(box.y + baseline).toBeCloseTo(300, 5);
   });
 
   it('centres marks on the point', () => {

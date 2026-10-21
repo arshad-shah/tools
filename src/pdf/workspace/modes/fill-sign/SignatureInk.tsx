@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { IconEraser, IconUndo } from '@/shared/ui/icons';
 import {
   Button,
@@ -17,11 +17,13 @@ import {
   type SignatureSourceProps,
 } from '@/pdf/sign';
 import { InkField } from './InkField';
+import { fillSign, useFillSign } from './store';
 
 /**
- * The pad's design size in CSS px. It shrinks to fit its container (phone
- * width); strokes are recorded in the shown px, and the vector is cropped
- * to the ink, so the frame only bounds the points.
+ * The pad's coordinate space. It is shown at whatever size fits its
+ * container (phone width, browser text size); strokes are recorded in this
+ * space so the signature keeps its shape and weight, and the vector is
+ * cropped to the ink.
  */
 const PAD = { width: 480, height: 180 };
 
@@ -36,18 +38,18 @@ const UNDO = 'Mod+Z';
 /**
  * An ink pen (plan H-14 "Draw"): pressure-sensitive strokes kept as one
  * vector path, three weights, ink colours, stroke-level undo (also the
- * undo shortcut while focus is in the pad's area).
+ * undo shortcut while focus is in the pad's area). The drawing lives in the
+ * mode's store, so another tab or closing the panel doesn't lose it.
  */
 export const SignatureInk: React.FC<
   SignatureSourceProps & { label?: string }
 > = ({ onChange, disabled, label = 'Draw your signature' }) => {
-  const [strokes, setStrokes] = useState<InkStroke[]>([]);
-  const [ink, setInk] = useState(INK_COLORS[0].value);
-  const [weight, setWeight] = useState<InkWeight>('medium');
+  const drawing = useFillSign((s) => s.drawing);
+  const { strokes, weight } = drawing;
+  const ink = drawing.ink ?? INK_COLORS[0].value;
   const hintId = useId();
 
-  const commit = (next: InkStroke[], color = ink, w = weight) => {
-    setStrokes(next);
+  const emit = (next: InkStroke[], color: string, w: InkWeight) => {
     try {
       onChange(
         next.length
@@ -59,6 +61,18 @@ export const SignatureInk: React.FC<
       onChange(null);
     }
   };
+
+  const commit = (next: InkStroke[], color = ink, w = weight) => {
+    fillSign.set({ drawing: { strokes: next, ink: color, weight: w } });
+    emit(next, color, w);
+  };
+
+  // Back on this tab (or the panel reopened): the kept drawing is the
+  // source again. Once, on mount: later changes go through commit.
+  const restore = useRef(() => {
+    if (strokes.length > 0) emit(strokes, ink, weight);
+  });
+  useEffect(() => restore.current(), []);
 
   const undo = () => {
     if (!disabled && strokes.length > 0) commit(strokes.slice(0, -1));
@@ -77,6 +91,7 @@ export const SignatureInk: React.FC<
     >
       <SignaturePad
         value={strokes}
+        space={PAD}
         onChange={commit}
         label={label}
         aria-describedby={hintId}
@@ -92,20 +107,14 @@ export const SignatureInk: React.FC<
         <InkField
           value={ink}
           disabled={disabled}
-          onChange={(v) => {
-            setInk(v);
-            if (strokes.length > 0) commit(strokes, v);
-          }}
+          onChange={(v) => commit(strokes, v)}
         />
         <SegmentedControl
           label="Weight"
           size="sm"
           value={weight}
           options={WEIGHTS.map((o) => ({ ...o, disabled }))}
-          onChange={(w) => {
-            setWeight(w);
-            if (strokes.length > 0) commit(strokes, ink, w);
-          }}
+          onChange={(w) => commit(strokes, ink, w)}
         />
         <Button
           size="sm"

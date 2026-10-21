@@ -13,9 +13,11 @@ import { caretMetrics, remember } from './text-style';
 export const DRAFT_KEY = 'draft';
 
 /**
- * A new text or date box being typed: committed as a free fill on Enter.
- * Its selection frame resizes or moves the box while it is typed; the
- * caret goes back to the text after each change.
+ * A new text or date box being typed: committed as a free fill on Enter,
+ * and also when it closes any other way (another spot clicked, the mode
+ * left), so typed text is never thrown away. Its selection frame resizes
+ * or moves the box while it is typed; the caret goes back to the text
+ * after each change.
  */
 export function DraftBox({
   ctx,
@@ -39,6 +41,13 @@ export function DraftBox({
   const finish = useFillSign((s) => s.finish);
   const [preview, setPreview] = useState<Box | null>(null);
   const editor = useRef<HTMLDivElement>(null);
+  // A new spot is a new box (its editor starts empty); a resize is not.
+  const [spot, setSpot] = useState<{ rect: Box | null; n: number }>({
+    rect: null,
+    n: 0,
+  });
+  if (draft && draft.rect !== spot.rect)
+    setSpot({ rect: draft.rect, n: spot.n + 1 });
   if (!draft) return null;
   const rect = preview ?? draft.rect;
   const field: ViewField = {
@@ -56,9 +65,8 @@ export function DraftBox({
     fillOpId: null,
     style: draft.style,
   };
-  const commit = (v: string) => {
-    fillSign.set({ draft: null, typing: null });
-    if (!v.trim()) return;
+  const place = (v: string) => {
+    if (!v.trim()) return null;
     const placed = placeFree(
       ctx,
       page.id,
@@ -67,9 +75,13 @@ export function DraftBox({
       v,
       draft.style,
     );
-    if (!placed) return;
-    remember(ctx.doc.state.id, draft.style);
-    ctx.selection.selectObjects([placed.opId]);
+    if (placed) remember(ctx.doc.state.id, draft.style);
+    return placed;
+  };
+  const commit = (v: string) => {
+    fillSign.set({ draft: null, typing: null });
+    const placed = place(v);
+    if (placed) ctx.selection.selectObjects([placed.opId]);
   };
   const backToText = () =>
     editor.current
@@ -93,7 +105,10 @@ export function DraftBox({
         onCommit={(box) => {
           setPreview(null);
           const cur = fillSign.get().draft;
-          if (cur) fillSign.set({ draft: { ...cur, rect: box } });
+          if (cur) {
+            setSpot({ rect: box, n: spot.n });
+            fillSign.set({ draft: { ...cur, rect: box } });
+          }
           backToText();
         }}
       />
@@ -107,6 +122,7 @@ export function DraftBox({
           onActivate={() => {}}
         >
           <FieldEditor
+            key={spot.n}
             field={field}
             inline={
               draft.kind === 'text'
@@ -134,6 +150,7 @@ export function DraftBox({
             }
             onCommit={commit}
             onCancel={() => fillSign.set({ draft: null, typing: null })}
+            onLeave={place}
             onTab={(v) => commit(v)}
           />
         </FieldBox>

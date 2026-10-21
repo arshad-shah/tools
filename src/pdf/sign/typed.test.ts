@@ -3,7 +3,12 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import fontkit from '@pdf-lib/fontkit';
 import { layoutInk } from '@/pdf/edit/text-fit';
 import type { SignatureFont } from './fonts';
-import { slantMatrix, typedLayout, type TypedSignature } from './typed';
+import {
+  slantMatrix,
+  typedLayout,
+  typedVector,
+  type TypedSignature,
+} from './typed';
 
 let font: SignatureFont;
 beforeAll(() => {
@@ -86,5 +91,34 @@ describe('typedLayout', () => {
     const ink = slantedInk(s, typedLayout(font, s, BOX));
     expect((ink.minX + ink.maxX) / 2).toBeCloseTo(BOX.x + BOX.width / 2, 6);
     expect((ink.minY + ink.maxY) / 2).toBeCloseTo(BOX.y + BOX.height / 2, 6);
+  });
+});
+
+describe('typedVector', () => {
+  // Two 1-em squares side by side: the ink is 2 em wide, 1 em tall.
+  const square = {
+    advanceWidth: 1000,
+    bbox: { minX: 0, minY: 0, maxX: 1000, maxY: 1000 },
+    path: { toSVG: () => 'M0 0L1000 0L1000 1000L0 1000Z' },
+  };
+  const font = {
+    unitsPerEm: 1000,
+    layout: () => ({ glyphs: [square, square] }),
+  } as unknown as SignatureFont;
+
+  it('is the glyph outlines, y down, cropped to the ink', () => {
+    expect(typedVector(font, 'ab', 0)).toEqual({
+      d: 'M0 100L100 100L100 0L0 0ZM100 100L200 100L200 0L100 0Z',
+      width: 200,
+      height: 100,
+    });
+  });
+
+  it('leans right by the slant, sheared about the baseline', () => {
+    const v = typedVector(font, 'ab', 45);
+    expect(v.width).toBeCloseTo(300);
+    expect(v.height).toBe(100);
+    // The first square's top-left corner moves right by its height.
+    expect(v.d.startsWith('M0 100L100 100L200 0L100 0Z')).toBe(true);
   });
 });

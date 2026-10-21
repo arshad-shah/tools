@@ -4,7 +4,7 @@ import type { Box, PageId } from '@/pdf/doc/types';
 import type { FormInfo } from '@/pdf/render/form-info';
 import type { SignatureContent } from '@/pdf/doc/ops/fill-sign';
 import type { SignTarget } from '@/pdf/detect';
-import type { InkVector } from '@/pdf/sign/ink';
+import type { InkStroke, InkVector, InkWeight } from '@/pdf/sign/ink';
 import type { AutofillRow } from './AutofillPreview';
 import type { FieldStyle } from './text-style';
 
@@ -84,6 +84,8 @@ export interface FillSignState {
   panelRole: 'signature' | 'initials';
   /** The name typed in the panel (initials and the block start from it). */
   typedName: string;
+  /** The Draw tab's strokes and pen, kept while the panel is closed or on another tab. */
+  drawing: { strokes: InkStroke[]; ink: string | null; weight: InkWeight };
   /**
    * The signature field or place to sign the panel was opened from: Place
    * fills it (snapped to `target` when it came from smart placement).
@@ -130,6 +132,7 @@ const initial: FillSignState = {
   ready: { signature: null, initials: null },
   panelRole: 'signature',
   typedName: '',
+  drawing: { strokes: [], ink: null, weight: 'medium' },
   signTarget: null,
   placing: null,
   justPlaced: null,
@@ -158,6 +161,7 @@ export const fillSign = {
       // Previews and made signatures outlive a mode switch.
       previews: useFillSign.getState().previews,
       ready: useFillSign.getState().ready,
+      drawing: useFillSign.getState().drawing,
       goToPage: useFillSign.getState().goToPage,
     }),
 };

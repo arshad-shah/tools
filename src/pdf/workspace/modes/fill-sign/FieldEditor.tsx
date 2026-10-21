@@ -37,14 +37,21 @@ export interface FieldEditorProps {
   finishNonce?: number;
   /** Done: default onCommit. */
   onFinish?(value: string): void;
+  /**
+   * The editor closed with the text changed but not committed (another
+   * field or spot clicked, the mode left, the page scrolled out of view):
+   * keep what was typed. Called on unmount, so it must not change which
+   * editor is open.
+   */
+  onLeave?(value: string): void;
 }
 
 /**
  * The inline editor inside a field (spec §8.5): a single-line Input, a
  * Textarea for multiline fields, a date input, or a choice list. Enter
  * commits, Esc cancels (or keeps the text, with escapeKeeps), Tab and
- * Shift+Tab commit and move. A warning shows
- * when the text will not fit at 6pt.
+ * Shift+Tab commit and move; closing it any other way keeps the text
+ * (onLeave). A warning shows when the text will not fit at 6pt.
  */
 export function FieldEditor({
   field,
@@ -58,16 +65,35 @@ export function FieldEditor({
   onEscape,
   finishNonce,
   onFinish,
+  onLeave,
 }: FieldEditorProps) {
-  const [value, setRaw] = useState(
+  const [initial] = useState(() =>
     field.type === 'date' ? displayToIso(field.value) : field.value,
   );
+  const [value, setRaw] = useState(initial);
   const wrap = useRef<HTMLDivElement>(null);
+  // Enter, Tab, Esc or Done settled the edit; otherwise unmounting keeps it.
+  const settled = useRef(false);
   const setValue = (v: string) => {
+    settled.current = false;
     setRaw(v);
     onDraft?.(field.type === 'date' ? isoToDisplay(v) : v);
   };
   const out = () => (field.type === 'date' ? isoToDisplay(value) : value);
+
+  const settle =
+    <A extends unknown[]>(f: (...a: A) => void) =>
+    (...a: A) => {
+      settled.current = true;
+      f(...a);
+    };
+  const leave = useRef<() => void>(() => {});
+  useEffect(() => {
+    leave.current = () => {
+      if (!settled.current && value !== initial) onLeave?.(out());
+    };
+  });
+  useEffect(() => () => leave.current(), []);
 
   useEffect(() => {
     wrap.current
@@ -79,7 +105,7 @@ export function FieldEditor({
   const [openedAt] = useState(finishNonce);
   const finish = useRef<() => void>(() => {});
   useEffect(() => {
-    finish.current = () => (onFinish ?? onCommit)(out());
+    finish.current = settle(() => (onFinish ?? onCommit)(out()));
   });
   useEffect(() => {
     if (finishNonce !== undefined && finishNonce !== openedAt) finish.current();
@@ -93,19 +119,19 @@ export function FieldEditor({
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      if (escapeKeeps) (onEscape ?? onCommit)(out());
-      else onCancel();
+      if (escapeKeeps) settle(onEscape ?? onCommit)(out());
+      else settle(onCancel)();
     } else if (
       e.key === 'Enter' &&
       !(field.type === 'multiline' && e.shiftKey)
     ) {
       e.preventDefault();
       e.stopPropagation();
-      onCommit(out());
+      settle(onCommit)(out());
     } else if (e.key === 'Tab') {
       e.preventDefault();
       e.stopPropagation();
-      onTab(out(), e.shiftKey ? -1 : 1);
+      settle(onTab)(out(), e.shiftKey ? -1 : 1);
     }
   };
 

@@ -1,9 +1,9 @@
 import {
   fetchFontBytes,
-  fontById,
   loadSignatureFont,
   type SignatureSource,
 } from '@/pdf/sign';
+import { typedVector } from '@/pdf/sign/typed';
 import { layoutInk, slantInk } from '@/pdf/edit/text-fit';
 import type { ModeProps } from '../types';
 import { fillSign, type ReadySignature } from './store';
@@ -43,12 +43,12 @@ export async function prepare(
   ]);
   const fontAsset = ctx.doc.addAsset(bytes, 'font/woff');
   const slant = source.slant ?? 0;
+  // The page shows the glyph outlines the writer fits, so the placed text
+  // is the size and place the export draws it at any zoom.
   const preview = {
-    kind: 'text' as const,
-    text: source.text,
-    family: fontById(source.fontId).family,
+    kind: 'ink' as const,
+    vector: typedVector(font, source.text, slant),
     color: source.color,
-    ...(slant ? { slant } : {}),
   };
   fillSign.set({
     previews: { ...fillSign.get().previews, [fontAsset]: preview },

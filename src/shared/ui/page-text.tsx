@@ -31,8 +31,10 @@ export interface PageTextProps {
 /**
  * Typed text drawn over a page exactly where the export puts it: each
  * character at its own page-space position (letter spacing and character
- * boxes come from the caller's layout), in a Helvetica-compatible face. The
- * kit owns the inline geometry; colours are validated, never passed raw.
+ * boxes come from the caller's layout), in a Helvetica-compatible face.
+ * SVG text sits on its baseline exactly, as the PDF's does; a CSS line box
+ * would put it 0.15 to 0.25 em high, depending on the font. The kit owns
+ * the inline geometry; colours are validated, never passed raw.
  * Decorative: the field's own control carries the accessible name.
  */
 export function PageText({
@@ -59,25 +61,26 @@ export function PageText({
       height={r.height}
       aria-hidden
       data-testid={testId}
-      className={cn(
-        'pointer-events-none overflow-visible whitespace-pre [font-family:Helvetica,Arial,sans-serif] leading-none',
-        className,
-      )}
+      className={cn('pointer-events-none overflow-visible', className)}
     >
-      {chars.map((ch, i) => (
-        <span
-          key={i}
-          className="absolute"
-          style={{
-            left: x[i] * scale,
-            bottom: baseline * scale,
-            fontSize: size * scale,
-            color,
-          }}
-        >
-          {ch}
-        </span>
-      ))}
+      <svg
+        width={r.width}
+        height={r.height}
+        className="absolute inset-0 overflow-visible [font-family:Helvetica,Arial,sans-serif]"
+        fill={color}
+        fontSize={size * scale}
+      >
+        {chars.map((ch, i) => (
+          <text
+            key={i}
+            x={x[i] * scale}
+            y={r.height - baseline * scale}
+            xmlSpace="preserve"
+          >
+            {ch}
+          </text>
+        ))}
+      </svg>
     </Positioned>
   );
 }

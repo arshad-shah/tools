@@ -229,10 +229,20 @@ describe('initials on chosen pages', () => {
     for (let i = 0; i < 3; i++) {
       const [img] = await imagePlacements(out.bytes, i);
       const { width: w, height: h } = img.viewport;
-      expect(img.left / w).toBeCloseTo(anchor.fx, 2);
-      expect((h - img.top - img.height) / h).toBeCloseTo(anchor.fy, 2);
-      expect(img.width / w).toBeCloseTo(anchor.fw, 2);
-      expect(img.height / h).toBeCloseTo(anchor.fh, 2);
+      // The spot is the same fraction of each page; the 2:1 picture keeps
+      // its shape, as large as fits and centred in it.
+      const spot = {
+        x: anchor.fx * w,
+        y: h - (anchor.fy + anchor.fh) * h,
+        width: anchor.fw * w,
+        height: anchor.fh * h,
+      };
+      expect(img.width / img.height).toBeCloseTo(2);
+      expect(
+        Math.max(img.width / spot.width, img.height / spot.height),
+      ).toBeCloseTo(1);
+      expect(img.left + img.width / 2).toBeCloseTo(spot.x + spot.width / 2, 1);
+      expect(img.top + img.height / 2).toBeCloseTo(spot.y + spot.height / 2, 1);
     }
   });
 

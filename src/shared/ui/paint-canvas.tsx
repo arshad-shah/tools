@@ -25,7 +25,11 @@ export type PaintCanvasProps = PaintA11y & {
   'aria-describedby'?: string;
 } & Pick<
     React.HTMLAttributes<HTMLCanvasElement>,
-    'onPointerDown' | 'onPointerMove' | 'onPointerUp' | 'onPointerCancel'
+    | 'onPointerDown'
+    | 'onPointerMove'
+    | 'onPointerUp'
+    | 'onPointerCancel'
+    | 'onContextMenu'
   >;
 
 /**

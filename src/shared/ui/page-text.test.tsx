@@ -22,14 +22,16 @@ describe('PageText', () => {
     const box = screen.getByTestId('t');
     expect(box.style.left).toBe('200px');
     expect(box.style.width).toBe('320px');
-    const spans = box.querySelectorAll('span');
-    expect([...spans].map((s) => s.style.left)).toEqual([
-      '15px',
-      '55px',
-      '95px',
+    // SVG text sits on its baseline: 5pt up from the box's 20pt bottom.
+    const chars = box.querySelectorAll('text');
+    expect([...chars].map((c) => c.getAttribute('x'))).toEqual([
+      '15',
+      '55',
+      '95',
     ]);
-    expect(spans[0].style.fontSize).toBe('22px');
-    expect(spans[0].style.bottom).toBe('10px');
+    expect(chars[0].getAttribute('y')).toBe('30');
+    expect(box.querySelector('svg')!.getAttribute('font-size')).toBe('22');
+    expect(box.querySelector('svg')!.getAttribute('fill')).toBe('#1e3a8a');
     expect(box.getAttribute('aria-hidden')).toBe('true');
   });
 

@@ -13,7 +13,11 @@ vi.mock('@/pdf/sign', async (importOriginal) => ({
 
 const ctx = { doc: {}, selection: {} } as unknown as ModeProps;
 
-afterEach(() => fillSign.reset());
+afterEach(() => {
+  fillSign.reset();
+  fillSign.set({ drawing: { strokes: [], ink: null, weight: 'medium' } });
+  vi.restoreAllMocks();
+});
 
 describe('SignaturePanel', () => {
   it('offers each signature method, the footer actions and the picture note', () => {
@@ -47,6 +51,31 @@ describe('SignaturePanel', () => {
       (screen.getByRole('textbox', { name: 'Initials' }) as HTMLInputElement)
         .value,
     ).toBe('AKL');
+  });
+
+  it('keeps the drawing when you look at another tab, or close and reopen the panel', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const view = render(<SignaturePanel ctx={ctx} />);
+    const place = () =>
+      screen.getByRole('button', { name: 'Place' }) as HTMLButtonElement;
+    const pad = screen.getByRole('img', { name: 'Draw your signature' });
+    fireEvent.pointerDown(pad, { clientX: 10, clientY: 20, button: 0 });
+    fireEvent.pointerMove(pad, { clientX: 60, clientY: 40 });
+    fireEvent.pointerMove(pad, { clientX: 120, clientY: 30 });
+    fireEvent.pointerUp(pad);
+    expect(place().disabled).toBe(false);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Type' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Draw' }));
+    expect(place().disabled).toBe(false);
+    expect(
+      (screen.getByRole('button', { name: 'Undo stroke' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+
+    view.unmount();
+    render(<SignaturePanel ctx={ctx} />);
+    expect(place().disabled).toBe(false);
   });
 
   it('the Block tab asks for a signature first', () => {

@@ -46,6 +46,33 @@ describe('FieldEditor', () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
+  it('keeps typed text when it closes without Enter (another field clicked, mode left)', () => {
+    const onLeave = vi.fn();
+    const { view } = setup({ onLeave });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Text' }), {
+      target: { value: 'Smith' },
+    });
+    view.unmount();
+    expect(onLeave).toHaveBeenCalledOnce();
+    expect(onLeave).toHaveBeenCalledWith('Smith');
+  });
+
+  it('closing untouched, or after Enter or Esc, does not write twice', () => {
+    const onLeave = vi.fn();
+    setup({ onLeave }).view.unmount();
+    const typed = setup({ onLeave });
+    const input = screen.getByRole('textbox', { name: 'Text' });
+    fireEvent.change(input, { target: { value: 'Smith' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    typed.view.unmount();
+    const cancelled = setup({ onLeave });
+    const again = screen.getByRole('textbox', { name: 'Text' });
+    fireEvent.change(again, { target: { value: 'Nope' } });
+    fireEvent.keyDown(again, { key: 'Escape' });
+    cancelled.view.unmount();
+    expect(onLeave).not.toHaveBeenCalled();
+  });
+
   it('finishes when the bar says Done, not when it opens', () => {
     const onFinish = vi.fn();
     const { view } = setup({ finishNonce: 3, onFinish });

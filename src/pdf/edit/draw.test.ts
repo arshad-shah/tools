@@ -239,6 +239,22 @@ describe('drawings on a page with /Rotate 90', () => {
     expect(pos.y).toBeLessThanOrEqual(area.bottom + 0.01);
   });
 
+  it("'contain' keeps the image's shape, centred in the box", async () => {
+    const { doc, page, ctx } = await setup();
+    const box = { x: 100, y: 200, width: 100, height: 100 };
+    const png = encodePng(20, 10, noiseImage(20, 10, 4));
+    await drawImage(ctx, page, png, 'image/png', box, { fit: 'contain' });
+    const bytes = await doc.save();
+    const [placed] = await imagePlacements(bytes, 0);
+    const area = await onScreen(bytes, box);
+    expect(placed.width).toBeCloseTo(area.right - area.left, 3);
+    expect(placed.height).toBeCloseTo((area.bottom - area.top) / 2, 3);
+    expect(placed.top - area.top).toBeCloseTo(
+      area.bottom - (placed.top + placed.height),
+      3,
+    );
+  });
+
   it('an image turned with the page fills its box upright', async () => {
     const { doc, page, ctx } = await setup(90);
     const box = { x: 100, y: 200, width: 120, height: 60 };

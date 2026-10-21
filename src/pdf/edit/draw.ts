@@ -142,14 +142,18 @@ export async function drawText(
   return fitted;
 }
 
-/** A PNG or JPEG stretched to fill the box. */
+/**
+ * A PNG or JPEG in the box: stretched to fill it, or with `fit: 'contain'`
+ * as large as fits with its shape kept, centred (what a signature's preview
+ * shows).
+ */
 export async function drawImage(
   ctx: DrawCtx,
   page: PDFPage,
   bytes: Uint8Array,
   mime: 'image/png' | 'image/jpeg',
   box: Box,
-  o: { opacity?: number; rotate?: number } = {},
+  o: { opacity?: number; rotate?: number; fit?: 'fill' | 'contain' } = {},
 ): Promise<void> {
   assertBox(box);
   checkOpacity(o.opacity);
@@ -167,8 +171,23 @@ export async function drawImage(
   const matrix = rotated(box, o.rotate);
   page.pushOperators(pushGraphicsState());
   if (matrix) page.pushOperators(concatTransformationMatrix(...matrix));
-  page.drawImage(image, { ...box, opacity: o.opacity });
+  page.drawImage(image, {
+    ...(o.fit === 'contain' ? contain(box, image.width / image.height) : box),
+    opacity: o.opacity,
+  });
   page.pushOperators(popGraphicsState());
+}
+
+/** The largest box of this aspect (width / height) centred in `box`. */
+function contain(box: Box, aspect: number): Box {
+  const width = Math.min(box.width, box.height * aspect);
+  const height = width / aspect;
+  return {
+    x: box.x + (box.width - width) / 2,
+    y: box.y + (box.height - height) / 2,
+    width,
+    height,
+  };
 }
 
 export { arrowHead, drawArrow, drawTextBox } from './draw-extra';

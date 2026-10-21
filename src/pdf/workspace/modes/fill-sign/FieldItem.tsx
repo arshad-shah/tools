@@ -165,6 +165,13 @@ export function FieldItem({
               } else advance(ctx, all, x.key);
             }}
             onCancel={() => fillSign.set({ editing: null, typing: null })}
+            onLeave={(v) => {
+              // Another field opened (or the page left the view): keep the
+              // text without touching which editor is open now.
+              if (fillSign.get().typing?.key === x.key)
+                fillSign.set({ typing: null });
+              writeValue(ctx, x, v);
+            }}
             onTab={(v, dir) => {
               fillSign.set({ typing: null });
               if (writeValue(ctx, x, v).ok) advance(ctx, all, x.key, dir);

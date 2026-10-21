@@ -144,7 +144,7 @@ describe('fill-sign writers', () => {
     });
   });
 
-  it('places a signature image inside its rect', async () => {
+  it('places a signature image inside its rect, its shape kept and centred', async () => {
     const png = encodePng(4, 2, new Uint8Array(4 * 2 * 4).fill(40));
     const out = await run(
       base,
@@ -161,10 +161,21 @@ describe('fill-sign writers', () => {
       { assets: { a1: png } },
     );
     const [img] = await imagePlacements(out.bytes, 0);
-    expect(img.left).toBeCloseTo(RECT.x);
-    expect(img.top).toBeCloseTo(792 - RECT.y - RECT.height);
-    expect(img.width).toBeCloseTo(RECT.width);
-    expect(img.height).toBeCloseTo(RECT.height);
+    // A 2:1 picture, as large as fits, never stretched to the rect.
+    expect(img.width / img.height).toBeCloseTo(2);
+    const top = 792 - RECT.y - RECT.height;
+    expect(img.left).toBeGreaterThanOrEqual(RECT.x - 0.01);
+    expect(img.top).toBeGreaterThanOrEqual(top - 0.01);
+    expect(img.left + img.width).toBeLessThanOrEqual(
+      RECT.x + RECT.width + 0.01,
+    );
+    expect(img.top + img.height).toBeLessThanOrEqual(top + RECT.height + 0.01);
+    expect(
+      Math.max(img.width / RECT.width, img.height / RECT.height),
+    ).toBeCloseTo(1);
+    expect(img.left - RECT.x).toBeCloseTo(
+      RECT.x + RECT.width - img.left - img.width,
+    );
   });
 
   it('draws a typed signature inside its rect', async () => {

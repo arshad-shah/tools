@@ -45,20 +45,26 @@ export function simulatedPressure(
   return clamp(prevPressure + (target - prevPressure) * 0.35, 0.2, 1);
 }
 
-/** A sample from a pointer event; a pen gives real pressure and tilt. */
+/**
+ * A sample from a pointer event; a pen gives real pressure and tilt.
+ * `scale` maps the shown px to the pad's coordinate space.
+ */
 export function pointFromEvent(
   e: PointerEvent,
   rect: DOMRect,
   prev: InkPoint | null,
+  scale: { x: number; y: number } = { x: 1, y: 1 },
 ): InkPoint {
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = (e.clientX - rect.left) * scale.x;
+  const y = (e.clientY - rect.top) * scale.y;
   const t = e.timeStamp;
   if (e.pointerType === 'pen')
     return {
       x,
       y,
-      pressure: e.pressure > 0 ? e.pressure : 0.5,
+      // A pen reports 0 as it lifts off: keep the last pressure rather than
+      // jumping to a default, which left a blob at the end of each stroke.
+      pressure: e.pressure > 0 ? e.pressure : (prev?.pressure ?? 0.5),
       tiltX: e.tiltX ?? 0,
       tiltY: e.tiltY ?? 0,
       t,

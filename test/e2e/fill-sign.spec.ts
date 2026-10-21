@@ -642,3 +642,37 @@ test('a character-box form: one comb field per box run, a Yes tick and a date, e
     await strokesIn(original, 1),
   );
 });
+
+test('typed text is kept when you click somewhere else instead of pressing Enter', async ({
+  page,
+}) => {
+  await open(page, 'test/fixtures/generated/text-3.pdf');
+  await expect(
+    page.locator('[data-testid="page-slot-1"] canvas[data-rendered="true"]'),
+  ).toBeAttached();
+  await page
+    .getByRole('toolbar', { name: /Fill & Sign/ })
+    .getByRole('button', { name: 'Text', exact: true })
+    .click();
+  const slot = page.locator('[data-testid="page-slot-1"]');
+  const box = (await slot.boundingBox())!;
+  const input = page.locator('[data-state="focused"] input');
+  // Fill a flat form the natural way: click, type, click the next spot.
+  await page.mouse.click(box.x + box.width * 0.3, box.y + 300);
+  await expect(input).toBeFocused();
+  await input.pressSequentially('John');
+  await page.mouse.click(box.x + box.width * 0.3, box.y + 400);
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue('');
+  await input.pressSequentially('Smith');
+  await page.mouse.click(box.x + box.width * 0.3, box.y + 500);
+  await expect(input).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId(/^value-free:/)).toHaveCount(2);
+
+  const words = (await textPositions(await exportPdf(page), 0)).map(
+    (t) => t.str,
+  );
+  expect(words).toContain('John');
+  expect(words).toContain('Smith');
+});

@@ -7,6 +7,7 @@ import { SignaturePad } from './signature-pad';
 const ctx = {
   setTransform: vi.fn(),
   clearRect: vi.fn(),
+  scale: vi.fn(),
   fill: vi.fn(),
   fillStyle: '',
 };
@@ -95,6 +96,96 @@ describe('SignaturePad', () => {
     fireEvent.pointerDown(el, { clientX: 1, clientY: 1, button: 0 });
     fireEvent.pointerUp(el);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps the pen stroke when a palm or finger touches the pad mid-stroke', () => {
+    const onChange = vi.fn();
+    pad({ onChange });
+    const el = screen.getByRole('img', { name: 'Draw' });
+    const pen = { pointerId: 1, pointerType: 'pen', pressure: 0.6, button: 0 };
+    const palm = { pointerId: 2, pointerType: 'touch', button: 0 };
+    fireEvent.pointerDown(el, { ...pen, clientX: 1, clientY: 1 });
+    fireEvent.pointerMove(el, { ...pen, clientX: 10, clientY: 1 });
+    fireEvent.pointerDown(el, { ...palm, clientX: 100, clientY: 60 });
+    fireEvent.pointerMove(el, { ...palm, clientX: 120, clientY: 70 });
+    fireEvent.pointerUp(el, { ...palm, clientX: 120, clientY: 70 });
+    fireEvent.pointerMove(el, { ...pen, clientX: 20, clientY: 1 });
+    fireEvent.pointerUp(el, { ...pen, clientX: 20, clientY: 1 });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const [strokes] = onChange.mock.calls[0] as [InkStroke[]];
+    expect(strokes).toHaveLength(1);
+    expect(strokes[0].map((p) => p.x)).toEqual([1, 10, 20]);
+  });
+
+  it('ignores touch while a pen is in use (palm rejection)', () => {
+    const onChange = vi.fn();
+    pad({ onChange });
+    const el = screen.getByRole('img', { name: 'Draw' });
+    const pen = { pointerId: 1, pointerType: 'pen', pressure: 0.6, button: 0 };
+    fireEvent.pointerDown(el, { ...pen, clientX: 1, clientY: 1 });
+    fireEvent.pointerMove(el, { ...pen, clientX: 10, clientY: 1 });
+    fireEvent.pointerUp(el, { ...pen, clientX: 10, clientY: 1 });
+    const palm = { pointerId: 2, pointerType: 'touch', button: 0 };
+    fireEvent.pointerDown(el, { ...palm, clientX: 100, clientY: 60 });
+    fireEvent.pointerMove(el, { ...palm, clientX: 120, clientY: 70 });
+    fireEvent.pointerUp(el, { ...palm, clientX: 120, clientY: 70 });
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the pen pressure steady when a sample reports none', () => {
+    const onChange = vi.fn();
+    pad({ onChange });
+    const el = screen.getByRole('img', { name: 'Draw' });
+    const pen = { pointerId: 1, pointerType: 'pen', button: 0 };
+    fireEvent.pointerDown(el, {
+      ...pen,
+      pressure: 0.3,
+      clientX: 1,
+      clientY: 1,
+    });
+    fireEvent.pointerMove(el, {
+      ...pen,
+      pressure: 0.3,
+      clientX: 10,
+      clientY: 1,
+    });
+    fireEvent.pointerMove(el, { ...pen, pressure: 0, clientX: 20, clientY: 1 });
+    fireEvent.pointerUp(el, { ...pen, pressure: 0, clientX: 20, clientY: 1 });
+    const [strokes] = onChange.mock.calls[0] as [InkStroke[]];
+    expect(strokes[0].map((p) => +p.pressure.toFixed(3))).toEqual([
+      0.3, 0.3, 0.3,
+    ]);
+  });
+
+  it("does not draw with the pen's barrel button or eraser end", () => {
+    const onChange = vi.fn();
+    pad({ onChange });
+    const el = screen.getByRole('img', { name: 'Draw' });
+    for (const button of [2, 5]) {
+      const pen = { pointerId: 1, pointerType: 'pen', pressure: 0.5, button };
+      fireEvent.pointerDown(el, { ...pen, clientX: 1, clientY: 1 });
+      fireEvent.pointerMove(el, { ...pen, clientX: 30, clientY: 1 });
+      fireEvent.pointerUp(el, { ...pen, clientX: 30, clientY: 1 });
+    }
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('records points in its coordinate space whatever size it is shown at', () => {
+    const onChange = vi.fn();
+    pad({ onChange, space: { width: 480, height: 180 } });
+    const el = screen.getByRole('img', { name: 'Draw' });
+    // shown at 240 x 90: half the design size
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: 0, width: 240, height: 90 }),
+    );
+    fireEvent.pointerDown(el, { clientX: 10, clientY: 10, button: 0 });
+    fireEvent.pointerMove(el, { clientX: 230, clientY: 80 });
+    fireEvent.pointerUp(el);
+    const [strokes] = onChange.mock.calls[0] as [InkStroke[]];
+    expect(strokes[0].map((p) => [p.x, p.y])).toEqual([
+      [20, 20],
+      [460, 160],
+    ]);
   });
 
   it('ignores the secondary mouse button', () => {

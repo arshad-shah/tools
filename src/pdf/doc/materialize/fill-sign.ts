@@ -48,7 +48,9 @@ export const writeFlatFill = defineMaterializer<FlatFillParams>({
     const font = winAnsi.length
       ? ({ unicode: true } as const)
       : ({ standard: 'Helvetica' } as const);
-    if (p.spacing || p.comb || (!p.multiline && p.color)) {
+    // Styled layout for multiline text too: the overlay previews that
+    // layout, so wrapping, size and line spacing match the page.
+    if (p.spacing || p.comb || p.multiline || p.color) {
       const laid = await drawStyledText(ctx.draw, page, p.value, box, {
         font,
         size,

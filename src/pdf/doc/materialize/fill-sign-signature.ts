@@ -45,8 +45,10 @@ export async function drawSignatureContent(
   rotate: number,
 ): Promise<void> {
   if (c.kind === 'image')
+    // Shape kept, as the page showed it: a field's box need not match it.
     return drawImage(ctx.draw, page, ctx.asset(c.assetId), c.mime, box, {
       rotate,
+      fit: 'contain',
     });
   if (c.kind === 'ink' || c.kind === 'trace') {
     const fitted = fitVectorToBox(c.vector, box);

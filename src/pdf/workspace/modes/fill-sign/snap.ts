@@ -12,7 +12,8 @@ const inside = (b: Box, x: number, y: number) =>
  * Where click-anywhere text goes (spec §8.5): inside a table cell (any cell,
  * label cells included) the box is the cell left-padded 3pt with its bottom
  * at the cell's baseline (cell bottom + a quarter of its height, capped to
- * the font size); elsewhere a 160pt box sitting on the click's baseline.
+ * the font size); elsewhere a 160pt box whose text sits on the clicked
+ * line (the click is the baseline).
  */
 export function snapToCell(
   point: { x: number; y: number },
@@ -24,11 +25,15 @@ export function snapToCell(
       .filter((c) => inside(c, point.x, point.y))
       .sort((a, b) => a.width * a.height - b.width * b.height)[0] ?? null;
   const height = 1.25 * size;
-  if (!cell)
+  if (!cell) {
+    // One line is centred in its box (Helvetica ascent 0.718, descent
+    // 0.207): drop the box so that baseline lands on the click.
+    const above = height / 2 - ((0.718 - 0.207) / 2) * size;
     return {
-      box: { x: point.x, y: point.y, width: CLICK_BOX_WIDTH, height },
+      box: { x: point.x, y: point.y - above, width: CLICK_BOX_WIDTH, height },
       cell: null,
     };
+  }
   const baseline = cell.y + Math.min(cell.height / 4, size);
   const descent = 0.25 * size;
   const y = Math.max(cell.y, baseline - descent);
