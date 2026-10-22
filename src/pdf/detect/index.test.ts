@@ -54,6 +54,7 @@ describe('detectPage', () => {
         'extractGeometry',
         'findSignTargets',
         'isFlatForm',
+        'isSignNamedText',
         'medianLineHeight',
         'normaliseLines',
         'readingOrder',

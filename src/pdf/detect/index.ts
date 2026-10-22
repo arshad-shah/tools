@@ -32,6 +32,7 @@ export { autofillKey, AUTOFILL_DICTIONARY } from './autofill';
 export { confidence, FIELD_MIN, SUGGEST_MIN } from './confidence';
 export {
   findSignTargets,
+  isSignNamedText,
   sigFieldTargets,
   SIGN_LABELS,
   type SigWidgetLike,

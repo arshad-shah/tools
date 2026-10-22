@@ -4,7 +4,13 @@ import { mergeDetection } from '@/pdf/doc/detection';
 import { registerCoreOperations } from '@/pdf/doc/ops';
 import { makeModel } from '@/pdf/doc/test-helpers';
 import type { FormInfo } from '@/pdf/render/form-info';
-import { detectedKey, fieldName, viewFields } from './fields';
+import {
+  detectedKey,
+  fieldName,
+  shownFields,
+  viewFields,
+  type ViewField,
+} from './fields';
 
 beforeAll(() => registerCoreOperations());
 
@@ -132,6 +138,205 @@ describe('viewFields', () => {
     });
     expect(get()[0].value).toBe('Grace');
   });
+
+  it("leaves a widget's own value to the page, and covers it once changed", () => {
+    // The page render already draws the PDF's appearance of "R-1"; drawing
+    // the value again doubled it. A changed value hides the old one.
+    const forms: Record<string, FormInfo> = {
+      s0: {
+        hasAcroForm: true,
+        hasXfa: false,
+        widgets: [
+          {
+            fieldName: 'ref',
+            kind: 'text',
+            pageIndex: 0,
+            rect: { x: 210, y: 700, width: 300, height: 20 },
+            readOnly: false,
+            value: 'R-1',
+            label: null,
+          },
+          {
+            fieldName: 'blank',
+            kind: 'text',
+            pageIndex: 0,
+            rect: { x: 210, y: 600, width: 300, height: 20 },
+            readOnly: false,
+            value: '',
+            label: null,
+          },
+        ],
+      },
+    };
+    const { model, get } = setup([], forms);
+    expect(get()[0]).toMatchObject({ value: 'R-1', drawnByPage: true });
+    expect(get()[1].drawnByPage).toBeFalsy();
+    model.dispatch({
+      type: 'form.setValue',
+      params: { name: 'ref', value: 'R-2' },
+    });
+    expect(get()[0]).toMatchObject({
+      value: 'R-2',
+      drawnByPage: false,
+      coversPage: true,
+    });
+    model.dispatch({
+      type: 'form.setValue',
+      params: { name: 'blank', value: 'x' },
+    });
+    expect(get()[1].coversPage).toBeFalsy();
+  });
+
+  it('names each radio option by its value', () => {
+    const radio = (onValue: string, x: number) => ({
+      fieldName: 'size',
+      kind: 'radio' as const,
+      pageIndex: 0,
+      rect: { x, y: 700, width: 12, height: 12 },
+      readOnly: false,
+      value: '',
+      label: null,
+      onValue,
+    });
+    const { get } = setup([], {
+      s0: {
+        hasAcroForm: true,
+        hasXfa: false,
+        widgets: [radio('Small', 100), radio('Large', 150)],
+      },
+    });
+    expect(get().map(fieldName)).toEqual([
+      'Option field: size: Small, empty',
+      'Option field: size: Large, empty',
+    ]);
+  });
+
+  it('counts a dropdown on its blank " " option as empty', () => {
+    // The I-9's State lists start on a single-space option.
+    const { get } = setup([], {
+      s0: {
+        hasAcroForm: true,
+        hasXfa: false,
+        widgets: [
+          {
+            fieldName: 'State',
+            kind: 'dropdown',
+            pageIndex: 0,
+            rect: { x: 210, y: 700, width: 60, height: 20 },
+            readOnly: false,
+            value: [' '],
+            label: null,
+            options: [' ', 'AK', 'AL'],
+          },
+        ],
+      },
+    });
+    expect(get()[0]).toMatchObject({ filled: false });
+  });
+
+  it("names an unlabelled widget from the page's printed label", () => {
+    // IRS forms: no /TU, field names like topmostSubform[0].Page1[0].f1_01[0].
+    const raw = 'topmostSubform[0].Page1[0].f1_01[0]';
+    const widget = (fieldName: string, y: number, label: string | null) => ({
+      fieldName,
+      kind: 'text' as const,
+      pageIndex: 0,
+      rect: { x: 210, y, width: 300, height: 20 },
+      readOnly: false,
+      value: '',
+      label,
+    });
+    const { get } = setup(
+      [
+        detected('Your first name and middle initial', 700),
+        detected('Printed label', 600),
+      ],
+      {
+        s0: {
+          hasAcroForm: true,
+          hasXfa: false,
+          widgets: [widget(raw, 700, null), widget('f2', 600, 'Own tooltip')],
+        },
+      },
+    );
+    const widgets = get().filter((f) => f.origin === 'widget');
+    expect(widgets.map((f) => f.label)).toEqual([
+      'Your first name and middle initial',
+      'Own tooltip',
+    ]);
+    // The field keeps its real name for writing.
+    expect(widgets[0].widget?.fieldName).toBe(raw);
+  });
+
+  it('skips borrowed labels that are sentence fragments', () => {
+    // W-9: the end of an instruction above line 1, and a phrase cut mid-way.
+    const widget = (fieldName: string, y: number) => ({
+      fieldName,
+      kind: 'text' as const,
+      pageIndex: 0,
+      rect: { x: 210, y, width: 300, height: 20 },
+      readOnly: false,
+      value: '',
+      label: null,
+    });
+    const { get } = setup(
+      [
+        detected('entity’s name on line 2.)', 700),
+        detected('What Name and', 600),
+        detected('Postcode', 500),
+      ],
+      {
+        s0: {
+          hasAcroForm: true,
+          hasXfa: false,
+          widgets: [widget('f1', 700), widget('f2', 600), widget('f3', 500)],
+        },
+      },
+    );
+    expect(
+      get()
+        .filter((f) => f.origin === 'widget')
+        .map((f) => f.label),
+    ).toEqual(['f1', 'f2', 'Postcode']);
+  });
+
+  it('does not name a checkbox from a bigger detection around it, or a text one', () => {
+    // W-9 line 3a: a small checkbox inside a detected row labelled for the
+    // next box along ("C corporation").
+    const box = { x: 220, y: 700, width: 8, height: 8 };
+    const { get } = setup(
+      [
+        detected('C corporation', 696, {
+          rect: { x: 210, y: 696, width: 300, height: 16 },
+        }),
+        detected('Some text', 700, { rect: { ...box }, type: 'text' }),
+        detected('Individual/sole proprietor', 700, {
+          rect: { ...box },
+          type: 'tick',
+        }),
+      ],
+      {
+        s0: {
+          hasAcroForm: true,
+          hasXfa: false,
+          widgets: [
+            {
+              fieldName: 'c1_1[0]',
+              kind: 'checkbox',
+              pageIndex: 0,
+              rect: box,
+              readOnly: false,
+              value: false,
+              label: null,
+            },
+          ],
+        },
+      },
+    );
+    expect(get().find((f) => f.origin === 'widget')?.label).toBe(
+      'Individual/sole proprietor',
+    );
+  });
 });
 
 describe('signature fields', () => {
@@ -152,6 +357,52 @@ describe('signature fields', () => {
       },
     });
     expect(get()[0]).toMatchObject({ filled: true });
+  });
+
+  it('treats a text widget named Signature as a signature field', () => {
+    const rect = { x: 79, y: 306, width: 215, height: 25 };
+    const { model, get } = setup([], {
+      s0: {
+        hasAcroForm: true,
+        hasXfa: false,
+        widgets: [
+          {
+            fieldName: 'Signature',
+            kind: 'text',
+            pageIndex: 0,
+            rect,
+            readOnly: false,
+            value: '',
+            label: null,
+          },
+          {
+            fieldName: 'Name declaration',
+            kind: 'text',
+            pageIndex: 0,
+            rect: { ...rect, y: 271 },
+            readOnly: false,
+            value: '',
+            label: null,
+          },
+        ],
+      },
+    });
+    expect(get().map((f) => [f.label, f.type, f.filled])).toEqual([
+      ['Signature', 'signature', false],
+      ['Name declaration', 'text', false],
+    ]);
+    model.dispatch({
+      type: 'sign.place',
+      params: {
+        id: 's',
+        pageId: 'ckpt0:0',
+        rect: { x: 100, y: 308, width: 120, height: 20 },
+        rotate: 0,
+        role: 'signature',
+        content: { kind: 'image', assetId: 'a', mime: 'image/png' },
+      },
+    });
+    expect(get()[0]).toMatchObject({ type: 'signature', filled: true });
   });
 
   it('lays out a detected character-box field as comb text until restyled', () => {
@@ -185,5 +436,25 @@ describe('signature fields', () => {
       },
     });
     expect(get()[0].style).toEqual({});
+  });
+});
+
+describe('shownFields', () => {
+  const f = (origin: ViewField['origin']) => ({ origin }) as ViewField;
+  const widget = f('widget');
+  const guess = f('detected');
+  const free = f('free');
+
+  it('hides detected guesses by default when the document has real form fields', () => {
+    expect(shownFields([widget, guess, free], null)).toEqual([widget, free]);
+  });
+
+  it('shows detected fields by default on a flat form', () => {
+    expect(shownFields([guess, free], null)).toEqual([guess, free]);
+  });
+
+  it('follows the Detect fields toggle once it is used', () => {
+    expect(shownFields([widget, guess], true)).toEqual([widget, guess]);
+    expect(shownFields([guess, free], false)).toEqual([free]);
   });
 });

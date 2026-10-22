@@ -1,4 +1,5 @@
 import { createToolStore } from '@/shared/state/createToolStore';
+import { AUTO_TEXT_MAX, autoTextSize } from '@/pdf/edit/forms';
 import { layoutStyled, type StyledLayout } from '@/pdf/edit/styled-layout';
 import { textWidth } from './text-measure';
 
@@ -17,10 +18,18 @@ export interface FieldStyle extends TextSettings {
   comb: number;
   /** Detected character boxes: cell centres as shares of the width. */
   cells?: readonly number[];
+  /**
+   * A form field's quadding (/Q: 0 left, 1 centre, 2 right). Set only for
+   * AcroForm fields, whose text the export writer pads and aligns.
+   */
+  align?: 0 | 1 | 2;
 }
 
+/** The inset the AcroForm appearance writer leaves inside a field. */
+const FIELD_PAD = 2;
+
 export const DEFAULT_TEXT: TextSettings = {
-  size: 11,
+  size: AUTO_TEXT_MAX,
   color: '#000000',
   spacing: 0,
 };
@@ -110,13 +119,35 @@ export function overlayLayout(
   const box = quarter
     ? { width: rect.height, height: rect.width }
     : { width: rect.width, height: rect.height };
-  return layoutStyled((ch, size) => textWidth(ch, size), heights, text, box, {
-    size: style.size,
-    spacing: style.spacing,
-    comb: style.comb || undefined,
-    cells: style.cells,
-    multiline,
-  });
+  const align = style.align;
+  const laid = layoutStyled(
+    (ch, size) => textWidth(ch, size),
+    heights,
+    text,
+    align === undefined || style.comb
+      ? box
+      : { width: box.width - 2 * FIELD_PAD, height: box.height },
+    {
+      size: style.size,
+      spacing: style.spacing,
+      comb: style.comb || undefined,
+      cells: style.cells,
+      multiline,
+    },
+  );
+  if (align === undefined || style.comb) return laid;
+  // A form field: padded, then aligned as its /Q says.
+  const room = box.width - 2 * FIELD_PAD;
+  const shift = (xs: number[], chars: string[]) => {
+    const last = chars.length - 1;
+    const used = last < 0 ? 0 : xs[last] + textWidth(chars[last], laid.size);
+    const dx =
+      FIELD_PAD +
+      (align === 2 ? room - used : align === 1 ? (room - used) / 2 : 0);
+    return xs.map((x) => x + dx);
+  };
+  const lines = laid.lines.map((l) => ({ ...l, x: shift(l.x, l.chars) }));
+  return { ...laid, lines, x: lines[0]?.x ?? laid.x };
 }
 
 /** A flat field's settings: its own, else the writer's defaults. */
@@ -126,11 +157,12 @@ export function effectiveStyle(
 ): FieldStyle {
   const h = quarter ? f.rect.width : f.rect.height;
   return {
-    size: f.style?.size ?? Math.min(DEFAULT_TEXT.size, h * 0.75),
+    size: f.style?.size ?? autoTextSize(h),
     color: f.style?.color ?? DEFAULT_TEXT.color,
     spacing: f.style?.spacing ?? 0,
     comb: f.style?.comb ?? 0,
     ...(f.style?.cells ? { cells: f.style.cells } : {}),
+    ...(f.style?.align !== undefined ? { align: f.style.align } : {}),
   };
 }
 

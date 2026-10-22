@@ -2,7 +2,8 @@ export * from './stroke';
 export {
   INK_WEIGHTS,
   pointFromEvent,
-  simulatedPressure,
+  MOUSE_PRESSURE,
+  penPressure,
   inkOutline,
   outlineToPath,
   inkToVector,

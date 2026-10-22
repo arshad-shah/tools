@@ -288,6 +288,51 @@ describe('dedupeAgainstWidgets', () => {
     );
     expect(kept.map((f) => f.id)).toEqual(['0:cell:300:0', '1:cell:0:0']);
   });
+
+  const at = (id: string, rect: DetectedField['rect']): DetectedField => ({
+    ...field(0, 0),
+    id,
+    rect,
+  });
+
+  it('drops a small detection sitting inside a widget (low IoU, but contained)', () => {
+    // The Chubb form's Email widget, with a short rule detected inside it.
+    const widget = { x: 48, y: 346, width: 289, height: 20 };
+    const kept = dedupeAgainstWidgets(
+      [at('inside', { x: 50, y: 347, width: 70, height: 8 })],
+      [{ pageIndex: 0, rect: widget }],
+    );
+    expect(kept).toEqual([]);
+  });
+
+  it('drops thin strips stacked inside a tall multi-line widget', () => {
+    const widget = { x: 85, y: 434, width: 208, height: 79 };
+    const strips = [440, 455, 470, 485, 500].map((y) =>
+      at(`strip-${y}`, { x: 85, y, width: 208, height: 9 }),
+    );
+    expect(
+      dedupeAgainstWidgets(strips, [{ pageIndex: 0, rect: widget }]),
+    ).toEqual([]);
+  });
+
+  it('drops a detection that mostly covers a widget', () => {
+    // A full-width rule band over the Signature widget.
+    const widget = { x: 79, y: 306, width: 215, height: 25 };
+    const kept = dedupeAgainstWidgets(
+      [at('band', { x: 42, y: 300, width: 512, height: 40 })],
+      [{ pageIndex: 0, rect: widget }],
+    );
+    expect(kept).toEqual([]);
+  });
+
+  it('keeps a detection that only brushes a widget edge', () => {
+    const widget = { x: 0, y: 0, width: 100, height: 20 };
+    const kept = dedupeAgainstWidgets(
+      [at('beside', { x: 95, y: 0, width: 100, height: 20 })],
+      [{ pageIndex: 0, rect: widget }],
+    );
+    expect(kept.map((f) => f.id)).toEqual(['beside']);
+  });
 });
 
 describe('isFlatForm', () => {

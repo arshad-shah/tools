@@ -1,5 +1,6 @@
 import {
   dedupeAgainstWidgets,
+  isSignNamedText,
   type AutofillKey,
   type DetectedField,
   type FieldType,
@@ -56,6 +57,13 @@ export interface ViewField {
   fillOpId: OpId | null;
   /** Text settings of the latest fill (flat text fields), if any were set. */
   style?: Partial<FieldStyle>;
+  /**
+   * Widgets showing the PDF's own value: the page render draws its
+   * appearance, so the overlay must not draw it again.
+   */
+  drawnByPage?: boolean;
+  /** A changed widget value over the PDF's own one: drawn on a solid ground. */
+  coversPage?: boolean;
 }
 
 export const detectedKey = (pageId: PageId, fieldId: string) =>
@@ -92,7 +100,14 @@ function widgetFields(
     counts.set(w.fieldName, n + 1);
     // Signature fields are places to sign (SignTargetsOverlay), not values.
     if (w.kind === 'unsupported' || w.kind === 'signature') continue;
-    const value = set.has(w.fieldName) ? set.get(w.fieldName)! : w.value;
+    // A text field named "Signature" takes a signature, not typing.
+    const signs = isSignNamedText(w);
+    const changed = set.has(w.fieldName);
+    const value = changed ? set.get(w.fieldName)! : w.value;
+    const own =
+      w.value !== '' &&
+      w.value !== false &&
+      !(Array.isArray(w.value) && !w.value.length);
     const shown = pages.filter((p) => p.index === w.pageIndex);
     for (const page of shown) {
       const display =
@@ -113,8 +128,9 @@ function widgetFields(
         page,
         pageNumber: number(page.id),
         rect: w.rect,
-        type:
-          w.kind === 'text'
+        type: signs
+          ? 'signature'
+          : w.kind === 'text'
             ? w.multiline
               ? 'multiline'
               : 'text'
@@ -129,8 +145,20 @@ function widgetFields(
         origin: 'widget',
         widget: w,
         value: display,
-        filled: display !== '',
+        filled: display.trim() !== '',
         fillOpId: null,
+        ...(own ? { drawnByPage: !changed, coversPage: changed } : {}),
+        // The form's own size (0 is auto) and comb boxes, as export writes them.
+        ...(w.kind === 'text'
+          ? {
+              style: {
+                ...(w.fontSize ? { size: w.fontSize } : {}),
+                ...(w.comb && w.maxLength ? { comb: w.maxLength } : {}),
+                ...(w.color ? { color: w.color } : {}),
+                align: w.align ?? 0,
+              },
+            }
+          : {}),
       });
     }
   }
@@ -181,6 +209,56 @@ export function applyCorrections(
   }
 }
 
+/** Area of a ∩ b over a's area. */
+function coverOf(a: Box, b: Box): number {
+  const w = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+  const h = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  return w > 0 && h > 0 ? (w * h) / (a.width * a.height) : 0;
+}
+
+/** Ends mid-phrase: "What Name and", "Name of the". */
+const DANGLING = /\b(and|or|the|of|to|a|an|for|in|on|if|with)$/i;
+
+/**
+ * Whether detected text reads as a field label, not a fragment of a
+ * sentence ("entity’s name on line 2.)") or a lone item letter ("A"):
+ * 3-60 characters, starting with a capital or digit, not ending
+ * mid-phrase. A wrong name is worse than none.
+ */
+const labelLike = (s: string) =>
+  s.length >= 3 &&
+  s.length <= 60 &&
+  /^[\p{Lu}\d]/u.test(s) &&
+  !DANGLING.test(s.trim());
+
+/**
+ * Widgets without a /TU tooltip (IRS forms: "topmostSubform[0].Page1[0].
+ * f1_01[0]") take the printed label detection found for the same box, so
+ * they are announced and listed by what the page calls them.
+ */
+function nameFromPage(
+  fields: ViewField[],
+  pageId: PageId,
+  found: readonly DetectedField[],
+): void {
+  for (const f of fields) {
+    if (f.origin !== 'widget' || f.page.id !== pageId) continue;
+    if (f.widget?.label) continue;
+    const tick = f.type === 'tick' || f.type === 'radio';
+    let best: { label: string; cover: number } | null = null;
+    for (const d of found) {
+      if (!d.label || !labelLike(d.label) || (d.type === 'tick') !== tick)
+        continue;
+      // The same box: each covers most of the other. A bigger detection
+      // around a small checkbox is another field's row, not this box.
+      const cover = Math.min(coverOf(f.rect, d.rect), coverOf(d.rect, f.rect));
+      if (cover >= 0.5 && cover > (best?.cover ?? 0))
+        best = { label: d.label, cover };
+    }
+    if (best) f.label = best.label;
+  }
+}
+
 /**
  * Every field the overlay shows, in view page order (spec §8.1): AcroForm
  * widgets of the current base, plus detections that do not overlap one
@@ -208,6 +286,7 @@ export function viewFields(
     const widgets = (forms[page.source]?.widgets ?? [])
       .filter((w) => w.pageIndex === page.index)
       .map((w) => ({ pageIndex: page.index, rect: w.rect }));
+    if (page.source === baseSource) nameFromPage(out, page.id, d.fields);
     for (const f of dedupeAgainstWidgets(d.fields, widgets))
       detected.set(detectedKey(page.id, f.id), { ...f, pageId: page.id });
   }
@@ -260,6 +339,13 @@ export function viewFields(
         cx >= r.x && cx <= r.x + r.width && cy >= r.y && cy <= r.y + r.height
       );
     });
+  // Signature-named widgets are filled by a signature placed in them.
+  for (const f of out)
+    if (f.origin === 'widget' && f.type === 'signature' && !f.filled) {
+      const value = signed(f.page.id, f.rect) ? 'signed' : '';
+      f.value = value;
+      f.filled = value !== '';
+    }
   for (const [key, f] of detected) {
     const page = byPage.get(f.pageId);
     if (!page) continue;
@@ -308,5 +394,22 @@ const TYPE_NAMES: Record<ViewFieldType, string> = {
 };
 
 /** e.g. "Text field: Surname, empty" (spec §8.5, plan C-12). */
-export const fieldName = (f: ViewField) =>
-  `${TYPE_NAMES[f.type]} field: ${f.label ?? 'unlabelled'}, ${f.filled ? 'filled' : 'empty'}`;
+export const fieldName = (f: ViewField) => {
+  // Radio options share one name: say which option this is.
+  const option =
+    f.type === 'radio' && f.widget?.onValue ? `: ${f.widget.onValue}` : '';
+  return `${TYPE_NAMES[f.type]} field: ${f.label ?? 'unlabelled'}${option}, ${f.filled ? 'filled' : 'empty'}`;
+};
+
+/**
+ * The fields the "Detect fields" toggle lets through. Unset (null), a
+ * document with real form fields hides the detector's guesses: its own
+ * fields are the form, and guesses drawn over them were noise.
+ */
+export function shownFields(
+  fields: readonly ViewField[],
+  showDetected: boolean | null,
+): ViewField[] {
+  const show = showDetected ?? !fields.some((f) => f.origin === 'widget');
+  return show ? [...fields] : fields.filter((f) => f.origin !== 'detected');
+}

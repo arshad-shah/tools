@@ -303,4 +303,43 @@ describe('pageSignTargets', () => {
     );
     expect(targets.map((t) => t.label)).toEqual(['Empty1']);
   });
+
+  it('drops detected places that sit on any form field (the field is the place)', () => {
+    const model = makeModel();
+    const page = model.getView().pages[0];
+    // "b) the exact nature of illness/injury and the commencement date:"
+    // detected as a date place on top of an ordinary text widget.
+    const onWidget = target({
+      id: 'date-on-widget',
+      kind: 'date',
+      label: 'commencement date',
+      rect: { x: 283, y: 594, width: 271, height: 17 },
+    });
+    const free = target({
+      id: 'free',
+      rect: { x: 72, y: 100, width: 200, height: 11 },
+    });
+    const targets = pageSignTargets(
+      page,
+      { 's0:0': [onWidget, free] },
+      {
+        s0: {
+          hasAcroForm: true,
+          hasXfa: false,
+          widgets: [
+            {
+              fieldName: 'Nature of illness',
+              kind: 'text',
+              pageIndex: 0,
+              rect: { x: 283, y: 594, width: 271, height: 17 },
+              readOnly: false,
+              value: '',
+              label: null,
+            },
+          ],
+        },
+      },
+    );
+    expect(targets.map((t) => t.id)).toEqual(['free']);
+  });
 });

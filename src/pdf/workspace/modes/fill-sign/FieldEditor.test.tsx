@@ -37,6 +37,23 @@ describe('FieldEditor', () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it("stops at a form field's character limit", () => {
+    // The I-9's middle initial: one character (/MaxLen 1).
+    const { onCommit } = setup({
+      field: {
+        ...field,
+        value: '',
+        origin: 'widget',
+        widget: { maxLength: 1 },
+      } as unknown as ViewField,
+    });
+    const input = screen.getByRole('textbox', { name: 'Text' });
+    fireEvent.change(input, { target: { value: 'QA2' } });
+    expect((input as HTMLInputElement).value).toBe('Q');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onCommit).toHaveBeenCalledWith('Q');
+  });
+
   it('Esc keeps the text when asked', () => {
     const { onCommit, onCancel } = setup({ escapeKeeps: true });
     const input = screen.getByRole('textbox', { name: 'Text' });

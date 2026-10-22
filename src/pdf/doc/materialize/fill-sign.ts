@@ -1,10 +1,16 @@
-import type { PDFPage } from 'pdf-lib';
+import {
+  PDFBool,
+  PDFHexString,
+  PDFName,
+  PDFTextField,
+  type PDFPage,
+} from 'pdf-lib';
 import { drawText } from '@/pdf/edit/draw';
 import { drawCross, drawTick } from '@/pdf/edit/draw-shapes';
 import { uprightFrame } from '@/pdf/edit/draw-signature';
 import { drawStyledText } from '@/pdf/edit/draw-styled-text';
 import { unsupportedChars } from '@/pdf/edit/fonts';
-import { setFieldValue } from '@/pdf/edit/forms';
+import { autoTextSize, setFieldValue } from '@/pdf/edit/forms';
 import type { FlatFillParams, FormSetValueParams } from '../ops/fill-sign';
 import { SIGN_MATERIALIZERS } from './fill-sign-signature';
 import {
@@ -25,9 +31,42 @@ export const writeFormValue = defineMaterializer<FormSetValueParams>({
   phase: 'form',
   async apply(ctx, p) {
     const form = ctx.doc.getForm();
-    const font = await ctx.draw.fonts.get({ standard: 'Helvetica' });
-    setFieldValue(form, p.name, p.value, font);
+    const helvetica = await ctx.draw.fonts.get({ standard: 'Helvetica' });
+    let value = p.value;
+    let font = helvetica;
+    const target = form.getFieldMaybe(p.name);
+    if (target instanceof PDFTextField && typeof value === 'string') {
+      // One field must not fail the whole export: text past the field's
+      // limit is cut (the editor stops typing there too), and text
+      // Helvetica can't draw takes a Unicode font that draws all of it.
+      const max = target.getMaxLength();
+      if (max !== undefined) value = Array.from(value).slice(0, max).join('');
+      const text = value.replace(/[\r\n]/g, '');
+      if (unsupportedChars(helvetica, text).length) {
+        const stack = await ctx.draw.fonts.forText({ unicode: true }, text);
+        const one = stack.fonts.find((f) => !unsupportedChars(f, text).length);
+        if (!one) {
+          // Mixed scripts no one font has: keep the value and let the
+          // viewer draw it with its own fonts.
+          target.acroField.setValue(PDFHexString.fromText(value));
+          for (const w of target.acroField.getWidgets())
+            w.dict.delete(PDFName.of('AP'));
+          form.acroForm.dict.set(PDFName.of('NeedAppearances'), PDFBool.True);
+          return;
+        }
+        font = one;
+      }
+    }
+    setFieldValue(form, p.name, value, font);
     const field = form.getField(p.name);
+    // An auto-size (0) field: the size the editor previewed, not pdf-lib's
+    // box-filling auto size (a 25pt row came out at 19pt).
+    if (field instanceof PDFTextField && !field.isReadOnly()) {
+      const da = field.acroField.getDefaultAppearance() ?? '';
+      const size = Number(/([\d.]+)\s+Tf/.exec(da)?.[1] ?? 0);
+      const rect = field.acroField.getWidgets()[0]?.getRectangle();
+      if (size === 0 && rect) field.setFontSize(autoTextSize(rect.height));
+    }
     if (field.needsAppearancesUpdate()) field.defaultUpdateAppearances(font);
   },
 });

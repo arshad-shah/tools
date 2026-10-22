@@ -57,6 +57,7 @@ export function FillSignToolbar(ctx: ModeProps) {
     (f) => f.origin === 'detected' && f.status === 'field',
   ).length;
   const hasWidgets = fields.some((f) => f.origin === 'widget');
+  const detectedShown = showDetected ?? !hasWidgets;
   // "Next place to sign" (also a command) scrolls through the workspace.
   const goToPage = useContext(WorkspaceContext)?.goToPage ?? null;
   useEffect(() => {
@@ -77,8 +78,8 @@ export function FillSignToolbar(ctx: ModeProps) {
           label: 'Detect fields',
           icon: IconFlatFormDetect,
           kind: 'toggle',
-          pressed: showDetected,
-          onSelect: () => fillSign.set({ showDetected: !showDetected }),
+          pressed: detectedShown,
+          onSelect: () => fillSign.set({ showDetected: !detectedShown }),
         },
         {
           id: 'next-field',

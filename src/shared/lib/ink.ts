@@ -1,8 +1,8 @@
 import { getStroke } from 'perfect-freehand';
 
 /*
- * Ink pen geometry (plan H-2): pressure from the pen or simulated from
- * velocity, tapered outlines from perfect-freehand, SVG path data. Lives in
+ * Ink pen geometry (plan H-2): pressure from the pen (even for a mouse or
+ * finger), round-capped outlines from perfect-freehand, SVG path data. Lives in
  * the kit's lib so SignaturePad draws exactly what the PDF gets.
  */
 
@@ -29,20 +29,20 @@ const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v));
 
 /**
- * Pressure for a pointer that reports none: fast moves thin the line out,
- * slow ones thicken it, eased so the width never jumps.
+ * Pressure for a mouse or finger, which report none. Constant, like a
+ * ballpoint: pressure simulated from speed made the width wobble whenever
+ * the hand sped up or slowed down, which no real pen does.
  */
-export function simulatedPressure(
-  prev: InkPoint | null,
-  x: number,
-  y: number,
-  t: number,
-  prevPressure: number,
-): number {
-  if (!prev) return prevPressure;
-  const v = Math.hypot(x - prev.x, y - prev.y) / Math.max(1, t - prev.t);
-  const target = clamp(1 - v / 1.5, 0.2, 1);
-  return clamp(prevPressure + (target - prevPressure) * 0.35, 0.2, 1);
+export const MOUSE_PRESSURE = 0.5;
+
+/**
+ * A pen's raw pressure through a response curve, eased against the last
+ * sample. Pens report light writing as 0.1-0.3, a hairline if used raw, so
+ * the curve lifts the low end; easing hides the digitiser's jitter.
+ */
+export function penPressure(raw: number, prev: number | null): number {
+  const curved = 0.15 + 0.85 * Math.pow(clamp(raw, 0, 1), 0.65);
+  return prev === null ? curved : prev + (curved - prev) * 0.5;
 }
 
 /**
@@ -64,19 +64,15 @@ export function pointFromEvent(
       y,
       // A pen reports 0 as it lifts off: keep the last pressure rather than
       // jumping to a default, which left a blob at the end of each stroke.
-      pressure: e.pressure > 0 ? e.pressure : (prev?.pressure ?? 0.5),
+      pressure:
+        e.pressure > 0
+          ? penPressure(e.pressure, prev?.pressure ?? null)
+          : (prev?.pressure ?? MOUSE_PRESSURE),
       tiltX: e.tiltX ?? 0,
       tiltY: e.tiltY ?? 0,
       t,
     };
-  return {
-    x,
-    y,
-    pressure: simulatedPressure(prev, x, y, t, prev?.pressure ?? 0.5),
-    tiltX: 0,
-    tiltY: 0,
-    t,
-  };
+  return { x, y, pressure: MOUSE_PRESSURE, tiltX: 0, tiltY: 0, t };
 }
 
 /** The filled outline of one stroke (a closed polygon, pad px). */
@@ -95,12 +91,16 @@ export function inkOutline(
     stroke.map((p) => [p.x, p.y, p.pressure]),
     {
       size,
-      thinning: 0.62,
-      smoothing: 0.55,
-      streamline: 0.45,
+      thinning: 0.6,
+      smoothing: 0.5,
+      // Low: a high streamline lags behind the pen and rounds off corners.
+      streamline: 0.2,
       simulatePressure: false,
-      start: { taper: true, cap: true },
-      end: { taper: true, cap: true },
+      // No taper: perfect-freehand's `taper: true` tapers over the whole
+      // stroke, which faded every stroke's ends and lost short flicks. A
+      // pen's own pressure gives the natural start and lift-off.
+      start: { taper: 0, cap: true },
+      end: { taper: 0, cap: true },
       last: true,
     },
   ) as [number, number][];

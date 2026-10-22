@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { PDFDocument, PDFName } from 'pdf-lib';
 import {
   imagePlacements,
   makeFormPdf,
@@ -67,6 +67,119 @@ const fill = (value: string, extra: object = {}) =>
 let base: Uint8Array;
 beforeAll(async () => {
   base = await makeTextPdf({ pages: 1, label: 'Form' });
+});
+
+/** Text fields with auto (0) size, a set 9pt size, and 9 comb boxes. */
+async function makeSizedFormPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([612, 792]);
+  const form = doc.getForm();
+  // Real forms say "auto" with a 0 size: /Helv 0 Tf.
+  const auto = form.createTextField('auto');
+  auto.addToPage(page, { x: 72, y: 700, width: 240, height: 25 });
+  auto.acroField.setDefaultAppearance('/Helv 0 Tf 0 g');
+  const notes = form.createTextField('notes');
+  notes.enableMultiline();
+  notes.addToPage(page, { x: 72, y: 560, width: 400, height: 120 });
+  notes.acroField.setDefaultAppearance('/Helv 0 Tf 0 g');
+  const sized = form.createTextField('sized');
+  sized.addToPage(page, { x: 72, y: 500, width: 240, height: 25 });
+  sized.setFontSize(9);
+  const ssn = form.createTextField('ssn');
+  ssn.setMaxLength(9);
+  ssn.enableCombing();
+  ssn.addToPage(page, { x: 72, y: 440, width: 180, height: 20 });
+  // Without this, pdf-lib's save swaps the auto (0) sizes for fitted ones.
+  return doc.save({ updateFieldAppearances: false });
+}
+
+/** A field's DA font size in the exported file. */
+async function daSize(bytes: Uint8Array, name: string): Promise<number> {
+  const doc = await PDFDocument.load(bytes);
+  const da = doc.getForm().getTextField(name).acroField.getDefaultAppearance();
+  return Number(/([\d.]+)\s+Tf/.exec(da ?? '')?.[1] ?? NaN);
+}
+
+describe('form values that once failed the whole export', () => {
+  it('cuts text to the field limit instead of failing', async () => {
+    // The I-9's middle initial allows one character.
+    const out = await run(await makeSizedFormPdf(), [
+      item('form.setValue', null, { name: 'ssn', value: '123-45-678999' }),
+    ]);
+    const doc = await PDFDocument.load(out.bytes);
+    expect(doc.getForm().getTextField('ssn').getText()).toBe('123-45-67');
+  });
+
+  /** Exports one value into the 'auto' field, fonts read from node_modules. */
+  async function exportText(value: string) {
+    // The app fetches its bundled Noto Sans; read it from node_modules here.
+    vi.stubGlobal('fetch', async (url: string) => {
+      const file = String(url).replace(/^.*node_modules\//, 'node_modules/');
+      return new Response(new Uint8Array(readFileSync(file)));
+    });
+    const out = await run(await makeSizedFormPdf(), [
+      item('form.setValue', null, { name: 'auto', value }),
+    ]).finally(() => vi.unstubAllGlobals());
+    const doc = await PDFDocument.load(out.bytes);
+    const field = doc.getForm().getTextField('auto');
+    return {
+      text: field.getText(),
+      appearance: !!field.acroField.getWidgets()[0].dict.get(PDFName.of('AP')),
+      needAppearances: String(
+        doc.getForm().acroForm.dict.get(PDFName.of('NeedAppearances')),
+      ),
+    };
+  }
+
+  it('draws text Helvetica lacks with a Unicode font that has it all', async () => {
+    expect(await exportText('Αθήνα')).toMatchObject({
+      text: 'Αθήνα',
+      appearance: true,
+    });
+  });
+
+  it('leaves mixed-script text for the viewer to draw rather than failing', async () => {
+    // No one font has both "Ł" (Latin Extended) and the basic Latin here.
+    expect(await exportText('Łódź – Zoë Ñúñez')).toMatchObject({
+      text: 'Łódź – Zoë Ñúñez',
+      needAppearances: 'true',
+    });
+  });
+});
+
+describe('form text size', () => {
+  it('writes an auto-size field at the size the editor previews (not box-filling)', async () => {
+    const out = await run(await makeSizedFormPdf(), [
+      item('form.setValue', null, { name: 'auto', value: 'Mr' }),
+      item('form.setValue', null, {
+        name: 'notes',
+        value:
+          'Flight cancelled by airline due to a storm. Rebooking was not possible.',
+      }),
+    ]);
+    // The editor shows min(11, 75% of the box height).
+    expect(await daSize(out.bytes, 'auto')).toBe(11);
+    expect(await daSize(out.bytes, 'notes')).toBe(11);
+  });
+
+  it("keeps a field's own font size", async () => {
+    const out = await run(await makeSizedFormPdf(), [
+      item('form.setValue', null, { name: 'sized', value: 'x' }),
+    ]);
+    expect(await daSize(out.bytes, 'sized')).toBe(9);
+  });
+
+  it('shrinks the auto size for a short box', async () => {
+    const doc = await PDFDocument.load(await makeSizedFormPdf());
+    const f = doc.getForm().createTextField('tiny');
+    f.addToPage(doc.getPage(0), { x: 300, y: 300, width: 100, height: 10 });
+    f.acroField.setDefaultAppearance('/Helv 0 Tf 0 g');
+    const out = await run(await doc.save({ updateFieldAppearances: false }), [
+      item('form.setValue', null, { name: 'tiny', value: 'x' }),
+    ]);
+    // pdf-lib pads the widget by its 1pt border: 11pt tall, so 8.25pt.
+    expect(await daSize(out.bytes, 'tiny')).toBe(8.25);
+  });
 });
 
 describe('fill-sign writers', () => {

@@ -30,8 +30,9 @@ const overlaps = (a: Box, b: Box) =>
   b.y < a.y + a.height;
 
 /**
- * Unsigned /Sig fields and detected places on one view page (fields win
- * overlaps). pdf.js does not say whether a /Sig field is signed, so
+ * Unsigned /Sig fields, signature-named text fields and detected places on
+ * one view page. A detected place on any form field is dropped: the field is
+ * the place (a "date" label beside an ordinary field is not a signing date). pdf.js does not say whether a /Sig field is signed, so
  * `signed` lists, per source id, the field names the verifier reported.
  */
 export function pageSignTargets(
@@ -47,7 +48,7 @@ export function pageSignTargets(
     .map((w) => (done.has(w.fieldName) ? { ...w, signed: true } : w));
   const fields = sigFieldTargets(widgets);
   const found = (detected[detectionKey(page.source, page.index)] ?? []).filter(
-    (t) => !fields.some((f) => overlaps(f.rect, t.rect)),
+    (t) => !widgets.some((w) => overlaps(w.rect, t.rect)),
   );
   return [...fields, ...found];
 }

@@ -8,7 +8,7 @@ import {
 } from '@/pdf/doc/detection';
 import type { Box } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';
-import { viewFields, type ViewField } from './fields';
+import { shownFields, viewFields, type ViewField } from './fields';
 import { fillSign, useFillSign } from './store';
 import { knowContentHash, textKey } from './text-style';
 
@@ -169,14 +169,19 @@ const NO_CELLS: Box[] = [];
 /** Every field in the view (memoised per view, detection and form info). */
 export function useViewFields(doc: DocumentApi): ViewField[] {
   const forms = useFillSign((s) => s.forms);
+  const showDetected = useFillSign((s) => s.showDetected);
   const base = doc.state.checkpoints.find(
     (c) => c.id === doc.view.checkpoint,
   )?.sourceId;
   const { view } = doc;
   const detection = doc.state.detection;
   return useMemo(
-    () => viewFields(view, base ?? '', asDetectionCache(detection), forms),
-    [view, base, detection, forms],
+    () =>
+      shownFields(
+        viewFields(view, base ?? '', asDetectionCache(detection), forms),
+        showDetected,
+      ),
+    [view, base, detection, forms, showDetected],
   );
 }
 
@@ -185,11 +190,14 @@ export function currentFields(doc: DocumentApi): ViewField[] {
   const base = doc.state.checkpoints.find(
     (c) => c.id === doc.view.checkpoint,
   )?.sourceId;
-  return viewFields(
-    doc.view,
-    base ?? '',
-    asDetectionCache(doc.state.detection),
-    fillSign.get().forms,
+  return shownFields(
+    viewFields(
+      doc.view,
+      base ?? '',
+      asDetectionCache(doc.state.detection),
+      fillSign.get().forms,
+    ),
+    fillSign.get().showDetected,
   );
 }
 

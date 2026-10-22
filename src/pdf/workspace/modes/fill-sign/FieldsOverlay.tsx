@@ -99,7 +99,6 @@ export function FieldsOverlay(props: PageOverlayProps) {
   const menuFor = useFillSign((s) => s.menuFor);
   const resizing = useFillSign((s) => s.resizing);
   const editing = useFillSign((s) => s.editing);
-  const showDetected = useFillSign((s) => s.showDetected);
   const placing = useFillSign((s) => s.placing);
   const ready = useFillSign((s) => s.ready);
   const pageKey = detectionKey(page.source, page.index);
@@ -123,9 +122,7 @@ export function FieldsOverlay(props: PageOverlayProps) {
   /** A signature box at the point, snapped to a place to sign nearby. */
   const placedBox = (p: PagePoint, role: 'signature' | 'initials') =>
     snapNear(targets, page, signatureBoxAt(p, ready[role]!, role, quarter));
-  const fields = pageOrder(all, page.id).filter(
-    (x) => showDetected || x.origin !== 'detected',
-  );
+  const fields = pageOrder(all, page.id);
   const [preview, setPreview] = useState<ReadonlyMap<
     string,
     ObjectChange

@@ -170,4 +170,35 @@ describe('sigFieldTargets', () => {
     ]);
     expect(t).toMatchObject({ kind: 'initials', label: 'Initials here' });
   });
+
+  it('treats a text field named for a signature as a place to sign', () => {
+    // The Chubb claim form: plain text fields called "Signature".
+    const rect = { x: 79, y: 306, width: 215, height: 25 };
+    const targets = sigFieldTargets([
+      { fieldName: 'Signature', kind: 'text', pageIndex: 2, rect },
+      { fieldName: 'Doctor Signature', kind: 'text', pageIndex: 1, rect },
+      { fieldName: 'Initials', kind: 'text', pageIndex: 1, rect },
+      { fieldName: 'Name declaration', kind: 'text', pageIndex: 2, rect },
+      { fieldName: 'Signed date', kind: 'text', pageIndex: 2, rect },
+    ]);
+    expect(targets.map((t) => [t.label, t.kind, t.source])).toEqual([
+      ['Signature', 'signature', 'text-field'],
+      ['Doctor Signature', 'signature', 'text-field'],
+      ['Initials', 'initials', 'text-field'],
+    ]);
+  });
+
+  it('skips a signature-named text field that already has a value', () => {
+    expect(
+      sigFieldTargets([
+        {
+          fieldName: 'Signature',
+          kind: 'text',
+          value: 'J. Smith',
+          pageIndex: 0,
+          rect: { x: 0, y: 0, width: 100, height: 20 },
+        },
+      ]),
+    ).toEqual([]);
+  });
 });

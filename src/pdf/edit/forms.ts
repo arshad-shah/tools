@@ -23,6 +23,13 @@ import { unsupportedChars } from './fonts';
 import { loadPdf } from './load';
 import { XFA_MESSAGE } from './messages';
 
+/** Text size when a field leaves it to the writer (flat fills, auto-size fields). */
+export const AUTO_TEXT_MAX = 11;
+
+/** The auto text size for a box this tall: 11pt, or less in a short box. */
+export const autoTextSize = (height: number) =>
+  Math.min(AUTO_TEXT_MAX, height * 0.75);
+
 /**
  * `name` is the fully qualified field name; `label` is the field's alternate
  * (user-facing) name, /TU, when the form has one.

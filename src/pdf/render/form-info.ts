@@ -26,6 +26,14 @@ export interface WidgetInfo {
   multiline?: boolean;
   multiSelect?: boolean;
   maxLength?: number | null;
+  /** Text size from the field's /DA: 0 means auto. */
+  fontSize?: number;
+  /** Comb text: maxLength evenly spaced boxes. */
+  comb?: boolean;
+  /** Quadding (/Q): 0 left, 1 centre, 2 right. */
+  align?: 0 | 1 | 2;
+  /** Text colour from the field's /DA, '#rrggbb'. */
+  color?: string;
 }
 
 export interface FormInfo {
@@ -51,6 +59,20 @@ interface Annotation {
   fieldValue?: unknown;
   alternativeText?: string;
   options?: { exportValue: string; displayValue: string }[];
+  comb?: boolean;
+  defaultAppearanceData?: { fontSize?: number; fontColor?: ArrayLike<number> };
+  textAlignment?: number | null;
+}
+
+/** pdf.js's 0-255 RGB as '#rrggbb'. */
+function hex(rgb: ArrayLike<number> | undefined): string | null {
+  if (!rgb || rgb.length < 3) return null;
+  return (
+    '#' +
+    [0, 1, 2]
+      .map((i) => Math.round(rgb[i]).toString(16).padStart(2, '0'))
+      .join('')
+  );
 }
 
 function kindOf(a: Annotation): WidgetInfo['kind'] {
@@ -113,7 +135,19 @@ export async function readFormInfo(doc: FormDocLike): Promise<FormInfo> {
           : {}),
         ...(a.options ? { options: a.options.map((o) => o.exportValue) } : {}),
         ...(kind === 'text'
-          ? { multiline: !!a.multiLine, maxLength: a.maxLen ?? null }
+          ? {
+              multiline: !!a.multiLine,
+              maxLength: a.maxLen ?? null,
+              fontSize: a.defaultAppearanceData?.fontSize ?? 0,
+              align:
+                a.textAlignment === 1 || a.textAlignment === 2
+                  ? a.textAlignment
+                  : 0,
+              ...(hex(a.defaultAppearanceData?.fontColor)
+                ? { color: hex(a.defaultAppearanceData?.fontColor)! }
+                : {}),
+              ...(a.comb ? { comb: true } : {}),
+            }
           : {}),
         ...(kind === 'optionlist' || kind === 'dropdown'
           ? { multiSelect: !!a.multiSelect }

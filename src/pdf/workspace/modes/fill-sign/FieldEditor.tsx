@@ -72,9 +72,22 @@ export function FieldEditor({
   );
   const [value, setRaw] = useState(initial);
   const wrap = useRef<HTMLDivElement>(null);
+  const picker = useRef<HTMLSelectElement>(null);
+  // A dropdown opens its list straight away: one click to choose, as in a
+  // PDF viewer, not a second click on a small select box.
+  useEffect(() => {
+    try {
+      picker.current?.showPicker?.();
+    } catch {
+      // No user activation left (opened from the keyboard): focus is enough.
+    }
+  }, []);
   // Enter, Tab, Esc or Done settled the edit; otherwise unmounting keeps it.
   const settled = useRef(false);
-  const setValue = (v: string) => {
+  // A form field's /MaxLen: typing stops there, as in a PDF viewer.
+  const limit = field.widget?.maxLength ?? null;
+  const setValue = (typed: string) => {
+    const v = limit ? Array.from(typed).slice(0, limit).join('') : typed;
     settled.current = false;
     setRaw(v);
     onDraft?.(field.type === 'date' ? isoToDisplay(v) : v);
@@ -168,7 +181,8 @@ export function FieldEditor({
     <div
       ref={wrap}
       onKeyDown={onKeyDown}
-      className="absolute top-full left-0 z-10 mt-1 flex min-w-full flex-col gap-1 rounded-md bg-surface p-0.5 shadow-e3"
+      className="absolute top-full left-0 z-10 mt-1 flex min-w-full flex-col gap-1 rounded-md bg-surface p-0.5 shadow-e3 data-[choice]:min-w-40"
+      data-choice={field.type === 'choice' ? '' : undefined}
     >
       {field.type === 'multiline' ? (
         <Textarea
@@ -181,11 +195,13 @@ export function FieldEditor({
         <DateInput label={name} value={value} onChange={setValue} />
       ) : field.type === 'choice' ? (
         <Select
+          ref={picker}
           aria-label={name}
           value={value}
           items={(field.widget?.options ?? []).map((o) => ({
             value: o,
-            label: o,
+            // Forms often start on a blank " " option.
+            label: o.trim() ? o : '(none)',
           }))}
           onValueChange={setValue}
         />

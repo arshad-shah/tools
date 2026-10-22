@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { InkStroke } from '@/shared/lib/ink';
+import { penPressure, type InkStroke } from '@/shared/lib/ink';
 import { SignaturePad } from './signature-pad';
 
 const ctx = {
@@ -152,8 +152,11 @@ describe('SignaturePad', () => {
     fireEvent.pointerMove(el, { ...pen, pressure: 0, clientX: 20, clientY: 1 });
     fireEvent.pointerUp(el, { ...pen, pressure: 0, clientX: 20, clientY: 1 });
     const [strokes] = onChange.mock.calls[0] as [InkStroke[]];
+    const held = +penPressure(0.3, null).toFixed(3);
     expect(strokes[0].map((p) => +p.pressure.toFixed(3))).toEqual([
-      0.3, 0.3, 0.3,
+      held,
+      held,
+      held,
     ]);
   });
 

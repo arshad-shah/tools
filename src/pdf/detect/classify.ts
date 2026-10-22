@@ -54,6 +54,8 @@ function medianSize(runs: PageGeometry['runs']): number {
 const PEER_TOL = 2;
 const DUPLICATE_IOU = 0.6;
 const WIDGET_IOU = 0.3;
+/** Share of either box's area that makes a detection the widget's twin. */
+const WIDGET_COVER = 0.5;
 const TOUCH = 1;
 /** Candidates this much covered by a shaded band are decoration, not fields. */
 const BAND_COVER = 0.25;
@@ -312,15 +314,36 @@ function numberAddresses(fields: DetectedField[]): void {
   }
 }
 
-/** Spec 8.1: AcroForm widgets win; detections overlapping one (IoU >= 0.3) are dropped. */
+/** Area of a ∩ b. */
+function overlapArea(a: Box, b: Box): number {
+  const w = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+  const h = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+/**
+ * Spec 8.1: AcroForm widgets win. A detection is dropped when it overlaps a
+ * widget (IoU >= 0.3), sits mostly inside one, or mostly covers one. IoU
+ * alone kept the rules and strips drawn inside a widget's box, whose IoU is
+ * small because the widget is much bigger.
+ */
 export function dedupeAgainstWidgets(
   fields: DetectedField[],
   widgets: { pageIndex: number; rect: Box }[],
 ): DetectedField[] {
+  const clashes = (w: Box, f: Box) => {
+    const shared = overlapArea(w, f);
+    if (shared === 0) return false;
+    return (
+      iou(w, f) >= WIDGET_IOU ||
+      shared / (f.width * f.height) >= WIDGET_COVER ||
+      shared / (w.width * w.height) >= WIDGET_COVER
+    );
+  };
   return fields.filter(
     (f) =>
       !widgets.some(
-        (w) => w.pageIndex === f.pageIndex && iou(w.rect, f.rect) >= WIDGET_IOU,
+        (w) => w.pageIndex === f.pageIndex && clashes(w.rect, f.rect),
       ),
   );
 }

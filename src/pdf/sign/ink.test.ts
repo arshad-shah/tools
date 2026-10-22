@@ -5,8 +5,9 @@ import {
   inkOutline,
   inkToVector,
   outlineToPath,
+  MOUSE_PRESSURE,
+  penPressure,
   pointFromEvent,
-  simulatedPressure,
   type InkPoint,
   type InkStroke,
 } from './ink';
@@ -37,32 +38,20 @@ function widthAt(outline: [number, number][], x: number) {
   return ys.length ? Math.max(...ys) - Math.min(...ys) : 0;
 }
 
-describe('simulatedPressure', () => {
-  it('a slow move raises the pressure towards 1', () => {
-    const p = simulatedPressure(pt(0, 0, 0), 1, 0, 16, 0.5);
-    expect(p).toBeGreaterThan(0.5);
-    expect(p).toBeLessThanOrEqual(1);
+describe('penPressure', () => {
+  it('lifts light pen pressure so a light hand still leaves a visible line', () => {
+    expect(penPressure(0.1, null)).toBeGreaterThan(0.3);
+    expect(penPressure(1, null)).toBeCloseTo(1, 3);
   });
 
-  it('a fast move lowers the pressure towards 0.2', () => {
-    const p = simulatedPressure(pt(0, 0, 0), 40, 0, 16, 0.5);
-    expect(p).toBeLessThan(0.5);
-    expect(p).toBeGreaterThanOrEqual(0.2);
+  it('rises with harder pressure', () => {
+    expect(penPressure(0.6, null)).toBeGreaterThan(penPressure(0.3, null));
   });
 
-  it('stays between 0.2 and 1 however long the move goes on', () => {
-    let fast = 0.5;
-    let slow = 0.5;
-    for (let i = 0; i < 50; i++) {
-      fast = simulatedPressure(pt(0, 0, 0), 400, 0, 1, fast);
-      slow = simulatedPressure(pt(0, 0, 0), 0, 0, 100, slow);
-    }
-    expect(fast).toBeCloseTo(0.2, 3);
-    expect(slow).toBeCloseTo(1, 3);
-  });
-
-  it('the first sample of a stroke keeps the starting pressure', () => {
-    expect(simulatedPressure(null, 5, 5, 0, 0.5)).toBe(0.5);
+  it('eases sample-to-sample jitter rather than jumping', () => {
+    const p = penPressure(1, 0.4);
+    expect(p).toBeGreaterThan(0.4);
+    expect(p).toBeLessThan(1);
   });
 });
 
@@ -80,7 +69,7 @@ describe('pointFromEvent', () => {
       ...o,
     }) as PointerEvent;
 
-  it('a pen reports its real pressure and tilt, in pad px', () => {
+  it('a pen reports its pressure (through the pen curve) and tilt, in pad px', () => {
     const p = pointFromEvent(
       ev({ pointerType: 'pen', pressure: 0.8, tiltX: 30, tiltY: -10 }),
       rect,
@@ -89,41 +78,81 @@ describe('pointFromEvent', () => {
     expect(p).toEqual({
       x: 5,
       y: 10,
-      pressure: 0.8,
+      pressure: penPressure(0.8, null),
       tiltX: 30,
       tiltY: -10,
       t: 100,
     });
   });
 
-  it('a pen pressure of 0 means unknown: 0.5', () => {
+  it('a pen pressure of 0 (lifting off) keeps the last pressure', () => {
     expect(
-      pointFromEvent(ev({ pointerType: 'pen' }), rect, null).pressure,
-    ).toBe(0.5);
+      pointFromEvent(ev({ pointerType: 'pen' }), rect, pt(0, 0, 0, 0.7))
+        .pressure,
+    ).toBe(0.7);
   });
 
-  it('a mouse simulates pressure from velocity', () => {
-    const prev = pt(0, 0, 0);
-    const p = pointFromEvent(
-      ev({ clientX: 60, clientY: 20, timeStamp: 16, pressure: 0.5 }),
+  it('a mouse draws at an even pressure however fast it moves', () => {
+    const slow = pointFromEvent(
+      ev({ clientX: 11, clientY: 20, timeStamp: 16 }),
       rect,
-      prev,
+      pt(0, 0, 0),
     );
-    expect(p.pressure).toBeLessThan(0.5);
+    const fast = pointFromEvent(
+      ev({ clientX: 200, clientY: 20, timeStamp: 16 }),
+      rect,
+      pt(0, 0, 0),
+    );
+    expect(slow.pressure).toBe(MOUSE_PRESSURE);
+    expect(fast.pressure).toBe(MOUSE_PRESSURE);
   });
 });
 
 describe('inkOutline', () => {
-  it('a straight stroke is about the weight wide in the middle and tapers at both ends', () => {
-    // Pointer samples arrive every few px; three samples are too coarse for
-    // perfect-freehand's streamlining to reach full width.
+  it('a straight stroke keeps its full width right to both ends, like a pen', () => {
     const outline = inkOutline(line(0, 100, 50, 11), 'bold');
     const size = INK_WEIGHTS.bold;
     const mid = widthAt(outline, 50);
-    expect(mid).toBeGreaterThan(size * 0.6);
+    expect(mid).toBeGreaterThan(size * 0.8);
     expect(mid).toBeLessThan(size * 1.4);
-    expect(widthAt(outline, 5)).toBeLessThan(mid * 0.4);
-    expect(widthAt(outline, 95)).toBeLessThan(mid * 0.4);
+    expect(widthAt(outline, 5)).toBeGreaterThan(mid * 0.85);
+    expect(widthAt(outline, 95)).toBeGreaterThan(mid * 0.85);
+  });
+
+  it('a short flick is not lost to tapering', () => {
+    const outline = inkOutline(line(0, 12, 50, 4), 'medium');
+    expect(widthAt(outline, 6)).toBeGreaterThan(INK_WEIGHTS.medium * 0.8);
+  });
+
+  it('a tap is a round dot about the nib wide', () => {
+    const outline = inkOutline([pt(40, 40)], 'medium');
+    const xs = outline.map((p) => p[0]);
+    const ys = outline.map((p) => p[1]);
+    const w = Math.max(...xs) - Math.min(...xs);
+    const h = Math.max(...ys) - Math.min(...ys);
+    expect(w).toBeGreaterThan(INK_WEIGHTS.medium * 0.7);
+    expect(h).toBeGreaterThan(INK_WEIGHTS.medium * 0.7);
+    expect(Math.abs(w - h)).toBeLessThan(INK_WEIGHTS.medium * 0.5);
+  });
+
+  it('follows a sharp corner instead of cutting it', () => {
+    // A V: down to (50, 90) and back up. The ink must reach near the tip.
+    const v: InkStroke = [
+      ...Array.from({ length: 10 }, (_, i) => pt(5 * i, 45 + 5 * i, i * 8)),
+      ...Array.from({ length: 10 }, (_, i) =>
+        pt(50 + 5 * i, 90 - 5 * i, 80 + i * 8),
+      ),
+    ];
+    const lowest = Math.max(...inkOutline(v, 'medium').map((p) => p[1]));
+    expect(lowest).toBeGreaterThan(86);
+  });
+
+  it('heavier pen pressure draws a wider line', () => {
+    const light = line(0, 100, 50, 11).map((p) => ({ ...p, pressure: 0.3 }));
+    const hard = line(0, 100, 50, 11).map((p) => ({ ...p, pressure: 0.9 }));
+    expect(widthAt(inkOutline(hard, 'medium'), 50)).toBeGreaterThan(
+      widthAt(inkOutline(light, 'medium'), 50) * 1.2,
+    );
   });
 
   it('scales with the weight and the scale factor', () => {
@@ -211,6 +240,15 @@ describe('inkToVector', () => {
     expect(v.width).toBeGreaterThan(180);
     expect(v.height).toBeGreaterThan(79);
   }, 20_000);
+
+  it('keeps a tap (the dot of an i) as ink', () => {
+    const v = inkToVector([line(20, 80, 30, 5), [pt(100, 20)]], 'medium', {
+      width: 200,
+      height: 100,
+    });
+    expect(v.d.match(/M/g)).toHaveLength(2);
+    expect(v.width).toBeGreaterThan(80);
+  });
 
   it('refuses an empty drawing', () => {
     expect(() => inkToVector([], 'thin', { width: 10, height: 10 })).toThrow(

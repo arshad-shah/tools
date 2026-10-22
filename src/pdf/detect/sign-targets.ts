@@ -26,7 +26,7 @@ export interface SignTarget {
   /** Lines and leaders: the line is the bottom edge. */
   rect: Box;
   label: string;
-  source: 'sig-field' | 'line' | 'cell' | 'underscore';
+  source: 'sig-field' | 'text-field' | 'line' | 'cell' | 'underscore';
   fieldName?: string;
   /** Free room above the line or leader (points): how tall a signature may be. */
   lineGap?: number;
@@ -241,27 +241,51 @@ export interface SigWidgetLike {
   rect: Box;
   signed?: boolean;
   label?: string | null;
+  value?: unknown;
 }
 
-/** Unsigned /Sig widgets at their exact rect (signed ones are the verifier's to list). */
+/**
+ * A plain text field that is a place to sign by its name: many forms (the
+ * Chubb claim form among them) use a Tx field called "Signature" rather
+ * than a /Sig field. "Signed date" and "Signature date" are dates.
+ */
+const TEXT_SIGN = /\b(signature|signatory|initials?)\b/i;
+const TEXT_NOT_SIGN = /\bdate\b/i;
+
+/** Whether a widget is a text field named for a signature or initials. */
+export function isSignNamedText(
+  w: Pick<SigWidgetLike, 'kind' | 'fieldName' | 'label'>,
+): boolean {
+  if (w.kind !== 'text') return false;
+  return [w.fieldName, w.label?.trim() ?? ''].some(
+    (t) => TEXT_SIGN.test(t) && !TEXT_NOT_SIGN.test(t),
+  );
+}
+
+/**
+ * Unsigned /Sig widgets at their exact rect (signed ones are the verifier's
+ * to list), and empty text fields named for a signature or initials.
+ */
 export function sigFieldTargets(
   widgets: readonly SigWidgetLike[],
 ): SignTarget[] {
   const seen = new Map<string, number>();
   const out: SignTarget[] = [];
   for (const w of widgets) {
-    if (w.kind !== 'signature') continue;
+    const label = w.label?.trim() || w.fieldName;
+    const named = isSignNamedText(w);
+    if (w.kind !== 'signature' && !named) continue;
     const n = seen.get(w.fieldName) ?? 0;
     seen.set(w.fieldName, n + 1);
     if (w.signed) continue;
-    const label = w.label?.trim() || w.fieldName;
+    if (named && typeof w.value === 'string' && w.value.trim()) continue;
     out.push({
-      id: `sig:${w.fieldName}:${w.pageIndex}:${n}`,
+      id: `${named ? 'tx' : 'sig'}:${w.fieldName}:${w.pageIndex}:${n}`,
       pageIndex: w.pageIndex,
       kind: kindOf(label) === 'initials' ? 'initials' : 'signature',
       rect: { ...w.rect },
       label,
-      source: 'sig-field',
+      source: named ? 'text-field' : 'sig-field',
       fieldName: w.fieldName,
     });
   }

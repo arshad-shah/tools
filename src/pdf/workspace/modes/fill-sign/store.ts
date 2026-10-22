@@ -50,8 +50,11 @@ export interface FillSignState {
   editing: string | null;
   /** Field key that last had focus (Next empty field starts after it). */
   focusKey: string | null;
-  /** "Detect fields" toggle: show detected fields. */
-  showDetected: boolean;
+  /**
+   * "Detect fields" toggle: show detected fields. Null until used: shown
+   * on a flat form, hidden when the document has its own form fields.
+   */
+  showDetected: boolean | null;
   /** Field key whose corrections menu is open. */
   menuFor: string | null;
   /** Detected field key shown with resize handles. */
@@ -117,7 +120,7 @@ export interface FillSignState {
 const initial: FillSignState = {
   editing: null,
   focusKey: null,
-  showDetected: true,
+  showDetected: null,
   menuFor: null,
   resizing: null,
   draft: null,

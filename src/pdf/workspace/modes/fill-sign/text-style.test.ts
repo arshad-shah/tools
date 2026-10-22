@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   caretMetrics,
+  effectiveStyle,
   DEFAULT_TEXT,
   knowContentHash,
   lastUsed,
@@ -9,6 +10,7 @@ import {
   remember,
   useTextDefaults,
 } from './text-style';
+import { textWidth } from './text-measure';
 
 beforeEach(() => useTextDefaults.setState({ global: DEFAULT_TEXT, byDoc: {} }));
 
@@ -59,7 +61,43 @@ describe('overlayLayout', () => {
     expect(l.x).toHaveLength(2);
     expect(l.x[1] - l.x[0]).toBeCloseTo(25);
   });
+
+  const box = { width: 100, height: 20 };
+  const end = (l: ReturnType<typeof overlayLayout>, size: number) =>
+    l.x[l.x.length - 1] + textWidth(l.chars[l.chars.length - 1], size);
+
+  it("right-aligns a form field's text as the form says, inside its padding", () => {
+    // IRS amount fields: /Q 2.
+    const l = overlayLayout('85.00', box, {
+      ...DEFAULT_TEXT,
+      comb: 0,
+      align: 2,
+    });
+    expect(end(l, DEFAULT_TEXT.size)).toBeCloseTo(98, 0);
+  });
+
+  it('centres with align 1 and pads a left-aligned form field', () => {
+    const c = overlayLayout('ab', box, { ...DEFAULT_TEXT, comb: 0, align: 1 });
+    const mid = (c.x[0] + end(c, DEFAULT_TEXT.size)) / 2;
+    expect(mid).toBeCloseTo(50, 0);
+    const l = overlayLayout('ab', box, { ...DEFAULT_TEXT, comb: 0, align: 0 });
+    expect(l.x[0]).toBeCloseTo(2);
+  });
+
+  it('leaves free text (no align) where it was', () => {
+    const l = overlayLayout('ab', box, { ...DEFAULT_TEXT, comb: 0 });
+    expect(l.x[0]).toBe(0);
+  });
 });
+
+describe('effectiveStyle', () => {
+  it("keeps a form field's colour and alignment", () => {
+    expect(
+      effectiveStyle({ rect: box20, style: { color: '#000080', align: 2 } }),
+    ).toMatchObject({ color: '#000080', align: 2 });
+  });
+});
+const box20 = { width: 100, height: 20 };
 
 describe('caretMetrics', () => {
   const style = { size: 10, color: '#000000', spacing: 2, comb: 0 };
