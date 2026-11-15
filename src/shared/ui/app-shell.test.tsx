@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
-import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { findBanned } from '../../../eslint-rules/banned-glyphs.js';
 import { AppShell, SkipLinks } from './app-shell';
 import { Breadcrumb } from './breadcrumb';
@@ -69,6 +69,23 @@ describe('Breadcrumb', () => {
     expect(seps).toHaveLength(1);
     expect(seps[0].getAttribute('aria-hidden')).toBe('true');
     expect(findBanned(nav.textContent ?? '')).toBeNull();
+  });
+
+  it('routes a plain click through onNavigate instead of loading the page', () => {
+    const onNavigate = vi.fn();
+    render(
+      <Breadcrumb
+        segments={[{ label: 'pdf', href: '/pdf' }, { label: 'edit' }]}
+        onNavigate={onNavigate}
+      />,
+    );
+    const link = screen.getByRole('link', { name: 'pdf' });
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    fireEvent(link, click);
+    expect(onNavigate).toHaveBeenCalledWith('/pdf');
+    expect(click.defaultPrevented).toBe(true);
+    fireEvent.click(link, { ctrlKey: true });
+    expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 });
 

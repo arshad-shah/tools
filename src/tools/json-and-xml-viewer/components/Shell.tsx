@@ -1,3 +1,4 @@
+import { braces as bracesIcon } from '@arshad-shah/cynosure/icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   MOCK_SCHEMA_MIME,
@@ -6,7 +7,7 @@ import {
 } from '@/shared/lib/data-formats';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import type { HandoffPayload } from '@/shared/lib/handoff';
-import { IconBraces, IconLocate } from '@/shared/ui/icons';
+import { IconLocate } from '@/shared/ui/icons';
 import {
   Alert,
   Button,
@@ -291,7 +292,7 @@ export function Shell() {
     <LoadingState label="Parsing" />
   ) : (
     <EmptyState
-      icon={IconBraces}
+      icon={bracesIcon}
       title={error ? 'Fix the error to see this view' : 'No document yet'}
       description={
         error

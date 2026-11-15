@@ -1,13 +1,8 @@
 import React from 'react';
-import { IconChevronDown } from '@/shared/ui/icons';
-import { cn } from '@/shared/lib/cn';
-
-interface AccordionCtx {
-  open: Set<string>;
-  toggle: (value: string) => void;
-}
-const Ctx = React.createContext<AccordionCtx | null>(null);
-const ItemCtx = React.createContext<string>('');
+import {
+  Accordion as CyAccordion,
+  AccordionItem as CyAccordionItem,
+} from '@arshad-shah/cynosure';
 
 interface AccordionProps {
   type?: 'single' | 'multiple';
@@ -15,103 +10,80 @@ interface AccordionProps {
   className?: string;
   children: React.ReactNode;
 }
+
+const first = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
+const all = (v?: string | string[]) =>
+  v === undefined ? undefined : Array.isArray(v) ? v : [v];
+
+/**
+ * Cynosure `Accordion` (card sections). `single` keeps the open section
+ * closable, as before.
+ */
 export const Accordion: React.FC<AccordionProps> = ({
   type = 'single',
   defaultValue,
   className,
   children,
-}) => {
-  const [open, setOpen] = React.useState<Set<string>>(
-    () =>
-      new Set(
-        defaultValue
-          ? Array.isArray(defaultValue)
-            ? defaultValue
-            : [defaultValue]
-          : [],
-      ),
+}) =>
+  type === 'multiple' ? (
+    <CyAccordion
+      type="multiple"
+      variant="card"
+      defaultValue={all(defaultValue)}
+      className={className}
+    >
+      {children}
+    </CyAccordion>
+  ) : (
+    <CyAccordion
+      type="single"
+      collapsible
+      variant="card"
+      defaultValue={first(defaultValue)}
+      className={className}
+    >
+      {children}
+    </CyAccordion>
   );
-  const toggle = (value: string) =>
-    setOpen((prev) => {
-      const next = new Set(type === 'single' ? [] : prev);
-      if (prev.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
-  return (
-    <Ctx.Provider value={{ open, toggle }}>
-      <div className={cn('flex flex-col gap-2', className)}>{children}</div>
-    </Ctx.Provider>
-  );
-};
+Accordion.displayName = 'Accordion';
 
 interface AccordionItemProps {
   value: string;
+  /** Layout only. */
   className?: string;
+  /** An `AccordionTrigger` (the header) and an `AccordionContent`. */
   children: React.ReactNode;
 }
+
+/** A Cynosure `AccordionItem`: the trigger's children are its summary. */
 export const AccordionItem: React.FC<AccordionItemProps> = ({
   value,
-  className,
   children,
-}) => (
-  <ItemCtx.Provider value={value}>
-    <div
-      className={cn(
-        'overflow-hidden rounded-lg bg-surface shadow-e1',
-        className,
-      )}
-    >
-      {children}
-    </div>
-  </ItemCtx.Provider>
-);
+}) => {
+  let summary: React.ReactNode;
+  const content: React.ReactNode[] = [];
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement<{ children?: React.ReactNode }>(child)) return;
+    if (child.type === AccordionTrigger) summary = child.props.children;
+    else if (child.type === AccordionContent)
+      content.push(child.props.children);
+  });
+  return (
+    <CyAccordionItem value={value} summary={summary}>
+      {content}
+    </CyAccordionItem>
+  );
+};
+AccordionItem.displayName = 'AccordionItem';
 
+/** The section header; read by `AccordionItem`, never rendered on its own. */
 export const AccordionTrigger: React.FC<
   React.HTMLAttributes<HTMLButtonElement>
-> = ({ className, children, ...props }) => {
-  const ctx = React.useContext(Ctx)!;
-  const value = React.useContext(ItemCtx);
-  const isOpen = ctx.open.has(value);
-  return (
-    <button
-      type="button"
-      aria-expanded={isOpen}
-      onClick={() => ctx.toggle(value)}
-      className={cn(
-        'flex min-h-11 w-full items-center justify-between gap-3 bg-surface px-4 py-3 text-left text-sm font-semibold text-fg transition-colors duration-fast hover:bg-surface-2',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <IconChevronDown
-        size="sm"
-        className={cn(
-          'shrink-0 text-fg-subtle transition-transform duration-base',
-          isOpen && 'rotate-180',
-        )}
-      />
-    </button>
-  );
-};
+> = ({ children }) => <>{children}</>;
+AccordionTrigger.displayName = 'AccordionTrigger';
 
+/** The section body; read by `AccordionItem`, never rendered on its own. */
 export const AccordionContent: React.FC<
   React.HTMLAttributes<HTMLDivElement>
-> = ({ className, children, ...props }) => {
-  const ctx = React.useContext(Ctx)!;
-  const value = React.useContext(ItemCtx);
-  if (!ctx.open.has(value)) return null;
-  return (
-    <div
-      role="region"
-      className={cn(
-        'border-t border-line px-4 py-3 text-sm text-fg-muted',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-};
+> = ({ children }) => <>{children}</>;
+AccordionContent.displayName = 'AccordionContent';

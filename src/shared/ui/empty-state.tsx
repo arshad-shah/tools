@@ -1,12 +1,10 @@
 import React from 'react';
-import { cn } from '@/shared/lib/cn';
-import type { IconComponent } from './icons';
+import { EmptyState as CyEmptyState } from '@arshad-shah/cynosure';
+import type { IconData } from '@arshad-shah/cynosure/icons';
 
-export interface EmptyStateProps extends Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  'title'
-> {
-  icon?: IconComponent;
+export interface EmptyStateProps {
+  /** A Facet icon (`@arshad-shah/cynosure/icons`), shown above the title. */
+  icon?: IconData;
   title?: string;
   description?: React.ReactNode;
   actions?: React.ReactNode;
@@ -14,102 +12,76 @@ export interface EmptyStateProps extends Omit<
   headingLevel?: 2 | 3 | 4;
   /** sm: a compact inline empty (lists, side panels). Default md. */
   size?: 'sm' | 'md';
+  /** Layout only. */
+  className?: string;
+  /** Compound form: EmptyStateTitle, EmptyStateDescription, then actions. */
+  children?: React.ReactNode;
 }
 
+const isPart = (
+  node: React.ReactNode,
+  part: React.FC<never>,
+): node is React.ReactElement<{ children?: React.ReactNode }> =>
+  React.isValidElement(node) && node.type === part;
+
 /**
- * Empty state. Either the compound form (EmptyStateIcon, EmptyStateTitle,
- * ... as children) or the prop form (icon, title, description, actions).
+ * Cynosure `EmptyState`. Either the prop form (icon, title, description,
+ * actions) or the compound form: an `EmptyStateTitle` child is the title, an
+ * `EmptyStateDescription` child the description, and any other children
+ * (buttons) the actions.
  */
 export const EmptyState: React.FC<EmptyStateProps> = ({
   className,
-  icon: Icon,
+  icon,
   title,
   description,
   actions,
   headingLevel,
   size = 'md',
   children,
-  ...props
-}) => (
-  <div
-    className={cn(
-      'flex flex-col items-center justify-center text-center',
-      size === 'sm'
-        ? 'gap-1 rounded-md px-4 py-4'
-        : 'gap-3 rounded-lg border border-dashed border-line-strong px-6 py-12',
-      className,
-    )}
-    {...props}
-  >
-    {Icon ? (
-      size === 'sm' ? (
-        <Icon size="md" className="text-fg-subtle" />
-      ) : (
-        <EmptyStateIcon>
-          <Icon size="lg" />
-        </EmptyStateIcon>
-      )
-    ) : null}
-    {title ? (
-      <EmptyStateTitle
-        level={headingLevel}
-        className={size === 'sm' ? 'text-sm font-medium' : undefined}
-      >
-        {title}
-      </EmptyStateTitle>
-    ) : null}
-    {description ? (
-      <EmptyStateDescription className={size === 'sm' ? 'text-xs' : undefined}>
-        {description}
-      </EmptyStateDescription>
-    ) : null}
-    {actions ? <EmptyStateActions>{actions}</EmptyStateActions> : null}
-    {children}
-  </div>
-);
-EmptyState.displayName = 'EmptyState';
-
-export const EmptyStateIcon: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
-  className,
-  ...props
-}) => (
-  <div
-    className={cn(
-      'flex size-12 items-center justify-center rounded-lg bg-surface-2 text-accent-fg',
-      className,
-    )}
-    aria-hidden
-    {...props}
-  />
-);
-EmptyStateIcon.displayName = 'EmptyStateIcon';
-
-export const EmptyStateTitle: React.FC<
-  React.HTMLAttributes<HTMLHeadingElement> & { level?: 2 | 3 | 4 }
-> = ({ className, level = 3, ...props }) => {
-  const Tag = `h${level}` as const;
+}) => {
+  let partTitle: React.ReactNode;
+  let partDescription: React.ReactNode;
+  const rest: React.ReactNode[] = [];
+  React.Children.forEach(children, (child) => {
+    if (isPart(child, EmptyStateIcon)) return;
+    if (isPart(child, EmptyStateTitle)) partTitle = child.props.children;
+    else if (isPart(child, EmptyStateDescription))
+      partDescription = child.props.children;
+    else if (isPart(child, EmptyStateActions)) rest.push(child.props.children);
+    else rest.push(child);
+  });
+  const extra = rest.filter(
+    (n) => n !== null && n !== undefined && n !== false,
+  );
   return (
-    <Tag
-      className={cn('text-lg font-semibold text-fg', className)}
-      {...props}
+    <CyEmptyState
+      icon={icon}
+      title={title ?? partTitle}
+      description={description ?? partDescription}
+      actions={
+        actions || extra.length ? (
+          <>
+            {actions}
+            {extra}
+          </>
+        ) : undefined
+      }
+      headingLevel={headingLevel}
+      size={size}
+      className={className}
     />
   );
 };
+EmptyState.displayName = 'EmptyState';
+
+/** Compound parts: read by `EmptyState`, never rendered on their own. */
+type Part = React.FC<{ children?: React.ReactNode }>;
+export const EmptyStateIcon: Part = () => null;
+EmptyStateIcon.displayName = 'EmptyStateIcon';
+export const EmptyStateTitle: Part = ({ children }) => <>{children}</>;
 EmptyStateTitle.displayName = 'EmptyStateTitle';
-
-export const EmptyStateDescription: React.FC<
-  React.HTMLAttributes<HTMLParagraphElement>
-> = ({ className, ...props }) => (
-  <p className={cn('max-w-md text-sm text-fg-muted', className)} {...props} />
-);
+export const EmptyStateDescription: Part = ({ children }) => <>{children}</>;
 EmptyStateDescription.displayName = 'EmptyStateDescription';
-
-export const EmptyStateActions: React.FC<
-  React.HTMLAttributes<HTMLDivElement>
-> = ({ className, ...props }) => (
-  <div
-    className={cn('mt-2 flex flex-wrap justify-center gap-3', className)}
-    {...props}
-  />
-);
+export const EmptyStateActions: Part = ({ children }) => <>{children}</>;
 EmptyStateActions.displayName = 'EmptyStateActions';

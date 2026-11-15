@@ -1,8 +1,9 @@
+import { EmptyState as CyEmptyState } from '@arshad-shah/cynosure';
+import { alertCircle } from '@arshad-shah/cynosure/icons';
 import type { ToolError } from '@/shared/lib/errors';
 import { cn } from '@/shared/lib/cn';
 import { Button } from './button';
 import { Progress } from './controls';
-import { IconAlertCircle } from './icons';
 import { Spinner } from './spinner';
 
 export {
@@ -39,7 +40,10 @@ export interface ErrorStateProps {
   className?: string;
 }
 
-/** A ToolError as a state: title by code, the error's own message, recovery actions. */
+/**
+ * A ToolError as a state: title by code, the error's own message, recovery
+ * actions. Cynosure `EmptyState` inside an alert region.
+ */
 export function ErrorState({
   error,
   title,
@@ -47,35 +51,27 @@ export function ErrorState({
   headingLevel = 3,
   className,
 }: ErrorStateProps) {
-  const Heading = `h${headingLevel}` as const;
   return (
-    <div
-      role="alert"
-      className={cn(
-        'flex flex-col items-center gap-3 rounded-lg bg-surface px-6 py-10 text-center shadow-e1',
-        className,
-      )}
-    >
-      <span className="flex size-12 items-center justify-center rounded-lg bg-danger-soft text-danger">
-        <IconAlertCircle size="lg" />
-      </span>
-      <Heading className="text-lg font-semibold text-fg">
-        {title ?? TITLE[error.code] ?? 'Something went wrong'}
-      </Heading>
-      <p className="max-w-md text-sm text-fg-muted">{error.message}</p>
-      {actions?.length ? (
-        <div className="mt-2 flex flex-wrap justify-center gap-3">
-          {actions.map((a) => (
-            <Button
-              key={a.label}
-              variant={a.variant ?? 'secondary'}
-              onClick={a.onClick}
-            >
-              {a.label}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+    <div role="alert" className={className}>
+      <CyEmptyState
+        icon={alertCircle}
+        title={title ?? TITLE[error.code] ?? 'Something went wrong'}
+        description={error.message}
+        headingLevel={headingLevel}
+        actions={
+          actions?.length
+            ? actions.map((a) => (
+                <Button
+                  key={a.label}
+                  variant={a.variant ?? 'secondary'}
+                  onClick={a.onClick}
+                >
+                  {a.label}
+                </Button>
+              ))
+            : undefined
+        }
+      />
     </div>
   );
 }

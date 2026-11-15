@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fileText as fileTextIcon } from '@arshad-shah/cynosure/icons';
 import {
   AutoGrid,
   Badge,
@@ -11,12 +12,7 @@ import {
   Statistic,
   ToolCard,
 } from '@/shared/ui';
-import {
-  IconBinary,
-  IconFileText,
-  IconGlobe,
-  IconMerge,
-} from '@/shared/ui/icons';
+import { IconBinary, IconGlobe, IconMerge } from '@/shared/ui/icons';
 import { Row, Section } from '../Section';
 
 const TONES = [
@@ -63,11 +59,7 @@ export function CardsSection() {
             <CardDescription>Surface with the e1 elevation.</CardDescription>
           </CardHeader>
           <CardBody>
-            <Statistic
-              label="Pages"
-              value="12"
-              icon={<IconFileText size="sm" />}
-            />
+            <Statistic label="Pages" value="12" icon={fileTextIcon} />
           </CardBody>
         </Card>
       </AutoGrid>

@@ -1,3 +1,4 @@
+import { table as tableIcon } from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
 import {
   MOCK_SCHEMA_MIME,
@@ -25,7 +26,7 @@ import {
   Stack,
   usePaneTab,
 } from '@/shared/ui';
-import { IconPlusCircle, IconTable } from '@/shared/ui/icons';
+import { IconPlusCircle } from '@/shared/ui/icons';
 import { FieldEditor } from './components/FieldEditor';
 import { GeneratePanel } from './components/GeneratePanel';
 import { newSeed } from './lib/seed';
@@ -315,7 +316,7 @@ function Generator({
               <OutputPanel tables={job.result.tables} />
             ) : (
               <EmptyState
-                icon={IconTable}
+                icon={tableIcon}
                 title="No data yet"
                 description="Generate to preview the rows here."
               />

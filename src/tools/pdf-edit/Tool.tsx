@@ -103,7 +103,7 @@ export default function PdfEditTool() {
   const breadcrumb = (
     <Breadcrumb
       segments={[{ label: 'pdf', href: '/pdf' }, { label: 'edit' }]}
-      renderLink={routerLink}
+      onNavigate={navigate}
     />
   );
 

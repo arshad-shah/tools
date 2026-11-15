@@ -1,3 +1,4 @@
+import { fileText as fileTextIcon } from '@arshad-shah/cynosure/icons';
 import {
   Alert,
   AlertDescription,
@@ -13,7 +14,7 @@ import {
   Swatch,
 } from '@/shared/ui';
 import { ToolError } from '@/shared/lib/errors';
-import { IconFileText } from '@/shared/ui/icons';
+
 import { Row, Section } from '../Section';
 
 const STATUSES = ['info', 'success', 'warning', 'danger'] as const;
@@ -23,7 +24,7 @@ export function StatesSection() {
     <Section name="states" title="States">
       <div className="grid gap-4 md:grid-cols-3">
         <EmptyState
-          icon={IconFileText}
+          icon={fileTextIcon}
           title="No documents yet"
           description="Open a PDF to start."
         />
