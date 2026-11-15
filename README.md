@@ -75,13 +75,13 @@ Tools are discovered from `src/tools/<tool-id>/index.ts` manifests (`defineTool`
 
 ### Kit and enforcement rules
 
-`src/shared/ui` is the UI kit and the only place that may use raw elements (`button`, `input`, `svg`, `canvas` and so on), inline styles or icons from lucide. Everything else composes kit components. Icons are SVG components from `@/shared/ui/icons`: lucide icons wrapped with the kit defaults, and custom icons drawn on the same 24px grid. Third-party visual libraries are reached through `src/shared/ui/adapters`. Colours, spacing and motion are tokens in `src/theme/tokens.css`, with light and dark themes and reduced motion.
+`src/shared/ui` is the UI kit and the only place that may use raw elements (`button`, `input`, `svg`, `canvas` and so on) and inline styles. Everything else composes kit components. Icons are components from `@/shared/ui/icons`, each drawing one Facet icon (or a brand mark) from `@arshad-shah/cynosure` through its `Icon`; tools draws no icons of its own. Third-party visual libraries are reached through `src/shared/ui/adapters`. Colours, spacing and motion are tokens in `src/theme/tokens.css`, with light and dark themes and reduced motion.
 
 The rules are enforced, not advisory:
 
-- `eslint-rules/` is a local ESLint plugin: no pictographic, arrow or box-drawing glyphs in product text (rule a), no raw UI elements, `style` props or imperative style writes outside the kit (rule b), no `lucide-react` outside the icon module (rule c), and no inline disabling of these rules.
+- `eslint-rules/` is a local ESLint plugin: no pictographic, arrow or box-drawing glyphs in product text (rule a), no raw UI elements, `style` props or imperative style writes outside the kit (rule b), no icon package such as `lucide-react` anywhere (rule c), and no inline disabling of these rules.
 - `test/dist-glyphs.test.ts` scans the production build for glyphs.
-- `test/icons-grid.test.ts` checks every custom icon against the 24px grid.
+- `test/icons-facet.test.ts` checks the icon module draws no SVG of its own; `src/shared/ui/icons/icons.test.tsx` that every icon is a Facet icon or brand mark.
 - The visual suite runs axe on every page and fails on serious or critical findings.
 
 ### Workspace document model

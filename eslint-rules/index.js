@@ -1,6 +1,6 @@
 // @ts-check
 import noDisableEnforced from './no-disable-enforced.js';
-import noLucideOutsideIcons from './no-lucide-outside-icons.js';
+import noIconLibraries from './no-icon-libraries.js';
 import noPictographicText from './no-pictographic-text.js';
 import noRawUiOutsideKit from './no-raw-ui-outside-kit.js';
 
@@ -8,7 +8,7 @@ import noRawUiOutsideKit from './no-raw-ui-outside-kit.js';
 export const ENFORCED_RULES = [
   'local/no-pictographic-text',
   'local/no-raw-ui-outside-kit',
-  'local/no-lucide-outside-icons',
+  'local/no-icon-libraries',
   'local/no-disable-enforced',
 ];
 
@@ -17,7 +17,7 @@ export default {
   rules: {
     'no-pictographic-text': noPictographicText,
     'no-raw-ui-outside-kit': noRawUiOutsideKit,
-    'no-lucide-outside-icons': noLucideOutsideIcons,
+    'no-icon-libraries': noIconLibraries,
     'no-disable-enforced': noDisableEnforced,
   },
 };

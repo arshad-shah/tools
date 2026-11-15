@@ -66,7 +66,7 @@ Everything is client-side: document bytes never leave the browser.
 These rules are enforced by lint and tests; a PR that breaks them fails CI.
 
 - Compose the kit. Tools, modes, `src/app`, `src/pdf/components` and `src/pdf/workspace` use components from `@/shared/ui` only. Raw `button`, `input`, `select`, `textarea`, `svg`, `img`, `canvas`, `video`, `audio` and `iframe` elements, `style` props and imperative style writes (`element.style.left = ...`, `setAttribute('style', ...)`) are allowed only inside `src/shared/ui` (rule b).
-- Icons are SVG only, from `@/shared/ui/icons`. Use an existing `Icon...` export; if none fits, add a custom icon (see below). Only the icon module imports `lucide-react` (rule c).
+- Icons are Facet icons, from `@/shared/ui/icons`. Use an existing `Icon...` export; if none fits, add one (see below). No icon package (`lucide-react` and the like) anywhere (rule c).
 - No glyphs in product text: no emoji, pictographs, dingbats, arrows, geometric shapes, box drawing or technical symbols in strings, JSX text, toasts, labels or test names in `src` (rule a). Use icons, the `Kbd` component for keys, `MetaList` for separated values, or plain words ("to", "and", "Copyright"). Code that must recognise such characters builds them from code points, for example `String.fromCodePoint(0x2192)`.
 - Colours come from tokens (`bg-surface`, `text-fg-muted`, `border-line`, `text-danger`), never literals. Every surface works in the light and dark themes and with reduced motion: animate with `motion-safe:` variants.
 - The design-system rules are never disabled inline; `test/no-inline-disable.test.ts` fails on any such comment.
@@ -82,7 +82,7 @@ When a tool or mode needs something the kit does not have, add it to the kit bef
 4. Add a gallery entry in `src/app/gallery/sections/` (an existing section, or a new one listed in `KitGallery.tsx`) showing each variant and state. Add the section to `test/visual/kit-gallery.visual.ts` so it gets a baseline in both themes.
 5. Then use it from the tool or mode.
 
-A custom icon goes in the matching `src/shared/ui/icons/custom/<group>.tsx` file, made with `defineIcon` on the 24px grid: stroke only (no `fill` or `strokeWidth` on the shapes; the component sets stroke, round caps and joins), every coordinate inside 0 to 24. Add its name to the list in `test/icons-grid.test.ts` and update the icon snapshot (`pnpm exec vitest run src/shared/ui/icons -u`). It then appears in the gallery's custom icon review at every size on surface, surface-2 and accent.
+A new icon is one line in `src/shared/ui/icons/facet.ts`: `export const IconName = fromFacet('IconName', facetIcon);` with a Facet icon from `@arshad-shah/cynosure/icons` (or a brand mark from `@arshad-shah/cynosure/brands`). Update the icon snapshot (`pnpm exec vitest run src/shared/ui/icons -u`). tools never draws an icon: when Facet has none that fits, it is drawn in Cynosure first (list it in `GAPS-icons.md`). Kit facades pass `IconName.data` (or `facetOf(node)`) to Cynosure's `icon` slots.
 
 ## Code conventions
 

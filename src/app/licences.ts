@@ -174,12 +174,6 @@ export const LICENCES: LicenceEntry[] = [
     note: 'PDF tools; bundles qpdf (Apache-2.0) as wasm',
   },
   {
-    name: 'lucide-react',
-    licence: 'ISC',
-    url: 'https://github.com/lucide-icons/lucide',
-    note: 'Icons',
-  },
-  {
     name: 'clsx',
     licence: 'MIT',
     url: 'https://github.com/lukeed/clsx',
