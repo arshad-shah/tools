@@ -132,6 +132,12 @@ Each row is one task: rewrite the module(s) as a facade over the named Cynosure 
 
 ### Phase 1: Primitive facades (drops `@floating-ui/react-dom`)
 
+> **Status (2026-11-15):** four branches merged into `feat/cynosure-migration` (`facade/buttons`, `facade/fields`, `facade/overlays`, `facade/display`); full unit suite green (5715), targeted e2e green per group. Also: Cynosure now loads in a `cynosure` cascade layer below Tailwind utilities (`tokens.css`), and `@floating-ui/react-dom` and `escape-stack.ts` are gone.
+>
+> **Render Cynosure:** Button, IconButton, ToolButton, HitArea, ButtonGroup, Kbd, ShortcutHint, CopyButton, Badge, StatusDot, Spinner; Input, SearchInput, Textarea, SecretInput, SwitchField, Progress, RadioGroup; Tooltip, Popover, HoverCard, Menu, SendToMenu, OptionsMenu, ShareButton, Dialog, Drawer, AnchoredToolbar; Alert, PrivacyNote, ErrorState, EmptyState, Statistic, Accordion, List, AutoGrid, Divider, Breadcrumb, Card.
+>
+> **Still the kit's own, blocked on Cynosure gaps** (tracked in arshad-shah/cynosure#171): Switch, Checkbox, Slider, NumberInput, Stepper, Select, SegmentedControl, SecretText, ContextMenu, Table, MetaList, layout primitives (Box/Stack/Inline/Grid/Container/Section/Center), typography, Link, LoadingState, roving.ts. Workarounds in facades to remove once Cynosure fixes them: `useCallerAria` (button.tsx), `useFieldElement` aria-describedby (field-props.ts).
+
 | Task | Modules                                                                                                                                                               | Cynosure                                                                                               |
 | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | 1.1  | `button.tsx`, `button-variants.ts`, `tool-button.tsx`, `hit-area.tsx`                                                                                                 | `Button`, `IconButton`, `ButtonBase`                                                                   |
