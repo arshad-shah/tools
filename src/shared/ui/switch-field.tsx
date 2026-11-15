@@ -1,7 +1,4 @@
-import { useId } from 'react';
-import { cn } from '@/shared/lib/cn';
-import { Switch } from './controls';
-import { Label, Text } from './typography';
+import { Switch } from '@arshad-shah/cynosure';
 
 export interface SwitchFieldProps {
   label: string;
@@ -15,9 +12,9 @@ export interface SwitchFieldProps {
 }
 
 /**
- * The one "switch with a label" row (6-H component audit; four tools had
- * their own): switch first, label beside it, an optional hint below.
- * The label is clickable and names the switch.
+ * The one "switch with a label" row (6-H component audit), Cynosure's
+ * Switch: switch first, label beside it, an optional hint below. The whole
+ * row is clickable and the label names the switch.
  */
 export function SwitchField({
   label,
@@ -28,27 +25,16 @@ export function SwitchField({
   id,
   className,
 }: SwitchFieldProps) {
-  const auto = useId();
-  const switchId = id ?? auto;
-  const hintId = `${switchId}-hint`;
   return (
-    <div className={cn('flex items-start gap-2', className)}>
-      <Switch
-        id={switchId}
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        disabled={disabled}
-        aria-describedby={description ? hintId : undefined}
-      />
-      <div className="grid gap-0.5">
-        <Label htmlFor={switchId}>{label}</Label>
-        {description ? (
-          <Text as="span" id={hintId} size="xs" tone="subtle">
-            {description}
-          </Text>
-        ) : null}
-      </div>
-    </div>
+    <Switch
+      id={id}
+      label={label}
+      description={description}
+      checked={checked}
+      onChange={onCheckedChange}
+      disabled={disabled}
+      className={className}
+    />
   );
 }
 SwitchField.displayName = 'SwitchField';

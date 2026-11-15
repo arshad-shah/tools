@@ -14,7 +14,7 @@ describe('SwitchField', () => {
       />,
     );
     const sw = screen.getByRole('switch', { name: 'Padding' });
-    expect(sw.getAttribute('aria-checked')).toBe('false');
+    expect((sw as HTMLInputElement).checked).toBe(false);
     fireEvent.click(screen.getByText('Padding'));
     expect(onChange).toHaveBeenCalledWith(true);
   });

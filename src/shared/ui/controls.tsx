@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconCheck, IconMinus, IconPlus } from '@/shared/ui/icons';
+import { ProgressBar } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
 
 /* ------------------------------------------------------------------ *
@@ -230,7 +231,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
 NumberInput.displayName = 'NumberInput';
 
 /* ------------------------------------------------------------------ *
- * Progress — determinate bar
+ * Progress — determinate bar, Cynosure's ProgressBar
  * ------------------------------------------------------------------ */
 interface ProgressProps {
   value: number;
@@ -244,25 +245,14 @@ export const Progress: React.FC<ProgressProps> = ({
   max = 100,
   label = 'Progress',
   className,
-}) => {
-  const pct = Math.min(100, Math.max(0, (value / max) * 100));
-  return (
-    <div
-      role="progressbar"
-      aria-label={label}
-      aria-valuenow={value}
-      aria-valuemin={0}
-      aria-valuemax={max}
-      className={cn(
-        'h-2 w-full overflow-hidden rounded-full bg-surface-3',
-        className,
-      )}
-    >
-      <div
-        className="h-full rounded-full bg-accent-indicator transition-[width]"
-        style={{ width: `${pct}%` }}
-      />
-    </div>
-  );
-};
+}) => (
+  <ProgressBar
+    label={label}
+    labelHidden
+    value={Math.min(max, Math.max(0, value))}
+    max={max}
+    size="sm"
+    className={cn('w-full', className)}
+  />
+);
 Progress.displayName = 'Progress';
