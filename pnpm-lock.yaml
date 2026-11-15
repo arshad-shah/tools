@@ -25,6 +25,9 @@ importers:
 
   .:
     dependencies:
+      '@arshad-shah/cynosure':
+        specifier: ^0.5.0
+        version: 0.5.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@arshad-shah/detent':
         specifier: ^0.3.1
         version: 0.3.1
@@ -337,6 +340,13 @@ importers:
         version: 4.147.0(@types/node@25.9.1)
 
 packages:
+
+  '@arshad-shah/cynosure@0.5.0':
+    resolution: {integrity: sha512-C+vu3ZlXd2vaIBZFZ9e+5RUwQ/qDqAikwTVWgJI76p4lOiLPFP4i0jCyYNY1QDKRw9mp9QZIlE+bJIrXOzH1Cg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      react: '>=18 <20'
+      react-dom: '>=18 <20'
 
   '@arshad-shah/detent-react@0.3.1':
     resolution: {integrity: sha512-VfGzLE61PCAkThfsaUInwxc9MXj4q0EY40m2NqdffTTVJd14aE0oVpWN+XCUMhj6KsIHW7qn/P1DrbnHZHk0sQ==}
@@ -3074,6 +3084,12 @@ packages:
       '@types/emscripten': '>=1.39.6'
 
 snapshots:
+
+  '@arshad-shah/cynosure@0.5.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      '@arshad-shah/detent': 0.3.1
+      react: 19.2.6
+      react-dom: 19.2.6(react@19.2.6)
 
   '@arshad-shah/detent-react@0.3.1(react@19.2.6)':
     dependencies:

@@ -34,6 +34,7 @@
     ]
   },
   "dependencies": {
+    "@arshad-shah/cynosure": "^0.5.0",
     "@arshad-shah/detent": "^0.3.1",
     "@arshad-shah/detent-react": "^0.3.1",
     "@arshad-shah/qpdf-wasm": "^0.1.0",
@@ -86,9 +87,9 @@
     "papaparse": "^5.5.3",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289",
-    "prettier": "^3.8.3",
     "perfect-freehand": "^1.2.3",
     "pkijs": "^3.4.1",
+    "prettier": "^3.8.3",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
