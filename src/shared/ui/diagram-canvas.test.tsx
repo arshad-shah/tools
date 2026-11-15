@@ -292,7 +292,8 @@ describe('DiagramCanvas controls and keyboard', () => {
     // Each tooltip: the label, then the shortcut in words (and as key chips).
     const words = tips.map((t) => [
       t.firstElementChild?.textContent,
-      t.querySelector('.sr-only')?.textContent,
+      // Cynosure's Kbd says the shortcut in words in a visually hidden span.
+      t.querySelector('.cy-visually-hidden')?.textContent,
     ]);
     expect(words).toEqual([
       ['Zoom in', 'Plus'],

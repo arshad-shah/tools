@@ -60,8 +60,9 @@ describe('non-text contrast roles', () => {
     expect(screen.getByRole('img', { name: 'w' }).className).toContain(
       'border-line-control',
     );
-    expect(screen.getByRole('img', { name: 'Saved' }).className).toContain(
-      'bg-accent-indicator',
+    // The status dot is Cynosure's accent dot.
+    expect(screen.getByRole('img', { name: 'Saved' }).dataset.tone).toBe(
+      'accent',
     );
     expect(screen.getByRole('tab').className).toContain(
       'border-accent-indicator',

@@ -1,15 +1,15 @@
-import { cn } from '@/shared/lib/cn';
+import { Badge } from '@arshad-shah/cynosure';
 import { ToolError } from '@/shared/lib/errors';
 
 export type StatusTone = 'accent' | 'danger' | 'warning' | 'info' | 'muted';
 
-const TONE: Record<StatusTone, string> = {
-  accent: 'bg-accent-indicator',
-  danger: 'bg-danger',
-  warning: 'bg-warning',
-  info: 'bg-info',
-  muted: 'bg-fg-subtle',
-};
+const TONE = {
+  accent: 'accent',
+  danger: 'danger',
+  warning: 'warning',
+  info: 'info',
+  muted: 'neutral',
+} as const;
 
 interface StatusDotBase {
   tone: StatusTone;
@@ -25,7 +25,10 @@ export type StatusDotProps = StatusDotBase &
     | { decorative: true; label?: undefined }
   );
 
-/** 8px status indicator: replaces dot and bullet characters. */
+/**
+ * A status dot: Cynosure's Badge with `dot` and no text (`live` when it
+ * pulses). Named by `label` (role img), or hidden when decorative.
+ */
 export function StatusDot(props: StatusDotProps) {
   const { tone, pulse, className } = props;
   if (!props.decorative && !props.label?.trim())
@@ -33,18 +36,14 @@ export function StatusDot(props: StatusDotProps) {
       'INVALID_INPUT',
       'StatusDot needs a label unless it is decorative.',
     );
-  const a11y = props.decorative
-    ? ({ 'aria-hidden': true } as const)
-    : ({ role: 'img', 'aria-label': props.label } as const);
   return (
-    <span
-      {...a11y}
-      className={cn(
-        'inline-block size-2 shrink-0 rounded-full',
-        TONE[tone],
-        pulse && 'motion-safe:animate-pulse',
-        className,
-      )}
+    <Badge
+      dot={pulse ? 'live' : true}
+      tone={TONE[tone]}
+      // Neutral would be ink; a muted dot stays quiet.
+      {...(tone === 'muted' ? { color: 'var(--cy-color-muted)' } : {})}
+      label={props.decorative ? undefined : props.label}
+      {...(className ? { className } : {})}
     />
   );
 }
