@@ -78,7 +78,7 @@ test('the side tabs fit their card at 1400 px (they scroll, not overflow)', asyn
   await expect(list).toBeVisible();
   const { listRight, cardRight, listWidth, cardWidth } = await list.evaluate(
     (el) => {
-      const card = el.closest('[data-side-panel]') as HTMLElement;
+      const card = el.closest('[data-testid="side-panel"]') as HTMLElement;
       const l = el.getBoundingClientRect();
       const c = card.getBoundingClientRect();
       return {

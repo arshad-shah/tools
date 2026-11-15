@@ -117,32 +117,28 @@ const CollectionItem: React.FC<CollectionItemProps> = ({
       <Card
         interactive
         onClick={() => onSelectRequest(item)}
-        className={isSelected ? 'border-accent' : undefined}
+        aria-current={isSelected ? true : undefined}
+        actions={
+          <IconButton
+            variant="ghost"
+            size="sm"
+            label="Delete request"
+            icon={<IconTrash2 size="sm" />}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(item.id, 'request');
+            }}
+          />
+        }
       >
         <CardBody>
-          <Inline justify="between" align="center" gap="2" wrap>
-            <Inline align="center" gap="2">
-              <Badge
-                variant="solid"
-                tone={methodColor(methodOf(item))}
-                size="xs"
-              >
-                {methodOf(item)}
-              </Badge>
-              <Text size="sm" weight="medium" className="truncate">
-                {item.name}
-              </Text>
-            </Inline>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Delete request"
-              icon={<IconTrash2 size="sm" />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(item.id, 'request');
-              }}
-            />
+          <Inline align="center" gap="2">
+            <Badge variant="solid" tone={methodColor(methodOf(item))} size="xs">
+              {methodOf(item)}
+            </Badge>
+            <Text size="sm" weight="medium" className="truncate">
+              {item.name}
+            </Text>
           </Inline>
         </CardBody>
       </Card>
