@@ -19,14 +19,13 @@ describe('Cynosure theme stylesheet', () => {
     expect(css).toContain('--cy-color-accent:#3ddc97');
   });
 
-  it('loads after Cynosure styles and before tools tokens', () => {
-    const main = readFileSync('src/main.tsx', 'utf8');
-    const at = (s: string) => main.indexOf(s);
-    expect(at("import './theme/cynosure-theme.css';")).toBeGreaterThan(
-      at("import '@arshad-shah/cynosure/styles.css';"),
-    );
-    expect(at("import './theme/cynosure-theme.css';")).toBeLessThan(
-      at("import './theme/tokens.css';"),
+  it('loads right after Cynosure styles, in the same layer', () => {
+    const tokens = readFileSync('src/theme/tokens.css', 'utf8');
+    const at = (s: string) => tokens.indexOf(s);
+    expect(
+      at("@import './cynosure-theme.css' layer(cynosure);"),
+    ).toBeGreaterThan(
+      at("@import '@arshad-shah/cynosure/styles.css' layer(cynosure);"),
     );
   });
 });

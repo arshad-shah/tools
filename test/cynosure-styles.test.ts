@@ -15,11 +15,17 @@ describe('Cynosure styles', () => {
     );
   });
 
-  it('loads before tools tokens', () => {
-    const main = readFileSync('src/main.tsx', 'utf8');
-    const cy = main.indexOf("import '@arshad-shah/cynosure/styles.css';");
-    const tokens = main.indexOf("import './theme/tokens.css';");
-    expect(cy).toBeGreaterThanOrEqual(0);
-    expect(cy).toBeLessThan(tokens);
+  it('loads in a cascade layer below Tailwind utilities', () => {
+    // Call sites style Cynosure parts with layout utilities (p-3, hidden
+    // sm:flex): those must win, so Cynosure sits in a layer between base and
+    // components (the facade reports, tools#104).
+    const tokens = readFileSync('src/theme/tokens.css', 'utf8');
+    expect(tokens).toMatch(
+      /^@layer theme, base, cynosure, components, utilities;\s*@import 'tailwindcss';/,
+    );
+    expect(tokens).toContain(
+      "@import '@arshad-shah/cynosure/styles.css' layer(cynosure);",
+    );
+    expect(readFileSync('src/main.tsx', 'utf8')).not.toContain('cynosure');
   });
 });
