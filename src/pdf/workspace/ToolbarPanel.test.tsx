@@ -46,7 +46,7 @@ describe('ToolbarPanel (backlog P5-E)', () => {
     expect(
       screen
         .getByRole('dialog', { name: 'Redaction options' })
-        .getAttribute('data-presentation'),
-    ).toBe('sheet');
+        .getAttribute('data-side'),
+    ).toBe('bottom');
   });
 });

@@ -51,7 +51,6 @@ export { ButtonGroup } from './button-group';
 export { Tooltip, type TooltipProps } from './tooltip';
 export { Popover, type PopoverProps } from './popover';
 export {
-  useAnchoredFloating,
   type Side,
   type Align,
   type Rect,

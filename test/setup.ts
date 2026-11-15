@@ -1,4 +1,8 @@
 import { afterEach, beforeEach } from 'vitest';
+import { installOverlayPolyfills } from './jsdom-overlays';
+
+// Cynosure's overlays need the Popover API and <dialog>.showModal().
+installOverlayPolyfills();
 
 // jsdom lays nothing out, so the root's client size is 0. Give it the
 // window's size: the kit positioner clips floating surfaces to it.

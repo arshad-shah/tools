@@ -1,9 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /*
- * Floating surfaces never clip (owner feedback): the kit positioner flips,
- * shifts and shrinks them to stay inside the viewport, keeps the tooltip
- * arrow on its trigger, and portals them out of clipping ancestors.
+ * Floating surfaces never clip (owner feedback): Cynosure flips and shifts
+ * them to stay inside the viewport and shows them in the top layer, out of
+ * reach of clipping ancestors.
  */
 
 type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -51,7 +51,7 @@ async function openKit(page: Page) {
 
 const undo = (page: Page) =>
   page.getByTestId('kit-section-buttons').getByRole('button', { name: 'Undo' });
-const bubble = (page: Page) => page.locator('[data-tooltip-bubble]');
+const bubble = (page: Page) => page.getByRole('tooltip');
 
 async function hoverAtCorners(page: Page) {
   const button = undo(page);
@@ -65,18 +65,14 @@ async function hoverAtCorners(page: Page) {
     await expect(bubble(page)).toBeVisible();
     await expectInsideViewport(page, bubble(page));
     // Flipped below the trigger at the top edge, above it at the bottom.
-    await expect(bubble(page)).toHaveAttribute(
-      'data-side',
-      corner.startsWith('top') ? 'bottom' : 'top',
-    );
-    // The arrow still points at the trigger after the bubble shifted.
-    const arrow = await bubble(page)
-      .locator('[data-tooltip-arrow]')
-      .boundingBox();
-    const trigger = await button.boundingBox();
-    const mid = arrow!.x + arrow!.width / 2;
-    expect(mid).toBeGreaterThanOrEqual(trigger!.x);
-    expect(mid).toBeLessThanOrEqual(trigger!.x + trigger!.width);
+    const tip = (await bubble(page).boundingBox())!;
+    const trigger = (await button.boundingBox())!;
+    if (corner.startsWith('top'))
+      expect(tip.y).toBeGreaterThanOrEqual(trigger.y + trigger.height);
+    else expect(tip.y + tip.height).toBeLessThanOrEqual(trigger.y);
+    // Still beside the trigger after it slid along the edge.
+    expect(tip.x).toBeLessThanOrEqual(trigger.x + trigger.width);
+    expect(tip.x + tip.width).toBeGreaterThanOrEqual(trigger.x);
   }
 }
 
@@ -111,10 +107,10 @@ test('a tooltip escapes a clipping, transformed scroll container', async ({
   await button.scrollIntoViewIfNeeded();
   await button.hover();
   await expect(bubble(page)).toBeVisible();
-  // Portaled to body: no ancestor's overflow can cut it.
-  expect(
-    await bubble(page).evaluate((b) => b.parentElement === document.body),
-  ).toBe(true);
+  // In the top layer: no ancestor's overflow can cut it.
+  expect(await bubble(page).evaluate((b) => b.matches(':popover-open'))).toBe(
+    true,
+  );
   await expectInsideViewport(page, bubble(page));
   // It follows the trigger when the container scrolls.
   const before = (await bubble(page).boundingBox())!.y;
@@ -141,7 +137,11 @@ test('a dropdown menu at the bottom-right corner opens inside the viewport', asy
   const menu = page.getByRole('menu');
   await expect(menu).toBeVisible();
   await expectInsideViewport(page, menu);
-  await expect(menu).toHaveAttribute('data-side', 'top');
+  // Flipped above the trigger.
+  const box = (await menu.boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(
+    (await trigger.boundingBox())!.y,
+  );
   await page.getByRole('menuitem', { name: 'Rename' }).click();
   await expect(menu).toHaveCount(0);
 });

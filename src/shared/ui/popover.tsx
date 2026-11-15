@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { Popover as CyPopover } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
 import {
-  isRefAnchor as isRef,
-  useAnchoredFloating,
+  isRefAnchor,
+  toPlacement,
   type Align,
   type Anchor,
   type Side,
@@ -15,7 +16,9 @@ export interface PopoverProps {
   /** An element ref, or a virtual anchor such as a selection rectangle. */
   anchor: Anchor;
   side?: Side;
+  /** Kept for the callers; Cynosure lines the panel up with its anchor's start edge. */
   align?: Align;
+  /** Kept for the callers; Cynosure keeps its own gap from the anchor. */
   offset?: number;
   /** Accessible name of the dialog surface. */
   label: string;
@@ -24,144 +27,70 @@ export interface PopoverProps {
   initialFocus?: React.RefObject<HTMLElement | null>;
   /**
    * false: opening leaves focus where it is (a toolbar that accompanies an
-   * editor; reach it with a shortcut). Default true.
+   * editor; reach it with Tab). Default true.
    */
   autoFocus?: boolean;
   /**
-   * false: pointer-downs and focus moving outside do not close it (it
-   * follows its anchor; Esc inside still closes it). Default true.
+   * Layout of the content (width, padding, flex), as on the kit panel; it
+   * goes on a box inside Cynosure's panel, which keeps its own look.
    */
-  dismissOnOutside?: boolean;
   className?: string;
   children: React.ReactNode;
 }
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 /**
- * Anchored floating surface with collision handling (spec §4.6, no Radix).
- * Portals to body; Esc and outside pointerdown close it and focus returns to
- * the anchor. The kit owns the data-driven `style` used for its position.
+ * Cynosure's Popover: an anchored, labelled non-modal dialog in the top
+ * layer. Escape and an outside pointer-down close it, and focus goes back
+ * to where it was. `modal` keeps Tab inside. The content mounts only while
+ * it is open.
  */
 export function Popover({
   open,
   onOpenChange,
   anchor,
   side = 'bottom',
-  align = 'start',
-  offset = 8,
   label,
   modal = false,
   initialFocus,
   autoFocus = true,
-  dismissOnOutside = true,
   className,
   children,
 }: PopoverProps) {
-  const surface = useRef<HTMLDivElement>(null);
-  const focused = useRef(false);
-  const floating = useAnchoredFloating({ open, anchor, side, align, offset });
-  const { setFloating } = floating;
-  const setSurface = useCallback(
-    (el: HTMLDivElement | null) => {
-      surface.current = el;
-      setFloating(el);
-    },
-    [setFloating],
-  );
+  // Cynosure takes an element or a virtual anchor; a ref not attached yet
+  // is read when the panel is placed.
+  const at = isRefAnchor(anchor)
+    ? (anchor.current ?? {
+        getBoundingClientRect: () =>
+          anchor.current?.getBoundingClientRect() ?? new DOMRect(),
+      })
+    : anchor;
 
-  const close = useCallback(() => {
-    onOpenChange(false);
-    if (isRef(anchor)) anchor.current?.focus();
-  }, [anchor, onOpenChange]);
-
-  // Closing re-arms initial focus for the next open.
-  useLayoutEffect(() => {
-    if (!open) return;
-    return () => {
-      focused.current = false;
-    };
-  }, [open]);
-
-  // Initial focus once the surface is positioned (and therefore focusable
-  // and visible), once per open.
-  const placed = floating.placed;
+  // A chosen first focus (a field further down) once the panel is shown.
   useEffect(() => {
-    if (!open || !placed || focused.current || !autoFocus) return;
-    const el = surface.current;
-    if (!el) return;
-    focused.current = true;
-    const target =
-      initialFocus?.current ?? el.querySelector<HTMLElement>(FOCUSABLE) ?? el;
-    target.focus();
-  }, [open, placed, initialFocus, autoFocus]);
+    if (open && autoFocus) initialFocus?.current?.focus();
+  }, [open, autoFocus, initialFocus]);
 
-  useEffect(() => {
-    if (!open || !dismissOnOutside) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (surface.current?.contains(t)) return;
-      if (isRef(anchor) && anchor.current?.contains(t)) return;
-      onOpenChange(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown, true);
-    return () =>
-      document.removeEventListener('pointerdown', onPointerDown, true);
-  }, [open, anchor, onOpenChange, dismissOnOutside]);
-
-  if (!open || typeof document === 'undefined') return null;
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      close();
-      return;
-    }
-    if (e.key !== 'Tab' || !modal) return;
-    const items = [
-      ...(surface.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []),
-    ];
-    if (items.length === 0) {
-      e.preventDefault();
-      return;
-    }
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
-
-  const onBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (modal || !dismissOnOutside) return;
-    const next = e.relatedTarget as Node | null;
-    if (next && !surface.current?.contains(next)) onOpenChange(false);
-  };
-
-  return createPortal(
-    <div
-      ref={setSurface}
-      role="dialog"
-      aria-label={label}
-      aria-modal={modal || undefined}
-      tabIndex={-1}
-      data-side={floating.side}
-      onKeyDown={onKeyDown}
-      onBlur={onBlur}
-      className={cn(
-        'z-floating overflow-auto rounded-xl bg-surface p-3 text-fg shadow-e2 outline-none',
-        className,
-      )}
-      style={floating.style}
+  const panel = (
+    <CyPopover
+      open={open}
+      onOpenChange={onOpenChange}
+      anchor={at}
+      label={label}
+      placement={toPlacement(side)}
+      modal={modal}
+      initialFocus={autoFocus ? 'first' : 'none'}
+      // The content box sets the padding (p-3 unless the caller says), and
+      // the panel grows to it, up to the large preset.
+      size="lg"
+      style={{ '--cy-popover-padding': '0' } as React.CSSProperties}
     >
-      {children}
-    </div>,
-    document.body,
+      {open ? <div className={cn('p-3', className)}>{children}</div> : null}
+    </CyPopover>
   );
+  // In <body>, as before: the top layer lifts it above everything, but it
+  // would still inherit an ancestor's pointer-events or visibility.
+  return typeof document === 'undefined'
+    ? null
+    : createPortal(panel, document.body);
 }
 Popover.displayName = 'Popover';

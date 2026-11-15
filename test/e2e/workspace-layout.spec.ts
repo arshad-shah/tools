@@ -146,9 +146,9 @@ test.describe('desktop', () => {
 async function tooltipInside(page: Page, trigger: ReturnType<Page['locator']>) {
   // One bubble at a time: the last one closes once the pointer leaves.
   await page.mouse.move(0, 0);
-  await expect(page.locator('[data-tooltip-bubble]')).toHaveCount(0);
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
   await trigger.hover();
-  const bubble = page.locator('[data-tooltip-bubble]');
+  const bubble = page.getByRole('tooltip');
   await expect(bubble).toBeVisible();
   await expect(bubble).toHaveCSS('opacity', '1');
   const b = (await bubble.boundingBox())!;

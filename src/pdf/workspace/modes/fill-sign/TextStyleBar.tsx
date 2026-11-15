@@ -321,7 +321,6 @@ export function TextStyleBar({
           }}
           revealKey={boxKey}
           trailing={done}
-          data-testid="text-settings-bar"
         >
           {controls}
         </DockedToolbar>

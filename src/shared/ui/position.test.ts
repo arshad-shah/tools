@@ -1,21 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { sideOf, toPlacement } from './position';
+import { isRefAnchor, toPlacement } from './position';
 
 describe('toPlacement', () => {
-  it('maps a centred side to the bare side', () => {
-    expect(toPlacement('top', 'center')).toBe('top');
-    expect(toPlacement('right', 'center')).toBe('right');
+  it('keeps top and bottom', () => {
+    expect(toPlacement('top')).toBe('top');
+    expect(toPlacement('bottom')).toBe('bottom');
   });
 
-  it('keeps start and end as logical alignments', () => {
-    expect(toPlacement('bottom', 'start')).toBe('bottom-start');
-    expect(toPlacement('left', 'end')).toBe('left-end');
+  it('maps left and right to the inline start and end', () => {
+    expect(toPlacement('left')).toBe('start');
+    expect(toPlacement('right')).toBe('end');
   });
 });
 
-describe('sideOf', () => {
-  it('reads the side of a resolved placement', () => {
-    expect(sideOf('top-end')).toBe('top');
-    expect(sideOf('left')).toBe('left');
+describe('isRefAnchor', () => {
+  it('tells a ref from a virtual anchor', () => {
+    expect(isRefAnchor({ current: null })).toBe(true);
+    expect(isRefAnchor({ getBoundingClientRect: () => new DOMRect() })).toBe(
+      false,
+    );
   });
 });

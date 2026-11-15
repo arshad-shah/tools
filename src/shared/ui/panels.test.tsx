@@ -196,7 +196,7 @@ describe('Inspector', () => {
 });
 
 describe('Drawer', () => {
-  it('takes a side and exposes it', () => {
+  it('takes a side (left is the inline start) and exposes it', () => {
     render(
       <Drawer open onOpenChange={() => {}} side="left" title="Pages">
         x
@@ -204,6 +204,6 @@ describe('Drawer', () => {
     );
     expect(
       screen.getByRole('dialog', { name: 'Pages' }).getAttribute('data-side'),
-    ).toBe('left');
+    ).toBe('start');
   });
 });
