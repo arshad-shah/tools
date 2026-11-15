@@ -31,7 +31,7 @@ describe('Tooltip', () => {
     expect(tip.textContent).toContain('K');
   });
 
-  it('shows the Command key icon on macOS with a text alternative', () => {
+  it('names the Command key on macOS with a text alternative', () => {
     platform('MacIntel');
     render(
       <Tooltip content="Search" shortcut="Mod+K">
@@ -39,9 +39,9 @@ describe('Tooltip', () => {
       </Tooltip>,
     );
     const tip = screen.getByRole('tooltip', { hidden: true });
-    expect(
-      tip.querySelectorAll('[aria-hidden="true"] svg').length,
-    ).toBeGreaterThanOrEqual(1);
+    expect(tip.querySelector('[aria-hidden="true"]')?.textContent).toContain(
+      'Cmd',
+    );
     expect(tip.textContent).toContain('Command K');
   });
 });

@@ -47,7 +47,8 @@ describe('ShortcutSheet', () => {
     const workspace = within(dialog).getByRole('region', { name: 'Workspace' });
     const undo = within(workspace).getByText('Undo').closest('li')!;
     expect(undo.textContent).toContain('Ctrl Z');
-    expect(undo.querySelectorAll('kbd')).toHaveLength(2);
+    // Two drawn key caps (Cynosure nests one kbd per key in the root kbd).
+    expect(undo.querySelectorAll('kbd kbd')).toHaveLength(2);
     // The sheet's own shortcut is listed under General.
     expect(
       within(within(dialog).getByRole('region', { name: 'General' })).getByText(

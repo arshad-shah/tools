@@ -1,9 +1,9 @@
+import { Kbd } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
-import { hotkeyLabel } from '@/shared/lib/hotkeys';
+import { hotkeyCaps, hotkeyLabel } from '@/shared/lib/hotkeys';
 import { isMac } from '@/shared/lib/platform';
-import { Kbd } from './kbd';
 
-/** A shortcut shown as key chips with a plain-words text alternative. */
+/** A shortcut shown as Cynosure key caps with a plain-words text alternative. */
 export function ShortcutHint({
   keys,
   className,
@@ -11,17 +11,15 @@ export function ShortcutHint({
   keys: string;
   className?: string;
 }) {
+  const mac = isMac();
   return (
-    <span
+    <Kbd
+      keys={hotkeyCaps(keys, mac)}
+      label={hotkeyLabel(keys, mac)}
+      size="sm"
       // Keyboard hints mean nothing on touch screens.
-      className={cn(
-        'inline-flex items-center pointer-coarse:hidden',
-        className,
-      )}
-    >
-      <span className="sr-only">{hotkeyLabel(keys, isMac())}</span>
-      <Kbd keys={keys} />
-    </span>
+      className={cn('pointer-coarse:hidden', className)}
+    />
   );
 }
 ShortcutHint.displayName = 'ShortcutHint';
