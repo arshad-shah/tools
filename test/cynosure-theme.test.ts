@@ -8,7 +8,11 @@ import { cynosureThemeCss } from '../scripts/gen-cynosure-theme';
  * generated; this keeps it in step with the installed Cynosure.
  */
 describe('Cynosure theme stylesheet', () => {
-  const css = readFileSync('src/theme/cynosure-theme.css', 'utf8');
+  // Line endings aside: a Windows checkout may turn LF into CRLF.
+  const css = readFileSync('src/theme/cynosure-theme.css', 'utf8').replace(
+    /\r\n/g,
+    '\n',
+  );
 
   it('is what Cynosure generates for the tools accent', () => {
     expect(css).toBe(cynosureThemeCss());
