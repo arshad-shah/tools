@@ -180,12 +180,6 @@ export const LICENCES: LicenceEntry[] = [
     note: 'Tooltip, popover and menu placement',
   },
   {
-    name: 'sonner',
-    licence: 'MIT',
-    url: 'https://github.com/emilkowalski/sonner',
-    note: 'Toasts',
-  },
-  {
     name: 'lucide-react',
     licence: 'ISC',
     url: 'https://github.com/lucide-icons/lucide',

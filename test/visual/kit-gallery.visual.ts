@@ -106,21 +106,14 @@ for (const theme of ['light', 'dark'] as const) {
 
     test('toasts', async ({ page }) => {
       await page.getByRole('button', { name: 'Show toasts' }).click();
-      const toaster = page.locator('[data-sonner-toaster]');
-      await expect(toaster.getByText('That file is not a PDF')).toBeVisible();
-      await expect(toaster.locator('[data-sonner-toast]')).toHaveCount(3);
-      // Hovering expands the stack so all three toasts are in the baseline.
-      await toaster.locator('[data-sonner-toast]').first().hover();
-      await expect(
-        toaster.locator('[data-expanded="true"]').first(),
-      ).toBeVisible();
-      // sonner's list never settles as an element (it stacks and measures
-      // its toasts), so the screenshot clips the page to the toasts' boxes.
-      const boxes = await toaster
-        .locator('[data-sonner-toast]')
-        .evaluateAll((els) =>
-          els.map((e) => e.getBoundingClientRect().toJSON()),
-        );
+      // Cynosure toasts (tools#104) sit in a list without stacking.
+      const toasts = page.locator('.cy-toast');
+      await expect(page.getByText('That file is not a PDF')).toBeVisible();
+      await expect(toasts).toHaveCount(3);
+      // The page behind keeps changing, so clip to the toasts' boxes.
+      const boxes = await toasts.evaluateAll((els) =>
+        els.map((e) => e.getBoundingClientRect().toJSON()),
+      );
       const x = Math.floor(Math.min(...boxes.map((b) => b.left))) - 8;
       const y = Math.floor(Math.min(...boxes.map((b) => b.top))) - 8;
       const right = Math.ceil(Math.max(...boxes.map((b) => b.right))) + 8;

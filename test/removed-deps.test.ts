@@ -17,6 +17,8 @@ const REMOVED = [
   '@types/crypto-js',
   'lodash',
   '@types/lodash',
+  // tools#104: toasts come from Cynosure.
+  'sonner',
 ];
 
 describe('removed dependencies (spec 11.1)', () => {

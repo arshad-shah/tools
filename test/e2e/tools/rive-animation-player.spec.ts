@@ -65,9 +65,7 @@ test('rejects a non-Rive file with a toast', async ({ page }) => {
       buffer: Buffer.from('nope'),
     });
   await expect(
-    page
-      .locator('[data-sonner-toast]')
-      .getByText('fake.riv is not a Rive (.riv) file'),
+    page.locator('.cy-toast').getByText('fake.riv is not a Rive (.riv) file'),
   ).toBeVisible();
 });
 
