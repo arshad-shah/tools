@@ -87,6 +87,8 @@
 
 ### Task 3: Tools' colour roles alias Cynosure's
 
+> **As built (2026-11-15, owner's call: keep the current palette):** the other way round. The Cynosure theme is built _from_ tools' palette (`TOOLS_THEME` in `scripts/gen-cynosure-theme.ts`: every colour role per mode, Inter and JetBrains Mono), so Cynosure components show tools' look and `tokens.css` keeps its values unchanged. No visual baseline changes. Aliasing tools' Tailwind roles to `--cy-color-*` moves to Phase 4, when the kit is gone. Test: `test/cynosure-palette.test.ts`.
+
 **Files:**
 
 - Modify: `src/theme/tokens.css` (both palette blocks), `src/shared/lib/theme-tokens.ts`, `src/shared/ui/adapters/theme-colors.ts`, `src/shared/diagram/theme-bridge.ts`, `src/tools/markdown-editor/lib/doc-tokens.ts` and their tests
