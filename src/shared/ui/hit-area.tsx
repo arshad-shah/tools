@@ -1,4 +1,5 @@
 import type React from 'react';
+import { ButtonBase } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
 import {
   mapBox,
@@ -19,7 +20,7 @@ export interface HitAreaProps {
 }
 
 /**
- * A real, transparent `<button>` sized to a page-space box: the accessible
+ * A transparent Cynosure ButtonBase (a real button) sized to a page-space box: the accessible
  * twin of drawn shapes and detected fields. The focus ring stays visible.
  */
 export function HitArea({
@@ -35,10 +36,9 @@ export function HitArea({
 }: HitAreaProps) {
   const r = mapBox(transform, box);
   return (
-    <button
-      type="button"
+    <ButtonBase
       aria-label={label}
-      aria-pressed={pressed}
+      pressed={pressed}
       tabIndex={tabIndex}
       data-testid={testId}
       onClick={onActivate}
@@ -51,7 +51,7 @@ export function HitArea({
       style={{ left: r.left, top: r.top, width: r.width, height: r.height }}
     >
       {children}
-    </button>
+    </ButtonBase>
   );
 }
 HitArea.displayName = 'HitArea';

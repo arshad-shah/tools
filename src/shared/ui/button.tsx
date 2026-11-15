@@ -1,44 +1,92 @@
 import React from 'react';
-import { type VariantProps } from 'class-variance-authority';
+import {
+  Button as CyButton,
+  type ButtonProps as CyButtonProps,
+} from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
-import { buttonVariants } from './button-variants';
 import type { IconComponent, IconSize } from './icons';
-import { Spinner } from './spinner';
 
-/* ------------------------------------------------------------------ *
- * Slot — minimal asChild support (merges props onto a single child)
- * ------------------------------------------------------------------ */
-interface SlotProps extends React.HTMLAttributes<HTMLElement> {
-  children: React.ReactNode;
+/*
+ * Facade over Cynosure's Button (tools#104). The kit names stay; the look is
+ * Cynosure's. Kit icons are React components, while Cynosure's `icon` slot
+ * takes Facet icon data, so icons ride in the label until the icon swap.
+ */
+
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
+
+type Look = Required<Pick<CyButtonProps, 'variant' | 'tone'>>;
+/** Kit variant to Cynosure fill and tone. */
+const LOOK: Record<ButtonVariant, Look> = {
+  primary: { variant: 'solid', tone: 'accent' },
+  secondary: { variant: 'outline', tone: 'neutral' },
+  ghost: { variant: 'ghost', tone: 'neutral' },
+  danger: { variant: 'soft', tone: 'danger' },
+};
+
+type NativeButton = Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'color' | 'type'
+> & { type?: 'button' | 'submit' | 'reset' };
+
+/** Icon and text side by side inside Cynosure's label. */
+function WithIcons({
+  left,
+  right,
+  children,
+}: {
+  left?: React.ReactNode;
+  right?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  if (!left && !right) return <>{children}</>;
+  return (
+    <span className="inline-flex min-w-0 items-center gap-(--cy-button-gap,var(--cy-space-3))">
+      {left}
+      {children}
+      {right}
+    </span>
+  );
 }
-const Slot = React.forwardRef<HTMLElement, SlotProps>(
-  ({ children, className, ...props }, ref) => {
-    if (!React.isValidElement(children)) return null;
-    const child = children as React.ReactElement<Record<string, unknown>>;
-    return React.cloneElement(child, {
-      ...props,
-      ...child.props,
-      ref,
-      className: cn(className, child.props.className as string | undefined),
-    });
-  },
-);
-Slot.displayName = 'Slot';
+
+type Aria = React.AriaAttributes['aria-disabled'];
+
+/**
+ * Cynosure's Button writes `aria-disabled` and `aria-busy` from `loading`
+ * only, dropping a caller's (a focusable "disabled with a reason" item).
+ * Until it merges them, put the caller's values back on the element.
+ */
+function useCallerAria(
+  forwarded: React.ForwardedRef<HTMLButtonElement>,
+  ariaDisabled: Aria,
+  ariaBusy: Aria,
+  loading: boolean | undefined,
+) {
+  const own = React.useRef<HTMLButtonElement | null>(null);
+  React.useLayoutEffect(() => {
+    const el = own.current;
+    if (!el || loading) return;
+    for (const [name, value] of [
+      ['aria-disabled', ariaDisabled],
+      ['aria-busy', ariaBusy],
+    ] as const) {
+      if (value === undefined) el.removeAttribute(name);
+      else el.setAttribute(name, String(value));
+    }
+  }, [ariaDisabled, ariaBusy, loading]);
+  React.useImperativeHandle(forwarded, () => own.current as HTMLButtonElement);
+  return own;
+}
 
 /* ------------------------------------------------------------------ *
  * Button
  * ------------------------------------------------------------------ */
-/** Spinner size that visually matches each button size. */
-const spinnerForSize = { sm: 'sm', md: 'sm', lg: 'md' } as const;
-
-export interface ButtonProps
-  extends
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    Omit<VariantProps<typeof buttonVariants>, 'fullWidth'> {
-  asChild?: boolean;
+export interface ButtonProps extends NativeButton {
+  variant?: ButtonVariant | null;
+  size?: ButtonSize | null;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  /** Show a spinner in place of the left icon and disable the button. */
+  /** Shows Cynosure's busy dots, sets aria-busy and disables the button. */
   loading?: boolean;
   /** Stretch to the full width of the container. */
   fullWidth?: boolean;
@@ -46,45 +94,35 @@ export interface ButtonProps
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      className,
       variant,
       size,
-      asChild,
       leftIcon,
       rightIcon,
       loading,
       fullWidth,
       disabled,
       children,
+      'aria-disabled': ariaDisabled,
+      'aria-busy': ariaBusy,
       ...props
     },
     ref,
   ) => {
-    const classes = cn(buttonVariants({ variant, size, fullWidth }), className);
-    if (asChild) {
-      return (
-        <Slot className={classes} {...props}>
-          {children}
-        </Slot>
-      );
-    }
-    const left = loading ? (
-      <Spinner size={spinnerForSize[size ?? 'md']} decorative />
-    ) : (
-      leftIcon
-    );
+    const buttonRef = useCallerAria(ref, ariaDisabled, ariaBusy, loading);
     return (
-      <button
-        ref={ref}
-        className={classes}
-        disabled={disabled || loading}
-        aria-busy={loading || undefined}
+      <CyButton
+        ref={buttonRef}
         {...props}
+        {...LOOK[variant ?? 'secondary']}
+        size={size ?? 'md'}
+        fullWidth={fullWidth ?? false}
+        loading={loading ?? false}
+        disabled={disabled || loading}
       >
-        {left}
-        {children}
-        {rightIcon}
-      </button>
+        <WithIcons left={leftIcon} right={rightIcon}>
+          {children}
+        </WithIcons>
+      </CyButton>
     );
   },
 );
@@ -93,45 +131,23 @@ Button.displayName = 'Button';
 /* ------------------------------------------------------------------ *
  * IconButton — square, icon-only, requires a label
  * ------------------------------------------------------------------ */
-/**
- * Box size from the tokens in tokens.css: one step up on a fine pointer,
- * 44px on touch. lg is the 44px touch size everywhere.
- */
-const iconButtonSize = {
-  sm: 'size-(--icon-button-sm)',
-  md: 'size-(--icon-button-md)',
-  lg: 'size-touch',
-} as const;
-/** Glyph size for an icon component; a rendered node keeps its own size. */
-const iconGlyph: Record<keyof typeof iconButtonSize, string | undefined> = {
-  sm: 'size-(--icon-glyph-sm)',
-  md: 'size-(--icon-glyph-md)',
-  lg: undefined,
-};
-const iconSizeFor: Record<keyof typeof iconButtonSize, IconSize> = {
+const iconSizeFor: Record<ButtonSize, IconSize> = {
   sm: 'sm',
   md: 'md',
   lg: 'lg',
 };
-/** Tints ghost/soft icon buttons without a full filled background. */
-const iconButtonTone = {
-  danger: 'text-danger hover:text-danger',
-  warning: 'text-warning hover:text-warning',
-  accent: 'text-accent-fg hover:text-accent-fg',
-} as const;
-export interface IconButtonProps extends Omit<
-  React.ButtonHTMLAttributes<HTMLButtonElement>,
-  'aria-label'
-> {
+/** Tints the icon of a ghost or outline icon button (a destructive action). */
+export type IconButtonTone = 'danger' | 'warning' | 'accent';
+
+export interface IconButtonProps extends Omit<NativeButton, 'aria-label'> {
   label: string;
   /** An icon component (sized to the button) or a rendered node. */
   icon: IconComponent | React.ReactNode;
-  variant?: NonNullable<VariantProps<typeof buttonVariants>['variant']>;
-  size?: keyof typeof iconButtonSize;
-  /** Color tint for ghost/soft icon buttons (e.g. a destructive action). */
-  tone?: keyof typeof iconButtonTone;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  /** Colour tint (e.g. a destructive action). */
+  tone?: IconButtonTone;
   loading?: boolean;
-  asChild?: boolean;
   /**
    * desktop: the label shows as text beside the icon with a fine pointer on
    * wide screens (6-H); icon only, with its accessible name, elsewhere.
@@ -140,17 +156,23 @@ export interface IconButtonProps extends Omit<
   /** The visible text when showLabel applies (default `label`). */
   text?: string;
 }
-function renderIcon(
-  icon: IconComponent | React.ReactNode,
-  size: IconSize,
-  className?: string,
-) {
+function renderIcon(icon: IconComponent | React.ReactNode, size: IconSize) {
   if (typeof icon === 'function') {
     const Icon = icon as IconComponent;
-    return <Icon size={size} className={className} />;
+    return <Icon size={size} />;
   }
   return icon;
 }
+
+/**
+ * Icon-only until the desktop breakpoint, then icon and text: no padding and
+ * at least as wide as it is tall below it, Cynosure's padding from it.
+ */
+const DESK_LABEL: Record<ButtonSize, string> = {
+  sm: 'min-w-(--cy-control-height-sm) [--cy-button-padding-inline:0] desk:[--cy-button-padding-inline:var(--cy-space-5)]',
+  md: 'min-w-(--cy-control-height-md) [--cy-button-padding-inline:0] desk:[--cy-button-padding-inline:var(--cy-space-5)]',
+  lg: 'min-w-(--cy-control-height-lg) [--cy-button-padding-inline:0] desk:[--cy-button-padding-inline:var(--cy-space-5)]',
+};
 
 export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   (
@@ -162,50 +184,41 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       size = 'md',
       tone,
       loading,
-      asChild,
       disabled,
       showLabel,
       text,
-      children,
+      'aria-disabled': ariaDisabled,
+      'aria-busy': ariaBusy,
       ...props
     },
     ref,
   ) => {
-    const classes = cn(
-      buttonVariants({ variant }),
-      'p-0',
-      iconButtonSize[size],
-      showLabel && 'desk:w-auto desk:gap-1.5 desk:px-2.5',
-      tone && iconButtonTone[tone],
-      className,
-    );
-    if (asChild) {
-      return (
-        <Slot className={classes} aria-label={label} {...props}>
-          {children}
-        </Slot>
-      );
-    }
+    const look = LOOK[variant];
+    const buttonRef = useCallerAria(ref, ariaDisabled, ariaBusy, loading);
     return (
-      <button
-        ref={ref}
-        className={classes}
-        aria-label={label}
-        disabled={disabled || loading}
-        aria-busy={loading || undefined}
+      <CyButton
+        ref={buttonRef}
         {...props}
+        variant={look.variant}
+        tone={tone ?? look.tone}
+        size={size}
+        square={!showLabel}
+        aria-label={label}
+        loading={loading ?? false}
+        disabled={disabled || loading}
+        className={cn(showLabel && DESK_LABEL[size], className)}
       >
-        {loading ? (
-          <Spinner size="sm" decorative />
-        ) : (
-          renderIcon(icon, iconSizeFor[size], iconGlyph[size])
-        )}
-        {showLabel ? (
-          <span aria-hidden className="hidden text-sm desk:inline">
-            {text ?? label}
-          </span>
-        ) : null}
-      </button>
+        <WithIcons
+          left={renderIcon(icon, iconSizeFor[size])}
+          right={
+            showLabel ? (
+              <span aria-hidden className="hidden desk:inline">
+                {text ?? label}
+              </span>
+            ) : null
+          }
+        />
+      </CyButton>
     );
   },
 );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/shared/lib/cn';
-import { buttonVariants } from './button-variants';
+import { Button } from './button';
 import type { IconComponent } from './icons';
 
 /**
@@ -11,7 +11,7 @@ export type ToolLabels = 'none' | 'responsive' | 'always';
 
 export interface ToolButtonProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
-  'aria-label'
+  'aria-label' | 'color' | 'type' | 'children'
 > {
   /** Accessible name (also the tooltip). */
   label: string;
@@ -19,54 +19,43 @@ export interface ToolButtonProps extends Omit<
   text?: string;
   icon: IconComponent;
   labels: Exclude<ToolLabels, 'none'>;
-  /** sm: 32px (Standard). lg: 44px touch targets (Focus, phone). */
+  /** sm: Standard. lg: touch targets (Focus, phone). */
   size?: 'sm' | 'md' | 'lg';
 }
 
-const HEIGHT = {
-  sm: 'h-8 min-w-8',
-  md: 'h-9 min-w-9',
-  lg: 'h-touch min-w-touch',
-};
-const PAD = {
-  responsive: { sm: 'px-0 md:px-2.5', md: 'px-0 md:px-3', lg: 'px-0 md:px-3' },
-  always: { sm: 'px-2.5', md: 'px-3', lg: 'px-3' },
+/** responsive: icon only (no padding, square) below md, Cynosure's padding from md. */
+const RESPONSIVE = {
+  sm: 'min-w-(--cy-control-height-sm) [--cy-button-padding-inline:0] md:[--cy-button-padding-inline:var(--cy-space-4)]',
+  md: 'min-w-(--cy-control-height-md) [--cy-button-padding-inline:0] md:[--cy-button-padding-inline:var(--cy-space-5)]',
+  lg: 'min-w-(--cy-control-height-lg) [--cy-button-padding-inline:0] md:[--cy-button-padding-inline:var(--cy-space-5)]',
 };
 const ICON = { sm: 'sm', md: 'md', lg: 'lg' } as const;
 
 /**
  * A ghost toolbar button with an icon and a text label (the labelled form
- * of IconButton, spec owner note: labels beside icons on desktop). The
- * accessible name stays `label` at every width.
+ * of IconButton, spec owner note: labels beside icons on desktop), on
+ * Cynosure's Button (through the Button facade). The accessible name stays `label` at every width.
  */
 export const ToolButton = React.forwardRef<HTMLButtonElement, ToolButtonProps>(
   (
     { label, text, icon: Icon, labels, size = 'sm', className, ...props },
     ref,
   ) => (
-    <button
+    <Button
       ref={ref}
-      type="button"
-      aria-label={label}
-      className={cn(
-        buttonVariants({ variant: 'ghost', size }),
-        'gap-1.5',
-        HEIGHT[size],
-        PAD[labels][size],
-        className,
-      )}
       {...props}
+      variant="ghost"
+      size={size}
+      aria-label={label}
+      className={cn(labels === 'responsive' && RESPONSIVE[size], className)}
+      leftIcon={<Icon size={ICON[size]} />}
     >
-      <Icon size={ICON[size]} />
       <span
-        className={cn(
-          'text-sm',
-          labels === 'responsive' ? 'hidden md:inline' : 'inline',
-        )}
+        className={labels === 'responsive' ? 'hidden md:inline' : undefined}
       >
         {text ?? label}
       </span>
-    </button>
+    </Button>
   ),
 );
 ToolButton.displayName = 'ToolButton';

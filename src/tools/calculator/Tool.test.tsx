@@ -34,8 +34,15 @@ const renderTool = () =>
 // tree and is slow in a loaded full run.
 const press = (name: string) =>
   fireEvent.click(screen.getByLabelText(name, { selector: 'button' }));
-const pressFace = (face: string) =>
-  fireEvent.click(screen.getByText(face, { selector: 'button' }));
+/** The keypad button showing `face` (its label may sit in nested spans). */
+const byFace = (face: string) => {
+  const b = screen
+    .getAllByRole('button')
+    .find((el) => el.textContent?.trim() === face);
+  if (!b) throw new Error(`No button shows ${face}`);
+  return b;
+};
+const pressFace = (face: string) => fireEvent.click(byFace(face));
 const line = (n: number) =>
   screen.getByLabelText(`Line ${n}`, { selector: 'textarea' });
 const result = (n: number) => screen.getByTestId(`result-${n}`).textContent;
@@ -52,7 +59,7 @@ describe('Calculator', () => {
   it('clicking keypad 7, multiply, 6, = shows 42', () => {
     renderTool();
     pressFace('7');
-    expect(screen.getByText(TIMES, { selector: 'button' })).toBeTruthy();
+    expect(byFace(TIMES)).toBeTruthy();
     press('Multiply');
     pressFace('6');
     expect(line(1)).toHaveProperty('value', '7*6');

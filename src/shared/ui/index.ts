@@ -13,7 +13,6 @@ export { Heading, Text, Label, Code } from './typography';
 export { Kbd, type KbdProps } from './kbd';
 export { ShortcutHint } from './shortcut-hint';
 export { Button, IconButton, type ButtonProps } from './button';
-export { buttonVariants } from './button-variants';
 export {
   Card,
   CardHeader,

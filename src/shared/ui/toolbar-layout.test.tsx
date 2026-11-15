@@ -81,7 +81,7 @@ describe('Toolbar layout options (P5-G)', () => {
   it('size lg gives 44px targets', () => {
     render(<Toolbar label="Tools" groups={groups()} size="lg" labelled />);
     const undo = screen.getByRole('button', { name: 'Undo last change' });
-    expect(undo.className).toContain('size-touch');
+    expect(undo.dataset.size).toBe('lg');
   });
 
   it('the floating palette takes a trailing slot', () => {
