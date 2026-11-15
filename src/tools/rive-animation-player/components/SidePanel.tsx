@@ -43,7 +43,7 @@ export function Section({
 export function SidePanel({ tabs }: { tabs: Record<SideTab, ReactNode[]> }) {
   const [tab, setTab] = useState<SideTab>('controls');
   return (
-    <Card data-side-panel="">
+    <Card data-testid="side-panel">
       <CardBody>
         <Tabs
           value={tab}

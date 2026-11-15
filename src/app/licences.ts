@@ -157,6 +157,12 @@ export const LICENCES: LicenceEntry[] = [
     note: 'Persisted tool stores',
   },
   {
+    name: '@arshad-shah/cynosure',
+    licence: 'MIT',
+    url: 'https://github.com/arshad-shah/cynosure',
+    note: 'UI components, theme and icons',
+  },
+  {
     name: '@arshad-shah/detent, detent-react',
     licence: 'MIT',
     url: 'https://github.com/arshad-shah/detent',
@@ -166,18 +172,6 @@ export const LICENCES: LicenceEntry[] = [
     licence: 'MIT',
     url: 'https://github.com/arshad-shah/qpdf-wasm',
     note: 'PDF tools; bundles qpdf (Apache-2.0) as wasm',
-  },
-  {
-    name: '@floating-ui/react-dom',
-    licence: 'MIT',
-    url: 'https://github.com/floating-ui/floating-ui',
-    note: 'Tooltip, popover and menu placement',
-  },
-  {
-    name: 'sonner',
-    licence: 'MIT',
-    url: 'https://github.com/emilkowalski/sonner',
-    note: 'Toasts',
   },
   {
     name: 'lucide-react',

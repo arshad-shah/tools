@@ -75,10 +75,10 @@ export const CompressReportView: React.FC<CompressReportViewProps> = ({
           )}
           {skippedTotal > 0 && (
             <Stack gap="1">
-              <Text size="sm" weight="semibold" id="cmp-untouched">
+              <Text size="sm" weight="semibold">
                 Left untouched
               </Text>
-              <List aria-labelledby="cmp-untouched">
+              <List aria-label="Left untouched">
                 {images.skipped.map((s) => (
                   <ListItem key={s.reason}>
                     {s.reason} ({s.count})

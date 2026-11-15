@@ -254,7 +254,9 @@ describe('WorkspaceShell', () => {
     const tools = await screen.findByRole('toolbar', {
       name: 'Organize tools',
     });
+    // A Cynosure lg button, or a control with a touch-size class.
     const big = (el: HTMLElement) =>
+      el.dataset.size === 'lg' ||
       /(^|\s)(size-touch|h-touch|min-h-touch)(\s|$)/.test(el.className);
     for (const b of within(tools).getAllByRole('button'))
       expect(big(b)).toBe(true);

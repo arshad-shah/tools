@@ -39,11 +39,10 @@ describe('non-text contrast roles', () => {
     );
   });
 
-  it('slider track, progress fill, swatch, status dot and tab underline', () => {
-    const { container } = render(
+  it('slider track, swatch, status dot and tab underline', () => {
+    render(
       <>
         <Slider value={1} onValueChange={() => {}} aria-label="v" />
-        <Progress value={50} label="p" />
         <Swatch color="info" label="w" />
         <StatusDot tone="accent" label="Saved" />
         <Tabs value="a" onValueChange={() => {}}>
@@ -54,18 +53,30 @@ describe('non-text contrast roles', () => {
       </>,
     );
     expect(screen.getByRole('slider').className).toContain('bg-line-control');
-    expect(
-      container.querySelector('[role="progressbar"] > div')!.className,
-    ).toContain('bg-accent-indicator');
     expect(screen.getByRole('img', { name: 'w' }).className).toContain(
       'border-line-control',
     );
-    expect(screen.getByRole('img', { name: 'Saved' }).className).toContain(
-      'bg-accent-indicator',
+    // The status dot is Cynosure's accent dot.
+    expect(screen.getByRole('img', { name: 'Saved' }).dataset.tone).toBe(
+      'accent',
     );
     expect(screen.getByRole('tab').className).toContain(
       'border-accent-indicator',
     );
+  });
+});
+
+describe('Progress', () => {
+  it('is a named progressbar with its value and max', () => {
+    render(<Progress value={30} max={60} label="Upload" />);
+    const bar = screen.getByRole('progressbar', { name: 'Upload' });
+    expect(bar.getAttribute('aria-valuenow')).toBe('30');
+    expect(bar.getAttribute('aria-valuemax')).toBe('60');
+  });
+
+  it('defaults its name to Progress', () => {
+    render(<Progress value={5} />);
+    expect(screen.getByRole('progressbar', { name: 'Progress' })).toBeTruthy();
   });
 });
 

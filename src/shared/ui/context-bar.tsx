@@ -1,7 +1,14 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/shared/lib/cn';
-import { useAnchoredFloating, type Anchor } from './position';
+import { FloatingToolbar } from '@arshad-shah/cynosure';
+import type { Anchor } from './position';
 import { dockedBarOpened } from './docked-bar-state';
 import { CONTEXT_GAP, revealRect } from './reveal';
 import { useVisibleViewport } from './use-visual-viewport';
@@ -37,17 +44,18 @@ export interface AnchoredToolbarProps {
   side?: 'top' | 'bottom';
   /** Esc inside the bar (focus then returns to where it came from). */
   onEscape?(): void;
+  /** Added to the bar, for layout. */
   className?: string;
   children: React.ReactNode;
-  'data-testid'?: string;
 }
 
 /**
- * A compact contextual toolbar (about 40px) anchored above the box it
- * works on, like the mini toolbars of Acrobat and Edge. The kit positioner
- * places it: it flips below when there is no room above and shifts along
- * the edge to stay inside the viewport, but never moves across the box, so
- * it never covers it. Non-modal: Tab moves through and on.
+ * A compact contextual toolbar anchored above the box it works on, like
+ * the mini toolbars of Acrobat and Edge: Cynosure's FloatingToolbar. It
+ * flips below when there is no room above and slides along the edge to
+ * stay inside the viewport, never across the box. Non-modal: it never
+ * takes focus by itself; Alt+F10 moves into it, arrows move inside it and
+ * Esc returns to where focus came from.
  */
 export function AnchoredToolbar({
   anchor,
@@ -56,40 +64,20 @@ export function AnchoredToolbar({
   onEscape,
   className,
   children,
-  'data-testid': testId,
 }: AnchoredToolbarProps) {
-  const {
-    setFloating,
-    side: placed,
-    style,
-  } = useAnchoredFloating({
-    open: true,
-    anchor,
-    side,
-    align: 'start',
-    offset: CONTEXT_GAP,
-  });
-  const focus = useBarFocus(onEscape);
-  if (typeof document === 'undefined') return null;
-  return createPortal(
-    <div
-      ref={setFloating}
-      role="toolbar"
-      aria-label={label}
-      aria-orientation="horizontal"
-      data-side={placed}
-      data-testid={testId}
-      onFocus={focus.onFocus}
-      onKeyDown={focus.onKeyDown}
-      className={cn(
-        'z-popover flex h-10 w-max items-center gap-0.5 overflow-x-auto overflow-y-hidden rounded-lg border border-line bg-surface px-1 text-fg shadow-e3',
-        className,
-      )}
-      style={style}
+  return (
+    <FloatingToolbar
+      label={label}
+      anchor={anchor}
+      side={side}
+      onEscape={onEscape}
+      className={className}
+      style={
+        { '--cy-floating-toolbar-offset': `${CONTEXT_GAP}px` } as CSSProperties
+      }
     >
       {children}
-    </div>,
-    document.body,
+    </FloatingToolbar>
   );
 }
 AnchoredToolbar.displayName = 'AnchoredToolbar';

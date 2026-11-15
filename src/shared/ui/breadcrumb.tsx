@@ -1,65 +1,53 @@
-import React from 'react';
-import { cn } from '@/shared/lib/cn';
-import { IconChevronRight } from './icons';
-import { defaultRenderLink, type RenderLink } from './link';
+import type { MouseEvent } from 'react';
+import { Breadcrumbs } from '@arshad-shah/cynosure';
+import { useMediaQuery } from '@/shared/lib/media-query';
 
 export interface BreadcrumbProps {
   /** Path parts after the logo, e.g. [{label:'pdf', href:'/pdf'}, {label:'edit'}]. */
   segments: { label: string; href?: string }[];
-  renderLink?: RenderLink;
+  /**
+   * Client-side navigation: called with a crumb's href instead of a page load
+   * (a plain click; modified clicks still open the link the browser's way).
+   */
+  onNavigate?: (href: string) => void;
+  /** Layout only. */
   className?: string;
 }
 
-/** Mono path segments separated by a chevron icon, never a character. */
+const PHONE = '(max-width: 639px)';
+
+const plainClick = (e: MouseEvent<HTMLElement>) =>
+  e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+
+/**
+ * Cynosure `Breadcrumbs`: links up the path, the last segment the current
+ * page. Phones keep the first crumb and the page, the rest behind "more".
+ */
 export function Breadcrumb({
   segments,
-  renderLink = defaultRenderLink,
+  onNavigate,
   className,
 }: BreadcrumbProps) {
+  const phone = useMediaQuery(PHONE);
   return (
-    <nav aria-label="Breadcrumb" className={cn('min-w-0', className)}>
-      <ol className="flex min-w-0 items-center gap-1.5 font-mono-meta text-sm text-fg-muted">
-        {segments.map((s, i) => {
-          const last = i === segments.length - 1;
-          // Phones keep one crumb, the parent (a way back up); the page's
-          // own heading already names where you are.
-          const phone = i === Math.max(0, segments.length - 2);
-          return (
-            <li
-              key={`${i}-${s.label}`}
-              className={cn(
-                'flex min-w-0 items-center gap-1.5',
-                !phone && 'max-sm:hidden',
-              )}
-            >
-              {i > 0 ? (
-                <IconChevronRight
-                  size="xs"
-                  className={cn('text-fg-subtle', phone && 'max-sm:hidden')}
-                />
-              ) : null}
-              {last || !s.href ? (
-                <span
-                  aria-current={last ? 'page' : undefined}
-                  className={cn('truncate', last && 'text-fg')}
-                >
-                  {s.label}
-                </span>
-              ) : (
-                <React.Fragment>
-                  {renderLink({
-                    href: s.href,
-                    className:
-                      'truncate rounded-sm transition-colors duration-fast hover:text-fg pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-center',
-                    children: s.label,
-                  })}
-                </React.Fragment>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+    <Breadcrumbs
+      size="sm"
+      maxItems={phone ? 2 : undefined}
+      className={className}
+      items={segments.map(({ label, href }) => ({
+        label,
+        ...(href ? { href } : {}),
+        ...(href && onNavigate
+          ? {
+              onClick: (e: MouseEvent<HTMLElement>) => {
+                if (!plainClick(e)) return;
+                e.preventDefault();
+                onNavigate(href);
+              },
+            }
+          : {}),
+      }))}
+    />
   );
 }
 Breadcrumb.displayName = 'Breadcrumb';

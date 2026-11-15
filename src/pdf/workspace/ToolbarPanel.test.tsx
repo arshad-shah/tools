@@ -41,12 +41,12 @@ describe('ToolbarPanel (backlog P5-E)', () => {
       </ToolbarPanel>,
     );
     const button = screen.getByRole('button', { name: 'Redaction options' });
-    expect(button.className).toContain('h-touch');
+    expect(button.dataset.size).toBe('lg');
     fireEvent.click(button);
     expect(
       screen
         .getByRole('dialog', { name: 'Redaction options' })
-        .getAttribute('data-presentation'),
-    ).toBe('sheet');
+        .getAttribute('data-side'),
+    ).toBe('bottom');
   });
 });

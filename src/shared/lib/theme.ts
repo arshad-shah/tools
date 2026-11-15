@@ -41,6 +41,8 @@ export function applyTheme(t: ResolvedTheme): void {
   if (typeof document === 'undefined') return;
   // color-scheme follows from tokens.css per data-theme (no inline style).
   document.documentElement.dataset.theme = t;
+  // Cynosure components read the same resolved mode (tools#104).
+  document.documentElement.setAttribute('data-cy-mode', t);
 }
 
 function notify(): void {

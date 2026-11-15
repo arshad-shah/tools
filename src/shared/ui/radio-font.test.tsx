@@ -5,7 +5,7 @@ import { FontSample } from './font-sample';
 import { RadioGroup } from './radio-group';
 
 describe('RadioGroup', () => {
-  it('is a named radiogroup that reports the picked value', () => {
+  it('is a named group of radios that reports the picked value', () => {
     const onValueChange = vi.fn();
     render(
       <RadioGroup
@@ -18,7 +18,9 @@ describe('RadioGroup', () => {
         ]}
       />,
     );
-    expect(screen.getByRole('radiogroup', { name: 'Size' })).toBeTruthy();
+    // A fieldset named by its (hidden) legend label: Cynosure's RadioGroup.
+    const group = screen.getByRole('group', { name: 'Size' });
+    expect(group.querySelectorAll('input[type=radio]')).toHaveLength(2);
     expect(
       (screen.getByRole('radio', { name: 'S' }) as HTMLInputElement).checked,
     ).toBe(true);

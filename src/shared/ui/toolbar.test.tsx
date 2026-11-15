@@ -167,15 +167,14 @@ describe('Toolbar', () => {
 
   it('size lg gives every control a 44px target (review I11)', () => {
     const { rerender } = render(<Toolbar label="Tools" groups={groups()} />);
-    // Default keeps the compact buttons (sized by the sm token).
-    expect(screen.getByRole('button', { name: 'Undo' }).className).toContain(
-      'size-(--icon-button-sm)',
+    // Default keeps the compact buttons.
+    expect(screen.getByRole('button', { name: 'Undo' }).dataset.size).toBe(
+      'sm',
     );
     rerender(<Toolbar label="Tools" groups={groups()} size="lg" />);
     for (const name of ['Undo', 'Pen', 'Rotate']) {
       const b = screen.getByRole('button', { name });
-      expect(b.className).toContain('size-touch');
-      expect(b.className).not.toContain('--icon-button-sm');
+      expect(b.dataset.size).toBe('lg');
     }
     // The split button's menu trigger is a full 44px target too (P5-G).
     const trigger = screen.getByRole('button', { name: 'Rotate options' });
@@ -226,8 +225,8 @@ describe('FloatingPalette', () => {
         size="lg"
       />,
     );
-    expect(screen.getByRole('button', { name: 'Undo' }).className).toContain(
-      'size-touch',
+    expect(screen.getByRole('button', { name: 'Undo' }).dataset.size).toBe(
+      'lg',
     );
     const grip = screen.getByRole('button', { name: /Move tools/ });
     expect(grip.className).toContain('h-touch');
@@ -240,7 +239,7 @@ describe('Toolbar labelled (6-H)', () => {
     render(<Toolbar label="Tools" groups={groups()} labelled />);
     const undo = screen.getByRole('button', { name: 'Undo' });
     expect(undo.textContent).toContain('Undo');
-    expect(undo.className).toContain('desk:w-auto');
+    expect(undo.hasAttribute('data-square')).toBe(false);
   });
 
   it('a menu item opens its menu and runs the chosen entry', () => {

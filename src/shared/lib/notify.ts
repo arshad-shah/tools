@@ -1,5 +1,4 @@
-import { toast } from 'sonner';
-import { announce } from './announce';
+import type { ToastApi, ToastOptions } from '@arshad-shah/cynosure';
 import { ToolError } from './errors';
 
 /** A toast action, e.g. "Undo" or "Open in workspace". */
@@ -14,34 +13,66 @@ interface NotifyOptions {
   duration?: number;
 }
 
-type Show = (
-  message: string,
-  data?: { action?: NotifyAction; duration?: number },
-) => unknown;
+/*
+ * The mounted Toaster's API, set by its bridge (src/shared/ui/toaster.tsx).
+ * Toasts raised before it mounts wait in `pending` and show when it does.
+ */
+let api: ToastApi | null = null;
+let pending: ToastOptions[] = [];
 
-const show = (fn: Show, message: string, opts?: NotifyOptions) => {
+/** Called by the Toaster's bridge on mount (with its API) and unmount (null). */
+export function connectToaster(next: ToastApi | null): void {
+  api = next;
+  if (!api) return;
+  const queued = pending;
+  pending = [];
+  for (const options of queued) api.toast(options);
+}
+
+const show = (
+  tone: ToastOptions['tone'],
+  title: string,
+  opts?: NotifyOptions,
+): void => {
   const action = opts?.action;
-  const data = {
-    ...(action
-      ? { action: { label: action.label, onClick: () => action.onClick() } }
-      : {}),
+  let id: string | undefined;
+  const options: ToastOptions = {
+    title,
+    tone,
     ...(opts?.duration !== undefined ? { duration: opts.duration } : {}),
   };
-  return Object.keys(data).length ? fn(message, data) : fn(message);
+  if (action)
+    options.action = {
+      label: action.label,
+      // As before (sonner): the action runs once and closes its toast.
+      onClick: () => {
+        action.onClick();
+        if (id !== undefined) api?.dismiss(id);
+      },
+    };
+  if (api) id = api.toast(options);
+  else {
+    id = `notify-${Math.random().toString(36).slice(2)}`;
+    options.id = id;
+    pending.push(options);
+  }
 };
 
-/** App-wide toasts. Rendered by the single kit <Toaster/> in App. */
+/**
+ * App-wide toasts, drawn by the single kit <Toaster/> in App through
+ * Cynosure. Errors are announced assertively by Cynosure's alert toast.
+ */
 export const notify = {
   success: (message: string, opts?: NotifyOptions) =>
-    show(toast.success, message, opts),
-  info: (message: string, opts?: NotifyOptions) => show(toast, message, opts),
-  /**
-   * Sonner announces every toast politely; an error is also announced
-   * assertively through the kit announcer (spec §4.6).
-   */
-  error: (error: string | ToolError, opts?: NotifyOptions) => {
-    const message = typeof error === 'string' ? error : error.message;
-    announce(message, 'assertive');
-    return show(toast.error, message, opts);
-  },
+    show('success', message, opts),
+  info: (message: string, opts?: NotifyOptions) =>
+    show('neutral', message, opts),
+  error: (error: string | ToolError, opts?: NotifyOptions) =>
+    show('danger', typeof error === 'string' ? error : error.message, opts),
 };
+
+/** Test seam: forget the connected Toaster and anything queued. */
+export function resetNotifyForTests(): void {
+  api = null;
+  pending = [];
+}

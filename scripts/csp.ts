@@ -12,7 +12,7 @@ export const CSP = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
   "worker-src 'self' blob:",
-  // sonner and Plotly inject style elements.
+  // React style attributes and Cynosure's custom properties are inline styles.
   "style-src 'self' 'unsafe-inline'",
   // The Random Data Generator shows remote avatar URLs.
   "img-src 'self' data: blob: https:",

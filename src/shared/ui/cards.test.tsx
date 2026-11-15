@@ -94,14 +94,14 @@ describe('HubLayout', () => {
 });
 
 describe('AutoGrid', () => {
-  it('sets grid-template-columns from min', () => {
-    const { container } = render(
-      <AutoGrid min={240}>
-        <p>a</p>
+  it('renders its children in a grid, as a named list when asked', () => {
+    render(
+      <AutoGrid min={240} as="ul" aria-label="Pages">
+        <li>a</li>
+        <li>b</li>
       </AutoGrid>,
     );
-    expect(
-      (container.firstElementChild as HTMLElement).style.gridTemplateColumns,
-    ).toContain('240px');
+    const list = screen.getByRole('list', { name: 'Pages' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
   });
 });

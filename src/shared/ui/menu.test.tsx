@@ -27,11 +27,11 @@ function setup(onRename = vi.fn()) {
 const item = (name: string) => screen.getByRole('menuitem', { name });
 
 describe('DropdownMenu', () => {
-  it('portals its content and names it from the trigger', () => {
+  it('opens a named menu the trigger controls', () => {
     const trigger = setup();
+    expect(screen.queryByRole('menu')).toBeNull();
     fireEvent.click(trigger, { detail: 1 });
     const menu = screen.getByRole('menu', { name: 'Actions' });
-    expect(menu.parentElement).toBe(document.body);
     expect(trigger.getAttribute('aria-controls')).toBe(menu.id);
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
   });
@@ -40,16 +40,16 @@ describe('DropdownMenu', () => {
     const onRename = vi.fn();
     const trigger = setup(onRename);
     fireEvent.click(trigger, { detail: 1 });
-    fireEvent.mouseDown(item('Rename'));
+    fireEvent.pointerDown(item('Rename'));
     fireEvent.click(item('Rename'));
     expect(onRename).toHaveBeenCalledOnce();
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  it('outside mousedown closes', () => {
+  it('outside pointerdown closes', () => {
     const trigger = setup();
     fireEvent.click(trigger, { detail: 1 });
-    fireEvent.mouseDown(document.body);
+    fireEvent.pointerDown(document.body);
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
@@ -57,14 +57,15 @@ describe('DropdownMenu', () => {
     const trigger = setup();
     fireEvent.click(trigger, { detail: 0 });
     await waitFor(() => expect(document.activeElement).toBe(item('Rename')));
-    const menu = screen.getByRole('menu');
-    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    const key = (k: string) =>
+      fireEvent.keyDown(document.activeElement!, { key: k });
+    key('ArrowDown');
     expect(document.activeElement).toBe(item('Duplicate'));
-    fireEvent.keyDown(menu, { key: 'End' });
+    key('End');
     expect(document.activeElement).toBe(item('Delete'));
-    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    key('ArrowDown');
     expect(document.activeElement).toBe(item('Rename'));
-    fireEvent.keyDown(menu, { key: 'ArrowUp' });
+    key('ArrowUp');
     expect(document.activeElement).toBe(item('Delete'));
   });
 

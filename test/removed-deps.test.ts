@@ -17,6 +17,10 @@ const REMOVED = [
   '@types/crypto-js',
   'lodash',
   '@types/lodash',
+  // tools#104: toasts come from Cynosure.
+  'sonner',
+  // tools#104: floating surfaces are placed by Cynosure.
+  '@floating-ui/react-dom',
 ];
 
 describe('removed dependencies (spec 11.1)', () => {

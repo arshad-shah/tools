@@ -1,3 +1,4 @@
+import { image as imageIcon } from '@arshad-shah/cynosure/icons';
 import { useEffect, useState } from 'react';
 import { ToolError } from '@/shared/lib/errors';
 import {
@@ -14,7 +15,7 @@ import {
   Stack,
   Text,
 } from '@/shared/ui';
-import { IconShapes } from '@/shared/ui/icons';
+
 import { MASKABLE_PADDING } from '../lib/outputs';
 import { renderIcon, type IconSource } from '../lib/render';
 
@@ -130,7 +131,7 @@ export function PreviewPanel({
         ) : !icons ? (
           <EmptyState
             size="sm"
-            icon={IconShapes}
+            icon={imageIcon}
             title="No icon yet"
             description="Choose a source to see the icons."
           />

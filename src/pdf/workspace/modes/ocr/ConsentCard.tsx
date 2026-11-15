@@ -75,7 +75,7 @@ export function ConsentCard({
   };
 
   return (
-    <Card aria-labelledby="ocr-consent-title">
+    <Card>
       <CardBody>
         <Stack gap="3">
           <div className="flex items-center gap-2">

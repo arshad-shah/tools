@@ -1,199 +1,307 @@
 import React from 'react';
-import { createPortal } from 'react-dom';
+import { Menu, type MenuEntry, type MenuItem } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
-import { useEscapeLayer } from './escape-stack';
-import { useAnchoredFloating } from './position';
+import { ShortcutHint } from './shortcut-hint';
+
+/**
+ * The kit DropdownMenu, composed as before
+ * (`<DropdownMenu><DropdownMenuTrigger/><DropdownMenuContent>…</>`), drawn
+ * by Cynosure's Menu: a top-layer list with arrow keys, Home and End,
+ * type-ahead, Escape and outside clicks, focus back to the trigger. The
+ * items declare themselves (any component may render them) and the menu
+ * lists them in document order.
+ */
+
+interface ItemRecord {
+  label: string;
+  shortcut?: string;
+  disabled?: boolean;
+  destructive?: boolean;
+  separator?: true;
+  /** The item's latest click handler. */
+  run: React.RefObject<(() => void) | undefined>;
+  /** Hidden marker that orders the items as the document does. */
+  marker: React.RefObject<HTMLSpanElement | null>;
+}
 
 interface MenuCtx {
   open: boolean;
-  setOpen: (v: boolean) => void;
-  /** The wrapper the content is anchored to. */
-  root: HTMLDivElement | null;
-  /** The portaled content, for outside-click checks. */
-  contentRef: React.RefObject<HTMLDivElement | null>;
-  /** Id of the content, named by the trigger's aria-controls. */
-  id: string;
-  /** Opened from the keyboard: focus moves to the first item. */
-  fromKeyboardRef: React.RefObject<boolean>;
+  setOpen: (open: boolean) => void;
+  entries: MenuEntry[];
+  /** The Content's accessible name and layout classes. */
+  content: { label?: string; className?: string };
+  setContent: (c: { label?: string; className?: string }) => void;
+  register: (id: string, record: ItemRecord) => () => void;
+  run: (id: string) => void;
 }
 const Ctx = React.createContext<MenuCtx | null>(null);
 
-const TRIGGER = '[data-menu-trigger]';
-const ITEM = '[role="menuitem"]:not(:disabled)';
+const same = (a: ItemRecord, b: ItemRecord) =>
+  a.label === b.label &&
+  a.shortcut === b.shortcut &&
+  a.disabled === b.disabled &&
+  a.destructive === b.destructive &&
+  a.separator === b.separator;
+
+/** Items between separators become unlabelled sections (lines between). */
+function toEntries(records: [string, ItemRecord][]): MenuEntry[] {
+  const groups: MenuItem[][] = [[]];
+  for (const [id, r] of records) {
+    if (r.separator) {
+      if (groups[groups.length - 1].length) groups.push([]);
+      continue;
+    }
+    groups[groups.length - 1].push({
+      value: id,
+      label: r.label,
+      ...(r.shortcut ? { shortcut: r.shortcut } : {}),
+      ...(r.disabled ? { disabled: true } : {}),
+      ...(r.destructive ? { tone: 'danger' as const } : {}),
+    });
+  }
+  const used = groups.filter((g) => g.length);
+  return used.length > 1 ? used.map((items) => ({ items })) : (used[0] ?? []);
+}
+
+/** Text of a node (an item's label), and the keys of a ShortcutHint in it. */
+function readLabel(node: React.ReactNode, out = { text: '', keys: '' }) {
+  if (node == null || typeof node === 'boolean') return out;
+  if (typeof node === 'string' || typeof node === 'number') {
+    out.text += String(node);
+  } else if (Array.isArray(node)) {
+    for (const n of node) readLabel(n, out);
+  } else if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    if (node.type === ShortcutHint)
+      out.keys = (node.props as { keys: string }).keys;
+    else readLabel(node.props.children, out);
+  }
+  return out;
+}
 
 /** Dropdown menu: <DropdownMenu><DropdownMenuTrigger/><DropdownMenuContent>…</> */
 export const DropdownMenu: React.FC<{
   children: React.ReactNode;
+  /** Added to the wrapper, for layout. */
   className?: string;
 }> = ({ children, className }) => {
   const [open, setOpen] = React.useState(false);
-  const [root, setRoot] = React.useState<HTMLDivElement | null>(null);
-  const contentRef = React.useRef<HTMLDivElement>(null);
-  const fromKeyboardRef = React.useRef(false);
-  const id = React.useId();
-  // Esc closes the menu, not a dialog it sits in, and focus goes back to
-  // the trigger when it was inside the menu.
-  useEscapeLayer(open, () => {
-    const inside = contentRef.current?.contains(document.activeElement);
-    setOpen(false);
-    if (inside) root?.querySelector<HTMLElement>(TRIGGER)?.focus();
-  });
-  React.useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (root?.contains(t) || contentRef.current?.contains(t)) return;
-      setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [open, root]);
+  const [content, setContentState] = React.useState<{
+    label?: string;
+    className?: string;
+  }>({});
+  const records = React.useRef(new Map<string, ItemRecord>());
+  const [entries, setEntries] = React.useState<MenuEntry[]>([]);
+  const publish = React.useCallback(() => {
+    const list = [...records.current].sort(([, a], [, b]) => {
+      const x = a.marker.current;
+      const y = b.marker.current;
+      if (!x || !y) return 0;
+      return x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1;
+    });
+    setEntries(toEntries(list));
+  }, []);
+  const register = React.useCallback(
+    (id: string, record: ItemRecord) => {
+      const prev = records.current.get(id);
+      records.current.set(id, record);
+      if (!prev || !same(prev, record)) publish();
+      return () => {
+        records.current.delete(id);
+        publish();
+      };
+    },
+    [publish],
+  );
+  const run = React.useCallback((id: string) => {
+    records.current.get(id)?.run.current?.();
+  }, []);
+  const setContent = React.useCallback(
+    (c: { label?: string; className?: string }) =>
+      setContentState((p) =>
+        p.label === c.label && p.className === c.className ? p : c,
+      ),
+    [],
+  );
+  const ctx = React.useMemo(
+    () => ({ open, setOpen, entries, content, setContent, register, run }),
+    [open, entries, content, setContent, register, run],
+  );
   return (
-    <Ctx.Provider
-      value={{ open, setOpen, root, contentRef, fromKeyboardRef, id }}
-    >
-      <div ref={setRoot} className={cn('relative inline-flex', className)}>
-        {children}
-      </div>
+    <Ctx.Provider value={ctx}>
+      <div className={cn('relative inline-flex', className)}>{children}</div>
     </Ctx.Provider>
   );
 };
 
+type TriggerChildProps = {
+  ref?: React.Ref<HTMLElement>;
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void;
+  label?: string;
+  'aria-label'?: string;
+  children?: React.ReactNode;
+};
+
+const setRef = <T,>(ref: React.Ref<T> | undefined, value: T) => {
+  if (typeof ref === 'function') ref(value);
+  else if (ref) (ref as React.RefObject<T>).current = value;
+};
+
+/** The one control that opens the menu (a Button or IconButton). */
 export const DropdownMenuTrigger: React.FC<{
   children: React.ReactElement;
-}> = ({ children }) => {
+  /** From a Tooltip around the trigger: passed on to the control. */
+  'aria-describedby'?: string;
+}> = ({ children, 'aria-describedby': describedBy }) => {
   const ctx = React.useContext(Ctx)!;
-  const child = children as React.ReactElement<Record<string, unknown>>;
-  return React.cloneElement(child, {
-    'aria-haspopup': 'menu',
-    'aria-expanded': ctx.open,
-    'aria-controls': ctx.open ? ctx.id : undefined,
-    'data-menu-trigger': '',
-    onClick: (e: React.MouseEvent) => {
-      (child.props.onClick as ((e: React.MouseEvent) => void) | undefined)?.(e);
-      // detail 0: a keyboard (or programmatic) click.
-      const { fromKeyboardRef, open, setOpen } = ctx;
-      fromKeyboardRef.current = !open && e.detail === 0;
-      setOpen(!open);
-    },
-  });
-};
-
-interface ContentProps extends React.HTMLAttributes<HTMLDivElement> {
-  align?: 'start' | 'end';
-}
-
-/**
- * The menu surface, portaled and placed by the kit positioner below the
- * trigger (above it when there is no room). Arrow keys, Home and End move
- * between items; Tab closes it and continues from the trigger.
- */
-export const DropdownMenuContent: React.FC<ContentProps> = ({
-  className,
-  align = 'end',
-  children,
-  onKeyDown,
-  ...props
-}) => {
-  const ctx = React.useContext(Ctx)!;
-  const { open, setOpen, root, contentRef, fromKeyboardRef, id } = ctx;
-  const {
-    setFloating,
-    side: placedSide,
-    style,
-    placed,
-  } = useAnchoredFloating({
-    open,
-    anchor: root,
-    side: 'bottom',
-    align,
-    offset: 4,
-  });
-  const setSurface = React.useCallback(
-    (el: HTMLDivElement | null) => {
-      contentRef.current = el;
-      setFloating(el);
-    },
-    [contentRef, setFloating],
-  );
-
+  const triggerEl = React.useRef<HTMLElement | null>(null);
+  const child = children as React.ReactElement<TriggerChildProps>;
+  // Items that arrive after the menu opened (an async list behind a
+  // status row): the first one takes focus, as it would have on opening.
+  const { open, entries } = ctx;
   React.useEffect(() => {
-    if (!open || !placed || !fromKeyboardRef.current) return;
-    fromKeyboardRef.current = false;
-    contentRef.current?.querySelector<HTMLElement>(ITEM)?.focus();
-  }, [open, placed, contentRef, fromKeyboardRef]);
-
-  if (!open || typeof document === 'undefined') return null;
-
-  const keyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    onKeyDown?.(e);
-    if (e.defaultPrevented) return;
-    const items = [...e.currentTarget.querySelectorAll<HTMLElement>(ITEM)];
-    const i = items.indexOf(document.activeElement as HTMLElement);
-    const go = (n: number) => {
-      e.preventDefault();
-      items[(n + items.length) % items.length]?.focus();
-    };
-    if (e.key === 'ArrowDown') go(i + 1);
-    else if (e.key === 'ArrowUp') go(i < 0 ? -1 : i - 1);
-    else if (e.key === 'Home') go(0);
-    else if (e.key === 'End') go(-1);
-    else if (e.key === 'Tab') {
-      // The content lives at the end of body: hand focus back to the
-      // trigger, and the Tab carries on from there.
-      root?.querySelector<HTMLElement>(TRIGGER)?.focus();
-      setOpen(false);
-    }
-  };
-
-  return createPortal(
-    <div
-      ref={setSurface}
-      id={id}
-      role="menu"
-      data-side={placedSide}
-      onKeyDown={keyDown}
-      className={cn(
-        'z-floating min-w-40 overflow-auto rounded-lg bg-surface py-1 shadow-e2',
-        className,
-      )}
-      style={style}
-      {...props}
-    >
-      {children}
-    </div>,
-    document.body,
-  );
-};
-
-interface ItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  destructive?: boolean;
-}
-export const DropdownMenuItem: React.FC<ItemProps> = ({
-  className,
-  destructive,
-  onClick,
-  ...props
-}) => {
-  const ctx = React.useContext(Ctx)!;
+    if (!open) return;
+    const panel = document.getElementById(
+      triggerEl.current?.getAttribute('aria-controls') ?? '',
+    );
+    if (!panel || panel.contains(document.activeElement)) return;
+    panel
+      .querySelector<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"])',
+      )
+      ?.focus({ preventScroll: true });
+  }, [open, entries]);
+  const own = child.props;
+  const name =
+    ctx.content.label ??
+    own['aria-label'] ??
+    own.label ??
+    (readLabel(own.children).text.trim() || 'Menu');
   return (
-    <button
-      type="button"
-      role="menuitem"
-      onClick={(e) => {
-        onClick?.(e);
-        ctx.setOpen(false);
-      }}
-      className={cn(
-        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors duration-fast hover:bg-surface-2 focus-visible:bg-surface-2 disabled:pointer-events-none disabled:opacity-50',
-        destructive ? 'text-danger' : 'text-fg',
-        className,
-      )}
-      {...props}
+    <Menu
+      label={name}
+      items={ctx.entries}
+      open={ctx.open}
+      onOpenChange={ctx.setOpen}
+      onSelect={ctx.run}
+      className={ctx.content.className}
+      trigger={(p) =>
+        React.cloneElement(child, {
+          ref: (el: HTMLElement | null) => {
+            triggerEl.current = el;
+            setRef(own.ref, el);
+            setRef(p.ref as React.Ref<HTMLElement | null>, el);
+          },
+          'aria-haspopup': p['aria-haspopup'],
+          'aria-expanded': p['aria-expanded'],
+          'aria-controls': p['aria-controls'],
+          ...(describedBy ? { 'aria-describedby': describedBy } : {}),
+          onClick: (e: React.MouseEvent<HTMLElement>) => {
+            own.onClick?.(e);
+            p.onClick();
+          },
+          onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => {
+            own.onKeyDown?.(e);
+            if (!e.defaultPrevented)
+              p.onKeyDown(e as React.KeyboardEvent<HTMLButtonElement>);
+          },
+        } as Partial<TriggerChildProps>)
+      }
     />
   );
 };
 
-export const DropdownMenuSeparator: React.FC = () => (
-  <div className="my-1 h-px bg-line" role="separator" />
-);
+interface ContentProps {
+  /** Kept for the callers; Cynosure lines the menu up with the trigger's start. */
+  align?: 'start' | 'end';
+  /** Accessible name of the menu (default: the trigger's name). */
+  'aria-label'?: string;
+  /** Added to the menu panel, for layout. */
+  className?: string;
+  children?: React.ReactNode;
+}
+
+/** The menu's items. Nothing of it is drawn here: Cynosure draws the list. */
+export const DropdownMenuContent: React.FC<ContentProps> = ({
+  'aria-label': label,
+  className,
+  children,
+}) => {
+  const ctx = React.useContext(Ctx)!;
+  const { setContent } = ctx;
+  React.useLayoutEffect(
+    () => setContent({ label, className }),
+    [label, className, setContent],
+  );
+  return <span hidden>{children}</span>;
+};
+
+interface ItemProps {
+  /** Runs when the item is chosen; the menu then closes. */
+  onClick?: () => void;
+  disabled?: boolean;
+  'aria-disabled'?: boolean | 'true' | 'false';
+  destructive?: boolean;
+  /** Kept for the callers; Cynosure draws the row. */
+  className?: string;
+  /** Shown from `aria-keyshortcuts` or a ShortcutHint in the children. */
+  'aria-keyshortcuts'?: string;
+  /** The label (text; icons are left out until the Facet icons arrive). */
+  children?: React.ReactNode;
+}
+
+function useItem(
+  record: Omit<ItemRecord, 'marker' | 'run'>,
+  onClick?: () => void,
+) {
+  const { register } = React.useContext(Ctx)!;
+  const id = React.useId();
+  const marker = React.useRef<HTMLSpanElement>(null);
+  const run = React.useRef(onClick);
+  React.useLayoutEffect(() => {
+    run.current = onClick;
+  });
+  const { label, shortcut, disabled, destructive, separator } = record;
+  React.useLayoutEffect(
+    () =>
+      register(id, {
+        label,
+        shortcut,
+        disabled,
+        destructive,
+        separator,
+        run,
+        marker,
+      }),
+    [register, id, label, shortcut, disabled, destructive, separator],
+  );
+  return marker;
+}
+
+export const DropdownMenuItem: React.FC<ItemProps> = ({
+  onClick,
+  disabled,
+  'aria-disabled': ariaDisabled,
+  destructive,
+  'aria-keyshortcuts': keyshortcuts,
+  children,
+}) => {
+  const read = readLabel(children);
+  const marker = useItem(
+    {
+      label: read.text.trim(),
+      shortcut: read.keys || keyshortcuts || undefined,
+      disabled: !!disabled || ariaDisabled === true || ariaDisabled === 'true',
+      destructive,
+    },
+    onClick,
+  );
+  return <span ref={marker} />;
+};
+
+export const DropdownMenuSeparator: React.FC = () => {
+  const marker = useItem({ label: '', separator: true });
+  return <span ref={marker} />;
+};

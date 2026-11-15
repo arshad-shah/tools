@@ -1,128 +1,82 @@
-import React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/shared/lib/cn';
+import type React from 'react';
+import { Badge as CyBadge } from '@arshad-shah/cynosure';
 
-const badgeVariants = cva(
-  'inline-flex items-center gap-1 font-mono-meta leading-none',
-  {
-    variants: {
-      variant: {
-        solid: '',
-        soft: '',
-        outline: 'bg-transparent',
-      },
-      tone: {
-        accent: '',
-        neutral: '',
-        success: '',
-        warning: '',
-        danger: '',
-        info: '',
-      },
-      size: {
-        xs: 'px-1.5 py-0.5 text-xs',
-        sm: 'px-1.5 py-1 text-xs',
-        md: 'px-2.5 py-1 text-xs',
-      },
-      pill: { true: 'rounded-full', false: 'rounded-sm' },
-    },
-    compoundVariants: [
-      // solid
-      { variant: 'solid', tone: 'accent', class: 'bg-accent text-accent-ink' },
-      { variant: 'solid', tone: 'neutral', class: 'bg-surface-3 text-fg' },
-      { variant: 'solid', tone: 'success', class: 'bg-accent text-accent-ink' },
-      { variant: 'solid', tone: 'warning', class: 'bg-warning text-canvas' },
-      { variant: 'solid', tone: 'danger', class: 'bg-danger text-canvas' },
-      { variant: 'solid', tone: 'info', class: 'bg-info text-canvas' },
-      // soft
-      {
-        variant: 'soft',
-        tone: 'accent',
-        class: 'bg-accent-soft text-accent-fg',
-      },
-      {
-        variant: 'soft',
-        tone: 'neutral',
-        class: 'bg-surface-2 text-fg-muted',
-      },
-      {
-        variant: 'soft',
-        tone: 'success',
-        class: 'bg-accent-soft text-accent-fg',
-      },
-      {
-        variant: 'soft',
-        tone: 'warning',
-        class: 'bg-warning-soft text-warning',
-      },
-      { variant: 'soft', tone: 'danger', class: 'bg-danger-soft text-danger' },
-      { variant: 'soft', tone: 'info', class: 'bg-info-soft text-info' },
-      // outline
-      {
-        variant: 'outline',
-        tone: 'accent',
-        class: 'border border-accent-fg/40 text-accent-fg',
-      },
-      {
-        variant: 'outline',
-        tone: 'neutral',
-        class: 'border border-line-strong text-fg-subtle',
-      },
-      {
-        variant: 'outline',
-        tone: 'success',
-        class: 'border border-accent-fg/40 text-accent-fg',
-      },
-      {
-        variant: 'outline',
-        tone: 'warning',
-        class: 'border border-warning/40 text-warning',
-      },
-      {
-        variant: 'outline',
-        tone: 'danger',
-        class: 'border border-danger/40 text-danger',
-      },
-      {
-        variant: 'outline',
-        tone: 'info',
-        class: 'border border-info/40 text-info',
-      },
-    ],
-    defaultVariants: {
-      variant: 'soft',
-      tone: 'neutral',
-      size: 'md',
-      pill: false,
-    },
-  },
-);
+export type BadgeVariant = 'solid' | 'soft' | 'outline';
+export type BadgeTone =
+  | 'accent'
+  | 'neutral'
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'info';
+export type BadgeSize = 'xs' | 'sm' | 'md';
 
-export interface BadgeProps
-  extends
-    React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {
+/** Kit size to Cynosure size (Cynosure's smallest badge is sm). */
+const SIZE = { xs: 'sm', sm: 'sm', md: 'md' } as const;
+
+export interface BadgeProps extends Omit<
+  React.HTMLAttributes<HTMLSpanElement>,
+  'color'
+> {
+  variant?: BadgeVariant | null;
+  tone?: BadgeTone | null;
+  size?: BadgeSize | null;
+  /** Fully rounded ends. */
+  pill?: boolean | null;
+  /** Kept for call sites: Cynosure's badge is always mono. */
   mono?: boolean;
   /** Leading icon, rendered before the label with the built-in gap. */
   icon?: React.ReactNode;
 }
-export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  (
-    { className, variant, tone, size, pill, mono, icon, children, ...props },
-    ref,
-  ) => (
-    <span
-      ref={ref}
-      className={cn(
-        badgeVariants({ variant, tone, size, pill }),
-        mono && 'font-mono-meta',
-        className,
-      )}
-      {...props}
+
+/**
+ * Cynosure's Badge. Kit icons are React nodes, so they ride beside the text
+ * until the icon swap. Attributes Cynosure's Badge does not take (a test id,
+ * aria-hidden) go on a box-less wrapper.
+ */
+export function Badge({
+  className,
+  variant,
+  tone,
+  size,
+  pill,
+  mono,
+  icon,
+  children,
+  style,
+  ...attrs
+}: BadgeProps) {
+  void mono;
+  const badge = (
+    <CyBadge
+      tone={tone ?? 'neutral'}
+      variant={variant ?? 'soft'}
+      size={SIZE[size ?? 'md']}
+      {...(className ? { className } : {})}
+      style={
+        pill
+          ? ({
+              '--cy-badge-radius': 'var(--cy-radius-full)',
+              ...style,
+            } as React.CSSProperties)
+          : style
+      }
     >
-      {icon}
-      {children}
+      {icon ? (
+        <>
+          {icon}
+          {children}
+        </>
+      ) : (
+        children
+      )}
+    </CyBadge>
+  );
+  if (Object.keys(attrs).length === 0) return badge;
+  return (
+    <span className="contents" {...attrs}>
+      {badge}
     </span>
-  ),
-);
+  );
+}
 Badge.displayName = 'Badge';

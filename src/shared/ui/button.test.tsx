@@ -1,30 +1,54 @@
 /** @vitest-environment jsdom */
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { createRef } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { IconSearch } from './icons';
 import { Button, IconButton } from './button';
-import { buttonVariants } from './button-variants';
 
 describe('Button', () => {
   it.each(['primary', 'secondary', 'ghost', 'danger'] as const)(
-    '%s renders',
+    '%s renders a Cynosure button',
     (variant) => {
       render(<Button variant={variant}>Go</Button>);
-      expect(screen.getByRole('button', { name: 'Go' })).toBeTruthy();
+      const b = screen.getByRole('button', { name: 'Go' });
+      expect(b.classList.contains('cy-button')).toBe(true);
     },
   );
 
-  it('primary is the accent fill', () => {
-    render(<Button variant="primary">Go</Button>);
-    expect(screen.getByRole('button').className).toContain('bg-accent');
+  it('maps the kit variants onto Cynosure fills and tones', () => {
+    render(
+      <>
+        <Button variant="primary">Primary</Button>
+        <Button>Secondary</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="danger">Danger</Button>
+      </>,
+    );
+    const look = (name: string) => {
+      const b = screen.getByRole('button', { name });
+      return [b.dataset.variant, b.dataset.tone];
+    };
+    expect(look('Primary')).toEqual(['solid', 'accent']);
+    expect(look('Secondary')).toEqual(['outline', 'neutral']);
+    expect(look('Ghost')).toEqual(['ghost', 'neutral']);
+    expect(look('Danger')).toEqual(['soft', 'danger']);
   });
 
-  it('has no deprecated aliases left (decision G20, removed in A2-12)', () => {
-    for (const alias of ['solid', 'soft', 'outline'])
-      expect(
-        buttonVariants({ variant: alias as 'primary' }).includes('bg-accent'),
-      ).toBe(false);
-    expect(buttonVariants({ size: 'xs' as 'sm' })).not.toContain('h-8');
+  it('never submits a form unless asked to', () => {
+    render(<Button>Go</Button>);
+    expect(screen.getByRole('button').getAttribute('type')).toBe('button');
+  });
+
+  it('shows the icons beside the label and forwards the ref', () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <Button ref={ref} leftIcon={<IconSearch />} rightIcon={<IconSearch />}>
+        Find
+      </Button>,
+    );
+    const b = screen.getByRole('button', { name: 'Find' });
+    expect(b.querySelectorAll('svg')).toHaveLength(2);
+    expect(ref.current).toBe(b);
   });
 
   it('disabled and loading disable the button', () => {
@@ -32,6 +56,20 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveProperty('disabled', true);
     rerender(<Button loading>Go</Button>);
     expect(screen.getByRole('button')).toHaveProperty('disabled', true);
+  });
+
+  it('passes clicks and native attributes through', () => {
+    const onClick = vi.fn();
+    render(
+      <Button onClick={onClick} aria-pressed title="Hint">
+        Go
+      </Button>,
+    );
+    const b = screen.getByRole('button', { name: 'Go' });
+    fireEvent.click(b);
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(b.getAttribute('aria-pressed')).toBe('true');
+    expect(b.getAttribute('title')).toBe('Hint');
   });
 });
 
@@ -44,7 +82,7 @@ describe('IconButton', () => {
     expect(container.querySelector('svg')?.getAttribute('width')).toBe('20');
   });
 
-  it('sm and md take their box and glyph from the size tokens', () => {
+  it('is a square Cynosure button at each size', () => {
     render(
       <>
         <IconButton label="Small" icon={IconSearch} size="sm" />
@@ -53,28 +91,30 @@ describe('IconButton', () => {
     );
     const sm = screen.getByRole('button', { name: 'Small' });
     const md = screen.getByRole('button', { name: 'Medium' });
-    expect(sm.className).toContain('size-(--icon-button-sm)');
-    expect(md.className).toContain('size-(--icon-button-md)');
-    expect(sm.querySelector('svg')?.getAttribute('class')).toContain(
-      'size-(--icon-glyph-sm)',
-    );
-    expect(md.querySelector('svg')?.getAttribute('class')).toContain(
-      'size-(--icon-glyph-md)',
-    );
+    expect(sm.dataset.size).toBe('sm');
+    expect(md.dataset.size).toBe('md');
+    expect(sm.hasAttribute('data-square')).toBe(true);
   });
 
   it('a rendered icon node keeps its own size', () => {
     const { container } = render(
       <IconButton label="More" icon={<IconSearch size="xs" />} size="sm" />,
     );
-    expect(container.querySelector('svg')?.getAttribute('class')).not.toContain(
-      'icon-glyph',
-    );
+    expect(container.querySelector('svg')?.getAttribute('width')).toBe('12');
   });
 
-  it('lg is a 44px touch target', () => {
-    render(<IconButton label="Search" icon={IconSearch} size="lg" />);
-    expect(screen.getByRole('button').className).toContain('size-touch');
+  it('tone tints the button', () => {
+    render(
+      <IconButton
+        label="Delete"
+        icon={IconSearch}
+        variant="ghost"
+        tone="danger"
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Delete' }).dataset.tone).toBe(
+      'danger',
+    );
   });
 });
 
@@ -89,9 +129,10 @@ describe('IconButton showLabel (6-H desktop labels)', () => {
   it('adds a desktop-only text label and keeps the accessible name', () => {
     render(<IconButton label="Export" icon={<span />} showLabel="desktop" />);
     const b = screen.getByRole('button', { name: 'Export' });
-    const text = b.querySelector('span.desk\\:inline');
-    expect(text?.textContent).toBe('Export');
-    expect(text?.className).toContain('hidden');
-    expect(b.className).toContain('desk:w-auto');
+    const text = [...b.querySelectorAll('span[aria-hidden]')].find(
+      (s) => s.textContent === 'Export',
+    );
+    expect(text).toBeTruthy();
+    expect(b.hasAttribute('data-square')).toBe(false);
   });
 });

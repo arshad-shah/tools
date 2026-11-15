@@ -1,3 +1,4 @@
+import { send as sendIcon } from '@arshad-shah/cynosure/icons';
 import { useMemo, useState } from 'react';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
@@ -33,7 +34,7 @@ import {
   usePaneTab,
   IconButton,
 } from '@/shared/ui';
-import { IconCode, IconSave, IconSend } from '@/shared/ui/icons';
+import { IconCode, IconSave } from '@/shared/ui/icons';
 import { AuthTab } from './components/AuthTab';
 import { BodyTab } from './components/BodyTab';
 import { CorsHelp } from './components/CorsHelp';
@@ -246,7 +247,7 @@ export default function HttpClient() {
       <ResponsePanel sent={c.sent} />
     ) : (
       <EmptyState
-        icon={IconSend}
+        icon={sendIcon}
         title="No response yet"
         description="Send the request to see the status, headers and body here."
       />

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Divider as CyDivider } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
 
 /* ------------------------------------------------------------------ *
@@ -274,7 +275,8 @@ Center.displayName = 'Center';
 /* ------------------------------------------------------------------ *
  * Divider — hairline rule
  * ------------------------------------------------------------------ */
+/** Cynosure `Divider`: a horizontal hairline. */
 export const Divider: React.FC<{ className?: string }> = ({ className }) => (
-  <hr className={cn('border-0 border-t border-line', className)} />
+  <CyDivider className={className} />
 );
 Divider.displayName = 'Divider';

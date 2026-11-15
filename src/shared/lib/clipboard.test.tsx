@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readClipboardText, useClipboard } from './clipboard';
 
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
-vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), toast) }));
+vi.mock('./notify', () => ({ notify: toast }));
 
 describe('useClipboard', () => {
   afterEach(() => {
@@ -44,7 +44,9 @@ describe('useClipboard', () => {
     });
     expect(ok).toBe(false);
     expect(result.current.copied).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith('Could not copy to clipboard');
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Could not copy to clipboard' }),
+    );
   });
 
   it('tracks the key of the last copy', async () => {

@@ -1,23 +1,29 @@
-import React from 'react';
-import { cn } from '@/shared/lib/cn';
+import type React from 'react';
+import { Inline } from '@arshad-shah/cynosure';
 
 /**
- * Groups buttons into a single segmented control — collapses the borders/radii
- * between adjacent children.
+ * A row of related buttons, named as one group. Cynosure has no joined
+ * button group, so the buttons sit side by side with a small gap.
  */
-export const ButtonGroup: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+export function ButtonGroup({
   className,
-  ...props
-}) => (
-  <div
-    role="group"
-    className={cn(
-      'inline-flex items-center [&>*]:rounded-none',
-      '[&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md',
-      '[&>*:not(:first-child)]:-ml-px',
-      className,
-    )}
-    {...props}
-  />
-);
+  children,
+  id,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <Inline
+      role="group"
+      gap="2"
+      wrap
+      id={id}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={className}
+    >
+      {children}
+    </Inline>
+  );
+}
 ButtonGroup.displayName = 'ButtonGroup';

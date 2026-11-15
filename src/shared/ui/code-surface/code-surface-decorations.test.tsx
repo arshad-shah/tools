@@ -8,7 +8,7 @@ const lines = (n: number) =>
   Array.from({ length: n }, (_, i) => `row ${i + 1}`).join('\n');
 
 describe('CodeSurface decorations', () => {
-  it('a marker has a labelled gutter icon, a tooltip and one announcement', () => {
+  it('a marker has a labelled gutter icon, a tooltip and one announcement', async () => {
     const markers: CodeMarker[] = [
       { line: 3, column: 2, message: 'Unexpected token', severity: 'error' },
     ];
@@ -25,8 +25,7 @@ describe('CodeSurface decorations', () => {
     expect(tip?.getAttribute('role')).toBe('tooltip');
     expect(tip?.textContent).toBe('Unexpected token');
     fireEvent.pointerEnter(icon.parentElement!);
-    // The bubble is portaled to body.
-    expect(document.querySelector('[data-tooltip-bubble]')?.textContent).toBe(
+    expect((await screen.findByRole('tooltip')).textContent).toBe(
       'Unexpected token',
     );
     const underline = container.querySelector(

@@ -1,4 +1,9 @@
+@layer theme, base, cynosure, components, utilities;
 @import 'tailwindcss';
+/* Cynosure (tools#104) sits below Tailwind's components and utilities, so
+   layout classes at call sites still apply to Cynosure parts. */
+@import '@arshad-shah/cynosure/styles.css' layer(cynosure);
+@import './cynosure-theme.css' layer(cynosure);
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/jetbrains-mono';
 

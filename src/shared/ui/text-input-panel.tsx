@@ -285,16 +285,12 @@ export function TextInputPanel({
         />
       </div>
       {notice ? (
-        <Alert status="warning" className="p-3 text-sm">
+        <Alert status="warning" size="sm">
           {notice}
         </Alert>
       ) : null}
       {error ? (
-        <Alert
-          status="danger"
-          className="p-3 text-sm"
-          data-error-code={error.code}
-        >
+        <Alert status="danger" size="sm" data-error-code={error.code}>
           {error.message}
         </Alert>
       ) : null}

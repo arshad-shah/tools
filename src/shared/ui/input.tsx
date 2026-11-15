@@ -1,10 +1,15 @@
 import React from 'react';
-import { IconX } from '@/shared/ui/icons';
-import { cn } from '@/shared/lib/cn';
+import { TextField, type TextFieldProps } from '@arshad-shah/cynosure';
+import {
+  INVALID_FIELD,
+  MONO_FIELD,
+  fieldClass,
+  useFieldElement,
+} from './field-props';
 
 interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  'onChange' | 'value' | 'size'
+  'onChange' | 'value' | 'size' | 'defaultValue' | 'children' | 'width'
 > {
   /** sm: a compact 24px field (inline editors in form rows); lg: a 44px touch target (Focus and phone). */
   size?: 'sm' | 'md' | 'lg';
@@ -16,10 +21,18 @@ interface InputProps extends Omit<
   trailingSlot?: React.ReactNode;
 }
 
+const SIZE = { sm: 'xs', md: 'md', lg: 'lg' } as const;
+
+/**
+ * A single-line field over Cynosure's TextField. Call sites name it with a
+ * separate `<Label htmlFor={id}>` or `aria-label`, so the TextField's own
+ * label stays hidden (and empty unless `aria-label` gives it the text).
+ */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
     {
       className,
+      style,
       value,
       onChange,
       invalid,
@@ -27,64 +40,43 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       leadingSlot,
       trailingSlot,
       size = 'md',
+      type,
+      'aria-describedby': describedBy,
+      'aria-invalid': ariaInvalid,
       ...props
     },
     ref,
   ) => {
-    const showClear = clearable && !!value && !!onChange;
+    const inputRef = useFieldElement(ref, describedBy);
+    const { mono, layout } = fieldClass(className);
     return (
-      <div
-        data-field-box=""
-        // The whole box is the target: a press on its padding focuses the field.
-        onMouseDown={(e) => {
-          if (e.target !== e.currentTarget) return;
-          e.preventDefault();
-          e.currentTarget.querySelector('input')?.focus();
+      <TextField
+        ref={inputRef}
+        {...props}
+        label={props['aria-label'] ?? ''}
+        labelHidden
+        // date, time and datetime-local are native input types TextField passes on.
+        type={type as TextFieldProps['type']}
+        value={value}
+        onChange={onChange}
+        aria-invalid={ariaInvalid ?? (invalid || undefined)}
+        size={SIZE[size]}
+        clearable={clearable && !!onChange}
+        addonStart={
+          leadingSlot ? (
+            <span aria-hidden className="inline-flex shrink-0">
+              {leadingSlot}
+            </span>
+          ) : undefined
+        }
+        addonEnd={trailingSlot}
+        className={layout}
+        style={{
+          ...(mono ? MONO_FIELD : null),
+          ...(invalid ? INVALID_FIELD : null),
+          ...style,
         }}
-        className={cn(
-          // min-w-0: shrinks inside flex rows; touch: 44px tall, 16px text (no
-          // focus zoom on iOS), except the compact sm size of inline editors.
-          'flex w-full min-w-0 cursor-text items-center rounded-md border bg-surface-2 transition-colors duration-fast',
-          size === 'sm'
-            ? 'h-6 gap-1 px-1.5'
-            : size === 'lg'
-              ? 'h-touch gap-2 px-3'
-              : 'h-9 gap-2 px-3 pointer-coarse:h-touch',
-          invalid
-            ? 'border-danger focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-danger'
-            : 'border-line-strong focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
-        )}
-      >
-        {leadingSlot && (
-          <span className="shrink-0 text-fg-subtle" aria-hidden>
-            {leadingSlot}
-          </span>
-        )}
-        <input
-          ref={ref}
-          value={value}
-          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-          className={cn(
-            'min-w-0 flex-1 self-stretch bg-transparent text-fg',
-            size === 'sm' ? 'text-xs' : 'text-sm pointer-coarse:text-md',
-            'placeholder:text-fg-subtle focus:outline-none',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            className,
-          )}
-          {...props}
-        />
-        {showClear && (
-          <button
-            type="button"
-            aria-label="Clear"
-            onClick={() => onChange('')}
-            className="-mr-2 inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-subtle transition-colors hover:text-fg pointer-coarse:size-11"
-          >
-            <IconX size="sm" />
-          </button>
-        )}
-        {trailingSlot && <span className="shrink-0">{trailingSlot}</span>}
-      </div>
+      />
     );
   },
 );

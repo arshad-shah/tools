@@ -13,7 +13,6 @@ export { Heading, Text, Label, Code } from './typography';
 export { Kbd, type KbdProps } from './kbd';
 export { ShortcutHint } from './shortcut-hint';
 export { Button, IconButton, type ButtonProps } from './button';
-export { buttonVariants } from './button-variants';
 export {
   Card,
   CardHeader,
@@ -52,7 +51,6 @@ export { ButtonGroup } from './button-group';
 export { Tooltip, type TooltipProps } from './tooltip';
 export { Popover, type PopoverProps } from './popover';
 export {
-  useAnchoredFloating,
   type Side,
   type Align,
   type Rect,

@@ -1,12 +1,6 @@
 import React from 'react';
-import { createPortal } from 'react-dom';
-import { cn } from '@/shared/lib/cn';
-import {
-  useAnchoredFloating,
-  type Align,
-  type Anchor,
-  type Side,
-} from './position';
+import { HoverCard as CyHoverCard } from '@arshad-shah/cynosure';
+import { toPlacement, type Align, type Anchor, type Side } from './position';
 
 export interface HoverCardProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -16,55 +10,45 @@ export interface HoverCardProps extends Omit<
   open: boolean;
   anchor: Anchor;
   side?: Side;
+  /** Kept for the callers; Cynosure slides the card along its anchor. */
   align?: Align;
+  /** Gap between the anchor and the card, CSS px. */
   offset?: number;
   children: React.ReactNode;
 }
 
 /**
- * A passive preview beside its anchor (a larger thumbnail on hover). It
- * takes no pointer or focus and is hidden from assistive tech, since it only
- * repeats what the anchor already names. The kit positioner keeps it inside
- * the viewport: it flips to the other side and slides along its anchor.
+ * Cynosure's HoverCard: a passive preview beside its anchor (a larger
+ * thumbnail on hover). It takes no pointer or focus and is hidden from
+ * assistive tech, since it only repeats what the anchor already names. It
+ * flips to the other side and slides along its anchor to stay on screen.
+ * Other attributes (a label, a test id) go on the card's content.
  */
 export function HoverCard({
   open,
   anchor,
   side = 'right',
-  align = 'center',
+  align,
   offset = 12,
   className,
   children,
   ...rest
 }: HoverCardProps) {
-  const {
-    setFloating,
-    side: placedSide,
-    style,
-  } = useAnchoredFloating({
-    open,
-    anchor,
-    side,
-    align,
-    offset,
-  });
-  if (!open || typeof document === 'undefined') return null;
-  return createPortal(
-    <div
-      ref={setFloating}
-      aria-hidden
-      data-hover-card=""
-      data-side={placedSide}
-      className={cn(
-        'pointer-events-none z-floating rounded-md border border-line-strong bg-surface-2 p-2 shadow-e2',
-        className,
-      )}
-      style={style}
-      {...rest}
+  void align; // Cynosure slides the card along its anchor itself.
+  return (
+    <CyHoverCard
+      open={open}
+      anchor={anchor}
+      placement={toPlacement(side)}
+      className={className}
+      style={{ '--cy-hover-card-offset': `${offset}px` } as React.CSSProperties}
     >
-      {children}
-    </div>,
-    document.body,
+      {open ? (
+        <div data-hover-card="" {...rest}>
+          {children}
+        </div>
+      ) : null}
+    </CyHoverCard>
   );
 }
 HoverCard.displayName = 'HoverCard';

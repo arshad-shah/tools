@@ -118,6 +118,41 @@ export function hotkeyParts(combo: string, mac: boolean = isMac()): KeyName[] {
   return parts;
 }
 
+/** Key cap names on macOS (modifiers in Apple's order, from hotkeyParts). */
+const CAP_MAC: Record<string, string> = {
+  Mod: 'Cmd',
+  Alt: 'Option',
+  Ctrl: 'Ctrl',
+  Shift: 'Shift',
+};
+const CAP: Record<string, string> = {
+  Mod: 'Ctrl',
+  Alt: 'Alt',
+  Ctrl: 'Ctrl',
+  Shift: 'Shift',
+  Space: 'Space',
+  Escape: 'Esc',
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
+  PageUp: 'PgUp',
+  PageDown: 'PgDn',
+  Delete: 'Del',
+  Home: 'Home',
+  End: 'End',
+};
+
+/** Key cap text for a combo (`Mod+Shift+Z`), named for the platform. */
+export function hotkeyCaps(combo: string, mac: boolean = isMac()): string[] {
+  return hotkeyParts(combo, mac).map(
+    (k) =>
+      (mac ? CAP_MAC[k] : undefined) ??
+      CAP[k] ??
+      (k.length === 1 ? k.toUpperCase() : k),
+  );
+}
+
 const WORDS_MAC: Record<string, string> = {
   Mod: 'Command',
   Alt: 'Option',
@@ -193,17 +228,20 @@ export interface ShortcutDef {
   run: (e: KeyboardEvent) => void;
 }
 
+/**
+ * A shown modal: a modal `<dialog>` (Cynosure's Dialog and Sheet), or an
+ * `aria-modal` surface that is not a hidden popover (Cynosure keeps a closed
+ * Popover in the page, hidden).
+ */
+const MODAL =
+  'dialog:modal, [aria-modal="true"]:not([popover]), [aria-modal="true"][popover]:popover-open';
+
 /** A modal is open: the event came from inside one, or one is in the page. */
 function modalOpen(target: EventTarget | null): boolean {
   if (typeof document === 'undefined') return false;
   const el = target as Element | null;
-  if (
-    el &&
-    typeof el.closest === 'function' &&
-    el.closest('[aria-modal="true"]')
-  )
-    return true;
-  return document.querySelector('[aria-modal="true"]') !== null;
+  if (el && typeof el.closest === 'function' && el.closest(MODAL)) return true;
+  return document.querySelector(MODAL) !== null;
 }
 
 /** One registration; its defs can be replaced in place (stable priority). */

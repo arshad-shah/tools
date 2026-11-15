@@ -105,9 +105,9 @@ export function OverlaysSection() {
             <Button rightIcon={<IconChevronDown size="sm" />}>Menu</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onSelect={() => {}}>Rename</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {}}>Rename</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem destructive onSelect={() => {}}>
+            <DropdownMenuItem destructive onClick={() => {}}>
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>

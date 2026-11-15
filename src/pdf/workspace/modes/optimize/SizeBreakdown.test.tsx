@@ -57,26 +57,19 @@ describe('SizeBreakdownView', () => {
 });
 
 describe('SizeBreakdownView ids', () => {
-  it('gives each mounted panel its own list labels', () => {
+  it('names each mounted panel its own lists, with no clashing ids', () => {
     const { container } = render(
       <>
         <SizeBreakdownView data={data} pageIds={[]} onGoToPage={() => {}} />
         <SizeBreakdownView data={data} pageIds={[]} onGoToPage={() => {}} />
       </>,
     );
+    expect(
+      screen.getAllByRole('list', { name: 'Largest images' }),
+    ).toHaveLength(2);
+    expect(screen.getAllByRole('list', { name: 'Fonts' })).toHaveLength(2);
     const ids = [...container.querySelectorAll('[id]')].map((e) => e.id);
-    expect(ids.length).toBe(4);
     expect(new Set(ids).size).toBe(ids.length);
-    const labelled = screen
-      .getAllByRole('list')
-      .filter((l) => l.hasAttribute('aria-labelledby'));
-    expect(labelled).toHaveLength(4);
-    for (const list of labelled)
-      expect(
-        container.querySelector(
-          `[id="${list.getAttribute('aria-labelledby')}"]`,
-        ),
-      ).toBeTruthy();
   });
 });
 

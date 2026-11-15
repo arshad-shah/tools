@@ -65,9 +65,7 @@ test('rejects a non-Rive file with a toast', async ({ page }) => {
       buffer: Buffer.from('nope'),
     });
   await expect(
-    page
-      .locator('[data-sonner-toast]')
-      .getByText('fake.riv is not a Rive (.riv) file'),
+    page.locator('.cy-toast').getByText('fake.riv is not a Rive (.riv) file'),
   ).toBeVisible();
 });
 
@@ -80,7 +78,7 @@ test('the side tabs fit their card at 1400 px (they scroll, not overflow)', asyn
   await expect(list).toBeVisible();
   const { listRight, cardRight, listWidth, cardWidth } = await list.evaluate(
     (el) => {
-      const card = el.closest('[data-side-panel]') as HTMLElement;
+      const card = el.closest('[data-testid="side-panel"]') as HTMLElement;
       const l = el.getBoundingClientRect();
       const c = card.getBoundingClientRect();
       return {

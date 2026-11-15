@@ -95,7 +95,7 @@ export function InitialPagesDialog({
         <Stack gap="4">
           <RadioGroup
             label="Pages to initial"
-            heading={<Label>Pages to initial</Label>}
+            showLabel
             value={which}
             onValueChange={(v) => setWhich(v as Which)}
             options={[
