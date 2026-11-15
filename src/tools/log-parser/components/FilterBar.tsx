@@ -73,7 +73,6 @@ export function FilterBar({
           <Inline gap="2" wrap={false}>
             <SearchInput
               className="flex-1"
-              prompt="/"
               aria-label="Search entries"
               aria-invalid={searchError ? true : undefined}
               aria-describedby={searchError ? errorId : undefined}

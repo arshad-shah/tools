@@ -46,7 +46,6 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({
             onChange={setQuery}
             placeholder="Search by name, description or pattern"
             aria-label="Search templates"
-            prompt=""
           />
           {groups.length === 0 && (
             <EmptyState size="sm" title="No templates match this search" />
