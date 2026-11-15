@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import {
@@ -43,9 +43,6 @@ export function SizeBreakdownView({
   pageIds,
   onGoToPage,
 }: SizeBreakdownViewProps) {
-  const id = useId();
-  const imagesId = `${id}-largest-images`;
-  const fontsId = `${id}-fonts`;
   return (
     <Stack gap="4">
       <Text size="sm">Total {formatBytes(data.total)}</Text>
@@ -67,7 +64,7 @@ export function SizeBreakdownView({
         ))}
       </Stack>
       <Stack gap="2">
-        <Text size="sm" weight="semibold" id={imagesId}>
+        <Text size="sm" weight="semibold">
           Largest images
         </Text>
         {data.largestImages.length === 0 ? (
@@ -75,7 +72,7 @@ export function SizeBreakdownView({
             This document has no images.
           </Text>
         ) : (
-          <List aria-labelledby={imagesId}>
+          <List aria-label="Largest images">
             {data.largestImages.map((img, i) => {
               const id = img.page >= 0 ? pageIds[img.page] : undefined;
               return (
@@ -105,7 +102,7 @@ export function SizeBreakdownView({
         )}
       </Stack>
       <Stack gap="2">
-        <Text size="sm" weight="semibold" id={fontsId}>
+        <Text size="sm" weight="semibold">
           Fonts
         </Text>
         {data.fontList.length === 0 ? (
@@ -113,7 +110,7 @@ export function SizeBreakdownView({
             This document has no fonts.
           </Text>
         ) : (
-          <List aria-labelledby={fontsId}>
+          <List aria-label="Fonts">
             {data.fontList.map((f, i) => (
               <ListItem key={i}>
                 <Stack gap="1">

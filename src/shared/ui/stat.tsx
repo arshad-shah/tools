@@ -1,31 +1,29 @@
 import React from 'react';
-import { cn } from '@/shared/lib/cn';
+import { Stat } from '@arshad-shah/cynosure';
+import type { IconData } from '@arshad-shah/cynosure/icons';
 
-interface StatProps extends React.HTMLAttributes<HTMLDivElement> {
+interface StatProps {
   label: React.ReactNode;
   value: React.ReactNode;
+  /** A quieter line under the value. */
   hint?: React.ReactNode;
-  icon?: React.ReactNode;
+  /** A Facet icon on a tile beside the label (decorative). */
+  icon?: IconData;
+  /** Layout only. */
+  className?: string;
 }
 
-/** A single labelled metric tile. */
-export const Statistic = React.forwardRef<HTMLDivElement, StatProps>(
-  ({ className, label, value, hint, icon, ...props }, ref) => (
-    <div
+/** A single labelled metric tile: Cynosure `Stat`. */
+export const Statistic = React.forwardRef<HTMLElement, StatProps>(
+  ({ className, label, value, hint, icon }, ref) => (
+    <Stat
       ref={ref}
-      className={cn(
-        'flex flex-col gap-1 rounded-lg bg-surface p-4 shadow-e1',
-        className,
-      )}
-      {...props}
-    >
-      <div className="flex items-center gap-2 font-mono text-xs text-fg-subtle">
-        {icon && <span className="text-accent-fg">{icon}</span>}
-        {label}
-      </div>
-      <div className="font-mono text-2xl font-bold text-fg">{value}</div>
-      {hint && <div className="text-xs text-fg-muted">{hint}</div>}
-    </div>
+      label={label}
+      value={value}
+      description={hint}
+      icon={icon}
+      className={className}
+    />
   ),
 );
 Statistic.displayName = 'Statistic';
