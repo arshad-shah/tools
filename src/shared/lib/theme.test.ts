@@ -36,6 +36,7 @@ beforeEach(() => {
   localStorage.clear();
   resetThemeForTests();
   delete document.documentElement.dataset.theme;
+  document.documentElement.removeAttribute('data-cy-mode');
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -47,6 +48,22 @@ describe('applyTheme', () => {
     // No inline style: an inline color-scheme would outlive a theme switch
     // and is UI styling outside the kit (rule (b)).
     expect(document.documentElement.getAttribute('style')).toBeNull();
+  });
+});
+
+describe('Cynosure mode (tools#104)', () => {
+  it('mirrors the resolved theme on data-cy-mode for Cynosure components', () => {
+    applyTheme('dark');
+    expect(document.documentElement.getAttribute('data-cy-mode')).toBe('dark');
+    applyTheme('light');
+    expect(document.documentElement.getAttribute('data-cy-mode')).toBe('light');
+  });
+
+  it('follows the OS on data-cy-mode while the preference is system', () => {
+    const media = stubMatchMedia(false);
+    startThemeSync();
+    media.set(true);
+    expect(document.documentElement.getAttribute('data-cy-mode')).toBe('dark');
   });
 });
 

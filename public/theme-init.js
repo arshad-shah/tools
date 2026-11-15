@@ -1,4 +1,4 @@
-// Resolves data-theme before first paint (decision G10). Mirrors
+// Resolves data-theme and data-cy-mode before first paint (decision G10). Mirrors
 // src/shared/lib/theme.ts: key 'tools:theme', values system | light | dark.
 (function () {
   var pref = 'system';
@@ -15,4 +15,6 @@
   var theme = dark ? 'dark' : 'light';
   // color-scheme follows from tokens.css per data-theme.
   document.documentElement.dataset.theme = theme;
+  // Cynosure components read the same resolved mode (tools#104).
+  document.documentElement.setAttribute('data-cy-mode', theme);
 })();

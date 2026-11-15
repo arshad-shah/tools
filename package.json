@@ -22,7 +22,8 @@
     "preview": "pnpm run build && wrangler dev",
     "deploy": "pnpm run build && wrangler deploy",
     "prepare": "husky",
-    "licences": "tsx scripts/licence-report.ts"
+    "licences": "tsx scripts/licence-report.ts",
+    "theme:gen": "tsx scripts/gen-cynosure-theme.ts"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs}": [

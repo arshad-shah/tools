@@ -157,6 +157,12 @@ export const LICENCES: LicenceEntry[] = [
     note: 'Persisted tool stores',
   },
   {
+    name: '@arshad-shah/cynosure',
+    licence: 'MIT',
+    url: 'https://github.com/arshad-shah/cynosure',
+    note: 'UI components, theme and icons',
+  },
+  {
     name: '@arshad-shah/detent, detent-react',
     licence: 'MIT',
     url: 'https://github.com/arshad-shah/detent',
