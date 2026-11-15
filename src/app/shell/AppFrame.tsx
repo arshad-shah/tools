@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useNavigationType } from 'react-router-dom';
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { useMediaQuery } from '@/shared/lib/media-query';
 import { IconMenu, IconPanelLeft, IconSearch } from '@/shared/ui/icons';
 import {
@@ -59,6 +59,7 @@ function useScrollRestore() {
 function Frame() {
   const { pathname } = useLocation();
   const segments = useBreadcrumbSegments();
+  const navigate = useNavigate();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
@@ -104,7 +105,7 @@ function Frame() {
               renderLink={routerLink}
               breadcrumb={
                 segments.length ? (
-                  <Breadcrumb segments={segments} renderLink={routerLink} />
+                  <Breadcrumb segments={segments} onNavigate={navigate} />
                 ) : undefined
               }
               actions={
