@@ -1,3 +1,4 @@
+import { type as typeIcon } from '@arshad-shah/cynosure/icons';
 import { IconFieldText, IconNextField } from '@/shared/ui/icons';
 import {
   Button,
@@ -38,7 +39,7 @@ export function FillSummary(ctx: ModeProps) {
     return (
       <InspectorSection title="Form">
         <EmptyState
-          icon={IconFieldText}
+          icon={typeIcon}
           headingLevel={4}
           title="No fields found yet"
           description={

@@ -1,3 +1,4 @@
+import { qrCode as qrCodeIcon } from '@arshad-shah/cynosure/icons';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToolError, toToolError } from '@/shared/lib/errors';
@@ -25,7 +26,7 @@ import {
   usePaneTab,
   type Shape,
 } from '@/shared/ui';
-import { IconPlay, IconQrCode } from '@/shared/ui/icons';
+import { IconPlay } from '@/shared/ui/icons';
 import { ResultCard } from './components/ResultCard';
 import { ScanSources, type SourceMode } from './components/ScanSources';
 import { resultHandoffs, type ResultTarget } from './lib/handoffs';
@@ -271,7 +272,7 @@ export default function QrScanner() {
     </Stack>
   ) : (
     <EmptyState
-      icon={IconQrCode}
+      icon={qrCodeIcon}
       title="Nothing scanned yet"
       description="Choose, drop or paste an image (Mod+V works anywhere on the page), or use the camera."
     />

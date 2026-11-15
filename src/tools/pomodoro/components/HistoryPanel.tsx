@@ -1,3 +1,4 @@
+import { calendar as calendarIcon } from '@arshad-shah/cynosure/icons';
 import React, { useMemo, useState } from 'react';
 import { IconCalendar, IconDownload } from '@/shared/ui/icons';
 import {
@@ -65,7 +66,7 @@ export const HistoryPanel: React.FC = () => {
 
       {history.length === 0 ? (
         <EmptyState
-          icon={IconCalendar}
+          icon={calendarIcon}
           title="No sessions yet"
           headingLevel={4}
           description="Finished sessions are logged per day: counts and minutes only."

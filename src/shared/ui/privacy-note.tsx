@@ -1,6 +1,6 @@
 import React from 'react';
-import { cn } from '@/shared/lib/cn';
-import { IconGlobe, IconShieldCheck } from './icons';
+import { Icon, Inline, Text } from '@arshad-shah/cynosure';
+import { globe, shieldCheck } from '@arshad-shah/cynosure/icons';
 
 export interface PrivacyNoteProps {
   /** 'local': nothing leaves the browser; 'network': the tool makes requests. */
@@ -20,24 +20,18 @@ export const PrivacyNote: React.FC<PrivacyNoteProps> = ({
   variant,
   children,
   className,
-}) => {
-  const Icon = variant === 'local' ? IconShieldCheck : IconGlobe;
-  return (
-    <p
-      className={cn('flex items-start gap-2 text-sm text-fg-muted', className)}
-    >
-      <Icon
-        size="sm"
-        className={cn(
-          'mt-0.5',
-          variant === 'local' ? 'text-accent-fg' : 'text-info',
-        )}
-      />
-      <span>
-        <span>{WORDING[variant]}</span>
-        {children ? <span> {children}</span> : null}
-      </span>
-    </p>
-  );
-};
+}) => (
+  <Inline gap="4" align="start" className={className}>
+    <Icon
+      icon={variant === 'local' ? shieldCheck : globe}
+      tone={variant === 'local' ? 'accent' : 'info'}
+      size="sm"
+      className="mt-0.5 shrink-0"
+    />
+    <Text as="p" size="sm" tone="muted">
+      <span>{WORDING[variant]}</span>
+      {children ? <span> {children}</span> : null}
+    </Text>
+  </Inline>
+);
 PrivacyNote.displayName = 'PrivacyNote';

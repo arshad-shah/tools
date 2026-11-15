@@ -2,8 +2,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ToolError } from '@/shared/lib/errors';
-import { IconFileText } from './icons';
-import { EmptyState, ErrorState, LoadingState } from './states';
+import { fileText } from '@arshad-shah/cynosure/icons';
+import {
+  EmptyState,
+  EmptyStateDescription,
+  EmptyStateTitle,
+  ErrorState,
+  LoadingState,
+} from './states';
 
 describe('ErrorState', () => {
   it('titles the signing codes', () => {
@@ -63,7 +69,7 @@ describe('EmptyState', () => {
   it('prop form renders icon, title, description and actions', () => {
     render(
       <EmptyState
-        icon={IconFileText}
+        icon={fileText}
         title="No documents yet"
         description="Drop a PDF to start."
         actions={<button type="button">Open</button>}
@@ -95,5 +101,20 @@ describe('state semantics (review M12, M25)', () => {
       screen.getByRole('heading', { level: 2, name: 'Nothing' }),
     ).toBeTruthy();
     expect(screen.getByRole('heading', { level: 4 })).toBeTruthy();
+  });
+});
+
+describe('EmptyState compound form', () => {
+  it('reads the title, description and extra children as actions', () => {
+    render(
+      <EmptyState>
+        <EmptyStateTitle>No matches</EmptyStateTitle>
+        <EmptyStateDescription>Try another search.</EmptyStateDescription>
+        <button type="button">Clear</button>
+      </EmptyState>,
+    );
+    expect(screen.getByRole('heading', { name: 'No matches' })).toBeTruthy();
+    expect(screen.getByText('Try another search.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeTruthy();
   });
 });

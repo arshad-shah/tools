@@ -1,3 +1,4 @@
+import { listChecks as listChecksIcon } from '@arshad-shah/cynosure/icons';
 import React, { useState } from 'react';
 import { IconListTodo, IconPlus } from '@/shared/ui/icons';
 import {
@@ -65,7 +66,7 @@ export const TaskList: React.FC = () => {
         {tasks.length === 0 ? (
           <EmptyState
             size="sm"
-            icon={IconListTodo}
+            icon={listChecksIcon}
             title="No tasks yet"
             description="Add one using the form above."
           />
