@@ -39,7 +39,8 @@ function Items({
   return (
     <ul
       className={cn(
-        'grid gap-0.5',
+        // minmax(0, 1fr): long labels end in an ellipsis instead of widening the nav.
+        'grid grid-cols-[minmax(0,1fr)] gap-0.5',
         depth > 0 && 'mt-0.5 ml-3 border-l border-line pl-2',
       )}
     >
@@ -51,7 +52,7 @@ function Items({
               href: it.href,
               'aria-current': it.current ? 'page' : undefined,
               className: cn(
-                'flex min-h-8 items-center gap-2 rounded-md px-2 text-sm transition-colors duration-fast pointer-coarse:min-h-11',
+                'flex min-h-8 min-w-0 items-center gap-2 rounded-md px-2 text-sm transition-colors duration-fast pointer-coarse:min-h-11',
                 'outline-none focus-visible:outline-2 focus-visible:outline-focus',
                 it.current
                   ? 'bg-accent-soft font-medium text-accent-fg'
