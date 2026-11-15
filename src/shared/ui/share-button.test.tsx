@@ -8,7 +8,7 @@ const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('@/shared/lib/notify', () => ({ notify }));
 
 describe('ShareButton', () => {
-  it('is disabled with the reason as its tooltip when it cannot share', () => {
+  it('is disabled with the reason as its tooltip when it cannot share', async () => {
     const share = vi.fn();
     render(
       <ShareButton
@@ -20,8 +20,8 @@ describe('ShareButton', () => {
     const tip = screen.getByRole('tooltip', { hidden: true });
     expect(tip.textContent).toBe('Too large to share (90 KB)');
     expect(button.getAttribute('aria-describedby')).toBe(tip.id);
-    fireEvent.pointerEnter(button);
-    expect(document.querySelector('[data-tooltip-bubble]')?.textContent).toBe(
+    fireEvent.pointerEnter(button.parentElement!);
+    expect((await screen.findByRole('tooltip')).textContent).toBe(
       'Too large to share (90 KB)',
     );
     fireEvent.click(button);

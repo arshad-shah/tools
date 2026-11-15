@@ -45,23 +45,25 @@ describe('HoverCard', () => {
     expect(card()).toBeNull();
   });
 
-  it('is a passive preview portaled to body', () => {
+  it('is a passive preview: hidden from assistive tech and inert', () => {
     render(<Harness open x={10} />);
-    expect(card()!.parentElement).toBe(document.body);
-    expect(card()!.getAttribute('aria-hidden')).toBe('true');
-    expect(card()!.className).toContain('pointer-events-none');
+    const surface = card()!.closest('.cy-hover-card') as HTMLElement;
+    expect(surface.getAttribute('aria-hidden')).toBe('true');
+    expect(surface.hasAttribute('inert')).toBe(true);
+    expect(surface.matches(':popover-open')).toBe(true);
   });
 
-  it('sits right of its anchor and flips left at the right edge', async () => {
+  it('sits after its anchor and flips before it at the end edge', async () => {
+    const surface = () => card()!.closest('.cy-hover-card') as HTMLElement;
     const { unmount } = render(<Harness open x={10} />);
-    await waitFor(() => expect(card()!.style.left).toBe('70px'));
-    expect(card()!.dataset.side).toBe('right');
+    await waitFor(() => expect(surface().dataset.placement).toBe('end'));
+    expect(parseFloat(surface().style.left)).toBeGreaterThan(58);
     unmount();
     render(<Harness open x={window.innerWidth - 50} />);
-    const el = card()!;
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(
+    vi.spyOn(surface(), 'getBoundingClientRect').mockReturnValue(
       DOMRect.fromRect({ x: 0, y: 0, width: 260, height: 340 }),
     );
-    await waitFor(() => expect(el.dataset.side).toBe('left'));
+    window.dispatchEvent(new Event('resize'));
+    await waitFor(() => expect(surface().dataset.placement).toBe('start'));
   });
 });

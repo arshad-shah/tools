@@ -1,28 +1,14 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { IconX } from '@/shared/ui/icons';
+import {
+  Dialog as CyDialog,
+  IconButton,
+  Sheet,
+  VisuallyHidden,
+} from '@arshad-shah/cynosure';
+import { close as closeIcon } from '@arshad-shah/cynosure/icons';
 import { cn } from '@/shared/lib/cn';
-import { useEscapeLayer } from './escape-stack';
 import { Popover, type PopoverProps } from './popover';
-
-/**
- * Locks scroll, closes on Esc (when it is the topmost overlay), restores
- * focus.
- */
-function useOverlay(open: boolean, onClose: () => void) {
-  const prevFocus = React.useRef<HTMLElement | null>(null);
-  useEscapeLayer(open, onClose);
-  React.useEffect(() => {
-    if (!open) return;
-    prevFocus.current = document.activeElement as HTMLElement;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      prevFocus.current?.focus?.();
-    };
-  }, [open]);
-}
 
 interface DialogProps {
   open: boolean;
@@ -40,20 +26,48 @@ interface DialogProps {
   anchor?: PopoverProps['anchor'];
   children: React.ReactNode;
 }
-const DialogCtx = React.createContext<{
+
+/**
+ * The parts find their place through this context. In a Cynosure Dialog
+ * or Sheet the title, description and footer are drawn into its own
+ * header, description and actions (`slots`); in the popover presentation
+ * the parts draw themselves.
+ */
+interface DialogCtxValue {
   close: () => void;
-  titleId: string;
-  descId: string;
+  /** null: the popover presentation. */
+  slots: {
+    title: HTMLElement | null;
+    description: HTMLElement | null;
+    actions: HTMLElement | null;
+  } | null;
   setHasTitle: (v: boolean) => void;
   setHasDesc: (v: boolean) => void;
-}>({
+  setHasFooter: (v: boolean) => void;
+}
+const DialogCtx = React.createContext<DialogCtxValue>({
   close: () => {},
-  titleId: '',
-  descId: '',
+  slots: null,
   setHasTitle: () => {},
   setHasDesc: () => {},
+  setHasFooter: () => {},
 });
 
+/** A part's place in the dialog, counted so it is there while any part is. */
+function usePart(set: (v: boolean) => void) {
+  React.useLayoutEffect(() => {
+    set(true);
+    return () => set(false);
+  }, [set]);
+}
+
+/**
+ * Cynosure's Dialog (or Sheet): a modal in the top layer. Focus moves in,
+ * stays in and comes back; Escape (when it is the topmost overlay), the
+ * backdrop and the close button close it. Below about 36rem it becomes a
+ * bottom sheet. The kit parts (DialogHeader, DialogTitle,
+ * DialogDescription, DialogBody, DialogFooter) keep their composition.
+ */
 export const Dialog: React.FC<DialogProps> = ({
   open,
   onOpenChange,
@@ -64,162 +78,154 @@ export const Dialog: React.FC<DialogProps> = ({
   children,
 }) => {
   const close = React.useCallback(() => onOpenChange(false), [onOpenChange]);
-  const id = React.useId();
-  const titleId = `${id}-title`;
-  const descId = `${id}-desc`;
-  // Title and description register themselves, so the dialog only points
-  // at ids that exist.
   const [hasTitle, setHasTitle] = React.useState(false);
   const [hasDesc, setHasDesc] = React.useState(false);
-  const ctx = React.useMemo(
-    () => ({ close, titleId, descId, setHasTitle, setHasDesc }),
-    [close, titleId, descId],
+  const [hasFooter, setHasFooter] = React.useState(false);
+  const [title, setTitle] = React.useState<HTMLElement | null>(null);
+  const [description, setDescription] = React.useState<HTMLElement | null>(
+    null,
   );
+  const [actions, setActions] = React.useState<HTMLElement | null>(null);
   const as = presentation === 'popover' && !anchor ? 'dialog' : presentation;
-  useOverlay(open && as !== 'popover', close);
-  const contentRef = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    if (open && as !== 'popover') contentRef.current?.focus();
-  }, [open, as]);
-  if (!open) return null;
-  if (as === 'popover' && anchor)
+  const popover = as === 'popover';
+  const ctx = React.useMemo<DialogCtxValue>(
+    () => ({
+      close,
+      slots: popover ? null : { title, description, actions },
+      setHasTitle,
+      setHasDesc,
+      setHasFooter,
+    }),
+    [close, popover, title, description, actions],
+  );
+
+  if (popover && anchor)
     return (
       <DialogCtx.Provider value={ctx}>
         <Popover
-          open
+          open={open}
           onOpenChange={onOpenChange}
           anchor={anchor}
           label={label ?? 'Dialog'}
           modal
-          className="flex max-h-[calc(100dvh-1rem)] w-80 max-w-[calc(100vw-1rem)] flex-col overflow-hidden p-0"
+          className="flex w-80 max-w-full flex-col gap-3 p-4"
         >
           {children}
         </Popover>
       </DialogCtx.Provider>
     );
-  const sheet = as === 'sheet';
-  return createPortal(
-    <DialogCtx.Provider value={ctx}>
-      <div
-        className={cn(
-          'fixed inset-0 z-dialog flex',
-          sheet
-            ? 'items-end'
-            : 'items-center justify-center p-4 max-sm:items-end max-sm:p-0',
-        )}
-      >
-        <div
-          className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
-          onClick={close}
-          aria-hidden
-        />
-        <div
-          ref={contentRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={hasTitle ? titleId : undefined}
-          aria-label={hasTitle ? undefined : label}
-          aria-describedby={hasDesc ? descId : undefined}
-          data-presentation={as}
-          tabIndex={-1}
-          className={cn(
-            'relative z-10 flex w-full flex-col overflow-hidden bg-surface shadow-e3 outline-none',
-            sheet
-              ? 'bottom-0 max-h-[85dvh] rounded-t-xl pb-[env(safe-area-inset-bottom)]'
-              : cn(
-                  'max-h-[calc(100dvh-2rem)] rounded-xl',
-                  // Phones: a bottom sheet, full width, up to the full
-                  // height, with the footer actions in thumb reach.
-                  'max-sm:max-h-dvh max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)]',
-                  size === 'lg' ? 'max-w-3xl' : 'max-w-lg',
-                ),
-          )}
-        >
-          {children}
-        </div>
-      </div>
-    </DialogCtx.Provider>,
-    document.body,
-  );
+
+  const frame = {
+    open,
+    onOpenChange,
+    title: (
+      <span ref={setTitle} className="contents">
+        {hasTitle ? null : <VisuallyHidden>{label ?? 'Dialog'}</VisuallyHidden>}
+      </span>
+    ),
+    description: hasDesc ? <span ref={setDescription} /> : undefined,
+    actions: hasFooter ? (
+      <span ref={setActions} className="contents" />
+    ) : undefined,
+    children: open ? (
+      <DialogCtx.Provider value={ctx}>{children}</DialogCtx.Provider>
+    ) : null,
+  };
+  const dialog =
+    as === 'sheet' ? (
+      <Sheet {...frame} side="bottom" />
+    ) : (
+      <CyDialog {...frame} size={size} />
+    );
+  // Portaled to body as before: no ancestor (a hidden panel, a form) holds it.
+  return typeof document === 'undefined'
+    ? null
+    : createPortal(dialog, document.body);
 };
+
+/** A part drawn into a slot of the Cynosure dialog, or in place. */
+function InSlot({
+  slot,
+  children,
+}: {
+  slot: HTMLElement | null;
+  children: React.ReactNode;
+}) {
+  return slot ? createPortal(children, slot) : null;
+}
 
 export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   children,
   ...props
 }) => {
-  const { close } = React.useContext(DialogCtx);
+  const { close, slots } = React.useContext(DialogCtx);
+  // In a Cynosure dialog its own header holds the title and close button.
+  if (slots) return <>{children}</>;
   return (
     <div
-      className={cn(
-        'flex items-start justify-between gap-3 border-b border-line p-4',
-        className,
-      )}
+      className={cn('flex items-start justify-between gap-3', className)}
       {...props}
     >
       <div className="min-w-0 flex-1">{children}</div>
-      <button
-        type="button"
-        aria-label="Close"
+      <IconButton
+        icon={closeIcon}
+        label="Close"
+        variant="ghost"
+        size="sm"
         onClick={close}
-        className="-m-2 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors hover:text-fg pointer-coarse:size-11"
-      >
-        <IconX size="md" />
-      </button>
+      />
     </div>
   );
 };
 
 export const DialogTitle: React.FC<
   React.HTMLAttributes<HTMLHeadingElement>
-> = ({ className, ...props }) => {
-  const { titleId, setHasTitle } = React.useContext(DialogCtx);
-  React.useEffect(() => {
-    setHasTitle(true);
-    return () => setHasTitle(false);
-  }, [setHasTitle]);
+> = ({ children, ...props }) => {
+  const { slots, setHasTitle } = React.useContext(DialogCtx);
+  usePart(setHasTitle);
+  if (slots) return <InSlot slot={slots.title}>{children}</InSlot>;
   return (
-    <h2
-      id={titleId}
-      className={cn('text-lg font-semibold text-fg', className)}
-      {...props}
-    />
+    <h2 className="text-md font-semibold text-fg" {...props}>
+      {children}
+    </h2>
   );
 };
 
 export const DialogDescription: React.FC<
   React.HTMLAttributes<HTMLParagraphElement>
-> = ({ className, ...props }) => {
-  const { descId, setHasDesc } = React.useContext(DialogCtx);
-  React.useEffect(() => {
-    setHasDesc(true);
-    return () => setHasDesc(false);
-  }, [setHasDesc]);
+> = ({ className, children, ...props }) => {
+  const { slots, setHasDesc } = React.useContext(DialogCtx);
+  usePart(setHasDesc);
+  if (slots) return <InSlot slot={slots.description}>{children}</InSlot>;
   return (
-    <p
-      id={descId}
-      className={cn('mt-1 text-sm text-fg-muted', className)}
-      {...props}
-    />
+    <p className={cn('mt-1 text-sm text-fg-muted', className)} {...props}>
+      {children}
+    </p>
   );
 };
 
+/** The dialog's content; Cynosure pads it and scrolls it when it is tall. */
 export const DialogBody: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   ...props
-}) => (
-  <div className={cn('min-h-0 overflow-y-auto p-4', className)} {...props} />
-);
+}) => <div className={className} {...props} />;
 
+/** The buttons along the bottom (Cancel first, then the main action). */
 export const DialogFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
+  children,
   ...props
-}) => (
-  <div
-    className={cn(
-      'flex flex-wrap justify-end gap-2 border-t border-line p-4',
-      className,
-    )}
-    {...props}
-  />
-);
+}) => {
+  const { slots, setHasFooter } = React.useContext(DialogCtx);
+  usePart(setHasFooter);
+  if (slots) return <InSlot slot={slots.actions}>{children}</InSlot>;
+  return (
+    <div
+      className={cn('flex flex-wrap justify-end gap-2', className)}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};

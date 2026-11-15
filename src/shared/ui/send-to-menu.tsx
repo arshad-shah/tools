@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { routeDrop } from '@/app/drop-routing';
 import { getEnabledTools, toolsAccepting } from '@/app/registry';
@@ -16,7 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './menu';
-import { Spinner } from './spinner';
 
 export interface SendToMenuProps {
   /** The payload to hand over, computed when the menu opens (null: nothing yet). */
@@ -47,13 +46,6 @@ async function targetsFor(
   return [];
 }
 
-/** The open menu's items (the trigger names the portaled menu it controls). */
-const items = (trigger: HTMLElement | null) => {
-  const id = trigger?.getAttribute('aria-controls');
-  const menu = id ? document.getElementById(id) : null;
-  return [...(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
-};
-
 /**
  * "Send to" menu button (spec §4.3): lists the other enabled tools that take
  * this payload and hands it over with `sendTo`. Keyboard use (arrows, Home,
@@ -83,10 +75,6 @@ export const SendToMenu: React.FC<SendToMenuProps> = ({
       run: () => requestAnimationFrame(() => trigger.current?.click()),
     },
   ]);
-
-  useEffect(() => {
-    if (targets.state === 'ready') items(trigger.current)[0]?.focus();
-  }, [targets]);
 
   const onOpen = () => {
     const run = ++seq.current;
@@ -139,24 +127,21 @@ export const SendToMenu: React.FC<SendToMenuProps> = ({
         aria-label={label}
         className="max-h-80 min-w-56 overflow-y-auto"
       >
-        {targets.state === 'loading' ? (
-          <p className="flex items-center gap-2 px-3 py-2 text-sm text-fg-muted">
-            <Spinner size="sm" decorative />
-            Finding tools
-          </p>
-        ) : targets.state === 'nothing' ? (
-          <p className="px-3 py-2 text-sm text-fg-muted">Nothing to send yet</p>
-        ) : targets.tools.length === 0 ? (
-          <p className="px-3 py-2 text-sm text-fg-muted">
-            No other tool accepts this
-          </p>
-        ) : (
+        {targets.state === 'ready' && targets.tools.length ? (
           targets.tools.map((t) => (
             <DropdownMenuItem key={t.id} onClick={() => select(t)}>
-              <t.icon size="sm" className="text-fg-muted" />
               {t.name}
             </DropdownMenuItem>
           ))
+        ) : (
+          // The state as one unavailable row: Cynosure menus list items only.
+          <DropdownMenuItem disabled>
+            {targets.state === 'loading'
+              ? 'Finding tools'
+              : targets.state === 'nothing'
+                ? 'Nothing to send yet'
+                : 'No other tool accepts this'}
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

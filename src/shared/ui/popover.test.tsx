@@ -71,12 +71,18 @@ describe('Popover', () => {
     expect(document.activeElement?.textContent).toBe('First');
   });
 
-  it('Esc closes and returns focus to the anchor', () => {
+  it('Esc closes and returns focus to the anchor', async () => {
     render(<Harness />);
+    const anchor = screen.getByRole('button', { name: 'Anchor' });
+    anchor.focus();
     openIt();
-    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    const dialog = screen.getByRole('dialog');
+    await waitFor(() =>
+      expect(dialog.contains(document.activeElement)).toBe(true),
+    );
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.activeElement?.textContent).toBe('Anchor');
+    expect(document.activeElement).toBe(anchor);
   });
 
   it('outside pointerdown closes', () => {
@@ -101,63 +107,59 @@ describe('Popover', () => {
     expect(document.activeElement?.textContent).toBe('First');
   });
 
-  it('positions from the anchor rect and exposes the side', async () => {
+  it('is shown in the top layer only while open, its content with it', () => {
     render(<Harness />);
-    const anchor = screen.getByRole('button', { name: 'Anchor' });
-    vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(
-      DOMRect.fromRect({ x: 40, y: 50, width: 80, height: 20 }),
-    );
+    expect(screen.queryByRole('button', { name: 'First' })).toBeNull();
     openIt();
-    const dialog = screen.getByRole('dialog');
-    expect(dialog.getAttribute('data-side')).toBe('bottom');
-    await waitFor(() => expect(dialog.style.left).toBe('40px'));
-    expect(dialog.style.top).toBe('78px');
-    expect(dialog.style.position).toBe('fixed');
-  });
-
-  it('flips to the top when the anchor sits at the bottom edge', async () => {
-    render(<Harness />);
-    const anchor = screen.getByRole('button', { name: 'Anchor' });
-    vi.spyOn(anchor, 'getBoundingClientRect').mockReturnValue(
-      DOMRect.fromRect({
-        x: 40,
-        y: window.innerHeight - 20,
-        width: 80,
-        height: 20,
-      }),
-    );
-    openIt();
-    const dialog = screen.getByRole('dialog');
-    vi.spyOn(dialog, 'getBoundingClientRect').mockReturnValue(
-      DOMRect.fromRect({ x: 0, y: 0, width: 200, height: 120 }),
-    );
-    await waitFor(() => expect(dialog.getAttribute('data-side')).toBe('top'));
+    const dialog = screen.getByRole('dialog', { name: 'Colour' });
+    expect(dialog.matches(':popover-open')).toBe(true);
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'First' })).toBeNull();
   });
 });
 
 describe('Popover accompanying an editor', () => {
-  it('can open without taking focus and stay open on outside pointer-downs', () => {
-    const onOpenChange = vi.fn();
+  it('can open without taking focus', () => {
     render(
       <>
         <input aria-label="Editor" autoFocus />
         <Popover
           open
-          onOpenChange={onOpenChange}
+          onOpenChange={() => {}}
           anchor={{ getBoundingClientRect: () => new DOMRect(0, 0, 10, 10) }}
           label="Settings"
           autoFocus={false}
-          dismissOnOutside={false}
         >
           <button type="button">Bold</button>
         </Popover>
       </>,
     );
     const editor = screen.getByRole('textbox', { name: 'Editor' });
+    expect(screen.getByRole('button', { name: 'Bold' })).toBeTruthy();
     expect(document.activeElement).toBe(editor);
-    fireEvent.pointerDown(editor);
-    const bold = screen.getByRole('button', { name: 'Bold' });
-    fireEvent.blur(bold, { relatedTarget: editor });
-    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('moves first focus to initialFocus', async () => {
+    function WithField() {
+      const field = useRef<HTMLInputElement>(null);
+      return (
+        <Popover
+          open
+          onOpenChange={() => {}}
+          anchor={{ getBoundingClientRect: () => new DOMRect(0, 0, 10, 10) }}
+          label="Note"
+          initialFocus={field}
+        >
+          <button type="button">Bold</button>
+          <input ref={field} aria-label="Text" />
+        </Popover>
+      );
+    }
+    render(<WithField />);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('textbox', { name: 'Text' }),
+      ),
+    );
   });
 });

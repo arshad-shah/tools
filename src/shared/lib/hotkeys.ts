@@ -193,17 +193,20 @@ export interface ShortcutDef {
   run: (e: KeyboardEvent) => void;
 }
 
+/**
+ * A shown modal: a modal `<dialog>` (Cynosure's Dialog and Sheet), or an
+ * `aria-modal` surface that is not a hidden popover (Cynosure keeps a closed
+ * Popover in the page, hidden).
+ */
+const MODAL =
+  'dialog:modal, [aria-modal="true"]:not([popover]), [aria-modal="true"][popover]:popover-open';
+
 /** A modal is open: the event came from inside one, or one is in the page. */
 function modalOpen(target: EventTarget | null): boolean {
   if (typeof document === 'undefined') return false;
   const el = target as Element | null;
-  if (
-    el &&
-    typeof el.closest === 'function' &&
-    el.closest('[aria-modal="true"]')
-  )
-    return true;
-  return document.querySelector('[aria-modal="true"]') !== null;
+  if (el && typeof el.closest === 'function' && el.closest(MODAL)) return true;
+  return document.querySelector(MODAL) !== null;
 }
 
 /** One registration; its defs can be replaced in place (stable priority). */

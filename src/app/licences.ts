@@ -174,12 +174,6 @@ export const LICENCES: LicenceEntry[] = [
     note: 'PDF tools; bundles qpdf (Apache-2.0) as wasm',
   },
   {
-    name: '@floating-ui/react-dom',
-    licence: 'MIT',
-    url: 'https://github.com/floating-ui/floating-ui',
-    note: 'Tooltip, popover and menu placement',
-  },
-  {
     name: 'lucide-react',
     licence: 'ISC',
     url: 'https://github.com/lucide-icons/lucide',

@@ -38,12 +38,13 @@ function Harness({
 }
 
 describe('Dialog presentations (backlog P5-B)', () => {
-  it('popover: anchored to the tool that opened it, no backdrop', () => {
+  it('popover: anchored to the tool that opened it, not modal', () => {
     render(<Harness presentation="popover" />);
     const d = screen.getByRole('dialog', { name: 'Page size' });
-    // Placed by the kit positioner (the floating layer), not as a modal.
-    expect(d.className).toContain('z-floating');
-    expect(document.querySelector('.backdrop-blur-sm')).toBeNull();
+    // A top-layer popover beside the anchor, not a modal <dialog>.
+    expect(d.tagName).toBe('DIV');
+    expect(d.matches(':popover-open')).toBe(true);
+    expect(screen.getByRole('heading', { name: 'Page size' })).toBeTruthy();
   });
 
   it('popover: the header close button and Esc close it', () => {
@@ -51,19 +52,25 @@ describe('Dialog presentations (backlog P5-B)', () => {
     render(<Harness presentation="popover" onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
+    onOpenChange.mockClear();
+    fireEvent.keyDown(screen.getByRole('button', { name: 'A4' }), {
+      key: 'Escape',
+    });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('sheet: a bottom sheet across the screen', () => {
+  it('sheet: a modal docked to the bottom edge', () => {
     render(<Harness presentation="sheet" />);
     const d = screen.getByRole('dialog', { name: 'Page size' });
-    expect(d.getAttribute('data-presentation')).toBe('sheet');
-    expect(d.className).toContain('bottom-0');
-    expect(d.className).toContain('rounded-t-xl');
+    expect(d.tagName).toBe('DIALOG');
+    expect(d.getAttribute('data-side')).toBe('bottom');
   });
 
-  it('dialog: centred as before', () => {
+  it('dialog: a centred modal', () => {
     render(<Harness presentation="dialog" />);
     const d = screen.getByRole('dialog', { name: 'Page size' });
-    expect(d.getAttribute('data-presentation')).toBe('dialog');
+    expect(d.tagName).toBe('DIALOG');
+    expect(d.hasAttribute('data-side')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   });
 });

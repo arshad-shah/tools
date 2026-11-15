@@ -105,7 +105,6 @@ describe('SendToMenu', () => {
     await openMenu();
     const items = screen.getAllByRole('menuitem');
     expect(items.map((i) => i.textContent)).toEqual(['JSON to CSV']);
-    expect(items[0].querySelector('svg')).not.toBeNull();
   });
 
   it('selecting navigates to the tool with a hand-off id', async () => {
@@ -127,14 +126,17 @@ describe('SendToMenu', () => {
       sourceTool: 'json-formatter',
     }));
     await openMenu();
-    expect(screen.queryAllByRole('menuitem')).toHaveLength(0);
-    expect(screen.getByText('No other tool accepts this')).toBeTruthy();
+    const [only, ...rest] = screen.getAllByRole('menuitem');
+    expect(rest).toHaveLength(0);
+    expect(only.textContent).toBe('No other tool accepts this');
+    expect(only.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('says so when there is nothing to send', async () => {
     renderMenu(() => null);
     await openMenu();
-    expect(screen.getByText('Nothing to send yet')).toBeTruthy();
+    const row = screen.getByRole('menuitem', { name: 'Nothing to send yet' });
+    expect(row.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('lists tools accepting the file kinds for a files payload', async () => {

@@ -41,8 +41,8 @@ describe('Annotate style in the toolbar (backlog P5-D)', () => {
     expect(
       screen
         .getByRole('dialog', { name: 'Annotation style' })
-        .getAttribute('data-presentation'),
-    ).toBe('sheet');
+        .getAttribute('data-side'),
+    ).toBe('bottom');
   });
 
   it('recolours the selected annotation as one step', () => {
