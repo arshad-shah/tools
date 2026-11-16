@@ -1,6 +1,6 @@
+import { Button, Grid, Stack } from '@arshad-shah/cynosure';
+import { arrowLeft } from '@arshad-shah/cynosure/icons';
 import React from 'react';
-import { Button, Grid, Stack } from '@/shared/ui';
-import { KeyBackspace } from '@/shared/ui/icons';
 
 /** What a key does: insert text, or one of the sheet's commands. */
 export type KeyEffect =
@@ -98,39 +98,39 @@ interface KeypadProps {
   onKey(effect: KeyEffect): void;
 }
 
-const VARIANT = {
-  operator: 'secondary',
-  equals: 'primary',
-  clear: 'danger',
+/** Digits are quiet, operators soft accent, = solid, C a soft danger. */
+const LOOK = {
+  digit: { variant: 'outline', tone: 'neutral' },
+  operator: { variant: 'soft', tone: 'accent' },
+  equals: { variant: 'solid', tone: 'accent' },
+  clear: { variant: 'soft', tone: 'danger' },
 } as const;
 
 const KeyGrid: React.FC<{
   keys: KeyDef[];
   onKey(effect: KeyEffect): void;
   label: string;
-}> = ({ keys, onKey, label }) => (
-  <Grid cols={4} gap="2" role="group" aria-label={label}>
-    {keys.map((k) => (
-      <Button
-        key={k.name ?? k.face}
-        type="button"
-        size="lg"
-        fullWidth
-        variant={k.tone ? VARIANT[k.tone] : 'ghost'}
-        aria-label={k.name}
-        leftIcon={
-          'command' in k.effect && k.effect.command === 'backspace' ? (
-            <KeyBackspace size="sm" />
-          ) : undefined
-        }
-        className={
-          k.tone === 'operator' ? 'text-accent-fg' : 'border border-line'
-        }
-        onClick={() => onKey(k.effect)}
-      >
-        {k.face}
-      </Button>
-    ))}
+  size: 'md' | 'lg';
+}> = ({ keys, onKey, label, size }) => (
+  <Grid columns={4} gap="2" role="group" aria-label={label}>
+    {keys.map((k) => {
+      const backspace =
+        'command' in k.effect && k.effect.command === 'backspace';
+      return (
+        <Button
+          key={k.name ?? k.face}
+          size={size}
+          fullWidth
+          {...LOOK[k.tone ?? 'digit']}
+          aria-label={k.name}
+          // Cynosure Facet has no backspace glyph yet (docs/cynosure-gaps.md).
+          icon={backspace ? arrowLeft : undefined}
+          onClick={() => onKey(k.effect)}
+        >
+          {k.face}
+        </Button>
+      );
+    })}
   </Grid>
 );
 
@@ -141,8 +141,13 @@ const KeyGrid: React.FC<{
 export const Keypad: React.FC<KeypadProps> = ({ scientific, onKey }) => (
   <Stack gap="3">
     {scientific && (
-      <KeyGrid keys={SCIENTIFIC_KEYS} onKey={onKey} label="Scientific keys" />
+      <KeyGrid
+        keys={SCIENTIFIC_KEYS}
+        onKey={onKey}
+        label="Scientific keys"
+        size="md"
+      />
     )}
-    <KeyGrid keys={STANDARD_KEYS} onKey={onKey} label="Keypad" />
+    <KeyGrid keys={STANDARD_KEYS} onKey={onKey} label="Keypad" size="lg" />
   </Stack>
 );
