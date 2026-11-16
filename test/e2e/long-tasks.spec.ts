@@ -20,6 +20,20 @@ const show = (page: Page, name: string) =>
 const status = (page: Page) =>
   page.getByRole('toolbar', { name: 'Document status' });
 
+/**
+ * Resolves once the browser has run every queued task (React's effects
+ * included) and is idle, twice over so work an effect schedules is done too.
+ */
+async function mainThreadIdle(page: Page) {
+  for (let i = 0; i < 2; i++)
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestIdleCallback(() => resolve(), { timeout: 10_000 }),
+        ),
+    );
+}
+
 async function observeLongTasks(page: Page) {
   await page.evaluate(() => {
     const w = window as unknown as { longTasks: number[] };
@@ -114,6 +128,10 @@ test('scrolling large.csv has no long task over 100 ms', async ({ page }) => {
   const grid = page.getByRole('grid', { name: 'Table data' });
   await expect(grid).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText('500,000 of 500,000 rows')).toBeVisible();
+  // The count paints with the grid, but the grid's after-paint work (its
+  // effects measuring 500,000 rows) still runs: count only what scrolling
+  // costs, from the first moment the main thread is idle.
+  await mainThreadIdle(page);
   await page.evaluate(() => {
     (window as unknown as { longTasks: number[] }).longTasks = [];
     new PerformanceObserver((l) => {
