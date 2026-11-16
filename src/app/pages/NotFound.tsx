@@ -16,7 +16,6 @@ import { CATEGORIES } from '../categories';
 import { getEnabledTools } from '../registry';
 import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
-import { categoryGlyph } from '../ui/glyphs';
 import { LinkCard, ToolCard } from '../ui/ToolCard';
 
 /** Unknown path (spec §3.2): says so, offers search and the categories. Never redirects. */
@@ -94,7 +93,7 @@ export default function NotFound() {
               <LinkCard
                 key={c.id}
                 href={categoryPath(c.id)}
-                icon={categoryGlyph(c.id)}
+                icon={c.icon}
                 title={c.label}
                 description={c.blurb}
               />

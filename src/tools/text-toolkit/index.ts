@@ -1,4 +1,4 @@
-import { IconType } from '@/shared/ui/icons';
+import { type as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -9,7 +9,7 @@ export default defineTool({
   name: 'Text Toolkit',
   description:
     'Count words, change case, sort and dedupe lines, clean up and find and replace text',
-  icon: IconType,
+  icon,
   keywords: [
     'word count',
     'case converter',

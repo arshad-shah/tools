@@ -1,4 +1,4 @@
-import { IconMinimize2 } from '@/shared/ui/icons';
+import { fileCompress as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'PDF Compressor',
   description:
     'Shrink PDFs by recompressing images and restructuring the file, with a per-stage report',
-  icon: IconMinimize2,
+  icon,
   category: 'pdf',
   slug: 'compress',
   kind: 'quick-task',

@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { IconComponent } from '@/shared/ui/icons';
+import type { IconData } from '@arshad-shah/cynosure/icons';
 
 export type ToolCategory =
   | 'encoding'
@@ -52,7 +52,8 @@ export interface ToolDefinition {
   kind: ToolKind;
   name: string;
   description: string;
-  icon: IconComponent;
+  /** A Facet icon (redesign spec, rule 2). */
+  icon: IconData;
   /** Plain words for search and Mod+K. */
   keywords: string[];
   /** Hub drop and hand-off routing; absent = the tool takes neither. */

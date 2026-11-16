@@ -1,11 +1,11 @@
-import { IconScissors } from '@/shared/ui/icons';
+import { pageSplit as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'pdf-splitter',
   name: 'PDF Splitter',
   description: 'Split PDF files into multiple documents by pages or ranges',
-  icon: IconScissors,
+  icon,
   category: 'pdf',
   slug: 'split',
   kind: 'quick-task',

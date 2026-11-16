@@ -1,4 +1,4 @@
-import { IconCodeXml } from '@/shared/ui/icons';
+import { code as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Code Formatter & Minifier',
   description:
     'Format or minify JSON, JavaScript, TypeScript, CSS, HTML, Markdown, YAML, GraphQL, SQL and XML',
-  icon: IconCodeXml,
+  icon,
   category: 'web',
   slug: 'format',
   alsoIn: ['data'],

@@ -1,4 +1,4 @@
-import { IconLock } from '@/shared/ui/icons';
+import { hash as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Hash & Checksum',
   description:
     'Hash text and files with SHA-2, SHA-3, BLAKE, legacy and checksum algorithms; verify a hash and compute HMACs',
-  icon: IconLock,
+  icon,
   category: 'security',
   slug: 'hash',
   kind: 'tool',

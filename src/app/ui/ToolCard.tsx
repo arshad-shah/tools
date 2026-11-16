@@ -14,7 +14,6 @@ import { star } from '@arshad-shah/cynosure/icons';
 import { useFavorites } from '../favorites';
 import { toolPath } from '../routes';
 import type { ToolManifest } from '../tool';
-import { toolGlyph } from './glyphs';
 
 export interface FavouriteToggleProps {
   tool: Pick<ToolManifest, 'id' | 'name'>;
@@ -97,7 +96,7 @@ export function ToolCard({
   return (
     <LinkCard
       href={toolPath(tool)}
-      icon={toolGlyph(tool.id)}
+      icon={tool.icon}
       title={tool.name}
       description={tool.description}
       query={query}

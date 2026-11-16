@@ -1,11 +1,11 @@
-import { IconUnlock } from '@/shared/ui/icons';
+import { unlock as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'pdf-unlock',
   name: 'Unlock PDF',
   description: 'Remove the password from a PDF you have the password for',
-  icon: IconUnlock,
+  icon,
   category: 'pdf',
   slug: 'unlock',
   kind: 'quick-task',

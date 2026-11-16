@@ -21,8 +21,8 @@ import { toToolError } from '@/shared/lib/errors';
 import { commandScore } from '@/shared/lib/fuzzy';
 import { hotkeyCaps } from '@/shared/lib/hotkeys';
 import { notify } from '@/shared/lib/notify';
-import type { ToolCategory } from '../tool';
-import { categoryGlyph, toolGlyph } from '../ui/glyphs';
+import { getCategory } from '../categories';
+import { getTool } from '../registry';
 
 const FIXED: Record<string, IconData> = {
   'route:home': home,
@@ -39,8 +39,9 @@ const FIXED: Record<string, IconData> = {
 function glyphFor(id: string): IconData {
   if (FIXED[id]) return FIXED[id];
   const [kind, rest] = id.split(':', 2);
-  if (kind === 'tool' || kind === 'favourite') return toolGlyph(rest);
-  if (kind === 'route') return categoryGlyph(rest as ToolCategory);
+  if (kind === 'tool' || kind === 'favourite')
+    return getTool(rest)?.icon ?? command;
+  if (kind === 'route') return getCategory(rest)?.icon ?? command;
   // Every row has an icon, so the labels line up.
   return command;
 }

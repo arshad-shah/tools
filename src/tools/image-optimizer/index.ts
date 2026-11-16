@@ -1,4 +1,4 @@
-import { IconImage } from '@/shared/ui/icons';
+import { image as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Image Compressor & Resizer',
   description:
     'Compress, resize and convert many images at once to WebP, AVIF, JPEG or PNG, with a target size and ZIP download',
-  icon: IconImage,
+  icon,
   category: 'media',
   slug: 'image-optimizer',
   kind: 'tool',

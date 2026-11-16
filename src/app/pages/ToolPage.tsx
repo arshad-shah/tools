@@ -18,7 +18,6 @@ import { getCategory } from '../categories';
 import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import type { ToolManifest } from '../tool';
-import { toolGlyph } from '../ui/glyphs';
 import { FavouriteToggle } from '../ui/ToolCard';
 
 export interface ToolPageProps {
@@ -53,7 +52,7 @@ export function ToolPage({ tool, children }: ToolPageProps) {
         <Inline gap="6" align="start">
           {/* Phones: the title takes the full width. */}
           <Stack hideBelow="md">
-            <IconTile icon={toolGlyph(tool.id)} size="lg" />
+            <IconTile icon={tool.icon} size="lg" />
           </Stack>
           <PageHeader
             title={tool.name}

@@ -17,7 +17,6 @@ import { useRecentToolsStore } from '../recents';
 import { getEnabledTools, TOOLS } from '../registry';
 import { categoryPath, toolPath } from '../routes';
 import type { ToolManifest } from '../tool';
-import { categoryGlyph, toolGlyph } from '../ui/glyphs';
 import { HelpMenu } from './HelpMenu';
 
 /** Recent tools listed in the navigation (spec: the last five). */
@@ -33,7 +32,7 @@ const toolItem = (t: ToolManifest, prefix = ''): NavItem => ({
   id: `${prefix}${toolPath(t)}`,
   label: t.name,
   href: toolPath(t),
-  icon: toolGlyph(t.id),
+  icon: t.icon,
 });
 
 export interface AppNavProps {
@@ -87,7 +86,7 @@ export function AppNav({
         .map((c) => ({
           id: `category:${c.id}`,
           label: c.label,
-          icon: categoryGlyph(c.id),
+          icon: c.icon,
           items: [
             {
               id: categoryPath(c.id),

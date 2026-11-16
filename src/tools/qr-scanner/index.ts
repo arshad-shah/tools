@@ -1,4 +1,4 @@
-import { IconQrCode } from '@/shared/ui/icons';
+import { scanLine as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'QR & Barcode Scanner',
   description:
     'Read QR codes and barcodes from images, the clipboard or the camera',
-  icon: IconQrCode,
+  icon,
   category: 'web',
   slug: 'qr-scan',
   kind: 'tool',

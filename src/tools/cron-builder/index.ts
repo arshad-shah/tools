@@ -1,4 +1,4 @@
-import { IconHistory } from '@/shared/ui/icons';
+import { history as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Cron Expression Builder',
   description:
     'Build and explain cron schedules (Unix, with seconds or Quartz) and list the next run times in any zone',
-  icon: IconHistory,
+  icon,
   category: 'time',
   alsoIn: ['web'],
   slug: 'cron',

@@ -1,4 +1,4 @@
-import { IconLink } from '@/shared/ui/icons';
+import { api as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'HTTP Client',
   description:
     'Send HTTP requests with params, auth, every body kind and environments',
-  icon: IconLink,
+  icon,
   category: 'web',
   slug: 'http-client',
   kind: 'tool',

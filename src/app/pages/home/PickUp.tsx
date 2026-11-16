@@ -17,7 +17,6 @@ import { useRecentToolsStore } from '../../recents';
 import { getEnabledTools } from '../../registry';
 import { toolPath } from '../../routes';
 import type { ToolManifest } from '../../tool';
-import { toolGlyph } from '../../ui/glyphs';
 import { FavouriteToggle } from '../../ui/ToolCard';
 
 function ToolRows({ label, tools }: { label: string; tools: ToolManifest[] }) {
@@ -29,7 +28,7 @@ function ToolRows({ label, tools }: { label: string; tools: ToolManifest[] }) {
           href={toolPath(t)}
           label={t.name}
           description={t.description}
-          leading={<IconTile icon={toolGlyph(t.id)} size="sm" />}
+          leading={<IconTile icon={t.icon} size="sm" />}
           actions={<FavouriteToggle tool={t} size="sm" />}
         />
       ))}

@@ -1,4 +1,4 @@
-import { IconShieldCheck } from '@/shared/ui/icons';
+import { camera as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'EXIF Viewer & Remover',
   description:
     'View photo metadata, check it for location and owner details, and remove it without re-encoding',
-  icon: IconShieldCheck,
+  icon,
   category: 'media',
   alsoIn: ['security'],
   slug: 'exif',

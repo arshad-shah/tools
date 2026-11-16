@@ -31,7 +31,6 @@ import { useFavorites } from '../favorites';
 import { useNavStore, useRecentToolsStore } from '../recents';
 import { getEnabledTools, TOOLS } from '../registry';
 import { toolPath } from '../routes';
-import { toolGlyph } from '../ui/glyphs';
 import { AppNav, NavRouterLink } from './AppNav';
 import { AppPalette } from './AppPalette';
 import { useBreadcrumbSegments } from './breadcrumb';
@@ -153,7 +152,7 @@ function FavouritesSheet({
               href={toolPath(t)}
               label={t.name}
               description={t.description}
-              leading={<IconTile icon={toolGlyph(t.id)} size="sm" />}
+              leading={<IconTile icon={t.icon} size="sm" />}
               onClick={() => onOpenChange(false)}
             />
           ))}

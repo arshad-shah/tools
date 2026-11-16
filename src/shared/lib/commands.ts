@@ -1,5 +1,5 @@
-import { useEffect, useSyncExternalStore } from 'react';
-import type { IconComponent } from '@/shared/ui/icons';
+import type { IconData } from '@arshad-shah/cynosure/icons';
+import { useEffect, useSyncExternalStore, type ComponentType } from 'react';
 import { commandScore } from './fuzzy';
 
 /** One palette entry. Labels are plain words, never glyphs. */
@@ -11,7 +11,12 @@ export interface Command {
   keywords?: string[];
   /** Hotkey combo shown with ShortcutHint. */
   shortcut?: string;
-  icon?: IconComponent;
+  /**
+   * A Facet icon. The palette draws its own icon per command id; the
+   * component form is the old kit icon some PDF workspace modes still pass.
+   * TODO(mig/rollout-pdf-workspace): IconData only once that branch merges.
+   */
+  icon?: IconData | ComponentType<never>;
   /** true, or the reason shown to the user. */
   disabled?: boolean | string;
   run(): void | Promise<void>;

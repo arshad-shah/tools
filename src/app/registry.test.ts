@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IconFileText } from '@/shared/ui/icons';
+import { fileText } from '@arshad-shah/cynosure/icons';
 import { buildRegistry, TOOLS, toolsAccepting } from './registry';
 import { defineTool, type ToolManifest } from './tool';
 
@@ -13,7 +13,7 @@ const fake = (
     slug: id,
     name,
     description: 'd',
-    icon: IconFileText,
+    icon: fileText,
     enabled: true,
     category: 'pdf',
     kind: 'tool',

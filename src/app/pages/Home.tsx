@@ -28,7 +28,6 @@ import { routePdfHubDrop } from '../drop-routing';
 import { getEnabledTools, TOOLS } from '../registry';
 import { categoryPath } from '../routes';
 import type { ToolManifest } from '../tool';
-import { categoryGlyph } from '../ui/glyphs';
 import { ToolCard } from '../ui/ToolCard';
 import { HubDropZone } from './hub/HubDropZone';
 import { PickUp } from './home/PickUp';
@@ -54,11 +53,7 @@ function CategorySection({
       <Stack gap="5">
         <Inline gap="4" align="center" justify="between" wrap>
           <Inline gap="4" align="center">
-            <IconTile
-              icon={categoryGlyph(category.id)}
-              size="sm"
-              tone="neutral"
-            />
+            <IconTile icon={category.icon} size="sm" tone="neutral" />
             <Heading level={2} size="lg" id={id}>
               {category.label}
             </Heading>
