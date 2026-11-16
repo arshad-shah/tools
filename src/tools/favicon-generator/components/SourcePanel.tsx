@@ -149,6 +149,7 @@ function TextSource({
       />
       <Slider
         label="Padding"
+        labels={{ value: (v: number) => `${Math.round(v * 100)}%` }}
         min={0}
         max={0.3}
         step={0.01}

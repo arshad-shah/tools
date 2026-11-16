@@ -191,6 +191,7 @@ export default function PdfToImagesTool() {
                 {format === 'jpeg' ? (
                   <Slider
                     label="JPEG quality"
+                    labels={{ value: (v: number) => `${Math.round(v * 100)}%` }}
                     value={quality}
                     min={0.5}
                     max={1}
