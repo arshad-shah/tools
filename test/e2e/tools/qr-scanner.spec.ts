@@ -55,10 +55,14 @@ test('a WiFi code keeps the password masked until revealed', async ({
     .locator('input[type=file]')
     .setInputFiles({ name: 'wifi.png', mimeType: 'image/png', buffer: png });
   await expect(page.getByText('Cafe')).toBeVisible({ timeout: 20_000 });
+  // The password is a read-only field, masked until revealed.
+  const password = page.getByLabel('WiFi password');
+  await expect(password).toHaveAttribute('type', 'password');
   await expect(page.getByText('s3cret-pass')).toHaveCount(0);
   await page
     .getByRole('button', { name: /Reveal|Show/ })
     .first()
     .click();
-  await expect(page.getByText('s3cret-pass')).toBeVisible();
+  await expect(password).toHaveAttribute('type', 'text');
+  await expect(password).toHaveValue('s3cret-pass');
 });

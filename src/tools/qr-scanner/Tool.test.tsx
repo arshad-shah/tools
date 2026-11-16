@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import QrScanner from './Tool';
@@ -77,5 +77,72 @@ describe('QR Scanner Mod+V anywhere on the page', () => {
       pasteOn(document.body, [png()]);
     });
     expect(decodeBarcodes).not.toHaveBeenCalled();
+  });
+});
+
+describe('QR Scanner results and camera', () => {
+  it('shows each decoded code with its fields and actions', async () => {
+    decodeBarcodes.mockResolvedValue([
+      {
+        text: 'https://example.com/a',
+        format: 'qr_code',
+        box: { x: 0, y: 0, w: 5, h: 5 },
+      },
+    ]);
+    mount();
+    await act(async () => {
+      pasteOn(document.body, [png()]);
+    });
+    expect(screen.getByText('Found 1 code.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Link' })).toBeTruthy();
+    expect(screen.getByText('https://example.com/a')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Open link' }));
+    expect(
+      screen.getByRole('dialog', { name: 'Open this link?' }),
+    ).toBeTruthy();
+  });
+
+  it('says when an image has no code', async () => {
+    mount();
+    await act(async () => {
+      pasteOn(document.body, [png()]);
+    });
+    expect(screen.getByText('No code found')).toBeTruthy();
+  });
+
+  it('starts and stops the camera with its own controls', async () => {
+    const track = {
+      stop: vi.fn(),
+      getCapabilities: () => ({}),
+      getSettings: () => ({ deviceId: 'cam-a' }),
+    };
+    const stream = { getTracks: () => [track], getVideoTracks: () => [track] };
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia,
+        enumerateDevices: vi
+          .fn()
+          .mockResolvedValue([
+            { kind: 'videoinput', deviceId: 'cam-a', label: 'Back' },
+          ]),
+      },
+    });
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    mount();
+    fireEvent.click(screen.getByRole('radio', { name: 'Camera' }));
+    expect(screen.getByText('Camera is off')).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+    });
+    expect(getUserMedia).toHaveBeenCalled();
+    expect(screen.queryByText('Camera is off')).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    });
+    expect(track.stop).toHaveBeenCalled();
+    expect(screen.getByText('Camera is off')).toBeTruthy();
+    Reflect.deleteProperty(navigator, 'mediaDevices');
   });
 });
