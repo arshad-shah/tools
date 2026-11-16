@@ -10,7 +10,7 @@ import { advance, resizeField, writeValue } from './actions';
 import { FieldEditor } from './FieldEditor';
 import { FieldValue } from './FieldValue';
 import { fieldName, type ViewField } from './fields';
-import { FocusOnMount } from './FocusOnMount';
+import { FocusOnMount } from '@/pdf/surfaces/FocusOnMount';
 import { fillSign, useFillSign } from './store';
 import { caretMetrics, effectiveStyle } from './text-style';
 
