@@ -2,13 +2,15 @@ import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { LogoMark } from '../src/shared/ui/icons/brand/Logo';
+import { TOOLS_ACCENT } from '../src/theme/tools-theme';
 
-/** Dark-theme token values from tokens.css (the favicon tile is always dark). */
-export function darkToken(name: string): string {
+/**
+ * The logo's fixed colours from tokens.css (the tile is dark in both themes,
+ * so they are literal values there, not theme roles).
+ */
+export function logoToken(name: 'logo-tile' | 'logo-glyph'): string {
   const css = readFileSync('src/theme/tokens.css', 'utf8');
-  const start = css.indexOf(":root[data-theme='dark']");
-  const body = css.slice(start, css.indexOf('}', start));
-  const m = new RegExp(`--${name}:\\s*(#[0-9a-f]{6})\\b`, 'i').exec(body);
+  const m = new RegExp(`--${name}:\\s*(#[0-9a-f]{6})\\b`, 'i').exec(css);
   if (!m) throw new Error(`token --${name} not found`);
   return m[1];
 }
@@ -19,10 +21,10 @@ export function faviconSvg(): string {
     .replace(' aria-hidden="true"', '')
     .replace(' focusable="false"', '')
     .replace(/ class="shrink-0"/, '')
-    .replace('class="fill-logo-tile"', `fill="${darkToken('logo-tile')}"`)
-    .replace('class="fill-accent"', `fill="${darkToken('accent')}"`)
+    .replace('class="fill-logo-tile"', `fill="${logoToken('logo-tile')}"`)
+    .replace('class="fill-accent"', `fill="${TOOLS_ACCENT}"`)
     .replace(
       'class="stroke-logo-glyph"',
-      `stroke="${darkToken('logo-glyph')}"`,
+      `stroke="${logoToken('logo-glyph')}"`,
     )}\n`;
 }
