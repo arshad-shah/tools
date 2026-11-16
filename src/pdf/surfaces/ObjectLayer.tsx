@@ -30,6 +30,9 @@ import type { Box } from '@/pdf/doc/types';
 import { PageFrame } from './PageFrame';
 
 /** One placed object the layer lets people pick and change. */
+/** On-screen size (CSS px) below which a selection shows no handles. */
+const MIN_HANDLES_PX = 32;
+
 export interface LayerObject {
   id: string;
   /** Page-space bounds (PDF points, y up). */
@@ -312,7 +315,13 @@ export function ObjectLayer({
   // frame maps its moves through it.
   const frameBox = one ? shown(one).box : group;
   const restBox = one ? one.box : group;
-  const frameRect = restBox ? around(boxToScreen(viewport, restBox)) : null;
+  const restRect = restBox ? boxToScreen(viewport, restBox) : null;
+  const frameRect = restRect ? around(restRect) : null;
+  // Cynosure's handles would cover a small object whole, leaving nothing to
+  // drag it by (docs/cynosure-gaps.md): below this size the frame shows no
+  // handles, and the object moves by dragging and the arrow keys.
+  const roomy =
+    !!restRect && Math.max(restRect.width, restRect.height) >= MIN_HANDLES_PX;
 
   // Cynosure 0.6.0's SelectionFrame cannot be moved by dragging its body
   // (docs/cynosure-gaps.md): its own drag gives up at the first move. The
@@ -590,6 +599,10 @@ export function ObjectLayer({
               ref={room}
               data-testid="selection-frame"
               data-frame-id={ids[0]}
+              // The frame lies over its object: a double-click edits it.
+              onDoubleClick={() => {
+                if (one?.editable) onEdit?.(one.id);
+              }}
               style={{
                 ...abs,
                 left: frameRect.left,
@@ -597,6 +610,8 @@ export function ObjectLayer({
                 width: frameRect.width,
                 height: frameRect.height,
                 pointerEvents: 'auto',
+                // A finger drags the selection; it does not scroll the page.
+                touchAction: 'none',
               }}
             >
               <PageFrame
@@ -607,7 +622,7 @@ export function ObjectLayer({
                 viewport={shift(viewport, frameRect.left, frameRect.top)}
                 box={frameBox}
                 rotate={one ? shown(one).rotate : 0}
-                resizable={!!one && one.resizable !== false}
+                resizable={!!one && one.resizable !== false && roomy}
                 rotatable={!!one?.rotatable}
                 keepAspect={!!one?.keepAspect}
                 bounded={false}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { newId } from '@/shared/lib/id';
 import { ShapeLayer, type Shape } from '@/shared/ui';
-import { DrawRect } from '@/pdf/surfaces/DrawRect';
+import { PageFrame } from '@/pdf/surfaces/PageFrame';
 import { Layer } from '@/pdf/surfaces/layers';
 import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
 import { geometryBounds } from '@/pdf/doc/object-geometry';
@@ -90,13 +90,15 @@ export function MarksOverlay(props: PageOverlayProps) {
           role="group"
           aria-label={`Redaction marks on page ${pageNumber}`}
         >
-          <DrawRect
-            width={width}
-            height={height}
-            viewport={viewport}
-            tone="danger"
+          {/* Cynosure's SelectionFrame in draw mode: drag a box, or Enter
+              places one in the middle to adjust with the keys. */}
+          <PageFrame
+            key={placed.length}
             label={`Draw a redaction area on page ${pageNumber}`}
-            onDraw={(box) => void addArea(box)}
+            viewport={viewport}
+            box={null}
+            draw
+            onCommit={(box) => void addArea(box)}
           />
         </Layer>
       ) : (

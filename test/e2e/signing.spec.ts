@@ -100,13 +100,20 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   sign = await openSignaturePanel(page);
   await sign.getByRole('radio', { name: 'Type' }).click();
   await sign.getByLabel('Your name').fill('Jane Doe');
-  await sign.getByRole('radio').nth(3).click();
+  // The fourth style card (a native radio under the card's picture).
+  await sign
+    .getByRole('group', { name: 'Style' })
+    .getByRole('radio')
+    .nth(3)
+    .evaluate((r: HTMLInputElement) => r.click());
   const slant = sign.getByRole('slider', { name: 'Slant' });
   await slant.focus();
   for (let i = 0; i < 10; i++) await slant.press('ArrowRight');
   await expect(slant).toHaveAttribute('aria-valuetext', '10 degrees');
   await sign.getByRole('radio', { name: 'Initials' }).click();
-  await expect(sign.getByLabel('Initials')).toHaveValue('JD');
+  await expect(sign.getByRole('textbox', { name: 'Initials' })).toHaveValue(
+    'JD',
+  );
   await sign.getByRole('button', { name: 'Initial pages' }).click();
   const pagesDialog = page.getByRole('dialog', { name: 'Initial pages' });
   await pagesDialog.getByRole('radio', { name: 'Every page' }).check();
@@ -154,9 +161,8 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   await cert.getByRole('button', { name: 'Create certificate' }).click();
   await cert.getByRole('button', { name: 'Use this certificate' }).click();
   await expect(cert).toHaveCount(0);
-  await exp
-    .getByLabel('Appearance')
-    .selectOption({ label: 'Signature on page 3' });
+  await exp.getByRole('combobox', { name: 'Appearance' }).click();
+  await page.getByRole('option', { name: 'Signature on page 3' }).click();
   await exp.getByRole('switch', { name: /Add a trusted timestamp/ }).click();
   await exp.getByLabel('Timestamp server').fill(TSA);
   const [download] = await Promise.all([
