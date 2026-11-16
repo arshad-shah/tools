@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+  Button,
   Card,
-  CardBody,
-  ShareButton,
-  ToolActions,
+  Disclosure,
+  Inline,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { close, sparkles } from '@arshad-shah/cynosure/icons';
+import React, { useState } from 'react';
+import { ShareButton, ToolActions, TransformLayout } from '@/app/ui/transform';
 import { useHandoff } from '@/shared/lib/handoff';
 import { fromTwos, parseInBase, toTwos } from '@/shared/lib/numbers';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
@@ -67,6 +65,10 @@ function sourceFromText(text: string): Source {
   return { key, text: t };
 }
 
+/**
+ * Number Base Converter (redesign spec, transform pattern): every base is
+ * an input; the bits, bytes and readouts follow beside them.
+ */
 const NumberConverter: React.FC = () => {
   const [settings, update] = numberSettings.useSettings();
   const { bits, signed, customBase, fractionPrecision } = settings;
@@ -142,84 +144,107 @@ const NumberConverter: React.FC = () => {
     };
   });
 
+  const togglePattern = (i: number) => setPattern(pattern ^ (1n << BigInt(i)));
+
+  const valueCard = (
+    <Card as="section" title="Value">
+      <Stack gap="5">
+        <BaseFields
+          fields={fields}
+          error={
+            reading.kind === 'error'
+              ? { key: source.key, message: reading.message }
+              : null
+          }
+          onEdit={(key, text) => setSource({ key, text })}
+          customBase={customBase}
+          onCustomBase={(b) => update({ customBase: b })}
+          base32={derived?.base32 ?? ''}
+          base58={derived?.base58 ?? ''}
+        />
+        <Inline gap="2" wrap>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={sparkles}
+            onClick={() => setSource({ key: 'hex', text: '0xCAFE' })}
+          >
+            Try an example
+          </Button>
+          {source.text ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={close}
+              onClick={() => setSource({ key: source.key, text: '' })}
+            >
+              Clear
+            </Button>
+          ) : null}
+        </Inline>
+      </Stack>
+    </Card>
+  );
+
+  const detailCards = (
+    <Stack gap="6">
+      <Card as="section" title="Bits and bytes">
+        <WidthPanel
+          bits={bits}
+          signed={signed}
+          onBits={(b) => update({ bits: b })}
+          onSigned={(s) => update({ signed: s })}
+          pattern={pattern}
+          overflow={derived?.overflow ?? false}
+          bytesBE={derived?.bytesBE ?? ''}
+          bytesLE={derived?.bytesLE ?? ''}
+          onToggleBit={togglePattern}
+        />
+      </Card>
+      <Card as="section" title="Read as">
+        <Readouts
+          bytesBE={derived?.bytesBE ?? ''}
+          ascii={derived?.ascii ?? []}
+          utf8={derived?.utf8 ?? null}
+          float={derived?.float}
+          bits={bits}
+          perms={derived?.perms}
+          pattern={pattern}
+          hasValue={!!derived}
+          onToggleBit={togglePattern}
+        />
+      </Card>
+    </Stack>
+  );
+
   return (
     <Stack gap="6">
       <ToolActions>
         <ShareButton share={shareState} />
       </ToolActions>
-      <Card>
-        <CardBody>
-          <BaseFields
-            fields={fields}
-            error={
-              reading.kind === 'error'
-                ? { key: source.key, message: reading.message }
-                : null
-            }
-            onEdit={(key, text) => setSource({ key, text })}
-            customBase={customBase}
-            onCustomBase={(b) => update({ customBase: b })}
-            base32={derived?.base32 ?? ''}
-            base58={derived?.base58 ?? ''}
-          />
-        </CardBody>
-      </Card>
-      <Card>
-        <CardBody>
-          <WidthPanel
-            bits={bits}
-            signed={signed}
-            onBits={(b) => update({ bits: b })}
-            onSigned={(s) => update({ signed: s })}
-            pattern={pattern}
-            overflow={derived?.overflow ?? false}
-            bytesBE={derived?.bytesBE ?? ''}
-            bytesLE={derived?.bytesLE ?? ''}
-            onToggleBit={(i) => setPattern(pattern ^ (1n << BigInt(i)))}
-          />
-        </CardBody>
-      </Card>
-      <Card>
-        <CardBody>
-          <Readouts
-            bytesBE={derived?.bytesBE ?? ''}
-            ascii={derived?.ascii ?? []}
-            utf8={derived?.utf8 ?? null}
-            float={derived?.float}
-            bits={bits}
-            perms={derived?.perms}
-            pattern={pattern}
-            hasValue={!!derived}
-            onToggleBit={(i) => setPattern(pattern ^ (1n << BigInt(i)))}
-          />
-        </CardBody>
-      </Card>
-      <Accordion>
-        <AccordionItem value="how">
-          <AccordionTrigger>How it works</AccordionTrigger>
-          <AccordionContent>
-            <Stack gap="2">
-              <Text size="sm" tone="muted">
-                Type in any field: it is read in its own base and every other
-                field follows. Numbers are arbitrary precision (BigInt), so 64
-                bit values stay exact. Prefixes 0x, 0b and 0o, underscores and
-                spaces are accepted.
-              </Text>
-              <Text size="sm" tone="muted">
-                Binary, octal, hex and the custom base show the two&apos;s
-                complement bit pattern at the chosen word size; decimal shows
-                that pattern read as signed or unsigned. A value too large for
-                the width is cut to its low bits and flagged as overflow.
-              </Text>
-              <Text size="sm" tone="muted">
-                The bytes are read as characters (control bytes by name, such as
-                NUL), as an IEEE-754 float at 32 or 64 bits, and as Unix
-                permissions when the value is 7777 octal or less.
-              </Text>
-            </Stack>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      <TransformLayout start={valueCard} end={detailCards} defaultSize={50} />
+      <Disclosure summary="How it works" variant="line">
+        <Stack gap="3">
+          <Text as="p" tone="muted">
+            Type in any field: it is read in its own base and every other field
+            follows. Numbers are arbitrary precision (BigInt), so 64 bit values
+            stay exact. Prefixes 0x, 0b and 0o, underscores and spaces are
+            accepted.
+          </Text>
+          <Text as="p" tone="muted">
+            Binary, octal, hex and the custom base show the two&apos;s
+            complement bit pattern at the chosen word size; decimal shows that
+            pattern read as signed or unsigned. A value too large for the width
+            is cut to its low bits and flagged as overflow.
+          </Text>
+          <Text as="p" tone="muted">
+            The bytes are read as characters (control bytes by name, such as
+            NUL), as an IEEE-754 float at 32 or 64 bits, and as Unix permissions
+            when the value is 7777 octal or less.
+          </Text>
+        </Stack>
+      </Disclosure>
     </Stack>
   );
 };

@@ -82,13 +82,21 @@ describe('NumberConverter', () => {
     setup();
     fireEvent.change(field('Octal'), { target: { value: '750' } });
     expect(screen.getByText('rwxr-x---')).toBeTruthy();
-    const otherRead = screen.getByLabelText('Others read');
-    expect(otherRead.getAttribute('aria-checked')).toBe('false');
+    const otherRead = screen.getByLabelText('Others read') as HTMLInputElement;
+    expect(otherRead.checked).toBe(false);
     fireEvent.click(otherRead);
     expect(field('Octal').value).toBe('754');
   });
 
-  it('each base field has a kit copy button', () => {
+  it('arrow keys move between bits with one tab stop', () => {
+    setup();
+    const top = screen.getByLabelText('Bit 31, clear');
+    top.focus();
+    fireEvent.keyDown(top, { key: 'End' });
+    expect(document.activeElement).toBe(screen.getByLabelText('Bit 0, clear'));
+  });
+
+  it('each base field has a copy button', () => {
     setup();
     fireEvent.change(field('Decimal'), { target: { value: '7' } });
     const copy = screen.getByLabelText('Copy Binary') as HTMLButtonElement;
