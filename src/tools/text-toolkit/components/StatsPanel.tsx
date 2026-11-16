@@ -1,15 +1,16 @@
-import { useDeferredValue, useId, useMemo } from 'react';
 import {
+  Card,
   EmptyState,
-  Heading,
+  Grid,
   Inline,
-  Label,
-  MetaList,
   Select,
   Stack,
-  Statistic,
-  SwitchField,
-} from '@/shared/ui';
+  Stat,
+  Switch,
+  Table,
+  Text,
+} from '@arshad-shah/cynosure';
+import { useDeferredValue, useMemo } from 'react';
 import { textStats } from '../lib/stats';
 
 const LOCALES = [
@@ -56,11 +57,8 @@ export function StatsPanel({
     () => textStats(deferred, locale, { stopWords }),
     [deferred, locale, stopWords],
   );
-  const localeId = useId();
-  const headingId = useId();
 
   const tiles: [string, number][] = [
-    ['Words', s.words],
     ['Characters', s.chars],
     ['Characters without spaces', s.charsNoSpaces],
     ['Sentences', s.sentences],
@@ -70,65 +68,69 @@ export function StatsPanel({
   ];
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <Heading level={2} size="md" id={headingId}>
-        Statistics
-      </Heading>
-      <div aria-live="polite">
-        <MetaList
-          items={[
+    <Card as="section" title="Statistics">
+      <Stack gap="5">
+        <Inline gap="4" wrap aria-live="polite">
+          {[
             count(s.words, 'word'),
             `${formatMinutes(s.readingMinutes)} reading`,
             `${formatMinutes(s.speakingMinutes)} speaking`,
-          ]}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {tiles.map(([label, value]) => (
-          <Statistic
-            key={label}
-            label={label}
-            value={value.toLocaleString('en-US')}
-            className="p-3"
-          />
-        ))}
-      </div>
-      <Inline gap="4" wrap align="end">
-        <Stack gap="1" className="min-w-40">
-          <Label htmlFor={localeId}>Language</Label>
+          ].map((t) => (
+            <Text key={t} tone="muted">
+              {t}
+            </Text>
+          ))}
+        </Inline>
+        <Grid minItemWidth="8rem" gap="3">
+          {tiles.map(([label, value]) => (
+            <Stat
+              key={label}
+              size="sm"
+              variant="soft"
+              label={label}
+              value={value.toLocaleString('en-US')}
+            />
+          ))}
+        </Grid>
+        <Inline gap="5" wrap align="end">
           <Select
-            id={localeId}
+            label="Language"
+            width="sm"
             value={locale}
-            onValueChange={onLocale}
-            items={LOCALES}
+            onChange={onLocale}
+            options={LOCALES}
           />
-        </Stack>
-        <SwitchField
-          label="Hide common words"
-          checked={stopWords}
-          onCheckedChange={onStopWords}
-        />
-      </Inline>
-      <Stack gap="1">
-        <Heading level={3} size="sm">
-          Top words
-        </Heading>
+          <Switch
+            label="Hide common words"
+            checked={stopWords}
+            onChange={onStopWords}
+          />
+        </Inline>
         {s.topWords.length === 0 ? (
           <EmptyState size="sm" title="No words yet" />
         ) : (
-          <ol aria-label="Top words" className="flex flex-col gap-1 text-sm">
-            {s.topWords.map(([word, n]) => (
-              <li
-                key={word}
-                className="flex justify-between gap-4 rounded-sm px-2 py-1 odd:bg-surface-2"
-              >
-                <span className="truncate text-fg">{word}</span>
-                <span className="font-mono text-fg-muted">{n}</span>
-              </li>
-            ))}
-          </ol>
+          <Table
+            caption="Top words"
+            size="sm"
+            rows={s.topWords.map(([word, n]) => ({ word, n }))}
+            getRowId={(r) => r.word}
+            columns={[
+              {
+                key: 'word',
+                header: 'Word',
+                rowHeader: true,
+                cell: (r) => r.word,
+              },
+              {
+                key: 'n',
+                header: 'Count',
+                align: 'end',
+                cell: (r) => r.n.toLocaleString('en-US'),
+              },
+            ]}
+          />
         )}
       </Stack>
-    </section>
+    </Card>
   );
 }
