@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { toolRoutes } from './tool-routes';
+import { expectNotFound } from './not-found';
 
 const ENABLED = toolRoutes().filter((t) => t.enabled);
 
@@ -28,9 +29,7 @@ test('a tool lives at /<category>/<slug>', async ({ page }) => {
 
 test('old tool URLs show NotFound, with no redirect', async ({ page }) => {
   await page.goto('/regex-tester');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'No page at /regex-tester',
-  );
+  await expectNotFound(page, '/regex-tester');
   expect(new URL(page.url()).pathname).toBe('/regex-tester');
 });
 
@@ -38,16 +37,12 @@ test('folded PDF tools are gone: /pdf/metadata shows NotFound', async ({
   page,
 }) => {
   await page.goto('/pdf/metadata');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'No page at /pdf/metadata',
-  );
+  await expectNotFound(page, '/pdf/metadata');
 });
 
 test('an unknown path offers search over the tools', async ({ page }) => {
   await page.goto('/nope/thing');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'No page at /nope/thing',
-  );
+  await expectNotFound(page, '/nope/thing');
   await page.getByRole('searchbox', { name: 'Search tools' }).fill('regex');
   await page.getByRole('link', { name: 'Regex Tester' }).click();
   await expect(page).toHaveURL(/\/text\/regex$/);

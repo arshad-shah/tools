@@ -218,7 +218,9 @@ test('Open exp in Epoch Converter hands over the seconds', async ({ page }) => {
     .getByRole('button', { name: 'Open exp in Epoch Converter' })
     .click();
   await expect(page).toHaveURL(new RegExp(pathOf('epoch-converter')));
-  await expect(page.locator('#epoch-input')).toHaveValue('1700000000');
+  await expect(
+    page.getByRole('textbox', { name: 'Timestamp or date' }),
+  ).toHaveValue('1700000000');
 });
 
 test('accordion triggers have accessible names', async ({ page }) => {
