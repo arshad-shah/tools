@@ -11,7 +11,7 @@ import {
 import { home, search, shieldCheck } from '@arshad-shah/cynosure/icons';
 import { Link, useLocation } from 'react-router-dom';
 import { hotkeyCaps, hotkeyLabel } from '@/shared/lib/hotkeys';
-import { useTheme } from '@/shared/lib/theme';
+import { THEME_KEY } from '@/theme/tools-theme';
 import { CATEGORIES } from '../categories';
 import { useFavorites } from '../favorites';
 import { useRecentToolsStore } from '../recents';
@@ -58,7 +58,6 @@ export function AppNav({
   onPrivacy,
 }: AppNavProps) {
   const { pathname } = useLocation();
-  const { preference, setPreference } = useTheme();
   const { ids: favIds } = useFavorites();
   const recentIds = useRecentToolsStore((s) => s.ids);
   const tools = getEnabledTools();
@@ -134,11 +133,7 @@ export function AppNav({
       {collapsed ? (
         <Stack gap="2" align="center" paddingBlock="4">
           <HelpMenu tool={tool} />
-          <ThemeToggle
-            variant="cycle"
-            value={preference}
-            onChange={setPreference}
-          />
+          <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
         </Stack>
       ) : (
         <Inline
@@ -148,11 +143,7 @@ export function AppNav({
           paddingBlock="4"
         >
           <HelpMenu tool={tool} />
-          <ThemeToggle
-            variant="cycle"
-            value={preference}
-            onChange={setPreference}
-          />
+          <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
         </Inline>
       )}
     </Stack>

@@ -43,15 +43,6 @@
 :root:not([data-cy-mode]) {
   color-scheme: light dark;
 }
-/* The resolved mode (src/shared/lib/theme.ts), for code that reads
-   computed colours and for readDocTokens' light read. */
-:root[data-theme='light'] {
-  color-scheme: light;
-}
-:root[data-theme='dark'] {
-  color-scheme: dark;
-}
-
 :root {
   --canvas: var(--cy-color-bg);
   --surface: var(--cy-color-surface);

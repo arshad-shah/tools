@@ -8,6 +8,8 @@ import {
   within,
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { ColourModeWrapper } from '../../../../test/helpers/colour-mode';
+import { setColourMode } from '../../../../test/helpers/colour-mode-store';
 import { Chart } from './chart';
 import {
   COLORS,
@@ -18,7 +20,10 @@ import {
 import type { ChartSeries } from './types';
 
 beforeEach(installChartStubs);
-afterEach(resetChartStubs);
+afterEach(() => {
+  resetChartStubs();
+  setColourMode('light');
+});
 
 const SERIES: ChartSeries[] = [
   {
@@ -83,14 +88,16 @@ describe('Chart', () => {
   });
 
   it('repaints with the new colours when the theme changes', async () => {
-    render(<Chart kind="line" series={SERIES} ariaLabel="Traffic" />);
+    render(<Chart kind="line" series={SERIES} ariaLabel="Traffic" />, {
+      wrapper: ColourModeWrapper,
+    });
     const ctx = contextOf(canvas());
     const clears = () => ctx.calls.filter((c) => c.name === 'clearRect').length;
     const before = clears();
     expect(before).toBeGreaterThan(0);
     await act(async () => {
       document.documentElement.style.setProperty('--chart-1', '#abcdef');
-      document.documentElement.setAttribute('data-theme', 'dark');
+      setColourMode('dark');
     });
     await waitFor(() => expect(clears()).toBeGreaterThan(before));
     expect(ctx.calls.some((c) => c.strokeStyle === '#abcdef')).toBe(true);

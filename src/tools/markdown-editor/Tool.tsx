@@ -12,7 +12,7 @@ import { copyText } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
-import { watchTheme } from '@/shared/lib/theme-tokens';
+import { useCynosureTheme } from '@arshad-shah/cynosure';
 import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
 import {
   Alert,
@@ -88,7 +88,16 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   const baseCss = useMemo(() => markdownCss(tokens), [tokens]);
   const words = textStats(useDeferredValue(text)).words;
 
-  useEffect(() => watchTheme(() => setTokens(readDocTokens())), []);
+  // Re-read the document colours when the Cynosure theme or mode changes.
+  const { palette } = useCynosureTheme();
+  useEffect(() => {
+    // After CynosureTheme has marked the document with the new mode.
+    let live = true;
+    queueMicrotask(() => live && setTokens(readDocTokens()));
+    return () => {
+      live = false;
+    };
+  }, [palette]);
 
   const setText = (next: string) => {
     setTextState(next);

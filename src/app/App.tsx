@@ -1,14 +1,12 @@
-import { CynosureTheme } from '@arshad-shah/cynosure';
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { useTheme, useThemeSync } from '@/shared/lib/theme';
 import { Toaster } from '@/shared/ui';
-import { toolsTheme } from '@/theme/tools-theme';
 import ErrorBoundary from './ErrorBoundary';
+import { Theme } from './Theme';
 import { getEnabledTools, getWorkspaceTool } from './registry';
 import { toolPath } from './routes';
 import { ToolPage } from './pages/ToolPage';
-import { PageLoading } from './ui/PageLoading';
+import { Inline, LoadingDots, Text } from '@arshad-shah/cynosure';
 
 const AppFrame = lazy(() => import('./shell/AppFrame'));
 const WorkspaceFrame = lazy(() => import('./shell/WorkspaceFrame'));
@@ -30,25 +28,24 @@ const toolRoutes = getEnabledTools()
 const workspace = getWorkspaceTool();
 const Workspace = workspace ? lazy(workspace.load) : null;
 
-/**
- * The tools theme on the whole document (redesign spec, rule 4), in the
- * colour mode saved under tools:theme.
- */
-function Theme({ children }: { children: React.ReactNode }) {
-  const { preference } = useTheme();
-  useThemeSync();
-  return (
-    <CynosureTheme theme={toolsTheme} mode={preference} target="document">
-      {children}
-    </CynosureTheme>
-  );
-}
-
 const App: React.FC = () => (
   <Theme>
     <ErrorBoundary>
       <BrowserRouter>
-        <Suspense fallback={<PageLoading />}>
+        <Suspense
+          fallback={
+            <Inline
+              gap="4"
+              align="center"
+              justify="center"
+              paddingBlock="10"
+              role="status"
+            >
+              <LoadingDots tone="muted" />
+              <Text tone="muted">Loading</Text>
+            </Inline>
+          }
+        >
           <Routes>
             {KitGallery ? (
               <Route

@@ -5,9 +5,11 @@ import {
   ErrorBoundary,
   IconTile,
   Inline,
+  LoadingDots,
   Notice,
   PageHeader,
   Stack,
+  Text,
 } from '@arshad-shah/cynosure';
 import { home, retry as retryIcon } from '@arshad-shah/cynosure/icons';
 import React, { Suspense, useState } from 'react';
@@ -17,7 +19,6 @@ import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import type { ToolManifest } from '../tool';
 import { toolGlyph } from '../ui/glyphs';
-import { PageLoading } from '../ui/PageLoading';
 import { FavouriteToggle } from '../ui/ToolCard';
 
 export interface ToolPageProps {
@@ -102,7 +103,20 @@ export function ToolPage({ tool, children }: ToolPageProps) {
             </Notice>
           )}
         >
-          <Suspense fallback={<PageLoading label={`Loading ${tool.name}`} />}>
+          <Suspense
+            fallback={
+              <Inline
+                gap="4"
+                align="center"
+                justify="center"
+                paddingBlock="10"
+                role="status"
+              >
+                <LoadingDots tone="muted" />
+                <Text tone="muted">Loading {tool.name}</Text>
+              </Inline>
+            }
+          >
             <ToolActionsSlot.Provider value={actions}>
               <React.Fragment key={attempt}>{children}</React.Fragment>
             </ToolActionsSlot.Provider>

@@ -11,9 +11,10 @@ export function readDocTokens(
   theme: 'current' | 'light' = 'current',
 ): DocTokens {
   const root = document.documentElement;
-  const previous = root.getAttribute('data-theme');
-  const flip = theme === 'light' && previous !== null && previous !== 'light';
-  if (flip) root.setAttribute('data-theme', 'light');
+  // Cynosure's colour mode: its roles are light-dark() pairs.
+  const previous = root.getAttribute('data-cy-mode');
+  const flip = theme === 'light' && previous !== 'light';
+  if (flip) root.setAttribute('data-cy-mode', 'light');
   try {
     const raw = readThemeTokens(Object.values(DOC_TOKEN_NAMES));
     const out = {} as DocTokens;
@@ -21,6 +22,9 @@ export function readDocTokens(
       out[key as keyof DocTokens] = raw[name] ?? '';
     return out;
   } finally {
-    if (flip && previous !== null) root.setAttribute('data-theme', previous);
+    if (flip) {
+      if (previous === null) root.removeAttribute('data-cy-mode');
+      else root.setAttribute('data-cy-mode', previous);
+    }
   }
 }

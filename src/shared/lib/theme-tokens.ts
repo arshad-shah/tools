@@ -29,16 +29,3 @@ export function readThemeTokens(
   }
   return out;
 }
-
-/**
- * Calls `onChange` whenever the theme on `el` changes (its `data-theme`
- * attribute). Returns an unsubscribe.
- */
-export function watchTheme(
-  onChange: () => void,
-  el: HTMLElement = root(),
-): () => void {
-  const obs = new MutationObserver(() => onChange());
-  obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
-  return () => obs.disconnect();
-}

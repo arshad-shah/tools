@@ -1,7 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { resetThemeForTests } from '@/shared/lib/theme';
 
 const received: Record<string, unknown> = {};
 
@@ -20,7 +19,6 @@ const { QrCode } = await import('./QrCode');
 const { RivePlayer } = await import('./RivePlayer');
 
 afterEach(() => {
-  resetThemeForTests();
   localStorage.clear();
 });
 

@@ -21,7 +21,7 @@ import React, {
 } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { ToolError } from '@/shared/lib/errors';
-import { watchTheme } from '@/shared/lib/theme-tokens';
+import { useCynosureTheme } from '@arshad-shah/cynosure';
 import { Button } from '../button';
 import { Switch } from '../controls';
 import { Label } from '../typography';
@@ -131,7 +131,16 @@ export function Chart({
     setView(null);
   }
 
-  useEffect(() => watchTheme(() => setTheme(readChartTheme())), []);
+  // Repaint in the new colours when the Cynosure theme or mode changes.
+  const { palette } = useCynosureTheme();
+  useEffect(() => {
+    // After CynosureTheme has marked the document with the new mode.
+    let live = true;
+    queueMicrotask(() => live && setTheme(readChartTheme()));
+    return () => {
+      live = false;
+    };
+  }, [palette]);
 
   useEffect(() => {
     const el = box.current;

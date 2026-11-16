@@ -61,7 +61,6 @@ export function installChartStubs() {
 export function resetChartStubs() {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  document.documentElement.removeAttribute('data-theme');
   document.documentElement.removeAttribute('style');
 }
 
