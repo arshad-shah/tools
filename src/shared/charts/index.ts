@@ -5,3 +5,4 @@ export {
   type ChartTableData,
 } from './ChartFrame';
 export { chartPng } from './export';
+export { ChartMount } from './ChartMount';

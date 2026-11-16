@@ -108,7 +108,7 @@ tester.run('no-raw-ui', rule, {
     },
     {
       code: `const a = <div ref={host} />;`,
-      filename: 'src/shared/charts/ChartFrame.tsx',
+      filename: 'src/shared/charts/ChartMount.tsx',
     },
     // TODO(mig/rollout-pdf-workspace): exempt until that branch merges.
     {

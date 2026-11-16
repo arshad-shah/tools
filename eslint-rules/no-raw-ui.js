@@ -10,7 +10,7 @@
  * - src/shared/surfaces/: the product's drawing surfaces (canvases, frames,
  *   the virtual list, the code tree) and the DOM helpers they need;
  * - the editor and chart mount points (src/shared/editor/CodeEditor.tsx,
- *   src/shared/charts/ChartFrame.tsx), where CodeMirror and swift-chart
+ *   src/shared/charts/ChartMount.tsx), where CodeMirror and swift-chart
  *   attach to an element;
  * - tests, which do not ship (decision G1).
  *
@@ -61,7 +61,7 @@ const norm = (f) => f.replace(/\\/g, '/');
 const EXEMPT = [
   /(^|\/)src\/shared\/surfaces\//,
   /(^|\/)src\/shared\/editor\/CodeEditor\.tsx$/,
-  /(^|\/)src\/shared\/charts\/ChartFrame\.tsx$/,
+  /(^|\/)src\/shared\/charts\/ChartMount\.tsx$/,
   // Tests do not ship (decision G1).
   /\.test\.(ts|tsx)$/,
   // TODO(mig/rollout-pdf-workspace): remove with the old kit.
