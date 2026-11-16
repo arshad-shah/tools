@@ -1,96 +1,169 @@
 import { expect, test, type Page } from '@playwright/test';
-import { toolRoutes } from '../e2e/tool-routes';
+import { pathOf } from '../e2e/tool-routes';
+import { makeTextPdf } from '../fixtures/builders';
 import {
   expectAxeClean,
   setTheme,
   stabilise,
   touchFullPage,
-  VIEWPORTS,
+  type Theme,
 } from './helpers';
 
 /*
- * Pages of the new IA (plan A2-15): Home, a hub template, the PDF hub,
- * NotFound and the tools outside the workspace (decision G24: the non-PDF
- * tools plus the 8 PDF quick tasks), in both themes at desktop. The 6-H
- * mobile pass adds every non-PDF tool page, Home and the hubs at phone width
- * with a touch screen (coarse pointer), each with an axe check.
+ * The redesigned app on Cynosure (redesign spec, rule 6): Home, a category
+ * hub, Not found, the two pattern tools (PDF Merger, a file tool; JWT
+ * Decoder, a transform tool), a data tool (CSV Viewer with a table) and a
+ * chart tool (CSV Viewer's chart view), each in light and dark at desktop
+ * (1440) and phone (390, touch) width, with an axe check.
+ *
+ * Baselines are not committed from a workstation: CI's pinned container
+ * writes them (workflow_dispatch with `update`).
  */
-const QUICK_TASKS = new Set([
-  'pdf-merger',
-  'pdf-splitter',
-  'pdf-compressor',
-  'images-to-pdf',
-  'pdf-to-images',
-  'pdf-to-text',
-  'pdf-protect',
-  'pdf-unlock',
-]);
-const TOOLS = toolRoutes().filter(
-  (t) => t.enabled && (t.category !== 'pdf' || QUICK_TASKS.has(t.id)),
-);
 
-async function open(page: Page, path: string, theme: 'light' | 'dark') {
-  await page.goto(path);
+const WIDTHS = {
+  desktop: { width: 1440, height: 900 },
+  phone: { width: 390, height: 844 },
+} as const;
+type Width = keyof typeof WIDTHS;
+
+const CSV =
+  'name,team,score\n' +
+  [
+    ['Ada', 'red', 41],
+    ['Grace', 'blue', 85],
+    ['Alan', 'red', 36],
+    ['Barbara', 'green', 40],
+    ['Edsger', 'blue', 72],
+    ['Frances', 'green', 58],
+  ]
+    .map((r) => r.join(','))
+    .join('\n');
+
+/** A token with fixed claims: the page shows the same decode every run. */
+function sampleJwt(): string {
+  const part = (o: object) =>
+    Buffer.from(JSON.stringify(o)).toString('base64url');
+  return [
+    part({ alg: 'HS256', typ: 'JWT' }),
+    part({ sub: '1234567890', name: 'Ada Lovelace', iat: 1516239022 }),
+    'c2lnbmF0dXJl',
+  ].join('.');
+}
+
+/** A text PDF built here, so the suite needs no generated fixtures. */
+async function pdf(name: string, pages: number, label: string) {
+  return {
+    name,
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(await makeTextPdf({ pages, label })),
+  };
+}
+
+async function loadCsv(page: Page) {
+  await page
+    .locator('input[type=file]')
+    .first()
+    .setInputFiles({
+      name: 'scores.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(CSV),
+    });
+  await expect(page.getByRole('grid', { name: 'Table data' })).toBeVisible();
+}
+
+interface Shot {
+  name: string;
+  path: string;
+  /** Brings the page to the state worth a picture. */
+  prepare?(page: Page): Promise<void>;
+}
+
+const SHOTS: Shot[] = [
+  { name: 'home', path: '/' },
+  { name: 'hub-data', path: '/data' },
+  { name: 'not-found', path: '/regex-tester' },
+  {
+    name: 'pdf-merger',
+    path: pathOf('pdf-merger'),
+    async prepare(page) {
+      await page
+        .locator('input[type=file]')
+        .first()
+        .setInputFiles([
+          await pdf('text-3.pdf', 3, 'Alpha'),
+          await pdf('text-12.pdf', 12, 'Beta'),
+        ]);
+      const rows = page
+        .getByRole('list', { name: 'Files to merge' })
+        .getByRole('listitem');
+      await expect(rows).toHaveCount(2);
+      // Thumbnails come from the pdf.js worker.
+      for (const name of ['text-3.pdf', 'text-12.pdf'])
+        await expect
+          .poll(() =>
+            page
+              .getByRole('img', { name: `${name}, page 1` })
+              .evaluate((i) => (i as HTMLImageElement).naturalWidth),
+          )
+          .toBeGreaterThan(0);
+    },
+  },
+  {
+    name: 'jwt-decode',
+    path: pathOf('jwt-decode'),
+    async prepare(page) {
+      await page.getByRole('textbox', { name: 'JWT token' }).fill(sampleJwt());
+      await expect(page.getByText('Ada Lovelace').first()).toBeVisible();
+    },
+  },
+  { name: 'csv-viewer-table', path: pathOf('csv-viewer'), prepare: loadCsv },
+  {
+    name: 'csv-viewer-chart',
+    path: pathOf('csv-viewer'),
+    async prepare(page) {
+      await loadCsv(page);
+      await page
+        .getByRole('radiogroup', { name: 'View' })
+        .getByRole('radio', { name: 'Chart' })
+        .check();
+      await expect(page.getByRole('img', { name: /chart of/ })).toBeVisible();
+    },
+  },
+];
+
+async function open(page: Page, shot: Shot, theme: Theme) {
+  await page.goto(shot.path);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await setTheme(page, theme);
   // Lazy tool chunks: wait until no loading state remains.
   await expect(
     page.getByRole('status').filter({ hasText: /^Loading/ }),
-  ).toHaveCount(0, {
-    timeout: 30_000,
-  });
+  ).toHaveCount(0, { timeout: 30_000 });
+  await shot.prepare?.(page);
   await stabilise(page);
 }
 
-for (const theme of ['light', 'dark'] as const) {
-  test.describe(`app pages ${theme}`, () => {
-    for (const [name, path] of [
-      ['home', '/'],
-      ['hub-text', '/text'],
-      ['hub-pdf', '/pdf'],
-      ['not-found', '/regex-tester'],
-    ] as const) {
-      test(name, async ({ page }) => {
-        await open(page, path, theme);
-        await expect(page).toHaveScreenshot(`${name}-${theme}.png`, {
-          fullPage: true,
+for (const [width, viewport] of Object.entries(WIDTHS) as [
+  Width,
+  (typeof WIDTHS)[Width],
+][])
+  for (const theme of ['light', 'dark'] as const)
+    test.describe(`app ${width} ${theme}`, () => {
+      test.use(width === 'phone' ? { viewport, hasTouch: true } : { viewport });
+
+      for (const shot of SHOTS)
+        test(shot.name, async ({ page }) => {
+          await open(page, shot, theme);
+          if (width === 'phone') {
+            await touchFullPage(page, viewport.width);
+            await expect(page).toHaveScreenshot(
+              `${shot.name}-${width}-${theme}.png`,
+            );
+          } else
+            await expect(page).toHaveScreenshot(
+              `${shot.name}-${width}-${theme}.png`,
+              { fullPage: true },
+            );
+          await expectAxeClean(page);
         });
-        await expectAxeClean(page);
-      });
-    }
-
-    for (const tool of TOOLS)
-      test(`tool ${tool.id}`, async ({ page }) => {
-        await open(page, tool.path, theme);
-        await expect(
-          page.getByRole('heading', { level: 1, name: tool.name }),
-        ).toBeVisible();
-        await expect(page).toHaveScreenshot(`tool-${tool.id}-${theme}.png`);
-        await expectAxeClean(page);
-      });
-  });
-}
-
-const PHONE_PAGES: [string, string][] = [
-  ['home', '/'],
-  ['hub-text', '/text'],
-  ['hub-pdf', '/pdf'],
-  ...TOOLS.filter((t) => t.category !== 'pdf').map((t): [string, string] => [
-    `tool-${t.id}`,
-    t.path,
-  ]),
-];
-
-for (const theme of ['light', 'dark'] as const) {
-  test.describe(`app pages phone ${theme}`, () => {
-    test.use({ viewport: VIEWPORTS.phone, hasTouch: true });
-
-    for (const [name, path] of PHONE_PAGES)
-      test(`${name} phone`, async ({ page }) => {
-        await open(page, path, theme);
-        await touchFullPage(page, VIEWPORTS.phone.width);
-        await expect(page).toHaveScreenshot(`${name}-phone-${theme}.png`);
-        await expectAxeClean(page);
-      });
-  });
-}
+    });

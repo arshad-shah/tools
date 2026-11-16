@@ -1,10 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /*
- * Visual regression for the dev-only kit gallery (and, from A2, pages).
- * Baselines are per platform (decision G8): local win32 baselines gate PRs;
- * Linux baselines come from the pinned Playwright container
- * (pnpm test:visual:docker).
+ * Visual regression of the real app (test/visual): the redesigned pages
+ * (app.visual.ts) and the PDF workspace, in both themes. Baselines are per
+ * platform (decision G8); Linux baselines come from the pinned Playwright
+ * container, written by CI's workflow_dispatch `update` input (or
+ * pnpm test:visual:docker).
  */
 const port = Number(process.env.E2E_PORT ?? 5175);
 
