@@ -9,11 +9,16 @@ import { pathOf } from './tool-routes';
 test.use({ trace: 'off' });
 
 const tree = (page: Page) => page.getByRole('tree', { name: 'Document tree' });
+/** The view beside the Source (a radio group in the redesign). */
 const show = (page: Page, name: string) =>
-  page.getByRole('tab', { name, exact: true }).click();
+  page
+    .getByRole('radiogroup', { name: 'View' })
+    .getByRole('radio', { name, exact: true })
+    .check();
 
-/** The status line only: a page-wide text search would scan the 20 MB editor. */
-const status = (page: Page) => page.locator('[data-status-line]').first();
+/** The status bar only: a page-wide text search would scan the 20 MB editor. */
+const status = (page: Page) =>
+  page.getByRole('toolbar', { name: 'Document status' });
 
 async function observeLongTasks(page: Page) {
   await page.evaluate(() => {
@@ -72,7 +77,7 @@ test('the Map lays out 5,000 cards in the worker without blocking', async ({
   await expect(status(page).getByText('Parsed', { exact: true })).toBeVisible({
     timeout: 30_000,
   });
-  await page.getByRole('tab', { name: 'Map' }).click();
+  await show(page, 'Map');
   await expect(page.getByTestId('diagram-canvas')).toBeVisible();
   // The canvas summary ("Map of N objects…") changes once the new cap lays out.
   const summary = () =>
@@ -82,10 +87,12 @@ test('the Map lays out 5,000 cards in the worker without blocking', async ({
       return document.getElementById(id)?.textContent ?? '';
     });
   const before = await summary();
+  // Open the cap's listbox first; the option is then found by CSS.
+  await page.getByRole('combobox', { name: 'Node cap' }).click();
   const longTasks = await observeLongTasks(page);
   // CSS and in-page checks only while observing: a text or label locator
   // walks the whole DOM on the main thread and would count as a long task.
-  await page.locator('#json-xml-node-cap').selectOption('5000');
+  await page.locator('[role="option"]', { hasText: '5,000' }).click();
   await expect.poll(summary).not.toBe(before);
   await page.waitForTimeout(500);
   const long = await longTasks();

@@ -1,21 +1,24 @@
 import { expect, test } from '@playwright/test';
 import { toolRoutes } from './tool-routes';
+import { expectNotFound } from './not-found';
 
 const ENABLED = toolRoutes().filter((t) => t.enabled);
 
 /** Tools that render more after load (timers, debounces): what to wait for. */
 const READY: Record<string, string> = {
-  // The sample token is decoded 300 ms after mount.
-  'jwt-decode': 'role=button[name="Raw JSON"]',
+  // The decoder starts empty and offers an example (redesign).
+  'jwt-decode': 'role=button[name="Try an example"]',
 };
 
 test('home states the promise and lists the categories', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Free, private tools. Nothing leaves your browser.',
+    'Private tools that run in your browser',
   );
   await expect(
-    page.getByRole('main').getByRole('link', { name: 'PDF' }),
+    page
+      .getByRole('region', { name: 'PDF', exact: true })
+      .getByRole('link', { name: 'Open PDF' }),
   ).toBeVisible();
 });
 
@@ -28,9 +31,7 @@ test('a tool lives at /<category>/<slug>', async ({ page }) => {
 
 test('old tool URLs show NotFound, with no redirect', async ({ page }) => {
   await page.goto('/regex-tester');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'No page at /regex-tester',
-  );
+  await expectNotFound(page, '/regex-tester');
   expect(new URL(page.url()).pathname).toBe('/regex-tester');
 });
 
@@ -38,16 +39,12 @@ test('folded PDF tools are gone: /pdf/metadata shows NotFound', async ({
   page,
 }) => {
   await page.goto('/pdf/metadata');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'No page at /pdf/metadata',
-  );
+  await expectNotFound(page, '/pdf/metadata');
 });
 
 test('an unknown path offers search over the tools', async ({ page }) => {
   await page.goto('/nope/thing');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'No page at /nope/thing',
-  );
+  await expectNotFound(page, '/nope/thing');
   await page.getByRole('searchbox', { name: 'Search tools' }).fill('regex');
   await page.getByRole('link', { name: 'Regex Tester' }).click();
   await expect(page).toHaveURL(/\/text\/regex$/);
@@ -63,25 +60,36 @@ test('Mod+K opens the palette and runs a tool', async ({ page }) => {
   await expect(page).toHaveURL(/\/text\/regex$/);
 });
 
-test('footer shows on home and tool pages with per-tool issue link', async ({
+// The redesign has no page footer: what it held is in the navigation's Help
+// menu, which reports a problem with the tool on screen.
+test('the Help menu reports a problem with the current tool', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.locator('footer')).toBeVisible();
+  await page
+    .context()
+    .route('https://github.com/**', (route) =>
+      route.fulfill({ status: 200, body: '' }),
+    );
   await page.goto('/pdf/merge');
-  const footer = page.locator('footer');
-  await expect(footer).toBeVisible();
-  await expect(
-    footer.getByRole('link', {
-      name: 'issues: report a problem with PDF Merger',
-    }),
-  ).toHaveAttribute('href', /%5Bpdf-merger%5D/);
+  await page.getByRole('button', { name: 'Help' }).click();
+  const popup = page.waitForEvent('popup');
+  await page
+    .getByRole('menuitem', { name: 'Report a problem with PDF Merger' })
+    .click();
+  expect((await popup).url()).toMatch(/\/issues\/new\?title=%5Bpdf-merger%5D/);
 });
 
-test('footer causes no horizontal scroll at 375px', async ({ page }) => {
+test('the Help menu is reachable at 375px with no horizontal scroll', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto('/');
-  await expect(page.locator('footer')).toBeVisible();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Menu' });
+  await sheet.getByRole('button', { name: 'Help' }).click();
+  await expect(
+    page.getByRole('menuitem', { name: 'Report a problem' }),
+  ).toBeVisible();
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(375);
 });

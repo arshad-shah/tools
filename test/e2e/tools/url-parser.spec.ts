@@ -45,8 +45,12 @@ test('Send to HTTP Client prefills the GET with params', async ({ page }) => {
   await expect(page.getByRole('textbox', { name: 'Request URL' })).toHaveValue(
     'https://api.tools.test/items',
   );
-  await expect(page.getByRole('textbox', { name: 'Key, row 2' })).toHaveValue(
-    'lang',
+  // A parameter row is named by its key.
+  await expect(page.getByRole('textbox', { name: 'Value (q)' })).toHaveValue(
+    '1',
+  );
+  await expect(page.getByRole('textbox', { name: 'Value (lang)' })).toHaveValue(
+    'en',
   );
 });
 

@@ -146,12 +146,31 @@ test('a dropdown menu at the bottom-right corner opens inside the viewport', asy
   await expect(menu).toHaveCount(0);
 });
 
-test('icon buttons are one step larger on a fine pointer', async ({ page }) => {
+/**
+ * A button's target: its box, grown by Cynosure's ::before hit area (which
+ * keeps small buttons small and their targets large).
+ */
+async function target(button: Locator) {
+  return button.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const hit = getComputedStyle(el, '::before');
+    return {
+      width: Math.max(r.width, parseFloat(hit.width) || 0),
+      height: Math.max(r.height, parseFloat(hit.height) || 0),
+    };
+  });
+}
+
+// The kit's IconButton renders Cynosure's: a 32px button on every pointer,
+// whose hit area is at least 24px with a mouse and 44px on touch (the old
+// kit grew the button itself to 40px with a mouse instead).
+test('icon buttons are at least 24px targets on a fine pointer', async ({
+  page,
+}) => {
   await openKit(page);
-  const box = await undo(page).boundingBox();
-  // md: 36px base, 40px with a mouse.
-  expect(box!.width).toBe(40);
-  expect(box!.height).toBe(40);
+  const box = await target(undo(page));
+  expect(box.width).toBeGreaterThanOrEqual(24);
+  expect(box.height).toBeGreaterThanOrEqual(24);
 });
 
 test.describe('on touch', () => {
@@ -168,8 +187,17 @@ test.describe('on touch', () => {
     expect(
       await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
     ).toBe(true);
-    const box = await undo(page).boundingBox();
-    expect(box!.width).toBe(44);
-    expect(box!.height).toBe(44);
+    const box = await target(undo(page));
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    // The target really takes the tap: a point just inside its edge.
+    await undo(page).scrollIntoViewIfNeeded();
+    const r = (await undo(page).boundingBox())!;
+    const hitsButton = await page.evaluate(
+      ({ x, y }) =>
+        !!document.elementFromPoint(x, y)?.closest('button[aria-label="Undo"]'),
+      { x: r.x + r.width / 2, y: r.y + r.height / 2 - 21 },
+    );
+    expect(hitsButton).toBe(true);
   });
 });

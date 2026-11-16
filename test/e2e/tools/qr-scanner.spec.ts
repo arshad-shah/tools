@@ -10,8 +10,9 @@ async function makeQr(
 ): Promise<Buffer> {
   await page.goto(pathOf('qr-code-generator'));
   await set(page);
-  await page.getByRole('tab', { name: 'Export' }).click();
-  await page.getByRole('combobox', { name: 'PNG size' }).selectOption('512');
+  // The redesigned generator shows Export as a card, its size a Select.
+  await page.getByRole('combobox', { name: 'PNG size' }).click();
+  await page.getByRole('option', { name: 'Medium (512 px)' }).click();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download PNG' }).click();
   const { readFile } = await import('node:fs/promises');
@@ -44,11 +45,10 @@ test('a WiFi code keeps the password masked until revealed', async ({
   page,
 }) => {
   const png = await makeQr(page, async (p) => {
-    await p
-      .getByRole('combobox', { name: 'Content type' })
-      .selectOption('wifi');
+    await p.getByRole('combobox', { name: 'Content type' }).click();
+    await p.getByRole('option', { name: /Wi-?Fi/i }).click();
     await p.getByRole('textbox', { name: 'Network name (SSID)' }).fill('Cafe');
-    await p.getByLabel('Password').fill('s3cret-pass');
+    await p.getByLabel('Password', { exact: true }).fill('s3cret-pass');
   });
   await page.goto(SCAN);
   await page
