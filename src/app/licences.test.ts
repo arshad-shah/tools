@@ -3,10 +3,7 @@ import pkg from '../../package.json';
 import { LICENCES } from './licences';
 
 /** Packages credited under a display name instead of the package name. */
-const CREDITED_AS: Record<string, string> = {
-  '@fontsource-variable/inter': 'Inter',
-  '@fontsource-variable/jetbrains-mono': 'JetBrains Mono',
-};
+const CREDITED_AS: Record<string, string> = {};
 
 const ALLOWED =
   /^(MIT|ISC|BSD-[23]-Clause|Apache-2\.0|OFL-1\.1|MPL-2\.0|Zlib|CC-BY-3\.0-US)$/;

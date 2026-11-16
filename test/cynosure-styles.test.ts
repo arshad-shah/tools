@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 /*
- * Cynosure migration (tools#104), Phase 0 Task 1: Cynosure's stylesheet loads
- * before tools' own tokens, so tokens.css can alias --cy-* roles.
+ * Cynosure migration (tools#104): the app's only stylesheet is Cynosure's,
+ * with the generated tools theme (src/theme/app.css).
  */
 describe('Cynosure styles', () => {
   it('is a dependency from npm', () => {
@@ -15,17 +15,13 @@ describe('Cynosure styles', () => {
     );
   });
 
-  it('loads in a cascade layer below Tailwind utilities', () => {
-    // Call sites style Cynosure parts with layout utilities (p-3, hidden
-    // sm:flex): those must win, so Cynosure sits in a layer between base and
-    // components (the facade reports, tools#104).
-    const tokens = readFileSync('src/theme/tokens.css', 'utf8');
-    expect(tokens).toMatch(
-      /^@layer theme, base, cynosure, components, utilities;\s*@import 'tailwindcss';/,
+  it('is the app stylesheet, with no Tailwind and no product rules on its parts', () => {
+    const app = readFileSync('src/theme/app.css', 'utf8');
+    expect(app).toContain("@import '@arshad-shah/cynosure/styles.css';");
+    expect(app).not.toMatch(/tailwind|@theme|@utility|@custom-variant/);
+    expect(app).not.toMatch(/\.cy-/);
+    expect(readFileSync('src/main.tsx', 'utf8')).toContain(
+      "import './theme/app.css';",
     );
-    expect(tokens).toContain(
-      "@import '@arshad-shah/cynosure/styles.css' layer(cynosure);",
-    );
-    expect(readFileSync('src/main.tsx', 'utf8')).not.toContain('cynosure');
   });
 });

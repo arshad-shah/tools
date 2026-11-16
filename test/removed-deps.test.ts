@@ -23,6 +23,14 @@ const REMOVED = [
   '@floating-ui/react-dom',
   // tools#104: icons are Facet icons from Cynosure.
   'lucide-react',
+  // The kit removal: no Tailwind, class helpers or Tailwind-era fonts.
+  'tailwindcss',
+  '@tailwindcss/vite',
+  'class-variance-authority',
+  'tailwind-merge',
+  'clsx',
+  '@fontsource-variable/inter',
+  '@fontsource-variable/jetbrains-mono',
 ];
 
 describe('removed dependencies (spec 11.1)', () => {
