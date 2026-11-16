@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
   Card,
-  CardBody,
-  PrivacyNote,
+  Disclosure,
+  Inline,
+  SegmentedControl,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import React, { useState } from 'react';
+import { TransformLayout } from '@/app/ui/transform';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { BulkPanel } from './components/BulkPanel';
 import { CheckerTab } from './components/CheckerTab';
@@ -26,6 +20,10 @@ import { passwordSettings, type PasswordSettings } from './settings';
 
 type Tab = PasswordSettings['mode'] | 'check';
 
+/**
+ * Password Generator (redesign spec, transform pattern): the options beside
+ * the generated secret and its strength; a checker for existing ones.
+ */
 const PasswordGenerator: React.FC = () => {
   const [settings, update] = passwordSettings.useSettings();
   const [checking, setChecking] = useState(false);
@@ -58,76 +56,88 @@ const PasswordGenerator: React.FC = () => {
         )
       : generatePassword(optionsFrom(settings, settings.mode === 'pin'));
 
-  const generator = (
-    <Stack gap="4" className="pt-4">
-      <Card>
-        <CardBody>
-          {settings.mode === 'passphrase' ? (
-            <PassphraseTab
-              settings={settings}
-              update={update}
-              nonce={nonce}
-              onRegenerate={regenerate}
-            />
-          ) : (
-            <GeneratorTab
-              settings={settings}
-              update={update}
-              pin={settings.mode === 'pin'}
-              nonce={nonce}
-              onRegenerate={regenerate}
-            />
-          )}
-        </CardBody>
-      </Card>
-      <Accordion type="single">
-        <AccordionItem value="bulk">
-          <AccordionTrigger>Generate many</AccordionTrigger>
-          <AccordionContent>
-            <BulkPanel
-              count={settings.bulkCount}
-              onCount={(n) => update({ bulkCount: n })}
-              make={make}
-            />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </Stack>
+  const place = ({
+    result,
+    options,
+  }: {
+    result: React.ReactNode;
+    options: React.ReactNode;
+  }) => (
+    <TransformLayout
+      defaultSize={55}
+      start={
+        <Stack gap="6">
+          <Card
+            as="section"
+            title={`Your ${settings.mode === 'pin' ? 'PIN' : settings.mode}`}
+          >
+            {result}
+          </Card>
+        </Stack>
+      }
+      end={
+        <Stack gap="6">
+          <Card as="section" title="Options">
+            {options}
+          </Card>
+          <Card as="section">
+            <Disclosure summary="Generate many" variant="plain">
+              <BulkPanel
+                count={settings.bulkCount}
+                onCount={(n) => update({ bulkCount: n })}
+                make={make}
+              />
+            </Disclosure>
+          </Card>
+        </Stack>
+      }
+    />
   );
 
-  return (
-    <Stack gap="4">
-      <Tabs
-        value={tab}
-        onValueChange={(v) => {
-          if (v === 'check') setChecking(true);
-          else {
-            setChecking(false);
-            update({ mode: v as PasswordSettings['mode'] });
-          }
-        }}
-        variant="soft"
+  const generator =
+    settings.mode === 'passphrase' ? (
+      <PassphraseTab
+        settings={settings}
+        update={update}
+        nonce={nonce}
+        onRegenerate={regenerate}
       >
-        <TabsList aria-label="Generator">
-          <TabsTrigger value="password">Password</TabsTrigger>
-          <TabsTrigger value="passphrase">Passphrase</TabsTrigger>
-          <TabsTrigger value="pin">PIN</TabsTrigger>
-          <TabsTrigger value="check">Check strength</TabsTrigger>
-        </TabsList>
-        <TabsContent value="password">{generator}</TabsContent>
-        <TabsContent value="passphrase">{generator}</TabsContent>
-        <TabsContent value="pin">{generator}</TabsContent>
-        <TabsContent value="check">
-          <div className="pt-4">
-            <CheckerTab />
-          </div>
-        </TabsContent>
-      </Tabs>
-      {tab !== 'check' && (
-        <PrivacyNote variant="local">
-          Generated with your browser's secure random source; never stored.
-        </PrivacyNote>
-      )}
+        {place}
+      </PassphraseTab>
+    ) : (
+      <GeneratorTab
+        settings={settings}
+        update={update}
+        pin={settings.mode === 'pin'}
+        nonce={nonce}
+        onRegenerate={regenerate}
+      >
+        {place}
+      </GeneratorTab>
+    );
+
+  return (
+    <Stack gap="6">
+      <Inline>
+        <SegmentedControl
+          label="Generator"
+          value={tab}
+          onChange={(v) => {
+            if (v === 'check') setChecking(true);
+            else {
+              setChecking(false);
+              update({ mode: v as PasswordSettings['mode'] });
+            }
+          }}
+          options={[
+            { value: 'password', label: 'Password' },
+            { value: 'passphrase', label: 'Passphrase' },
+            { value: 'pin', label: 'PIN' },
+            { value: 'check', label: 'Check strength' },
+          ]}
+        />
+      </Inline>
+      {tab === 'check' ? <CheckerTab /> : generator}
     </Stack>
   );
 };
