@@ -1,17 +1,16 @@
-import { useEffect, useId, useState } from 'react';
-import { toToolError, type ToolError } from '@/shared/lib/errors';
-import { IconEraser, IconSave } from '@/shared/ui/icons';
+import { useEffect, useState } from 'react';
 import {
   Badge,
   Button,
-  ErrorState,
+  DescriptionList,
   Inline,
-  Input,
-  Label,
-  LoadingState,
   Stack,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { eraser, save as saveIcon } from '@arshad-shah/cynosure/icons';
+import { toToolError, type ToolError } from '@/shared/lib/errors';
+import { ErrorNotice, LoadingLine } from '../../ui/states';
 import { metadataOf, PROPERTY_FIELDS } from '@/pdf/doc/ops/protect';
 import type {
   MetadataField,
@@ -41,7 +40,6 @@ const when = (d: Date | null) => (d ? d.toLocaleString() : 'Not set');
  * `meta.set` (undoable, written at export).
  */
 export function MetadataForm({ doc }: ModeProps) {
-  const id = useId();
   const ws = useWorkspace();
   const checkpoint = doc.view.checkpoint;
   const [base, setBase] = useState<{
@@ -73,8 +71,8 @@ export function MetadataForm({ doc }: ModeProps) {
   }, [ws.session, checkpoint]);
 
   if (!base || base.checkpoint !== checkpoint)
-    return <LoadingState label="Reading document properties" />;
-  if (!base.meta) return <ErrorState error={base.error!} headingLevel={3} />;
+    return <LoadingLine label="Reading document properties" />;
+  if (!base.meta) return <ErrorNotice error={base.error!} />;
 
   const pending = metadataOf(doc.view);
   const current = effectiveValues(base.meta, pending);
@@ -103,47 +101,60 @@ export function MetadataForm({ doc }: ModeProps) {
   return (
     <Stack gap="4">
       {PROPERTY_FIELDS.map((f) => (
-        <Stack key={f} gap="2">
-          <Label htmlFor={`${id}-${f}`}>{LABELS[f]}</Label>
-          <Input
-            id={`${id}-${f}`}
-            value={values[f]}
-            disabled={restricted}
-            onChange={(v) => setEdits((e) => ({ ...e, [f]: v }))}
-          />
-        </Stack>
+        <TextField
+          key={f}
+          label={LABELS[f]}
+          size="sm"
+          value={values[f]}
+          disabled={restricted}
+          onChange={(v) => setEdits((e) => ({ ...e, [f]: v }))}
+        />
       ))}
-      <Stack gap="1">
-        <Text size="sm" tone="muted">
-          {`Created: ${pending.removeAll ? 'Not set' : when(base.meta.creationDate)}`}
-        </Text>
-        <Text size="sm" tone="muted">
-          {`Modified: ${when(base.meta.modificationDate)}`}
-        </Text>
-      </Stack>
+      <DescriptionList
+        size="sm"
+        layout="inline"
+        items={[
+          {
+            id: 'created',
+            term: 'Created',
+            detail: pending.removeAll
+              ? 'Not set'
+              : when(base.meta.creationDate),
+          },
+          {
+            id: 'modified',
+            term: 'Modified',
+            detail: when(base.meta.modificationDate),
+          },
+        ]}
+      />
       {base.meta.hasXmp && !pending.removeAll ? (
-        <Inline gap="2" align="center" wrap>
-          <Badge tone="info">XMP metadata present</Badge>
+        <Stack gap="1" align="start">
+          <Badge tone="info" size="sm">
+            XMP metadata present
+          </Badge>
           <Text size="sm" tone="muted">
             Saving rewrites it from these fields. Other XMP properties are
             removed, except the PDF/A and PDF/UA identification.
           </Text>
-        </Inline>
+        </Stack>
       ) : null}
       <Inline gap="2" wrap>
         <Button
-          variant="primary"
+          variant="solid"
+          tone="accent"
           size="sm"
-          leftIcon={<IconSave size="sm" />}
+          icon={saveIcon}
           disabled={!dirty || restricted}
           onClick={save}
         >
           Save properties
         </Button>
         <Button
-          variant="danger"
+          variant="outline"
+          tone="danger"
           size="sm"
-          leftIcon={<IconEraser size="sm" />}
+          icon={eraser}
           disabled={restricted}
           onClick={removeAll}
         >
