@@ -1,19 +1,11 @@
+import { Inline, SegmentedControl, Stack } from '@arshad-shah/cynosure';
 import React, { useMemo, useState } from 'react';
-import {
-  ShareButton,
-  ToolActions,
-  Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui';
+import { ShareButton, ToolActions, TransformLayout } from '@/app/ui/transform';
 import { useHandoff } from '@/shared/lib/handoff';
 import { localZone } from '@/shared/lib/time';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { ConvertPanel } from './components/ConvertPanel';
 import { MeetingPlanner } from './components/MeetingPlanner';
-import { NowPanel } from './components/NowPanel';
 import { WorldClock } from './components/WorldClock';
 import { ZoneConverter } from './components/ZoneConverter';
 import { useNow } from '@/shared/lib/use-now';
@@ -21,12 +13,19 @@ import { readInstant, type ReadAs } from './lib/read';
 import { epochSettings } from './settings';
 import { EPOCH_SHARE_VERSION, parseEpochShare, type EpochShare } from './share';
 
+type Section = 'convert' | 'zones' | 'planner';
+
+/**
+ * Epoch & Time Zone Converter (redesign spec, transform pattern): a time in
+ * any form beside every way to write it, a world clock with a zone
+ * converter, and a meeting planner.
+ */
 const EpochConverter: React.FC = () => {
   const [settings, update] = epochSettings.useSettings();
   const [text, setText] = useState('');
   const [readAs, setReadAs] = useState<ReadAs>('auto');
   const [zone, setZone] = useState(localZone);
-  const [tab, setTab] = useState('convert');
+  const [tab, setTab] = useState<Section>('convert');
   const now = useNow(1000);
 
   // A number handed over from another tool (JWT exp, Date "Compare across
@@ -77,42 +76,50 @@ const EpochConverter: React.FC = () => {
           }}
         />
       </ToolActions>
-      <NowPanel now={now} onUse={(ms) => setText(String(ms))} />
-      <Tabs value={tab} onValueChange={setTab} variant="soft">
-        <TabsList aria-label="Converter sections">
-          <TabsTrigger value="convert">Convert</TabsTrigger>
-          <TabsTrigger value="zones">World clock</TabsTrigger>
-          <TabsTrigger value="planner">Meeting planner</TabsTrigger>
-        </TabsList>
-        <TabsContent value="convert">
-          <ConvertPanel
-            text={text}
-            onText={setText}
-            readAs={readAs}
-            onReadAs={setReadAs}
-            zone={zone}
-            onZone={setZone}
-            now={now}
-          />
-        </TabsContent>
-        <TabsContent value="zones">
-          <Stack gap="6">
+      <Inline>
+        <SegmentedControl
+          label="Converter sections"
+          value={tab}
+          onChange={(v) => setTab(v as Section)}
+          options={[
+            { value: 'convert', label: 'Convert' },
+            { value: 'zones', label: 'World clock' },
+            { value: 'planner', label: 'Meeting planner' },
+          ]}
+        />
+      </Inline>
+      {tab === 'convert' ? (
+        <ConvertPanel
+          text={text}
+          onText={setText}
+          readAs={readAs}
+          onReadAs={setReadAs}
+          zone={zone}
+          onZone={setZone}
+          now={now}
+          showNow
+        />
+      ) : null}
+      {tab === 'zones' ? (
+        <TransformLayout
+          defaultSize={50}
+          start={
             <WorldClock
               instant={instant ?? now}
               zones={settings.zones}
               onZones={(zones) => update({ zones })}
             />
-            <ZoneConverter zones={settings.zones} defaultZone={zone} />
-          </Stack>
-        </TabsContent>
-        <TabsContent value="planner">
-          <MeetingPlanner
-            zones={settings.zones}
-            workHours={settings.workHours}
-            onWorkHours={(workHours) => update({ workHours })}
-          />
-        </TabsContent>
-      </Tabs>
+          }
+          end={<ZoneConverter zones={settings.zones} defaultZone={zone} />}
+        />
+      ) : null}
+      {tab === 'planner' ? (
+        <MeetingPlanner
+          zones={settings.zones}
+          workHours={settings.workHours}
+          onWorkHours={(workHours) => update({ workHours })}
+        />
+      ) : null}
     </Stack>
   );
 };
