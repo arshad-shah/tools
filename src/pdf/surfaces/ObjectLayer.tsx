@@ -31,7 +31,7 @@ import { PageFrame } from './PageFrame';
 
 /** One placed object the layer lets people pick and change. */
 /** On-screen size (CSS px) below which a selection shows no handles. */
-const MIN_HANDLES_PX = 32;
+const MIN_HANDLES_PX = 48;
 
 export interface LayerObject {
   id: string;

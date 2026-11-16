@@ -137,7 +137,10 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   ).toBeVisible({ timeout: 30_000 });
   const retake = sign.getByRole('button', { name: 'Retake' });
   if (await retake.isVisible()) await retake.click();
-  await sign.getByRole('radio', { name: 'Upload' }).click();
+  await sign
+    .getByRole('radiogroup', { name: 'Photo source' })
+    .getByRole('radio', { name: 'Upload' })
+    .click();
   const chooser = page.waitForEvent('filechooser');
   await sign.getByRole('button', { name: 'Choose a photo' }).click();
   await (await chooser).setFiles(PHOTO);
@@ -203,7 +206,8 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
     ),
   ).toBeVisible({ timeout: 20_000 });
   await expect(
-    sigs.getByText('Timestamp not verified', { exact: true }),
+    // One line under the signer: when, how the time is known, coverage.
+    sigs.getByText(/\. Timestamp not verified\. /),
   ).toBeVisible();
 
   // 7. One changed byte inside the signed range: invalid.

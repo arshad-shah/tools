@@ -48,7 +48,9 @@ async function at(page: Page, x: number, y: number) {
 async function settled(page: Page) {
   let last = '';
   for (let i = 0; i < 40; i++) {
-    const b = await boxOf(page.getByTestId('page-slot-1'));
+    const b = await page.getByTestId('page-slot-1').boundingBox();
+    // Scrolled away (zoomed in on another page): nothing to wait for.
+    if (!b) return;
     const now = `${b.x},${b.y},${b.width}`;
     if (now === last) return;
     last = now;
@@ -121,7 +123,10 @@ async function moveResizeDeleteUndo(
     const p2 = await pageBox(page, obj);
     expect(p2.width - p1.width).toBeGreaterThan(5);
   } else {
-    await expect(frame.locator('[data-handle]')).toHaveCount(0);
+    // No resize handles (a rotatable object keeps its rotate handle).
+    await expect(
+      frame.locator('[data-handle]:not([data-handle="rotate"])'),
+    ).toHaveCount(0);
   }
   const p2 = await pageBox(page, obj);
   await obj.focus();
@@ -397,7 +402,9 @@ test.describe('Fill & Sign objects', () => {
       await expect(sig).toHaveAttribute('style', /rotate\(15deg\)/);
       await page.keyboard.press('ControlOrMeta+z');
       await expect(sig).not.toHaveAttribute('style', /rotate/);
-      await moveResizeDeleteUndo(page, sig);
+      // Initials are smaller than the frame's handles: they move, and are
+      // resized from the keyboard or by placing them again.
+      await moveResizeDeleteUndo(page, sig, { resize: role === 'Signature' });
     });
   }
 
