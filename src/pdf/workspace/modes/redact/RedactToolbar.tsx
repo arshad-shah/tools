@@ -11,7 +11,13 @@ import { ModeToolbar } from '../../ModeToolbar';
 import { ErrorNotice } from '../../ui/states';
 import { ToolbarPanel } from '../../ToolbarPanel';
 import type { DocumentApi, ModeProps } from '../types';
-import { applyBlocked, applyRedactions, askApply, toggleArea } from './actions';
+import {
+  applyBlocked,
+  applyRedactions,
+  askApply,
+  openSearch,
+  toggleArea,
+} from './actions';
 import { ApplyConfirm } from './ApplyConfirm';
 import { RedactOptions } from './RedactOptions';
 import { AREA_TOOL, markTotals } from './marks';
@@ -64,7 +70,8 @@ export function RedactToolbar(ctx: ModeProps) {
           shortcut: 'Mod+F',
           kind: 'toggle',
           pressed: ui.searchOpen,
-          onSelect: () => setRedactUi({ searchOpen: !ui.searchOpen }),
+          onSelect: () =>
+            ui.searchOpen ? setRedactUi({ searchOpen: false }) : openSearch(),
         },
       ],
     },

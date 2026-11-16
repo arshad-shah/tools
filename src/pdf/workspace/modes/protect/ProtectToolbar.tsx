@@ -1,3 +1,4 @@
+import { requestProperties } from '../../properties-request';
 import {
   fileClean,
   fileKey,
@@ -27,7 +28,10 @@ export function ProtectToolbar(ctx: ModeProps) {
           icon: fileKey,
           kind: 'toggle',
           pressed: panel === 'password',
-          onSelect: () => ctx.tool.set('password'),
+          onSelect: () => {
+            ctx.tool.set('password');
+            requestProperties();
+          },
         },
         {
           id: 'properties',
@@ -35,7 +39,10 @@ export function ProtectToolbar(ctx: ModeProps) {
           icon: tag,
           kind: 'toggle',
           pressed: panel === 'properties',
-          onSelect: () => ctx.tool.set('properties'),
+          onSelect: () => {
+            ctx.tool.set('properties');
+            requestProperties();
+          },
         },
       ],
     },

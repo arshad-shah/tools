@@ -205,46 +205,52 @@ export function CommentsPanel(ctx: ModeProps) {
       <InspectorSection title="Comments">
         <Stack gap="3">
           <AuthorField ctx={ctx} />
-          <Stack gap="2">
-            <Select
-              label="Filter by page"
-              labelHidden
-              size="sm"
-              value={page}
-              onChange={setPage}
-              options={[
-                { value: ALL, label: 'All pages' },
-                ...[...new Set(rows.map((r) => r.pageNumber))]
-                  .sort((a, b) => a - b)
-                  .map((n) => ({ value: String(n), label: `Page ${n}` })),
-              ]}
-            />
-            <Select
-              label="Filter by author"
-              labelHidden
-              size="sm"
-              value={author}
-              onChange={setAuthor}
-              options={[
-                { value: ALL, label: 'All authors' },
-                ...distinct((r) => r.author).map((a) => ({
-                  value: a,
-                  label: a,
-                })),
-              ]}
-            />
-            <Select
-              label="Filter by type"
-              labelHidden
-              size="sm"
-              value={type}
-              onChange={setType}
-              options={[
-                { value: ALL, label: 'All types' },
-                ...distinct((r) => r.type).map((t) => ({ value: t, label: t })),
-              ]}
-            />
-          </Stack>
+          {/* Filters only once there is something to filter. */}
+          {rows.length === 0 ? null : (
+            <Stack gap="2">
+              <Select
+                label="Filter by page"
+                labelHidden
+                size="sm"
+                value={page}
+                onChange={setPage}
+                options={[
+                  { value: ALL, label: 'All pages' },
+                  ...[...new Set(rows.map((r) => r.pageNumber))]
+                    .sort((a, b) => a - b)
+                    .map((n) => ({ value: String(n), label: `Page ${n}` })),
+                ]}
+              />
+              <Select
+                label="Filter by author"
+                labelHidden
+                size="sm"
+                value={author}
+                onChange={setAuthor}
+                options={[
+                  { value: ALL, label: 'All authors' },
+                  ...distinct((r) => r.author).map((a) => ({
+                    value: a,
+                    label: a,
+                  })),
+                ]}
+              />
+              <Select
+                label="Filter by type"
+                labelHidden
+                size="sm"
+                value={type}
+                onChange={setType}
+                options={[
+                  { value: ALL, label: 'All types' },
+                  ...distinct((r) => r.type).map((t) => ({
+                    value: t,
+                    label: t,
+                  })),
+                ]}
+              />
+            </Stack>
+          )}
           {shown.length === 0 ? (
             <Text as="p" size="sm" tone="muted">
               {rows.length === 0

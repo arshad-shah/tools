@@ -1,3 +1,4 @@
+import { requestProperties } from '../../properties-request';
 import { type ToolGroup } from '../../ui/tool-groups';
 import {
   checkCheck,
@@ -69,7 +70,10 @@ export function OcrToolbar({ doc, selection }: ModeProps) {
           label: `Language: ${languageNames(ui.langs)}`,
           icon: languagesIcon,
           kind: 'split',
-          onSelect: () => setOcrUi({ dismissed: false }),
+          onSelect: () => {
+            setOcrUi({ dismissed: false });
+            requestProperties();
+          },
           menu: OCR_LANGUAGES.map((l) => ({
             id: `language-${l}`,
             label: OCR_LANGUAGE_LABELS[l],

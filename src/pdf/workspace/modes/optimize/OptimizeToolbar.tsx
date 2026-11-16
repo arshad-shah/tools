@@ -1,3 +1,4 @@
+import { requestProperties } from '../../properties-request';
 import { type ToolGroup } from '../../ui/tool-groups';
 import { fileChart, minimize, wrench } from '@arshad-shah/cynosure/icons';
 import { ModeToolbar } from '../../ModeToolbar';
@@ -37,7 +38,10 @@ export function OptimizeToolbar({ doc }: ModeProps) {
           label: 'Measure size again',
           icon: fileChart,
           kind: 'button',
-          onSelect: refreshSizeBreakdown,
+          onSelect: () => {
+            refreshSizeBreakdown();
+            requestProperties();
+          },
         },
       ],
     },

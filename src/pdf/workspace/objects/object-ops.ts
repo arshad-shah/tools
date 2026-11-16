@@ -1,3 +1,4 @@
+import { requestProperties } from '../properties-request';
 import { newId } from '@/shared/lib/id';
 import type { ObjectChange, ObjectOrder } from '@/pdf/surfaces/ObjectLayer';
 import { fitGeometry } from '@/pdf/doc/object-geometry';
@@ -130,6 +131,7 @@ export const itemRotation = (item: OverlayItem) =>
  * this selection); else its first control.
  */
 export function focusProperties(selector?: string, tries = 10): void {
+  requestProperties();
   const find = () =>
     (selector ? document.querySelector<HTMLElement>(selector) : null) ??
     document.querySelector<HTMLElement>(

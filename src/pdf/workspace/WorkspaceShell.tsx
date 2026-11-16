@@ -9,6 +9,7 @@ import { useCommands } from '@/shared/lib/commands';
 import { useShortcuts } from '@/shared/lib/hotkeys';
 import { useMediaQuery } from '@/shared/lib/media-query';
 import {
+  Button,
   Divider,
   DockedToolbar,
   Heading,
@@ -27,7 +28,7 @@ import {
   ZoomControls,
   type ZoomSetting,
 } from '@arshad-shah/cynosure';
-import { close as closeIcon } from '@arshad-shah/cynosure/icons';
+import { close as closeIcon, panelBottom } from '@arshad-shah/cynosure/icons';
 import type { ModeId, PageId } from '@/pdf/doc/types';
 import { createDocumentApi } from './document-api';
 import { ExportDialog } from './ExportDialog';
@@ -41,6 +42,7 @@ import { DocumentCanvas, type PageScrollRequest } from './DocumentCanvas';
 import type { WorkspaceSession } from './session';
 import { useWorkspaceSettings } from './settings';
 import { useHeldValue } from './use-held-value';
+import { onPropertiesRequest } from './properties-request';
 import { WorkspaceContext, type WorkspaceActions } from './workspace-context';
 import {
   workspaceCommands,
@@ -168,7 +170,14 @@ export function WorkspaceShell({
   const [visiblePages, setVisiblePages] = useState<readonly PageId[]>([]);
   const [scrollTo, setScrollTo] = useState<PageScrollRequest>();
   const [railDrawer, setRailDrawer] = useState(false);
-  const [inspectorOpen, setInspectorOpen] = useState(true);
+  // A phone opens Properties on demand (a sheet over the page), not at once.
+  const [inspectorOpen, setInspectorOpen] = useState(!phone);
+  useEffect(() => onPropertiesRequest(() => setInspectorOpen(true)), []);
+  const [seenPhone, setSeenPhone] = useState(phone);
+  if (seenPhone !== phone) {
+    setSeenPhone(phone);
+    setInspectorOpen(!phone);
+  }
   const [exportOpen, setExportOpen] = useState(false);
   const [scale, setScale] = useState(1);
 
@@ -588,23 +597,42 @@ export function WorkspaceShell({
                       justify="between"
                     >
                       {toolbar}
-                      <ZoomControls
-                        zoom={settings.zoom}
-                        percent={Math.round(scale * 100)}
-                        onZoomChange={setZoom}
-                      />
+                      {/* The tools scroll; zoom keeps its one row. */}
+                      <Inline shrink={false}>
+                        <ZoomControls
+                          zoom={settings.zoom}
+                          percent={Math.round(scale * 100)}
+                          onZoomChange={setZoom}
+                        />
+                      </Inline>
                     </Inline>
                     <Divider spacing="none" />
                   </Stack>
                 ) : layout === 'phone' ? (
                   <Stack gap="0">
                     <Inline
-                      as="nav"
-                      aria-label="Modes"
                       paddingInline="4"
                       paddingBlock="2"
+                      gap="2"
+                      align="center"
+                      justify="between"
                     >
-                      {modeSwitch}
+                      <Inline as="nav" aria-label="Modes">
+                        {modeSwitch}
+                      </Inline>
+                      {Inspect ? (
+                        // The mode's panel opens as a sheet when asked.
+                        <Button
+                          variant={inspectorShown ? 'soft' : 'outline'}
+                          tone={inspectorShown ? 'accent' : 'neutral'}
+                          size="lg"
+                          icon={panelBottom}
+                          pressed={inspectorShown}
+                          onClick={() => setInspectorOpen(!inspectorShown)}
+                        >
+                          Properties
+                        </Button>
+                      ) : null}
                     </Inline>
                     <Divider spacing="none" />
                   </Stack>
