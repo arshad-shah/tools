@@ -11,7 +11,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { prettyXml } from '@/shared/lib/data-formats/xml';
 // The sandboxed frame is a drawing surface: the response's own HTML.
-import { SandboxedHtml } from '@/shared/ui/sandboxed-html';
+import { SandboxedHtml } from '@/shared/surfaces/sandboxed-html/SandboxedHtml';
 import { formatBytes } from '@/shared/lib/format';
 import type { HttpResponse } from '../lib/http';
 import { HEX_LIMIT, hexDump } from '../lib/hex';

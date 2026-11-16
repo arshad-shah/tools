@@ -6,8 +6,8 @@ import { materializeIn } from '@/pdf/doc/services';
 import type { PageId } from '@/pdf/doc/types';
 import { usePageBitmap, usePdfDocument } from '@/pdf/render';
 import { displaySize } from './page-display';
-import { BitmapSurface } from '@/pdf/surfaces/BitmapSurface';
-import { PageImage } from '@/pdf/surfaces/PageImage';
+import { BitmapSurface } from '@/shared/surfaces/pdf/BitmapSurface';
+import { PageImage } from '@/shared/surfaces/pdf/PageImage';
 import { LoadingLine } from './ui/states';
 import type { WorkspaceSession } from './session';
 

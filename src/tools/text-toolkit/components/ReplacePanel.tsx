@@ -158,13 +158,15 @@ export function ReplacePanel({
           >
             Replace all
           </Button>
-          <Text size="sm" tone="muted" aria-live="polite">
-            {current && 'count' in current
-              ? current.count === 0
-                ? 'No matches'
-                : plural(current.count, 'match')
-              : ''}
-          </Text>
+          <Inline aria-live="polite">
+            <Text size="sm" tone="muted">
+              {current && 'count' in current
+                ? current.count === 0
+                  ? 'No matches'
+                  : plural(current.count, 'match')
+                : ''}
+            </Text>
+          </Inline>
         </Inline>
         {shownError ? (
           <Notice tone="danger" size="sm">

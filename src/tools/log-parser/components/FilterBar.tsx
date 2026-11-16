@@ -112,7 +112,7 @@ export function FilterBar({
 
 function Chip({ label, onRemove }: { label: string; onRemove(): void }) {
   return (
-    <li>
+    <Inline role="listitem">
       <Button
         size="sm"
         variant="soft"
@@ -122,7 +122,7 @@ function Chip({ label, onRemove }: { label: string; onRemove(): void }) {
       >
         {label}
       </Button>
-    </li>
+    </Inline>
   );
 }
 
@@ -133,7 +133,7 @@ function ActiveChips({
 }: Pick<FilterBarProps, 'filter' | 'onChange'>) {
   if (filter.fields.length === 0 && !filter.range) return null;
   return (
-    <Inline as="ul" gap="2" wrap aria-label="Active filters">
+    <Inline gap="2" wrap role="list" aria-label="Active filters">
       {filter.fields.map((f, i) => (
         <Chip
           key={`${f.mode}:${f.key}=${f.value}`}

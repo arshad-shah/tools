@@ -1,10 +1,4 @@
-import {
-  Button,
-  Dialog,
-  Select,
-  Stack,
-  TextField,
-} from '@arshad-shah/cynosure';
+import { Button, Dialog, Form, Select, TextField } from '@arshad-shah/cynosure';
 import React from 'react';
 import type { Folder } from '../lib/collections-migrate';
 
@@ -45,18 +39,12 @@ export const SaveRequestDialog: React.FC<SaveRequestDialogProps> = ({
       </>
     }
   >
-    <Stack gap="4">
+    <Form label="Save request" gap="4" onSubmit={onSave}>
       <TextField
         label="Name"
         value={saveName}
         onChange={setSaveName}
         placeholder="My request"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            onSave();
-          }
-        }}
       />
       <Select
         label="Collection"
@@ -67,6 +55,6 @@ export const SaveRequestDialog: React.FC<SaveRequestDialogProps> = ({
           ...collections.map((c) => ({ value: c.id, label: c.name })),
         ]}
       />
-    </Stack>
+    </Form>
   </Dialog>
 );

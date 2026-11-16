@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { utf8Encode } from '@/shared/lib/encoding';
 import { ToolError } from '@/shared/lib/errors';
-import {
-  PREVIEW_LENGTH,
-  PREVIEW_THRESHOLD,
-  decodeInput,
-  encodeBytes,
-  encodeText,
-  guessFileType,
-  preview,
-} from './convert';
+import { decodeInput, encodeBytes, encodeText, guessFileType } from './convert';
 
 // Built from the code point: rule (a) bans pictographs as literals.
 const GRIN = String.fromCodePoint(0x1f600);
@@ -87,26 +79,6 @@ describe('guessFileType', () => {
       mime: 'application/octet-stream',
       ext: 'bin',
     });
-  });
-});
-
-describe('preview', () => {
-  it('keeps short text whole', () => {
-    expect(preview('abc', 10)).toEqual({ text: 'abc', truncated: false });
-  });
-
-  it('cuts long text for display only', () => {
-    expect(preview('a'.repeat(20), 5)).toEqual({
-      text: 'aaaaa',
-      truncated: true,
-    });
-  });
-
-  it('shows everything up to the 1 MB default threshold', () => {
-    const text = 'b'.repeat(PREVIEW_THRESHOLD);
-    expect(preview(text).truncated).toBe(false);
-    expect(preview(text + 'b').truncated).toBe(true);
-    expect(preview(text + 'b').text.length).toBe(PREVIEW_LENGTH);
   });
 });
 

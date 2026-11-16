@@ -1,4 +1,4 @@
-import { IconLink } from '@/shared/ui/icons';
+import { link as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Text Encoder / Decoder',
   description:
     'Encode and decode URL, HTML entities, Unicode escapes, Punycode, hex, Base32 and more',
-  icon: IconLink,
+  icon,
   category: 'encoding',
   slug: 'text',
   kind: 'tool',

@@ -7,6 +7,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ToolProps } from '@/app/tool';
 import { TextSourceActions } from '@/app/ui/text-source';
+import { useTextFile } from '@/app/ui/use-text-file';
 import { SendToMenu, ToolActions, TransformLayout } from '@/app/ui/transform';
 import { saveBlob } from '@/shared/lib/download';
 import type { HandoffPayload } from '@/shared/lib/handoff';
@@ -106,10 +107,13 @@ export default function TextToolkit({ definition }: ToolProps) {
     );
   };
 
+  // A file dropped on the field opens like Open file (TextArea onFiles).
+  const textFile = useTextFile({ onChange: doc.set });
   const textCard = (
     <Card as="section" title="Text">
       <Stack gap="5">
         <TextArea
+          onFiles={textFile.onFiles}
           label="Text"
           labelHidden
           rows={10}

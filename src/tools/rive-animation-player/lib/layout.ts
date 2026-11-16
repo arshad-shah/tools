@@ -1,4 +1,4 @@
-import { Alignment, Fit } from '@/shared/ui/adapters/rive-runtime';
+import { Alignment, Fit } from '@/shared/lib/rive-runtime';
 import type { AlignFitIndex } from '../types';
 
 export const fitValues: (keyof typeof Fit)[] = [

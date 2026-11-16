@@ -1,4 +1,4 @@
-import { IconFileCode } from '@/shared/ui/icons';
+import { fileCode as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Base64 Encoder / Decoder',
   description:
     'Encode text and files to Base64 and decode Base64 or data URIs, with a look at what the data is',
-  icon: IconFileCode,
+  icon,
   category: 'encoding',
   slug: 'base64',
   kind: 'tool',

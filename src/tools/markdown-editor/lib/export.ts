@@ -14,19 +14,19 @@ export interface DocTokens {
   comment: string;
 }
 
-/** Token names `DocTokens` is read from (`readThemeTokens`, light theme). */
-export const DOC_TOKEN_NAMES: Record<keyof DocTokens, string> = {
+/** The Cynosure colour each `DocTokens` role is (`paletteColors`). */
+export const DOC_TOKEN_NAMES = {
   bg: 'surface',
-  fg: 'fg',
-  muted: 'fg-muted',
+  fg: 'ink',
+  muted: 'muted',
   border: 'line',
-  link: 'accent-fg',
-  codeBg: 'surface-2',
-  keyword: 'syntax-keyword',
-  string: 'syntax-string',
-  number: 'syntax-number',
-  comment: 'syntax-comment',
-};
+  link: 'accentText',
+  codeBg: 'soft',
+  keyword: 'syntaxKeyword',
+  string: 'syntaxString',
+  number: 'syntaxNumber',
+  comment: 'syntaxComment',
+} as const satisfies Record<keyof DocTokens, string>;
 
 /** The stylesheet for rendered Markdown, from concrete token values. */
 export function markdownCss(t: DocTokens): string {

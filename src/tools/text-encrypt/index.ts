@@ -1,4 +1,4 @@
-import { IconLock } from '@/shared/ui/icons';
+import { lock as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Text & File Encrypt',
   description:
     'Encrypt text or any file with a passphrase (AES-256-GCM, PBKDF2 or Argon2id), all in your browser',
-  icon: IconLock,
+  icon,
   category: 'security',
   slug: 'encrypt',
   kind: 'tool',

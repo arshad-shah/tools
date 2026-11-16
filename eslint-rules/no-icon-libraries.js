@@ -36,7 +36,7 @@ export default {
     },
     messages: {
       library:
-        'Icons are Facet icons: import them from @/shared/ui/icons or @arshad-shah/cynosure/icons, never from an icon package (tools#104).',
+        'Icons are Facet icons: import them from @arshad-shah/cynosure/icons, never from an icon package (tools#104).',
     },
     schema: [],
   },

@@ -26,10 +26,9 @@ import { toolsAccepting } from '@/app/registry';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo, useHandoff } from '@/shared/lib/handoff';
-import { useMediaQuery } from '@/shared/lib/media-query';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import { ToolActionsSlot } from '@/shared/ui/tool-actions-slot';
+import { ToolActionsSlot } from '@/shared/lib/tool-actions-slot';
 import { BuilderView } from './components/BuilderView';
 import { DecodedCard } from './components/DecodedCard';
 import { useJwtDecoder } from './hooks/useJwtDecoder';
@@ -45,6 +44,7 @@ import {
 import { isExpired, timeClaimsStatus, tryDecodeJwt } from './lib/jwt';
 import { jwtSettings } from './settings';
 import type { JwtTab } from './types';
+import { PANES_STACK_BELOW } from '@/app/ui/transform';
 
 type Mode = 'decode' | 'build';
 
@@ -78,7 +78,6 @@ function SendPayloadMenu({ onSend }: { onSend(toolId: string): void }) {
 export default function JWTDecoder() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const wide = useMediaQuery('(min-width: 1200px)');
   const { jwt, setJwt, decoded, error } = useJwtDecoder();
   // A token handed over (Send to) fills the input.
   const handedOff = useHandoff(isTokenHandoff);
@@ -168,22 +167,17 @@ export default function JWTDecoder() {
     },
   ]);
 
-  const layout = (start: React.ReactNode, end: React.ReactNode) =>
-    wide ? (
-      <SplitPane
-        label="Resize the input and output"
-        defaultSize={42}
-        min={30}
-        max={70}
-        start={<Stack paddingInline="3">{start}</Stack>}
-        end={<Stack paddingInline="3">{end}</Stack>}
-      />
-    ) : (
-      <Stack gap="6">
-        {start}
-        {end}
-      </Stack>
-    );
+  const layout = (start: React.ReactNode, end: React.ReactNode) => (
+    <SplitPane
+      label="Resize the input and output"
+      defaultSize={42}
+      min={30}
+      max={70}
+      stackBelow={PANES_STACK_BELOW}
+      start={<Stack paddingInline="3">{start}</Stack>}
+      end={<Stack paddingInline="3">{end}</Stack>}
+    />
+  );
 
   const tryExample = () => {
     setMode('decode');
@@ -195,6 +189,7 @@ export default function JWTDecoder() {
       <Stack gap="5">
         <TextArea
           label="JWT token"
+          monospace
           labelHidden
           rows={6}
           maxRows={14}
@@ -237,6 +232,7 @@ export default function JWTDecoder() {
             <Stack gap="4">
               <TextArea
                 label="Token to compare"
+                monospace
                 rows={4}
                 spellCheck={false}
                 value={other}

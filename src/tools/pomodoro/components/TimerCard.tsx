@@ -22,7 +22,7 @@ import {
   skipForward,
 } from '@arshad-shah/cynosure/icons';
 import React from 'react';
-import { renderFaviconImage, useFavicon } from '@/shared/ui/use-favicon';
+import { renderFaviconImage, useFavicon } from '@/shared/surfaces/use-favicon';
 import { drawFaviconRing } from '../lib/favicon-ring';
 import { PresetBar } from './PresetBar';
 import { useToolCommands } from '@/shared/lib/tool-commands';

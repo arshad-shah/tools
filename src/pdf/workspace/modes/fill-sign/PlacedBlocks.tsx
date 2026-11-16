@@ -1,7 +1,7 @@
-import type { OverlayTransform } from '@/shared/ui';
-import { boxRect } from '@/pdf/surfaces/geometry';
-import { PaperLine, Place } from '@/pdf/surfaces/layers';
-import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { boxRect } from '@/shared/surfaces/pdf/geometry';
+import { PaperLine, Place } from '@/shared/surfaces/pdf/layers';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import type {
   SignBlockParams,
   SignInitialPagesParams,

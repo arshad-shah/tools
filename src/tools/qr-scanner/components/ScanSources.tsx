@@ -19,7 +19,7 @@ import {
 } from '@arshad-shah/cynosure/icons';
 import type { ToolError } from '@/shared/lib/errors';
 import { useCamera } from '@/shared/lib/use-camera';
-import { CameraVideo } from '@/shared/ui/camera-video';
+import { CameraVideo } from '@/shared/surfaces/camera-video';
 
 export type SourceMode = 'image' | 'camera';
 

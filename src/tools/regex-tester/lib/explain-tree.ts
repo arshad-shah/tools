@@ -1,4 +1,4 @@
-import type { TreeNodeData } from '@/shared/ui';
+import type { TreeNodeData } from '@/shared/surfaces/code-tree/code-tree-model';
 import type { ExplainNode } from './explain/describe';
 
 export interface ExplainTree {

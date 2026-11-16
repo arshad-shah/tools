@@ -1,4 +1,4 @@
-import { IconShapes } from '@/shared/ui/icons';
+import { shapes as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Favicon & App Icon Generator',
   description:
     'Make favicon.ico, Apple touch and PWA icons, a web manifest and link tags from an image, SVG or text',
-  icon: IconShapes,
+  icon,
   category: 'media',
   alsoIn: ['web'],
   slug: 'favicon',

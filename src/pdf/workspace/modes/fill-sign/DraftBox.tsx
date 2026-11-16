@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
-import type { OverlayTransform } from '@/shared/ui';
-import { FieldBox } from '@/pdf/surfaces/FieldBox';
-import { Layer } from '@/pdf/surfaces/layers';
-import { matrixViewport } from '@/pdf/surfaces/geometry';
-import { PageFrame } from '@/pdf/surfaces/PageFrame';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { FieldBox } from '@/shared/surfaces/pdf/FieldBox';
+import { Layer } from '@/shared/surfaces/pdf/layers';
+import { matrixViewport } from '@/shared/surfaces/pdf/geometry';
+import { PageFrame } from '@/shared/surfaces/pdf/PageFrame';
 import type { Box, PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { placeFree } from './actions';

@@ -1,7 +1,7 @@
 import { DocumentViewport, type ZoomSetting } from '@arshad-shah/cynosure';
-import { Layer, PageSlot } from '@/pdf/surfaces/layers';
-import { PageImage } from '@/pdf/surfaces/PageImage';
-import { TiledLayer } from '@/pdf/surfaces/TiledLayer';
+import { Layer, PageSlot } from '@/shared/surfaces/pdf/layers';
+import { PageImage } from '@/shared/surfaces/pdf/PageImage';
+import { TiledLayer } from '@/shared/surfaces/pdf/TiledLayer';
 import type { Box, PageId, PageRef } from '@/pdf/doc/types';
 import type { ModeModule, ModeProps } from './modes/types';
 import { displaySize } from './page-display';

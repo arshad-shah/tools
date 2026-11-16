@@ -1,0 +1,20 @@
+/*
+ * The app's stylesheet: Cynosure, the generated tools theme
+ * (scripts/gen-cynosure-theme.ts) and Cynosure's font. Pages are styled by
+ * Cynosure components only; drawing surfaces bring their own CSS
+ * (src/shared/surfaces), CodeMirror its theme in JS (src/shared/editor).
+ */
+@import '@arshad-shah/cynosure/styles.css';
+@import './cynosure-theme.css';
+@import '@arshad-shah/cynosure/fonts/hanken.css';
+
+/* The app shell fills the window; its content and navigation scroll. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+html {
+  background-color: var(--cy-color-bg);
+}

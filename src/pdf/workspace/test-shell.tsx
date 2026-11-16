@@ -1,4 +1,5 @@
 // Test-only: a WorkspaceShell over an in-memory 3-page document.
+import { Text } from '@arshad-shah/cynosure';
 import { vi } from 'vitest';
 import { BlobStore } from '@/pdf/doc/blob-store';
 import { inProcessServices } from '@/pdf/doc/test-services';
@@ -68,7 +69,7 @@ export function shellHarness() {
       onSearch={() => {}}
       onUnlock={() => {}}
       onOpenNew={() => {}}
-      breadcrumb={<span>pdf / edit</span>}
+      breadcrumb={<Text>pdf / edit</Text>}
     />
   );
   return { model, session, ui };

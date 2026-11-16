@@ -1,4 +1,5 @@
 import {
+  BitField,
   DescriptionList,
   Inline,
   Notice,
@@ -8,7 +9,7 @@ import {
 } from '@arshad-shah/cynosure';
 import React from 'react';
 import type { NumberSettings } from '../settings';
-import { BitGrid } from './BitGrid';
+import { changedBit } from '../lib/bits';
 
 type Bits = NumberSettings['bits'];
 
@@ -70,10 +71,10 @@ export const WidthPanel: React.FC<WidthPanelProps> = ({
         {`The value does not fit in ${bits} bits, signed or unsigned. The fields show its low ${bits} bits only.`}
       </Notice>
     ) : null}
-    <BitGrid
+    <BitField
       bits={bits}
       value={pattern}
-      onToggle={onToggleBit}
+      onChange={(next) => onToggleBit(changedBit(pattern, next))}
       label={`Bits of the ${bits}-bit pattern`}
     />
     <DescriptionList

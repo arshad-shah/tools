@@ -13,13 +13,13 @@ import {
 } from '@arshad-shah/cynosure';
 import { home, retry as retryIcon } from '@arshad-shah/cynosure/icons';
 import React, { Suspense, useState } from 'react';
-import { ToolActionsSlot } from '@/shared/ui/tool-actions-slot';
+import { ToolActionsSlot } from '@/shared/lib/tool-actions-slot';
 import { getCategory } from '../categories';
 import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import type { ToolManifest } from '../tool';
-import { toolGlyph } from '../ui/glyphs';
 import { FavouriteToggle } from '../ui/ToolCard';
+import { renderRouterLink } from '@/app/shell/router-link';
 
 export interface ToolPageProps {
   tool: ToolManifest;
@@ -53,7 +53,7 @@ export function ToolPage({ tool, children }: ToolPageProps) {
         <Inline gap="6" align="start">
           {/* Phones: the title takes the full width. */}
           <Stack hideBelow="md">
-            <IconTile icon={toolGlyph(tool.id)} size="lg" />
+            <IconTile icon={tool.icon} size="lg" />
           </Stack>
           <PageHeader
             title={tool.name}
@@ -95,7 +95,13 @@ export function ToolPage({ tool, children }: ToolPageProps) {
                   >
                     Try again
                   </Button>
-                  <Button size="sm" variant="ghost" href="/" icon={home}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    href="/"
+                    renderLink={renderRouterLink}
+                    icon={home}
+                  >
                     Go to Home
                   </Button>
                 </Inline>

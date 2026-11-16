@@ -19,17 +19,13 @@ describe('Cynosure theme stylesheet', () => {
     expect(css).toContain('--cy-color-accent:#3ddc97');
   });
 
-  it('loads right after Cynosure styles, in the same layer', () => {
-    const tokens = readFileSync('src/theme/tokens.css', 'utf8');
-    const at = (s: string) => tokens.indexOf(s);
-    expect(
-      at("@import './cynosure-theme.css' layer(cynosure);"),
-    ).toBeGreaterThan(
-      at("@import '@arshad-shah/cynosure/styles.css' layer(cynosure);"),
+  it('loads right after Cynosure styles', () => {
+    const app = readFileSync('src/theme/app.css', 'utf8');
+    const at = (s: string) => app.indexOf(s);
+    expect(at("@import './cynosure-theme.css';")).toBeGreaterThan(
+      at("@import '@arshad-shah/cynosure/styles.css';"),
     );
     // Cynosure's own font face, self-hosted by the package.
-    expect(tokens).toContain(
-      "@import '@arshad-shah/cynosure/fonts/hanken.css' layer(cynosure);",
-    );
+    expect(app).toContain("@import '@arshad-shah/cynosure/fonts/hanken.css';");
   });
 });

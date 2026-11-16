@@ -1,11 +1,11 @@
-import { IconSplit } from '@/shared/ui/icons';
+import { fileDiff as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'text-diff-checker',
   name: 'Text Diff',
   description: 'Compare differences between text files or snippets',
-  icon: IconSplit,
+  icon,
   category: 'text',
   slug: 'diff',
   kind: 'tool',

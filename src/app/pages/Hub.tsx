@@ -14,7 +14,6 @@ import { hubTools } from '../drop-routing';
 import { TOOLS } from '../registry';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import type { ToolManifest } from '../tool';
-import { categoryGlyph } from '../ui/glyphs';
 import { ToolCard } from '../ui/ToolCard';
 import { HubDropZone, type HubDropZoneProps } from './hub/HubDropZone';
 
@@ -88,7 +87,7 @@ export function Hub({
         <Inline gap="6" align="start">
           {/* Phones: the title takes the full width. */}
           <Stack hideBelow="md">
-            <IconTile icon={categoryGlyph(category.id)} size="lg" />
+            <IconTile icon={category.icon} size="lg" />
           </Stack>
           <PageHeader title={category.label} description={category.blurb} />
         </Inline>

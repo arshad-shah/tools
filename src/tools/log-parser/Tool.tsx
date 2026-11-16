@@ -18,7 +18,7 @@ import {
 } from '@arshad-shah/cynosure/icons';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { type VirtualListHandle } from '@/shared/ui';
+import type { VirtualListHandle } from '@/shared/surfaces/virtual-list/virtual-list';
 import { formatBytes } from '@/shared/lib/format';
 import {
   useHandoff,

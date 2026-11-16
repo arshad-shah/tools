@@ -5,7 +5,7 @@ import {
   Link,
   Stack,
 } from '@arshad-shah/cynosure';
-import { Logo } from '@/shared/ui/icons/brand/Logo';
+import { Logo } from '@/shared/surfaces/logo/Logo';
 import { formatBuildStamp, REPO_URL } from '../footerUtils';
 import { getEnabledTools } from '../registry';
 

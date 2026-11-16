@@ -43,7 +43,7 @@ pnpm install
 pnpm dev
 ```
 
-Then open the URL Vite prints (usually <http://localhost:5173>). The kit gallery, a dev-only page with every UI component in both themes, is at `/__kit`.
+Then open the URL Vite prints (usually <http://localhost:5173>).
 
 ## Scripts
 
@@ -73,15 +73,14 @@ Then open the URL Vite prints (usually <http://localhost:5173>). The kit gallery
 
 Tools are discovered from `src/tools/<tool-id>/index.ts` manifests (`defineTool`). A manifest names the tool, its category and slug, its keywords for search and the file kinds it accepts from a hub drop or a hand-off. Each tool's component is lazy-loaded.
 
-### Kit and enforcement rules
+### UI and enforcement rules
 
-`src/shared/ui` is the UI kit and the only place that may use raw elements (`button`, `input`, `svg`, `canvas` and so on) and inline styles. Everything else composes kit components. Icons are components from `@/shared/ui/icons`, each drawing one Facet icon (or a brand mark) from `@arshad-shah/cynosure` through its `Icon`; tools draws no icons of its own. Third-party visual libraries are reached through `src/shared/ui/adapters`. Colours, spacing and motion are tokens in `src/theme/tokens.css`, with light and dark themes and reduced motion.
+Every page is built from [Cynosure](https://cynosure.arshadshah.com) (`@arshad-shah/cynosure`) components: layout from `Container`, `Stack`, `Inline` and `Grid`, text from `Heading` and `Text`, and the controls, overlays and feedback that match. Icons are Facet icons from `@arshad-shah/cynosure/icons`, drawn by Cynosure's `Icon` and `IconTile`; tools draws no icons of its own. The theme is `createTheme({ accent: '#3ddc97' })` (`src/theme/cynosure-theme.css`, generated). Only drawing surfaces (`src/shared/surfaces/`: canvases, the sandboxed HTML frame, the code tree, the virtual list, the logo, the PDF page layers) use raw elements and their own token CSS; CodeMirror (`src/shared/editor`) and swift-chart (`src/shared/charts`) mount on one element each.
 
 The rules are enforced, not advisory:
 
-- `eslint-rules/` is a local ESLint plugin: no pictographic, arrow or box-drawing glyphs in product text (rule a), no raw UI elements, `style` props or imperative style writes outside the kit (rule b), no icon package such as `lucide-react` anywhere (rule c), and no inline disabling of these rules.
+- `eslint-rules/` is a local ESLint plugin: no pictographic, arrow or box-drawing glyphs in product text (rule a), no raw element, `className`, `style` prop or imperative style write outside the drawing surfaces and the editor and chart mount points (`local/no-raw-ui`), no icon package such as `lucide-react` anywhere (rule c), and no inline disabling of these rules.
 - `test/dist-glyphs.test.ts` scans the production build for glyphs.
-- `test/icons-facet.test.ts` checks the icon module draws no SVG of its own; `src/shared/ui/icons/icons.test.tsx` that every icon is a Facet icon or brand mark.
 - The visual suite runs axe on every page and fails on serious or critical findings.
 
 ### Workspace document model
@@ -112,15 +111,15 @@ Each workspace mode is a folder in `src/pdf/workspace/modes/<mode-id>/` with a m
 
 ### Tech
 
-- **React 19** and **TypeScript 6** (strict), **Vite 8**, **Tailwind CSS 4**, pnpm
-- An in-house UI kit (`src/shared/ui`) with light and dark themes from design tokens (`src/theme/tokens.css`), WCAG 2.2 AA
+- **React 19** and **TypeScript 6** (strict), **Vite 8**, pnpm
+- **Cynosure** (`@arshad-shah/cynosure`) for every component and Facet icon, with light and dark themes, WCAG 2.2 AA
 - Heavy work in Web Workers; pdf.js, qpdf-wasm and pdf-lib for PDFs
 - **Cloudflare Workers** (Wrangler) for hosting
 - Vitest, Playwright and axe; ESLint, Prettier, Husky and lint-staged for guardrails
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, the design-system rules and how to add a tool or a kit component.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, the design-system rules and how to add a tool.
 
 ## Security
 

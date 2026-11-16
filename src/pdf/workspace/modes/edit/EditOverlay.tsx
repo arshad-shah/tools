@@ -1,6 +1,6 @@
-import { Layer } from '@/pdf/surfaces/layers';
+import { Layer } from '@/shared/surfaces/pdf/layers';
 import { useEffect, useRef, useState } from 'react';
-import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import { toScreen } from '@/pdf/doc/geometry';
 import type { ImageParams } from '@/pdf/doc/ops/edit';
 import type { Box } from '@/pdf/doc/types';
@@ -13,9 +13,9 @@ import {
   previewItem,
 } from '../../objects/object-ops';
 import { objectsOn } from '../../objects/useObjectSelection';
-import { ContentPreview } from '@/pdf/surfaces/edit/ContentPreview';
+import { ContentPreview } from '@/shared/surfaces/pdf/edit/ContentPreview';
 import { objectLabel } from './labels';
-import { MarkupPreview } from '@/pdf/surfaces/edit/MarkupPreview';
+import { MarkupPreview } from '@/shared/surfaces/pdf/edit/MarkupPreview';
 import { addCover, addText } from './place';
 import { PlaceLayer } from './PlaceLayer';
 import { TextPrompt } from './TextPrompt';

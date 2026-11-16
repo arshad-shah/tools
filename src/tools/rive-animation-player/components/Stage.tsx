@@ -6,7 +6,7 @@ import {
 } from '@arshad-shah/cynosure';
 import type React from 'react';
 import type { DragEvent } from 'react';
-import { RiveStage } from '@/shared/ui/adapters/RiveStage';
+import { RiveStage } from '@/shared/surfaces/rive/RiveStage';
 import { PlayerState, type Status } from '../types';
 import type { DeviceChoice } from './StagePanel';
 

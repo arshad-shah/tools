@@ -14,7 +14,7 @@ import { star } from '@arshad-shah/cynosure/icons';
 import { useFavorites } from '../favorites';
 import { toolPath } from '../routes';
 import type { ToolManifest } from '../tool';
-import { toolGlyph } from './glyphs';
+import { renderRouterLink } from '@/app/shell/router-link';
 
 export interface FavouriteToggleProps {
   tool: Pick<ToolManifest, 'id' | 'name'>;
@@ -60,7 +60,12 @@ export function LinkCard({
   actions,
 }: LinkCardProps) {
   return (
-    <Card href={href} padding="md" actions={actions}>
+    <Card
+      href={href}
+      renderLink={renderRouterLink}
+      padding="md"
+      actions={actions}
+    >
       <Stack gap="4">
         <Inline gap="4" align="center">
           <IconTile icon={icon} />
@@ -97,7 +102,7 @@ export function ToolCard({
   return (
     <LinkCard
       href={toolPath(tool)}
-      icon={toolGlyph(tool.id)}
+      icon={tool.icon}
       title={tool.name}
       description={tool.description}
       query={query}

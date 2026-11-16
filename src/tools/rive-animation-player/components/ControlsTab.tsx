@@ -8,7 +8,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { play } from '@arshad-shah/cynosure/icons';
 import React from 'react';
-import { StateMachineInput } from '@/shared/ui/adapters/rive-runtime';
+import { StateMachineInput } from '@/shared/lib/rive-runtime';
 import {
   type RiveAnimations,
   type RiveController,

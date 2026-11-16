@@ -1,120 +1,21 @@
 import type { IconData } from '@arshad-shah/cynosure/icons';
 import {
-  api,
-  binary,
-  braces,
-  calculator,
-  calendar,
-  camera,
-  clock,
-  code,
-  dice,
   edit,
-  fileCode,
   fileCompress,
   fileConvert,
-  fileDiff,
-  fileImage,
-  fileKey,
-  fileLock,
   filePen,
-  fileText,
-  globe,
   grid,
-  hash,
   highlighter,
-  history,
-  image,
-  images,
-  key,
-  link,
-  lock,
   ocrScan,
-  pageMerge,
-  pageSplit,
-  palette,
-  playCircle,
-  qrCode,
   redactArea,
-  regex,
-  route,
-  ruler,
-  scanLine,
-  scrollText,
-  shapes,
-  shield,
   shieldCheck,
   signatureDraw,
-  table,
-  tag,
-  timer,
-  type,
-  unlock,
-  wrench,
 } from '@arshad-shah/cynosure/icons';
-import type { ToolCategory } from '../tool';
 
 /*
- * Facet icons for tools, categories and workspace modes (redesign spec,
- * rule 2). Manifests still carry the old kit icon while the other tools are
- * redesigned; the redesigned app reads these instead, by id.
+ * Facet icons for the PDF workspace modes, by id (the PDF hub lists them).
+ * Tools and categories carry their own icon (manifest and CATEGORIES).
  */
-const TOOL_GLYPHS: Record<string, IconData> = {
-  'api-request': api,
-  'base64-converter': fileCode,
-  calculator,
-  'code-formatter': code,
-  'color-tester': palette,
-  'cron-builder': history,
-  'csv-viewer': table,
-  'date-calculator': calendar,
-  'epoch-converter': clock,
-  'exif-tool': camera,
-  'favicon-generator': shapes,
-  'hash-generator': hash,
-  'image-optimizer': image,
-  'images-to-pdf': images,
-  'json-and-xml-viewer': braces,
-  'jwt-decode': fileKey,
-  'log-parser': scrollText,
-  'markdown-editor': fileText,
-  'number-converter': binary,
-  'password-generator': key,
-  'pdf-compressor': fileCompress,
-  'pdf-edit': filePen,
-  'pdf-merger': pageMerge,
-  'pdf-protect': fileLock,
-  'pdf-splitter': pageSplit,
-  'pdf-to-images': fileImage,
-  'pdf-to-text': fileText,
-  'pdf-unlock': unlock,
-  pomodoro: timer,
-  'qr-code-generator': qrCode,
-  'qr-scanner': scanLine,
-  'random-data-generator': dice,
-  'regex-tester': regex,
-  'rive-animation-player': playCircle,
-  'text-diff-checker': fileDiff,
-  'text-encrypt': lock,
-  'text-toolkit': type,
-  'unit-converter': ruler,
-  'url-encoder-decoder': link,
-  'url-parser': route,
-  'uuid-generator': tag,
-};
-
-const CATEGORY_GLYPHS: Record<ToolCategory, IconData> = {
-  pdf: fileText,
-  text: type,
-  data: table,
-  encoding: binary,
-  web: globe,
-  media: image,
-  security: shield,
-  math: calculator,
-  time: clock,
-};
-
 const MODE_GLYPHS: Record<string, IconData> = {
   organize: grid,
   edit,
@@ -127,8 +28,4 @@ const MODE_GLYPHS: Record<string, IconData> = {
   ocr: ocrScan,
 };
 
-/** A tool's Facet icon (a wrench for a tool added without one). */
-export const toolGlyph = (id: string): IconData => TOOL_GLYPHS[id] ?? wrench;
-export const categoryGlyph = (id: ToolCategory): IconData =>
-  CATEGORY_GLYPHS[id];
 export const modeGlyph = (id: string): IconData => MODE_GLYPHS[id] ?? filePen;

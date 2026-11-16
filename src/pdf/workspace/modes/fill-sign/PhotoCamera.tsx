@@ -13,8 +13,8 @@ import {
 // is useCamera's and the picture the CameraVideo drawing surface; every
 // control around it is Cynosure.
 import { useCamera } from '@/shared/lib/use-camera';
-import { CameraVideo } from '@/shared/ui/camera-video';
-import { CAMERA_BLOCKED } from '@/shared/ui/camera-errors';
+import { CameraVideo } from '@/shared/surfaces/camera-video';
+import { CAMERA_BLOCKED } from '@/shared/lib/camera-errors';
 import { LoadingLine } from '../../ui/states';
 import type { ToolError } from '@/shared/lib/errors';
 

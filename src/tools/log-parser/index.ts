@@ -1,11 +1,11 @@
-import { IconFileText } from '@/shared/ui/icons';
+import { scrollText as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'log-parser',
   name: 'Log Viewer',
   description: 'Open, filter and explore large log files',
-  icon: IconFileText,
+  icon,
   category: 'text',
   slug: 'logs',
   kind: 'tool',

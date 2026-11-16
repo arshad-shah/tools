@@ -7,7 +7,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { useEffect, useRef } from 'react';
 import type { PageId, PageRef } from '@/pdf/doc/types';
-import { PageImage } from '@/pdf/surfaces/PageImage';
+import { PageImage } from '@/shared/surfaces/pdf/PageImage';
 import { deletePages } from './modes/organize/actions';
 import type { ModeModule, ModeProps } from './modes/types';
 import { displaySize } from './page-display';

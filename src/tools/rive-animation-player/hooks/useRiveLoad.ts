@@ -4,11 +4,7 @@ import { readBytes } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
 import { notify } from '@/shared/lib/notify';
 import { useJob } from '@/shared/state/useJob';
-import {
-  createRive,
-  loadRive,
-  type Rive,
-} from '@/shared/ui/adapters/rive-runtime';
+import { createRive, loadRive, type Rive } from '@/shared/lib/rive-runtime';
 import { getAlignmentValue, getFitValue } from '../lib/layout';
 import { assertRiveFile } from '../lib/rive-file';
 import {

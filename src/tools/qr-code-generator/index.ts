@@ -1,4 +1,4 @@
-import { IconQrCode } from '@/shared/ui/icons';
+import { qrCode as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'QR Code Generator',
   description:
     'QR codes for links, WiFi, contacts, events and payments, with style, export and a scan check',
-  icon: IconQrCode,
+  icon,
   category: 'web',
   slug: 'qr',
   kind: 'tool',

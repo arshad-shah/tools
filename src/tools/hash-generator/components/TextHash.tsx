@@ -11,6 +11,7 @@ import {
 import { hash, sparkles } from '@arshad-shah/cynosure/icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { TextSourceActions } from '@/app/ui/text-source';
+import { useTextFile } from '@/app/ui/use-text-file';
 import { TransformLayout } from '@/app/ui/transform';
 import {
   bytesFrom,
@@ -101,10 +102,13 @@ export const TextHash: React.FC<TextHashProps> = ({
   const expectedHex = expected.trim() ? normalizeExpected(expected) : null;
   const shown = selected.filter((id) => results[id] !== undefined);
 
+  // A file dropped on the field opens like Open file (TextArea onFiles).
+  const textFile = useTextFile({ onChange: setInput });
   const inputCard = (
     <Card as="section" title="Message">
       <Stack gap="5">
         <TextArea
+          onFiles={textFile.onFiles}
           label="Text to hash"
           labelHidden
           rows={5}

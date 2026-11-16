@@ -1,4 +1,4 @@
-import { CopyButton, Inline, Text } from '@arshad-shah/cynosure';
+import { CopyButton, Inline, Stack, Text } from '@arshad-shah/cynosure';
 import type { DocNode } from '../lib/doc-model';
 import { isXmlPath, toDisplayPath, toJsAccessor } from '../lib/paths';
 import { nodeValueText, subtreeJson } from '../lib/subtree';
@@ -47,9 +47,11 @@ export function PathBar({ node, value, xml }: PathBarProps) {
   ];
   return (
     <Inline gap="2" align="center" wrap={false}>
-      <Text variant="code" size="sm" truncate>
-        <span aria-label="Selected path">{path}</span>
-      </Text>
+      <Stack as="span" role="group" aria-label="Selected path" minSize="0">
+        <Text variant="code" size="sm" truncate>
+          {path}
+        </Text>
+      </Stack>
       <Inline gap="1" wrap={false}>
         {actions.map((a) => (
           <CopyButton

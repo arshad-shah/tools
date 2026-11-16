@@ -1,11 +1,11 @@
-import { IconImages } from '@/shared/ui/icons';
+import { images as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'images-to-pdf',
   name: 'Images to PDF',
   description: 'Combine PNG, JPEG, WebP and GIF images into one PDF',
-  icon: IconImages,
+  icon,
   category: 'pdf',
   slug: 'images-to-pdf',
   kind: 'quick-task',

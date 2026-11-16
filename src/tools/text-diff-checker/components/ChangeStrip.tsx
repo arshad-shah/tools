@@ -2,7 +2,7 @@ import { AspectRatio } from '@arshad-shah/cynosure';
 import { BarChart } from '@arshad-shah/swift-chart';
 import { useEffect, useEffectEvent, useMemo, useRef } from 'react';
 // swift-chart draws the strip (a canvas); everything around it is Cynosure.
-import { useChartTheme } from '@/shared/charts';
+import { ChartMount, useChartTheme } from '@/shared/charts';
 
 const BUCKETS = 60;
 
@@ -78,7 +78,7 @@ function Strip({ anchors, rows, onJump }: ChangeStripProps) {
 
   return (
     <AspectRatio ratio={14}>
-      <div ref={host} />
+      <ChartMount ref={host} />
     </AspectRatio>
   );
 }

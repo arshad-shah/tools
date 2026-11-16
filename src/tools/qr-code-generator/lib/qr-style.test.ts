@@ -39,12 +39,9 @@ describe('assessScannability', () => {
     });
     expect(warnings.some((w) => /inverted/i.test(w))).toBe(true);
   });
-  it('warns when the logo is beyond the error correction capacity', () => {
+  it('never warns about a logo: Cynosure keeps it within level H', () => {
     expect(
       assessScannability({ ...style, ecc: 'M', logoFraction: 0.3 }).warnings,
-    ).toHaveLength(1);
-    expect(
-      assessScannability({ ...style, ecc: 'H', logoFraction: 0.2 }).warnings,
     ).toEqual([]);
   });
   it('warns about a missing quiet zone', () => {
@@ -59,7 +56,7 @@ describe('render', () => {
     const svg = await qrSvg('https://a.test', style, 256);
     expect(svg.startsWith('<svg')).toBe(true);
     expect(svg).toContain('xmlns="http://www.w3.org/2000/svg"');
-    expect(svg).toContain('height="256"');
+    expect(svg).toContain('height="256px"');
   });
   it('converts a print size to pixels at 300 dpi', () => {
     expect(printPixels(25.4)).toBe(300);

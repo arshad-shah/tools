@@ -1,0 +1,49 @@
+/* The diagram surface: two canvases (main and minimap) and what sits over
+   them while laying out or after a failure. */
+.tools-diagram {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  /* Grows to fill a flex column; never shorter than a useful map. */
+  flex: 1;
+  min-block-size: 640px;
+  overflow: hidden;
+  background-color: var(--cy-color-bg);
+}
+.tools-diagram-canvas {
+  display: block;
+  touch-action: none;
+  outline: none;
+}
+.tools-diagram-canvas:focus-visible {
+  outline: 2px solid var(--cy-color-accent-text);
+  outline-offset: -2px;
+}
+.tools-diagram-minimap {
+  position: absolute;
+  inset-inline-end: var(--cy-space-4);
+  inset-block-end: var(--cy-space-4);
+  z-index: 1;
+  cursor: pointer;
+  touch-action: none;
+  border-radius: var(--cy-radius-md);
+  background-color: var(--cy-color-surface);
+  box-shadow:
+    var(--cy-shadow-md),
+    0 0 0 1px var(--cy-color-line);
+}
+.tools-diagram-busy {
+  position: absolute;
+  inset-block-start: var(--cy-space-5);
+  inset-inline-start: var(--cy-space-5);
+  z-index: 1;
+}
+.tools-diagram-error {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cy-space-8);
+}

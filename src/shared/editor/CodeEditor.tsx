@@ -389,7 +389,9 @@ export function CodeEditor({
   });
   useLayoutEffect(() => {
     const parent = mountRef.current;
-    if (!parent) return;
+    // Re-run with a live view (StrictMode's extra cycle, a Suspense boundary
+    // showing the tree again): keep it, and so the same content element.
+    if (!parent || viewRef.current) return;
     const i = initial.current;
     const view = new EditorView({
       parent,
@@ -469,12 +471,24 @@ export function CodeEditor({
       }),
     });
     viewRef.current = view;
-    return () => {
-      view.destroy();
-      viewRef.current = null;
-    };
     // The view lives as long as the component; one-line mode is fixed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Destroyed when the component leaves or Activity hides it. The check
+  // waits a microtask: StrictMode's extra cleanup is followed at once by
+  // setup again, and the editor people (and tests) already hold must stay
+  // the same element rather than be replaced after the first paint.
+  const alive = useRef(false);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      queueMicrotask(() => {
+        if (alive.current) return;
+        viewRef.current?.destroy();
+        viewRef.current = null;
+      });
+    };
   }, []);
 
   // A new controlled value replaces the text (keeping the caret in range),

@@ -1,0 +1,15 @@
+.tools-sandboxed-html {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 12rem;
+  border: var(--cy-border-width) solid var(--cy-color-line);
+  border-radius: var(--cy-radius-md);
+  background-color: var(--cy-color-surface);
+}
+/* A reading page: tall, but never taller than the window. */
+.tools-sandboxed-html[data-size='page'] {
+  block-size: 100vh;
+  max-block-size: 45rem;
+  min-block-size: 24rem;
+}

@@ -29,7 +29,7 @@ async function png(page: Page, seed: number) {
 
 /**
  * A grid's column headers, in order, by text. Cynosure's DataGrid holds its
- * header row; the kit grid renders it just above, in the same parent.
+ * header row inside the grid.
  */
 async function headersOf(page: Page, name: string) {
   const headers = page
@@ -132,22 +132,6 @@ async function checkGrid(page: Page, name: string, headers: string[]) {
 for (const viewport of VIEWPORTS) {
   test.describe(`data grids at ${viewport.width} px`, () => {
     test.use({ viewport });
-
-    test('kit gallery', async ({ page }) => {
-      await page.goto('/__kit');
-      const headers = [
-        'Order',
-        'Customer',
-        'Country',
-        'Placed',
-        'Items',
-        'Total',
-        'Paid',
-        'Note',
-      ];
-      await checkGrid(page, 'Orders', headers);
-      await checkGrid(page, 'Orders with no match', headers);
-    });
 
     test('CSV viewer', async ({ page }) => {
       await page.goto(pathOf('csv-viewer'));

@@ -1,5 +1,8 @@
 import { useCallback, useMemo } from 'react';
-import { VirtualList, type VirtualListHandle } from '@/shared/ui';
+import {
+  VirtualList,
+  type VirtualListHandle,
+} from '@/shared/surfaces/virtual-list/virtual-list';
 import type { FieldFilter } from '../lib/filter';
 import type { LogEntry } from '../lib/model';
 import type { SearchSpec } from '../lib/search-ranges';
@@ -23,6 +26,8 @@ export interface LogListProps {
 }
 
 const ROW_HEIGHT = 30;
+/** The list scrolls inside this height (px). */
+const LIST_HEIGHT = 525;
 
 /**
  * The filtered entries as a virtual `role="log"` list. Rows are fetched by
@@ -52,6 +57,7 @@ export function LogList({
       const e = entryAt(i);
       return {
         'aria-label': e ? `Line ${e.line}` : undefined,
+        'data-selected': e && selected.has(e.index) ? '' : undefined,
         onKeyDown: (ev: React.KeyboardEvent<HTMLDivElement>) => {
           if (!e || ev.target !== ev.currentTarget) return;
           if (ev.key === 'Enter' || ev.key === ' ') {
@@ -61,7 +67,7 @@ export function LogList({
         },
       };
     },
-    [entryAt, onToggle],
+    [entryAt, onToggle, selected],
   );
 
   return (
@@ -76,7 +82,8 @@ export function LogList({
       rowProps={rowProps}
       onRangeChange={onRangeChange}
       onActiveIndexChange={onActiveChange}
-      className="h-150 min-h-64 rounded-lg border border-line bg-surface"
+      height={LIST_HEIGHT}
+      framed
       renderItem={(_, i) => {
         const e = entryAt(i);
         return (

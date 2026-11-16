@@ -6,7 +6,7 @@ import {
   StateMachineInputType,
   type Layout,
   type StateMachineInput,
-} from '@/shared/ui/adapters/rive-runtime';
+} from '@/shared/lib/rive-runtime';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { notify } from '@/shared/lib/notify';
 import { FakeRive } from '../test/fake-rive';

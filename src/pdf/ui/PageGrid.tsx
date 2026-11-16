@@ -9,7 +9,7 @@ import {
   Stack,
   Text,
 } from '@arshad-shah/cynosure';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { DocInfo } from '@/pdf/render';
 import { usePageImage } from './use-first-page-image';
 
@@ -25,46 +25,43 @@ function PageTile({
   doc: DocInfo;
   index: number;
   selected?: boolean;
-  onToggle?(index: number, checked: boolean): void;
+  onToggle?(index: number, checked: boolean, range: boolean): void;
 }) {
   const page = doc.pages[index];
   const { src } = usePageImage(doc.docId, index, 240);
   const ratio = page ? page.width / page.height : 1 / Math.SQRT2;
   const label = `Page ${index + 1}`;
-  return (
-    <Card
-      padding="sm"
-      variant={selected ? 'soft' : 'surface'}
-      tone={selected ? 'accent' : 'neutral'}
-    >
+  const picture = src ? (
+    <Image src={src} alt={label} ratio={ratio} fit="contain" radius="sm" />
+  ) : (
+    <Skeleton shape="block" height="10rem" />
+  );
+  return onToggle ? (
+    <Checkbox
+      variant="card"
+      media={picture}
+      size="sm"
+      label={label}
+      checked={!!selected}
+      onChange={(checked, event) =>
+        onToggle(index, checked, nativeShift(event.nativeEvent))
+      }
+    />
+  ) : (
+    <Card padding="sm">
       <Stack gap="3">
-        {src ? (
-          <Image
-            src={src}
-            alt={label}
-            ratio={ratio}
-            fit="contain"
-            radius="sm"
-          />
-        ) : (
-          <Skeleton shape="block" height="10rem" />
-        )}
-        {onToggle ? (
-          <Checkbox
-            size="sm"
-            label={label}
-            checked={!!selected}
-            onChange={(checked) => onToggle(index, checked)}
-          />
-        ) : (
-          <Text size="sm" tone="muted" align="center">
-            {label}
-          </Text>
-        )}
+        {picture}
+        <Text size="sm" tone="muted" align="center">
+          {label}
+        </Text>
       </Stack>
     </Card>
   );
 }
+
+/** Whether Shift was held for the click or key press behind a change. */
+const nativeShift = (e: Event) =>
+  'shiftKey' in e && !!(e as MouseEvent).shiftKey;
 
 /**
  * The pages of an open PDF as a grid of thumbnails (rendered by the pdf.js
@@ -84,20 +81,6 @@ export function PageGrid({
   label?: string;
 }) {
   const [page, setPage] = useState(1);
-  // Checkbox reports only the new value, so whether Shift was held comes
-  // from the press itself (a recorded Cynosure gap: no range selection).
-  const shift = useRef(false);
-  useEffect(() => {
-    const note = (e: PointerEvent | KeyboardEvent) => {
-      shift.current = e.shiftKey;
-    };
-    window.addEventListener('pointerdown', note, true);
-    window.addEventListener('keydown', note, true);
-    return () => {
-      window.removeEventListener('pointerdown', note, true);
-      window.removeEventListener('keydown', note, true);
-    };
-  }, []);
   const pages = Math.ceil(doc.pageCount / PER_PAGE);
   const first = (page - 1) * PER_PAGE;
   const indices = Array.from(
@@ -119,11 +102,7 @@ export function PageGrid({
               doc={doc}
               index={i}
               selected={selected?.has(i)}
-              onToggle={
-                onToggle
-                  ? (index, checked) => onToggle(index, checked, shift.current)
-                  : undefined
-              }
+              onToggle={onToggle}
             />
           </GridItem>
         ))}

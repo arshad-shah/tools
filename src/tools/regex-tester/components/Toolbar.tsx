@@ -5,7 +5,7 @@ import {
   share as shareIcon,
   sliders,
 } from '@arshad-shah/cynosure/icons';
-import type { ShareControl } from '@/shared/ui';
+import type { ShareControl } from '@/shared/lib/use-shareable-state';
 
 interface RegexToolbarProps {
   share: ShareControl;

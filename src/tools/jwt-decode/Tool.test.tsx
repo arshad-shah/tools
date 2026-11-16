@@ -43,9 +43,7 @@ describe('JWTDecoder', () => {
     fireEvent.click(
       screen.getAllByRole('button', { name: 'Try an example' })[0]!,
     );
-    expect(
-      screen.getByRole('radiogroup', { name: 'JWT sections' }),
-    ).toBeTruthy();
+    expect(screen.getByRole('tablist', { name: 'JWT sections' })).toBeTruthy();
     expect(screen.getByText('user-12345')).toBeTruthy();
   });
 
@@ -119,7 +117,8 @@ describe('JWTDecoder', () => {
   it('masks a shared secret; public keys are a multi-line field', () => {
     renderTool();
     enter(token({ sub: 'x' }));
-    fireEvent.click(screen.getByRole('radio', { name: 'Signature' }));
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Signature' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Signature' }));
     const secret = screen.getByLabelText('Secret or public key');
     expect((secret as HTMLInputElement).type).toBe('password');
     fireEvent.click(screen.getByRole('radio', { name: 'PEM public key' }));

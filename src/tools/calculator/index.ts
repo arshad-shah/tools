@@ -1,4 +1,4 @@
-import { IconCalculator } from '@/shared/ui/icons';
+import { calculator as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Calculator & Grapher',
   description:
     'Expression sheet with variables, units and exact decimals, plus programmer mode and a function grapher',
-  icon: IconCalculator,
+  icon,
   category: 'math',
   slug: 'calculator',
   kind: 'tool',

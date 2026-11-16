@@ -43,6 +43,7 @@ import { buildRequest } from './lib/http';
 import { requestFromHandoff } from './lib/io';
 import { fromPairs, toPairs } from './lib/kv';
 import { emptyRequest } from './lib/model';
+import { PANES_STACK_BELOW } from '@/app/ui/transform';
 
 type RequestPart = 'params' | 'headers' | 'auth' | 'body' | 'settings';
 
@@ -51,7 +52,6 @@ export default function HttpClient() {
   const { request, setRequest, job } = c;
   const [reqTab, setReqTab] = useState<RequestPart>('params');
   const [sideOpen, setSideOpen] = useState(false);
-  const wide = useMediaQuery('(min-width: 1200px)');
   // Phones: the five request parts do not fit one segmented row.
   const phone = useMediaQuery('(max-width: 40rem)');
   const [saveOpen, setSaveOpen] = useState(false);
@@ -293,21 +293,15 @@ export default function HttpClient() {
       <Text size="sm" tone="muted">
         Requests go directly from your browser to the URL you enter.
       </Text>
-      {wide ? (
-        <SplitPane
-          label="Resize the request and response"
-          defaultSize={50}
-          min={35}
-          max={65}
-          start={<Stack paddingInline="3">{requestPane}</Stack>}
-          end={<Stack paddingInline="3">{responsePane}</Stack>}
-        />
-      ) : (
-        <Stack gap="6">
-          {requestPane}
-          {responsePane}
-        </Stack>
-      )}
+      <SplitPane
+        label="Resize the request and response"
+        defaultSize={50}
+        min={35}
+        max={65}
+        stackBelow={PANES_STACK_BELOW}
+        start={<Stack paddingInline="3">{requestPane}</Stack>}
+        end={<Stack paddingInline="3">{responsePane}</Stack>}
+      />
 
       <Sheet
         open={sideOpen}

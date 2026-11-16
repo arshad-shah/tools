@@ -1,11 +1,11 @@
-import { IconFilePlus } from '@/shared/ui/icons';
+import { pageMerge as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'pdf-merger',
   name: 'PDF Merger',
   description: 'Merge multiple PDF files into a single document',
-  icon: IconFilePlus,
+  icon,
   category: 'pdf',
   slug: 'merge',
   kind: 'quick-task',

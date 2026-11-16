@@ -24,8 +24,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { download, listTree, sparkles } from '@arshad-shah/cynosure/icons';
 import { readText } from '@/shared/lib/files';
-import { useMediaQuery } from '@/shared/lib/media-query';
-import { type SandboxedHtmlHandle } from '@/shared/ui';
+import type { SandboxedHtmlHandle } from '@/shared/surfaces/sandboxed-html/SandboxedHtml';
 import { textStats } from '@/tools/text-toolkit/lib/stats';
 import { FORMAT_ITEMS } from './components/format-items';
 import { Outline } from './components/Outline';
@@ -43,6 +42,7 @@ import { renderMarkdown } from './lib/render';
 import { SAMPLE_MARKDOWN } from './lib/sample';
 import { markdownSettings } from './settings';
 import { CodeEditor, type CodeEditorHandle } from '@/shared/editor';
+import { PANES_STACK_BELOW } from '@/app/ui/transform';
 
 const plural = (n: number, word: string) =>
   `${n.toLocaleString('en-US')} ${word}${n === 1 ? '' : 's'}`;
@@ -64,7 +64,6 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   const pendingSelection = useRef<Selection | null>(null);
   const pendingJump = useRef<number | null>(null);
   // Wide screens: editor and preview side by side; narrow: stacked.
-  const wide = useMediaQuery('(min-width: 1200px)');
 
   // Text handed over from another tool (Text Toolkit, Send to) opens once.
   const handed = useHandoff(
@@ -401,18 +400,12 @@ export default function MarkdownEditor({ definition }: ToolProps) {
           Loading them is a network request to the image hosts.
         </Notice>
       ) : null}
-      {wide ? (
-        <SplitPane
-          label="Resize the editor and the preview"
-          start={<Stack paddingInline="3">{editor_}</Stack>}
-          end={<Stack paddingInline="3">{preview_}</Stack>}
-        />
-      ) : (
-        <Stack gap="5">
-          {editor_}
-          {preview_}
-        </Stack>
-      )}
+      <SplitPane
+        label="Resize the editor and the preview"
+        stackBelow={PANES_STACK_BELOW}
+        start={<Stack paddingInline="3">{editor_}</Stack>}
+        end={<Stack paddingInline="3">{preview_}</Stack>}
+      />
       <StatusBar
         label="Document"
         start={

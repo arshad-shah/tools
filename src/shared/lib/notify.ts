@@ -14,7 +14,7 @@ interface NotifyOptions {
 }
 
 /*
- * The mounted Toaster's API, set by its bridge (src/shared/ui/toaster.tsx).
+ * The mounted Toaster's API, set by NotifyBridge (./notify-bridge.ts).
  * Toasts raised before it mounts wait in `pending` and show when it does.
  */
 let api: ToastApi | null = null;

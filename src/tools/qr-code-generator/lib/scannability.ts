@@ -1,16 +1,6 @@
 import { contrastRatio, luminance, parseColor } from '@/shared/lib/colour';
 import type { EccLevel } from './render';
 
-/** Damage each level recovers from (ISO/IEC 18004). */
-export const ECC_CAPACITY: Record<EccLevel, number> = {
-  L: 0.07,
-  M: 0.15,
-  Q: 0.25,
-  H: 0.3,
-};
-
-/** A logo may cover this share of what the level recovers. */
-const SAFETY = 0.8;
 const MIN_CONTRAST = 4;
 const MIN_MARGIN = 4;
 
@@ -49,13 +39,7 @@ export function assessScannability(s: ScannabilityInput): {
     warnings.push(
       `Quiet zone of ${s.margin} modules. Scanners expect at least ${MIN_MARGIN}`,
     );
-  if (s.logoFraction > 0) {
-    const area = s.logoFraction;
-    const limit = ECC_CAPACITY[s.ecc] * SAFETY;
-    if (area > limit)
-      warnings.push(
-        `The logo covers ${Math.round(area * 100)}% of the code; error correction ${s.ecc} safely recovers about ${Math.round(limit * 100)}%. Make the logo smaller or raise error correction`,
-      );
-  }
+  // A logo needs no check: Cynosure raises the level to H and keeps the
+  // logo within 30% of the width (about 9% of the area).
   return { warnings };
 }

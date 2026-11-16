@@ -116,7 +116,8 @@ test.describe('Epoch zones', () => {
     const time = page.getByRole('textbox', { name: 'Time', exact: true });
     await time.fill('01:30');
     await time.press('Enter');
-    await page.getByRole('combobox', { name: 'In zone' }).click();
+    const zone = page.getByRole('combobox', { name: 'In zone' });
+    await zone.fill('Dublin');
     await page.getByRole('option', { name: /^Europe\/Dublin/ }).click();
     await expect(
       page.getByText(/01:30 does not exist in Europe\/Dublin/),

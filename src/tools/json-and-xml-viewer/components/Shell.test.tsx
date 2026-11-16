@@ -17,7 +17,9 @@ import {
 } from '@/shared/editor/testing';
 import { Shell } from './Shell';
 
-vi.mock('@/shared/ui/diagram-canvas', () => ({ DiagramCanvas: () => null }));
+vi.mock('@/shared/surfaces/diagram-canvas/DiagramCanvas', () => ({
+  DiagramCanvas: () => null,
+}));
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });

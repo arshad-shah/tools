@@ -1,11 +1,11 @@
-import { IconEye } from '@/shared/ui/icons';
+import { regex as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'regex-tester',
   name: 'Regex Tester',
   description: 'Test regular expressions',
-  icon: IconEye,
+  icon,
   category: 'text',
   slug: 'regex',
   kind: 'tool',

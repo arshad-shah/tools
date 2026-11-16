@@ -2,12 +2,11 @@ import { Toaster } from '@arshad-shah/cynosure';
 import { useCallback, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppPalette } from './AppPalette';
-import { NotifyBridge } from './AppFrame';
+import { NotifyBridge } from '@/shared/lib/notify-bridge';
 import { HelpContext } from './help-context';
 import { useHelpDialogs } from './HelpDialogs';
 import { PaletteContext } from './palette';
 import { useAppCommands } from './use-app-commands';
-import { useClientLinks } from './use-client-links';
 
 /**
  * Layout route for the PDF workspace: the workspace draws its own full-height
@@ -18,7 +17,6 @@ export default function WorkspaceFrame() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   useAppCommands();
-  useClientLinks();
   const { dialogs: helpDialogs, ...help } = useHelpDialogs();
   return (
     <PaletteContext.Provider value={openPalette}>

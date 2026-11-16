@@ -21,7 +21,8 @@ import { encodePng } from '../../../../../test/fixtures/images';
 import { registerCoreOperations } from '@/pdf/doc/ops';
 import { shellHarness, stubLayoutApis } from '../../test-shell';
 import { requestConvert } from './ui-store';
-import { Toaster } from '@/shared/ui/toaster';
+import { Toaster } from '@arshad-shah/cynosure';
+import { NotifyBridge } from '@/shared/lib/notify-bridge';
 
 beforeAll(() => registerCoreOperations());
 beforeEach(() => stubLayoutApis());
@@ -37,7 +38,9 @@ async function open() {
   render(
     <>
       {cloneElement(h.ui, { mode: 'convert' })}
-      <Toaster />
+      <Toaster position="bottom-end">
+        <NotifyBridge />
+      </Toaster>
     </>,
   );
   const toolbar = await screen.findByRole('toolbar', { name: 'Convert tools' });

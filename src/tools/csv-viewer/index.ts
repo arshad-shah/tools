@@ -1,4 +1,4 @@
-import { IconTable } from '@/shared/ui/icons';
+import { table as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'CSV Viewer & Converter',
   description:
     'View, filter, profile, chart, edit and convert CSV and TSV data (XLSX, JSON, SQL and more)',
-  icon: IconTable,
+  icon,
   category: 'data',
   slug: 'csv',
   kind: 'tool',

@@ -1,9 +1,19 @@
 /** @vitest-environment jsdom */
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Toaster } from '@/shared/ui/toaster';
+import { Toaster as CyToaster } from '@arshad-shah/cynosure';
+import { NotifyBridge } from './notify-bridge';
 import { ToolError } from './errors';
 import { notify, resetNotifyForTests } from './notify';
+
+/** The app's toast host: a Cynosure Toaster with the notify bridge. */
+function Toaster() {
+  return (
+    <CyToaster position="bottom-end">
+      <NotifyBridge />
+    </CyToaster>
+  );
+}
 
 afterEach(() => {
   vi.useRealTimers();

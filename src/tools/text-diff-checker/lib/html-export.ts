@@ -1,3 +1,4 @@
+import { withAlpha } from '@/shared/lib/palette';
 import type { DiffResult } from './engine';
 import { buildViewModel, type Surface } from './view-model';
 
@@ -16,17 +17,30 @@ export interface ReportTokens {
   delStrong: string;
 }
 
-/** The token names `ReportTokens` is read from (`readThemeTokens`). */
-export const REPORT_TOKEN_NAMES: Record<keyof ReportTokens, string> = {
-  bg: 'surface',
-  fg: 'fg',
-  muted: 'fg-muted',
-  border: 'line',
-  addBg: 'diff-add-soft',
-  delBg: 'diff-del-soft',
-  addStrong: 'diff-add-strong',
-  delStrong: 'diff-del-strong',
-};
+/**
+ * The report's colours from a palette's concrete values: added and removed
+ * lines are the success and danger colours at the editor's tints (14% for
+ * a line, 34% for the changed words).
+ */
+export function reportTokensFrom(c: {
+  surface: string;
+  ink: string;
+  muted: string;
+  line: string;
+  success: string;
+  danger: string;
+}): ReportTokens {
+  return {
+    bg: c.surface,
+    fg: c.ink,
+    muted: c.muted,
+    border: c.line,
+    addBg: withAlpha(c.success, 0.14),
+    delBg: withAlpha(c.danger, 0.14),
+    addStrong: withAlpha(c.success, 0.34),
+    delStrong: withAlpha(c.danger, 0.34),
+  };
+}
 
 export const escapeHtml = (s: string): string =>
   s

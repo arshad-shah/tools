@@ -10,7 +10,10 @@ import {
 } from '@arshad-shah/cynosure';
 import { chevronDown, chevronUp } from '@arshad-shah/cynosure/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CodeTree, type CodeTreeHandle } from '@/shared/ui';
+import {
+  CodeTree,
+  type CodeTreeHandle,
+} from '@/shared/surfaces/code-tree/code-tree';
 import type { DocNode } from '../lib/doc-model';
 import type { SearchResult } from '../lib/search';
 import {
@@ -21,6 +24,9 @@ import {
 } from '../lib/to-tree';
 
 const DEPTHS = [1, 2, 3, 4, 5];
+
+/** The tree's height: the Shell gives views no height of their own. */
+const VIEW_HEIGHT = 640;
 
 export interface TreeSearchState {
   term: string;
@@ -159,15 +165,16 @@ export function TreeTab({
           onChange={(regex) => onSearchChange({ ...search, regex, active: 0 })}
         />
         {result.error ? null : (
-          <Text size="sm" tone="muted" numeric>
-            <span aria-live="polite">{status}</span>
-          </Text>
+          <Inline aria-live="polite">
+            <Text size="sm" tone="muted" numeric>
+              {status}
+            </Text>
+          </Inline>
         )}
       </Inline>
       <CodeTree
         ref={tree}
-        className="min-h-0 flex-1"
-        height="100%"
+        height={VIEW_HEIGHT}
         roots={roots}
         expanded={expanded}
         onExpandedChange={setExpanded}

@@ -54,11 +54,11 @@ describe('theme-init.js', () => {
     );
   });
 
-  it('lets an unmarked document follow the OS and dark: follow the mode', () => {
-    const tokens = readFileSync('src/theme/tokens.css', 'utf8');
-    expect(tokens).toMatch(
-      /:root:not\(\[data-cy-mode\]\)\s*\{\s*color-scheme: light dark;/,
+  it('needs no color-scheme rule of the app: Cynosure follows the mark', () => {
+    // Cynosure gap 2, fixed in 0.7.0: the script marks `system` when nothing
+    // is saved and Cynosure's stylesheet maps every mark to a color-scheme.
+    expect(readFileSync('src/theme/app.css', 'utf8')).not.toContain(
+      'color-scheme',
     );
-    expect(tokens).toContain("[data-cy-mode='dark']");
   });
 });

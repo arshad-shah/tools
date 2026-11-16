@@ -1,8 +1,8 @@
 import {
   Button,
+  Form,
   Inline,
   Notice,
-  Stack,
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
@@ -24,7 +24,8 @@ export interface PasswordFormProps {
 
 /**
  * Asks for one encrypted PDF's password, next to the file it is for
- * (redesign spec: errors sit next to what caused them). Enter submits;
+ * (redesign spec: errors sit next to what caused them). A Cynosure Form:
+ * Enter submits;
  * an empty password is never submitted.
  */
 export function PasswordForm({
@@ -47,7 +48,7 @@ export function PasswordForm({
       icon={lock}
       title={`${fileName} is password-protected`}
     >
-      <Stack gap="4">
+      <Form label={`Unlock ${fileName}`} gap="4" onSubmit={submit}>
         <Text as="p">{description}</Text>
         <TextField
           label={`Password for ${fileName}`}
@@ -58,12 +59,6 @@ export function PasswordForm({
           onChange={setPassword}
           error={error ?? undefined}
           disabled={busy || disabled}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              submit();
-            }
-          }}
         />
         <Inline gap="2" wrap>
           <Button
@@ -71,7 +66,7 @@ export function PasswordForm({
             tone="accent"
             loading={busy}
             disabled={!password || busy || disabled}
-            onClick={submit}
+            type="submit"
           >
             {submitLabel}
           </Button>
@@ -81,7 +76,7 @@ export function PasswordForm({
             </Button>
           ) : null}
         </Inline>
-      </Stack>
+      </Form>
     </Notice>
   );
 }

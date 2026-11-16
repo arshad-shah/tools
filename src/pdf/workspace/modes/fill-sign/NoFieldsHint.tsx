@@ -1,6 +1,6 @@
 import { fieldSuggest, fieldText } from '@arshad-shah/cynosure/icons';
 import { Button, Card, Inline, Stack } from '@arshad-shah/cynosure';
-import { Place } from '@/pdf/surfaces/layers';
+import { Place } from '@/shared/surfaces/pdf/layers';
 import type { ModeProps } from '../types';
 import type { ViewField } from './fields';
 import { useFillSign } from './store';

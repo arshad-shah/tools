@@ -1,15 +1,17 @@
 import {
+  Button,
+  IconButton,
   Inline,
   Kbd,
   SideNav,
   Stack,
   ThemeToggle,
+  useAppShell,
   type NavEntry,
   type NavItem,
-  type NavLinkProps,
 } from '@arshad-shah/cynosure';
 import { home, search, shieldCheck } from '@arshad-shah/cynosure/icons';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { THEME_KEY } from '@/theme/tools-theme';
 import { CATEGORIES } from '../categories';
 import { useFavorites } from '../favorites';
@@ -17,45 +19,70 @@ import { useRecentToolsStore } from '../recents';
 import { getEnabledTools, TOOLS } from '../registry';
 import { categoryPath, toolPath } from '../routes';
 import type { ToolManifest } from '../tool';
-import { categoryGlyph, toolGlyph } from '../ui/glyphs';
 import { HelpMenu } from './HelpMenu';
+import { renderRouterLink } from './router-link';
 
 /** Recent tools listed in the navigation (spec: the last five). */
 const RECENT = 5;
-
-/** SideNav links through the router (client-side navigation). */
-export function NavRouterLink({ href, ...rest }: NavLinkProps) {
-  return <Link to={href} {...rest} />;
-}
-const renderNavLink = (props: NavLinkProps) => <NavRouterLink {...props} />;
 
 const toolItem = (t: ToolManifest, prefix = ''): NavItem => ({
   id: `${prefix}${toolPath(t)}`,
   label: t.name,
   href: toolPath(t),
-  icon: toolGlyph(t.id),
+  icon: t.icon,
 });
 
 export interface AppNavProps {
-  /** The desktop rail shows icons only. */
-  collapsed?: boolean;
-  onCollapsedChange?(collapsed: boolean): void;
   onSearch(): void;
   onPrivacy(): void;
 }
 
 /**
- * The site navigation (redesign spec, Shell): Search, Home, Favourites,
- * the last five tools, then every category as a group of its tools (the
- * current one open). The footer holds the privacy status, the Help menu
- * and the colour mode. The desktop rail and the phone drawer both use it.
+ * The navigation footer (SideNav `footer`): the privacy status, the Help
+ * menu and the colour mode; stacked icons in the desktop rail.
  */
-export function AppNav({
-  collapsed = false,
-  onCollapsedChange,
-  onSearch,
+function NavFooter({
   onPrivacy,
-}: AppNavProps) {
+  tool,
+}: {
+  onPrivacy(): void;
+  tool: ToolManifest | undefined;
+}) {
+  const { navCollapsed } = useAppShell();
+  const privacy = 'Files stay on this device';
+  return navCollapsed ? (
+    <Stack gap="2" align="center" paddingBlock="4">
+      <IconButton
+        icon={shieldCheck}
+        label={privacy}
+        variant="ghost"
+        tone="neutral"
+        onClick={onPrivacy}
+      />
+      <HelpMenu tool={tool} />
+      <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
+    </Stack>
+  ) : (
+    <Stack gap="2" paddingInline="4" paddingBlock="4">
+      <Button
+        variant="ghost"
+        tone="neutral"
+        icon={shieldCheck}
+        fullWidth
+        onClick={onPrivacy}
+      >
+        {privacy}
+      </Button>
+      <Inline justify="between" align="center">
+        <HelpMenu tool={tool} />
+        <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
+      </Inline>
+    </Stack>
+  );
+}
+
+export function AppNav({ onSearch, onPrivacy }: AppNavProps) {
+  const { navCollapsed: collapsed } = useAppShell();
   const { pathname } = useLocation();
   const { ids: favIds } = useFavorites();
   const recentIds = useRecentToolsStore((s) => s.ids);
@@ -87,7 +114,7 @@ export function AppNav({
         .map((c) => ({
           id: `category:${c.id}`,
           label: c.label,
-          icon: categoryGlyph(c.id),
+          icon: c.icon,
           items: [
             {
               id: categoryPath(c.id),
@@ -101,44 +128,15 @@ export function AppNav({
   ];
 
   return (
-    <Stack fill gap="0">
-      <Stack grow minSize="0" overflow="auto">
-        <SideNav
-          label="Tools navigation"
-          items={items}
-          current={pathname}
-          collapsed={collapsed}
-          onCollapsedChange={onCollapsedChange}
-          renderLink={renderNavLink}
-          onNavigate={(id) => {
-            if (id === 'search') onSearch();
-            else if (id === 'privacy') onPrivacy();
-          }}
-          footer={[
-            {
-              id: 'privacy',
-              label: 'Files stay on this device',
-              icon: shieldCheck,
-            },
-          ]}
-        />
-      </Stack>
-      {collapsed ? (
-        <Stack gap="2" align="center" paddingBlock="4">
-          <HelpMenu tool={tool} />
-          <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
-        </Stack>
-      ) : (
-        <Inline
-          justify="between"
-          align="center"
-          paddingInline="5"
-          paddingBlock="4"
-        >
-          <HelpMenu tool={tool} />
-          <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
-        </Inline>
-      )}
-    </Stack>
+    <SideNav
+      label="Tools navigation"
+      items={items}
+      current={pathname}
+      renderLink={renderRouterLink}
+      onNavigate={(id) => {
+        if (id === 'search') onSearch();
+      }}
+      footer={<NavFooter onPrivacy={onPrivacy} tool={tool} />}
+    />
   );
 }

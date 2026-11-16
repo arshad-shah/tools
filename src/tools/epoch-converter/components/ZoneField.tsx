@@ -1,8 +1,8 @@
-import { Select } from '@arshad-shah/cynosure';
+import { Combobox } from '@arshad-shah/cynosure';
 import React, { useMemo } from 'react';
 import { listZones } from '@/shared/lib/time';
 
-/** Every IANA zone with its offset now (type to jump in the list). */
+/** Every IANA zone with its offset now: type a city or zone to find it. */
 export const ZoneField: React.FC<{
   label: string;
   value: string;
@@ -13,6 +13,13 @@ export const ZoneField: React.FC<{
     [],
   );
   return (
-    <Select label={label} options={options} value={value} onChange={onChange} />
+    <Combobox
+      label={label}
+      options={options}
+      value={value}
+      onChange={(zone) => {
+        if (zone) onChange(zone);
+      }}
+    />
   );
 };

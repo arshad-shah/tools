@@ -7,7 +7,7 @@ export const TOOLS_ACCENT = '#3ddc97';
 
 /**
  * Cynosure's own font, Hanken Grotesk, self-hosted by the package
- * (`@arshad-shah/cynosure/fonts/hanken.css`, imported in tokens.css).
+ * (`@arshad-shah/cynosure/fonts/hanken.css`, imported in app.css).
  */
 const HANKEN =
   '"Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';

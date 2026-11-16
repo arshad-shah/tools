@@ -122,6 +122,7 @@ export function BuilderView({
         />
         <TextArea
           label="Header JSON"
+          monospace
           rows={3}
           spellCheck={false}
           value={header}
@@ -130,6 +131,7 @@ export function BuilderView({
         />
         <TextArea
           label="Payload JSON"
+          monospace
           rows={7}
           spellCheck={false}
           value={payload}

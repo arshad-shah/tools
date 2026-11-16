@@ -2,6 +2,7 @@ import {
   Button,
   CodeBlock,
   DescriptionList,
+  Form,
   Disclosure,
   Notice,
   SegmentedControl,
@@ -52,12 +53,6 @@ export function SignaturePanel({
   verify: Verify;
 }) {
   const status = verify.sigStatus;
-  const enter = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && verify.keyText.trim()) {
-      e.preventDefault();
-      void verify.handleVerify();
-    }
-  };
   return (
     <Stack gap="6">
       <DescriptionList
@@ -74,7 +69,13 @@ export function SignaturePanel({
           unsigned token.
         </Notice>
       ) : (
-        <Stack gap="5">
+        <Form
+          label="Verify the signature"
+          gap="5"
+          onSubmit={() => {
+            if (verify.keyText.trim()) void verify.handleVerify();
+          }}
+        >
           <SegmentedControl
             label="Key type"
             size="sm"
@@ -94,7 +95,6 @@ export function SignaturePanel({
                 placeholder="The shared secret used for HS256, HS384 or HS512"
                 value={verify.keyText}
                 onChange={verify.setKeyText}
-                onKeyDown={enter}
               />
               <Select
                 label="Secret encoding"
@@ -108,6 +108,7 @@ export function SignaturePanel({
             <TextArea
               id="jwt-verify-key"
               label="Secret or public key"
+              monospace
               rows={5}
               spellCheck={false}
               autoComplete="off"
@@ -148,7 +149,7 @@ export function SignaturePanel({
             icon={shieldCheck}
             loading={status.state === 'checking'}
             disabled={!verify.keyText.trim()}
-            onClick={() => void verify.handleVerify()}
+            type="submit"
           >
             Verify signature
           </Button>
@@ -170,7 +171,7 @@ export function SignaturePanel({
               ? `Checked: ${status.state === 'error' ? 'the key could not be used' : status.state === 'verified' ? 'the signature matches this key' : 'the signature does not match this key'}.`
               : ''}
           </Text>
-        </Stack>
+        </Form>
       )}
       <Disclosure summary="Signature value" variant="line">
         <CodeBlock code={signature} title="Base64url signature" wrap copyable />

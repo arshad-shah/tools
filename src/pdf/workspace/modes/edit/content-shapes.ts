@@ -1,4 +1,4 @@
-import type { Shape } from '@/shared/ui';
+import type { Shape } from '@/shared/surfaces/page/shape-layer';
 import type { ContentShapeParams } from '@/pdf/doc/ops/edit';
 import { lineEnds } from '@/pdf/doc/ops/edit';
 import type { CoverParams } from '@/pdf/doc/ops/cover';

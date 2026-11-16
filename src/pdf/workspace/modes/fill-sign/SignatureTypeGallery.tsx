@@ -9,7 +9,7 @@ import {
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
-import { SamplePaper, TypedSample } from '@/pdf/surfaces/InkSample';
+import { SamplePaper, TypedSample } from '@/shared/surfaces/pdf/InkSample';
 import {
   ensureFontFace,
   fontById,

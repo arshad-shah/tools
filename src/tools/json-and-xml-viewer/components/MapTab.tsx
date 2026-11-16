@@ -20,7 +20,10 @@ import {
   zoomOut,
 } from '@arshad-shah/cynosure/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DiagramCanvas, type DiagramCanvasHandle } from '@/shared/ui';
+import {
+  DiagramCanvas,
+  type DiagramCanvasHandle,
+} from '@/shared/surfaces/diagram-canvas/DiagramCanvas';
 import {
   ancestors,
   findById,
@@ -218,11 +221,13 @@ export function MapTab({
           />
         </Toolbar>
         <Inline gap="3" align="center">
-          <Text size="sm" tone="muted" aria-live="polite">
-            {shown < total
-              ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
-              : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
-          </Text>
+          <Inline aria-live="polite">
+            <Text size="sm" tone="muted">
+              {shown < total
+                ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
+                : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
+            </Text>
+          </Inline>
           <Select
             label="Node cap"
             size="sm"
@@ -238,8 +243,6 @@ export function MapTab({
       </Inline>
       <DiagramCanvas
         ref={canvas}
-        className="min-h-80 flex-1"
-        controls={false}
         diagram={diagram}
         direction={settings.direction}
         minimap={settings.minimap}

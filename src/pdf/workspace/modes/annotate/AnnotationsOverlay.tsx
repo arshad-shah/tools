@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Notice } from '@arshad-shah/cynosure';
-import { ShapeLayer } from '@/shared/ui';
-import { HitArea } from '@/pdf/surfaces/HitArea';
-import { Layer, Place } from '@/pdf/surfaces/layers';
-import type { LayerObject, ObjectChange } from '@/pdf/surfaces/ObjectLayer';
-import { PdfTextLayerHost } from '@/shared/ui/adapters/PdfTextLayerHost';
+import { ShapeLayer } from '@/shared/surfaces/page/shape-layer';
+import { HitArea } from '@/shared/surfaces/pdf/HitArea';
+import { Layer, Place } from '@/shared/surfaces/pdf/layers';
+import type {
+  LayerObject,
+  ObjectChange,
+} from '@/shared/surfaces/pdf/ObjectLayer';
+import { PdfTextLayerHost } from '@/shared/surfaces/page/PdfTextLayerHost';
 import { toScreen } from '@/pdf/doc/geometry';
 import { geometryBounds } from '@/pdf/doc/object-geometry';
 import type { Box, OverlayItem } from '@/pdf/doc/types';

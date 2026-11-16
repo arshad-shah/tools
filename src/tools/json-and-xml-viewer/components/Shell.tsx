@@ -530,15 +530,14 @@ export function Shell() {
       <Card as="section" padding="sm" aria-label={`${TAB_LABEL[view]} view`}>
         <Stack gap="3">
           {doc ? <PathBar node={selected} value={value} xml={xml} /> : null}
-          <div className="flex h-160 min-h-0 flex-col">
-            {doc ? views[view]() : empty}
-          </div>
+          {/* Each view sets its own height (Cynosure gap 35: no box height). */}
+          <Stack minSize="0">{doc ? views[view]() : empty}</Stack>
         </Stack>
       </Card>
     );
 
   return (
-    <Stack gap="5" className="min-w-0">
+    <Stack gap="5" minSize="0">
       <Inline gap="3" align="center" justify="between" wrap>
         <Inline gap="3" align="center" wrap>
           <SegmentedControl

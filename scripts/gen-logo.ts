@@ -11,7 +11,7 @@ import fontkit from '@pdf-lib/fontkit';
 
 const FONT =
   'node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2';
-const OUT = 'src/shared/ui/icons/brand/logo-paths.ts';
+const OUT = 'src/shared/surfaces/logo/logo-paths.ts';
 const TEXT = '~/tools';
 const SIZE = 24; // em size in viewBox units
 

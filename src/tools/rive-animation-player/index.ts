@@ -1,4 +1,4 @@
-import { IconPlay } from '@/shared/ui/icons';
+import { playCircle as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Rive Animation Player',
   description:
     'Preview and control Rive animations with state machines and artboards',
-  icon: IconPlay,
+  icon,
   category: 'media',
   slug: 'rive',
   kind: 'tool',

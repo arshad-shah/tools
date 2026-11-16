@@ -120,17 +120,12 @@ export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
         {logo ? (
           <Stack gap="4">
             <Slider
-              label="Logo area (% of the code)"
+              label="Logo width (% of the code)"
               showValue
-              value={Math.round(s.logoFraction * 100)}
-              min={2}
+              value={Math.round(Math.min(0.3, s.logoFraction) * 100)}
+              min={10}
               max={30}
               onChange={(v) => update({ logoFraction: (v as number) / 100 })}
-            />
-            <Switch
-              label="Clear the modules behind the logo"
-              checked={s.excavate}
-              onChange={(excavate) => update({ excavate })}
             />
           </Stack>
         ) : null}

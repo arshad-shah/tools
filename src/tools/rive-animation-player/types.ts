@@ -1,4 +1,4 @@
-import type { Rive } from '@/shared/ui/adapters/rive-runtime';
+import type { Rive } from '@/shared/lib/rive-runtime';
 
 export enum PlayerState {
   Idle,

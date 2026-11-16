@@ -23,6 +23,7 @@ import {
 } from '@arshad-shah/cynosure/icons';
 import React, { useMemo, useState } from 'react';
 import { TextSourceActions } from '@/app/ui/text-source';
+import { useTextFile } from '@/app/ui/use-text-file';
 import { TransformLayout } from '@/app/ui/transform';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
@@ -38,7 +39,8 @@ import {
   encodeBytes,
   encodeText,
   guessFileType,
-  preview,
+  PREVIEW_LENGTH,
+  PREVIEW_THRESHOLD,
 } from './lib/convert';
 import { describeBytes, type BytesInsight } from './lib/insight';
 import { base64Settings, type Base64Settings } from './settings';
@@ -75,12 +77,14 @@ function ResultBlock({
   text: string;
   name: string;
 }) {
-  const shown = preview(text);
   return (
     <Stack gap="3">
+      {/* A megabyte line is shown cut, with Show all; Copy and Download
+          always take all of it. */}
       <CodeBlock
         title={title}
-        code={shown.text}
+        code={text}
+        maxChars={text.length > PREVIEW_THRESHOLD ? PREVIEW_LENGTH : undefined}
         wrap
         copyable={false}
         actions={
@@ -103,11 +107,6 @@ function ResultBlock({
           </Inline>
         }
       />
-      {shown.truncated ? (
-        <Text size="sm" tone="muted">
-          {`Showing the first ${formatBytes(shown.text.length)} of ${formatBytes(text.length)}. Copy and Download take all of it.`}
-        </Text>
-      ) : null}
     </Stack>
   );
 }
@@ -217,6 +216,15 @@ const Base64Converter: React.FC = () => {
   const encoding = mode === 'encode';
   const empty = !file && !inputText.trim();
 
+  // A file dropped on the field opens like Open file (TextArea onFiles).
+  const textFile = useTextFile({
+    onChange: setInputText,
+    onFile: (f) => {
+      if (!encoding) return false;
+      void loadFile(f);
+      return true;
+    },
+  });
   const input = (
     <Card as="section" title={encoding ? 'Text or file' : 'Base64'}>
       <Stack gap="5">
@@ -247,6 +255,7 @@ const Base64Converter: React.FC = () => {
           </Inline>
         ) : (
           <TextArea
+            onFiles={textFile.onFiles}
             label={encoding ? 'Text to encode' : 'Base64 to decode'}
             labelHidden
             rows={6}

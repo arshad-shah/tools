@@ -1,8 +1,9 @@
 import { check, close } from '@arshad-shah/cynosure/icons';
 import { Icon } from '@arshad-shah/cynosure';
-import { PageText, type OverlayTransform } from '@/shared/ui';
-import { boxRect } from '@/pdf/surfaces/geometry';
-import { Paper, Place } from '@/pdf/surfaces/layers';
+import { PageText } from '@/shared/surfaces/page/page-text';
+import { type OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { boxRect } from '@/shared/surfaces/pdf/geometry';
+import { Paper, Place } from '@/shared/surfaces/pdf/layers';
 import type { ViewField } from './fields';
 import { effectiveStyle, overlayLayout, type FieldStyle } from './text-style';
 

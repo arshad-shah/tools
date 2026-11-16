@@ -15,7 +15,6 @@ import { toToolError, type ToolError } from '@/shared/lib/errors';
 import type { CategoryDef } from '../../categories';
 import { routeDrop, type DropDecision } from '../../drop-routing';
 import { TOOLS } from '../../registry';
-import { toolGlyph } from '../../ui/glyphs';
 import { imagesAsPdfs } from './images-as-pdfs';
 
 export interface HubDropZoneProps {
@@ -103,7 +102,7 @@ export function HubDropZone({
               key={tool.id}
               label={tool.name}
               description={tool.description}
-              leading={<IconTile icon={toolGlyph(tool.id)} size="sm" />}
+              leading={<IconTile icon={tool.icon} size="sm" />}
               onClick={() => {
                 const files = choice?.files ?? [];
                 setChoice(null);

@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type React from 'react';
-import type { OverlayTransform } from '@/shared/ui';
-import { FieldBox, type FieldBoxState } from '@/pdf/surfaces/FieldBox';
-import { matrixViewport } from '@/pdf/surfaces/geometry';
-import { PageFrame } from '@/pdf/surfaces/PageFrame';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { FieldBox, type FieldBoxState } from '@/shared/surfaces/pdf/FieldBox';
+import { matrixViewport } from '@/shared/surfaces/pdf/geometry';
+import { PageFrame } from '@/shared/surfaces/pdf/PageFrame';
 import type { Box } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { advance, resizeField, writeValue } from './actions';
 import { FieldEditor } from './FieldEditor';
 import { FieldValue } from './FieldValue';
 import { fieldName, type ViewField } from './fields';
-import { FocusOnMount } from '@/pdf/surfaces/FocusOnMount';
+import { FocusOnMount } from '@/shared/surfaces/pdf/FocusOnMount';
 import { fillSign, useFillSign } from './store';
 import { caretMetrics, effectiveStyle } from './text-style';
 

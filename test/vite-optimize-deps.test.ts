@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest';
  * The dev server pre-bundles dependencies it finds by scanning from
  * index.html. Packages only a worker imports are invisible to that scan, so
  * the first worker load discovers them and Vite reloads the page, which
- * drops in-memory state such as a Home hand-off (P5-G). Every package a PDF
- * worker graph imports must be listed in optimizeDeps.include.
+ * drops in-memory state such as a Home hand-off (P5-G) or a hub's (the
+ * image compressor's AVIF encoder). Every package a worker graph imports
+ * must be listed in optimizeDeps.include.
  */
 const ROOT = resolve(__dirname, '..');
 const SRC = join(ROOT, 'src');
@@ -55,10 +56,10 @@ function sources(dir: string): string[] {
   });
 }
 
-/** Every PDF module started with `new Worker(new URL(...))` (the workspace). */
+/** Every module started with `new Worker(new URL(...))` (PDF, images, text). */
 function workerEntries(): string[] {
   const out: string[] = [];
-  for (const c of sources(join(SRC, 'pdf'))) {
+  for (const c of sources(SRC)) {
     const text = readFileSync(c, 'utf8');
     for (const m of text.matchAll(WORKER)) {
       const file = resolveFile(c, m[1]);
@@ -77,7 +78,7 @@ const include = (() => {
 })();
 
 describe('vite optimizeDeps', () => {
-  it('finds the PDF worker entries', () => {
+  it('finds the worker entries', () => {
     expect(workerEntries().length).toBeGreaterThan(0);
   });
 
@@ -85,7 +86,7 @@ describe('vite optimizeDeps', () => {
     expect(include.has('pdfjs-dist/build/pdf.worker.mjs')).toBe(true);
   });
 
-  it('pre-bundles every package only a PDF worker imports', () => {
+  it('pre-bundles every package only a worker imports', () => {
     const bare = new Set<string>();
     for (const w of workerEntries()) walk(w, bare);
     const main = new Set<string>();

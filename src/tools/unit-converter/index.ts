@@ -1,11 +1,11 @@
-import { IconCalculator } from '@/shared/ui/icons';
+import { ruler as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'unit-converter',
   name: 'Unit Converter',
   description: 'Convert between units',
-  icon: IconCalculator,
+  icon,
   category: 'math',
   slug: 'units',
   kind: 'tool',

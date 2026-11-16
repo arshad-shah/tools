@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
-import { OverlayText, PageBox, type OverlayTransform } from '@/shared/ui';
-import { BytesImage } from '@/pdf/surfaces/BytesImage';
+import { OverlayText } from '@/shared/surfaces/page/overlay-text';
+import {
+  PageBox,
+  type OverlayTransform,
+} from '@/shared/surfaces/page/overlay-layer';
+import { BytesImage } from '@/shared/surfaces/pdf/BytesImage';
 import {
   FREETEXT_LINE_HEIGHT,
   FREETEXT_PAD,

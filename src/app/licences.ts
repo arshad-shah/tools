@@ -34,18 +34,6 @@ export const LICENCES: LicenceEntry[] = [
     note: 'DEFLATE and ZIP: share links, XLSX export',
   },
   {
-    name: 'Inter',
-    licence: 'OFL-1.1',
-    url: 'https://github.com/rsms/inter',
-    note: 'Interface font',
-  },
-  {
-    name: 'JetBrains Mono',
-    licence: 'OFL-1.1',
-    url: 'https://github.com/JetBrains/JetBrainsMono',
-    note: 'Monospace font',
-  },
-  {
     name: 'zxing-wasm',
     licence: 'MIT',
     url: 'https://github.com/Sec-ant/zxing-wasm',
@@ -192,21 +180,6 @@ export const LICENCES: LicenceEntry[] = [
     note: 'PDF tools; bundles qpdf (Apache-2.0) as wasm',
   },
   {
-    name: 'clsx',
-    licence: 'MIT',
-    url: 'https://github.com/lukeed/clsx',
-  },
-  {
-    name: 'tailwind-merge',
-    licence: 'MIT',
-    url: 'https://github.com/dcastil/tailwind-merge',
-  },
-  {
-    name: 'class-variance-authority',
-    licence: 'Apache-2.0',
-    url: 'https://github.com/joe-bell/cva',
-  },
-  {
     name: '@internationalized/date',
     licence: 'Apache-2.0',
     url: 'https://github.com/adobe/react-spectrum',
@@ -228,12 +201,6 @@ export const LICENCES: LicenceEntry[] = [
     licence: 'MIT',
     url: 'https://github.com/mholt/PapaParse',
     note: 'CSV parsing',
-  },
-  {
-    name: 'qrcode.react',
-    licence: 'ISC',
-    url: 'https://github.com/zpao/qrcode.react',
-    note: 'QR code rendering',
   },
   {
     name: '@rive-app/canvas, react-canvas',
