@@ -18,6 +18,7 @@ export const JobButton: React.FC<{
       <Inline gap="2" align="center" wrap>
         <Button
           variant="solid"
+          tone="accent"
           icon={icon}
           disabled={disabled || running}
           loading={running}
