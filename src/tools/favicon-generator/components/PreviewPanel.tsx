@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { ToolError } from '@/shared/lib/errors';
 import { MASKABLE_PADDING } from '../lib/outputs';
 import { renderIcon, type IconSource } from '../lib/render';
+import { SafeZoneRing } from '@/shared/surfaces/safe-zone';
 
 interface Rendered {
   tab16: string;
@@ -156,6 +157,8 @@ export function PreviewPanel({
                     alt={`Android ${m.label.toLowerCase()} mask`}
                     ratio={1}
                     radius={m.radius}
+                    overlay={<SafeZoneRing />}
+                    overlayLabel="Safe zone, the middle 80% of the icon"
                   />
                   <Text size="xs" tone="muted">
                     {m.label}
@@ -165,7 +168,7 @@ export function PreviewPanel({
             </Grid>
             <Text size="xs" tone="muted">
               Launchers cut the icon to their own shape: keep the artwork inside
-              the middle 80%.
+              the dashed ring (the middle 80%).
             </Text>
           </Stack>
         </Stack>

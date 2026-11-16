@@ -1,11 +1,12 @@
+import { useState } from 'react';
 import {
   Button,
   Card,
   CompareSlider,
-  Grid,
-  Image,
   Select,
   Stack,
+  ZoomControls,
+  type ZoomSetting,
 } from '@arshad-shah/cynosure';
 import { download } from '@arshad-shah/cynosure/icons';
 import { useBlobUrl, useObjectUrl } from '@/shared/lib/object-url';
@@ -27,17 +28,15 @@ export function ComparePanel({
   onDownload,
 }: ComparePanelProps) {
   const { row, result, file } = selected;
+  // Fit the frame by default; 100% is the picture's actual size (gap 16).
+  const [zoom, setZoom] = useState<ZoomSetting>({ kind: 'fit-page' });
+  const [scale, setScale] = useState(1);
   const before = useBlobUrl(file);
   const after = useObjectUrl(
     result?.bytes ?? null,
     result?.mime ?? 'image/png',
   );
   if (!result) return null;
-  // Both sides at the original's shape, so the divider compares like for like.
-  const ratio =
-    row.before.width && row.before.height
-      ? row.before.width / row.before.height
-      : undefined;
   return (
     <Card as="section" title="Compare" headingLevel={2}>
       <Stack gap="5">
@@ -48,30 +47,27 @@ export function ComparePanel({
           options={entries.map((e) => ({ value: e.row.id, label: e.row.name }))}
         />
         {before && after ? (
-          <CompareSlider
-            key={row.id}
-            before={
-              <Grid columns="1fr">
-                <Image
-                  src={before}
-                  alt={`${row.name}, original`}
-                  ratio={ratio}
-                  fit="contain"
-                />
-              </Grid>
-            }
-            after={
-              <Grid columns="1fr">
-                <Image
-                  src={after}
-                  alt={`${row.name}, compressed`}
-                  ratio={ratio}
-                  fit="contain"
-                />
-              </Grid>
-            }
-            labels={{ before: 'Original', after: 'Compressed' }}
-          />
+          <Stack gap="3">
+            <ZoomControls
+              size="sm"
+              zoom={zoom}
+              percent={Math.round(scale * 100)}
+              onZoomChange={setZoom}
+              labels={{ group: 'Compare zoom' }}
+            />
+            <CompareSlider
+              key={row.id}
+              beforeSrc={before}
+              beforeAlt={`${row.name}, original`}
+              afterSrc={after}
+              afterAlt={`${row.name}, compressed`}
+              zoom={zoom}
+              onZoomChange={setZoom}
+              onScaleChange={setScale}
+              zoomable
+              labels={{ before: 'Original', after: 'Compressed' }}
+            />
+          </Stack>
         ) : null}
         <Button
           variant="soft"
