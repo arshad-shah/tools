@@ -1,5 +1,5 @@
 /**
- * The safety net behind PdfDropzone's password flow: only reached when
+ * The safety net behind PdfIntake's password flow: only reached when
  * encrypted bytes slip past it. Its own module, so the render worker can use
  * it without pulling pdf-lib into its bundle.
  */

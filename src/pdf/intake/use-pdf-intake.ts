@@ -62,8 +62,8 @@ export interface PdfIntakeOptions {
 /**
  * How dropped PDFs come in (no UI): each file is loaded and checked, an
  * encrypted one is decrypted in memory (or waits for its password), and the
- * ready files are handed over in drop order. Shared by the old PdfDropzone
- * and the redesigned file tools.
+ * ready files are handed over in drop order. Used by the PDF file tools
+ * (src/pdf/ui/PdfIntake).
  */
 export function usePdfIntake({
   onFiles,
