@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './menu';
+import { IconCopy } from './icons';
 
 function setup(onRename = vi.fn()) {
   render(
@@ -85,5 +86,35 @@ describe('DropdownMenu', () => {
     fireEvent.keyDown(item('Rename'), { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+});
+
+describe('DropdownMenu item icons', () => {
+  it("draws a kit icon in the item's children as the item's icon", () => {
+    render(
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <button type="button">Menu</button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent aria-label="Actions">
+          <DropdownMenuItem>
+            <IconCopy size="sm" aria-hidden />
+            Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuItem>Delete</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }), {
+      detail: 1,
+    });
+    // The icon adds nothing to the item's name, and is drawn decoratively.
+    const dup = screen.getByRole('menuitem', { name: 'Duplicate' });
+    const svg = dup.querySelectorAll('svg');
+    expect(svg).toHaveLength(1);
+    expect(svg[0]!.getAttribute('aria-hidden')).toBe('true');
+    expect(
+      screen.getByRole('menuitem', { name: 'Delete' }).querySelector('svg'),
+    ).toBeNull();
   });
 });

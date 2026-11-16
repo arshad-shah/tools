@@ -1,5 +1,6 @@
 import type React from 'react';
 import { Badge as CyBadge } from '@arshad-shah/cynosure';
+import { facetOf } from './icons';
 
 export type BadgeVariant = 'solid' | 'soft' | 'outline';
 export type BadgeTone =
@@ -25,13 +26,15 @@ export interface BadgeProps extends Omit<
   pill?: boolean | null;
   /** Kept for call sites: Cynosure's badge is always mono. */
   mono?: boolean;
-  /** Leading icon, rendered before the label with the built-in gap. */
+  /**
+   * Leading icon: a kit icon (`<IconX />`) goes to Cynosure's icon slot; any
+   * other node is rendered before the label with the built-in gap.
+   */
   icon?: React.ReactNode;
 }
 
 /**
- * Cynosure's Badge. Kit icons are React nodes, so they ride beside the text
- * until the icon swap. Attributes Cynosure's Badge does not take (a test id,
+ * Cynosure's Badge, with a kit icon in its Facet `icon` slot. Attributes Cynosure's Badge does not take (a test id,
  * aria-hidden) go on a box-less wrapper.
  */
 export function Badge({
@@ -47,11 +50,13 @@ export function Badge({
   ...attrs
 }: BadgeProps) {
   void mono;
+  const facet = facetOf(icon);
   const badge = (
     <CyBadge
       tone={tone ?? 'neutral'}
       variant={variant ?? 'soft'}
       size={SIZE[size ?? 'md']}
+      icon={facet}
       {...(className ? { className } : {})}
       style={
         pill
@@ -62,7 +67,7 @@ export function Badge({
           : style
       }
     >
-      {icon ? (
+      {icon && !facet ? (
         <>
           {icon}
           {children}

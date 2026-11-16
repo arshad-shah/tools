@@ -47,8 +47,22 @@ describe('Button', () => {
       </Button>,
     );
     const b = screen.getByRole('button', { name: 'Find' });
-    expect(b.querySelectorAll('svg')).toHaveLength(2);
+    // Cynosure's icon and iconEnd slots, on either side of the label.
+    const content = b.querySelector('.cy-button-content')!;
+    expect([...content.children].map((c) => c.tagName.toLowerCase())).toEqual([
+      'svg',
+      'span',
+      'svg',
+    ]);
     expect(ref.current).toBe(b);
+  });
+
+  it('a node that is not a plain kit icon rides beside the label', () => {
+    render(<Button leftIcon={<span data-testid="mark" />}>Go</Button>);
+    const label = screen
+      .getByRole('button', { name: 'Go' })
+      .querySelector('.cy-button-label')!;
+    expect(label.querySelector('[data-testid="mark"]')).not.toBeNull();
   });
 
   it('disabled and loading disable the button', () => {
@@ -75,11 +89,23 @@ describe('Button', () => {
 
 describe('IconButton', () => {
   it('takes an icon component, sized to the button, and a label', () => {
-    const { container } = render(
-      <IconButton label="Search" icon={IconSearch} size="lg" />,
+    render(<IconButton label="Search" icon={IconSearch} size="lg" />);
+    const b = screen.getByRole('button', { name: 'Search' });
+    // Cynosure's icon slot: decorative, sized to the control.
+    const svg = b.querySelectorAll('svg');
+    expect(svg).toHaveLength(1);
+    expect(svg[0]!.getAttribute('aria-hidden')).toBe('true');
+    expect(svg[0]!.dataset.size).toBe('lg');
+  });
+
+  it('a plain icon element goes to the icon slot too', () => {
+    render(
+      <IconButton label="Find" icon={<IconSearch size="xs" />} size="sm" />,
     );
-    expect(screen.getByRole('button', { name: 'Search' })).toBeTruthy();
-    expect(container.querySelector('svg')?.getAttribute('width')).toBe('20');
+    const svg = screen
+      .getByRole('button', { name: 'Find' })
+      .querySelector('svg');
+    expect(svg?.dataset.size).toBe('md');
   });
 
   it('is a square Cynosure button at each size', () => {
@@ -96,11 +122,17 @@ describe('IconButton', () => {
     expect(sm.hasAttribute('data-square')).toBe(true);
   });
 
-  it('a rendered icon node keeps its own size', () => {
+  it('a styled icon node keeps its own size', () => {
     const { container } = render(
-      <IconButton label="More" icon={<IconSearch size="xs" />} size="sm" />,
+      <IconButton
+        label="More"
+        icon={<IconSearch size="xs" className="text-danger" />}
+        size="sm"
+      />,
     );
-    expect(container.querySelector('svg')?.getAttribute('width')).toBe('12');
+    const svg = container.querySelector('svg')!;
+    expect(svg.style.getPropertyValue('--cy-icon-size')).toBe('12px');
+    expect(svg.classList).toContain('text-danger');
   });
 
   it('tone tints the button', () => {

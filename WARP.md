@@ -76,7 +76,7 @@ src/tools/<tool-id>/
 
 ## Technology Stack
 
-React 19, TypeScript, Vite, Tailwind CSS v4, React Router v7, zustand, pdf-lib, pdfjs-dist, qpdf-wasm, lucide-react, Vitest, Playwright, pnpm.
+React 19, TypeScript, Vite, Tailwind CSS v4, React Router v7, zustand, pdf-lib, pdfjs-dist, qpdf-wasm, @arshad-shah/cynosure (UI and Facet icons), Vitest, Playwright, pnpm.
 
 ## CI/CD
 

@@ -1,7 +1,7 @@
 import { RuleTester } from 'eslint';
 import tseslint from 'typescript-eslint';
 import { describe, it } from 'vitest';
-import rule from './no-lucide-outside-icons.js';
+import rule from './no-icon-libraries.js';
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -14,26 +14,52 @@ const tester = new RuleTester({
   },
 });
 
-const bad = [{ messageId: 'lucide' }];
+const bad = [{ messageId: 'library' }];
 
-tester.run('no-lucide-outside-icons', rule, {
+tester.run('no-icon-libraries', rule, {
   valid: [
     { code: `import { IconStar } from '@/shared/ui/icons';` },
-    { code: `import x from 'lucide';` },
+    { code: `import { star } from '@arshad-shah/cynosure/icons';` },
+    { code: `import { github } from '@arshad-shah/cynosure/brands';` },
     { code: `import x from 'lucide-reactor';` },
-    {
-      code: `import { Star } from 'lucide-react';`,
-      filename: 'src/shared/ui/icons/lucide.ts',
-    },
-    {
-      code: `import { Star } from 'lucide-react';`,
-      filename: 'C:\\repo\\src\\shared\\ui\\icons\\lucide.ts',
-    },
+    { code: `import x from 'react-iconsole';` },
+    { code: `import x from '@tabler-ish/core';` },
   ],
   invalid: [
     {
       code: `import { Star } from 'lucide-react';`,
       filename: 'src/tools/x/Tool.tsx',
+      errors: bad,
+    },
+    {
+      // The icon module too: it wraps Facet, nothing else.
+      code: `import { Star } from 'lucide-react';`,
+      filename: 'src/shared/ui/icons/facet.ts',
+      errors: bad,
+    },
+    {
+      code: `import { Star } from 'lucide-react';`,
+      filename: 'C:\\repo\\src\\shared\\ui\\icons\\facet.ts',
+      errors: bad,
+    },
+    {
+      code: `import x from 'lucide';`,
+      filename: 'src/app/a.ts',
+      errors: bad,
+    },
+    {
+      code: `import { FaStar } from 'react-icons/fa';`,
+      filename: 'src/app/a.ts',
+      errors: bad,
+    },
+    {
+      code: `import { StarIcon } from '@heroicons/react/24/outline';`,
+      filename: 'src/app/a.ts',
+      errors: bad,
+    },
+    {
+      code: `import { IconStar } from '@tabler/icons-react';`,
+      filename: 'src/app/a.ts',
       errors: bad,
     },
     {

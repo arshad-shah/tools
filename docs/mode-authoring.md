@@ -165,7 +165,7 @@ Handlers receive an `RpcContext` (abort signal, progress) and return `Transferre
 
 ## 8. Icons
 
-Mode icons live in `src/shared/ui/icons/custom/modes.tsx` (`IconModeProtect` and so on): one family drawn on a document outline with the mode's mark in the lower half. Tool icons for a mode go in their own group file, `src/shared/ui/icons/custom/<group>.tsx`, exported with one line from `src/shared/ui/icons/index.ts`. Draw them with `defineIcon` on the 24px grid, stroke only, every coordinate inside 0 to 24, and list each new name in `test/icons-grid.test.ts`. Prefer a lucide icon when one fits.
+Mode icons are Facet's `file-*` family (`IconModeProtect` is `file-lock`, and so on), in `src/shared/ui/icons/facet.ts`. Tool icons for a mode go in that file's section for the mode, one `fromFacet` line each. tools draws no icons: when Facet has none that fits, it is drawn in Cynosure first.
 
 ## 9. Tests
 
@@ -187,7 +187,7 @@ Several Parts add to the workspace in parallel, so every shared registry takes o
 - `src/pdf/doc/export-stages.ts`: one stage per export step
 - `src/pdf/workspace/export-options.ts`: one Export dialog section
 - `src/pdf/edit/worker/handlers.ts` and `src/pdf/render/handlers/index.ts`: one handler module each
-- `src/shared/ui/icons/index.ts`: one line per custom icon group
+- `src/shared/ui/icons/facet.ts`: one line per icon, in its section
 - `src/shared/ui/index.ts`: one line per kit module
 
 Keep edits to these files additive so parallel branches merge without conflicts.

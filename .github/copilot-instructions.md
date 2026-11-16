@@ -33,14 +33,14 @@ The folder name **must equal** the manifest `id`. It is also the URL (`/<tool-id
 
 ```ts
 // src/tools/your-tool/index.ts
-import { Calculator } from 'lucide-react';
+import { IconCalculator } from '@/shared/ui/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'your-tool',
   name: 'Your Tool',
   description: 'One-line description',
-  icon: Calculator,
+  icon: IconCalculator,
   category: 'data', // ToolCategory in src/app/tool.ts
   enabled: true,
   load: () => import('./Tool'),
@@ -90,7 +90,7 @@ export default function YourTool({ definition }: ToolProps) {
   - Inline `style` only for data-driven values, each with a `// data-driven:` comment.
 - Never hand-roll download anchors, `navigator.clipboard`, `FileReader`, size formatting, per-tool toasts, or raw `<input type="file">`. Use the shared helpers.
 - No silent failures: report through `notify.error(...)` or an inline `Alert`.
-- Icons come from **lucide-react** only.
+- Icons are **Facet** icons only: an `Icon...` export of `@/shared/ui/icons` (or `@arshad-shah/cynosure/icons`). No icon packages (`local/no-icon-libraries`).
 
 ### Persisted data keys
 
