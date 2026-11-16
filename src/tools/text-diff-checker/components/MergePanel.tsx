@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
+  CodeBlock,
   Inline,
   SegmentedControl,
   Stack,
   Text,
-  TextInputPanel,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { download } from '@arshad-shah/cynosure/icons';
+import { saveBlob } from '@/shared/lib/download';
 import type { DiffResult, Hunk } from '../lib/engine';
 import { applyChoices, type HunkChoice } from '../lib/merge';
 
@@ -47,24 +49,24 @@ export function MergePanel({ result, texts }: MergePanelProps) {
   return (
     <Stack gap="3">
       <Inline gap="2">
-        <Button size="sm" variant="secondary" onClick={() => all('left')}>
+        <Button size="sm" variant="soft" onClick={() => all('left')}>
           Take all left
         </Button>
-        <Button size="sm" variant="secondary" onClick={() => all('right')}>
+        <Button size="sm" variant="soft" onClick={() => all('right')}>
           Take all right
         </Button>
       </Inline>
       <Stack gap="2">
         {changes.map(({ h, index }, n) => (
-          <Inline key={index} gap="3" className="flex-wrap">
-            <Text size="sm" className="min-w-48">
+          <Inline key={index} gap="4" align="center" wrap>
+            <Text size="sm">
               Change {n + 1}: {describeHunk(h)}
             </Text>
             <SegmentedControl
               size="sm"
               label={`Change ${n + 1} source`}
               value={choices.get(index) ?? 'left'}
-              onChange={(v) => choose(index, v)}
+              onChange={(v) => choose(index, v as HunkChoice)}
               options={[
                 { value: 'left', label: 'Take left' },
                 { value: 'right', label: 'Take right' },
@@ -73,15 +75,19 @@ export function MergePanel({ result, texts }: MergePanelProps) {
           </Inline>
         ))}
       </Stack>
-      <TextInputPanel
-        label="Merged result"
-        value={merged}
-        onChange={() => {}}
-        language="plain"
-        readOnly
-        downloadName="merged.txt"
-        maxHeight={320}
-      />
+      <CodeBlock title="Merged result" code={merged} copyable wrap />
+      <Inline>
+        <Button
+          size="sm"
+          variant="soft"
+          icon={download}
+          onClick={() =>
+            saveBlob(new Blob([merged], { type: 'text/plain' }), 'merged.txt')
+          }
+        >
+          Download merged.txt
+        </Button>
+      </Inline>
     </Stack>
   );
 }

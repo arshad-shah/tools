@@ -1,11 +1,5 @@
-import { IconDownload } from '@/shared/ui/icons';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui';
+import { Button, Menu } from '@arshad-shah/cynosure';
+import { download } from '@arshad-shah/cynosure/icons';
 import { copyText } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
@@ -38,48 +32,43 @@ export function ExportMenu({ result, texts, names }: ExportMenuProps) {
   const patch = () =>
     toUnifiedPatch(names.left, names.right, texts.left, texts.right);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button variant="secondary" size="sm" disabled={!result}>
-          <IconDownload size="sm" aria-hidden />
+    <Menu
+      label="Export"
+      items={[
+        { value: 'copy', label: 'Copy patch' },
+        { value: 'patch', label: 'Download .patch' },
+        { value: 'html', label: 'Download HTML report' },
+      ]}
+      onSelect={(v) => {
+        if (v === 'copy')
+          void copyText(patch()).then(
+            () => notify.success('Patch copied'),
+            () => notify.error('Could not copy to clipboard'),
+          );
+        else if (v === 'patch')
+          saveBlob(
+            new Blob([patch()], { type: 'text/x-diff' }),
+            'changes.patch',
+          );
+        else if (v === 'html' && result)
+          saveBlob(
+            new Blob([toHtmlReport(result, texts, names, reportTokens())], {
+              type: 'text/html',
+            }),
+            'diff-report.html',
+          );
+      }}
+      trigger={(props) => (
+        <Button
+          {...props}
+          variant="soft"
+          size="sm"
+          icon={download}
+          disabled={!result}
+        >
           Export
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={() =>
-            void copyText(patch()).then(
-              () => notify.success('Patch copied'),
-              () => notify.error('Could not copy to clipboard'),
-            )
-          }
-        >
-          Copy patch
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            saveBlob(
-              new Blob([patch()], { type: 'text/x-diff' }),
-              'changes.patch',
-            )
-          }
-        >
-          Download .patch
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            result &&
-            saveBlob(
-              new Blob([toHtmlReport(result, texts, names, reportTokens())], {
-                type: 'text/html',
-              }),
-              'diff-report.html',
-            )
-          }
-        >
-          Download HTML report
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      )}
+    />
   );
 }
