@@ -1,4 +1,4 @@
-import { Badge, StatusDot } from '@/shared/ui';
+import { Badge } from '@arshad-shah/cynosure';
 import type { PageRef } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';
 import { latestRedaction, pageMarks } from './marks';
@@ -17,8 +17,7 @@ export function RedactRailBadge({
   );
   if (n)
     return (
-      <Badge tone="danger" variant="soft" size="xs">
-        <StatusDot tone="danger" decorative />
+      <Badge tone="danger" size="sm" dot>
         {n === 1 ? '1 mark' : `${n} marks`}
       </Badge>
     );
@@ -26,13 +25,13 @@ export function RedactRailBadge({
   if (!latest || page.source !== latest.sourceId || page.blank) return null;
   if (latest.report.rasterisedPages?.includes(page.index))
     return (
-      <Badge tone="warning" variant="soft" size="xs">
+      <Badge tone="warning" size="sm">
         Turned into image
       </Badge>
     );
   if (latest.report.redactedPages?.includes(page.index))
     return (
-      <Badge tone="neutral" variant="soft" size="xs">
+      <Badge tone="neutral" size="sm">
         Redacted
       </Badge>
     );

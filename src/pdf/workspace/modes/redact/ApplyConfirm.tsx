@@ -1,13 +1,4 @@
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Text,
-} from '@/shared/ui';
+import { Button, Dialog, Notice } from '@arshad-shah/cynosure';
 import { applyMessage } from './marks';
 
 export interface ApplyConfirmProps {
@@ -28,27 +19,29 @@ export function ApplyConfirm({
   onApply,
 }: ApplyConfirmProps) {
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogHeader>
-        <DialogTitle>Apply redactions</DialogTitle>
-        <DialogDescription>{applyMessage(areas, pages)}</DialogDescription>
-      </DialogHeader>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => !o && onCancel()}
+      title="Apply redactions"
+      description={applyMessage(areas, pages)}
+      size="sm"
+      actions={
+        <>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="solid" tone="danger" onClick={onApply}>
+            Apply redactions
+          </Button>
+        </>
+      }
+    >
       {tagged ? (
-        <DialogBody>
-          <Text size="sm" tone="muted">
-            Tagged structure (used by screen readers) will be removed from this
-            document.
-          </Text>
-        </DialogBody>
+        <Notice tone="warning" size="sm">
+          Tagged structure (used by screen readers) will be removed from this
+          document.
+        </Notice>
       ) : null}
-      <DialogFooter>
-        <Button variant="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button variant="danger" onClick={onApply}>
-          Apply redactions
-        </Button>
-      </DialogFooter>
     </Dialog>
   );
 }

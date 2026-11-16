@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { newId } from '@/shared/lib/id';
-import {
-  DrawRectLayer,
-  OverlayLayer,
-  ShapeLayer,
-  type ObjectChange,
-  type Shape,
-} from '@/shared/ui';
+import { ShapeLayer, type Shape } from '@/shared/ui';
+import { DrawRect } from '@/pdf/surfaces/DrawRect';
+import { Layer } from '@/pdf/surfaces/layers';
+import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
 import { geometryBounds } from '@/pdf/doc/object-geometry';
 import type { RedactMarkParams } from '@/pdf/doc/ops/redact';
 import type { Box } from '@/pdf/doc/types';
@@ -88,20 +85,20 @@ export function MarksOverlay(props: PageOverlayProps) {
         shapes={shapes}
       />
       {drawing ? (
-        <OverlayLayer
-          width={width}
-          height={height}
-          interactive
-          label={`Redaction marks on page ${pageNumber}`}
+        <Layer
+          clip
+          role="group"
+          aria-label={`Redaction marks on page ${pageNumber}`}
         >
-          <DrawRectLayer
+          <DrawRect
             width={width}
             height={height}
-            transform={transform}
+            viewport={viewport}
+            tone="danger"
             label={`Draw a redaction area on page ${pageNumber}`}
             onDraw={(box) => void addArea(box)}
           />
-        </OverlayLayer>
+        </Layer>
       ) : (
         <ModeObjectLayer
           doc={doc}

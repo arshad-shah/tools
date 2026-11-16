@@ -37,7 +37,7 @@ test('find, mark all, apply, verify and export a redaction', async ({
 
   await page.getByRole('button', { name: 'Find and mark' }).click();
   await page.getByRole('textbox', { name: 'Find' }).fill(REDACT_TERM);
-  const matches = page.getByRole('list', { name: 'Matches' });
+  const matches = page.getByRole('region', { name: 'Matches' });
   await expect(matches.getByRole('checkbox').first()).toBeVisible({
     timeout: 20_000,
   });
