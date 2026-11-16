@@ -24,7 +24,8 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
     fixture: FIXTURE,
     ready: '[data-testid="page-slot-1"] canvas[data-rendered="true"]',
   },
-  '/pdf/merge',
+  // The redesigned merger shows page 1 as an image (no canvas).
+  { route: '/pdf/merge', fixture: FIXTURE, ready: 'img[alt$=", page 1"]' },
   '/pdf/split',
   '/pdf/to-images',
   '/pdf/to-text',
