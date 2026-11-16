@@ -37,7 +37,7 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
   {
     route: '/pdf/images-to-pdf',
     fixture: 'test/fixtures/generated/photo.png',
-    ready: 'li[data-sortable-item] img',
+    ready: 'img[alt="photo.png"]',
   },
   // Fill & Sign: the mode's chunk and the render worker's detection.
   {
