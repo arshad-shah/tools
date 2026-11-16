@@ -3,7 +3,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 /*
  * Floating surfaces never clip (owner feedback): Cynosure flips and shifts
  * them to stay inside the viewport and shows them in the top layer, out of
- * reach of clipping ancestors.
+ * reach of clipping ancestors. Checked on Home: a tool card's favourite
+ * star (an IconButton with its tooltip) and the Help menu in the navigation.
  */
 
 type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -42,19 +43,21 @@ async function expectInsideViewport(page: Page, el: Locator) {
     .toBe(true);
 }
 
-async function openKit(page: Page) {
-  await page.goto('/__kit');
-  await expect(
-    page.getByRole('heading', { name: 'Kit gallery' }),
-  ).toBeVisible();
+async function openHome(page: Page) {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 }
 
-const undo = (page: Page) =>
-  page.getByTestId('kit-section-buttons').getByRole('button', { name: 'Undo' });
+/** The Text category's section on Home, and its first tool's star. */
+const textSection = (page: Page) => page.locator('#category-text');
+const star = (page: Page) =>
+  textSection(page)
+    .getByRole('button', { name: /^Add .+ to favourites$/ })
+    .first();
 const bubble = (page: Page) => page.getByRole('tooltip');
 
 async function hoverAtCorners(page: Page) {
-  const button = undo(page);
+  const button = star(page);
   // The Tooltip wrapper is the trigger's parent.
   const wrapper = button.locator('xpath=..');
   for (const corner of CORNERS) {
@@ -79,12 +82,12 @@ async function hoverAtCorners(page: Page) {
 test('icon button tooltips stay inside the viewport at all four edges', async ({
   page,
 }) => {
-  await openKit(page);
+  await openHome(page);
   await hoverAtCorners(page);
 });
 
 test('the same holds in a right-to-left document', async ({ page }) => {
-  await openKit(page);
+  await openHome(page);
   await page.evaluate(() =>
     document.documentElement.setAttribute('dir', 'rtl'),
   );
@@ -94,8 +97,8 @@ test('the same holds in a right-to-left document', async ({ page }) => {
 test('a tooltip escapes a clipping, transformed scroll container', async ({
   page,
 }) => {
-  await openKit(page);
-  const section = page.getByTestId('kit-section-buttons');
+  await openHome(page);
+  const section = textSection(page);
   await section.evaluate((s) => {
     Object.assign((s as HTMLElement).style, {
       overflow: 'auto',
@@ -103,7 +106,7 @@ test('a tooltip escapes a clipping, transformed scroll container', async ({
       transform: 'translateZ(0)',
     });
   });
-  const button = undo(page);
+  const button = star(page);
   await button.scrollIntoViewIfNeeded();
   await button.hover();
   await expect(bubble(page)).toBeVisible();
@@ -129,9 +132,9 @@ test('a tooltip escapes a clipping, transformed scroll container', async ({
 test('a dropdown menu at the bottom-right corner opens inside the viewport', async ({
   page,
 }) => {
-  await openKit(page);
-  const trigger = page.getByRole('button', { name: 'Menu' });
-  // The DropdownMenu root is the trigger's parent.
+  await openHome(page);
+  const trigger = page.getByRole('button', { name: 'Help' });
+  // The Menu root is the trigger's parent.
   await pin(trigger.locator('xpath=..'), 'bottom-right');
   await trigger.click();
   const menu = page.getByRole('menu');
@@ -142,7 +145,7 @@ test('a dropdown menu at the bottom-right corner opens inside the viewport', asy
   expect(box.y + box.height).toBeLessThanOrEqual(
     (await trigger.boundingBox())!.y,
   );
-  await page.getByRole('menuitem', { name: 'Rename' }).click();
+  await page.getByRole('menuitem', { name: 'Keyboard shortcuts' }).click();
   await expect(menu).toHaveCount(0);
 });
 
@@ -161,14 +164,13 @@ async function target(button: Locator) {
   });
 }
 
-// The kit's IconButton renders Cynosure's: a 32px button on every pointer,
-// whose hit area is at least 24px with a mouse and 44px on touch (the old
-// kit grew the button itself to 40px with a mouse instead).
+// Cynosure's IconButton: a small button whose hit area is at least 24px
+// with a mouse and 44px on touch.
 test('icon buttons are at least 24px targets on a fine pointer', async ({
   page,
 }) => {
-  await openKit(page);
-  const box = await target(undo(page));
+  await openHome(page);
+  const box = await target(star(page));
   expect(box.width).toBeGreaterThanOrEqual(24);
   expect(box.height).toBeGreaterThanOrEqual(24);
 });
@@ -183,19 +185,21 @@ test.describe('on touch', () => {
   test('icon buttons are 44px targets on a coarse pointer', async ({
     page,
   }) => {
-    await openKit(page);
+    await openHome(page);
     expect(
       await page.evaluate(() => matchMedia('(pointer: coarse)').matches),
     ).toBe(true);
-    const box = await target(undo(page));
+    const box = await target(star(page));
     expect(box.width).toBeGreaterThanOrEqual(44);
     expect(box.height).toBeGreaterThanOrEqual(44);
     // The target really takes the tap: a point just inside its edge.
-    await undo(page).scrollIntoViewIfNeeded();
-    const r = (await undo(page).boundingBox())!;
+    await star(page).scrollIntoViewIfNeeded();
+    const r = (await star(page).boundingBox())!;
     const hitsButton = await page.evaluate(
       ({ x, y }) =>
-        !!document.elementFromPoint(x, y)?.closest('button[aria-label="Undo"]'),
+        !!document
+          .elementFromPoint(x, y)
+          ?.closest('button[aria-label$="to favourites"]'),
       { x: r.x + r.width / 2, y: r.y + r.height / 2 - 21 },
     );
     expect(hitsButton).toBe(true);
