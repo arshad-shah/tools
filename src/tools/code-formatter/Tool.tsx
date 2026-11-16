@@ -11,7 +11,6 @@ import {
   Notice,
   Select,
   Stack,
-  TextArea,
 } from '@arshad-shah/cynosure';
 import {
   braces,
@@ -25,6 +24,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextSourceActions } from '@/app/ui/text-source';
 import { TransformLayout } from '@/app/ui/transform';
+import { CodeEditor, type LanguageId } from '@/shared/editor';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
@@ -51,6 +51,24 @@ import {
 } from './settings';
 
 const TOOL_ID = 'code-formatter';
+/** The editor's highlighting for each formatter language. */
+const EDITOR_LANGUAGE: Record<FormatLanguage, LanguageId> = {
+  json: 'json',
+  javascript: 'js',
+  jsx: 'js',
+  typescript: 'ts',
+  tsx: 'ts',
+  css: 'css',
+  scss: 'css',
+  less: 'css',
+  html: 'html',
+  markdown: 'markdown',
+  yaml: 'yaml',
+  graphql: 'plain',
+  sql: 'sql',
+  xml: 'xml',
+};
+
 const MAX_BYTES = 10 * 1024 * 1024;
 
 const SAMPLES = [
@@ -223,20 +241,36 @@ export default function CodeFormatter() {
     />
   );
 
+  const diagnostics =
+    error instanceof CodeError && error.line !== undefined
+      ? [
+          {
+            line: error.line,
+            column: error.column,
+            message: error.message,
+            severity: 'error' as const,
+          },
+        ]
+      : undefined;
+
   const inputCard = (
     <Card as="section" title="Input">
       <Stack gap="5">
-        <TextArea
-          label="Input"
-          labelHidden
-          rows={8}
-          maxRows={30}
-          spellCheck={false}
+        <CodeEditor
+          aria-label="Input"
+          language={EDITOR_LANGUAGE[language]}
           placeholder="Paste code, or open a file. The language is detected."
           value={input}
           onChange={changeInput}
-          error={codeError}
+          diagnostics={diagnostics}
+          minHeight={200}
+          maxHeight={560}
         />
+        {codeError ? (
+          <Notice tone="danger" title="Cannot format">
+            {codeError}
+          </Notice>
+        ) : null}
         <TextSourceActions
           value={input}
           onChange={changeInput}
