@@ -13,10 +13,9 @@
  *   src/shared/charts/ChartMount.tsx), where CodeMirror and swift-chart
  *   attach to an element;
  * - tests, which do not ship (decision G1).
- *
- * TODO(mig/rollout-pdf-workspace): src/pdf/**, src/tools/pdf-edit/** and
- * the old kit (src/shared/ui/**) are exempt until the PDF workspace
- * rebuild on that branch merges; then remove those three lines.
+
+ * A Cynosure component's `style` prop is allowed: its documented contract
+ * is layout only (a height for a list or a viewport).
  */
 
 /** Elements `createElement` may not make outside the surfaces. */
@@ -64,10 +63,6 @@ const EXEMPT = [
   /(^|\/)src\/shared\/charts\/ChartMount\.tsx$/,
   // Tests do not ship (decision G1).
   /\.test\.(ts|tsx)$/,
-  // TODO(mig/rollout-pdf-workspace): remove with the old kit.
-  /(^|\/)src\/shared\/ui\//,
-  /(^|\/)src\/pdf\//,
-  /(^|\/)src\/tools\/pdf-edit\//,
 ];
 
 /** @param {string} f */

@@ -110,16 +110,6 @@ tester.run('no-raw-ui', rule, {
       code: `const a = <div ref={host} />;`,
       filename: 'src/shared/charts/ChartMount.tsx',
     },
-    // TODO(mig/rollout-pdf-workspace): exempt until that branch merges.
-    {
-      code: `const a = <button style={{}} className="x" />;`,
-      filename: 'src/shared/ui/button.tsx',
-    },
-    { code: `const a = <div className="flex" />;`, filename: 'src/pdf/a.tsx' },
-    {
-      code: `const a = <div className="flex" />;`,
-      filename: 'src/tools/pdf-edit/Tool.tsx',
-    },
     { code: `const a = <button />;`, filename: 'src/tools/x/Tool.test.tsx' },
     // A Cynosure component's layout style (a height for a list or viewport).
     {
@@ -147,6 +137,17 @@ tester.run('no-raw-ui', rule, {
       filename: TOOL,
       errors: [{ messageId: 'element', data: { name: t } }],
     })),
+    // The PDF workspace has no exemption: its surfaces live in src/shared/surfaces.
+    ...['src/pdf/workspace/a.tsx', 'src/tools/pdf-edit/Tool.tsx'].map(
+      (filename) => ({
+        code: `const a = <div className="flex" />;`,
+        filename,
+        errors: [
+          { messageId: 'element', data: { name: 'div' } },
+          { messageId: 'className' },
+        ],
+      }),
+    ),
     // The editor and chart folders are exempt only at their mount points.
     {
       code: `const a = <div />;`,
