@@ -56,9 +56,9 @@ test('Make QR opens the generator with the URL', async ({ page }) => {
   await page.getByRole('button', { name: 'Open in' }).click();
   await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
   await expect(page).toHaveURL(new RegExp(pathOf('qr-code-generator')));
-  await expect(page.getByLabel('Encoded text')).toHaveText(
-    'https://example.org/qr',
-  );
+  await expect(
+    page.getByRole('figure', { name: 'Encoded text' }).locator('code'),
+  ).toHaveText('https://example.org/qr');
 });
 
 test('the share link round-trips without the password', async ({

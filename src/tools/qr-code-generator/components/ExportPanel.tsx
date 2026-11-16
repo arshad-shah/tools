@@ -1,17 +1,16 @@
+import {
+  Button,
+  Inline,
+  NumberField,
+  Select,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
+import { copy, download } from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
-import {
-  Button,
-  Inline,
-  Label,
-  NumberInput,
-  Select,
-  Stack,
-  Text,
-} from '@/shared/ui';
-import { IconCopy, IconDownload } from '@/shared/ui/icons';
 import { printPixels, qrSvg, svgToPng, type QrStyle } from '../lib/render';
 import type { QrSettings } from '../settings';
 
@@ -60,37 +59,34 @@ export function ExportPanel({
   const png = async () => svgToPng(await qrSvg(value, style, px), px);
 
   return (
-    <Stack gap="3">
+    <Stack gap="4">
       <Inline gap="3" align="end" wrap>
-        <Stack gap="1">
-          <Label htmlFor="qr-export-size">PNG size</Label>
-          <Select
-            id="qr-export-size"
-            value={s.exportPreset}
-            onValueChange={(exportPreset) => update({ exportPreset })}
-            items={PRESETS}
+        <Select
+          label="PNG size"
+          width="md"
+          value={s.exportPreset}
+          onChange={(exportPreset) => update({ exportPreset })}
+          options={PRESETS}
+        />
+        {s.exportPreset === 'print' ? (
+          <NumberField
+            label="Printed width (mm)"
+            width="sm"
+            value={s.printMm}
+            min={10}
+            max={500}
+            onChange={(printMm) => update({ printMm: printMm || 30 })}
           />
-        </Stack>
-        {s.exportPreset === 'print' && (
-          <Stack gap="1">
-            <Label htmlFor="qr-print-mm">Printed width (mm)</Label>
-            <NumberInput
-              id="qr-print-mm"
-              value={s.printMm}
-              min={10}
-              max={500}
-              onValueChange={(printMm) => update({ printMm: printMm || 30 })}
-            />
-          </Stack>
-        )}
+        ) : null}
       </Inline>
-      <Text size="xs" tone="muted">
-        PNG is {px} by {px} pixels.
+      <Text size="sm" tone="muted">
+        {`PNG is ${px} by ${px} pixels.`}
       </Text>
       <Inline gap="2" wrap>
         <Button
-          variant="primary"
-          leftIcon={<IconDownload size="sm" />}
+          variant="solid"
+          tone="accent"
+          icon={download}
           disabled={disabled || busy}
           onClick={() =>
             void run('make the PNG', async () =>
@@ -101,8 +97,8 @@ export function ExportPanel({
           Download PNG
         </Button>
         <Button
-          variant="secondary"
-          leftIcon={<IconDownload size="sm" />}
+          variant="soft"
+          icon={download}
           disabled={disabled || busy}
           onClick={() =>
             void run('make the SVG', async () =>
@@ -118,8 +114,8 @@ export function ExportPanel({
           Download SVG
         </Button>
         <Button
-          variant="secondary"
-          leftIcon={<IconCopy size="sm" />}
+          variant="soft"
+          icon={copy}
           disabled={disabled || busy || typeof ClipboardItem === 'undefined'}
           onClick={() =>
             void run('copy the image', async () => {
