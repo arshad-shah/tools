@@ -181,7 +181,7 @@ export default function PdfToTextTool() {
             files={outputs}
             note={
               file.wasEncrypted
-                ? 'The original was password-protected. The text is not'
+                ? 'The original was password-protected. This file is not'
                 : undefined
             }
             zipName={deriveFilename(file.name, 'text', 'zip')}

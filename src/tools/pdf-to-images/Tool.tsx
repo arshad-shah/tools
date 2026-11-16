@@ -253,7 +253,7 @@ export default function PdfToImagesTool() {
           files={job.result}
           note={
             file.wasEncrypted
-              ? 'The original was password-protected. These images are not'
+              ? 'The original was password-protected. This file is not'
               : undefined
           }
           zipName={deriveFilename(file.name, 'images', 'zip')}
