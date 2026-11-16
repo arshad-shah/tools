@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { EventType, Layout } from '@/shared/ui/adapters/rive-runtime';
+import type { EventType, Layout } from '@/shared/lib/rive-runtime';
 
 type Callback = () => void;
 type EventCallback = (e: { type: EventType; data?: unknown }) => void;

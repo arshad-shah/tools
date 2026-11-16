@@ -4,7 +4,7 @@ import {
   setRiveLayout,
   type Rive,
   type StateMachineInput,
-} from '@/shared/ui/adapters/rive-runtime';
+} from '@/shared/lib/rive-runtime';
 import { notify } from '@/shared/lib/notify';
 import {
   DEFAULT_ALIGN_FIT,

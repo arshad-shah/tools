@@ -11,7 +11,7 @@ import {
   circleDot,
   type IconData,
 } from '@arshad-shah/cynosure/icons';
-import { Fit } from '@/shared/ui/adapters/rive-runtime';
+import { Fit } from '@/shared/lib/rive-runtime';
 import { alignValues, fitValues } from '../lib/layout';
 import type { AlignFitIndex } from '../types';
 

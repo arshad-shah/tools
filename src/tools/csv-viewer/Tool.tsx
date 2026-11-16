@@ -32,7 +32,7 @@ import {
 } from '@/shared/lib/handoff';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import type { GridFilters, SortKey } from '@/shared/ui';
+import type { GridFilters, SortKey } from '@/shared/lib/grid';
 import { ChartPanel } from './components/ChartPanel';
 import { EditToolbar } from './components/EditToolbar';
 import { ExportMenu } from './components/ExportMenu';

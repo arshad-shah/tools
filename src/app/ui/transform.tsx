@@ -20,7 +20,7 @@ import { notify } from '@/shared/lib/notify';
 import { SEND_GROUP } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import type { ShareableState } from '@/shared/lib/use-shareable-state';
-import { ToolActionsSlot } from '@/shared/ui/tool-actions-slot';
+import { ToolActionsSlot } from '@/shared/lib/tool-actions-slot';
 
 export interface TransformLayoutProps {
   start: React.ReactNode;

@@ -4,7 +4,7 @@
  * here holds a colour: every value comes from the token layer on `el`.
  */
 
-import { resolveColour } from '@/shared/ui/adapters/resolve-colour';
+import { resolveColour } from '@/shared/surfaces/resolve-colour';
 
 const root = () => document.documentElement;
 

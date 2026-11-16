@@ -13,7 +13,6 @@ import {
   SideNav,
   Toaster,
   useAppShell,
-  useToast,
 } from '@arshad-shah/cynosure';
 import { home, search, sidebar, star } from '@arshad-shah/cynosure/icons';
 import { fileText } from '@arshad-shah/cynosure/icons';
@@ -25,8 +24,8 @@ import {
   useState,
 } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
-import { connectToaster } from '@/shared/lib/notify';
-import { Logo } from '@/shared/ui/icons/brand/Logo';
+import { NotifyBridge } from '@/shared/lib/notify-bridge';
+import { Logo } from '@/shared/surfaces/logo/Logo';
 import { useFavorites } from '../favorites';
 import { useNavStore, useRecentToolsStore } from '../recents';
 import { getEnabledTools, TOOLS } from '../registry';
@@ -41,16 +40,6 @@ import { KeepAliveOutlet } from './keep-alive';
 import { PaletteContext } from './palette';
 import { useAppCommands } from './use-app-commands';
 import { useClientLinks } from './use-client-links';
-
-/** Hands the Toaster's API to `notify`, which code outside React calls. */
-export function NotifyBridge() {
-  const api = useToast();
-  useEffect(() => {
-    connectToaster(api);
-    return () => connectToaster(null);
-  }, [api]);
-  return null;
-}
 
 /**
  * New pages start at the top; Back and Forward return to where each page

@@ -2,7 +2,7 @@ import { Toaster } from '@arshad-shah/cynosure';
 import { useCallback, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppPalette } from './AppPalette';
-import { NotifyBridge } from './AppFrame';
+import { NotifyBridge } from '@/shared/lib/notify-bridge';
 import { HelpContext } from './help-context';
 import { useHelpDialogs } from './HelpDialogs';
 import { PaletteContext } from './palette';

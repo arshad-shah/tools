@@ -7,7 +7,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { EventType } from '@/shared/ui/adapters/rive-runtime';
+import { EventType } from '@/shared/lib/rive-runtime';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetCommandsForTests } from '@/shared/lib/commands';
 import { FakeRive } from './test/fake-rive';

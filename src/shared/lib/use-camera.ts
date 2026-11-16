@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ToolError, toToolError } from '@/shared/lib/errors';
-import { cameraError } from '@/shared/ui/camera-errors';
+import { cameraError } from '@/shared/lib/camera-errors';
 
 /** A camera the browser offers, for a device choice. */
 export interface CameraDevice {

@@ -3,7 +3,7 @@ import { share as shareIcon } from '@arshad-shah/cynosure/icons';
 import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ShareableState } from '@/shared/lib/use-shareable-state';
-import { ToolActionsSlot } from '@/shared/ui/tool-actions-slot';
+import { ToolActionsSlot } from '@/shared/lib/tool-actions-slot';
 
 /**
  * Page-level actions (Share, Help, Send to): portalled into the tool page

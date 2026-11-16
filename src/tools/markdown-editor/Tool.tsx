@@ -25,7 +25,7 @@ import {
 import { download, listTree, sparkles } from '@arshad-shah/cynosure/icons';
 import { readText } from '@/shared/lib/files';
 import { useMediaQuery } from '@/shared/lib/media-query';
-import { type SandboxedHtmlHandle } from '@/shared/ui';
+import type { SandboxedHtmlHandle } from '@/shared/surfaces/sandboxed-html/SandboxedHtml';
 import { textStats } from '@/tools/text-toolkit/lib/stats';
 import { FORMAT_ITEMS } from './components/format-items';
 import { Outline } from './components/Outline';

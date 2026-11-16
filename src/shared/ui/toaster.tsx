@@ -1,16 +1,5 @@
-import { Toaster as CyToaster, useToast } from '@arshad-shah/cynosure';
-import { useEffect } from 'react';
-import { connectToaster } from '@/shared/lib/notify';
-
-/** Hands the Toaster's API to `notify`, which code outside React calls. */
-function NotifyBridge() {
-  const api = useToast();
-  useEffect(() => {
-    connectToaster(api);
-    return () => connectToaster(null);
-  }, [api]);
-  return null;
-}
+import { Toaster as CyToaster } from '@arshad-shah/cynosure';
+import { NotifyBridge } from '@/shared/lib/notify-bridge';
 
 /**
  * The app's single toast host (kit adapter over Cynosure's Toaster).

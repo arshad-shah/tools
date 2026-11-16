@@ -1,0 +1,11 @@
+.tools-camera-video {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--cy-radius-md);
+  background-color: var(--cy-color-soft);
+}
+.tools-camera-video[hidden] {
+  display: none;
+}

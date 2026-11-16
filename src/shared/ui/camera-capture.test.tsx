@@ -8,7 +8,7 @@ import {
   CameraFrameGuide,
   type CameraCaptureProps,
 } from './camera-capture';
-import { CAMERA_BLOCKED } from './camera-errors';
+import { CAMERA_BLOCKED } from '@/shared/lib/camera-errors';
 
 function fakeStream(caps: Record<string, unknown> = {}) {
   const track = {

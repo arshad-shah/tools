@@ -13,7 +13,7 @@ import { encodePng, noiseImage } from '../../../test/fixtures/images';
 import { ToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import type { ImageJob } from '@/shared/lib/image/pipeline';
-import { mockViewport } from '@/shared/ui/data-grid/test-utils';
+import { mockViewport } from '@/shared/lib/mock-viewport';
 
 type Call = (
   method: string,

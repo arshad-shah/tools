@@ -23,7 +23,7 @@ import {
   lineCount,
   tooLarge,
   utf8Length,
-} from '@/shared/ui/text-input-lib';
+} from '@/shared/lib/text-input-lib';
 
 const NEVER = () => false;
 const plural = (n: number, word: string) =>

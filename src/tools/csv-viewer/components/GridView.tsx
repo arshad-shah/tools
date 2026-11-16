@@ -18,7 +18,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { columns as columnsIcon, filter } from '@arshad-shah/cynosure/icons';
 import { useMemo, useState } from 'react';
-import type { GridFilters, SortKey } from '@/shared/ui';
+import type { GridFilters, SortKey } from '@/shared/lib/grid';
 import { COLUMN_TYPE_LABEL, type ColumnType } from '../lib/columns';
 import type { CellChange, Row, Table } from '../lib/edit';
 
@@ -192,11 +192,11 @@ export function GridView({
             </Badge>
           ))}
         </Inline>
-        <Text size="sm" tone="muted" numeric>
-          <span aria-live="polite">
+        <Inline aria-live="polite">
+          <Text size="sm" tone="muted" numeric>
             {`${indices.length.toLocaleString('en-US')} of ${table.rows.length.toLocaleString('en-US')} rows`}
-          </span>
-        </Text>
+          </Text>
+        </Inline>
       </Inline>
       {errors.length > 0 && (
         <Notice tone="warning">
@@ -297,7 +297,7 @@ function FilterForm({
           Clear filters
         </Button>
       </Inline>
-      <ScrollArea label="Column filters" className="max-h-96">
+      <ScrollArea label="Column filters">
         <Stack gap="3">
           {columns.map((c) => {
             const f = filters[c];

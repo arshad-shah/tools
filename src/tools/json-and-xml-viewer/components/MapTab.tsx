@@ -20,7 +20,10 @@ import {
   zoomOut,
 } from '@arshad-shah/cynosure/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DiagramCanvas, type DiagramCanvasHandle } from '@/shared/ui';
+import {
+  DiagramCanvas,
+  type DiagramCanvasHandle,
+} from '@/shared/surfaces/diagram-canvas/DiagramCanvas';
 import {
   ancestors,
   findById,
@@ -238,8 +241,6 @@ export function MapTab({
       </Inline>
       <DiagramCanvas
         ref={canvas}
-        className="min-h-80 flex-1"
-        controls={false}
         diagram={diagram}
         direction={settings.direction}
         minimap={settings.minimap}

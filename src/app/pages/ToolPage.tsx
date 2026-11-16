@@ -13,7 +13,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { home, retry as retryIcon } from '@arshad-shah/cynosure/icons';
 import React, { Suspense, useState } from 'react';
-import { ToolActionsSlot } from '@/shared/ui/tool-actions-slot';
+import { ToolActionsSlot } from '@/shared/lib/tool-actions-slot';
 import { getCategory } from '../categories';
 import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';

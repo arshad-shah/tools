@@ -2,7 +2,7 @@ import React from 'react';
 import {
   StateMachineInput,
   StateMachineInputType,
-} from '@/shared/ui/adapters/rive-runtime';
+} from '@/shared/lib/rive-runtime';
 import {
   Button,
   EmptyState,

@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { queryCommands } from '@/shared/lib/commands';
-import { IconType } from '@/shared/ui/icons';
+import { type as typeIcon } from '@arshad-shah/cynosure/icons';
 import type { ToolDefinition } from '@/app/tool';
 import TextToolkit from './Tool';
 import { TOOLKIT_SETTINGS_DEFAULTS, toolkitSettings } from './settings';
@@ -44,7 +44,7 @@ const definition: ToolDefinition = {
   kind: 'tool',
   name: 'Text Toolkit',
   description: 'd',
-  icon: IconType,
+  icon: typeIcon,
   keywords: [],
   enabled: true,
 };

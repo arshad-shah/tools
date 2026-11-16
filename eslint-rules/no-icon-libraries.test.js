@@ -18,7 +18,6 @@ const bad = [{ messageId: 'library' }];
 
 tester.run('no-icon-libraries', rule, {
   valid: [
-    { code: `import { IconStar } from '@/shared/ui/icons';` },
     { code: `import { star } from '@arshad-shah/cynosure/icons';` },
     { code: `import { github } from '@arshad-shah/cynosure/brands';` },
     { code: `import x from 'lucide-reactor';` },

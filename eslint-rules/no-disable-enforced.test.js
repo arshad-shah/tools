@@ -42,10 +42,7 @@ describe('no-disable-enforced', () => {
       'named',
     ],
     [`/* eslint-disable local/no-icon-libraries */`, 'named'],
-    [
-      `const a = 1; // eslint-disable-line local/no-raw-ui-outside-kit`,
-      'named',
-    ],
+    [`const a = 1; // eslint-disable-line local/no-raw-ui`, 'named'],
     [
       `/* eslint-disable no-console, local/no-disable-enforced -- reason */`,
       'named',

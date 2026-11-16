@@ -17,7 +17,7 @@ import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import { formatBytes } from '@/shared/lib/format';
 import { useObjectUrl } from '@/shared/lib/object-url';
-import { formatRow } from '@/shared/ui/bytes-view-format';
+import { formatRow } from '@/shared/lib/bytes-view-format';
 import type { BytesInsight } from '../lib/insight';
 import { sendTargets } from '../lib/send-targets';
 

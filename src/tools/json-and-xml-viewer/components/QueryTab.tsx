@@ -88,9 +88,11 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
       ) : null}
       {outcome?.ok ? (
         <Inline gap="2" align="center" justify="between">
-          <Text size="sm" tone="muted" numeric>
-            <span aria-live="polite">{`${rows.length.toLocaleString('en-US')} ${rows.length === 1 ? 'result' : 'results'}`}</span>
-          </Text>
+          <Inline aria-live="polite">
+            <Text size="sm" tone="muted" numeric>
+              {`${rows.length.toLocaleString('en-US')} ${rows.length === 1 ? 'result' : 'results'}`}
+            </Text>
+          </Inline>
           <CopyButton
             size="sm"
             variant="ghost"
@@ -115,7 +117,6 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
             selectionMode="none"
             isDisabled={(r) => !r.id}
             onAction={(r) => r.id && onSelect(r.id)}
-            className="h-full"
             renderItem={(r) => (
               <Stack gap="0">
                 <Text variant="code" size="xs" tone="muted" truncate>

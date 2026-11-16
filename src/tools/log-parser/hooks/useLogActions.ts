@@ -5,7 +5,7 @@ import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import type { VirtualListHandle } from '@/shared/ui';
+import type { VirtualListHandle } from '@/shared/surfaces/virtual-list/virtual-list';
 import { diffPairPayload } from '@/tools/text-diff-checker/lib/handoff';
 import type { LogFilter } from '../lib/filter';
 import { comparePair } from '../lib/handoff';

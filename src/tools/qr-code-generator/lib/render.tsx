@@ -1,5 +1,5 @@
 import { ToolError } from '@/shared/lib/errors';
-import { QrCode } from '@/shared/ui/adapters/QrCode';
+import { QrCode } from '@/shared/surfaces/qr-code';
 
 export type EccLevel = 'L' | 'M' | 'Q' | 'H';
 

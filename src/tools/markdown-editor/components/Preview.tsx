@@ -1,5 +1,8 @@
 import type { Ref } from 'react';
-import { SandboxedHtml, type SandboxedHtmlHandle } from '@/shared/ui';
+import {
+  SandboxedHtml,
+  type SandboxedHtmlHandle,
+} from '@/shared/surfaces/sandboxed-html/SandboxedHtml';
 
 export interface PreviewProps {
   html: string;
@@ -25,7 +28,7 @@ export function Preview({
       title="Preview"
       baseCss={baseCss}
       allowRemoteImages={allowRemoteImages}
-      className="h-screen max-h-180 min-h-96"
+      size="page"
     />
   );
 }

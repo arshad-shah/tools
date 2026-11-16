@@ -18,7 +18,7 @@
     "test:csp": "pnpm build && playwright test -c playwright.csp.config.ts",
     "test:visual:docker": "node scripts/visual-docker.mjs",
     "fixtures": "tsx scripts/gen-fixtures.ts",
-    "icons:gen": "tsx scripts/gen-logo.ts && tsx --tsconfig tsconfig.app.json scripts/gen-favicon.ts && prettier --write src/shared/ui/icons/brand/logo-paths.ts",
+    "icons:gen": "tsx scripts/gen-logo.ts && tsx --tsconfig tsconfig.app.json scripts/gen-favicon.ts && prettier --write src/shared/surfaces/logo/logo-paths.ts",
     "preview": "pnpm run build && wrangler dev",
     "deploy": "pnpm run build && wrangler deploy",
     "prepare": "husky",

@@ -1,0 +1,51 @@
+/* The Rive stage (a drawing surface): sizes, the drop highlight and the
+   scrim behind the overlay. Colours are Cynosure tokens. */
+.tools-rive-fill {
+  inline-size: 100%;
+  block-size: 100%;
+}
+.tools-rive-slot {
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  min-block-size: 400px;
+}
+.tools-rive-stage {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  border-radius: var(--cy-radius-lg);
+}
+.tools-rive-stage[data-framed] {
+  border-radius: 0;
+}
+.tools-rive-stage[data-highlighted] {
+  outline: 2px solid var(--cy-color-accent-text);
+  outline-offset: 2px;
+}
+.tools-rive-canvas {
+  display: block;
+}
+.tools-rive-canvas[hidden] {
+  display: none;
+}
+.tools-rive-canvas[data-background='white'] {
+  background-color: #fff;
+}
+.tools-rive-canvas[data-background='black'] {
+  background-color: #000;
+}
+.tools-rive-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--cy-space-6);
+}
+.tools-rive-overlay[data-over-canvas] {
+  background-color: rgb(0 0 0 / 0.4);
+}
+.tools-rive-overlay-content {
+  inline-size: 100%;
+  max-inline-size: 24rem;
+}

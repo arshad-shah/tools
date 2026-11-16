@@ -8,4 +8,4 @@ export {
   type IconSize,
 } from './icon';
 export * from './facet';
-export { Logo, LogoMark } from './brand/Logo';
+export { Logo, LogoMark } from '@/shared/surfaces/logo/Logo';

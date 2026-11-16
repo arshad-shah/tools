@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { queryCommands } from '@/shared/lib/commands';
-import { IconFileCode } from '@/shared/ui/icons';
+import { fileCode } from '@arshad-shah/cynosure/icons';
 import type { ToolDefinition } from '@/app/tool';
 import {
   editorSelection,
@@ -32,7 +32,7 @@ const definition: ToolDefinition = {
   kind: 'tool',
   name: 'Markdown Editor & Preview',
   description: 'd',
-  icon: IconFileCode,
+  icon: fileCode,
   keywords: [],
   enabled: true,
 };

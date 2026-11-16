@@ -138,7 +138,7 @@ export function ParseOptions({
                 These columns are not typed (leading zeros and IDs stay exact).
               </Text>
             </Stack>
-            <ScrollArea label="Columns" className="max-h-48">
+            <ScrollArea label="Columns">
               <Stack gap="1">
                 {columns.map((c) => (
                   <Checkbox

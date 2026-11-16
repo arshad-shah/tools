@@ -44,7 +44,7 @@ export function TopBar({
             compact && 'min-h-touch',
           ),
           'aria-label': 'tools home',
-          children: <Logo label="tools home" className="h-5" />,
+          children: <Logo label="tools home" />,
         })}
         {breadcrumb}
       </div>

@@ -1,0 +1,50 @@
+/* The virtual list surface: a scroll region of absolutely placed rows.
+   Rows are positioned inline (transform); the rest is here. */
+.tools-vl {
+  position: relative;
+  overflow: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+.tools-vl:focus-visible {
+  outline: 2px solid var(--cy-color-accent-text);
+  outline-offset: 2px;
+}
+.tools-vl-spacer {
+  position: relative;
+  inline-size: 100%;
+}
+.tools-vl-row {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  outline: none;
+}
+.tools-vl-row:focus-visible {
+  outline: 2px solid var(--cy-color-accent-text);
+  outline-offset: -2px;
+}
+.tools-vl-sticky {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  block-size: 0;
+  overflow: visible;
+}
+.tools-vl-sticky-row {
+  background-color: var(--cy-color-surface);
+}
+/* framed: a bordered panel, rows divided by lines; data-selected rows
+   take the accent's soft fill. */
+.tools-vl[data-framed] {
+  border: var(--cy-border-width) solid var(--cy-color-line);
+  border-radius: var(--cy-radius-lg);
+  background-color: var(--cy-color-surface);
+  min-block-size: 16rem;
+}
+.tools-vl[data-framed] .tools-vl-row {
+  border-block-end: var(--cy-border-width) solid var(--cy-color-line);
+}
+.tools-vl-row[data-selected] {
+  background-color: var(--cy-color-accent-soft);
+}

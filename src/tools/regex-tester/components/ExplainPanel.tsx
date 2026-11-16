@@ -1,6 +1,6 @@
 import { Card, EmptyState, Tree, type TreeItem } from '@arshad-shah/cynosure';
 import { useMemo } from 'react';
-import type { TreeNodeData } from '@/shared/ui/code-tree-model';
+import type { TreeNodeData } from '@/shared/surfaces/code-tree/code-tree-model';
 import type { ExplainTree } from '../lib/explain-tree';
 
 interface ExplainPanelProps {

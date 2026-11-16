@@ -3,10 +3,12 @@ import {
   Badge,
   Checkbox,
   IconButton,
+  Inline,
+  Stack,
+  Text,
   VisuallyHidden,
 } from '@arshad-shah/cynosure';
 import { chevronDown, chevronRight } from '@arshad-shah/cynosure/icons';
-import { cn } from '@/shared/lib/cn';
 
 import type { FieldFilter } from '../lib/filter';
 import { levelLabel, levelTone } from '../lib/level-style';
@@ -59,19 +61,16 @@ export const EntryRow = memo(function EntryRow({
 
   if (!entry)
     return (
-      <div className="flex h-7 items-center px-3 text-sm text-fg-subtle">
-        Loading
-      </div>
+      <Inline align="center" paddingInline="5" paddingBlock="2">
+        <Text size="sm" tone="muted">
+          Loading
+        </Text>
+      </Inline>
     );
 
   return (
-    <div
-      className={cn(
-        'border-b border-line px-2 py-1 text-sm',
-        selected && 'bg-accent-soft',
-      )}
-    >
-      <div className="flex min-w-0 items-start gap-2">
+    <Stack gap="2" paddingInline="4" paddingBlock="2">
+      <Inline gap="4" align="start" wrap={false}>
         <Checkbox
           size="sm"
           checked={selected}
@@ -89,50 +88,51 @@ export const EntryRow = memo(function EntryRow({
           onClick={() => onToggle(entry.index)}
         />
         {show('line') ? (
-          <span
-            data-column="line"
-            className="w-12 shrink-0 text-right font-mono text-fg-subtle tabular-nums"
-          >
-            {entry.line}
-          </span>
+          <Inline data-column="line" shrink={false}>
+            <Text variant="code" size="sm" tone="muted" numeric>
+              {entry.line}
+            </Text>
+          </Inline>
         ) : null}
         {show('level') ? (
-          <span data-column="level" className="w-20 shrink-0">
+          <Inline data-column="level" shrink={false}>
             <Badge size="sm" variant="soft" tone={levelTone(entry.level)} dot>
               {levelLabel(entry.level)}
             </Badge>
-          </span>
+          </Inline>
         ) : null}
         {show('time') && entry.ts !== undefined ? (
-          <span
-            data-column="time"
-            className="hidden shrink-0 font-mono text-fg-muted tabular-nums md:inline"
-          >
-            {rowTime(entry.ts)}
-          </span>
+          <Inline data-column="time" shrink={false} hideBelow="md">
+            <Text variant="code" size="sm" tone="muted" numeric>
+              {rowTime(entry.ts)}
+            </Text>
+          </Inline>
         ) : null}
         {show('component') && entry.component ? (
-          <span
-            data-column="component"
-            className="hidden max-w-48 shrink-0 truncate font-mono text-info sm:inline"
-          >
-            {entry.component}
-          </span>
+          <Inline data-column="component" hideBelow="sm" minSize="0">
+            <Text variant="code" size="sm" tone="info" truncate>
+              {entry.component}
+            </Text>
+          </Inline>
         ) : null}
-        <span
-          className={cn(
-            'min-w-0 flex-1 font-mono text-fg',
-            wrap ? 'whitespace-pre-wrap break-all' : 'truncate whitespace-pre',
-          )}
-        >
-          {first}
-          {nl >= 0 && !expanded ? (
-            <span className="text-fg-subtle"> (more lines)</span>
-          ) : null}
-        </span>
-      </div>
+        <Stack grow minSize="0">
+          <Text
+            variant="code"
+            size="sm"
+            {...(wrap ? { wrap: 'break' as const } : { truncate: true })}
+          >
+            {first}
+            {nl >= 0 && !expanded ? (
+              <Text as="span" tone="muted">
+                {' '}
+                (more lines)
+              </Text>
+            ) : null}
+          </Text>
+        </Stack>
+      </Inline>
       {expanded ? (
-        <div className="mt-2 mb-1 flex flex-col gap-2 pl-14">
+        <Stack gap="2" paddingInline="10">
           <CodeEditor
             value={entry.message}
             language="log"
@@ -146,8 +146,8 @@ export const EntryRow = memo(function EntryRow({
           {entry.fields ? (
             <FieldTable fields={entry.fields} onFilter={onFieldFilter} />
           ) : null}
-        </div>
+        </Stack>
       ) : null}
-    </div>
+    </Stack>
   );
 });

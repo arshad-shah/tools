@@ -2,8 +2,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GridFilters, SortKey } from '@/shared/ui';
-import { mockViewport } from '@/shared/ui/data-grid/test-utils';
+import type { GridFilters, SortKey } from '@/shared/lib/grid';
+import { mockViewport } from '@/shared/lib/mock-viewport';
 import type { CellChange, Table } from '../lib/edit';
 import { tableView } from '../lib/view';
 import { GridView } from './GridView';

@@ -29,7 +29,7 @@ import { sendTo, useHandoff } from '@/shared/lib/handoff';
 import { useMediaQuery } from '@/shared/lib/media-query';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import { ToolActionsSlot } from '@/shared/ui/tool-actions-slot';
+import { ToolActionsSlot } from '@/shared/lib/tool-actions-slot';
 import { BuilderView } from './components/BuilderView';
 import { DecodedCard } from './components/DecodedCard';
 import { useJwtDecoder } from './hooks/useJwtDecoder';
