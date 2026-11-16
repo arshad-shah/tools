@@ -1,11 +1,17 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SignatureSource } from '@/pdf/sign';
 import { SignatureInk } from './SignatureInk';
 import { fillSign } from './store';
 
 beforeEach(() => {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: false,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  }));
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
     setTransform: vi.fn(),
     clearRect: vi.fn(),
@@ -21,6 +27,8 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  // Unmount before the canvas mock goes, so no late frame draws.
+  cleanup();
   fillSign.set({ drawing: { strokes: [], ink: null, weight: 'medium' } });
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -48,8 +56,8 @@ describe('SignatureInk', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Bold' }));
     expect(
-      screen.getByRole('radio', { name: 'Bold' }).getAttribute('aria-checked'),
-    ).toBe('true');
+      (screen.getByRole('radio', { name: 'Bold' }) as HTMLInputElement).checked,
+    ).toBe(true);
     const bold = last(onChange)!;
     // A bolder nib makes a wider outline around the same strokes.
     expect(bold.vector.height).toBeGreaterThan(medium.vector.height);

@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { IconCamera } from '@/shared/ui/icons';
+import { camera as cameraIcon, play, stop } from '@arshad-shah/cynosure/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
-  CameraCapture,
-  CameraFrameGuide,
-  LoadingState,
+  EmptyState,
+  Inline,
+  Notice,
+  Select,
   Stack,
-} from '@/shared/ui';
-import { CAMERA_BLOCKED } from '@/shared/ui/camera-errors';
+  Text,
+} from '@arshad-shah/cynosure';
+// Cynosure has no camera view (docs/cynosure-gaps.md, gap 39): the stream
+// is useCamera's and the picture the CameraVideo drawing surface; every
+// control around it is Cynosure.
+import { useCamera } from '@/shared/lib/use-camera';
+import { CameraVideo } from '@/shared/surfaces/camera-video';
+import { CAMERA_BLOCKED } from '@/shared/lib/camera-errors';
+import { LoadingLine } from '../../ui/states';
 import type { ToolError } from '@/shared/lib/errors';
 
 export const CAMERA_DENIED =
@@ -29,7 +35,7 @@ const insecure = () =>
   typeof window !== 'undefined' && window.isSecureContext === false;
 
 /**
- * The kit camera plus a Capture button: the latest frame is kept and handed
+ * The live camera, Start and Stop, a camera choice and Capture: the latest frame is kept and handed
  * over (the receiver owns it) when Capture is pressed, which also stops
  * the camera. Frames never leave the device.
  */
@@ -58,59 +64,98 @@ export function PhotoCamera({
     [],
   );
 
+  const {
+    video,
+    running,
+    setActive: run,
+    devices,
+    current,
+    choose,
+  } = useCamera({
+    active,
+    onActiveChange: (on) => {
+      setActive(on);
+      if (on) setProblem(null);
+      else drop();
+    },
+    onFrame: (b) => {
+      frame.current?.close();
+      frame.current = b;
+      setHasFrame(true);
+    },
+    fps: 4,
+    onError: (e) => setProblem(problemText(e)),
+  });
+
   // getUserMedia exists only in secure contexts (https, localhost).
-  if (insecure())
-    return (
-      <Alert status="warning">
-        <AlertDescription>{CAMERA_UNAVAILABLE}</AlertDescription>
-      </Alert>
-    );
+  if (insecure()) return <Notice tone="warning">{CAMERA_UNAVAILABLE}</Notice>;
 
   return (
     <Stack gap="3">
-      <CameraCapture
-        label="Camera preview"
-        active={active}
-        fps={4}
-        overlay={<CameraFrameGuide hint={FRAME_HINT} />}
-        onActiveChange={(on) => {
-          setActive(on);
-          if (on) setProblem(null);
-          else drop();
-        }}
-        onFrame={(b) => {
-          frame.current?.close();
-          frame.current = b;
-          setHasFrame(true);
-        }}
-        onError={(e) => setProblem(problemText(e))}
-      />
-      {active && !hasFrame ? (
-        <LoadingState label="Waiting for camera permission" className="py-4" />
+      <CameraVideo ref={video} label="Camera preview" off={!running} />
+      {running ? (
+        <Text size="sm" tone="muted" align="center">
+          {FRAME_HINT}
+        </Text>
+      ) : (
+        <EmptyState
+          size="sm"
+          icon={cameraIcon}
+          title="Camera is off"
+          description="Start it, then hold the paper with your signature flat in good light."
+        />
+      )}
+      {running && !hasFrame ? (
+        <LoadingLine label="Waiting for camera permission" />
       ) : null}
       {problem ? (
-        <Alert status={problem === CAMERA_DENIED ? 'warning' : 'danger'}>
-          <AlertDescription>{problem}</AlertDescription>
-        </Alert>
+        <Notice tone={problem === CAMERA_DENIED ? 'warning' : 'danger'}>
+          {problem}
+        </Notice>
       ) : null}
-      {active ? (
-        <Button
-          variant="primary"
-          leftIcon={<IconCamera size="sm" />}
-          disabled={disabled || !hasFrame}
-          onClick={() => {
-            const b = frame.current;
-            if (!b) return;
-            frame.current = null;
-            setHasFrame(false);
-            setActive(false);
-            onCapture(b);
-          }}
-          className="self-start"
-        >
-          Capture
-        </Button>
-      ) : null}
+      <Inline gap="2" align="end" wrap>
+        {running ? (
+          <>
+            <Button
+              variant="solid"
+              tone="accent"
+              icon={cameraIcon}
+              disabled={disabled || !hasFrame}
+              onClick={() => {
+                const b = frame.current;
+                if (!b) return;
+                frame.current = null;
+                setHasFrame(false);
+                run(false);
+                onCapture(b);
+              }}
+            >
+              Capture
+            </Button>
+            <Button variant="soft" icon={stop} onClick={() => run(false)}>
+              Stop
+            </Button>
+            {devices.length > 1 ? (
+              <Select
+                label="Camera"
+                size="sm"
+                value={current}
+                options={devices}
+                onChange={choose}
+              />
+            ) : null}
+          </>
+        ) : (
+          <Button
+            variant="solid"
+            icon={play}
+            disabled={disabled}
+            onClick={() => run(true)}
+          >
+            Start
+          </Button>
+        )}
+      </Inline>
     </Stack>
   );
 }

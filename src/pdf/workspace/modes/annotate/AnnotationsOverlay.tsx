@@ -1,14 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  HitArea,
-  OverlayLayer,
-  ShapeLayer,
-  type LayerObject,
-  type ObjectChange,
-} from '@/shared/ui';
+import { Button, Notice } from '@arshad-shah/cynosure';
+import { ShapeLayer } from '@/shared/ui';
+import { HitArea } from '@/pdf/surfaces/HitArea';
+import { Layer, Place } from '@/pdf/surfaces/layers';
+import type { LayerObject, ObjectChange } from '@/pdf/surfaces/ObjectLayer';
 import { PdfTextLayerHost } from '@/shared/ui/adapters/PdfTextLayerHost';
 import { toScreen } from '@/pdf/doc/geometry';
 import { geometryBounds } from '@/pdf/doc/object-geometry';
@@ -155,11 +150,7 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
   };
 
   return (
-    <div
-      ref={slot}
-      className="absolute inset-0"
-      data-testid={`annotate-page-${pageNumber}`}
-    >
+    <Layer ref={slot} data-testid={`annotate-page-${pageNumber}`}>
       <ExistingLayer
         doc={doc}
         page={page}
@@ -197,7 +188,7 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
         ) : null,
       )}
       {text && !page.blank ? (
-        <div className="absolute inset-0" onPointerUp={onTextPointerUp}>
+        <Layer onPointerUp={onTextPointerUp}>
           <PdfTextLayerHost
             text={text}
             geom={doc.pageGeom(page)}
@@ -207,7 +198,7 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
             selectable={!!markup}
             label={`Page ${pageNumber} text`}
           />
-        </div>
+        </Layer>
       ) : null}
       {tool === 'select' ? (
         <ModeObjectLayer
@@ -273,15 +264,15 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
           }}
           onProperties={(id) => {
             selection.selectObjects([id]);
-            focusProperties('#annotate-opacity');
+            focusProperties('[aria-label="Properties"] [role="slider"]');
           }}
         />
       ) : null}
       {tool === 'eraser' ? (
-        <OverlayLayer
-          width={width}
-          height={height}
-          label={`Annotations on page ${pageNumber}`}
+        <Layer
+          passive
+          role="group"
+          aria-label={`Annotations on page ${pageNumber}`}
         >
           {pending.map((o) => {
             const box = boundsOf(o);
@@ -304,7 +295,7 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
               />
             );
           })}
-        </OverlayLayer>
+        </Layer>
       ) : null}
       {DRAW_TOOLS.has(tool) ? (
         <DrawLayer
@@ -318,24 +309,25 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
         />
       ) : null}
       {markup && ui.noTextPage === page.id ? (
-        <div className="absolute inset-x-4 top-4">
-          <Alert status="info">
-            <AlertDescription>
-              No text here. Run OCR to make it selectable.
-            </AlertDescription>
-            {goToMode ? (
-              <div className="mt-2">
+        <Place x={16} y={16} width={Math.max(0, width - 32)}>
+          <Notice
+            tone="info"
+            size="sm"
+            action={
+              goToMode ? (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={() => goToMode('ocr')}
                 >
                   Run OCR
                 </Button>
-              </div>
-            ) : null}
-          </Alert>
-        </div>
+              ) : undefined
+            }
+          >
+            No text here. Run OCR to make it selectable.
+          </Notice>
+        </Place>
       ) : null}
       {editor ? (
         <NoteEditor
@@ -349,6 +341,6 @@ export function AnnotationsOverlay(props: PageOverlayProps) {
           onSave={(body) => saveEditor(doc, editor, body)}
         />
       ) : null}
-    </div>
+    </Layer>
   );
 }

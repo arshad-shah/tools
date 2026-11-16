@@ -1,23 +1,16 @@
-import { useEffect, useId, useState } from 'react';
-import { toToolError, type ToolError } from '@/shared/lib/errors';
-import { notify } from '@/shared/lib/notify';
-import { IconSanitize } from '@/shared/ui/icons';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Checkbox,
   Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  ErrorState,
-  Inline,
-  Label,
-  LoadingState,
+  List,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { fileClean } from '@arshad-shah/cynosure/icons';
+import { toToolError, type ToolError } from '@/shared/lib/errors';
+import { notify } from '@/shared/lib/notify';
+import { ErrorNotice, LoadingLine } from '../../ui/states';
 import { SANITIZE_KEYS, type SanitizeParams } from '@/pdf/doc/ops/protect';
 import { useWorkspace } from '../../workspace-context';
 import type { ModeProps } from '../types';
@@ -56,7 +49,6 @@ export function SanitizeDialog({ doc }: ModeProps) {
 }
 
 function SanitizeBody({ doc }: Pick<ModeProps, 'doc'>) {
-  const id = useId();
   const ws = useWorkspace();
   const [chosen, setChosen] = useState<SanitizeParams>(DEFAULTS);
   const [preview, setPreview] = useState<SanitizePreview | null>(null);
@@ -88,64 +80,59 @@ function SanitizeBody({ doc }: Pick<ModeProps, 'doc'>) {
   };
 
   return (
-    <Dialog open onOpenChange={(o) => !o && close()}>
-      <DialogHeader>
-        <DialogTitle>Sanitise document</DialogTitle>
-        <DialogDescription>
-          Removes content that can run, hide or leak information. You can undo
-          until you export.
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody className="flex flex-col gap-4">
+    <Dialog
+      open
+      onOpenChange={(o) => !o && close()}
+      title="Sanitise document"
+      description="Removes content that can run, hide or leak information. You can undo until you export."
+      actions={
+        <>
+          <Button variant="ghost" onClick={close}>
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            tone="accent"
+            icon={fileClean}
+            disabled={nothingChosen || !preview || lines.length === 0}
+            onClick={() => void apply()}
+          >
+            Remove
+          </Button>
+        </>
+      }
+    >
+      <Stack gap="5">
         <Stack gap="2">
           {SANITIZE_KEYS.map((k) => (
-            <Inline key={k} gap="2" align="center">
-              <Checkbox
-                id={`${id}-${k}`}
-                checked={chosen[k]}
-                onCheckedChange={(v) => setChosen((c) => ({ ...c, [k]: v }))}
-              />
-              <Label htmlFor={`${id}-${k}`}>{LABELS[k]}</Label>
-            </Inline>
+            <Checkbox
+              key={k}
+              label={LABELS[k]}
+              checked={chosen[k]}
+              onChange={(v) => setChosen((c) => ({ ...c, [k]: v }))}
+            />
           ))}
+          <Text size="sm" tone="muted">
+            Page thumbnails and private application data are always removed.
+          </Text>
         </Stack>
-        <Text size="sm" tone="muted">
-          Page thumbnails and private application data are always removed.
-        </Text>
-        <section aria-label="Will be removed" className="flex flex-col gap-2">
-          <Text size="sm" weight="semibold">
+        <Stack as="section" gap="2" aria-label="Will be removed">
+          <Text size="sm" weight="medium">
             Will be removed
           </Text>
           {error ? (
-            <ErrorState error={error} headingLevel={3} />
+            <ErrorNotice error={error} />
           ) : !preview ? (
-            <LoadingState label="Checking the document" />
+            <LoadingLine label="Checking the document" />
           ) : lines.length ? (
-            <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-fg">
-              {lines.map((l) => (
-                <li key={l}>{l}</li>
-              ))}
-            </ul>
+            <List size="sm" items={lines.map((l) => ({ id: l, label: l }))} />
           ) : (
             <Text size="sm" tone="muted">
               Nothing to remove for the chosen items.
             </Text>
           )}
-        </section>
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="secondary" onClick={close}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          leftIcon={<IconSanitize size="sm" />}
-          disabled={nothingChosen || !preview || lines.length === 0}
-          onClick={() => void apply()}
-        >
-          Remove
-        </Button>
-      </DialogFooter>
+        </Stack>
+      </Stack>
     </Dialog>
   );
 }

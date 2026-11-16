@@ -64,13 +64,14 @@ describe('Organize toolbar', () => {
 
   it('cannot delete every page and says why', async () => {
     const { model, toolbar } = await open();
+    fireEvent.pointerDown(option(1));
     fireEvent.click(option(1));
+    fireEvent.pointerDown(option(3), { shiftKey: true });
     fireEvent.click(option(3), { shiftKey: true });
-    const del = within(toolbar).getByRole('button', { name: 'Delete pages' });
-    expect(del.getAttribute('aria-disabled')).toBe('true');
-    expect(document.body.textContent).toContain(
-      'The document must keep at least one page',
-    );
+    const del = within(toolbar).getByRole('button', {
+      name: 'Delete pages (The document must keep at least one page)',
+    });
+    expect((del as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(del);
     expect(model.getView().pages).toHaveLength(3);
   });

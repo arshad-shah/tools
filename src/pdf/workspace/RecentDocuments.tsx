@@ -1,5 +1,14 @@
-import { IconFileText, IconTrash } from '@/shared/ui/icons';
-import { Button, IconButton, Image, MetaList } from '@/shared/ui';
+import {
+  IconButton,
+  IconTile,
+  Heading,
+  Image,
+  ListRow,
+  ListRows,
+  Stack,
+} from '@arshad-shah/cynosure';
+import { fileText, trash } from '@arshad-shah/cynosure/icons';
+import { useEffect, useMemo } from 'react';
 import type { RecentDocument } from '@/pdf/doc/recent';
 import { relativeTime } from './relative-time';
 
@@ -10,7 +19,18 @@ export interface RecentDocumentsProps {
   headingLevel?: 2 | 3;
 }
 
-/** Autosaved documents with thumbnail, size and age (spec §5.2, §13.3). */
+/** The first page saved with the document, or a file icon. */
+function Thumb({ blob }: { blob?: Blob | null }) {
+  const src = useMemo(() => (blob ? URL.createObjectURL(blob) : null), [blob]);
+  useEffect(() => () => void (src && URL.revokeObjectURL(src)), [src]);
+  if (!blob || !src)
+    return <IconTile icon={fileText} size="sm" tone="neutral" />;
+  return (
+    <Image src={src} alt="" width={36} ratio={3 / 4} fit="cover" radius="sm" />
+  );
+}
+
+/** Autosaved documents with thumbnail, page count and age (spec §5.2). */
 export function RecentDocuments({
   docs,
   onOpen,
@@ -18,73 +38,41 @@ export function RecentDocuments({
   headingLevel = 2,
 }: RecentDocumentsProps) {
   if (docs.length === 0) return null;
-  const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
-    <section aria-labelledby="recent-documents" className="flex flex-col gap-3">
-      <Heading id="recent-documents" className="text-lg font-semibold text-fg">
+    <Stack as="section" gap="3" aria-labelledby="recent-documents">
+      <Heading id="recent-documents" level={headingLevel} size="md">
         Recent documents
       </Heading>
-      <ul className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
+      <ListRows label="Recent documents" divided>
         {docs.map((d) => (
-          <li
+          <ListRow
             key={d.id}
-            className="flex items-center gap-3 rounded-lg bg-surface p-3 shadow-e1"
-          >
-            <span className="flex h-14 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-surface-2 text-fg-subtle">
-              {d.thumb ? (
-                <Image
-                  src={d.thumb}
-                  decorative
-                  fit="cover"
-                  className="size-full"
-                />
-              ) : (
-                <IconFileText size="lg" />
-              )}
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              {d.restorable ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto min-w-0 justify-start truncate px-0 text-left font-medium text-fg hover:underline"
-                  onClick={() => onOpen(d.id)}
-                >
-                  {d.name}
-                </Button>
-              ) : (
-                <span className="truncate text-sm font-medium text-fg">
-                  {d.name}
-                </span>
-              )}
-              <MetaList
-                items={
+            label={d.name}
+            description={
+              d.restorable
+                ? `${d.pageCount} ${d.pageCount === 1 ? 'page' : 'pages'}, edited ${relativeTime(d.updatedAt)}`
+                : "Can't be restored by this version"
+            }
+            dimmed={!d.restorable}
+            leading={<Thumb blob={d.thumb} />}
+            onClick={d.restorable ? () => onOpen(d.id) : undefined}
+            actions={
+              <IconButton
+                variant="ghost"
+                size="sm"
+                tone={d.restorable ? 'neutral' : 'danger'}
+                label={
                   d.restorable
-                    ? [
-                        `${d.pageCount} ${d.pageCount === 1 ? 'page' : 'pages'}`,
-                        <span key="age" data-dynamic>
-                          edited {relativeTime(d.updatedAt)}
-                        </span>,
-                      ]
-                    : ["Can't be restored by this version"]
+                    ? `Remove ${d.name} from this device`
+                    : `Delete ${d.name}`
                 }
+                icon={trash}
+                onClick={() => onRemove(d.id)}
               />
-            </div>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              tone={d.restorable ? undefined : 'danger'}
-              label={
-                d.restorable
-                  ? `Remove ${d.name} from this device`
-                  : `Delete ${d.name}`
-              }
-              icon={IconTrash}
-              onClick={() => onRemove(d.id)}
-            />
-          </li>
+            }
+          />
         ))}
-      </ul>
-    </section>
+      </ListRows>
+    </Stack>
   );
 }

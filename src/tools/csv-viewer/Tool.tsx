@@ -253,7 +253,7 @@ export default function CsvViewer() {
     },
   ].filter((x) => x.items.length);
 
-  // A Card header keeps its actions beside the title (Cynosure gap 45):
+  // A Card header keeps its actions beside the title (Cynosure gap 52):
   // on phones they go in the body, where they wrap.
   const actions = (
     <Inline gap="2" wrap>

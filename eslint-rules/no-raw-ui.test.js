@@ -121,6 +121,11 @@ tester.run('no-raw-ui', rule, {
       filename: 'src/tools/pdf-edit/Tool.tsx',
     },
     { code: `const a = <button />;`, filename: 'src/tools/x/Tool.test.tsx' },
+    // A Cynosure component's layout style (a height for a list or viewport).
+    {
+      code: `import { VirtualList } from '@arshad-shah/cynosure';\nconst a = <VirtualList style={{ blockSize: '100%' }} />;`,
+      filename: TOOL,
+    },
     // createElement of a layout element is not drawn UI (a probe, a host).
     { code: `const a = React.createElement('div');`, filename: TOOL },
     { code: `const a = <Input type="text" />;`, filename: TOOL },
@@ -168,6 +173,11 @@ tester.run('no-raw-ui', rule, {
     },
     {
       code: `const a = <Box style={{ width: 3 }} />;`,
+      filename: 'src/app/a.tsx',
+      errors: [{ messageId: 'style' }],
+    },
+    {
+      code: `import { Box } from './box';\nconst a = <Box style={s} />;`,
       filename: 'src/app/a.tsx',
       errors: [{ messageId: 'style' }],
     },

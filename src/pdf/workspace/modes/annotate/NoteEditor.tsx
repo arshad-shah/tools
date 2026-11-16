@@ -1,5 +1,11 @@
-import { useRef, useState } from 'react';
-import { Button, Popover, Stack, Textarea } from '@/shared/ui';
+import {
+  Button,
+  Inline,
+  Popover,
+  Stack,
+  TextArea,
+} from '@arshad-shah/cynosure';
+import { useState } from 'react';
 import type { EditorState } from './ui-store';
 
 export interface NoteEditorProps {
@@ -25,48 +31,50 @@ export function NoteEditor({
   onCancel,
 }: NoteEditorProps) {
   const [text, setText] = useState(editor.kind === 'edit' ? editor.text : '');
-  const field = useRef<HTMLTextAreaElement>(null);
   const empty = text.trim() === '';
+  const save = () => {
+    if (!empty) onSave(text);
+  };
   return (
     <Popover
       open
       onOpenChange={(open) => !open && onCancel()}
       anchor={{ getBoundingClientRect: anchor }}
       label={TITLES[editor.kind]}
-      initialFocus={field}
+      initialFocus="first"
       modal
+      size="sm"
     >
-      <form
-        className="w-72 p-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!empty) onSave(text);
-        }}
-      >
-        <Stack gap="2">
-          <Textarea
-            ref={field}
-            aria-label={TITLES[editor.kind]}
-            value={text}
-            onChange={setText}
-            rows={4}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                if (!empty) onSave(text);
-              }
-            }}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="sm" type="submit" disabled={empty}>
-              Save
-            </Button>
-          </div>
-        </Stack>
-      </form>
+      <Stack gap="3">
+        <TextArea
+          label={TITLES[editor.kind]}
+          labelHidden
+          value={text}
+          onChange={setText}
+          rows={4}
+          description="Ctrl Enter saves."
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              save();
+            }
+          }}
+        />
+        <Inline gap="2" justify="end">
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            tone="accent"
+            size="sm"
+            disabled={empty}
+            onClick={save}
+          >
+            Save
+          </Button>
+        </Inline>
+      </Stack>
     </Popover>
   );
 }

@@ -1,21 +1,20 @@
 import { ColorField } from './ColorField';
 import { useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
   Button,
-  InspectorSection,
-  Label,
-  NumberInput,
+  Inline,
+  LoadingDots,
+  Notice,
+  NumberField,
   SegmentedControl,
   Select,
   Slider,
-  Spinner,
   Stack,
   Switch,
   Text,
-  Textarea,
-} from '@/shared/ui';
+  TextArea,
+} from '@arshad-shah/cynosure';
+import { InspectorSection } from '../../ui/InspectorSection';
 import { unsupportedChars } from '@/pdf/edit/fonts';
 import type {
   ContentFont,
@@ -67,22 +66,17 @@ function Unsupported({
   const bad = unsupportedChars(layout.font, text.replace(/\n/g, ''));
   if (bad.length === 0) return null;
   return (
-    <Alert status="warning">
-      <AlertDescription>
-        <Stack gap="2">
-          <span>
-            This font cannot draw{' '}
-            {bad.length === 1 ? 'one character' : `${bad.length} characters`} in
-            the text.
-          </span>
-          <div>
-            <Button size="sm" variant="secondary" onClick={onFix}>
-              Use Unicode font
-            </Button>
-          </div>
-        </Stack>
-      </AlertDescription>
-    </Alert>
+    <Notice
+      tone="warning"
+      size="sm"
+      action={
+        <Button size="sm" variant="outline" onClick={onFix}>
+          Use Unicode font
+        </Button>
+      }
+    >
+      {`This font cannot draw ${bad.length === 1 ? 'one character' : `${bad.length} characters`} in the text.`}
+    </Notice>
   );
 }
 
@@ -110,43 +104,41 @@ function TextFields({
   };
   return (
     <Stack gap="3">
-      <Stack gap="1">
-        <Label htmlFor="edit-text">Text</Label>
-        <Textarea
-          id="edit-text"
-          value={value}
-          rows={3}
-          onChange={(v) => setDraft({ base: p.text, value: v })}
-          onBlur={commit}
-        />
-      </Stack>
+      <TextArea
+        label="Text"
+        value={value}
+        rows={3}
+        onChange={(v) => setDraft({ base: p.text, value: v })}
+        onBlur={commit}
+      />
       <Unsupported
         font={p.font}
         text={value}
         onFix={() => set({ font: 'unicode' })}
       />
-      <Stack gap="1">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="edit-font">Font</Label>
-          {!ready ? <Spinner size="sm" label="Loading the font" /> : null}
-        </div>
-        <Select
-          id="edit-font"
-          value={p.font}
-          onValueChange={(font) => set({ font })}
-          items={FONT_ITEMS}
-        />
-      </Stack>
-      <Stack gap="1">
-        <Label htmlFor="edit-size">Size</Label>
-        <NumberInput
-          id="edit-size"
-          value={p.size}
-          min={4}
-          max={288}
-          onValueChange={(size) => set({ size })}
-        />
-      </Stack>
+      <Select
+        label="Font"
+        size="sm"
+        value={p.font}
+        onChange={(font) => set({ font })}
+        options={FONT_ITEMS}
+        description={
+          ready ? undefined : (
+            <Inline gap="2" align="center">
+              <LoadingDots size="sm" tone="muted" label="Loading the font" />
+              Loading the font
+            </Inline>
+          )
+        }
+      />
+      <NumberField
+        label="Size"
+        size="sm"
+        value={p.size}
+        min={4}
+        max={288}
+        onChange={(size) => size !== null && set({ size })}
+      />
       <ColorField
         label="Text colour"
         value={p.color}
@@ -160,17 +152,15 @@ function TextFields({
         onChange={(align) => set({ align })}
       />
       {p.lineHeight !== undefined ? (
-        <Stack gap="1">
-          <Label htmlFor="edit-line-height">Line height</Label>
-          <NumberInput
-            id="edit-line-height"
-            value={p.lineHeight}
-            min={0.8}
-            max={3}
-            step={0.1}
-            onValueChange={(lineHeight) => set({ lineHeight })}
-          />
-        </Stack>
+        <NumberField
+          label="Line height"
+          size="sm"
+          value={p.lineHeight}
+          min={0.8}
+          max={3}
+          step={0.1}
+          onChange={(lineHeight) => lineHeight !== null && set({ lineHeight })}
+        />
       ) : null}
     </Stack>
   );
@@ -198,22 +188,19 @@ export function ObjectInspector({
     return (
       <InspectorSection title="Cover and replace">
         <Stack gap="3">
-          <Text size="sm">{COVER_COPY}</Text>
-          <div>
+          <Text as="p" size="sm">
+            {COVER_COPY}
+          </Text>
+          <Inline>
             <Button
               size="sm"
-              variant="secondary"
+              variant="outline"
               disabled={!redact || !nav}
-              title={
-                redact
-                  ? undefined
-                  : 'Redact is not available in this version yet'
-              }
               onClick={() => nav?.('redact')}
             >
               Open Redact
             </Button>
-          </div>
+          </Inline>
           <ColorField
             label="Cover colour"
             value={p.fill}
@@ -229,26 +216,21 @@ export function ObjectInspector({
     return (
       <InspectorSection title="Image">
         <Stack gap="3">
-          <Stack gap="1">
-            <Label htmlFor="edit-image-opacity">Opacity</Label>
-            <Slider
-              id="edit-image-opacity"
-              aria-label="Opacity"
-              value={Math.round(p.opacity * 100)}
-              min={5}
-              max={100}
-              step={5}
-              onValueChange={(v) => set({ opacity: v / 100 })}
-            />
-          </Stack>
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="edit-keep-aspect">Keep aspect ratio</Label>
-            <Switch
-              id="edit-keep-aspect"
-              checked={p.keepAspect}
-              onCheckedChange={(keepAspect) => set({ keepAspect })}
-            />
-          </div>
+          <Slider
+            label="Opacity"
+            showValue
+            labels={{ value: (v) => `${v}%` }}
+            value={Math.round(p.opacity * 100)}
+            min={5}
+            max={100}
+            step={5}
+            onCommit={(v) => set({ opacity: Number(v) / 100 })}
+          />
+          <Switch
+            label="Keep aspect ratio"
+            checked={p.keepAspect}
+            onChange={(keepAspect) => set({ keepAspect })}
+          />
         </Stack>
       </InspectorSection>
     );
@@ -265,22 +247,16 @@ export function ObjectInspector({
         />
         {!line ? (
           <>
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="edit-no-stroke">Outline</Label>
-              <Switch
-                id="edit-no-stroke"
-                checked={p.stroke !== null}
-                onCheckedChange={(on) => set({ stroke: on ? '#000000' : null })}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="edit-fill-on">Fill</Label>
-              <Switch
-                id="edit-fill-on"
-                checked={p.fill !== null}
-                onCheckedChange={(on) => set({ fill: on ? '#e5e7eb' : null })}
-              />
-            </div>
+            <Switch
+              label="Outline"
+              checked={p.stroke !== null}
+              onChange={(on) => set({ stroke: on ? '#000000' : null })}
+            />
+            <Switch
+              label="Fill"
+              checked={p.fill !== null}
+              onChange={(on) => set({ fill: on ? '#e5e7eb' : null })}
+            />
             {p.fill ? (
               <ColorField
                 label="Fill colour"
@@ -290,17 +266,15 @@ export function ObjectInspector({
             ) : null}
           </>
         ) : null}
-        <Stack gap="1">
-          <Label htmlFor="edit-width">Line width</Label>
-          <NumberInput
-            id="edit-width"
-            value={p.width}
-            min={0.25}
-            max={50}
-            step={0.5}
-            onValueChange={(width) => set({ width })}
-          />
-        </Stack>
+        <NumberField
+          label="Line width"
+          size="sm"
+          value={p.width}
+          min={0.25}
+          max={50}
+          step={0.5}
+          onChange={(width) => width !== null && set({ width })}
+        />
       </Stack>
     </InspectorSection>
   );

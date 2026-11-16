@@ -1,25 +1,18 @@
-import React from 'react';
+import { AppShell, Container, FileDrop, Stack } from '@arshad-shah/cynosure';
+import { PageHeader } from '@arshad-shah/cynosure';
+import type { ReactNode } from 'react';
 import { useShortcuts } from '@/shared/lib/hotkeys';
-import { IconFileText } from '@/shared/ui/icons';
-import {
-  AppShell,
-  DropZone,
-  ErrorState,
-  FilePicker,
-  LoadingState,
-  TopBar,
-  useWindowFileDrag,
-  type RenderLink,
-} from '@/shared/ui';
-import { PasswordPrompt } from '@/pdf/components/PasswordPrompt';
+import { PasswordForm } from '@/pdf/ui/PasswordForm';
 import { RecentDocuments } from './RecentDocuments';
+import { FilePicker } from './ui/FilePicker';
+import { ErrorNotice, LoadingLine } from './ui/states';
 import { useRecentDocuments } from './use-recent-documents';
 import type { WorkspacePhase } from './use-workspace-document';
 
 export interface OpenDocumentProps {
   phase: Exclude<WorkspacePhase, { kind: 'ready' }>;
-  breadcrumb: React.ReactNode;
-  renderLink?: RenderLink;
+  /** The header's breadcrumbs (pdf, edit). */
+  breadcrumb: ReactNode;
   onFiles(files: File[]): void;
   onRestore(id: string): void;
   onPassword(password: string): void;
@@ -27,15 +20,15 @@ export interface OpenDocumentProps {
   onReset(): void;
 }
 
+const ACCEPT = '.pdf,application/pdf';
+
 /**
- * The workspace before a document is open (spec §13.3 Workspace row): a
- * window-wide drop target, the "Open a PDF" hero, recent documents, and the
- * opening, password and error states.
+ * The workspace before a document is open: a window-wide FileDrop, recent
+ * documents, and the opening, password and error states next to it.
  */
 export function OpenDocument({
   phase,
   breadcrumb,
-  renderLink,
   onFiles,
   onRestore,
   onPassword,
@@ -43,14 +36,13 @@ export function OpenDocument({
   onReset,
 }: OpenDocumentProps) {
   const recent = useRecentDocuments();
-  const { dragging } = useWindowFileDrag(onFiles);
 
-  let body: React.ReactNode;
+  let body: ReactNode = null;
   if (phase.kind === 'opening')
-    body = <LoadingState label={`Opening ${phase.name}`} />;
+    body = <LoadingLine label={`Opening ${phase.name}`} />;
   else if (phase.kind === 'locked')
     body = (
-      <PasswordPrompt
+      <PasswordForm
         fileName={phase.file.name}
         error={phase.error}
         busy={phase.busy}
@@ -60,21 +52,14 @@ export function OpenDocument({
       />
     );
   else if (phase.kind === 'error') {
-    const repairable = phase.error.code === 'INVALID_FILE' && phase.file;
+    const repairable = phase.error.code === 'INVALID_FILE' && !!phase.file;
     const crashed = phase.error.code === 'WORKER_CRASHED';
     body = (
-      <ErrorState
+      <ErrorNotice
         error={phase.error}
-        headingLevel={2}
         actions={[
           ...(repairable
-            ? [
-                {
-                  label: 'Try to repair',
-                  onClick: onRepair,
-                  variant: 'primary' as const,
-                },
-              ]
+            ? [{ label: 'Try to repair', onClick: onRepair, primary: true }]
             : []),
           crashed
             ? { label: 'Reload', onClick: () => window.location.reload() }
@@ -82,52 +67,39 @@ export function OpenDocument({
         ]}
       />
     );
-  } else
-    body = (
-      <FilePicker onFiles={onFiles} accept=".pdf,application/pdf">
-        {(open) => <ChooseShortcut open={open} />}
-      </FilePicker>
-    );
+  }
 
   return (
-    <AppShell
-      topBar={<TopBar breadcrumb={breadcrumb} renderLink={renderLink} />}
-    >
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10 md:px-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">
-            PDF workspace
-          </h1>
-          <p className="text-base text-fg-muted">
-            Organise, edit and export a PDF. It stays in your browser.
-          </p>
-        </div>
-        {phase.kind === 'empty' ? (
-          <DropZone
-            variant="hero"
-            icon={IconFileText}
-            title="Open a PDF"
-            hint="Drop a file here or choose one"
-            chooseLabel="Choose file"
-            accept=".pdf,application/pdf"
-            onFiles={onFiles}
+    <AppShell header={breadcrumb}>
+      <Container size="md" paddingBlock="8">
+        <Stack gap="7">
+          <PageHeader
+            title="PDF workspace"
+            description="Organise, edit, sign and export a PDF. It stays in your browser."
           />
-        ) : null}
-        <div aria-live="polite">{body}</div>
-        {phase.kind === 'empty' && recent.docs?.length ? (
-          <RecentDocuments
-            docs={recent.docs}
-            onOpen={onRestore}
-            onRemove={(id) => void recent.remove(id)}
-          />
-        ) : null}
-      </div>
-      <DropZone
-        variant="fullscreen"
-        active={dragging}
-        title="Drop to open"
-        onFiles={onFiles}
-      />
+          {phase.kind === 'empty' ? (
+            <FileDrop
+              size="lg"
+              target="window"
+              accept={ACCEPT}
+              hint="Files stay on this device."
+              labels={{ prompt: 'Drop a PDF here, or' }}
+              onFiles={(files) => files.length && onFiles(files)}
+            />
+          ) : null}
+          {body}
+          {phase.kind === 'empty' && recent.docs?.length ? (
+            <RecentDocuments
+              docs={recent.docs}
+              onOpen={onRestore}
+              onRemove={(id) => void recent.remove(id)}
+            />
+          ) : null}
+        </Stack>
+      </Container>
+      <FilePicker onFiles={onFiles} accept={ACCEPT}>
+        {(open) => <ChooseShortcut open={open} />}
+      </FilePicker>
     </AppShell>
   );
 }

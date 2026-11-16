@@ -1,12 +1,7 @@
-export { PdfDropzone, type PdfInputFile } from './PdfDropzone';
-export { PasswordPrompt } from './PasswordPrompt';
+// The old kit components that lived here are gone: PDF pages use
+// src/pdf/ui (Cynosure) and the workspace. What is left has no UI.
 export { UNENCRYPTED_NOTE } from './notes';
-export { PageThumb } from './PageThumb';
-export { FileThumb } from './FileThumb';
-export { PageGrid, type PageTile } from './PageGrid';
-export { SortableFileList } from './SortableFileList';
-export { JobPanel } from './JobPanel';
-export { ResultFiles, type ResultFile } from './ResultFiles';
+export type { ResultFile } from './result-file';
 export {
   useSortableList,
   useKeyboardReorder,
@@ -26,8 +21,5 @@ export {
   type PageSelectionState,
   type PlainClick,
 } from './usePageSelection';
-export { PdfFileHeader } from './PdfFileHeader';
-export { PdfPagePreview } from './PdfPagePreview';
 export { usePreviewBytes } from './usePreviewBytes';
-export { PageRangeField } from './PageRangeField';
 export { uprightJpeg } from './upright-jpeg';

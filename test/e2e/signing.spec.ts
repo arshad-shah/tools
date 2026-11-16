@@ -75,7 +75,7 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
 
   // 1. Draw: a bold blue stroke, placed on the next place to sign (page 3).
   let sign = await openSignaturePanel(page);
-  await sign.getByRole('tab', { name: 'Draw' }).click();
+  await sign.getByRole('radio', { name: 'Draw' }).click();
   await sign.getByRole('radio', { name: 'Bold' }).click();
   const pad = sign.getByRole('img', { name: 'Draw your signature' });
   const box = (await pad.boundingBox())!;
@@ -98,15 +98,22 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
 
   // 2. Type: Jane Doe in the 4th style, slant 10, as initials on every page.
   sign = await openSignaturePanel(page);
-  await sign.getByRole('tab', { name: 'Type' }).click();
+  await sign.getByRole('radio', { name: 'Type' }).click();
   await sign.getByLabel('Your name').fill('Jane Doe');
-  await sign.getByRole('radio').nth(3).click();
+  // The fourth style card (a native radio under the card's picture).
+  await sign
+    .getByRole('group', { name: 'Style' })
+    .getByRole('radio')
+    .nth(3)
+    .evaluate((r: HTMLInputElement) => r.click());
   const slant = sign.getByRole('slider', { name: 'Slant' });
   await slant.focus();
   for (let i = 0; i < 10; i++) await slant.press('ArrowRight');
   await expect(slant).toHaveAttribute('aria-valuetext', '10 degrees');
-  await sign.getByRole('tab', { name: 'Initials' }).click();
-  await expect(sign.getByLabel('Initials')).toHaveValue('JD');
+  await sign.getByRole('radio', { name: 'Initials' }).click();
+  await expect(sign.getByRole('textbox', { name: 'Initials' })).toHaveValue(
+    'JD',
+  );
   await sign.getByRole('button', { name: 'Initial pages' }).click();
   const pagesDialog = page.getByRole('dialog', { name: 'Initial pages' });
   await pagesDialog.getByRole('radio', { name: 'Every page' }).check();
@@ -118,7 +125,7 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   // 3. Photo: the fake camera shows a test pattern, so either outcome is
   // honest; then the uploaded photo is straightened and used.
   sign = await openSignaturePanel(page);
-  await sign.getByRole('tab', { name: 'Photo' }).click();
+  await sign.getByRole('radio', { name: 'Photo' }).click();
   await sign.getByRole('button', { name: 'Start' }).click();
   await sign
     .getByRole('button', { name: 'Capture' })
@@ -130,7 +137,10 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   ).toBeVisible({ timeout: 30_000 });
   const retake = sign.getByRole('button', { name: 'Retake' });
   if (await retake.isVisible()) await retake.click();
-  await sign.getByRole('radio', { name: 'Upload' }).click();
+  await sign
+    .getByRole('radiogroup', { name: 'Photo source' })
+    .getByRole('radio', { name: 'Upload' })
+    .click();
   const chooser = page.waitForEvent('filechooser');
   await sign.getByRole('button', { name: 'Choose a photo' }).click();
   await (await chooser).setFiles(PHOTO);
@@ -154,9 +164,8 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   await cert.getByRole('button', { name: 'Create certificate' }).click();
   await cert.getByRole('button', { name: 'Use this certificate' }).click();
   await expect(cert).toHaveCount(0);
-  await exp
-    .getByLabel('Appearance')
-    .selectOption({ label: 'Signature on page 3' });
+  await exp.getByRole('combobox', { name: 'Appearance' }).click();
+  await page.getByRole('option', { name: 'Signature on page 3' }).click();
   await exp.getByRole('switch', { name: /Add a trusted timestamp/ }).click();
   await exp.getByLabel('Timestamp server').fill(TSA);
   const [download] = await Promise.all([
@@ -197,7 +206,8 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
     ),
   ).toBeVisible({ timeout: 20_000 });
   await expect(
-    sigs.getByText('Timestamp not verified', { exact: true }),
+    // One line under the signer: when, how the time is known, coverage.
+    sigs.getByText(/\. Timestamp not verified\. /),
   ).toBeVisible();
 
   // 7. One changed byte inside the signed range: invalid.

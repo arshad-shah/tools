@@ -32,6 +32,32 @@ if (typeof globalThis.ResizeObserver === 'undefined')
     disconnect() {}
   } as unknown as typeof ResizeObserver;
 
+// jsdom has no matchMedia; Cynosure 0.7.0 reads media queries (reduced
+// motion, pointer, CompareSlider zoom). Width queries are answered against
+// the window's width (jsdom: 1024px), as a desktop would; every other query
+// does not match unless a test stubs it.
+const widthMatches = (query: string): boolean => {
+  const conditions = [...query.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)];
+  if (conditions.length === 0) return false;
+  return conditions.every(([, kind, px]) =>
+    kind === 'min'
+      ? window.innerWidth >= Number(px)
+      : window.innerWidth <= Number(px),
+  );
+};
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function')
+  window.matchMedia = (query: string) =>
+    ({
+      matches: widthMatches(query),
+      media: query,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+
 // jsdom lays nothing out: CodeMirror measures text ranges.
 if (typeof Range !== 'undefined' && !Range.prototype.getClientRects) {
   const empty = () =>

@@ -214,24 +214,35 @@ test.describe('phone 390x844', () => {
     const docked = bar(page);
     let b = await rect(docked);
     expect(b.height).toBeLessThanOrEqual(72);
-    expect(Math.round(b.y + b.height)).toBe(844);
+    // Docked at the bottom (Cynosure's docked bar keeps a hairline inset).
+    expect(844 - (b.y + b.height)).toBeLessThanOrEqual(4);
+    expect(844 - (b.y + b.height)).toBeGreaterThanOrEqual(0);
     expect(intersects(b, await rect(active(page)))).toBe(false);
     await expectInside(page, b);
     // Every control shares one row.
-    const tops = await docked
-      .getByRole('button')
-      .evaluateAll((els) => [
-        ...new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))),
-      ]);
-    expect(tops).toHaveLength(1);
+    // Every control shares one row: their middles line up (Done is taller).
+    const rows = await docked.evaluate((el) => {
+      return [
+        ...new Set(
+          [...el.querySelectorAll('button')]
+            .filter((b) => b.getBoundingClientRect().height > 0)
+            .map((b) => {
+              const r = b.getBoundingClientRect();
+              return Math.round((r.top + r.height / 2) / 4);
+            }),
+        ),
+      ];
+    });
+    expect(rows).toHaveLength(1);
 
     // The keyboard opens: the bar rides above it and the box scrolls clear.
     await setKeyboard(page, 320);
     await expect
-      .poll(async () =>
-        Math.round((await rect(docked)).y + (await rect(docked)).height),
-      )
-      .toBe(844 - 320);
+      .poll(async () => {
+        const r = await rect(docked);
+        return 844 - 320 - (r.y + r.height) <= 4 && r.y + r.height <= 844 - 320;
+      })
+      .toBe(true);
     await expect
       .poll(async () => {
         const box = await rect(active(page));

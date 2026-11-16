@@ -1,4 +1,4 @@
-import { ColorSwatchPicker } from '@/shared/ui';
+import { InkPicker } from '../../ui/InkPicker';
 import { INK_COLORS } from '@/pdf/sign';
 
 const OPTIONS = INK_COLORS.map((c) => ({ value: c.value, label: c.label }));
@@ -19,12 +19,10 @@ export function InkField({
   label?: string;
 }) {
   return (
-    <ColorSwatchPicker
+    <InkPicker
       label={label}
-      showLabel
       value={value}
-      options={OPTIONS}
-      allowCustom
+      swatches={OPTIONS}
       disabled={disabled}
       onChange={onChange}
     />

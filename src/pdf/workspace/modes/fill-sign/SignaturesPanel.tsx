@@ -1,21 +1,19 @@
 import { useState } from 'react';
 import {
-  IconSignatureBroken,
-  IconSignatureUnknown,
-  IconSignatureVerified,
-} from '@/shared/ui/icons';
+  signatureBroken,
+  signatureUnknown,
+  signatureVerified,
+} from '@arshad-shah/cynosure/icons';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
   Button,
-  ErrorState,
-  LoadingState,
-  MetaList,
+  Card,
+  Disclosure,
+  Icon,
+  Inline,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { ErrorNotice, LoadingLine } from '../../ui/states';
 import type { SignatureReport } from '@/pdf/sign/pades/verify';
 import type { DocumentSignatures } from '../../signatures';
 import { CertificateDetails } from './cert-meta';
@@ -34,79 +32,80 @@ const when = (d: Date | null) =>
 function iconFor(r: SignatureReport) {
   if (r.integrity !== 'intact' || !r.signatureValid || !r.signer)
     return {
-      Icon: IconSignatureBroken,
-      tone: 'text-danger',
+      icon: signatureBroken,
+      tone: 'danger' as const,
       label: 'Invalid signature',
     };
   if (r.trust === 'trusted')
     return {
-      Icon: IconSignatureVerified,
-      tone: 'text-accent-fg',
+      icon: signatureVerified,
+      tone: 'success' as const,
       label: 'Trusted signature',
     };
   return {
-    Icon: IconSignatureUnknown,
-    tone: 'text-warning',
+    icon: signatureUnknown,
+    tone: 'warning' as const,
     label: 'Signer not verified',
   };
 }
 
 function SignatureCard({ r }: { r: SignatureReport }) {
-  const { Icon, tone, label } = iconFor(r);
+  const { icon, tone, label } = iconFor(r);
   return (
-    <li className="flex flex-col gap-2 rounded-md border border-line p-3">
-      <div className="flex items-start gap-2">
-        <span className={tone}>
-          <Icon size="md" label={label} />
-        </span>
-        <Stack gap="1" className="min-w-0">
-          <Text size="sm" className="font-medium text-fg">
-            {r.signer?.subjectCN || r.fieldName}
-          </Text>
-          <Text size="sm">{r.summary}</Text>
-        </Stack>
-      </div>
-      <MetaList
-        items={[
-          when(r.time.value),
-          timeSourceText(r),
-          r.coverage === 'whole-document'
-            ? 'Covers the whole document'
-            : 'Document changed after signing',
-        ]}
-      />
-      <ul className="flex flex-col gap-1 text-sm text-fg-muted">
-        {r.notes.map((n, i) => (
-          <li key={`n${i}`}>{n}</li>
-        ))}
-        {r.problems.map((p, i) => (
-          <li key={`p${i}`} className="text-danger">
-            {p}
-          </li>
-        ))}
-      </ul>
-      {r.signer ? (
-        <Accordion type="single">
-          <AccordionItem value="cert" className="shadow-none">
-            <AccordionTrigger>Show certificate</AccordionTrigger>
-            <AccordionContent>
-              <Stack gap="3">
-                {r.chain.map((c, i) => (
-                  <Stack key={`${i}-${c.sha256}`} gap="1">
-                    {r.chain.length > 1 ? (
-                      <Text size="sm" tone="muted">
-                        {i === 0 ? 'Signer' : `Issuer ${i}`}
-                      </Text>
-                    ) : null}
-                    <CertificateDetails info={c} />
-                  </Stack>
-                ))}
-              </Stack>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      ) : null}
-    </li>
+    <Card as="li" variant="outline" padding="md">
+      <Stack gap="3">
+        <Inline gap="3" align="start">
+          <Icon icon={icon} size="md" tone={tone} label={label} />
+          <Stack gap="1" minSize="0">
+            <Text size="sm" weight="medium">
+              {r.signer?.subjectCN || r.fieldName}
+            </Text>
+            <Text as="p" size="sm">
+              {r.summary}
+            </Text>
+          </Stack>
+        </Inline>
+        <Text size="sm" tone="muted">
+          {[
+            when(r.time.value),
+            timeSourceText(r),
+            r.coverage === 'whole-document'
+              ? 'Covers the whole document'
+              : 'Document changed after signing',
+          ].join('. ')}
+        </Text>
+        {r.notes.length || r.problems.length ? (
+          <Stack gap="1">
+            {r.notes.map((n, i) => (
+              <Text key={`n${i}`} as="p" size="sm" tone="muted">
+                {n}
+              </Text>
+            ))}
+            {r.problems.map((p, i) => (
+              <Text key={`p${i}`} as="p" size="sm" tone="danger">
+                {p}
+              </Text>
+            ))}
+          </Stack>
+        ) : null}
+        {r.signer ? (
+          <Disclosure summary="Show certificate" variant="plain" size="sm">
+            <Stack gap="3">
+              {r.chain.map((c, i) => (
+                <Stack key={`${i}-${c.sha256}`} gap="1">
+                  {r.chain.length > 1 ? (
+                    <Text size="sm" tone="muted">
+                      {i === 0 ? 'Signer' : `Issuer ${i}`}
+                    </Text>
+                  ) : null}
+                  <CertificateDetails info={c} />
+                </Stack>
+              ))}
+            </Stack>
+          </Disclosure>
+        ) : null}
+      </Stack>
+    </Card>
   );
 }
 
@@ -122,23 +121,23 @@ export function SignaturesPanel({
   const [roots, setRoots] = useState(false);
   const { reports, error } = signatures;
   return (
-    <Stack gap="3" className="p-3">
+    <Stack gap="4">
       {error ? (
-        <ErrorState error={error} headingLevel={3} />
+        <ErrorNotice error={error} />
       ) : !reports ? (
-        <LoadingState label="Checking signatures" />
+        <LoadingLine label="Checking signatures" />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <Stack as="ul" gap="3">
           {reports.map((r, i) => (
             <SignatureCard key={`${i}-${r.fieldName}`} r={r} />
           ))}
-        </ul>
+        </Stack>
       )}
-      <div>
-        <Button variant="secondary" size="sm" onClick={() => setRoots(true)}>
+      <Inline>
+        <Button variant="outline" size="sm" onClick={() => setRoots(true)}>
           Trusted roots
         </Button>
-      </div>
+      </Inline>
       <TrustedRootsDialog open={roots} onOpenChange={setRoots} />
     </Stack>
   );

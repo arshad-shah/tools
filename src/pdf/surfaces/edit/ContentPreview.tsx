@@ -1,11 +1,11 @@
 import {
-  Image,
   OverlayText,
   PagePlaced,
   ShapeLayer,
   type OverlayFontFamily,
   type OverlayTransform,
 } from '@/shared/ui';
+import { BytesImage } from '../BytesImage';
 import type {
   ContentFont,
   ContentShapeParams,
@@ -14,10 +14,17 @@ import type {
 } from '@/pdf/doc/ops/edit';
 import type { CoverParams } from '@/pdf/doc/ops/cover';
 import type { OverlayItem } from '@/pdf/doc/types';
-import { useWorkspace } from '../../workspace-context';
-import { metricsOf, useTextLayout, type LayoutFont } from '../../text-layout';
-import { contentShapes, coverShape } from './content-shapes';
-import { useAssetBytes } from './use-asset';
+import { useWorkspace } from '@/pdf/workspace/workspace-context';
+import {
+  metricsOf,
+  useTextLayout,
+  type LayoutFont,
+} from '@/pdf/workspace/text-layout';
+import {
+  contentShapes,
+  coverShape,
+} from '@/pdf/workspace/modes/edit/content-shapes';
+import { useAssetBytes } from '@/pdf/workspace/modes/edit/use-asset';
 
 const FAMILY: Record<ContentFont, OverlayFontFamily> = {
   Helvetica: 'helvetica',
@@ -121,13 +128,7 @@ function ImagePreview({
       rotate={p.rotate ?? 0}
       opacity={p.opacity}
     >
-      <Image
-        src={bytes}
-        mime={p.mime}
-        decorative
-        fit="cover"
-        className="size-full"
-      />
+      <BytesImage bytes={bytes} mime={p.mime} fit="cover" />
     </PagePlaced>
   );
 }

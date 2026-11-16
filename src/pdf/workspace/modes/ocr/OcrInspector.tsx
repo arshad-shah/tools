@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
-import { Button, ErrorState, InspectorSection, Stack, Text } from '@/shared/ui';
-import { IconOcrScan, IconTrash } from '@/shared/ui/icons';
+import { Button, Stack, Text } from '@arshad-shah/cynosure';
+import { ocrScan, trash } from '@arshad-shah/cynosure/icons';
+import { InspectorSection } from '../../ui/InspectorSection';
+import { ErrorNotice } from '../../ui/states';
 import type { ModeProps } from '../types';
 import {
   latestOcr,
@@ -32,37 +34,28 @@ export function OcrInspector({ doc, selection }: ModeProps) {
   return (
     <>
       {ui.error ? (
-        <ErrorState
+        <ErrorNotice
           error={ui.error}
-          headingLevel={3}
           actions={
             RETRY.has(ui.error.code)
-              ? [{ label: 'Try again', onClick: run, variant: 'primary' }]
-              : [
-                  {
-                    label: 'Close',
-                    onClick: () => setOcrUi({ error: null }),
-                    variant: 'secondary',
-                  },
-                ]
+              ? [{ label: 'Try again', onClick: run, primary: true }]
+              : [{ label: 'Close', onClick: () => setOcrUi({ error: null }) }]
           }
         />
       ) : null}
       {ui.dismissed ? (
-        <Stack gap="2" className="p-1">
+        <Stack gap="2" align="start">
           <Text size="sm" tone="muted">
             Nothing is downloaded until you choose Download and run.
           </Text>
-          <div>
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<IconOcrScan size="sm" />}
-              onClick={() => setOcrUi({ dismissed: false })}
-            >
-              Show OCR options
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={ocrScan}
+            onClick={() => setOcrUi({ dismissed: false })}
+          >
+            Show OCR options
+          </Button>
         </Stack>
       ) : (
         <ConsentCard
@@ -81,22 +74,21 @@ export function OcrInspector({ doc, selection }: ModeProps) {
         </InspectorSection>
       ) : null}
       <InspectorSection title="OCR data on this device" defaultOpen={false}>
-        <Stack gap="2">
+        <Stack gap="2" align="start">
           <Text size="sm" tone="muted">
             Language data is kept in this browser so OCR works offline next
             time. The engine stays in the browser cache until it clears it.
           </Text>
-          <div>
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<IconTrash size="sm" />}
-              disabled={ui.running}
-              onClick={() => void removeData(doc)}
-            >
-              Remove OCR data
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            tone="danger"
+            size="sm"
+            icon={trash}
+            disabled={ui.running}
+            onClick={() => void removeData(doc)}
+          >
+            Remove OCR data
+          </Button>
         </Stack>
       </InspectorSection>
     </>

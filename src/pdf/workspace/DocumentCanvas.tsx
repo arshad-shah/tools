@@ -1,9 +1,10 @@
-import { DocumentViewport, type ZoomSetting } from '@/shared/ui';
+import { DocumentViewport, type ZoomSetting } from '@arshad-shah/cynosure';
+import { Layer, PageSlot } from '@/pdf/surfaces/layers';
+import { PageImage } from '@/pdf/surfaces/PageImage';
+import { TiledLayer } from '@/pdf/surfaces/TiledLayer';
 import type { Box, PageId, PageRef } from '@/pdf/doc/types';
 import type { ModeModule, ModeProps } from './modes/types';
 import { displaySize } from './page-display';
-import { PageImage } from './PageImage';
-import { TiledLayer } from './TiledLayer';
 import { TILE_ABOVE_SCALE } from './tile-plan';
 import { boxToScreen, pageViewport } from '@/pdf/doc/geometry';
 import type { SourceDocs } from './source-docs';
@@ -83,7 +84,7 @@ export function DocumentCanvas({
       onVisiblePagesChange={onVisiblePagesChange}
       onCurrentPageChange={onCurrentPageChange}
       onScaleChange={onScaleChange}
-      scrollToPage={request}
+      scrollTo={request}
       renderPage={({ index, scale, visible, visibleRect }) => {
         const actual = view.pages[index];
         const page = shownPage(actual, mode);
@@ -97,7 +98,7 @@ export function DocumentCanvas({
           ? boxToScreen(full, page.crop)
           : { left: 0, top: 0, width: full.width, height: full.height };
         return (
-          <div className="relative size-full">
+          <PageSlot pageNumber={index + 1} pageId={actual.id}>
             <PageImage
               page={page}
               sources={state.sources}
@@ -127,7 +128,7 @@ export function DocumentCanvas({
               />
             ) : null}
             {Overlay ? (
-              <div className="absolute inset-0">
+              <Layer>
                 <Overlay
                   {...mode}
                   page={actual}
@@ -136,9 +137,9 @@ export function DocumentCanvas({
                   width={vp.width}
                   height={vp.height}
                 />
-              </div>
+              </Layer>
             ) : null}
-          </div>
+          </PageSlot>
         );
       }}
     />

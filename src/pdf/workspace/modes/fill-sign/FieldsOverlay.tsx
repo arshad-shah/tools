@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import type React from 'react';
-import { IconMoreHorizontal } from '@/shared/ui/icons';
+import { moreHorizontal } from '@arshad-shah/cynosure/icons';
+import { IconButton } from '@arshad-shah/cynosure';
 import {
-  IconButton,
-  OverlayLayer,
-  PageBox,
   PointerLayer,
-  type LayerObject,
-  type ObjectChange,
   type OverlayTransform,
   type PagePoint,
 } from '@/shared/ui';
+import { boxRect } from '@/pdf/surfaces/geometry';
+import { Layer, Place } from '@/pdf/surfaces/layers';
+import type { LayerObject, ObjectChange } from '@/pdf/surfaces/ObjectLayer';
 import { detectionKey } from '@/pdf/doc/detection';
 import type {
   SignInitialPagesParams,
@@ -279,13 +278,8 @@ export function FieldsOverlay(props: PageOverlayProps) {
   };
 
   return (
-    <OverlayLayer
-      width={width}
-      height={height}
-      interactive
-      label={`Page ${pageNumber} fields`}
-    >
-      <div ref={setRootEl} className="pointer-events-none absolute inset-0" />
+    <Layer role="group" aria-label={`Page ${pageNumber} fields`} clip>
+      <Layer ref={setRootEl} passive />
       {clickTool || placing ? (
         <PointerLayer
           transform={transform}
@@ -337,25 +331,23 @@ export function FieldsOverlay(props: PageOverlayProps) {
             resizing !== x.key,
         )
         .map((x) => (
-          <PageBox
+          <Place
             key={`options-${x.key}`}
-            transform={transform}
-            box={{
+            {...boxRect(transform, {
               x: x.rect.x + x.rect.width,
               y: x.rect.y,
               width: 1,
               height: x.rect.height,
-            }}
-            className="pointer-events-auto flex items-center"
+            })}
           >
             <IconButton
               label="Field options"
-              icon={IconMoreHorizontal}
+              icon={moreHorizontal}
               size="sm"
-              variant="ghost"
+              variant="soft"
               onClick={() => fillSign.set({ menuFor: x.key })}
             />
-          </PageBox>
+          </Place>
         ))}
       <PlacedSignatures
         ctx={ctx}
@@ -376,8 +368,8 @@ export function FieldsOverlay(props: PageOverlayProps) {
         width={width}
         height={height}
       />
-      <div
-        className="contents"
+      <Layer
+        passive
         onKeyDown={(e) => {
           // Alt+T: from a selected text box to its text settings.
           if (e.altKey && e.key.toLowerCase() === 't') {
@@ -425,15 +417,15 @@ export function FieldsOverlay(props: PageOverlayProps) {
             else focusProperties();
           }}
         />
-      </div>
+      </Layer>
       {placing && hover && ready[placing] ? (
-        <PageBox
-          transform={transform}
-          box={placedBox(hover, placing).box}
-          className="pointer-events-none opacity-60"
+        <Place
+          {...boxRect(transform, placedBox(hover, placing).box)}
+          passive
+          opacity={0.6}
         >
           <SignatureLook preview={ready[placing]!.preview} role={placing} />
-        </PageBox>
+        </Place>
       ) : null}
       {menuFor
         ? fields
@@ -458,10 +450,10 @@ export function FieldsOverlay(props: PageOverlayProps) {
       />
       {page.id === doc.currentPage ? (
         <>
-          <NoFieldsHint ctx={ctx} fields={all} />
-          <FormNotice ctx={ctx} />
+          <NoFieldsHint ctx={ctx} fields={all} width={width} />
+          <FormNotice ctx={ctx} width={width} />
         </>
       ) : null}
-    </OverlayLayer>
+    </Layer>
   );
 }

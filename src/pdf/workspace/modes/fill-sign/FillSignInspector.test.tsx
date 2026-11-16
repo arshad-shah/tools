@@ -66,12 +66,11 @@ describe('FillSignInspector with nothing selected', () => {
   it('shows the fill summary and the next action', () => {
     const c = ctx(3, 1);
     render(<FillSignInspector {...c} />);
-    expect(screen.getByText('1 of 3 fields filled')).toBeTruthy();
-    expect(screen.getByText('2 left')).toBeTruthy();
-    expect(screen.getByText('0 signatures placed')).toBeTruthy();
-    expect(
-      screen.getByRole('progressbar', { name: 'Fields filled' }),
-    ).toBeTruthy();
+    const bar = screen.getByRole('progressbar', {
+      name: '1 of 3 fields filled',
+    });
+    expect(bar.getAttribute('aria-valuenow')).toBe('1');
+    expect(screen.getByText('2 left, 0 signatures placed')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Next empty field' }));
     expect(fillSign.get().editing).toBe('ckpt0:0/f1');
   });

@@ -1,9 +1,9 @@
+import { BitmapSurface } from '@/pdf/surfaces/BitmapSurface';
+import { HitArea } from '@/pdf/surfaces/HitArea';
+import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
 import {
-  BitmapCanvas,
-  HitArea,
   PageBox,
   ShapeLayer,
-  type ObjectChange,
   type OverlayTransform,
   type Shape,
 } from '@/shared/ui';
@@ -45,11 +45,11 @@ function Patch({
   if (!bitmap) return null;
   return (
     <PageBox transform={transform} box={box}>
-      <BitmapCanvas
+      <BitmapSurface
         bitmap={bitmap}
         width={r.width}
         height={r.height}
-        label=""
+        label="Cleaned page under the annotation"
       />
     </PageBox>
   );

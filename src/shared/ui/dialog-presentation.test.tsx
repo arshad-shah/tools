@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Dialog, DialogBody, DialogHeader, DialogTitle } from './dialog';
@@ -52,11 +52,15 @@ describe('Dialog presentations (backlog P5-B)', () => {
     render(<Harness presentation="popover" onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    onOpenChange.mockClear();
+    // The harness keeps it open, and a controlled popover reports a close
+    // only once, so Esc is checked on a fresh render.
+    cleanup();
+    const onEscape = vi.fn();
+    render(<Harness presentation="popover" onOpenChange={onEscape} />);
     fireEvent.keyDown(screen.getByRole('button', { name: 'A4' }), {
       key: 'Escape',
     });
-    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onEscape).toHaveBeenCalledWith(false);
   });
 
   it('sheet: a modal docked to the bottom edge', () => {

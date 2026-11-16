@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { RedactOptions } from './modes/redact/RedactOptions';
 import { ToolbarPanel } from './ToolbarPanel';
+import { settings } from '@arshad-shah/cynosure/icons';
 
 describe('ToolbarPanel (backlog P5-E)', () => {
   it('opens the redaction options from the toolbar, by the button', () => {
@@ -11,7 +12,7 @@ describe('ToolbarPanel (backlog P5-E)', () => {
         layout="standard"
         label="Redaction options"
         text="Options"
-        leading={null}
+        icon={settings}
         title="Redaction options"
       >
         <RedactOptions />
@@ -34,7 +35,7 @@ describe('ToolbarPanel (backlog P5-E)', () => {
         layout="phone"
         label="Redaction options"
         text="Options"
-        leading={null}
+        icon={settings}
         title="Redaction options"
       >
         <RedactOptions />

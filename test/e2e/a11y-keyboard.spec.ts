@@ -120,13 +120,13 @@ test('a text box added from the toolbar is placed and moved with the arrows', as
 }) => {
   await open(page, FORM, '/pdf/edit/fill-sign');
   const toolbar = page.getByRole('toolbar', { name: /Fill & Sign/ });
-  // The split item's main button; ArrowDown on it opens its menu.
+  // The split item's menu button, beside its main button.
   const options = toolbar
     .getByRole('button', {
       name: /^Add field/,
       exact: false,
     })
-    .and(page.locator(':not([aria-haspopup])'));
+    .and(page.locator('[aria-haspopup="menu"]'));
   // One tab stop for the toolbar (roving focus); arrows move inside it.
   await tabTo(page, toolbar.locator('[tabindex="0"]').first());
   for (let i = 0; i < 20; i++) {
@@ -134,7 +134,7 @@ test('a text box added from the toolbar is placed and moved with the arrows', as
     await page.keyboard.press('ArrowRight');
   }
   await expect(options).toBeFocused();
-  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
   const centre = page.getByRole('menuitem', { name: 'Add at page centre' });
   await expect(centre).toBeVisible();
   // The menu focuses its first item; arrows walk to "Add at page centre".

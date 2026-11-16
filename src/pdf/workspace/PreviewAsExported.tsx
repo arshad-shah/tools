@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
-import {
-  Alert,
-  AlertDescription,
-  BitmapCanvas,
-  LoadingState,
-} from '@/shared/ui';
+import { Inline, Notice, Stack, Text } from '@arshad-shah/cynosure';
 import { planFor } from '@/pdf/doc/plan';
 import { materializeIn } from '@/pdf/doc/services';
 import type { PageId } from '@/pdf/doc/types';
 import { usePageBitmap, usePdfDocument } from '@/pdf/render';
 import { displaySize } from './page-display';
-import { PageImage } from './PageImage';
+import { BitmapSurface } from '@/pdf/surfaces/BitmapSurface';
+import { PageImage } from '@/pdf/surfaces/PageImage';
+import { LoadingLine } from './ui/states';
 import type { WorkspaceSession } from './session';
 
 const WIDTH = 260;
@@ -68,43 +65,38 @@ export function PreviewAsExported({
   const n = index + 1;
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-4">
-        <figure className="flex flex-col gap-1">
-          <div className="w-fit shadow-page">
-            <PageImage
-              page={page}
-              sources={model.getState().sources}
-              docId={handle?.docId ?? null}
-              scale={WIDTH / size.width}
-              visible
-              priority={0}
-              label={`Page ${n} in the workspace`}
-            />
-          </div>
-          <figcaption className="text-sm text-fg-muted">
-            In the workspace
-          </figcaption>
-        </figure>
-        <figure className="flex flex-col gap-1">
-          {current?.error ? (
-            <Alert status="danger">
-              <AlertDescription>{current.error.message}</AlertDescription>
-            </Alert>
-          ) : pageInfo ? (
-            <BitmapCanvas
-              bitmap={bitmap}
-              width={WIDTH}
-              aspect={pageInfo.width / pageInfo.height}
-              label={`Page ${n} as exported`}
-              className="bg-white shadow-page"
-            />
-          ) : (
-            <LoadingState label={`Preparing page ${n} as exported`} />
-          )}
-          <figcaption className="text-sm text-fg-muted">As exported</figcaption>
-        </figure>
-      </div>
-    </div>
+    <Inline gap="5" wrap align="start">
+      <Stack gap="2">
+        <PageImage
+          page={page}
+          sources={model.getState().sources}
+          docId={handle?.docId ?? null}
+          scale={WIDTH / size.width}
+          visible
+          priority={0}
+          label={`Page ${n} in the workspace`}
+        />
+        <Text size="sm" tone="muted">
+          In the workspace
+        </Text>
+      </Stack>
+      <Stack gap="2">
+        {current?.error ? (
+          <Notice tone="danger">{current.error.message}</Notice>
+        ) : pageInfo ? (
+          <BitmapSurface
+            bitmap={bitmap}
+            width={WIDTH}
+            height={(WIDTH * pageInfo.height) / pageInfo.width}
+            label={`Page ${n} as exported`}
+          />
+        ) : (
+          <LoadingLine label={`Preparing page ${n} as exported`} />
+        )}
+        <Text size="sm" tone="muted">
+          As exported
+        </Text>
+      </Stack>
+    </Inline>
   );
 }

@@ -1,4 +1,4 @@
-import type { ZoomSetting } from '@/shared/ui';
+import type { ZoomSetting } from '@arshad-shah/cynosure';
 
 export { zoomScale } from '@/shared/ui';
 

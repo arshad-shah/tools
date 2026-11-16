@@ -1,16 +1,19 @@
-import { useContext, useId, useState } from 'react';
-import { IconCertificate, IconTimestamp } from '@/shared/ui/icons';
+import { useContext, useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
+  certificate as certificateIcon,
+  timer,
+} from '@arshad-shah/cynosure/icons';
+import {
   Button,
-  Input,
-  Label,
+  Grid,
+  Inline,
+  Notice,
   Select,
   Stack,
   Switch,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
 import type { ExportOptions } from '@/pdf/doc/export-stages';
 import type { SignPlaceParams } from '@/pdf/doc/ops/sign-params';
 import type { SigningIdentity } from '@/pdf/sign/pades/pkcs12';
@@ -62,7 +65,6 @@ function placements(doc: DocumentApi) {
  * options only and cleared after the export (G25).
  */
 export function DigitalSignatureSection({ doc, options, set }: Props) {
-  const id = useId();
   const ws = useContext(WorkspaceContext);
   const { reports } = useDocumentSignatures(ws?.session ?? null);
   const [dialog, setDialog] = useState(false);
@@ -89,146 +91,104 @@ export function DigitalSignatureSection({ doc, options, set }: Props) {
   const signed = (reports ?? []).length > 0;
   const blocker = signingBlocker(options, doc.view);
 
+  const NONE = 'none';
   return (
-    <Stack gap="3">
-      <div className="flex items-center justify-between gap-3">
-        <Label htmlFor={`${id}-on`}>Sign digitally (PAdES)</Label>
-        <Switch
-          id={`${id}-on`}
-          checked={on}
-          onCheckedChange={(v) => apply({ on: v })}
-        />
-      </div>
+    <Stack gap="4">
+      <Switch
+        label="Sign digitally (PAdES)"
+        checked={on}
+        onChange={(v) => apply({ on: v })}
+      />
       {!on ? null : (
         <>
           {signed ? (
-            <Alert status="warning">
-              <AlertDescription>
-                This document is already signed by{' '}
-                {[
-                  ...new Set(
-                    reports!.map(
-                      (r) => r.signer?.subjectCN || 'an unknown signer',
-                    ),
+            <Notice tone="warning" size="sm">
+              {`This document is already signed by ${[
+                ...new Set(
+                  reports!.map(
+                    (r) => r.signer?.subjectCN || 'an unknown signer',
                   ),
-                ].join(', ')}
-                . Saving other changes will make those signatures invalid.
-              </AlertDescription>
-            </Alert>
+                ),
+              ].join(
+                ', ',
+              )}. Saving other changes will make those signatures invalid.`}
+            </Notice>
           ) : null}
-          <Stack gap="2">
+          <Stack gap="3">
             {identity ? (
               <CertificateSummary info={identity.info} now={chosenAt} />
             ) : null}
-            <div>
+            <Inline>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                leftIcon={<IconCertificate size="sm" />}
+                icon={certificateIcon}
                 onClick={() => setDialog(true)}
               >
                 {identity ? 'Change certificate' : 'Choose certificate'}
               </Button>
-            </div>
+            </Inline>
           </Stack>
-          <Stack gap="1">
-            <Label htmlFor={`${id}-ap`}>Appearance</Label>
-            <Select
-              id={`${id}-ap`}
-              value={s.placementOpId ?? ''}
-              onValueChange={(v) =>
-                apply({ settings: { placementOpId: v || null } })
-              }
-              items={[{ value: '', label: 'Invisible signature' }, ...places]}
+          <Select
+            label="Appearance"
+            value={s.placementOpId ?? NONE}
+            onChange={(v) =>
+              apply({ settings: { placementOpId: v === NONE ? null : v } })
+            }
+            options={[{ value: NONE, label: 'Invisible signature' }, ...places]}
+          />
+          <Grid columns={2} minItemWidth="12rem" gap="4">
+            <TextField
+              label="Reason"
+              value={s.reason}
+              onChange={(v) => apply({ settings: { reason: v } })}
             />
-          </Stack>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Stack gap="1">
-              <Label htmlFor={`${id}-reason`}>Reason</Label>
-              <Input
-                id={`${id}-reason`}
-                value={s.reason}
-                onChange={(v) => apply({ settings: { reason: v } })}
-              />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor={`${id}-loc`}>Location</Label>
-              <Input
-                id={`${id}-loc`}
-                value={s.location}
-                onChange={(v) => apply({ settings: { location: v } })}
-              />
-            </Stack>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor={`${id}-caption`}>Caption under the signature</Label>
-            <Switch
-              id={`${id}-caption`}
-              checked={s.caption}
-              disabled={!s.placementOpId}
-              onCheckedChange={(v) => apply({ settings: { caption: v } })}
+            <TextField
+              label="Location"
+              value={s.location}
+              onChange={(v) => apply({ settings: { location: v } })}
             />
-          </div>
-          <Stack gap="1">
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor={`${id}-summary`}>
-                Add a signing summary page
-              </Label>
-              <Switch
-                id={`${id}-summary`}
-                checked={s.summaryPage && !signed}
-                disabled={signed}
-                aria-describedby={signed ? `${id}-summary-why` : undefined}
-                onCheckedChange={(v) => apply({ settings: { summaryPage: v } })}
-              />
-            </div>
-            {signed ? (
-              <Text id={`${id}-summary-why`} size="sm" tone="muted">
-                {SUMMARY_BLOCKED_REASON}
-              </Text>
-            ) : null}
-          </Stack>
+          </Grid>
+          <Switch
+            label="Caption under the signature"
+            checked={s.caption}
+            disabled={!s.placementOpId}
+            onChange={(v) => apply({ settings: { caption: v } })}
+          />
+          <Switch
+            label="Add a signing summary page"
+            description={signed ? SUMMARY_BLOCKED_REASON : undefined}
+            checked={s.summaryPage && !signed}
+            disabled={signed}
+            onChange={(v) => apply({ settings: { summaryPage: v } })}
+          />
           <Stack gap="2">
-            <div className="flex items-center justify-between gap-3">
-              <Label
-                htmlFor={`${id}-ts`}
-                className="inline-flex items-center gap-2"
-              >
-                <IconTimestamp size="sm" />
-                Add a trusted timestamp (sends one request to the server below)
-              </Label>
-              <Switch
-                id={`${id}-ts`}
-                checked={s.timestamp}
-                onCheckedChange={(v) => apply({ settings: { timestamp: v } })}
-              />
-            </div>
+            <Switch
+              label="Add a trusted timestamp (sends one request to the server below)"
+              checked={s.timestamp}
+              onChange={(v) => apply({ settings: { timestamp: v } })}
+            />
             {s.timestamp ? (
-              <Stack gap="1">
-                <Label htmlFor={`${id}-tsa`}>Timestamp server</Label>
-                <Input
-                  id={`${id}-tsa`}
-                  type="url"
-                  inputMode="url"
-                  placeholder="https://"
-                  value={s.timestampUrl}
-                  onChange={(v) => apply({ settings: { timestampUrl: v } })}
-                />
-                <Text size="sm" tone="muted">
-                  Enter a timestamp server that allows browser requests. Only a
-                  hash of the signature is sent, never the document.
-                </Text>
-              </Stack>
+              <TextField
+                label="Timestamp server"
+                type="url"
+                inputMode="url"
+                placeholder="https://"
+                iconStart={timer}
+                value={s.timestampUrl}
+                onChange={(v) => apply({ settings: { timestampUrl: v } })}
+                description="Enter a timestamp server that allows browser requests. Only a hash of the signature is sent, never the document."
+              />
             ) : (
-              <Text size="sm" tone="muted">
+              <Text as="p" size="sm" tone="muted">
                 {DEVICE_CLOCK_NOTE}
               </Text>
             )}
           </Stack>
           {blocker ? (
-            <Alert status="info">
-              <AlertDescription>{blocker}</AlertDescription>
-            </Alert>
+            <Notice tone="info" size="sm">
+              {blocker}
+            </Notice>
           ) : null}
         </>
       )}

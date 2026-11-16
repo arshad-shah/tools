@@ -55,6 +55,8 @@ export interface OverlayTextProps {
   /** CSS px size of the overlay it sits in. */
   width: number;
   height: number;
+  /** Bold weight (the watermark's Helvetica-Bold). */
+  bold?: boolean;
   className?: string;
 }
 
@@ -81,6 +83,7 @@ export function OverlayText({
   baseline,
   width,
   height,
+  bold,
   className,
 }: OverlayTextProps) {
   if (baseline)
@@ -91,6 +94,7 @@ export function OverlayText({
         height={height}
         className={cn(
           'pointer-events-none absolute top-0 left-0 overflow-visible',
+          bold && 'font-bold',
           className,
         )}
       >
@@ -153,6 +157,7 @@ export function OverlayText({
       height={height}
       className={cn(
         'pointer-events-none absolute left-0 top-0 overflow-visible',
+        bold && 'font-bold',
         className,
       )}
     >

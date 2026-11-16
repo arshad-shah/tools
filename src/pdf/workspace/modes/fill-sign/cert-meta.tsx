@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, MetaList, Stack, Text } from '@/shared/ui';
+import { DescriptionList, Notice, Stack, Text } from '@arshad-shah/cynosure';
 import type { CertInfo } from '@/pdf/sign/pades/cert-info';
 
 const day = (d: Date) =>
@@ -19,29 +19,27 @@ export function CertificateSummary({
   const expired = info.notAfter.getTime() < now.getTime();
   return (
     <Stack gap="2">
-      <Text size="sm" className="font-medium text-fg">
+      <Text size="sm" weight="medium">
         {info.subjectCN || info.subject}
       </Text>
-      <MetaList
-        items={[
+      <Text size="sm" tone="muted">
+        {[
           info.selfSigned
             ? 'Self-signed'
             : `Issued by ${info.issuerCN || info.issuer}`,
-          `Valid ${day(info.notBefore)} to ${day(info.notAfter)}`,
+          `valid ${day(info.notBefore)} to ${day(info.notAfter)}`,
           info.keyDescription,
-        ]}
-      />
+        ].join(', ')}
+      </Text>
       {expired ? (
-        <Alert status="warning">
-          <AlertDescription>
-            This certificate expired on {day(info.notAfter)}.
-          </AlertDescription>
-        </Alert>
+        <Notice tone="warning" size="sm">
+          {`This certificate expired on ${day(info.notAfter)}.`}
+        </Notice>
       ) : null}
       {info.selfSigned ? (
-        <Alert status="warning">
-          <AlertDescription>{SELF_SIGNED_WARNING}</AlertDescription>
-        </Alert>
+        <Notice tone="warning" size="sm">
+          {SELF_SIGNED_WARNING}
+        </Notice>
       ) : null}
     </Stack>
   );
@@ -59,13 +57,10 @@ export function CertificateDetails({ info }: { info: CertInfo }) {
     ['SHA-256', info.sha256],
   ];
   return (
-    <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
-      {rows.map(([k, v]) => (
-        <div key={k} className="contents">
-          <dt className="text-fg-muted">{k}</dt>
-          <dd className="break-all font-mono-meta text-fg">{v}</dd>
-        </div>
-      ))}
-    </dl>
+    <DescriptionList
+      size="sm"
+      layout="inline"
+      items={rows.map(([term, detail]) => ({ id: term, term, detail }))}
+    />
   );
 }

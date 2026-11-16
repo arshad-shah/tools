@@ -1,14 +1,11 @@
-import { useId } from 'react';
 import {
   Checkbox,
-  Inline,
-  Label,
   Select,
   Stack,
   Switch,
   Text,
-  type SelectItem,
-} from '@/shared/ui';
+  type SelectOption,
+} from '@arshad-shah/cynosure';
 import { protectionOf, type ProtectParams } from '@/pdf/doc/ops/protect';
 import {
   DEFAULT_PERMISSIONS,
@@ -16,7 +13,7 @@ import {
 } from '@/pdf/edit/permissions';
 import type { ModeProps } from '../types';
 
-const PRINT_ITEMS: SelectItem[] = [
+const PRINT_ITEMS: SelectOption[] = [
   { value: 'none', label: 'Not allowed' },
   { value: 'low', label: 'Low resolution' },
   { value: 'full', label: 'High resolution' },
@@ -38,7 +35,6 @@ const FLAGS: { key: Flag; label: string }[] = [
  * typed in the Export dialog and never stored (G25).
  */
 export function PermissionsForm({ doc }: ModeProps) {
-  const id = useId();
   const current: ProtectParams = protectionOf(doc.view) ?? {
     enabled: false,
     permissions: DEFAULT_PERMISSIONS,
@@ -51,54 +47,44 @@ export function PermissionsForm({ doc }: ModeProps) {
   const locked = !enabled || doc.state.restricted;
 
   return (
-    <Stack gap="4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-0.5">
-          <Label htmlFor={`${id}-on`}>Password protection</Label>
-          <Text size="sm" tone="muted">
-            {enabled
-              ? 'You choose the password when you export. It is never saved.'
-              : 'The exported file opens without a password.'}
-          </Text>
-        </div>
-        <Switch
-          id={`${id}-on`}
-          checked={enabled}
-          disabled={doc.state.restricted}
-          onCheckedChange={(on) => set({ enabled: on, permissions })}
-        />
-      </div>
+    <Stack gap="5">
+      <Switch
+        label="Password protection"
+        description={
+          enabled
+            ? 'You choose the password when you export. It is never saved.'
+            : 'The exported file opens without a password.'
+        }
+        checked={enabled}
+        disabled={doc.state.restricted}
+        onChange={(on) => set({ enabled: on, permissions })}
+      />
       <Stack gap="3">
-        <Stack gap="2">
-          <Label htmlFor={`${id}-print`}>Printing</Label>
-          <Select
-            id={`${id}-print`}
-            value={permissions.printing}
-            items={PRINT_ITEMS}
-            disabled={locked}
-            onValueChange={(v) =>
-              setPermission({ printing: v as PermissionChoices['printing'] })
-            }
-          />
-        </Stack>
+        <Select
+          label="Printing"
+          size="sm"
+          value={permissions.printing}
+          options={PRINT_ITEMS}
+          disabled={locked}
+          onChange={(v) =>
+            setPermission({ printing: v as PermissionChoices['printing'] })
+          }
+        />
         {FLAGS.map(({ key, label }) => {
           // Readers treat comments as also allowing form filling.
           const implied = key === 'fillForms' && permissions.annotate;
           return (
-            <Inline key={key} gap="2" align="center" wrap>
-              <Checkbox
-                id={`${id}-${key}`}
-                checked={permissions[key] || implied}
-                disabled={locked || implied}
-                onCheckedChange={(v) => setPermission({ [key]: v })}
-              />
-              <Label htmlFor={`${id}-${key}`}>{label}</Label>
-              {implied ? (
-                <Text size="sm" tone="muted">
-                  Included when comments are allowed.
-                </Text>
-              ) : null}
-            </Inline>
+            <Checkbox
+              key={key}
+              size="sm"
+              label={label}
+              description={
+                implied ? 'Included when comments are allowed.' : undefined
+              }
+              checked={permissions[key] || implied}
+              disabled={locked || implied}
+              onChange={(v) => setPermission({ [key]: v })}
+            />
           );
         })}
       </Stack>

@@ -1,5 +1,9 @@
 import { useRef, useState } from 'react';
-import { FieldBox, SelectionFrame, type OverlayTransform } from '@/shared/ui';
+import type { OverlayTransform } from '@/shared/ui';
+import { FieldBox } from '@/pdf/surfaces/FieldBox';
+import { Layer } from '@/pdf/surfaces/layers';
+import { matrixViewport } from '@/pdf/surfaces/geometry';
+import { PageFrame } from '@/pdf/surfaces/PageFrame';
 import type { Box, PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { placeFree } from './actions';
@@ -96,8 +100,8 @@ export function DraftBox({
         transform={transform}
         quarter={quarter}
       />
-      <SelectionFrame
-        transform={transform}
+      <PageFrame
+        viewport={matrixViewport(transform)}
         box={rect}
         resizable
         label={`Resize new ${draft.kind === 'date' ? 'date' : 'text'} box`}
@@ -112,7 +116,7 @@ export function DraftBox({
           backToText();
         }}
       />
-      <div ref={editor} className="contents">
+      <Layer ref={editor} passive>
         <FieldBox
           transform={transform}
           box={rect}
@@ -154,7 +158,7 @@ export function DraftBox({
             onTab={(v) => commit(v)}
           />
         </FieldBox>
-      </div>
+      </Layer>
     </>
   );
 }

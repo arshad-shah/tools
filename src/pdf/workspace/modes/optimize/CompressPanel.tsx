@@ -1,28 +1,20 @@
-import { useId } from 'react';
-import { formatBytes } from '@/shared/lib/format';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Badge,
   Button,
+  Disclosure,
   Inline,
-  Label,
   List,
-  ListItem,
-  NumberInput,
+  NumberField,
+  Notice,
   SegmentedControl,
   Slider,
   Stack,
   Switch,
   Text,
-} from '@/shared/ui';
-import { IconMinimize2 } from '@/shared/ui/icons';
-import { CompressReportView } from '@/pdf/components/CompressReport';
+} from '@arshad-shah/cynosure';
+import { fileCompress } from '@arshad-shah/cynosure/icons';
+import { formatBytes } from '@/shared/lib/format';
+import { CompressReportView } from '@/pdf/ui/CompressReport';
 import type {
   CompressReport,
   CompressSettings,
@@ -46,24 +38,6 @@ const QPDF_SWITCHES: { key: QpdfKey; label: string }[] = [
   { key: 'removeUnreferenced', label: 'Remove unreferenced objects' },
 ];
 
-function SwitchRow({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange(v: boolean): void;
-}) {
-  const id = useId();
-  return (
-    <Inline gap="3">
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-      <Label htmlFor={id}>{label}</Label>
-    </Inline>
-  );
-}
-
 function AdvancedSettings({
   settings,
   update,
@@ -71,57 +45,53 @@ function AdvancedSettings({
   settings: CompressSettings;
   update(patch: Partial<CompressSettings>): void;
 }) {
-  const dpiId = useId();
-  const qualityId = useId();
   const images = settings.images ?? DEFAULT_IMAGES;
   const setImages = (patch: Partial<typeof images>) =>
     update({ images: { ...images, ...patch } });
   return (
     <Stack gap="4">
-      <SwitchRow
+      <Switch
         label="Recompress images"
+        size="sm"
         checked={settings.images !== null}
         onChange={(on) => update({ images: on ? images : null })}
       />
-      <Stack gap="2">
-        <Label htmlFor={dpiId}>Target resolution (DPI)</Label>
-        <NumberInput
-          id={dpiId}
-          min={50}
-          max={600}
-          step={10}
-          value={images.targetDpi}
-          disabled={settings.images === null}
-          onValueChange={(targetDpi) => setImages({ targetDpi })}
-        />
-      </Stack>
-      <Stack gap="2">
-        <Label htmlFor={qualityId}>JPEG quality</Label>
-        <Inline gap="3">
-          <Slider
-            id={qualityId}
-            min={0.3}
-            max={0.95}
-            step={0.05}
-            value={images.quality}
-            disabled={settings.images === null}
-            onValueChange={(quality) => setImages({ quality })}
-          />
-          <Text size="sm" className="font-mono">
-            {Math.round(images.quality * 100)}%
-          </Text>
-        </Inline>
-      </Stack>
+      <NumberField
+        label="Target resolution (DPI)"
+        size="sm"
+        min={50}
+        max={600}
+        step={10}
+        value={images.targetDpi}
+        disabled={settings.images === null}
+        onChange={(targetDpi) => targetDpi !== null && setImages({ targetDpi })}
+      />
+      <Slider
+        label="JPEG quality"
+        size="sm"
+        min={0.3}
+        max={0.95}
+        step={0.05}
+        showValue
+        labels={{ value: (v: number) => `${Math.round(v * 100)}%` }}
+        value={images.quality}
+        disabled={settings.images === null}
+        onChange={(quality) =>
+          typeof quality === 'number' && setImages({ quality })
+        }
+      />
       {QPDF_SWITCHES.map(({ key, label }) => (
-        <SwitchRow
+        <Switch
           key={key}
           label={label}
+          size="sm"
           checked={settings.qpdf[key]}
           onChange={(v) => update({ qpdf: { ...settings.qpdf, [key]: v } })}
         />
       ))}
-      <SwitchRow
+      <Switch
         label="Remove metadata (Info and XMP)"
+        size="sm"
         checked={settings.stripMetadata}
         onChange={(stripMetadata) => update({ stripMetadata })}
       />
@@ -141,39 +111,38 @@ export function OptimizeResult({
     type === 'optimize.compress' ? (report.details as CompressReport) : null;
   return (
     <Stack gap="3">
-      <Alert status={details?.keptOriginal ? 'info' : 'success'}>
-        <AlertTitle>{report.title}</AlertTitle>
-        {details?.keptOriginal ? (
-          <AlertDescription>
-            The file stays at {formatBytes(details.inputSize)}. This is not an
-            error: there was nothing to gain.
-          </AlertDescription>
-        ) : null}
-      </Alert>
+      <Notice
+        tone={details?.keptOriginal ? 'info' : 'success'}
+        size="sm"
+        title={report.title}
+      >
+        {details?.keptOriginal
+          ? `The file stays at ${formatBytes(details.inputSize)}. This is not an error: there was nothing to gain.`
+          : null}
+      </Notice>
       {details ? (
         <CompressReportView report={details} />
       ) : (
         <>
-          <List aria-label="Repair result">
-            {report.lines.map((l) => (
-              <ListItem key={l}>{l}</ListItem>
-            ))}
-          </List>
+          <List
+            label="Repair result"
+            size="sm"
+            items={report.lines.map((l) => ({ id: l, label: l }))}
+          />
           {report.warnings.length > 0 ? (
-            <Accordion type="single">
-              <AccordionItem value="warnings">
-                <AccordionTrigger>
-                  Problems fixed ({report.warnings.length})
-                </AccordionTrigger>
-                <AccordionContent>
-                  <List>
-                    {report.warnings.map((w, i) => (
-                      <ListItem key={i}>{w}</ListItem>
-                    ))}
-                  </List>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <Disclosure
+              summary={`Problems fixed (${report.warnings.length})`}
+              variant="line"
+              size="sm"
+            >
+              <List
+                size="sm"
+                items={report.warnings.map((w, i) => ({
+                  id: String(i),
+                  label: w,
+                }))}
+              />
+            </Disclosure>
           ) : null}
         </>
       )}
@@ -193,14 +162,19 @@ export function CompressPanel({ doc }: Pick<ModeProps, 'doc'>) {
           <SegmentedControl
             label="Compression preset"
             size="sm"
+            fullWidth
             value={preset}
-            onChange={choosePreset}
+            onChange={(v) => choosePreset(v as PresetId)}
             options={(Object.keys(PRESET_LABELS) as PresetId[]).map((id) => ({
               value: id,
               label: PRESET_LABELS[id],
             }))}
           />
-          {custom ? <Badge tone="accent">Custom</Badge> : null}
+          {custom ? (
+            <Badge tone="accent" size="sm">
+              Custom
+            </Badge>
+          ) : null}
         </Inline>
         <Text size="sm" tone="muted">
           {custom
@@ -208,17 +182,14 @@ export function CompressPanel({ doc }: Pick<ModeProps, 'doc'>) {
             : PRESET_DESCRIPTIONS[preset]}
         </Text>
       </Stack>
-      <Accordion type="single">
-        <AccordionItem value="advanced">
-          <AccordionTrigger>Advanced settings</AccordionTrigger>
-          <AccordionContent>
-            <AdvancedSettings settings={settings} update={update} />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      <Disclosure summary="Advanced settings" variant="line" size="sm">
+        <AdvancedSettings settings={settings} update={update} />
+      </Disclosure>
       <Button
-        variant="primary"
-        leftIcon={<IconMinimize2 size="sm" />}
+        variant="solid"
+        tone="accent"
+        fullWidth
+        icon={fileCompress}
         onClick={() => void compress(doc)}
       >
         Compress
