@@ -8,9 +8,6 @@ import { expectEditorValue } from './editor';
  * accessible name and checks the target route and its filled state.
  */
 
-const tab = (page: Page, name: string) =>
-  page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
-
 const go = async (page: Page, id: string) => {
   await page.goto(pathOf(id));
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -40,7 +37,8 @@ test.describe('Mock Data', () => {
     await go(page, 'random-data-generator');
     await page.getByLabel('Rows').fill('5');
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
-    await page.getByRole('button', { name: 'Open in CSV Viewer' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Open in CSV Viewer' }).click();
     await atTool(page, 'csv-viewer');
     await expect(page.getByText('5 of 5 rows')).toBeVisible();
   });
@@ -49,9 +47,9 @@ test.describe('Mock Data', () => {
     await go(page, 'random-data-generator');
     await page.getByLabel('Rows').fill('3');
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
-    await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Open in JSON Viewer' }).click();
     await atTool(page, 'json-and-xml-viewer');
-    await tab(page, 'Source');
     await expectEditorValue(
       page.getByRole('textbox', { name: 'Document' }),
       /^\[/,
@@ -63,18 +61,19 @@ test.describe('CSV Viewer', () => {
   const loadCsv = async (page: Page) => {
     await go(page, 'csv-viewer');
     await page
-      .getByRole('textbox', { name: /CSV/ })
-      .first()
+      .getByRole('textbox', { name: 'CSV or TSV data' })
       .fill('name,age\nAda,36\nGrace,85\n');
     await expect(page.getByText('2 of 2 rows')).toBeVisible();
   };
 
   test('Open as JSON in the JSON Viewer', async ({ page }) => {
     await loadCsv(page);
-    await page.getByRole('button', { name: 'Send JSON to' }).click();
-    await page.getByRole('menuitem', { name: /JSON & XML Viewer/ }).click();
+    await page.getByRole('button', { name: 'Send to' }).click();
+    await page
+      .getByRole('group', { name: 'Rows as JSON' })
+      .getByRole('menuitem', { name: /JSON & XML Viewer/ })
+      .click();
     await atTool(page, 'json-and-xml-viewer');
-    await tab(page, 'Source');
     await expectEditorValue(
       page.getByRole('textbox', { name: 'Document' }),
       /"Grace"/,
@@ -83,7 +82,11 @@ test.describe('CSV Viewer', () => {
 
   test('Generate more like this in Mock Data', async ({ page }) => {
     await loadCsv(page);
-    await page.getByRole('button', { name: 'Generate more like this' }).click();
+    await page.getByRole('button', { name: 'Send to' }).click();
+    await page
+      .getByRole('group', { name: 'More like this' })
+      .getByRole('menuitem', { name: 'Mock Data Generator' })
+      .click();
     await atTool(page, 'random-data-generator');
     await expect(
       page.getByText('Schema received from another tool'),
@@ -94,7 +97,6 @@ test.describe('CSV Viewer', () => {
 test.describe('JSON Viewer', () => {
   const loadJson = async (page: Page) => {
     await go(page, 'json-and-xml-viewer');
-    await tab(page, 'Source');
     await page
       .getByRole('textbox', { name: 'Document' })
       .fill('[{"name":"Ada","age":36},{"name":"Grace","age":85}]');
@@ -102,16 +104,22 @@ test.describe('JSON Viewer', () => {
 
   test('Open as table in the CSV Viewer', async ({ page }) => {
     await loadJson(page);
-    await page.getByRole('button', { name: 'Send as CSV' }).click();
-    await page.getByRole('menuitem', { name: /CSV Viewer/ }).click();
+    await page.getByRole('button', { name: 'Send to' }).click();
+    await page
+      .getByRole('group', { name: 'As CSV' })
+      .getByRole('menuitem', { name: /CSV Viewer/ })
+      .click();
     await atTool(page, 'csv-viewer');
     await expect(page.getByText('2 of 2 rows')).toBeVisible();
   });
 
   test('Generate more like this in Mock Data', async ({ page }) => {
     await loadJson(page);
-    await page.getByRole('button', { name: 'Send schema' }).click();
-    await page.getByRole('menuitem', { name: /Mock Data/ }).click();
+    await page.getByRole('button', { name: 'Send to' }).click();
+    await page
+      .getByRole('group', { name: 'As a mock data schema' })
+      .getByRole('menuitem', { name: /Mock Data/ })
+      .click();
     await atTool(page, 'random-data-generator');
     await expect(
       page.getByText('Schema received from another tool'),
@@ -127,12 +135,10 @@ test('Formatter Show changes opens Text Diff with both sides', async ({
   await page.getByRole('button', { name: 'Format', exact: true }).click();
   await page.getByRole('button', { name: 'Show changes' }).click();
   await atTool(page, 'text-diff-checker');
-  await tab(page, 'Original');
   await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
     '{"b":1,"a":[1,2]}',
   );
-  await tab(page, 'Changed');
   await expectEditorValue(
     page.getByRole('textbox', { name: 'Changed text' }),
     /\n/,
@@ -143,11 +149,9 @@ test.describe('Base64', () => {
   const decode = async (page: Page, text: string) => {
     await go(page, 'base64-converter');
     await page.getByRole('radio', { name: 'Decode' }).click();
-    await tab(page, 'Input');
     await page
       .getByRole('textbox', { name: 'Base64 to decode' })
       .fill(Buffer.from(text).toString('base64'));
-    await tab(page, 'Output');
   };
 
   test('Open in JSON Viewer', async ({ page }) => {
@@ -155,7 +159,6 @@ test.describe('Base64', () => {
     await page.getByRole('button', { name: 'Send to' }).click();
     await page.getByRole('menuitem', { name: /JSON & XML Viewer/ }).click();
     await atTool(page, 'json-and-xml-viewer');
-    await tab(page, 'Source');
     await expectEditorValue(
       page.getByRole('textbox', { name: 'Document' }),
       /"base64"/,
@@ -174,9 +177,7 @@ test.describe('Base64', () => {
 test.describe('JWT', () => {
   const open = async (page: Page) => {
     await go(page, 'jwt-decode');
-    await tab(page, 'Input');
     await page.getByRole('textbox', { name: 'JWT token' }).fill(TOKEN);
-    await tab(page, 'Output');
   };
 
   test('Open payload in JSON Viewer', async ({ page }) => {
@@ -184,7 +185,6 @@ test.describe('JWT', () => {
     await page.getByRole('button', { name: 'Send payload to' }).click();
     await page.getByRole('menuitem', { name: /JSON & XML Viewer/ }).click();
     await atTool(page, 'json-and-xml-viewer');
-    await tab(page, 'Source');
     await expectEditorValue(
       page.getByRole('textbox', { name: 'Document' }),
       /workflow-user/,
@@ -197,7 +197,9 @@ test.describe('JWT', () => {
       .getByRole('button', { name: 'Open exp in Epoch Converter' })
       .click();
     await atTool(page, 'epoch-converter');
-    await expect(page.getByRole('textbox').first()).toHaveValue('1893456000');
+    await expect(
+      page.getByRole('textbox', { name: 'Timestamp or date' }),
+    ).toHaveValue('1893456000');
   });
 });
 
@@ -224,7 +226,6 @@ test.describe('HTTP Client', () => {
     await respond(page);
     await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
     await atTool(page, 'json-and-xml-viewer');
-    await tab(page, 'Source');
     await expectEditorValue(
       page.getByRole('textbox', { name: 'Document' }),
       /"token"/,
@@ -286,7 +287,6 @@ test('Text Encoder opens a decoded URL in the URL Inspector', async ({
   await page
     .getByRole('textbox', { name: /Text to decode/ })
     .fill('https%3A%2F%2Fexample.com%2Fa%3Fb%3D1');
-  await tab(page, 'Output');
   await page.getByRole('button', { name: 'Open URL in' }).click();
   await page.getByRole('menuitem', { name: /URL Inspector/ }).click();
   await atTool(page, 'url-parser');
@@ -313,7 +313,6 @@ test('Password Hash this', async ({ page }) => {
   await page.getByRole('button', { name: 'Use in' }).click();
   await page.getByRole('menuitem', { name: 'Hash this' }).click();
   await atTool(page, 'hash-generator');
-  await tab(page, 'Input');
   await expect(page.getByRole('textbox').first()).not.toHaveValue('');
 });
 
@@ -368,7 +367,7 @@ test('Color Use colours in QR', async ({ page }) => {
     .setInputFiles('test/fixtures/generated/photo.png');
   await page.getByRole('button', { name: 'Use colours in QR' }).click();
   await atTool(page, 'qr-code-generator');
-  await tab(page, 'Style');
+  await expect(page.getByRole('region', { name: 'Style' })).toBeVisible();
 });
 
 test('EXIF Send to Image Compressor', async ({ page }) => {
@@ -423,7 +422,7 @@ test('Mod+K Import cURL into HTTP Client from anywhere', async ({
   );
   await page.keyboard.press('ControlOrMeta+k');
   await page
-    .getByRole('combobox', { name: 'Search commands' })
+    .getByRole('combobox', { name: 'Search tools and actions' })
     .fill('import curl');
   await page
     .getByRole('option', { name: /Import cURL into HTTP Client/ })
@@ -441,7 +440,7 @@ test('Mod+K lists Send result to commands for a hand-off source', async ({
   await page.getByRole('button', { name: 'Generate', exact: true }).click();
   await page.keyboard.press('ControlOrMeta+k');
   await page
-    .getByRole('combobox', { name: 'Search commands' })
+    .getByRole('combobox', { name: 'Search tools and actions' })
     .fill('send result');
   await expect(
     page.getByRole('option', { name: /Send result to CSV Viewer/ }),
@@ -463,17 +462,14 @@ test('Log Viewer Compare selected opens Text Diff with both lines', async ({
         '2024-01-15T08:24:01.789 [WARN] [svc] right-line',
       ].join('\n'),
     );
-  await tab(page, 'Output');
   await page.getByRole('checkbox', { name: 'Select line 1' }).check();
   await page.getByRole('checkbox', { name: 'Select line 2' }).check();
   await page.getByRole('button', { name: /^Compare selected/ }).click();
   await atTool(page, 'text-diff-checker');
-  await tab(page, 'Original');
   await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
     /left-line/,
   );
-  await tab(page, 'Changed');
   await expectEditorValue(
     page.getByRole('textbox', { name: 'Changed text' }),
     /right-line/,
@@ -486,8 +482,8 @@ test.describe('QR Scanner', () => {
     await page
       .getByRole('textbox', { name: 'URL' })
       .fill('https://example.com/scanned');
-    await page.getByRole('tab', { name: 'Export' }).click();
-    await page.getByRole('combobox', { name: 'PNG size' }).selectOption('512');
+    await page.getByRole('combobox', { name: 'PNG size' }).click();
+    await page.getByRole('option', { name: 'Medium (512 px)' }).click();
     const download = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download PNG' }).click();
     const { readFile } = await import('node:fs/promises');
@@ -517,8 +513,6 @@ test.describe('QR Scanner', () => {
     await scan(page);
     await page.getByRole('button', { name: 'Make QR' }).click();
     await atTool(page, 'qr-code-generator');
-    // The generator remembers its last tab (Export, from making the code).
-    await tab(page, 'Content');
     await expect(
       page.getByRole('textbox', { name: 'URL' }).filter({ visible: true }),
     ).toHaveValue('https://example.com/scanned');

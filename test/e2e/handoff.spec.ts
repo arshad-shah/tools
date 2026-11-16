@@ -36,8 +36,8 @@ test('two PDFs on the PDF hub open in Merge with both files', async ({
   await expect(page).toHaveURL(/\/pdf\/merge$/);
   const rows = page.getByRole('list', { name: /^Files/ }).getByRole('listitem');
   await expect(rows).toHaveCount(2);
-  await expect(page.getByText('text-3.pdf')).toBeVisible();
-  await expect(page.getByText('text-12.pdf')).toBeVisible();
+  await expect(rows.getByText('text-3.pdf', { exact: true })).toBeVisible();
+  await expect(rows.getByText('text-12.pdf', { exact: true })).toBeVisible();
 });
 
 test('a PNG on the media hub offers the image compressor or the EXIF viewer', async ({
@@ -53,7 +53,7 @@ test('a PNG on the media hub offers the image compressor or the EXIF viewer', as
     .click();
   await expect(page).toHaveURL(/\/media\/image-optimizer$/);
   await expect(
-    page.getByRole('grid', { name: 'Files' }).getByText('photo.png'),
+    page.getByRole('list', { name: 'Files' }).getByText('photo.png'),
   ).toBeVisible();
 });
 
