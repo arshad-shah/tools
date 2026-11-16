@@ -136,8 +136,10 @@ test('downloads all of a large encoded file', async ({ page }) => {
   await expect(
     page.getByText(/^2(\.0)? MB, application\/octet-stream$/),
   ).toBeVisible();
-  // The block shows a preview; Download saves all of it.
-  await expect(page.getByText(/^Showing the first/).first()).toBeVisible();
+  // The block shows the start (CodeBlock maxChars); Download saves all of it.
+  await expect(
+    page.getByRole('button', { name: /^Show all/ }).first(),
+  ).toBeVisible();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download Base64' }).click();
   const text = await readFile(await (await download).path(), 'utf8');

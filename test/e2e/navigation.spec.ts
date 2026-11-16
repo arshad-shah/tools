@@ -74,9 +74,13 @@ test('the navigation marks the current tool, opens categories and collapses to a
   // The rail is a setting: it stays collapsed after a reload.
   await page.getByRole('button', { name: 'Collapse navigation' }).click();
   await page.reload();
+  // AppShell's rail button is named for what it does next.
   await expect(
     page.getByRole('button', { name: 'Expand navigation' }),
-  ).toHaveAttribute('aria-pressed', 'false');
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Collapse navigation' }),
+  ).toHaveCount(0);
 });
 
 test('a starred tool is listed under Favourites', async ({ page }) => {
