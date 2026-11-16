@@ -1,0 +1,115 @@
+import { CommandPalette, type Command } from '@arshad-shah/cynosure';
+import type { IconData } from '@arshad-shah/cynosure/icons';
+import {
+  clipboardPaste,
+  home,
+  keyboard,
+  monitor,
+  moon,
+  shieldCheck,
+  sun,
+} from '@arshad-shah/cynosure/icons';
+import { useMemo } from 'react';
+import {
+  noteCommandRun,
+  queryCommands,
+  useCommandRegistryVersion,
+} from '@/shared/lib/commands';
+import { toToolError } from '@/shared/lib/errors';
+import { commandScore } from '@/shared/lib/fuzzy';
+import { hotkeyCaps } from '@/shared/lib/hotkeys';
+import { notify } from '@/shared/lib/notify';
+import type { ToolCategory } from '../tool';
+import { categoryGlyph, toolGlyph } from '../ui/glyphs';
+
+const FIXED: Record<string, IconData> = {
+  'route:home': home,
+  'theme:light': sun,
+  'theme:dark': moon,
+  'theme:system': monitor,
+  'app:import-curl': clipboardPaste,
+  'help:shortcuts': keyboard,
+  'help:privacy': shieldCheck,
+};
+
+/** The Facet icon for a registered command, by its id. */
+function glyphFor(id: string): IconData | undefined {
+  if (FIXED[id]) return FIXED[id];
+  const [kind, rest] = id.split(':', 2);
+  if (kind === 'tool' || kind === 'favourite') return toolGlyph(rest);
+  if (kind === 'route') return categoryGlyph(rest as ToolCategory);
+  return undefined;
+}
+
+/** tools' fuzzy ranking (higher is better); Cynosure ranks lower first. */
+const filter = (command: Command, query: string) => {
+  const score = commandScore(query, command);
+  return score === null ? null : { score: -score };
+};
+
+/**
+ * Mod+K (redesign spec, Shell): Cynosure's CommandPalette over the app's
+ * command registry, so every registered source (app commands, tools,
+ * the workspace) is listed. Recent commands stay tools' own, kept in
+ * localStorage and listed first.
+ */
+export function AppPalette({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange(open: boolean): void;
+}) {
+  const version = useCommandRegistryVersion();
+  const groups = useMemo(
+    () => (open ? queryCommands('') : []),
+    // version: re-read when sources change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, version],
+  );
+  const { commands, byId } = useMemo(() => {
+    const list = groups.flatMap((g) => g.commands.map((c) => ({ c, g })));
+    return {
+      byId: new Map(list.map(({ c }) => [c.id, c])),
+      commands: list.map(
+        ({ c, g }): Command => ({
+          id: c.id,
+          label: c.label,
+          group: g.group,
+          ...(c.keywords ? { keywords: c.keywords } : {}),
+          ...(c.shortcut ? { shortcut: hotkeyCaps(c.shortcut) } : {}),
+          ...(glyphFor(c.id) ? { icon: glyphFor(c.id) } : {}),
+          disabled: !!c.disabled,
+        }),
+      ),
+    };
+  }, [groups]);
+
+  const run = (id: string) => {
+    const c = byId.get(id);
+    if (!c || c.disabled) return;
+    noteCommandRun(id);
+    // After the palette has closed, so the focus the command sets is kept.
+    setTimeout(() => {
+      Promise.resolve()
+        .then(() => c.run())
+        .catch((e: unknown) => notify.error(toToolError(e)));
+    }, 0);
+  };
+
+  return (
+    <CommandPalette
+      open={open}
+      onOpenChange={onOpenChange}
+      commands={commands}
+      onRun={run}
+      filter={filter}
+      recentLimit={0}
+      labels={{
+        title: 'Search tools and actions',
+        placeholder: 'Search tools and actions',
+        empty: 'No tools or actions match',
+      }}
+    />
+  );
+}

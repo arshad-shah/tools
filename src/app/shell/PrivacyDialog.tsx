@@ -1,13 +1,5 @@
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Text,
-} from '@/shared/ui';
-import { IconShieldCheck } from '@/shared/ui/icons';
+import { Button, Dialog, Inline, IconTile, Text } from '@arshad-shah/cynosure';
+import { shieldCheck } from '@arshad-shah/cynosure/icons';
 import { PRIVACY_TEXT } from './privacy';
 
 /** Where files go and what touches the network (plan G-7). */
@@ -19,19 +11,24 @@ export function PrivacyDialog({
   onOpenChange(open: boolean): void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Privacy</DialogTitle>
-      </DialogHeader>
-      <DialogBody className="flex items-start gap-3">
-        <IconShieldCheck size="lg" className="mt-0.5 text-accent-fg" />
-        <Text>{PRIVACY_TEXT}</Text>
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="primary" onClick={() => onOpenChange(false)}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Privacy"
+      actions={
+        <Button
+          variant="solid"
+          tone="accent"
+          onClick={() => onOpenChange(false)}
+        >
           Close
         </Button>
-      </DialogFooter>
+      }
+    >
+      <Inline gap="5" align="start">
+        <IconTile icon={shieldCheck} tone="success" />
+        <Text as="p">{PRIVACY_TEXT}</Text>
+      </Inline>
     </Dialog>
   );
 }

@@ -57,15 +57,12 @@ describe('DetectedDocumentCard', () => {
     expect(screen.queryByRole('button', { name: 'Fill & Sign' })).toBeNull();
   });
 
-  it('lists the probe results as meta items and suggests Fill & Sign', async () => {
+  it('lists the probe results and suggests Fill & Sign', async () => {
     const { resolve, onNavigate, render_ } = setup();
     await waitFor(() => expect(render_.detectSummary).toHaveBeenCalled());
     await act(async () => resolve(SUMMARY));
     for (const t of ['3 pages', 'Flat form', '12 fields detected'])
       expect(screen.getByText(t)).toBeTruthy();
-    const list = screen.getByText('3 pages').closest('ul')!;
-    expect(list.querySelectorAll('[data-separator]')).toHaveLength(2);
-    expect(list.textContent).toBe('3 pagesFlat form12 fields detected');
     fireEvent.click(screen.getByRole('button', { name: 'Fill & Sign' }));
     const path = onNavigate.mock.calls[0][0] as string;
     expect(path).toMatch(/^\/pdf\/edit\/fill-sign\?open=/);

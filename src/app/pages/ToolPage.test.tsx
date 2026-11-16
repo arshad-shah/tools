@@ -1,15 +1,22 @@
 /** @vitest-environment jsdom */
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { Breadcrumb } from '@/shared/ui';
 import { getTool } from '../registry';
 import { useBreadcrumbSegments } from '../shell/breadcrumb';
 import { BreadcrumbProvider } from '../shell/breadcrumb-context';
 import { ToolPage } from './ToolPage';
 
 function Crumbs() {
-  return <Breadcrumb segments={useBreadcrumbSegments()} />;
+  return (
+    <ol aria-label="Breadcrumb">
+      {useBreadcrumbSegments().map((s) => (
+        <li key={s.label}>
+          {s.href ? <a href={s.href}>{s.label}</a> : s.label}
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 beforeEach(() => localStorage.clear());
@@ -39,7 +46,7 @@ describe('ToolPage', () => {
   });
   it('sets the breadcrumb to category then tool', () => {
     setup();
-    const nav = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    const nav = screen.getByRole('list', { name: 'Breadcrumb' });
     const items = within(nav)
       .getAllByRole('listitem')
       .map((li) => li.textContent);
@@ -57,5 +64,28 @@ describe('ToolPage', () => {
     expect(star.getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(star);
     expect(star.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(star);
+    expect(star.getAttribute('aria-pressed')).toBe('false');
+  });
+  it('shows a failing tool as a message with Try again', () => {
+    const tool = getTool('regex-tester')!;
+    let fail = true;
+    const Boom = () => {
+      if (fail) throw new Error('kaboom');
+      return <p>recovered</p>;
+    };
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <MemoryRouter>
+        <ToolPage tool={tool}>
+          <Boom />
+        </ToolPage>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/kaboom/)).toBeTruthy();
+    fail = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.getByText('recovered')).toBeTruthy();
+    spy.mockRestore();
   });
 });

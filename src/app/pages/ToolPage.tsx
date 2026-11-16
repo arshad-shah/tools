@@ -1,19 +1,24 @@
-import React, { Suspense, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IconStar, IconStarFilled } from '@/shared/ui/icons';
 import {
   Badge,
-  IconButton,
-  LoadingState,
-  ToolActionsSlot,
-  useScrollFade,
-} from '@/shared/ui';
+  Button,
+  Container,
+  ErrorBoundary,
+  IconTile,
+  Inline,
+  Notice,
+  PageHeader,
+  Stack,
+} from '@arshad-shah/cynosure';
+import { home, retry as retryIcon } from '@arshad-shah/cynosure/icons';
+import React, { Suspense, useState } from 'react';
+import { ToolActionsSlot } from '@/shared/ui/tool-actions-slot';
 import { getCategory } from '../categories';
-import { useFavorites } from '../favorites';
 import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import type { ToolManifest } from '../tool';
-import ToolErrorBoundary from '../ToolErrorBoundary';
+import { toolGlyph } from '../ui/glyphs';
+import { PageLoading } from '../ui/PageLoading';
+import { FavouriteToggle } from '../ui/ToolCard';
 
 export interface ToolPageProps {
   tool: ToolManifest;
@@ -22,19 +27,16 @@ export interface ToolPageProps {
 }
 
 /**
- * Frame for every tool page (spec §16 step 2): breadcrumb, header with icon,
- * name, description and favourite toggle, then the tool inside an error
- * boundary and a loading state.
+ * Frame for every tool page (redesign spec, Pages): a PageHeader with the
+ * tool's icon, name and description, its actions (the favourite star and
+ * whatever the tool puts in ToolActionsSlot, such as Send to), then the
+ * tool inside an error boundary and a loading state.
  */
 export function ToolPage({ tool, children }: ToolPageProps) {
-  const navigate = useNavigate();
-  const { isFavorite, toggle } = useFavorites();
   // Bumped on retry to remount the tool.
   const [attempt, setAttempt] = useState(0);
-  // Where tools portal their page-level actions (ToolActions).
-  const [actions, setActions] = useState<HTMLDivElement | null>(null);
-  // On phones the actions are one row that scrolls; fade the hidden ends.
-  useScrollFade(actions);
+  // Where tools put their page-level actions (ToolActions, Send to).
+  const [actions, setActions] = useState<HTMLElement | null>(null);
   const category = getCategory(tool.category);
   useBreadcrumb([
     {
@@ -43,60 +45,70 @@ export function ToolPage({ tool, children }: ToolPageProps) {
     },
     { label: tool.name },
   ]);
-  const Icon = tool.icon;
-  const favourite = isFavorite(tool.id);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-      <header className="flex items-start gap-4">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-surface text-accent-fg shadow-e1">
-          <Icon size="lg" />
-        </span>
-        {/* Phones: title and star, the description, then the page actions
-            in one row that scrolls sideways. From sm up: the actions join
-            the title line and wrap there when it is short. */}
-        <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-          <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2">
-            <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-fg">
-              {tool.name}
-            </h1>
-            {tool.isNew ? (
-              <Badge size="xs" tone="accent">
-                new
-              </Badge>
-            ) : null}
-          </div>
-          <IconButton
-            variant="ghost"
-            label={`Add ${tool.name} to favourites`}
-            aria-pressed={favourite}
-            tone={favourite ? 'accent' : undefined}
-            icon={favourite ? IconStarFilled : IconStar}
-            onClick={() => toggle(tool.id)}
-            className="col-start-2 row-start-1 shrink-0 sm:col-start-3"
+    <Container size="xl" paddingBlock="8">
+      <Stack gap="8">
+        <Inline gap="6" align="start">
+          <IconTile icon={toolGlyph(tool.id)} size="lg" />
+          <PageHeader
+            title={tool.name}
+            description={tool.description}
+            meta={
+              tool.isNew ? (
+                <Badge tone="accent" size="sm">
+                  New
+                </Badge>
+              ) : undefined
+            }
+            actions={
+              <Inline gap="2" align="center" wrap>
+                <Inline ref={setActions} gap="2" align="center" wrap />
+                <FavouriteToggle tool={tool} />
+              </Inline>
+            }
           />
-          <p className="col-span-2 row-start-2 max-w-2xl text-base text-fg-muted sm:col-span-3">
-            {tool.description}
-          </p>
-          <div
-            ref={setActions}
-            data-tool-actions
-            className="col-span-2 row-start-3 -mx-1 mt-2 flex min-w-0 items-center gap-1 scroll-fade-x overflow-x-auto px-1 py-1 [scrollbar-width:none] empty:hidden sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:mx-0 sm:mt-0 sm:gap-2 sm:flex-wrap sm:justify-end sm:overflow-visible sm:p-0 sm:[mask-image:none] [&>*]:shrink-0"
-          />
-        </div>
-      </header>
-      <ToolErrorBoundary
-        toolName={tool.name}
-        toolId={tool.id}
-        onRetry={() => setAttempt((a) => a + 1)}
-        onNavigateHome={() => navigate('/')}
-      >
-        <Suspense fallback={<LoadingState label={`Loading ${tool.name}`} />}>
-          <ToolActionsSlot.Provider value={actions}>
-            <React.Fragment key={attempt}>{children}</React.Fragment>
-          </ToolActionsSlot.Provider>
-        </Suspense>
-      </ToolErrorBoundary>
-    </div>
+        </Inline>
+        <ErrorBoundary
+          resetKey={attempt}
+          label={`${tool.name} stopped working`}
+          onError={(error) => console.error(`Error in tool ${tool.id}:`, error)}
+          fallback={(error, retry) => (
+            <Notice
+              tone="danger"
+              title={`${tool.name} stopped working`}
+              action={
+                <Inline gap="2" wrap>
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    tone="danger"
+                    icon={retryIcon}
+                    onClick={() => {
+                      setAttempt((a) => a + 1);
+                      retry();
+                    }}
+                  >
+                    Try again
+                  </Button>
+                  <Button size="sm" variant="ghost" href="/" icon={home}>
+                    Go to Home
+                  </Button>
+                </Inline>
+              }
+            >
+              {error.message || 'Something went wrong.'} Your files have not
+              left this device.
+            </Notice>
+          )}
+        >
+          <Suspense fallback={<PageLoading label={`Loading ${tool.name}`} />}>
+            <ToolActionsSlot.Provider value={actions}>
+              <React.Fragment key={attempt}>{children}</React.Fragment>
+            </ToolActionsSlot.Provider>
+          </Suspense>
+        </ErrorBoundary>
+      </Stack>
+    </Container>
   );
 }
