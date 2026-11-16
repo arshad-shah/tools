@@ -43,25 +43,10 @@ export function encodeBytes(
   };
 }
 
-/** Above this many characters a textarea gets only a preview. */
+/** Above this many characters the result is shown cut (CodeBlock maxChars). */
 export const PREVIEW_THRESHOLD = 1_000_000;
-/** How much of a long result the preview shows. */
+/** How much of a long result is shown before Show all. */
 export const PREVIEW_LENGTH = 64 * 1024;
-
-/**
- * What to put in a textarea: the whole text, or its start when it is too
- * long to render. Copy and Download always use the full text.
- */
-export function preview(
-  text: string,
-  threshold = PREVIEW_THRESHOLD,
-): { text: string; truncated: boolean } {
-  if (text.length <= threshold) return { text, truncated: false };
-  return {
-    text: text.slice(0, Math.min(PREVIEW_LENGTH, threshold)),
-    truncated: true,
-  };
-}
 
 export interface Decoded {
   bytes: Uint8Array;

@@ -39,7 +39,8 @@ import {
   encodeBytes,
   encodeText,
   guessFileType,
-  preview,
+  PREVIEW_LENGTH,
+  PREVIEW_THRESHOLD,
 } from './lib/convert';
 import { describeBytes, type BytesInsight } from './lib/insight';
 import { base64Settings, type Base64Settings } from './settings';
@@ -76,12 +77,14 @@ function ResultBlock({
   text: string;
   name: string;
 }) {
-  const shown = preview(text);
   return (
     <Stack gap="3">
+      {/* A megabyte line is shown cut, with Show all; Copy and Download
+          always take all of it. */}
       <CodeBlock
         title={title}
-        code={shown.text}
+        code={text}
+        maxChars={text.length > PREVIEW_THRESHOLD ? PREVIEW_LENGTH : undefined}
         wrap
         copyable={false}
         actions={
@@ -104,11 +107,6 @@ function ResultBlock({
           </Inline>
         }
       />
-      {shown.truncated ? (
-        <Text size="sm" tone="muted">
-          {`Showing the first ${formatBytes(shown.text.length)} of ${formatBytes(text.length)}. Copy and Download take all of it.`}
-        </Text>
-      ) : null}
     </Stack>
   );
 }
