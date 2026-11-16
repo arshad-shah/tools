@@ -1,19 +1,15 @@
-import { useId, useMemo, useState } from 'react';
-import { copyText } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
-import { ToolError } from '@/shared/lib/errors';
-import { notify } from '@/shared/lib/notify';
-import { IconCopy, IconDownload } from '@/shared/ui/icons';
 import {
   Button,
-  Code,
+  CodeBlock,
+  Grid,
   Heading,
-  Inline,
-  Input,
-  Label,
   SegmentedControl,
   Stack,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { download } from '@arshad-shah/cynosure/icons';
+import { useMemo, useState } from 'react';
+import { saveBlob } from '@/shared/lib/download';
 import {
   exportPalette,
   tokenName,
@@ -45,7 +41,6 @@ export interface PaletteExportProps {
 
 /** The scale or the working palette as CSS, Tailwind, JSON or SVG. */
 export function PaletteExport({ scale, palette }: PaletteExportProps) {
-  const id = useId();
   const [fmt, setFmt] = useState<PaletteFormat>('css');
   const [source, setSource] = useState<Source>('scale');
   const [name, setName] = useState('brand');
@@ -58,14 +53,6 @@ export function PaletteExport({ scale, palette }: PaletteExportProps) {
     return exportPalette({ name: name || 'palette', entries }, fmt);
   }, [from, scale, palette, name, fmt]);
 
-  const onCopy = async () => {
-    try {
-      await copyText(text);
-      notify.success('Export copied');
-    } catch (e) {
-      notify.error(e instanceof ToolError ? e : 'Could not copy');
-    }
-  };
   const onDownload = () => {
     const { ext, mime } = FILE[fmt];
     const suffix = fmt === 'tailwind' ? '-theme' : '';
@@ -77,26 +64,25 @@ export function PaletteExport({ scale, palette }: PaletteExportProps) {
   };
 
   return (
-    <Stack gap="3">
-      <Heading level={3} size="md">
+    <Stack gap="4">
+      <Heading level={3} size="sm">
         Export
       </Heading>
-      <Inline gap="3" align="end" wrap>
-        <Stack gap="1">
-          <Label htmlFor={`${id}-name`}>Token name</Label>
-          <Input
-            id={`${id}-name`}
-            value={name}
-            onChange={setName}
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </Stack>
-        <SegmentedControl<Source>
+      <Grid columns={{ base: 1, md: 3 }} gap="4" align="end">
+        <TextField
+          label="Token name"
+          size="sm"
+          value={name}
+          onChange={setName}
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <SegmentedControl
           label="Export source"
           size="sm"
+          fullWidth
           value={from}
-          onChange={setSource}
+          onChange={(v) => setSource(v as Source)}
           options={[
             { value: 'scale', label: 'Scale' },
             {
@@ -106,33 +92,32 @@ export function PaletteExport({ scale, palette }: PaletteExportProps) {
             },
           ]}
         />
-        <SegmentedControl<PaletteFormat>
+        <SegmentedControl
           label="Export format"
           size="sm"
+          fullWidth
           value={fmt}
-          onChange={setFmt}
+          onChange={(v) => setFmt(v as PaletteFormat)}
           options={FORMATS}
         />
-      </Inline>
-      <Code block aria-label="Export output">
-        {text}
-      </Code>
-      <Inline gap="2" wrap>
-        <Button
-          size="sm"
-          leftIcon={<IconCopy size="sm" />}
-          onClick={() => void onCopy()}
-        >
-          Copy export
-        </Button>
-        <Button
-          size="sm"
-          leftIcon={<IconDownload size="sm" />}
-          onClick={onDownload}
-        >
-          Download export
-        </Button>
-      </Inline>
+      </Grid>
+      <CodeBlock
+        title="Export output"
+        code={text}
+        language={fmt === 'json' ? 'json' : fmt === 'svg' ? 'xml' : 'css'}
+        copyable
+        labels={{ copy: 'Copy export' }}
+        actions={
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={download}
+            onClick={onDownload}
+          >
+            Download export
+          </Button>
+        }
+      />
     </Stack>
   );
 }
