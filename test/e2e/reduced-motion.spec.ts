@@ -72,8 +72,10 @@ async function sampleAnimations(page: Page) {
 async function expectNoMotion(page: Page) {
   const samples = await page.evaluate(() => window.__motion);
   const long = samples.filter((s) => !(s.duration <= 80));
-  const transform = samples.filter((s) =>
-    s.properties.some((p) => TRANSFORM.includes(p)),
+  // Cynosure collapses animations to one frame or less under reduced motion
+  // (its loading dots report 1 ms): an instant change is not motion.
+  const transform = samples.filter(
+    (s) => s.duration > 1 && s.properties.some((p) => TRANSFORM.includes(p)),
   );
   expect(long, 'animations longer than 80 ms').toEqual([]);
   expect(transform, 'transform animations').toEqual([]);
