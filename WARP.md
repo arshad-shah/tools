@@ -45,7 +45,7 @@ src/tools/<tool-id>/
 ### Shared code
 
 - `src/app/`: router (`App.tsx`), `Dashboard.tsx`, `ToolLayout.tsx`, error boundaries, `registry.ts`, `tool.ts` (`defineTool`, `ToolProps`, `ToolCategory`).
-- UI is `@arshad-shah/cynosure` (components and Facet icons). `src/shared/surfaces/`: drawing surfaces (canvases, sandboxed HTML, code tree, virtual list, logo). `src/shared/ui/`: the old kit, kept only for the PDF workspace.
+- UI is `@arshad-shah/cynosure` (components and Facet icons). `src/shared/surfaces/`: drawing surfaces (canvases, sandboxed HTML, code tree, virtual list, logo).
 - `src/shared/lib/`: `download` (`saveBlob`, `saveZip`, `deriveFilename`), `clipboard`, `files` (`loadFile`, `readBytes`), `format` (`formatBytes`), `errors` (`ToolError`), `notify`, `id` (`newId`), `worker-rpc`.
 - `src/shared/state/`: `createToolStore` (zustand + persistence under `kit:store:tool:<id>`) and `useJob` (async work with progress and cancel).
 - `src/pdf/`, shared by the PDF tools:
@@ -54,7 +54,7 @@ src/tools/<tool-id>/
   - `qpdf/`: qpdf-wasm encrypt, unlock and optimise. It arrives with the PDF security tools.
   - `compress/`: the compression pipeline. It also arrives with the PDF security tools.
   - `components/`: dropzone, page grid, job panel, result files.
-- `src/theme/`: the generated Cynosure theme (`cynosure-theme.css`, light and dark) and `tokens.css` (Cynosure imports, plus the Tailwind layer the old kit still needs for the PDF workspace).
+- `src/theme/`: `app.css` (Cynosure's styles and font) and the generated Cynosure theme (`cynosure-theme.css`, light and dark).
 
 ### State
 
@@ -76,7 +76,7 @@ src/tools/<tool-id>/
 
 ## Technology Stack
 
-React 19, TypeScript, Vite, Tailwind CSS v4, React Router v7, zustand, pdf-lib, pdfjs-dist, qpdf-wasm, @arshad-shah/cynosure (UI and Facet icons), Vitest, Playwright, pnpm.
+React 19, TypeScript, Vite, React Router v7, zustand, pdf-lib, pdfjs-dist, qpdf-wasm, @arshad-shah/cynosure (UI and Facet icons), Vitest, Playwright, pnpm.
 
 ## CI/CD
 

@@ -75,7 +75,7 @@ Tools are discovered from `src/tools/<tool-id>/index.ts` manifests (`defineTool`
 
 ### UI and enforcement rules
 
-Every page is built from [Cynosure](https://cynosure.arshadshah.com) (`@arshad-shah/cynosure`) components: layout from `Container`, `Stack`, `Inline` and `Grid`, text from `Heading` and `Text`, and the controls, overlays and feedback that match. Icons are Facet icons from `@arshad-shah/cynosure/icons`, drawn by Cynosure's `Icon` and `IconTile`; tools draws no icons of its own. The theme is `createTheme({ accent: '#3ddc97' })` (`src/theme/cynosure-theme.css`, generated). Only drawing surfaces (`src/shared/surfaces/`: canvases, the sandboxed HTML frame, the code tree, the virtual list, the logo) use raw elements and their own token CSS; CodeMirror (`src/shared/editor`) and swift-chart (`src/shared/charts`) mount on one element each. The old in-house kit (`src/shared/ui`) and Tailwind remain only for the PDF workspace until its rebuild lands.
+Every page is built from [Cynosure](https://cynosure.arshadshah.com) (`@arshad-shah/cynosure`) components: layout from `Container`, `Stack`, `Inline` and `Grid`, text from `Heading` and `Text`, and the controls, overlays and feedback that match. Icons are Facet icons from `@arshad-shah/cynosure/icons`, drawn by Cynosure's `Icon` and `IconTile`; tools draws no icons of its own. The theme is `createTheme({ accent: '#3ddc97' })` (`src/theme/cynosure-theme.css`, generated). Only drawing surfaces (`src/shared/surfaces/`: canvases, the sandboxed HTML frame, the code tree, the virtual list, the logo, the PDF page layers) use raw elements and their own token CSS; CodeMirror (`src/shared/editor`) and swift-chart (`src/shared/charts`) mount on one element each.
 
 The rules are enforced, not advisory:
 

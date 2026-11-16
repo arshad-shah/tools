@@ -41,12 +41,12 @@ src/
                 PDF hub, tool page), shell (navigation, Mod+K, shortcut sheet)
   shared/
     surfaces/   drawing surfaces: canvases, the sandboxed HTML frame, the
-                code tree, the virtual list, the logo (raw elements allowed)
+                code tree, the virtual list, the logo, the PDF page layers
+                (page/, pdf/) (raw elements allowed)
     editor/     CodeMirror 6, themed from Cynosure
     charts/     swift-chart, themed from Cynosure
     lib/        browser plumbing: download, clipboard, files, format, errors,
                 notify, id, hotkeys, commands, worker-rpc, grid sort/filters
-    ui/         the old kit, kept only for the PDF workspace (going away)
     state/      createToolStore (persisted zustand stores) and useJob
   pdf/
     doc/        the workspace document model (no React)
@@ -55,8 +55,8 @@ src/
     edit/       pdf-lib in a worker: materialisation and page edits
     detect/ redact/ ocr/ sign/ compress/ qpdf/ convert/   domain modules
     components/ shared PDF UI used by the quick tasks
-  theme/        the generated Cynosure theme and tokens.css (Cynosure imports;
-                the Tailwind layer the old kit still needs)
+  theme/        app.css (Cynosure's styles and font) and the generated
+                Cynosure theme (cynosure-theme.css)
   tools/<id>/   one folder per tool
 eslint-rules/   the local design-system ESLint plugin
 test/           e2e, visual, fixtures and build-level tests
@@ -69,7 +69,7 @@ Everything is client-side: document bytes never leave the browser.
 
 These rules are enforced by lint and tests; a PR that breaks them fails CI.
 
-- Compose Cynosure. Pages and tools use `@arshad-shah/cynosure` components only: `Container`, `Section`, `Stack`, `Inline`, `Grid` for layout, `Heading`, `Text`, `Link`, `List` for text. No raw element (`div`, `span`, `p`, `ul`, `button`, `input`, `a`, `svg`...), no `className`, no `style` prop and no imperative style write outside `src/shared/surfaces/` and the editor and chart mount points (`local/no-raw-ui`). `src/pdf` and `src/tools/pdf-edit` are exempt until the PDF workspace rebuild merges.
+- Compose Cynosure. Pages and tools use `@arshad-shah/cynosure` components only: `Container`, `Section`, `Stack`, `Inline`, `Grid` for layout, `Heading`, `Text`, `Link`, `List` for text. No raw element (`div`, `span`, `p`, `ul`, `button`, `input`, `a`, `svg`...), no `className`, no `style` prop and no imperative style write outside `src/shared/surfaces/` and the editor and chart mount points (`local/no-raw-ui`).
 - When Cynosure lacks something, write it down in `docs/cynosure-gaps.md` and use the closest Cynosure composition; it is fixed in Cynosure, never patched here. A genuine drawing surface goes in `src/shared/surfaces/`, styled by its own CSS from `--cy-*` tokens.
 - Icons are Facet icons from `@arshad-shah/cynosure/icons` (tool and category manifests carry Facet `IconData`), drawn with Cynosure's `Icon`, `IconTile` or a component's `icon` prop. No icon package (`lucide-react` and the like) anywhere (rule c).
 - No glyphs in product text: no emoji, pictographs, dingbats, arrows, geometric shapes, box drawing or technical symbols in strings, JSX text, toasts, labels or test names in `src` (rule a). Use icons, the `Kbd` component for keys, `MetaList` for separated values, or plain words ("to", "and", "Copyright"). Code that must recognise such characters builds them from code points, for example `String.fromCodePoint(0x2192)`.
