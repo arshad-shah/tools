@@ -1,12 +1,11 @@
 import {
-  Button,
   ColorField,
-  Inline,
+  ColorSwatches,
   SegmentedControl,
   Stack,
-  SwitchField,
+  Switch,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
 
 export type DeviceChoice = 'none' | 'phone' | 'tablet' | 'desktop';
 
@@ -15,6 +14,12 @@ const DEVICE_OPTIONS: { value: DeviceChoice; label: string }[] = [
   { value: 'phone', label: 'Phone' },
   { value: 'tablet', label: 'Tablet' },
   { value: 'desktop', label: 'Desktop' },
+];
+
+const PRESETS = [
+  { value: 'transparent', label: 'Transparent' },
+  { value: 'white', label: 'White' },
+  { value: 'black', label: 'Black' },
 ];
 
 /** The stage behind the artboard and the device frame around it. */
@@ -32,45 +37,41 @@ export function StagePanel({
   onDeviceChange: (device: DeviceChoice) => void;
 }) {
   return (
-    <Stack gap="4">
-      <Stack gap="2">
-        <ColorField
-          label="Background colour"
-          value={background}
-          onChange={(css) => onChange({ background: css })}
-          alpha
-          disabled={checkerboard}
-        />
-        <Inline gap="2" wrap>
-          {['transparent', 'white', 'black'].map((c) => (
-            <Button
-              key={c}
-              // A selection, never primary: pressed state on a quiet button.
-              variant={background === c ? 'secondary' : 'ghost'}
-              aria-pressed={background === c}
-              size="sm"
-              disabled={checkerboard}
-              onClick={() => onChange({ background: c })}
-            >
-              {c[0].toUpperCase() + c.slice(1)}
-            </Button>
-          ))}
-        </Inline>
-      </Stack>
-      <SwitchField
+    <Stack gap="5">
+      <ColorField
+        label="Background colour"
+        value={background}
+        onChange={(css) => onChange({ background: css })}
+        alpha
+        disabled={checkerboard}
+      />
+      <ColorSwatches
+        label="Background presets"
+        size="sm"
+        swatches={PRESETS}
+        value={background}
+        disabled={checkerboard}
+        onChange={(c) =>
+          onChange({
+            background: PRESETS.find((p) => p.value === c)?.value ?? c,
+          })
+        }
+      />
+      <Switch
         label="Checkerboard (shows transparency)"
         checked={checkerboard}
-        onCheckedChange={(v) => onChange({ checkerboard: v })}
+        onChange={(v) => onChange({ checkerboard: v })}
       />
       <Stack gap="2">
-        <Text as="span" size="sm" weight="medium">
+        <Text size="sm" weight="medium">
           Device frame
         </Text>
         <SegmentedControl
           label="Device frame"
           size="sm"
+          fullWidth
           value={device}
-          onChange={onDeviceChange}
+          onChange={(v) => onDeviceChange(v as DeviceChoice)}
           options={DEVICE_OPTIONS}
         />
       </Stack>

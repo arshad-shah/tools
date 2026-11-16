@@ -1,16 +1,13 @@
 import { useMemo } from 'react';
 import {
   Badge,
+  DescriptionList,
   EmptyState,
+  Inline,
   Stack,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
 import { artboardSizes } from '../lib/animator';
 import type { LoadedRive } from '../types';
 
@@ -65,46 +62,58 @@ export function InfoPanel({
       />
     );
   return (
-    <Stack gap="3">
-      <Text size="sm" weight="medium">
+    <Stack gap="4">
+      <Table<Row>
+        caption="Artboards"
+        size="sm"
+        rows={rows}
+        getRowId={(r) => r.name}
+        columns={[
+          {
+            key: 'name',
+            header: 'Artboard',
+            rowHeader: true,
+            cell: (r) => (
+              <Inline gap="2" align="center" wrap>
+                <Text size="sm">{r.name}</Text>
+                {r.name === selectedArtboard ? (
+                  <Badge tone="accent" size="sm">
+                    Active
+                  </Badge>
+                ) : null}
+              </Inline>
+            ),
+          },
+          { key: 'size', header: 'Size (px)', cell: (r) => r.size },
+          {
+            key: 'animations',
+            header: 'Animations',
+            align: 'end',
+            cell: (r) => r.animations,
+          },
+          {
+            key: 'stateMachines',
+            header: 'State machines',
+            align: 'end',
+            cell: (r) => r.stateMachines,
+          },
+        ]}
+      />
+      <Text size="sm" tone="muted">
         {rows.length === 1 ? '1 artboard' : `${rows.length} artboards`}
       </Text>
-      <Table aria-label="Artboards">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Artboard</TableHead>
-            <TableHead>Size (px)</TableHead>
-            <TableHead>Animations</TableHead>
-            <TableHead>State machines</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.name}>
-              <TableCell>
-                {r.name}
-                {r.name === selectedArtboard && (
-                  <>
-                    {' '}
-                    <Badge size="sm" variant="soft" tone="accent">
-                      Active
-                    </Badge>
-                  </>
-                )}
-              </TableCell>
-              <TableCell>{r.size}</TableCell>
-              <TableCell>{r.animations}</TableCell>
-              <TableCell>{r.stateMachines}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Stack gap="1">
-        <Text size="sm">
-          Frame rate: {fps ? `${fps} fps (active animation)` : NOT_STORED}
-        </Text>
-        <Text size="sm">Format version: {NOT_STORED}</Text>
-      </Stack>
+      <DescriptionList
+        size="sm"
+        layout="inline"
+        items={[
+          {
+            id: 'fps',
+            term: 'Frame rate',
+            detail: fps ? `${fps} fps (active animation)` : NOT_STORED,
+          },
+          { id: 'version', term: 'Format version', detail: NOT_STORED },
+        ]}
+      />
     </Stack>
   );
 }

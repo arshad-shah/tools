@@ -1,49 +1,37 @@
 import {
-  IconAlertCircle,
-  IconCheckCircle2,
-  IconInfo,
-  IconX,
-} from '@/shared/ui/icons';
-
-import {
-  Badge,
-  Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   EmptyState,
+  Icon,
   Inline,
+  ListRow,
+  ListRows,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  alertCircle,
+  checkCircle,
+  close,
+  info,
+  type IconData,
+} from '@arshad-shah/cynosure/icons';
 import type { DebugLog as DebugLogEntry } from '../types';
 
-const logColorScheme = (
-  type: DebugLogEntry['type'],
-): 'danger' | 'warning' | 'success' | 'accent' =>
-  type === 'error'
-    ? 'danger'
-    : type === 'warning'
-      ? 'warning'
-      : type === 'success'
-        ? 'success'
-        : 'accent';
+const TONE = {
+  error: 'danger',
+  warning: 'warning',
+  success: 'success',
+  info: undefined,
+} as const;
 
-const logIcon = (type: DebugLogEntry['type']) => {
-  switch (type) {
-    case 'error':
-      return <IconAlertCircle size="sm" />;
-    case 'warning':
-      return <IconAlertCircle size="sm" />;
-    case 'success':
-      return <IconCheckCircle2 size="sm" />;
-    default:
-      return <IconInfo size="sm" />;
-  }
+const ICON: Record<DebugLogEntry['type'], IconData> = {
+  error: alertCircle,
+  warning: alertCircle,
+  success: checkCircle,
+  info,
 };
 
+/** The player's own log: loading steps, warnings and errors. */
 export function DebugLog({
   debugLogs,
   onClear,
@@ -52,51 +40,41 @@ export function DebugLog({
   onClear: () => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <Inline justify="between" align="center">
-          <CardTitle as="h3">Debug logs</CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconX size="sm" />}
-            onClick={onClear}
-          >
-            Clear
-          </Button>
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        <Box className="max-h-64 overflow-auto">
-          {debugLogs.length === 0 ? (
-            <EmptyState
-              size="sm"
-              title="No logs yet"
-              description="Upload a file to see debug information."
+    <Stack gap="3">
+      <Inline justify="between" align="center">
+        <Text size="sm" tone="muted">
+          {debugLogs.length === 1 ? '1 entry' : `${debugLogs.length} entries`}
+        </Text>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={close}
+          onClick={onClear}
+          disabled={debugLogs.length === 0}
+        >
+          Clear log
+        </Button>
+      </Inline>
+      {debugLogs.length === 0 ? (
+        <EmptyState
+          size="sm"
+          title="No logs yet"
+          description="Load a file to see debug information."
+        />
+      ) : (
+        <ListRows label="Debug logs" size="sm" divided>
+          {debugLogs.map((log) => (
+            <ListRow
+              key={log.id}
+              label={log.message}
+              tone={TONE[log.type]}
+              leading={<Icon icon={ICON[log.type]} />}
+              trailing={log.timestamp}
+              wrap
             />
-          ) : (
-            <Stack gap="1">
-              {debugLogs.map((log) => (
-                <Card key={log.id}>
-                  <CardBody>
-                    <Inline gap="2" align="center">
-                      {logIcon(log.type)}
-                      <Badge
-                        variant="soft"
-                        tone={logColorScheme(log.type)}
-                        size="xs"
-                      >
-                        {log.timestamp}
-                      </Badge>
-                      <Text size="xs">{log.message}</Text>
-                    </Inline>
-                  </CardBody>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </Box>
-      </CardBody>
-    </Card>
+          ))}
+        </ListRows>
+      )}
+    </Stack>
   );
 }

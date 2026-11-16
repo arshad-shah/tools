@@ -1,18 +1,14 @@
-import React from 'react';
-import { StateMachineInput } from '@/shared/ui/adapters/rive-runtime';
-
 import {
   Button,
   EmptyState,
   Grid,
-  Label,
+  SegmentedControl,
   Select,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { play } from '@arshad-shah/cynosure/icons';
+import React from 'react';
+import { StateMachineInput } from '@/shared/ui/adapters/rive-runtime';
 import {
   type RiveAnimations,
   type RiveController,
@@ -58,95 +54,93 @@ export function ControlsTab({
   ) => void;
 }) {
   return (
-    <Stack gap="4">
-      <Tabs
+    <Stack gap="5">
+      <SegmentedControl
+        label="Controller"
+        fullWidth
         value={controller.active}
-        onValueChange={(v) =>
+        onChange={(v) =>
           setControllerState(v as 'animations' | 'state-machines')
         }
-        variant="soft"
-        fullWidth
-      >
-        <TabsList aria-label="Controller">
-          <TabsTrigger value="animations">Animations</TabsTrigger>
-          <TabsTrigger value="state-machines">State machines</TabsTrigger>
-        </TabsList>
+        options={[
+          { value: 'animations', label: 'Animations' },
+          { value: 'state-machines', label: 'State machines' },
+        ]}
+      />
 
-        <TabsContent value="animations">
-          <Stack gap="3" className="pt-3">
-            {artboards.length > 1 && (
-              <Stack gap="2">
-                <Label>Artboard</Label>
-                <Select
-                  value={selectedArtboard}
-                  onValueChange={setSelectedArtboard}
-                  items={artboards.map((a) => ({ value: a, label: a }))}
-                  aria-label="Artboard"
-                />
-              </Stack>
-            )}
-            {animationList && animationList.animations.length > 0 ? (
-              <Grid max={2} gap="2">
-                {animationList.animations.map((animation) => (
+      {controller.active === 'animations' ? (
+        <Stack gap="4">
+          {artboards.length > 1 ? (
+            <Select
+              label="Artboard"
+              value={selectedArtboard}
+              onChange={setSelectedArtboard}
+              options={artboards.map((a) => ({ value: a, label: a }))}
+            />
+          ) : null}
+          {animationList && animationList.animations.length > 0 ? (
+            <Grid
+              columns={{ base: 1, sm: 2 }}
+              gap="2"
+              role="group"
+              aria-label="Animations"
+            >
+              {animationList.animations.map((animation) => {
+                const on = animationList.active === animation;
+                return (
                   <Button
                     key={animation}
                     // The playing animation is a selection: pressed, not primary.
-                    variant={
-                      animationList.active === animation ? 'secondary' : 'ghost'
-                    }
-                    aria-pressed={animationList.active === animation}
+                    variant={on ? 'soft' : 'outline'}
+                    tone={on ? 'accent' : 'neutral'}
+                    icon={on ? play : undefined}
+                    aria-pressed={on}
                     size="sm"
                     onClick={() => setActiveAnimation(animation)}
                     fullWidth
                   >
                     {animation}
                   </Button>
-                ))}
-              </Grid>
-            ) : (
-              <EmptyState
-                size="sm"
-                title="No animations"
-                description="This artboard has no timeline animations."
-              />
-            )}
-          </Stack>
-        </TabsContent>
-
-        <TabsContent value="state-machines">
-          <Stack gap="3" className="pt-3">
-            {stateMachineList && stateMachineList.stateMachines.length > 0 ? (
-              <Stack gap="2">
-                <Label>Active state machine</Label>
-                <Select
-                  value={stateMachineList.active}
-                  onValueChange={setActiveStateMachine}
-                  items={stateMachineList.stateMachines.map((s) => ({
-                    value: s,
-                    label: s,
-                  }))}
-                  aria-label="State machine"
-                />
-              </Stack>
-            ) : (
-              <EmptyState
-                size="sm"
-                title="No state machines"
-                description="This artboard has no state machines."
-              />
-            )}
-
-            <InputsPanel
-              stateMachineInputs={stateMachineInputs}
-              stateMachineList={stateMachineList}
-              booleanValues={booleanValues}
-              setBooleanValues={setBooleanValues}
-              numberValues={numberValues}
-              handleInputChange={handleInputChange}
+                );
+              })}
+            </Grid>
+          ) : (
+            <EmptyState
+              size="sm"
+              title="No animations"
+              description="This artboard has no timeline animations."
             />
-          </Stack>
-        </TabsContent>
-      </Tabs>
+          )}
+        </Stack>
+      ) : (
+        <Stack gap="4">
+          {stateMachineList && stateMachineList.stateMachines.length > 0 ? (
+            <Select
+              label="Active state machine"
+              value={stateMachineList.active}
+              onChange={setActiveStateMachine}
+              options={stateMachineList.stateMachines.map((s) => ({
+                value: s,
+                label: s,
+              }))}
+            />
+          ) : (
+            <EmptyState
+              size="sm"
+              title="No state machines"
+              description="This artboard has no state machines."
+            />
+          )}
+          <InputsPanel
+            stateMachineInputs={stateMachineInputs}
+            stateMachineList={stateMachineList}
+            booleanValues={booleanValues}
+            setBooleanValues={setBooleanValues}
+            numberValues={numberValues}
+            handleInputChange={handleInputChange}
+          />
+        </Stack>
+      )}
     </Stack>
   );
 }
