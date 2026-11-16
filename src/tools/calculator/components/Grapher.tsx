@@ -11,16 +11,23 @@ import {
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
-import { download, plus, target, trash } from '@arshad-shah/cynosure/icons';
-import React, { useMemo, useRef, useState } from 'react';
-// The kit Chart is a drawing surface (a canvas): Cynosure has no plot
-// (docs/cynosure-gaps.md).
 import {
-  Chart,
-  type ChartFunction,
-  type ChartHandle,
-  type ChartHover,
-} from '@/shared/ui/chart';
+  chevronLeft,
+  chevronRight,
+  download,
+  plus,
+  rotateCcw,
+  target,
+  trash,
+  zoomIn,
+  zoomOut,
+} from '@arshad-shah/cynosure/icons';
+import { useDrag } from '@arshad-shah/cynosure';
+import { Line, type ChartRef } from '@arshad-shah/swift-chart/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+// swift-chart draws the graph (a canvas): the owner chose it over a
+// Cynosure plot. Every control around it is Cynosure.
+import { ChartFrame, chartPng, useChartTheme } from '@/shared/charts';
 import { saveBlob } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
@@ -29,8 +36,53 @@ import { findIntersections, findRoots } from '../lib/roots';
 import type { AngleUnit } from '../types';
 
 const MAX_FUNCTIONS = 6;
-/** The chart's series colour for a plotted function, in plotting order. */
-const seriesColour = (at: number) => `var(--chart-${at + 1})`;
+/** A plotted function's series colour (swift-chart's theme uses the same). */
+const seriesColour = (at: number) => `var(--cy-color-series-${at + 1})`;
+/** Samples across the x range per function. */
+const SAMPLES = 241;
+/** Rows in the data table (the graph's accessible twin). */
+const TABLE_POINTS = 21;
+const DEFAULT_RANGE: [number, number] = [-10, 10];
+
+interface Plotted {
+  id: string;
+  label: string;
+  fn(x: number): number;
+}
+
+/** `fn` at `n` evenly spaced x across the domain. */
+function sampleAt(fn: (x: number) => number, xs: number[]) {
+  return xs.map((x) => {
+    try {
+      const y = fn(x);
+      return Number.isFinite(y) ? y : NaN;
+    } catch {
+      return NaN;
+    }
+  });
+}
+
+const spaced = ([a, b]: [number, number], n: number) =>
+  Array.from({ length: n }, (_, i) => a + ((b - a) * i) / (n - 1));
+
+/**
+ * The y values worth showing: outliers past an asymptote (tan near pi/2)
+ * would squash the rest, so values far outside the middle 96 percent are
+ * left out of the drawing (NaN), like the gap a plotter leaves.
+ */
+function clip(series: number[][]): number[][] {
+  const all = series
+    .flat()
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  if (all.length < 10) return series;
+  const lo = all[Math.floor(all.length * 0.02)];
+  const hi = all[Math.ceil(all.length * 0.98) - 1];
+  const pad = (hi - lo || 1) * 0.5;
+  return series.map((ys) =>
+    ys.map((y) => (y < lo - pad || y > hi + pad ? NaN : y)),
+  );
+}
 
 interface Row {
   id: number;
@@ -62,9 +114,11 @@ interface GrapherProps {
  */
 export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
   const [rows, setRows] = useState<Row[]>([{ id: 1, expr: 'sin(x)' }]);
-  const [range, setRange] = useState<[number, number]>([-10, 10]);
-  const [trace, setTrace] = useState<ChartHover | null>(null);
-  const chart = useRef<ChartHandle>(null);
+  const [range, setRange] = useState<[number, number]>(DEFAULT_RANGE);
+  const [trace, setTrace] = useState<number | null>(null);
+  const chart = useRef<ChartRef>(null);
+  const plot = useRef<HTMLElement>(null);
+  const theme = useChartTheme();
   const nextId = useRef(2);
   const domain = ordered(range);
 
@@ -81,7 +135,7 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
     [rows, angle],
   );
 
-  const fns = useMemo<ChartFunction[]>(
+  const fns = useMemo<Plotted[]>(
     () =>
       compiled.flatMap(({ row, fn }) =>
         fn
@@ -121,22 +175,120 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
     const half = (domain[1] - domain[0]) / 2;
     setRange([x - half, x + half]);
   };
-  const exportPng = async () => {
+  /** Zoom by `factor` about x = `at` (default the centre). */
+  const zoom = (factor: number, at = (domain[0] + domain[1]) / 2) =>
+    setRange([at - (at - domain[0]) * factor, at + (domain[1] - at) * factor]);
+  const pan = (fraction: number) => {
+    const d = (domain[1] - domain[0]) * fraction;
+    setRange([domain[0] + d, domain[1] + d]);
+  };
+  const exportPng = () => {
     try {
-      const blob = await chart.current?.exportPng();
+      const blob = chartPng(chart.current);
       if (blob) saveBlob(blob, 'graph.png');
     } catch (e) {
       notify.error(toToolError(e, 'Could not export the graph'));
     }
   };
 
-  const traced = trace && fns.find((f) => f.id === trace.seriesId);
-  const plotIndex = (id: number) => fns.findIndex((f) => f.id === `f${id}`);
+  const [d0, d1] = domain;
+  const xs = useMemo(() => spaced([d0, d1], SAMPLES), [d0, d1]);
+  const data = useMemo(() => {
+    const ys = clip(fns.map((f) => sampleAt(f.fn, xs)));
+    const step = (d1 - d0) / (SAMPLES - 1);
+    const digits = Math.max(0, Math.min(10, -Math.floor(Math.log10(step)) + 1));
+    return {
+      labels: xs.map((x) => fmt(Number(x.toFixed(digits)))),
+      datasets: fns.map((f, i) => ({ label: f.label, data: ys[i] })),
+    };
+  }, [fns, xs, d0, d1]);
 
+  // Pointer on the plot: drag pans, the wheel zooms about the pointer.
+  const xAt = (clientX: number) => {
+    const c = chart.current?.chart;
+    if (!c) return null;
+    const box = c.canvas.getBoundingClientRect();
+    const area = c.plotArea;
+    const t = (clientX - box.left - area.x) / (area.w || 1);
+    return domain[0] + (domain[1] - domain[0]) * t;
+  };
+  const dragFrom = useRef<{ x: number; range: [number, number] } | null>(null);
+  useDrag(plot, {
+    distance: 4,
+    delay: 200,
+    onStart: ({ point }) => {
+      dragFrom.current = { x: point.x, range: domain };
+    },
+    onMove: ({ point }) => {
+      const from = dragFrom.current;
+      const c = chart.current?.chart;
+      if (!from || !c) return;
+      const per = (from.range[1] - from.range[0]) / (c.plotArea.w || 1);
+      const d = (point.x - from.x) * per;
+      setRange([from.range[0] - d, from.range[1] - d]);
+    },
+    onEnd: (_s, cancelled) => {
+      if (cancelled && dragFrom.current) setRange(dragFrom.current.range);
+      dragFrom.current = null;
+    },
+  });
+  const onWheel = useRef<(e: WheelEvent) => void>(() => {});
+  useEffect(() => {
+    onWheel.current = (e) => {
+      const at = xAt(e.clientX);
+      if (at === null) return;
+      e.preventDefault();
+      zoom(e.deltaY > 0 ? 1.2 : 1 / 1.2, at);
+    };
+  });
+  useEffect(() => {
+    const el = plot.current;
+    if (!el) return;
+    const wheel = (e: WheelEvent) => onWheel.current(e);
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, []);
+  // Hover readout: the sample under the pointer, from swift-chart's hover.
+  useEffect(() => {
+    const el = plot.current;
+    if (!el) return;
+    const read = () => {
+      const i = chart.current?.chart?.hoverIndex ?? -1;
+      setTrace(i >= 0 ? i : null);
+    };
+    const leave = () => setTrace(null);
+    // After swift-chart's own canvas listeners have set its hover index.
+    el.addEventListener('mousemove', read);
+    el.addEventListener('touchmove', read);
+    el.addEventListener('mouseleave', leave);
+    return () => {
+      el.removeEventListener('mousemove', read);
+      el.removeEventListener('touchmove', read);
+      el.removeEventListener('mouseleave', leave);
+    };
+  }, []);
+
+  const plotIndex = (id: number) => fns.findIndex((f) => f.id === `f${id}`);
   const traceText =
-    traced && typeof trace.x === 'number' && trace.y !== null
-      ? `Trace ${traced.id}: x = ${fmt(trace.x)}, y = ${fmt(trace.y)}`
-      : 'Point at the graph to trace a function';
+    trace !== null && fns.length
+      ? `x = ${fmt(xs[trace])}: ${fns
+          .map((f, i) => {
+            const y = data.datasets[i]?.data[trace];
+            return `${f.id} = ${Number.isFinite(y) ? fmt(y) : 'undefined'}`;
+          })
+          .join(', ')}`
+      : 'Point at the graph to trace the functions';
+  const tableXs = spaced(domain, TABLE_POINTS);
+  const tableRows = tableXs.map((x) => ({
+    id: String(x),
+    x: fmt(x),
+    ...Object.fromEntries(
+      fns.map((f) => {
+        const [y] = sampleAt(f.fn, [x]);
+        return [f.id, Number.isFinite(y) ? fmt(y) : 'undefined'];
+      }),
+    ),
+  }));
 
   return (
     <Stack gap="6">
@@ -161,7 +313,7 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
               variant="ghost"
               icon={download}
               disabled={fns.length === 0}
-              onClick={() => void exportPng()}
+              onClick={exportPng}
             >
               Export PNG
             </Button>
@@ -224,21 +376,88 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
         </Stack>
       </Card>
 
-      <Card as="section" title="Graph">
+      <Card
+        as="section"
+        title="Graph"
+        actions={
+          <Inline gap="1" role="group" aria-label="Pan and zoom">
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={chevronLeft}
+              label="Pan left"
+              onClick={() => pan(-0.25)}
+            />
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={chevronRight}
+              label="Pan right"
+              onClick={() => pan(0.25)}
+            />
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={zoomIn}
+              label="Zoom in"
+              onClick={() => zoom(1 / 1.5)}
+            />
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={zoomOut}
+              label="Zoom out"
+              onClick={() => zoom(1.5)}
+            />
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={rotateCcw}
+              label="Reset view"
+              onClick={() => setRange(DEFAULT_RANGE)}
+            />
+          </Inline>
+        }
+      >
         <Stack gap="4">
-          <Chart
-            ref={chart}
-            kind="function"
-            fns={fns}
-            xDomain={domain}
-            height={400}
-            xLabel="x"
-            yLabel="y"
-            zoomable
-            onPointHover={setTrace}
-            ariaLabel="Graph of the functions"
-            ariaSummary={`${fns.map((f) => f.label).join('; ') || 'No functions'}, for x from ${fmt(domain[0])} to ${fmt(domain[1])}`}
-          />
+          <ChartFrame
+            table={{
+              caption: 'Values of the functions',
+              rows: tableRows,
+              getRowId: (r) => r.id,
+              columns: [
+                { key: 'x', header: 'x', align: 'end' },
+                ...fns.map((f) => ({
+                  key: f.id,
+                  header: `${f.id}(x)`,
+                  align: 'end' as const,
+                })),
+              ],
+            }}
+          >
+            <Stack ref={plot}>
+              <Line
+                ref={chart}
+                data={[]}
+                mapping={data}
+                theme={theme.name}
+                height={400}
+                animate={false}
+                dots={false}
+                smooth={false}
+                lineWidth={2}
+                legendPosition="bottom"
+                formatValue={(v) => (Number.isFinite(v) ? fmt(v) : 'undefined')}
+                ariaLabel="Graph of the functions"
+                ariaDescription={`${fns.map((f) => f.label).join('; ') || 'No functions'}, for x from ${fmt(domain[0])} to ${fmt(domain[1])}. Drag to pan, scroll to zoom.`}
+              />
+            </Stack>
+          </ChartFrame>
           <Stack aria-live="polite">
             <Text size="sm" tone="muted" numeric>
               {traceText}

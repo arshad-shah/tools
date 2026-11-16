@@ -7,7 +7,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { installChartStubs } from '@/shared/ui/chart/test-utils';
+import { installChartStubs } from '@/shared/charts/testing';
 import { textHandlers } from '@/shared/workers/handlers';
 import { putHandoff } from '@/shared/lib/handoff';
 import { diffPairPayload } from './lib/handoff';

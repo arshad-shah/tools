@@ -1,7 +1,7 @@
 /**
  * Test helpers for swift-chart (imported by tests only): every canvas gets a
- * recording 2D context (with gradients), boxes measure 600 by 300, frames
- * run at once and a ResizeObserver fires on observe.
+ * recording 2D context (with gradients), boxes measure 600 by 300, motion
+ * is reduced (no entry animation) and a ResizeObserver fires on observe.
  */
 import { vi } from 'vitest';
 import {
@@ -13,11 +13,15 @@ const contexts = new WeakMap<HTMLCanvasElement, RecordingContext>();
 const gradient = () => ({ addColorStop() {} });
 
 export function installChartStubs() {
-  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-    cb(performance.now() + 10_000);
-    return 1;
-  });
-  vi.stubGlobal('cancelAnimationFrame', () => {});
+  // Reduced motion: swift-chart draws at once, with no entry animation.
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('prefers-reduced-motion'),
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+  }));
   vi.stubGlobal(
     'ResizeObserver',
     class {

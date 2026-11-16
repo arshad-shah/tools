@@ -6,7 +6,6 @@ import {
   DateInput,
   Image,
   Indent,
-  LineChart,
   PaintCanvas,
   Positioned,
   Select,
@@ -18,6 +17,8 @@ import {
   type InkWeight,
 } from '@/shared/ui';
 import { Row, Section } from '../Section';
+import { SparklineComponent } from '@arshad-shah/swift-chart/react';
+import { useChartTheme } from '@/shared/charts';
 
 const SAMPLE_SVG = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"><rect width="120" height="80" fill="#1d5fc4"/><rect x="20" y="20" width="80" height="40" fill="#3ddc97"/></svg>',
@@ -41,6 +42,7 @@ function useSampleBitmap(): ImageBitmap | null {
 }
 
 export function MediaSection() {
+  const chart = useChartTheme();
   const bitmap = useSampleBitmap();
   const [color, setColor] = useState('#1d5fc4');
   const [fruit, setFruit] = useState('');
@@ -157,12 +159,13 @@ export function MediaSection() {
           />
         </div>
       </Row>
-      <Row label="LineChart">
+      <Row label="Sparkline (swift-chart)">
         <div className="w-80">
-          <LineChart
-            label="Sample series"
-            values={[3, 5, 4, 8, 6, 9]}
-            height={160}
+          <SparklineComponent
+            data={[3, 5, 4, 8, 6, 9]}
+            filled
+            height={48}
+            theme={chart.name}
           />
         </div>
       </Row>
