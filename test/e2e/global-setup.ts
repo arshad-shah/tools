@@ -31,8 +31,9 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
   '/pdf/split',
   '/pdf/to-images',
   '/pdf/to-text',
-  '/pdf/compress',
-  '/pdf/protect',
+  // Compress and Protect show the opened file's page count, not its pages.
+  { route: '/pdf/compress', fixture: FIXTURE, ready: 'text=/^\\d+ pages?,/' },
+  { route: '/pdf/protect', fixture: FIXTURE, ready: 'text=/^\\d+ pages?,/' },
   // Image tools show <img> previews rather than pdf.js canvases.
   {
     route: '/pdf/images-to-pdf',
