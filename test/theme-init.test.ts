@@ -7,8 +7,8 @@ import { themeInitJs } from '../scripts/gen-cynosure-theme';
  * No flash of the wrong theme (redesign spec, rule 4). public/theme-init.js
  * is Cynosure's themeInitScript for tools:theme, loaded as a file (the CSP
  * forbids inline scripts) before anything paints. With a saved mode it
- * marks <html data-cy-mode>; with nothing saved, tokens.css lets the
- * document follow the OS until the app mounts.
+ * marks <html data-cy-mode>; with nothing valid saved (or storage blocked)
+ * it marks "system", so the document follows the OS from the first paint.
  */
 const script = readFileSync('public/theme-init.js', 'utf8');
 const run = () => new Function(script)();
@@ -31,10 +31,10 @@ describe('theme-init.js', () => {
     expect(html.getAttribute('data-cy-mode')).toBe(saved);
   });
 
-  it.each([null, 'purple'])('leaves %s to the OS', (saved) => {
+  it.each([null, 'purple'])('follows the OS for %s', (saved) => {
     if (saved) localStorage.setItem('tools:theme', saved);
     run();
-    expect(html.hasAttribute('data-cy-mode')).toBe(false);
+    expect(html.getAttribute('data-cy-mode')).toBe('system');
   });
 
   it('never throws when storage is blocked', () => {
@@ -42,7 +42,7 @@ describe('theme-init.js', () => {
       throw new Error('blocked');
     });
     expect(run).not.toThrow();
-    expect(html.hasAttribute('data-cy-mode')).toBe(false);
+    expect(html.getAttribute('data-cy-mode')).toBe('system');
   });
 
   it('runs from <head> before the app, as a file', () => {

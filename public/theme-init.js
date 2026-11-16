@@ -1,1 +1,1 @@
-(function(){try{var m=localStorage.getItem("tools:theme");if(m!=="light"&&m!=="dark"&&m!=="system")return;var e=document.documentElement;if(e)e.setAttribute("data-cy-mode",m)}catch(_){}})();
+(function(){try{var e=document.documentElement;if(!e)return;var m;try{m=localStorage.getItem("tools:theme")}catch(_){}if(m!=="light"&&m!=="dark"&&m!=="system"){if(e.hasAttribute("data-cy-mode"))return;m="system"}e.setAttribute("data-cy-mode",m)}catch(_){}})();

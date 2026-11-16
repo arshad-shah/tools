@@ -31,7 +31,7 @@ export function SwitchField({
       label={label}
       description={description}
       checked={checked}
-      onChange={onCheckedChange}
+      onChange={(checked: boolean) => onCheckedChange(checked)}
       disabled={disabled}
       className={className}
     />

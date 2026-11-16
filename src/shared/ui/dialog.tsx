@@ -104,7 +104,7 @@ export const Dialog: React.FC<DialogProps> = ({
       <DialogCtx.Provider value={ctx}>
         <Popover
           open={open}
-          onOpenChange={onOpenChange}
+          onOpenChange={(next) => onOpenChange(next)}
           anchor={anchor}
           label={label ?? 'Dialog'}
           modal
@@ -117,7 +117,8 @@ export const Dialog: React.FC<DialogProps> = ({
 
   const frame = {
     open,
-    onOpenChange,
+    // The kit's contract is onOpenChange(open): drop Cynosure's extra arguments.
+    onOpenChange: (next: boolean) => onOpenChange(next),
     title: (
       <span ref={setTitle} className="contents">
         {hasTitle ? null : <VisuallyHidden>{label ?? 'Dialog'}</VisuallyHidden>}
