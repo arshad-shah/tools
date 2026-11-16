@@ -1,15 +1,13 @@
-import { useId } from 'react';
-import type { MockTable } from '@/shared/lib/data-formats/mock-schema';
 import {
   Button,
   Inline,
-  Input,
-  Label,
-  NumberInput,
+  NumberField,
   Select,
   Switch,
-} from '@/shared/ui';
-import { IconPlus, IconTrash2 } from '@/shared/ui/icons';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { plus, trash } from '@arshad-shah/cynosure/icons';
+import type { MockTable } from '@/shared/lib/data-formats/mock-schema';
 
 interface TableBarProps {
   tables: readonly MockTable[];
@@ -25,7 +23,6 @@ export function TableBar({
   onActive,
   onTables,
 }: TableBarProps) {
-  const ids = { pick: useId(), name: useId(), own: useId(), count: useId() };
   const t = tables[active];
   const patch = (p: Partial<MockTable>) =>
     onTables(tables.map((x, i) => (i === active ? { ...x, ...p } : x)));
@@ -36,53 +33,46 @@ export function TableBar({
   };
 
   return (
-    <Inline gap="3" align="center" wrap>
+    <Inline gap="3" align="end" wrap>
       {tables.length > 1 && (
-        <Inline gap="2" align="center" wrap={false}>
-          <Label htmlFor={ids.pick}>Table</Label>
-          <Select
-            id={ids.pick}
-            value={String(active)}
-            onValueChange={(v) => onActive(Number(v))}
-            items={tables.map((x, i) => ({ value: String(i), label: x.name }))}
-          />
-        </Inline>
-      )}
-      <Inline gap="2" align="center" wrap={false}>
-        <Label htmlFor={ids.name}>Table name</Label>
-        <Input
-          id={ids.name}
-          value={t.name}
-          onChange={(name) => patch({ name })}
-          className="w-36"
+        <Select
+          size="sm"
+          label="Table"
+          value={String(active)}
+          onChange={(v) => onActive(Number(v))}
+          options={tables.map((x, i) => ({ value: String(i), label: x.name }))}
         />
-      </Inline>
+      )}
+      <TextField
+        size="sm"
+        label="Table name"
+        value={t.name}
+        onChange={(name) => patch({ name })}
+      />
       {tables.length > 1 && (
-        <Inline gap="2" align="center" wrap={false}>
-          <Switch
-            id={ids.own}
-            checked={t.count !== undefined}
-            onCheckedChange={(on) => patch({ count: on ? 50 : undefined })}
-          />
-          <Label htmlFor={ids.own}>Own row count</Label>
-          {t.count !== undefined && (
-            <NumberInput
-              id={ids.count}
-              aria-label="Table row count"
-              value={t.count}
-              min={0}
-              max={1_000_000}
-              onValueChange={(v) =>
-                patch({ count: Math.max(0, Math.round(v)) })
-              }
-            />
-          )}
-        </Inline>
+        <Switch
+          size="sm"
+          label="Own row count"
+          checked={t.count !== undefined}
+          onChange={(on) => patch({ count: on ? 50 : undefined })}
+        />
+      )}
+      {tables.length > 1 && t.count !== undefined && (
+        <NumberField
+          size="sm"
+          label="Table row count"
+          value={t.count}
+          min={0}
+          max={1_000_000}
+          onChange={(v) =>
+            v !== null && patch({ count: Math.max(0, Math.round(v)) })
+          }
+        />
       )}
       <Button
         size="sm"
         variant="ghost"
-        leftIcon={<IconPlus size="sm" />}
+        icon={plus}
         onClick={() => {
           onTables([
             ...tables,
@@ -97,7 +87,7 @@ export function TableBar({
         <Button
           size="sm"
           variant="ghost"
-          leftIcon={<IconTrash2 size="sm" />}
+          icon={trash}
           onClick={() => {
             onTables(tables.filter((_, i) => i !== active));
             onActive(0);

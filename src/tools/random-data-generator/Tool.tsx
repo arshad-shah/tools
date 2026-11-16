@@ -1,4 +1,18 @@
-import { table as tableIcon } from '@arshad-shah/cynosure/icons';
+import {
+  Button,
+  Card,
+  EmptyState,
+  Inline,
+  Notice,
+  SegmentedControl,
+  SplitPane,
+  Stack,
+} from '@arshad-shah/cynosure';
+import {
+  plusCircle,
+  share as shareIcon,
+  table as tableIcon,
+} from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
 import {
   MOCK_SCHEMA_MIME,
@@ -11,22 +25,7 @@ import { useHandoff } from '@/shared/lib/handoff';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import type { Json } from '@/shared/lib/tool-settings';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  Card,
-  CardBody,
-  EmptyState,
-  ErrorState,
-  Inline,
-  PaneTabs,
-  ShareButton,
-  ToolActions,
-  Stack,
-  usePaneTab,
-} from '@/shared/ui';
-import { IconPlusCircle } from '@/shared/ui/icons';
+import { useMediaQuery } from '@/shared/lib/media-query';
 import { FieldEditor } from './components/FieldEditor';
 import { GeneratePanel } from './components/GeneratePanel';
 import { newSeed } from './lib/seed';
@@ -111,7 +110,8 @@ function Generator({
         : null,
   );
   const job = useMockGenerator();
-  const tab = usePaneTab(TOOL_ID, 'schema');
+  const wide = useMediaQuery('(min-width: 1200px)');
+  const [pane, setPane] = useState<'schema' | 'preview'>('schema');
   const { copy } = useClipboard();
   const [count, setCount] = useState(link?.count ?? initial.count);
   const [locale, setLocale] = useState(link?.locale ?? initial.locale);
@@ -146,7 +146,7 @@ function Generator({
     );
 
   const generate = () => {
-    tab.show('preview');
+    setPane('preview');
     void job.run(clean(schema), count, seed || null, locale);
   };
 
@@ -186,144 +186,154 @@ function Generator({
   ]);
 
   const schemaPane = (
-    <Card>
-      <CardBody>
-        <Stack gap="4">
-          <TableBar
-            tables={schema.tables}
-            active={Math.min(active, schema.tables.length - 1)}
-            onActive={setActive}
-            onTables={(tables: MockTable[]) =>
-              setSchema(withTableIds({ tables }), null)
-            }
-          />
-          <Stack gap="3">
-            {table.fields.map((field, index) => (
-              <FieldEditor
-                key={field.id ?? index}
-                field={field}
-                index={index}
-                parentPath=""
-                level={0}
-                expandedFields={expanded}
-                totalFields={table.fields.length}
-                tables={schema.tables}
-                onRemoveField={(path) =>
-                  setFields(removeField(table.fields, path))
-                }
-                onUpdateField={(path, patch) =>
-                  setFields(updateField(table.fields, path, patch))
-                }
-                onMoveField={(path, dir) =>
-                  setFields(moveField(table.fields, path, dir))
-                }
-                onToggleExpanded={(key) =>
-                  setExpanded((e) => ({ ...e, [key]: !e[key] }))
-                }
-                onAddField={(parent) =>
-                  setFields(addField(table.fields, parent))
-                }
-              />
-            ))}
-            <Button
-              variant="secondary"
-              leftIcon={<IconPlusCircle size="sm" />}
-              onClick={() => setFields(addField(table.fields))}
-              fullWidth
-            >
-              Add field
-            </Button>
-          </Stack>
+    <Card as="section" title="Schema" headingLevel={2} padding="sm">
+      <Stack gap="4">
+        <TableBar
+          tables={schema.tables}
+          active={Math.min(active, schema.tables.length - 1)}
+          onActive={setActive}
+          onTables={(tables: MockTable[]) =>
+            setSchema(withTableIds({ tables }), null)
+          }
+        />
+        <Stack gap="3">
+          {table.fields.map((field, index) => (
+            <FieldEditor
+              key={field.id ?? index}
+              field={field}
+              index={index}
+              parentPath=""
+              level={0}
+              expandedFields={expanded}
+              totalFields={table.fields.length}
+              tables={schema.tables}
+              onRemoveField={(path) =>
+                setFields(removeField(table.fields, path))
+              }
+              onUpdateField={(path, patch) =>
+                setFields(updateField(table.fields, path, patch))
+              }
+              onMoveField={(path, dir) =>
+                setFields(moveField(table.fields, path, dir))
+              }
+              onToggleExpanded={(key) =>
+                setExpanded((e) => ({ ...e, [key]: !e[key] }))
+              }
+              onAddField={(parent) => setFields(addField(table.fields, parent))}
+            />
+          ))}
+          <Button
+            variant="soft"
+            icon={plusCircle}
+            onClick={() => setFields(addField(table.fields))}
+            fullWidth
+          >
+            Add field
+          </Button>
         </Stack>
-      </CardBody>
+      </Stack>
+    </Card>
+  );
+
+  const previewPane = (
+    <Card as="section" title="Preview" headingLevel={2} padding="sm">
+      {job.error ? (
+        <Notice tone="danger" title="Could not generate the data">
+          {job.error.message}
+        </Notice>
+      ) : job.result ? (
+        <OutputPanel tables={job.result.tables} />
+      ) : (
+        <EmptyState
+          icon={tableIcon}
+          title="No data yet"
+          description="Generate to preview the rows here."
+        />
+      )}
     </Card>
   );
 
   return (
-    <Stack gap="4">
+    <Stack gap="5">
       {receivedInvalid && (
-        <Alert status="danger" size="sm">
-          <AlertDescription>
-            The schema handed over is not valid.
-          </AlertDescription>
-        </Alert>
+        <Notice tone="danger">The schema handed over is not valid.</Notice>
       )}
       {note && (
-        <Alert status="info">
-          <AlertDescription>
-            <Inline justify="between" align="center" gap="2">
-              <span>{note}</span>
-              <Button size="sm" variant="ghost" onClick={() => setNote(null)}>
-                Dismiss
-              </Button>
-            </Inline>
-          </AlertDescription>
-        </Alert>
+        <Notice tone="info" dismissible onDismiss={() => setNote(null)}>
+          {note}
+        </Notice>
       )}
-      <ToolActions>
-        <SchemaIO
-          schema={clean(schema)}
-          lastPreset={lastPreset}
-          onSchema={replaceSchema}
+      <Card
+        as="section"
+        title="Generate"
+        headingLevel={2}
+        padding="sm"
+        actions={
+          <Inline gap="2">
+            <SchemaIO
+              schema={clean(schema)}
+              lastPreset={lastPreset}
+              onSchema={replaceSchema}
+            />
+            <Button
+              size="sm"
+              variant="soft"
+              icon={shareIcon}
+              disabled={!share.canShare}
+              onClick={() =>
+                void Promise.resolve(share.share()).catch(() => {})
+              }
+            >
+              Share
+            </Button>
+          </Inline>
+        }
+      >
+        <GeneratePanel
+          preset={
+            <PresetPicker lastPreset={lastPreset} onSchema={replaceSchema} />
+          }
+          count={count}
+          onCount={(n) => {
+            setCount(n);
+            update({ count: n });
+          }}
+          seed={seed}
+          onSeed={setSeed}
+          locale={locale}
+          onLocale={(l) => {
+            setLocale(l);
+            update({ locale: l });
+          }}
+          fieldCount={table.fields.length}
+          running={job.status === 'running'}
+          progress={job.progress}
+          onGenerate={generate}
+          onCancel={job.cancel}
         />
-        <ShareButton share={share} />
-      </ToolActions>
-
-      <Card>
-        <CardBody>
-          <GeneratePanel
-            preset={
-              <PresetPicker lastPreset={lastPreset} onSchema={replaceSchema} />
-            }
-            count={count}
-            onCount={(n) => {
-              setCount(n);
-              update({ count: n });
-            }}
-            seed={seed}
-            onSeed={setSeed}
-            locale={locale}
-            onLocale={(l) => {
-              setLocale(l);
-              update({ locale: l });
-            }}
-            fieldCount={table.fields.length}
-            running={job.status === 'running'}
-            progress={job.progress}
-            onGenerate={generate}
-            onCancel={job.cancel}
-          />
-        </CardBody>
       </Card>
-
-      <PaneTabs
-        id={TOOL_ID}
-        label="Mock data panes"
-        value={tab.value}
-        onValueChange={tab.show}
-        panes={[
-          { id: 'schema', label: 'Schema', content: schemaPane },
-          {
-            id: 'preview',
-            label: 'Preview',
-            changeKey: job.result,
-            content: job.error ? (
-              <ErrorState
-                title="Could not generate the data"
-                error={job.error}
-              />
-            ) : job.result ? (
-              <OutputPanel tables={job.result.tables} />
-            ) : (
-              <EmptyState
-                icon={tableIcon}
-                title="No data yet"
-                description="Generate to preview the rows here."
-              />
-            ),
-          },
-        ]}
-      />
+      {wide ? (
+        <SplitPane
+          label="Resize the schema and the preview"
+          start={<Stack paddingInline="3">{schemaPane}</Stack>}
+          end={<Stack paddingInline="3">{previewPane}</Stack>}
+        />
+      ) : (
+        <Stack gap="4">
+          <Inline>
+            <SegmentedControl
+              label="Pane"
+              value={pane}
+              onChange={(v) => setPane(v as typeof pane)}
+              options={[
+                { value: 'schema', label: 'Schema' },
+                { value: 'preview', label: 'Preview' },
+              ]}
+            />
+          </Inline>
+          {pane === 'schema' ? schemaPane : previewPane}
+        </Stack>
+      )}
     </Stack>
   );
 }
