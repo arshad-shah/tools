@@ -21,6 +21,8 @@ const REMOVED = [
   'sonner',
   // tools#104: floating surfaces are placed by Cynosure.
   '@floating-ui/react-dom',
+  // tools#104: icons are Facet icons from Cynosure.
+  'lucide-react',
 ];
 
 describe('removed dependencies (spec 11.1)', () => {

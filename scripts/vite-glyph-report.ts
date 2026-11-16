@@ -12,7 +12,10 @@ export interface GlyphHit {
 export interface GlyphReport {
   root: string;
   appHits: ({ module: string } & GlyphHit)[];
-  /** Module ids (relative, forward slashes) that import lucide-react directly. */
+  /**
+   * Module ids (relative, forward slashes) that import lucide-react directly.
+   * Icons are Facet icons (tools#104), so this stays empty.
+   */
   lucideImporters: string[];
   /** How many app script modules were scanned (proves the scan ran). */
   scannedModules: number;

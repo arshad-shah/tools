@@ -2,7 +2,6 @@ import * as Icons from '@/shared/ui/icons';
 import type { IconComponent, IconSize } from '@/shared/ui/icons';
 import { Logo, LogoMark } from '@/shared/ui/icons';
 import { Row, Section } from '../Section';
-import { IconReview } from './IconReview';
 
 const SIZES: IconSize[] = ['xs', 'sm', 'md', 'lg', 'xl'];
 
@@ -13,7 +12,7 @@ const ICONS = Object.entries(Icons)
   )
   .sort(([a], [b]) => a.localeCompare(b)) as [string, IconComponent][];
 
-/** Every icon at every size, captioned by its export name. */
+/** Every icon at every size, captioned by its export name and Facet icon. */
 export function IconsSection() {
   return (
     <Section name="icons" title="Icons">
@@ -54,10 +53,12 @@ export function IconsSection() {
             <span className="truncate font-mono-meta text-xs text-fg-muted">
               {name}
             </span>
+            <span className="truncate font-mono-meta text-xs text-fg-subtle">
+              {Icon.data.name}
+            </span>
           </li>
         ))}
       </ul>
-      <IconReview />
     </Section>
   );
 }

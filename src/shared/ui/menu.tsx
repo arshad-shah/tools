@@ -1,6 +1,8 @@
 import React from 'react';
 import { Menu, type MenuEntry, type MenuItem } from '@arshad-shah/cynosure';
+import type { IconData } from '@arshad-shah/cynosure/icons';
 import { cn } from '@/shared/lib/cn';
+import { facetOf } from './icons';
 import { ShortcutHint } from './shortcut-hint';
 
 /**
@@ -14,6 +16,8 @@ import { ShortcutHint } from './shortcut-hint';
 
 interface ItemRecord {
   label: string;
+  /** A kit icon in the item's children, drawn by Cynosure's Menu. */
+  icon?: IconData;
   shortcut?: string;
   disabled?: boolean;
   destructive?: boolean;
@@ -38,6 +42,7 @@ const Ctx = React.createContext<MenuCtx | null>(null);
 
 const same = (a: ItemRecord, b: ItemRecord) =>
   a.label === b.label &&
+  a.icon === b.icon &&
   a.shortcut === b.shortcut &&
   a.disabled === b.disabled &&
   a.destructive === b.destructive &&
@@ -54,6 +59,7 @@ function toEntries(records: [string, ItemRecord][]): MenuEntry[] {
     groups[groups.length - 1].push({
       value: id,
       label: r.label,
+      ...(r.icon ? { icon: r.icon } : {}),
       ...(r.shortcut ? { shortcut: r.shortcut } : {}),
       ...(r.disabled ? { disabled: true } : {}),
       ...(r.destructive ? { tone: 'danger' as const } : {}),
@@ -63,15 +69,29 @@ function toEntries(records: [string, ItemRecord][]): MenuEntry[] {
   return used.length > 1 ? used.map((items) => ({ items })) : (used[0] ?? []);
 }
 
-/** Text of a node (an item's label), and the keys of a ShortcutHint in it. */
-function readLabel(node: React.ReactNode, out = { text: '', keys: '' }) {
+interface ReadLabel {
+  text: string;
+  keys: string;
+  icon?: IconData;
+}
+
+/**
+ * Text of a node (an item's label), the keys of a ShortcutHint in it and its
+ * first kit icon.
+ */
+function readLabel(
+  node: React.ReactNode,
+  out: ReadLabel = { text: '', keys: '' },
+): ReadLabel {
   if (node == null || typeof node === 'boolean') return out;
   if (typeof node === 'string' || typeof node === 'number') {
     out.text += String(node);
   } else if (Array.isArray(node)) {
     for (const n of node) readLabel(n, out);
   } else if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
-    if (node.type === ShortcutHint)
+    const icon = facetOf(node);
+    if (icon) out.icon ??= icon;
+    else if (node.type === ShortcutHint)
       out.keys = (node.props as { keys: string }).keys;
     else readLabel(node.props.children, out);
   }
@@ -248,7 +268,7 @@ interface ItemProps {
   className?: string;
   /** Shown from `aria-keyshortcuts` or a ShortcutHint in the children. */
   'aria-keyshortcuts'?: string;
-  /** The label (text; icons are left out until the Facet icons arrive). */
+  /** The label: its text, a ShortcutHint and a kit icon (`<IconX />`). */
   children?: React.ReactNode;
 }
 
@@ -263,11 +283,12 @@ function useItem(
   React.useLayoutEffect(() => {
     run.current = onClick;
   });
-  const { label, shortcut, disabled, destructive, separator } = record;
+  const { label, icon, shortcut, disabled, destructive, separator } = record;
   React.useLayoutEffect(
     () =>
       register(id, {
         label,
+        ...(icon ? { icon } : {}),
         shortcut,
         disabled,
         destructive,
@@ -275,7 +296,7 @@ function useItem(
         run,
         marker,
       }),
-    [register, id, label, shortcut, disabled, destructive, separator],
+    [register, id, label, icon, shortcut, disabled, destructive, separator],
   );
   return marker;
 }
@@ -292,6 +313,7 @@ export const DropdownMenuItem: React.FC<ItemProps> = ({
   const marker = useItem(
     {
       label: read.text.trim(),
+      ...(read.icon ? { icon: read.icon } : {}),
       shortcut: read.keys || keyshortcuts || undefined,
       disabled: !!disabled || ariaDisabled === true || ariaDisabled === 'true',
       destructive,

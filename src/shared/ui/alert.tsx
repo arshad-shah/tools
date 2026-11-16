@@ -1,6 +1,7 @@
 import React from 'react';
 import { Notice } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
+import { facetOf } from './icons';
 
 const TONE = {
   danger: 'danger',
@@ -12,8 +13,9 @@ const TONE = {
 interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
   status?: keyof typeof TONE;
   /**
-   * Shows the status's icon. The node itself is not drawn: Cynosure's Notice
-   * takes a Facet icon, and its tone icon already says the same thing.
+   * Shows an icon: a kit icon (`<IconX />`) is drawn as the Notice's Facet
+   * icon; any other node shows the status's own icon instead. Absent: no
+   * icon.
    */
   icon?: React.ReactNode;
   /** sm: compact padding and small text (inline notes). Default md. */
@@ -44,7 +46,7 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
           tone={TONE[status]}
           size={size}
           title={title}
-          icon={icon ? undefined : null}
+          icon={facetOf(icon) ?? (icon ? undefined : null)}
         >
           {body.length ? body : null}
         </Notice>
