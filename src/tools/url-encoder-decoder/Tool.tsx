@@ -25,6 +25,7 @@ import {
 } from '@arshad-shah/cynosure/icons';
 import React, { useMemo, useState } from 'react';
 import { TextSourceActions } from '@/app/ui/text-source';
+import { useTextFile } from '@/app/ui/use-text-file';
 import { SendToMenu, TransformLayout } from '@/app/ui/transform';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
@@ -124,10 +125,13 @@ const TextEncoderTool: React.FC = () => {
   ]);
 
   const label = encoding ? 'Text to encode' : 'Text to decode';
+  // A file dropped on the field opens like Open file (TextArea onFiles).
+  const textFile = useTextFile({ onChange: edit });
   const inputCard = (
     <Card as="section" title="Input">
       <Stack gap="5">
         <TextArea
+          onFiles={textFile.onFiles}
           label={label}
           labelHidden
           rows={5}

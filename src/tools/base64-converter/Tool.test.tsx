@@ -59,9 +59,11 @@ describe('Base64 Converter', () => {
     renderTool();
     fireEvent.click(screen.getByRole('radio', { name: 'Decode' }));
     fireEvent.change(box('Base64 to decode'), { target: { value: '@@@' } });
-    expect(screen.getByRole('alert').textContent).toContain(
-      'Could not decode this Base64',
-    );
+    // Open file's FileDrop keeps its own (empty) alert region for rejections.
+    const alerts = screen.getAllByRole('alert').map((a) => a.textContent);
+    expect(
+      alerts.some((t) => t?.includes('Could not decode this Base64')),
+    ).toBe(true);
   });
 
   it('swap moves the output to the input and flips the mode', () => {

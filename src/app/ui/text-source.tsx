@@ -1,27 +1,20 @@
 import {
   Button,
-  FileInputBase,
+  FileDrop,
   IconButton,
   Inline,
   Text,
 } from '@arshad-shah/cynosure';
-import {
-  clipboardPaste,
-  close,
-  folderOpen,
-  sparkles,
-} from '@arshad-shah/cynosure/icons';
+import { clipboardPaste, close, sparkles } from '@arshad-shah/cynosure/icons';
 import React, { useEffect, useEffectEvent, useRef } from 'react';
 import { readClipboardText } from '@/shared/lib/clipboard';
+import { useTextFile } from './use-text-file';
 import { toToolError } from '@/shared/lib/errors';
-import { readBytes } from '@/shared/lib/files';
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import {
   codePointCount,
-  decodeText,
   lineCount,
-  tooLarge,
   utf8Length,
 } from '@/shared/lib/text-input-lib';
 
@@ -53,9 +46,8 @@ export interface TextSourceActionsProps {
 
 /**
  * The actions under a text input in the transform pattern: Paste, Open
- * file, Try an example and Clear (with Undo), and the text's size.
- * Cynosure has no file-picker button, so Open file presses a hidden
- * FileInputBase (docs/cynosure-gaps.md).
+ * file (a FileDrop button), Try an example and Clear (with Undo), and the
+ * text's size. `useTextFileDrop` lets the text field itself take a file.
  */
 export function TextSourceActions({
   value,
@@ -69,28 +61,7 @@ export function TextSourceActions({
   counts = true,
   children,
 }: TextSourceActionsProps) {
-  const picker = useRef<HTMLInputElement>(null);
-
-  const take = (text: string, what: string) => {
-    if (maxBytes !== undefined && utf8Length(text) > maxBytes) {
-      notify.error(tooLarge(what, maxBytes));
-      return;
-    }
-    onChange(text);
-  };
-
-  const open = async (file: File) => {
-    if (onFile?.(file) === true) return;
-    if (maxBytes !== undefined && file.size > maxBytes) {
-      notify.error(tooLarge(file.name, maxBytes));
-      return;
-    }
-    try {
-      take(decodeText(await readBytes(file), 'utf-8', file.name), file.name);
-    } catch (e) {
-      notify.error(toToolError(e, `Could not read ${file.name}`));
-    }
-  };
+  const { take, open } = useTextFile({ onChange, onFile, maxBytes });
 
   const paste = async () => {
     try {
@@ -131,23 +102,13 @@ export function TextSourceActions({
         >
           Paste
         </Button>
-        <Button
+        <FileDrop
+          variant="button"
           size="sm"
-          variant="ghost"
-          icon={folderOpen}
-          onClick={() => picker.current?.click()}
-        >
-          Open file
-        </Button>
-        <FileInputBase
-          ref={picker}
-          hidden
-          tabIndex={-1}
-          aria-hidden
           accept={accept}
+          labels={{ choose: 'Open file', chooseOne: 'Open file' }}
           onFiles={(files) => {
             if (files[0]) void open(files[0]);
-            if (picker.current) picker.current.value = '';
           }}
         />
         {onExample ? (

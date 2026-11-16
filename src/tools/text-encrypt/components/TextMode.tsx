@@ -13,6 +13,7 @@ import {
 import { download, lock, unlock } from '@arshad-shah/cynosure/icons';
 import React, { useState } from 'react';
 import { TextSourceActions } from '@/app/ui/text-source';
+import { useTextFile } from '@/app/ui/use-text-file';
 import { TransformLayout } from '@/app/ui/transform';
 import { armor, dearmor } from '@/shared/lib/crypto/aead';
 import { saveBlob } from '@/shared/lib/download';
@@ -99,10 +100,18 @@ export const TextMode: React.FC<TextModeProps> = ({
   const outName = encrypting ? 'Encrypted message' : 'Decrypted message';
   const fileName = encrypting ? 'message.txt.asc' : 'message.txt';
 
+  // A file dropped on the field opens like Open file (TextArea onFiles).
+  const textFile = useTextFile({
+    onChange: (v) => {
+      setInput(v);
+      setResult({});
+    },
+  });
   const inputCard = (
     <Card as="section" title={label}>
       <Stack gap="5">
         <TextArea
+          onFiles={textFile.onFiles}
           label={label}
           labelHidden
           rows={6}
