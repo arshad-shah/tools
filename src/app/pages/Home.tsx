@@ -21,7 +21,7 @@ import {
   search as searchIcon,
 } from '@arshad-shah/cynosure/icons';
 import { useMemo, useRef, useState } from 'react';
-import { hotkeyCaps, hotkeyLabel, useShortcuts } from '@/shared/lib/hotkeys';
+import { useShortcuts } from '@/shared/lib/hotkeys';
 import { CATEGORIES, getCategory, type CategoryDef } from '../categories';
 import { routePdfHubDrop } from '../drop-routing';
 import { getEnabledTools, TOOLS } from '../registry';
@@ -147,11 +147,7 @@ export default function Home() {
               <Text size="sm" tone="muted">
                 Press
               </Text>
-              <Kbd
-                keys={hotkeyCaps('Mod+K')}
-                label={hotkeyLabel('Mod+K')}
-                size="sm"
-              />
+              <Kbd keys="mod+k" size="sm" />
               <Text size="sm" tone="muted">
                 on any page to search tools and actions.
               </Text>

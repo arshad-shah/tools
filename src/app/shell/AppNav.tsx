@@ -10,7 +10,6 @@ import {
 } from '@arshad-shah/cynosure';
 import { home, search, shieldCheck } from '@arshad-shah/cynosure/icons';
 import { Link, useLocation } from 'react-router-dom';
-import { hotkeyCaps, hotkeyLabel } from '@/shared/lib/hotkeys';
 import { THEME_KEY } from '@/theme/tools-theme';
 import { CATEGORIES } from '../categories';
 import { useFavorites } from '../favorites';
@@ -76,13 +75,7 @@ export function AppNav({
       id: 'search',
       label: 'Search tools',
       icon: search,
-      badge: collapsed ? undefined : (
-        <Kbd
-          keys={hotkeyCaps('Mod+K')}
-          label={hotkeyLabel('Mod+K')}
-          size="sm"
-        />
-      ),
+      badge: collapsed ? undefined : <Kbd keys="mod+k" size="sm" />,
     },
     { id: '/', label: 'Home', href: '/', icon: home },
     ...(favourites.length ? [{ label: 'Favourites', items: favourites }] : []),
