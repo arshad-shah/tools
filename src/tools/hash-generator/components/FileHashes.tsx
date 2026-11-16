@@ -1,19 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { IconCopy, IconDownload, IconX } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
-  DataGrid,
-  DropZone,
+  FileDrop,
   IconButton,
   Inline,
-  Meter,
+  Notice,
+  ProgressBar,
   Select,
   Stack,
+  Table,
   Text,
-  type GridColumn,
-} from '@/shared/ui';
+  type TableColumn,
+} from '@arshad-shah/cynosure';
+import { close, copy, download } from '@arshad-shah/cynosure/icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { copyText } from '@/shared/lib/clipboard';
 import { digestInfo, type DigestId } from '@/shared/lib/crypto/digest';
 import { saveBlob } from '@/shared/lib/download';
@@ -128,99 +127,104 @@ export const FileHashes: React.FC<FileHashesProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incoming]);
 
-  const columns = useMemo<GridColumn<FileRow>[]>(
+  const columns = useMemo<TableColumn<FileRow>[]>(
     () => [
-      { id: 'name', header: 'Name', accessor: (r) => r.name, pinned: 'start' },
       {
-        id: 'size',
-        header: 'Size',
-        accessor: (r) => formatBytes(r.size),
+        key: 'name',
+        header: 'Name',
+        rowHeader: true,
+        cell: (r) => (
+          <Text as="span" wrap="break">
+            {r.name}
+          </Text>
+        ),
       },
+      { key: 'size', header: 'Size', cell: (r) => formatBytes(r.size) },
       {
-        id: 'progress',
+        key: 'progress',
         header: 'Progress',
-        accessor: progressText,
-        minWidth: 200,
-        render: (r) =>
+        width: '12rem',
+        cell: (r) =>
           r.status === 'hashing' ? (
-            <>
-              <Meter
-                className="min-w-0 flex-1"
-                label={`Hashing ${r.name}`}
-                value={r.size ? r.done / r.size : 0}
-                valueText={progressText(r)}
-                tone="ok"
-                hideLabel
-              />
+            <Inline gap="2" align="center">
+              <Stack grow>
+                <ProgressBar
+                  label={`Hashing ${r.name}`}
+                  labelHidden
+                  size="sm"
+                  value={r.size ? r.done / r.size : 0}
+                  max={1}
+                  valueText={progressText(r)}
+                />
+              </Stack>
               <IconButton
                 size="sm"
                 variant="ghost"
-                icon={IconX}
+                tone="neutral"
+                icon={close}
                 label={`Cancel ${r.name}`}
                 onClick={() => jobs.current.get(r.id)?.abort()}
               />
-            </>
+            </Inline>
           ) : (
-            <span className="truncate">{progressText(r)}</span>
+            progressText(r)
           ),
       },
-      ...selected.map((d) => ({
-        id: d,
-        header: digestInfo(d).name,
-        accessor: (r: FileRow) =>
-          r.results[d]
-            ? formatDigest(r.results[d]!, output)
-            : r.status === 'hashing'
-              ? 'Hashing'
-              : r.status === 'cancelled'
-                ? 'Cancelled'
-                : (r.error ?? ''),
-      })),
+      ...selected.map(
+        (d): TableColumn<FileRow> => ({
+          key: d,
+          header: digestInfo(d).name,
+          cell: (r) =>
+            r.results[d] ? (
+              <Text as="span" variant="code" size="sm" wrap="break">
+                {formatDigest(r.results[d]!, output)}
+              </Text>
+            ) : r.status === 'hashing' ? (
+              'Hashing'
+            ) : r.status === 'cancelled' ? (
+              'Cancelled'
+            ) : (
+              (r.error ?? '')
+            ),
+        }),
+      ),
     ],
     [selected, output],
   );
 
   const done = rows.filter((r) => r.status === 'done');
   const checksums = alg ? toChecksumFile(done, alg) : '';
+  const failed = rows.filter((r) => r.status === 'error');
 
   return (
-    <Stack gap="4">
-      <DropZone
-        variant="inline"
+    <Stack gap="6">
+      <FileDrop
         multiple
         onFiles={hashFiles}
-        title="Drop files to hash"
         hint="Any size: files are read in 4 MB slices on this device."
-        chooseLabel="Choose files"
+        labels={{ choose: 'Choose files' }}
       />
-      {rows.some((r) => r.status === 'error') && (
-        <Alert status="danger">
-          <AlertDescription>
-            {rows
-              .filter((r) => r.status === 'error')
-              .map((r) => `${r.name}: ${r.error}`)
-              .join('; ')}
-          </AlertDescription>
-        </Alert>
-      )}
-      {rows.length > 0 && (
-        <>
-          <Inline gap="2" align="center" wrap>
-            <div className="w-48">
-              <Select
-                value={alg}
-                onValueChange={(v) => setExportAlg(v as DigestId)}
-                items={selected.map((d) => ({
-                  value: d,
-                  label: digestInfo(d).name,
-                }))}
-                aria-label="Checksum file algorithm"
-              />
-            </div>
+      {failed.length ? (
+        <Notice tone="danger" title="Some files could not be hashed">
+          {failed.map((r) => `${r.name}: ${r.error}`).join('; ')}
+        </Notice>
+      ) : null}
+      {rows.length > 0 ? (
+        <Stack gap="4">
+          <Inline gap="3" align="end" wrap>
+            <Select
+              label="Checksum file algorithm"
+              width="sm"
+              value={alg}
+              onChange={(v) => setExportAlg(v as DigestId)}
+              options={selected.map((d) => ({
+                value: d,
+                label: digestInfo(d).name,
+              }))}
+            />
             <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<IconCopy size="sm" />}
+              variant="soft"
+              icon={copy}
               disabled={!checksums}
               onClick={() =>
                 void copyText(checksums).then(() =>
@@ -231,9 +235,8 @@ export const FileHashes: React.FC<FileHashesProps> = ({
               Copy all
             </Button>
             <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<IconDownload size="sm" />}
+              variant="soft"
+              icon={download}
               disabled={!checksums}
               onClick={() =>
                 saveBlob(
@@ -245,23 +248,25 @@ export const FileHashes: React.FC<FileHashesProps> = ({
             >
               Download checksums
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setRows([])}>
+            <Button variant="ghost" onClick={() => setRows([])}>
               Clear list
             </Button>
           </Inline>
-          <DataGrid
-            rows={rows}
+          <Table
+            caption="File hashes"
+            captionHidden
             columns={columns}
-            rowKey={(r) => r.id}
-            ariaLabel="File hashes"
+            rows={rows}
+            getRowId={(r) => r.id}
+            size="sm"
           />
-          {done.length === 0 && (
-            <Text size="sm" tone="subtle">
+          {done.length === 0 ? (
+            <Text size="sm" tone="muted">
               Checksum files list finished files only.
             </Text>
-          )}
-        </>
-      )}
+          ) : null}
+        </Stack>
+      ) : null}
     </Stack>
   );
 };
