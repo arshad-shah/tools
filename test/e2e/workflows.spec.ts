@@ -210,10 +210,7 @@ test.describe('HTTP Client', () => {
       .getByRole('textbox', { name: 'Request URL' })
       .fill(`${API}/session`);
     await page.getByRole('button', { name: 'Send', exact: true }).click();
-    await expect(page.getByRole('tab', { name: /^Response/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    await expect(page.getByText('200 OK').first()).toBeVisible();
   };
 
   test('Open response in JSON Viewer', async ({ page }) => {

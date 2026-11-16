@@ -1,18 +1,12 @@
-import { useState } from 'react';
 import {
-  Box,
   Button,
-  Card,
-  CardBody,
+  Grid,
   IconButton,
-  Inline,
+  SegmentedControl,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui';
-import { IconFilePlus, IconFolderPlus } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import { filePlus, folderPlus } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
 import type { HttpClientState } from '../hooks/useHttpClient';
 import { emptyRequest } from '../lib/model';
 import { CollectionsIO } from './CollectionsIO';
@@ -34,78 +28,78 @@ export function Sidebar({
   onNewCollection,
   onOpened,
 }: SidebarProps) {
-  const [side, setSide] = useState('collections');
+  const [side, setSide] = useState<'collections' | 'history'>('collections');
   return (
-    <Card className="min-w-0 self-start">
-      <CardBody>
-        <Tabs value={side} onValueChange={setSide} variant="soft" fullWidth>
-          <TabsList aria-label="Saved and recent">
-            <TabsTrigger value="collections">Collections</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-          </TabsList>
-          <TabsContent value="collections">
-            <Stack gap="2" className="pt-3">
-              <Inline gap="1" wrap={false}>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="flex-1"
-                  leftIcon={<IconFilePlus size="sm" />}
-                  onClick={onNewRequest}
-                >
-                  New request
-                </Button>
-                <IconButton
-                  size="sm"
-                  variant="ghost"
-                  label="New collection"
-                  icon={<IconFolderPlus size="sm" />}
-                  onClick={onNewCollection}
-                />
-                <CollectionsIO
-                  collections={c.collections}
-                  environment={c.activeEnv}
-                  onImport={(cols, env) => {
-                    c.setCollections([...c.collections, ...cols]);
-                    if (env) c.saveEnvironments([...c.environments, env]);
-                  }}
-                />
-              </Inline>
-              <CollectionTree
-                collections={c.collections}
-                selectedRequest={c.savedId}
-                onSelectRequest={(r) => {
-                  c.open(r.id);
-                  onOpened();
-                }}
-                onDelete={(id) => c.remove(id)}
-              />
-            </Stack>
-          </TabsContent>
-          <TabsContent value="history">
-            <Box className="pt-3">
-              <HistoryPanel
-                items={c.history}
-                persist={c.settings.historyPersist}
-                onPersistChange={c.setHistoryPersist}
-                onClear={c.clearHistory}
-                onOpen={(h) => {
-                  c.setRequest(
-                    h.request ??
-                      emptyRequest({
-                        mode: h.mode,
-                        method: h.method,
-                        url: h.url,
-                      }),
-                  );
-                  c.setSavedId(null);
-                  onOpened();
-                }}
-              />
-            </Box>
-          </TabsContent>
-        </Tabs>
-      </CardBody>
-    </Card>
+    <Stack gap="4">
+      <SegmentedControl
+        label="Saved and recent"
+        size="sm"
+        fullWidth
+        value={side}
+        onChange={(v) => setSide(v as 'collections' | 'history')}
+        options={[
+          { value: 'collections', label: 'Collections' },
+          { value: 'history', label: 'History' },
+        ]}
+      />
+      {side === 'collections' ? (
+        <Stack gap="3">
+          <Grid columns="minmax(0, 1fr) auto auto" gap="1" align="center">
+            <Button
+              size="sm"
+              variant="soft"
+              icon={filePlus}
+              onClick={onNewRequest}
+            >
+              New request
+            </Button>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              label="New collection"
+              icon={folderPlus}
+              onClick={onNewCollection}
+            />
+            <CollectionsIO
+              collections={c.collections}
+              environment={c.activeEnv}
+              onImport={(cols, env) => {
+                c.setCollections([...c.collections, ...cols]);
+                if (env) c.saveEnvironments([...c.environments, env]);
+              }}
+            />
+          </Grid>
+          <CollectionTree
+            collections={c.collections}
+            selectedRequest={c.savedId}
+            onSelectRequest={(r) => {
+              c.open(r.id);
+              onOpened();
+            }}
+            onDelete={(id) => c.remove(id)}
+          />
+        </Stack>
+      ) : (
+        <HistoryPanel
+          items={c.history}
+          persist={c.settings.historyPersist}
+          onPersistChange={c.setHistoryPersist}
+          onClear={c.clearHistory}
+          onOpen={(h) => {
+            c.setRequest(
+              h.request ??
+                emptyRequest({
+                  mode: h.mode,
+                  method: h.method,
+                  url: h.url,
+                }),
+            );
+            c.setSavedId(null);
+            onOpened();
+          }}
+        />
+      )}
+    </Stack>
   );
 }

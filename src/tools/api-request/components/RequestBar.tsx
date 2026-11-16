@@ -1,5 +1,5 @@
-import { Button, Inline, Input, Select } from '@/shared/ui';
-import { IconSend, IconX } from '@/shared/ui/icons';
+import { Button, Grid, Select, TextField } from '@arshad-shah/cynosure';
+import { close, send } from '@arshad-shah/cynosure/icons';
 import { METHODS, type HttpRequest } from '../lib/model';
 
 interface Props {
@@ -24,25 +24,27 @@ export function RequestBar({
   unresolved,
 }: Props) {
   return (
-    <Inline gap="2" align="start" wrap={false} className="max-sm:flex-wrap">
+    <Grid columns="7rem minmax(0, 1fr) auto" gap="2" align="end">
       {request.mode === 'rest' ? (
         <Select
-          aria-label="Method"
+          label="Method"
+          labelHidden
           value={request.method}
-          onValueChange={(method) => onChange({ ...request, method })}
-          items={METHODS.map((m) => ({ value: m, label: m }))}
-          className="w-28 shrink-0"
+          onChange={(method) => onChange({ ...request, method })}
+          options={METHODS.map((m) => ({ value: m, label: m }))}
         />
       ) : (
-        <Button variant="ghost" disabled className="w-28 shrink-0">
+        <Button variant="soft" tone="neutral" disabled>
           POST
         </Button>
       )}
-      <Input
-        aria-label="Request URL"
+      <TextField
+        label="Request URL"
+        labelHidden
         inputMode="url"
         autoCapitalize="none"
         autoCorrect="off"
+        autoComplete="off"
         value={request.url}
         onChange={(url) => {
           if (/^\s*curl\s/i.test(url) && onCurl(url)) return;
@@ -51,28 +53,19 @@ export function RequestBar({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !running) onSend();
         }}
-        invalid={unresolved.length > 0}
+        aria-invalid={unresolved.length > 0 || undefined}
         placeholder="https://api.example.com/items or paste a cURL command"
         spellCheck={false}
-        className="min-w-0 flex-1 font-mono"
       />
       {running ? (
-        <Button
-          variant="secondary"
-          leftIcon={<IconX size="sm" />}
-          onClick={onCancel}
-        >
+        <Button variant="soft" icon={close} onClick={onCancel}>
           Cancel
         </Button>
       ) : (
-        <Button
-          variant="primary"
-          leftIcon={<IconSend size="sm" />}
-          onClick={onSend}
-        >
+        <Button variant="solid" icon={send} onClick={onSend}>
           Send
         </Button>
       )}
-    </Inline>
+    </Grid>
   );
 }

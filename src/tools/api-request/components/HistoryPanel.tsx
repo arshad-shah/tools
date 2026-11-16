@@ -1,14 +1,15 @@
-import { formatBytes } from '@/shared/lib/format';
 import {
   Badge,
   Button,
-  Card,
-  CardBody,
   Inline,
+  ListRow,
+  ListRows,
   Stack,
+  Switch,
   Text,
-  SwitchField,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { trash } from '@arshad-shah/cynosure/icons';
+import { formatBytes } from '@/shared/lib/format';
 import type { HistoryItem } from '../lib/history';
 import { statusTone } from '../lib/response-view';
 
@@ -36,48 +37,45 @@ export function HistoryPanel({
   onClear,
 }: Props) {
   return (
-    <Stack gap="2">
-      <SwitchField
+    <Stack gap="4">
+      <Switch
         label="Remember history (no bodies)"
-        id="history-persist"
         checked={persist}
-        onCheckedChange={onPersistChange}
+        onChange={onPersistChange}
       />
       {items.length === 0 ? (
-        <Text size="sm" tone="subtle">
+        <Text size="sm" tone="muted">
           Sent requests appear here.
         </Text>
       ) : (
-        <Stack gap="1">
-          {items.map((h) => (
-            <Card key={h.id} interactive onClick={() => onOpen(h)}>
-              <CardBody>
-                <Stack gap="1">
-                  <Inline gap="2" align="center">
-                    <Badge variant="soft" tone="neutral" size="xs">
+        <Stack gap="3">
+          <ListRows label="Recent requests" size="sm" divided>
+            {items.map((h) => (
+              <ListRow
+                key={h.id}
+                label={h.url}
+                description={`${h.durationMs} ms, ${formatBytes(h.size)}`}
+                leading={
+                  <Inline gap="1">
+                    <Badge size="sm" tone="neutral">
                       {h.method}
                     </Badge>
-                    <Badge
-                      variant="soft"
-                      tone={TONE[statusTone(h.status)]}
-                      size="xs"
-                    >
-                      {h.status || 'failed'}
-                    </Badge>
-                    <Text size="xs" tone="muted">
-                      {h.durationMs} ms, {formatBytes(h.size)}
-                    </Text>
                   </Inline>
-                  <Text size="xs" className="truncate font-mono">
-                    {h.url}
-                  </Text>
-                </Stack>
-              </CardBody>
-            </Card>
-          ))}
-          <Button size="sm" variant="ghost" onClick={onClear}>
-            Clear history
-          </Button>
+                }
+                trailing={
+                  <Badge size="sm" tone={TONE[statusTone(h.status)]}>
+                    {h.status ? String(h.status) : 'failed'}
+                  </Badge>
+                }
+                onClick={() => onOpen(h)}
+              />
+            ))}
+          </ListRows>
+          <Inline>
+            <Button size="sm" variant="ghost" icon={trash} onClick={onClear}>
+              Clear history
+            </Button>
+          </Inline>
         </Stack>
       )}
     </Stack>
