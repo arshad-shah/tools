@@ -55,6 +55,19 @@ describe('Timeline', () => {
     expect(rows).toHaveLength(5);
   });
 
+  it('reads out the counts of the bar under the pointer', () => {
+    render(
+      <Timeline histogram={histogram} range={undefined} onRange={vi.fn()} />,
+    );
+    const canvas = chartCanvas('Entries over time by level');
+    // Four buckets across the 600 px stub: x = 520 is the last.
+    fireEvent.mouseMove(canvas, { clientX: 520, clientY: 100 });
+    expect(
+      screen.getByText('2026-01-02 10:03:00.000: 0 error, 1 info, 0 debug'),
+    ).toBeTruthy();
+    fireEvent.mouseLeave(canvas.parentElement!.parentElement!);
+  });
+
   it('the range slider filters to whole buckets and back', () => {
     const onRange = vi.fn();
     const { rerender } = render(

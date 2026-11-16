@@ -23,7 +23,8 @@ export function useChartTheme() {
     const n = `tools-${id}-${palette}`;
     // Registered while rendering, so a chart created by a child's effect
     // already finds it. Registering the same theme again is harmless.
-    addTheme(n, swiftChartTheme(theme, palette));
+    // A transparent background: the chart sits on its Card's surface.
+    addTheme(n, { ...swiftChartTheme(theme, palette), bg: 'transparent' });
     return n;
   }, [theme, palette]);
   return { name, colors };

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Inline, Slider, Stack, Text } from '@arshad-shah/cynosure';
 import { close } from '@arshad-shah/cynosure/icons';
-import { StackedBar } from '@arshad-shah/swift-chart/react';
+import { StackedBar, type ChartRef } from '@arshad-shah/swift-chart/react';
 // swift-chart draws the chart (a canvas); everything around it is Cynosure.
 import { ChartFrame, useChartTheme } from '@/shared/charts';
 import type { Histogram } from '../hooks/useLogSource';
@@ -24,13 +24,34 @@ const faded = (hex: string) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}40` : hex);
 
 /**
  * Stacked bars of entries per level over time, coloured like the level
- * badges. A click on a bar, or the range slider under the chart, filters
+ * badges, with a readout of the bar under the pointer. A click on a bar, or the range slider under the chart, filters
  * to a stretch of time.
  */
 export function Timeline({ histogram, range, onRange }: TimelineProps) {
   const chart = useChartTheme();
   // The slider's thumbs while dragging, before the range is applied.
   const [draft, setDraft] = useState<number[] | null>(null);
+  // Hover readout: the bucket under the pointer, from swift-chart's hover.
+  const [hover, setHover] = useState<number | null>(null);
+  const plot = useRef<HTMLElement>(null);
+  const bars = useRef<ChartRef>(null);
+  useEffect(() => {
+    const el = plot.current;
+    if (!el) return;
+    const read = () => {
+      const i = bars.current?.chart?.hoverIndex ?? -1;
+      setHover(i >= 0 ? i : null);
+    };
+    const leave = () => setHover(null);
+    el.addEventListener('mousemove', read);
+    el.addEventListener('touchend', read);
+    el.addEventListener('mouseleave', leave);
+    return () => {
+      el.removeEventListener('mousemove', read);
+      el.removeEventListener('touchend', read);
+      el.removeEventListener('mouseleave', leave);
+    };
+  }, []);
   const { t0, t1, counts } = histogram;
   const buckets = Object.values(counts)[0]?.length ?? 0;
   const width = (t1 - t0) / Math.max(1, buckets) || 1;
@@ -106,20 +127,36 @@ export function Timeline({ histogram, range, onRange }: TimelineProps) {
           ],
         }}
       >
-        <StackedBar
-          data={[]}
-          mapping={{ labels, datasets }}
-          theme={chart.name}
-          height={200}
-          animate={false}
-          legendPosition="bottom"
-          ariaLabel="Entries over time by level"
-          ariaDescription={`From ${rowTime(t0)} to ${rowTime(t1)}`}
-          colorFn={(_v, i, s) =>
-            i < shown[0] || i > shown[1] ? faded(datasets[s].color) : undefined
-          }
-          onPointClick={(i) => pick(i, i)}
-        />
+        <Stack ref={plot}>
+          <StackedBar
+            ref={bars}
+            data={[]}
+            // No axis text: 60 thin buckets leave room for none, so the
+            // readout below and the range slider name the times.
+            mapping={{ labels: labels.map(() => ''), datasets }}
+            theme={chart.name}
+            height={200}
+            animate={false}
+            legendPosition="bottom"
+            ariaLabel="Entries over time by level"
+            ariaDescription={`From ${rowTime(t0)} to ${rowTime(t1)}`}
+            colorFn={(_v, i, s) =>
+              i < shown[0] || i > shown[1]
+                ? faded(datasets[s].color)
+                : undefined
+            }
+            onPointClick={(i) => pick(i, i)}
+          />
+        </Stack>
+        <Text size="sm" tone="muted" numeric aria-live="polite">
+          {hover !== null && rows[hover]
+            ? `${rows[hover].at}: ${levels
+                .map(
+                  (l) => `${counts[l][hover]} ${levelLabel(l).toLowerCase()}`,
+                )
+                .join(', ')}`
+            : `${rowTime(t0)} to ${rowTime(t1)}. Point at a bar for its counts.`}
+        </Text>
         {buckets > 1 ? (
           <Slider
             label="Time range"

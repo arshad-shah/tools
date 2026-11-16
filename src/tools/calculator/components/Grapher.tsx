@@ -39,7 +39,7 @@ const MAX_FUNCTIONS = 6;
 /** A plotted function's series colour (swift-chart's theme uses the same). */
 const seriesColour = (at: number) => `var(--cy-color-series-${at + 1})`;
 /** Samples across the x range per function. */
-const SAMPLES = 241;
+const SAMPLES = 161;
 /** Rows in the data table (the graph's accessible twin). */
 const TABLE_POINTS = 21;
 const DEFAULT_RANGE: [number, number] = [-10, 10];
@@ -60,6 +60,23 @@ function sampleAt(fn: (x: number) => number, xs: number[]) {
       return NaN;
     }
   });
+}
+
+/** Samples between two labelled x-axis ticks (SAMPLES - 1 is a multiple). */
+const TICK_EVERY = 16;
+
+/**
+ * x-axis labels for the samples: every TICK_EVERY-th sample is labelled,
+ * the rest are blank, so swift-chart's label thinning (which keeps every
+ * m-th label, m a small power-friendly step) shows ten even ticks rather
+ * than a crowd. The readout under the graph gives any sample's exact x.
+ */
+function axisLabels(a: number, b: number, n: number): string[] {
+  return Array.from({ length: n }, (_, i) =>
+    i % TICK_EVERY === 0
+      ? fmt(Number((a + ((b - a) * i) / (n - 1)).toPrecision(3)))
+      : '',
+  );
 }
 
 const spaced = ([a, b]: [number, number], n: number) =>
@@ -195,10 +212,8 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
   const xs = useMemo(() => spaced([d0, d1], SAMPLES), [d0, d1]);
   const data = useMemo(() => {
     const ys = clip(fns.map((f) => sampleAt(f.fn, xs)));
-    const step = (d1 - d0) / (SAMPLES - 1);
-    const digits = Math.max(0, Math.min(10, -Math.floor(Math.log10(step)) + 1));
     return {
-      labels: xs.map((x) => fmt(Number(x.toFixed(digits)))),
+      labels: axisLabels(d0, d1, SAMPLES),
       datasets: fns.map((f, i) => ({ label: f.label, data: ys[i] })),
     };
   }, [fns, xs, d0, d1]);

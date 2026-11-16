@@ -2,7 +2,6 @@
 import { fireEvent, render, renderHook, screen } from '@testing-library/react';
 import {
   CynosureTheme,
-  resolveColors,
   swiftChartTheme,
   type ColorMode,
 } from '@arshad-shah/cynosure';
@@ -52,25 +51,29 @@ function Chart() {
   );
 }
 
-/** The colour the chart filled its background with, last. */
-const background = () =>
+/** The colour the chart last drew its text in. */
+const ink = () =>
   contextOf(screen.getByRole('img', { name: 'Sales by month' }))
-    .calls.filter((c) => c.name === 'fillRect')
+    .calls.filter((c) => c.name === 'fillText')
     .at(-1)?.fillStyle;
 
 describe('swift-chart in tools', () => {
   it('registers the Cynosure palette as a swift-chart theme', () => {
     const { result } = renderHook(() => useChartTheme());
+    const { bg, ...rest } = swiftChartTheme(undefined, 'light');
+    void bg;
+    // Transparent, so the chart sits on its card.
     expect(THEMES[result.current.name]).toMatchObject({
-      bg: swiftChartTheme(undefined, 'light').bg,
+      ...rest,
+      bg: 'transparent',
     });
   });
 
   it('re-themes when the mode changes', () => {
     const { rerender } = render(<Sales mode="light" />);
-    expect(background()).toBe(resolveColors(undefined, 'light').bg);
+    expect(ink()).toBe(swiftChartTheme(undefined, 'light').textMuted);
     rerender(<Sales mode="dark" />);
-    expect(background()).toBe(resolveColors(undefined, 'dark').bg);
+    expect(ink()).toBe(swiftChartTheme(undefined, 'dark').textMuted);
   });
 
   it('shows the data as a Cynosure table on request', () => {
