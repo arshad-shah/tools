@@ -9,6 +9,18 @@
 @import '@fontsource-variable/jetbrains-mono';
 
 /*
+ * Kit removal: the app outside the PDF workspace uses no Tailwind class and
+ * no token below except the Cynosure imports above, the first-paint
+ * color-scheme rule (Cynosure gap 2) and the colour roles the diagram
+ * canvas, the Markdown export and the diff export read through
+ * readThemeTokens (src/shared/lib/theme-tokens.ts).
+ * TODO(mig/rollout-pdf-workspace): once the PDF workspace no longer uses
+ * the old kit, drop Tailwind (@import 'tailwindcss', @theme, @utility, the
+ * dark and desk variants), Inter and JetBrains Mono, and move those readers
+ * to --cy-* tokens; this file then shrinks to the Cynosure imports.
+ */
+
+/*
  * Refined terminal (spec §4). Colour roles are CSS variables per data-theme,
  * resolved before first paint by public/theme-init.js, and exposed to
  * Tailwind through @theme inline. No colour literal lives outside this file.
