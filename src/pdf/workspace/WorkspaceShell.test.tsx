@@ -181,9 +181,7 @@ describe('WorkspaceShell', () => {
     ).toBeTruthy();
     expect(screen.getByRole('complementary', { name: 'Pages' })).toBeTruthy();
     expect(screen.getByRole('listbox', { name: 'Pages' })).toBeTruthy();
-    expect(
-      screen.getByRole('region', { name: 'Document canvas' }),
-    ).toBeTruthy();
+    expect(document.getElementById('workspace-canvas')).toBeTruthy();
     expect(screen.getByRole('banner')).toBeTruthy();
   });
 

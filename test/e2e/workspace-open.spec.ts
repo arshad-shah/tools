@@ -39,9 +39,7 @@ test('one PDF dropped on the PDF hub opens in the workspace', async ({
   await page.getByRole('button', { name: 'Open in editor' }).click();
   await expect(page).toHaveURL(/\/pdf\/edit/);
   await expect(firstPage(page)).toBeAttached();
-  await expect(
-    page.getByRole('region', { name: 'Page 1 of 3' }),
-  ).toBeAttached();
+  await expect(page.getByRole('group', { name: 'Page 1 of 3' })).toBeAttached();
 });
 
 test('an encrypted PDF asks for its password and is not saved locally', async ({

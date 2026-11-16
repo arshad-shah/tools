@@ -405,13 +405,8 @@ export function WorkspaceShell({
         const inspectorBody = Inspect ? <Inspect {...ctx} /> : null;
         const inspectorShown = showInspector && inspectorOpen;
         const canvas = (
-          <Stack
-            as="section"
-            id="workspace-canvas"
-            aria-label="Document canvas"
-            fill
-            minSize="0"
-          >
+          // The viewport inside is the "Document" region: no second one.
+          <Stack id="workspace-canvas" fill minSize="0">
             <DocumentCanvas
               mode={ctx}
               module={module}

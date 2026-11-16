@@ -86,6 +86,8 @@ test('open, organize, undo, reload and export', async ({ page }) => {
 });
 
 test('an unchanged page looks the same exported', async ({ page }) => {
+  // The whole page on screen at the default (fit width) zoom.
+  await page.setViewportSize({ width: 1280, height: 1500 });
   await open(page);
   const out = await exportPdf(page);
   const ratio = await compareOverlayWithExport(page, {
@@ -100,9 +102,10 @@ test('zooming past 200 percent renders sharp tiles for the visible area', async 
   page,
 }) => {
   await open(page);
-  await page.getByRole('region', { name: 'Document' }).click();
-  // The default reads at 125% at most (P5-G): 150, 200, then 300.
-  for (let i = 0; i < 3; i++) await page.keyboard.press(`${mod}+Equal`);
+  await page.getByRole('region', { name: 'Document', exact: true }).click();
+  // The default reads at 125% at most (P5-G); Cynosure's zoom steps by 25
+  // points, so five steps pass 200%.
+  for (let i = 0; i < 5; i++) await page.keyboard.press(`${mod}+Equal`);
   const tiles = page.locator(
     '[data-testid="page-slot-1"] canvas[aria-label="Page 1 detail"][data-rendered="true"]',
   );
