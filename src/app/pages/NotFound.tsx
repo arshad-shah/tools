@@ -17,6 +17,7 @@ import { getEnabledTools } from '../registry';
 import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import { LinkCard, ToolCard } from '../ui/ToolCard';
+import { renderRouterLink } from '@/app/shell/router-link';
 
 /** Unknown path (spec §3.2): says so, offers search and the categories. Never redirects. */
 export default function NotFound() {
@@ -54,7 +55,12 @@ export default function NotFound() {
             </>
           }
           actions={
-            <Button href="/" variant="soft" icon={home}>
+            <Button
+              href="/"
+              renderLink={renderRouterLink}
+              variant="soft"
+              icon={home}
+            >
               Go to Home
             </Button>
           }

@@ -1,11 +1,8 @@
 import {
   AppShell,
   Breadcrumbs,
-  Divider,
   EmptyState,
-  IconButton,
   IconTile,
-  Inline,
   Link,
   ListRow,
   ListRows,
@@ -14,7 +11,7 @@ import {
   Toaster,
   useAppShell,
 } from '@arshad-shah/cynosure';
-import { home, search, sidebar, star } from '@arshad-shah/cynosure/icons';
+import { home, search, star } from '@arshad-shah/cynosure/icons';
 import { fileText } from '@arshad-shah/cynosure/icons';
 import {
   useCallback,
@@ -23,14 +20,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
+import { useLocation, useNavigationType } from 'react-router-dom';
 import { NotifyBridge } from '@/shared/lib/notify-bridge';
-import { Logo } from '@/shared/surfaces/logo/Logo';
+import { Logo, LogoMark } from '@/shared/surfaces/logo/Logo';
 import { useFavorites } from '../favorites';
-import { useNavStore, useRecentToolsStore } from '../recents';
+import { useRecentToolsStore } from '../recents';
 import { getEnabledTools, TOOLS } from '../registry';
 import { toolPath } from '../routes';
-import { AppNav, NavRouterLink } from './AppNav';
+import { AppNav } from './AppNav';
 import { AppPalette } from './AppPalette';
 import { useBreadcrumbSegments } from './breadcrumb';
 import { BreadcrumbProvider } from './breadcrumb-context';
@@ -39,7 +36,10 @@ import { useHelpDialogs } from './HelpDialogs';
 import { KeepAliveOutlet } from './keep-alive';
 import { PaletteContext } from './palette';
 import { useAppCommands } from './use-app-commands';
-import { useClientLinks } from './use-client-links';
+import { renderRouterLink } from './router-link';
+
+/** The desktop rail's state, kept between visits (AppShell navCollapsedKey). */
+const NAV_COLLAPSED_KEY = 'tools:nav-collapsed';
 
 /**
  * New pages start at the top; Back and Forward return to where each page
@@ -62,56 +62,37 @@ function useScrollRestore() {
   }, [key, type]);
 }
 
-/** The top bar: the rail toggle, the logo and where you are. */
-function HeaderBar({
-  collapsed,
-  onToggle,
-}: {
-  collapsed: boolean;
-  onToggle(): void;
-}) {
-  const { narrow } = useAppShell();
-  const navigate = useNavigate();
-  const segments = useBreadcrumbSegments();
+/** The product mark at the head of the navigation (the caret tile in the rail). */
+function Brand() {
+  const { navCollapsed } = useAppShell();
   return (
-    <Inline gap="4" align="center" grow minSize="0">
-      {narrow ? null : (
-        <IconButton
-          icon={sidebar}
-          label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
-          aria-pressed={!collapsed}
-          variant="ghost"
-          tone="neutral"
-          onClick={onToggle}
-        />
-      )}
-      <Link href="/" underline="none" tone="neutral">
-        <Logo />
-      </Link>
-      {!narrow && segments.length ? (
-        <>
-          <Divider orientation="vertical" />
-          <Breadcrumbs
-            size="sm"
-            items={[
-              { label: 'Home', href: '/' },
-              ...segments.map((s) =>
-                s.href
-                  ? {
-                      label: s.label,
-                      href: s.href,
-                      onClick: (e: React.MouseEvent<HTMLElement>) => {
-                        e.preventDefault();
-                        navigate(s.href!);
-                      },
-                    }
-                  : { label: s.label },
-              ),
-            ]}
-          />
-        </>
-      ) : null}
-    </Inline>
+    <Link
+      href="/"
+      renderLink={renderRouterLink}
+      underline="none"
+      tone="neutral"
+      aria-label="tools home"
+    >
+      {navCollapsed ? <LogoMark size={28} label="tools home" /> : <Logo />}
+    </Link>
+  );
+}
+
+/** The top bar: where you are. */
+function HeaderBar() {
+  const { narrow } = useAppShell();
+  const segments = useBreadcrumbSegments();
+  return narrow || !segments.length ? null : (
+    <Breadcrumbs
+      size="sm"
+      renderLink={renderRouterLink}
+      items={[
+        { label: 'Home', href: '/' },
+        ...segments.map((s) =>
+          s.href ? { label: s.label, href: s.href } : { label: s.label },
+        ),
+      ]}
+    />
   );
 }
 
@@ -139,6 +120,7 @@ function FavouritesSheet({
             <ListRow
               key={t.id}
               href={toolPath(t)}
+              renderLink={renderRouterLink}
               label={t.name}
               description={t.description}
               leading={<IconTile icon={t.icon} size="sm" />}
@@ -166,11 +148,8 @@ function Frame() {
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   useAppCommands();
   useScrollRestore();
-  useClientLinks();
   const { dialogs: helpDialogs, ...help } = useHelpDialogs();
 
-  const collapsed = useNavStore((s) => s.collapsed);
-  const toggleNav = useNavStore((s) => s.toggle);
   const visit = useRecentToolsStore((s) => s.visit);
   const tool = TOOLS.find((t) => toolPath(t) === pathname);
 
@@ -191,21 +170,17 @@ function Frame() {
             collapseBelow={1024}
             onNarrowChange={setNarrow}
             labels={{ nav: 'Menu', openNav: 'Menu' }}
-            header={<HeaderBar collapsed={collapsed} onToggle={toggleNav} />}
-            nav={
-              <AppNav
-                collapsed={collapsed && !narrow}
-                onCollapsedChange={(c) => c !== collapsed && toggleNav()}
-                onSearch={openPalette}
-                onPrivacy={help.openPrivacy}
-              />
-            }
+            brand={<Brand />}
+            navToggle
+            navCollapsedKey={NAV_COLLAPSED_KEY}
+            header={<HeaderBar />}
+            nav={<AppNav onSearch={openPalette} onPrivacy={help.openPrivacy} />}
             tabs={
               <SideNav
                 label="Sections"
                 layout="bar"
                 current={tab}
-                renderLink={(props) => <NavRouterLink {...props} />}
+                renderLink={renderRouterLink}
                 onNavigate={(id) => {
                   if (id === 'search') openPalette();
                   else if (id === 'favourites') setFavouritesOpen(true);

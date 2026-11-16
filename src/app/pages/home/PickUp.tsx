@@ -18,6 +18,7 @@ import { getEnabledTools } from '../../registry';
 import { toolPath } from '../../routes';
 import type { ToolManifest } from '../../tool';
 import { FavouriteToggle } from '../../ui/ToolCard';
+import { renderRouterLink } from '@/app/shell/router-link';
 
 function ToolRows({ label, tools }: { label: string; tools: ToolManifest[] }) {
   return (
@@ -26,6 +27,7 @@ function ToolRows({ label, tools }: { label: string; tools: ToolManifest[] }) {
         <ListRow
           key={t.id}
           href={toolPath(t)}
+          renderLink={renderRouterLink}
           label={t.name}
           description={t.description}
           leading={<IconTile icon={t.icon} size="sm" />}

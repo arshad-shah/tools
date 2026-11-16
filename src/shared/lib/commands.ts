@@ -13,7 +13,7 @@ export interface Command {
   shortcut?: string;
   /** A Facet icon. */
   icon?: IconData;
-  /** true, or the reason shown to the user. */
+  /** true, or the reason shown to the user (CommandPalette `disabledReason`). */
   disabled?: boolean | string;
   run(): void | Promise<void>;
 }
@@ -24,14 +24,12 @@ export interface CommandSource {
   commands(query: string): Command[];
 }
 
+/** Where the palette keeps recently run command ids (CommandPalette `recentKey`). */
 export const RECENT_KEY = 'tools:recent-commands';
-export const RECENT_GROUP = 'Recent';
-const RECENT_MAX = 8;
 
 const sources = new Set<CommandSource>();
 const listeners = new Set<() => void>();
 let version = 0;
-let recent: string[] | null = null;
 
 const emit = () => {
   version++;
@@ -66,41 +64,16 @@ export function useCommandRegistryVersion(): number {
   );
 }
 
-function readRecent(): string[] {
-  if (recent) return recent;
-  try {
-    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]');
-    recent = Array.isArray(raw)
-      ? raw
-          .filter((x): x is string => typeof x === 'string')
-          .slice(0, RECENT_MAX)
-      : [];
-  } catch {
-    recent = [];
-  }
-  return recent;
-}
-
-/** Remembers a run command (memory and localStorage, newest first, max 8). */
-export function noteCommandRun(id: string): void {
-  recent = [id, ...readRecent().filter((x) => x !== id)].slice(0, RECENT_MAX);
-  try {
-    localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
-  } catch {
-    // Storage blocked: the in-memory list still applies this session.
-  }
-  emit();
-}
-
 export interface CommandGroup {
   group: string;
   commands: Command[];
 }
 
 /**
- * Commands from every source, grouped. Empty query: recent commands first,
- * then each group in source order. Otherwise ranked by fuzzy score; groups
- * are ordered by their best match.
+ * Commands from every source, grouped. Empty query: each group in source
+ * order. Otherwise ranked by fuzzy score; groups are ordered by their best
+ * match. (Recently run commands are the palette's own: CommandPalette
+ * `recentKey`.)
  */
 export function queryCommands(query: string): CommandGroup[] {
   const all: Command[] = [];
@@ -127,13 +100,7 @@ export function queryCommands(query: string): CommandGroup[] {
   };
 
   if (!query.trim()) {
-    const byId = new Map(all.map((c) => [c.id, c]));
-    const recentCommands = readRecent()
-      .map((id) => byId.get(id))
-      .filter((c): c is Command => c !== undefined);
-    recentCommands.forEach((c, i) => add(RECENT_GROUP, c, -i));
-    const recentIds = new Set(recentCommands.map((c) => c.id));
-    for (const c of all) if (!recentIds.has(c.id)) add(c.group, c, 0);
+    for (const c of all) add(c.group, c, 0);
     return [...groups.entries()].map(([group, g]) => ({
       group,
       commands: g.items.map((x) => x.c),
@@ -152,9 +119,8 @@ export function queryCommands(query: string): CommandGroup[] {
     }));
 }
 
-/** Test seam: forget sources and recent commands. */
+/** Test seam: forget sources. */
 export function resetCommandsForTests(): void {
   sources.clear();
-  recent = null;
   emit();
 }

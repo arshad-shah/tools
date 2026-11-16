@@ -32,6 +32,7 @@ import { ToolCard } from '../ui/ToolCard';
 import { HubDropZone } from './hub/HubDropZone';
 import { PickUp } from './home/PickUp';
 import { toolMatches } from './home/tool-matches';
+import { renderRouterLink } from '@/app/shell/router-link';
 
 function CategorySection({
   category,
@@ -62,7 +63,12 @@ function CategorySection({
             </Text>
           </Inline>
           {query ? null : (
-            <Link href={categoryPath(category.id)} size="sm" underline="hover">
+            <Link
+              href={categoryPath(category.id)}
+              renderLink={renderRouterLink}
+              size="sm"
+              underline="hover"
+            >
               Open {category.label}
             </Link>
           )}
@@ -184,7 +190,12 @@ export default function Home() {
                 route={(files) => routePdfHubDrop(files, TOOLS)}
               />
               <Inline>
-                <Button href="/pdf" variant="soft" iconEnd={arrowRight}>
+                <Button
+                  href="/pdf"
+                  renderLink={renderRouterLink}
+                  variant="soft"
+                  iconEnd={arrowRight}
+                >
                   All PDF tools
                 </Button>
               </Inline>

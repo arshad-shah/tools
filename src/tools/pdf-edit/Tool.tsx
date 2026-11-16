@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   useLocation,
   useNavigate,
@@ -18,6 +18,7 @@ import { WorkspaceShell } from '@/pdf/workspace/WorkspaceShell';
 import { takeStagedDocument } from '@/pdf/workspace/workspace-store';
 import { useOpenPalette } from '@/app/shell/palette';
 import { HelpMenu } from '@/app/shell/HelpMenu';
+import { renderRouterLink } from '@/app/shell/router-link';
 import { UnlockEditingDialog } from './UnlockEditingDialog';
 
 const FALLBACK: ModeId = 'organize';
@@ -100,20 +101,13 @@ export default function PdfEditTool() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoredUi]);
 
-  // Router links (gap 3): a plain click navigates in the app.
-  const crumb = (href: string) => ({
-    href,
-    onClick: (e: MouseEvent<HTMLElement>) => {
-      e.preventDefault();
-      navigate(href);
-    },
-  });
   const breadcrumb = (
     <Breadcrumbs
       size="sm"
+      renderLink={renderRouterLink}
       items={[
-        { label: 'Home', ...crumb('/') },
-        { label: 'PDF', ...crumb('/pdf') },
+        { label: 'Home', href: '/' },
+        { label: 'PDF', href: '/pdf' },
         { label: 'Workspace' },
       ]}
     />

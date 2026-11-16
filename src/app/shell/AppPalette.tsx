@@ -11,10 +11,10 @@ import {
   shieldCheck,
   sun,
 } from '@arshad-shah/cynosure/icons';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  noteCommandRun,
   queryCommands,
+  RECENT_KEY,
   useCommandRegistryVersion,
 } from '@/shared/lib/commands';
 import { toToolError } from '@/shared/lib/errors';
@@ -55,8 +55,8 @@ const filter = (command: Command, query: string) => {
 /**
  * Mod+K (redesign spec, Shell): Cynosure's CommandPalette over the app's
  * command registry, so every registered source (app commands, tools,
- * the workspace) is listed. Recent commands stay tools' own, kept in
- * localStorage and listed first.
+ * the workspace) is listed. The palette keeps recently run commands
+ * (recentKey) and hands sources the query.
  */
 export function AppPalette({
   open,
@@ -66,11 +66,13 @@ export function AppPalette({
   onOpenChange(open: boolean): void;
 }) {
   const version = useCommandRegistryVersion();
+  // Sources may build commands from the query ("Go to page 12").
+  const [query, setQuery] = useState('');
   const groups = useMemo(
-    () => (open ? queryCommands('') : []),
+    () => (open ? queryCommands(query) : []),
     // version: re-read when sources change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, version],
+    [open, version, query],
   );
   const { commands, byId } = useMemo(() => {
     const list = groups.flatMap((g) => g.commands.map((c) => ({ c, g })));
@@ -85,6 +87,9 @@ export function AppPalette({
           ...(c.shortcut ? { shortcut: hotkeyCaps(c.shortcut) } : {}),
           icon: glyphFor(c.id),
           disabled: !!c.disabled,
+          ...(typeof c.disabled === 'string'
+            ? { disabledReason: c.disabled }
+            : {}),
         }),
       ),
     };
@@ -93,7 +98,6 @@ export function AppPalette({
   const run = (id: string) => {
     const c = byId.get(id);
     if (!c || c.disabled) return;
-    noteCommandRun(id);
     // After the palette has closed, so the focus the command sets is kept.
     setTimeout(() => {
       Promise.resolve()
@@ -108,8 +112,9 @@ export function AppPalette({
       onOpenChange={onOpenChange}
       commands={commands}
       onRun={run}
+      onQueryChange={setQuery}
       filter={filter}
-      recentLimit={0}
+      recentKey={RECENT_KEY}
       labels={{
         title: 'Search tools and actions',
         placeholder: 'Search tools and actions',

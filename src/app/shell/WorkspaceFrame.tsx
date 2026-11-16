@@ -7,7 +7,6 @@ import { HelpContext } from './help-context';
 import { useHelpDialogs } from './HelpDialogs';
 import { PaletteContext } from './palette';
 import { useAppCommands } from './use-app-commands';
-import { useClientLinks } from './use-client-links';
 
 /**
  * Layout route for the PDF workspace: the workspace draws its own full-height
@@ -18,7 +17,6 @@ export default function WorkspaceFrame() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   useAppCommands();
-  useClientLinks();
   const { dialogs: helpDialogs, ...help } = useHelpDialogs();
   return (
     <PaletteContext.Provider value={openPalette}>

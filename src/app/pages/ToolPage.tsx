@@ -19,6 +19,7 @@ import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
 import type { ToolManifest } from '../tool';
 import { FavouriteToggle } from '../ui/ToolCard';
+import { renderRouterLink } from '@/app/shell/router-link';
 
 export interface ToolPageProps {
   tool: ToolManifest;
@@ -94,7 +95,13 @@ export function ToolPage({ tool, children }: ToolPageProps) {
                   >
                     Try again
                   </Button>
-                  <Button size="sm" variant="ghost" href="/" icon={home}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    href="/"
+                    renderLink={renderRouterLink}
+                    icon={home}
+                  >
                     Go to Home
                   </Button>
                 </Inline>
