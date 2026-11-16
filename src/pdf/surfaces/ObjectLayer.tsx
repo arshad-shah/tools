@@ -496,6 +496,7 @@ export function ObjectLayer({
           role="group"
           aria-label={label}
           data-testid={testId}
+          data-object-layer=""
           // The frame commits on its own key handler, before the event
           // bubbles here: note the source on the way down.
           onKeyDownCapture={() => {

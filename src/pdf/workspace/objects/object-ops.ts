@@ -149,7 +149,14 @@ export function focusObject(id: OpId, tries = 10): void {
     const el = document.querySelector<HTMLElement>(
       `[data-object-id="${CSS.escape(id)}"]`,
     );
-    if (el) el.focus({ preventScroll: true });
+    // A selected object's keys belong to its selection frame (arrows,
+    // resize, rotate): focus the frame once it is there.
+    const frame = el
+      ?.closest('[data-object-layer]')
+      ?.querySelector<HTMLElement>('[aria-roledescription="selection"]');
+    if (frame) frame.focus({ preventScroll: true });
+    else if (el && (left === 0 || el.getAttribute('aria-pressed') !== 'true'))
+      el.focus({ preventScroll: true });
     else if (left > 0) requestAnimationFrame(() => tick(left - 1));
   };
   requestAnimationFrame(() => tick(tries));

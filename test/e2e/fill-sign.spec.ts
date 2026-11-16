@@ -359,8 +359,10 @@ test('a Word table form: answer cells, a Yes tick, a date and a signature in the
   await expect(
     page.getByRole('button', { name: 'Signature field: Signature, filled' }),
   ).toBeAttached();
+  // Deselect the signature: its frame's handles reach over the next cell.
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Date field: Date, empty' }).click();
-  const date = page.locator('[data-state="focused"] input');
+  const date = page.getByRole('textbox', { name: 'Date', exact: true });
   await date.fill('2026-10-02');
   await date.press('Enter');
 
@@ -496,6 +498,10 @@ test('the text settings of a detected field export as letter spacing', async ({
   await bar
     .getByRole('spinbutton', { name: 'Letter spacing in points' })
     .fill('3');
+  // A number field takes its value on Enter (or leaving it).
+  await bar
+    .getByRole('spinbutton', { name: 'Letter spacing in points' })
+    .press('Enter');
   await expect(
     page.getByRole('button', { name: /^Undo Change text style on page 1/ }),
   ).toBeAttached();

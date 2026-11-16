@@ -88,13 +88,26 @@ export function FieldEditor({
   const settled = useRef(false);
   // A form field's /MaxLen: typing stops there, as in a PDF viewer.
   const limit = field.widget?.maxLength ?? null;
+  // The newest value, before React re-renders: a key that settles the edit
+  // can land in the same event as the change it follows.
+  const latest = useRef(initial);
   const setValue = (typed: string) => {
     const v = limit ? Array.from(typed).slice(0, limit).join('') : typed;
     settled.current = false;
+    latest.current = v;
     setRaw(v);
     onDraft?.(field.type === 'date' ? isoToDisplay(v) : v);
   };
-  const out = () => (field.type === 'date' ? isoToDisplay(value) : value);
+  const out = () =>
+    field.type === 'date' ? isoToDisplay(latest.current) : latest.current;
+  // A date typed (YYYY-MM-DD) but not yet taken by the date field, which
+  // reads its text on blur: settling keys take it from the box.
+  const typedDate = (e: React.KeyboardEvent) => {
+    if (field.type !== 'date') return;
+    const t = e.target as HTMLInputElement;
+    if (t.tagName === 'INPUT' && /^\d{4}-\d{2}-\d{2}$/.test(t.value.trim()))
+      latest.current = t.value.trim();
+  };
 
   const settle =
     <A extends unknown[]>(f: (...a: A) => void) =>
@@ -105,7 +118,7 @@ export function FieldEditor({
   const leave = useRef<() => void>(() => {});
   useEffect(() => {
     leave.current = () => {
-      if (!settled.current && value !== initial) onLeave?.(out());
+      if (!settled.current && latest.current !== initial) onLeave?.(out());
     };
   });
   useEffect(() => () => leave.current(), []);
@@ -127,6 +140,7 @@ export function FieldEditor({
   }, [finishNonce, openedAt]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === 'Tab') typedDate(e);
     if (onSettings && e.altKey && e.key.toLowerCase() === 't') {
       e.preventDefault();
       e.stopPropagation();
@@ -181,6 +195,24 @@ export function FieldEditor({
         ) : null}
       </Layer>
     );
+  // Multiline text: a compact text area right under the box, with no card
+  // around it, so the fields below stay in reach (the old editor's size).
+  if (field.type === 'multiline')
+    return (
+      <Below ref={wrap} onKeyDown={onKeyDown}>
+        <Stack gap="1">
+          <TextArea
+            label={name}
+            labelHidden
+            size="sm"
+            value={value}
+            onChange={setValue}
+            rows={2}
+          />
+          {warning ? <Card padding="sm">{warning}</Card> : null}
+        </Stack>
+      </Below>
+    );
   return (
     <Below
       ref={wrap}
@@ -189,15 +221,7 @@ export function FieldEditor({
     >
       <Card padding="sm">
         <Stack gap="2">
-          {field.type === 'multiline' ? (
-            <TextArea
-              label={name}
-              labelHidden
-              value={value}
-              onChange={setValue}
-              rows={3}
-            />
-          ) : field.type === 'date' ? (
+          {field.type === 'date' ? (
             <DateField
               label={name}
               labelHidden

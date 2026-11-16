@@ -417,11 +417,9 @@ describe('WorkspaceShell', () => {
     await screen.findByRole('toolbar', { name: 'Organize tools' });
     const [doc, tools] = [...container.querySelectorAll('a')];
     expect(doc.textContent).toBe('Skip to the document');
-    expect(
-      document
-        .querySelector(doc.getAttribute('href')!)
-        ?.getAttribute('aria-label'),
-    ).toBe('Document canvas');
+    // The document's own viewport sits in the skip target.
+    expect(doc.getAttribute('href')).toBe('#workspace-canvas');
+    expect(document.getElementById('workspace-canvas')).toBeTruthy();
     expect(tools.textContent).toBe('Skip to the tools');
     expect(
       document
