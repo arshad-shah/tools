@@ -607,30 +607,8 @@ export function WorkspaceShell({
                       {modeSwitch}
                     </Inline>
                     <Divider spacing="none" />
-                    <Stack
-                      id="mode-panel"
-                      role="region"
-                      aria-label={modeName}
-                      aria-busy={busy}
-                    >
-                      {toolbar}
-                    </Stack>
                   </Stack>
-                ) : (
-                  <>
-                    <DockedToolbar label="Modes" floating>
-                      {modeSwitch}
-                    </DockedToolbar>
-                    <Stack
-                      id="mode-panel"
-                      role="region"
-                      aria-label={modeName}
-                      aria-busy={busy}
-                    >
-                      {toolbar}
-                    </Stack>
-                  </>
-                )}
+                ) : null}
                 <Stack grow minSize="0" overflow="hidden">
                   {layout === 'standard' ? (
                     <SplitPane
@@ -666,7 +644,24 @@ export function WorkspaceShell({
                     canvas
                   )}
                 </Stack>
-                {layout === 'standard' ? statusBar : null}
+                {layout === 'standard' ? (
+                  statusBar
+                ) : (
+                  // Docked bars keep room for themselves at the bottom.
+                  <Stack
+                    id="mode-panel"
+                    role="region"
+                    aria-label={modeName}
+                    aria-busy={busy}
+                  >
+                    {toolbar}
+                    {layout === 'focus' ? (
+                      <DockedToolbar label="Modes" floating>
+                        {modeSwitch}
+                      </DockedToolbar>
+                    ) : null}
+                  </Stack>
+                )}
               </Stack>
               {layout === 'standard' ? null : (
                 <Sheet

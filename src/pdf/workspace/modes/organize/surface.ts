@@ -1,14 +1,10 @@
-import type { RefObject } from 'react';
+import type { ToolSurface } from '../../ui/ToolDialog';
 import type { ModeProps } from '../types';
 
 /** How an Organize tool's options show (backlog P5-B). */
-export interface OrganizeSurface {
-  presentation: 'popover' | 'sheet';
-  anchor: RefObject<HTMLButtonElement | null>;
-}
+export type OrganizeSurface = ToolSurface;
 
 /** By the tool that opened it; a bottom sheet on phones. */
 export const presentationFor = (
   layout: ModeProps['layout'],
-): OrganizeSurface['presentation'] =>
-  layout === 'phone' ? 'sheet' : 'popover';
+): ToolSurface['presentation'] => (layout === 'phone' ? 'sheet' : 'popover');

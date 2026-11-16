@@ -135,8 +135,9 @@ function ToolButton({
       />
     );
   if (item.kind !== 'split') return render();
+  const Pair = vertical ? Stack : Inline;
   return (
-    <Inline gap="0" align="center">
+    <Pair gap="0" align="center">
       {render()}
       <Menu
         label={item.label}
@@ -153,7 +154,7 @@ function ToolButton({
           />
         )}
       />
-    </Inline>
+    </Pair>
   );
 }
 

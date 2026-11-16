@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import {
   Button,
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Label,
-  NumberInput,
+  Inline,
+  NumberField,
   RadioGroup,
-} from '@/shared/ui';
+  Stack,
+} from '@arshad-shah/cynosure';
 import type { PageId } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
+import { ToolDialog } from '../../ui/ToolDialog';
 import type { OrganizeSurface } from './surface';
 
 const SIZES = {
@@ -40,23 +36,39 @@ export function PageSizeDialog({
   const size = choice === 'custom' ? custom : SIZES[choice];
   const n = pageIds.length;
   return (
-    <Dialog
+    <ToolDialog
       open={open}
       onOpenChange={onOpenChange}
-      label="Page size"
-      {...surface}
+      title="Page size"
+      description={`Changes the size of ${n === 1 ? 'the current page' : `${n} pages`}. Content is not scaled.`}
+      surface={surface}
+      actions={
+        <>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            tone="accent"
+            disabled={n === 0}
+            onClick={() => {
+              const ok = ctx.doc.dispatch({
+                type: 'page.resize',
+                params: { pageIds, ...size },
+              });
+              if (ok.length) onOpenChange(false);
+            }}
+          >
+            Change size
+          </Button>
+        </>
+      }
     >
-      <DialogHeader>
-        <DialogTitle>Page size</DialogTitle>
-        <DialogDescription>
-          {`Changes the size of ${n === 1 ? 'the current page' : `${n} pages`}. Content is not scaled.`}
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody className="flex flex-col gap-4">
+      <Stack gap="4">
         <RadioGroup
           label="Size"
           value={choice}
-          onValueChange={(v) => setChoice(v as typeof choice)}
+          onChange={(v) => setChoice(v as typeof choice)}
           options={[
             { value: 'a4', label: 'A4 (210 x 297 mm)' },
             { value: 'letter', label: 'Letter (8.5 x 11 in)' },
@@ -64,48 +76,28 @@ export function PageSizeDialog({
           ]}
         />
         {choice === 'custom' ? (
-          <div className="flex gap-3">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="page-size-width">Width in points</Label>
-              <NumberInput
-                id="page-size-width"
-                value={custom.width}
-                min={1}
-                max={14400}
-                onValueChange={(width) => setCustom((c) => ({ ...c, width }))}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="page-size-height">Height in points</Label>
-              <NumberInput
-                id="page-size-height"
-                value={custom.height}
-                min={1}
-                max={14400}
-                onValueChange={(height) => setCustom((c) => ({ ...c, height }))}
-              />
-            </div>
-          </div>
+          <Inline gap="3" wrap>
+            <NumberField
+              label="Width in points"
+              value={custom.width}
+              min={1}
+              max={14400}
+              onChange={(width) =>
+                width !== null && setCustom((c) => ({ ...c, width }))
+              }
+            />
+            <NumberField
+              label="Height in points"
+              value={custom.height}
+              min={1}
+              max={14400}
+              onChange={(height) =>
+                height !== null && setCustom((c) => ({ ...c, height }))
+              }
+            />
+          </Inline>
         ) : null}
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="secondary" onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          disabled={n === 0}
-          onClick={() => {
-            const ok = ctx.doc.dispatch({
-              type: 'page.resize',
-              params: { pageIds, ...size },
-            });
-            if (ok.length) onOpenChange(false);
-          }}
-        >
-          Change size
-        </Button>
-      </DialogFooter>
-    </Dialog>
+      </Stack>
+    </ToolDialog>
   );
 }

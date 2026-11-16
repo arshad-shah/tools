@@ -1,20 +1,17 @@
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { newId } from '@/shared/lib/id';
-import { IconPlus, IconTrash } from '@/shared/ui/icons';
 import {
   Button,
+  Card,
   Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   IconButton,
-  Input,
-  Label,
-  NumberInput,
+  Inline,
+  NumberField,
   Select,
-} from '@/shared/ui';
+  Stack,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { plus, trash } from '@arshad-shah/cynosure/icons';
 import type { PageLabelRange } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 
@@ -59,7 +56,6 @@ export function PageLabelsDialog({
   ctx: ModeProps;
 }) {
   const count = ctx.doc.view.pages.length;
-  const uid = useId();
   const [rows, setRows] = useState<Row[]>(() =>
     toRows(ctx.doc.view.pageLabels),
   );
@@ -79,72 +75,78 @@ export function PageLabelsDialog({
         ...(r.first !== 1 ? { first: r.first } : {}),
       }));
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} size="lg">
-      <DialogHeader>
-        <DialogTitle>Page labels</DialogTitle>
-        <DialogDescription>
-          Each range numbers pages from its first page until the next range.
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody className="flex flex-col gap-3">
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      title="Page labels"
+      description="Each range numbers pages from its first page until the next range."
+      actions={
+        <>
+          <Button variant="ghost" onClick={() => apply([])}>
+            Remove labels
+          </Button>
+          <Button variant="solid" tone="accent" onClick={() => apply(ranges())}>
+            Save labels
+          </Button>
+        </>
+      }
+    >
+      <Stack gap="4">
         {rows.map((r, i) => (
-          <fieldset
+          <Card
             key={r.key}
-            className="flex flex-wrap items-end gap-3 rounded-md border border-line p-3"
+            as="section"
+            variant="outline"
+            padding="md"
+            title={`Range ${i + 1}`}
+            headingLevel={3}
+            aria-label={`Range ${i + 1}`}
+            actions={
+              <IconButton
+                variant="ghost"
+                size="sm"
+                label={`Remove range ${i + 1}`}
+                icon={trash}
+                disabled={rows.length === 1}
+                onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}
+              />
+            }
           >
-            <legend className="px-1 text-sm font-medium text-fg">
-              Range {i + 1}
-            </legend>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor={`${uid}-from-${r.key}`}>From page</Label>
-              <NumberInput
-                id={`${uid}-from-${r.key}`}
+            <Inline gap="3" wrap align="end">
+              <NumberField
+                label="From page"
                 value={r.from}
                 min={1}
                 max={count}
-                onValueChange={(from) => patch(i, { from })}
+                onChange={(from) => from !== null && patch(i, { from })}
               />
-            </div>
-            <div className="flex min-w-48 flex-col gap-1">
-              <Label htmlFor={`${uid}-style-${r.key}`}>Style</Label>
               <Select
-                id={`${uid}-style-${r.key}`}
+                label="Style"
                 value={r.style}
-                items={STYLES}
-                onValueChange={(style) => patch(i, { style })}
+                options={STYLES}
+                onChange={(style) => patch(i, { style })}
               />
-            </div>
-            <div className="flex w-28 flex-col gap-1">
-              <Label htmlFor={`${uid}-prefix-${r.key}`}>Prefix</Label>
-              <Input
-                id={`${uid}-prefix-${r.key}`}
+              <TextField
+                label="Prefix"
+                width="sm"
                 value={r.prefix}
                 onChange={(prefix) => patch(i, { prefix })}
               />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor={`${uid}-first-${r.key}`}>Start at</Label>
-              <NumberInput
-                id={`${uid}-first-${r.key}`}
+              <NumberField
+                label="Start at"
                 value={r.first}
                 min={1}
-                onValueChange={(first) => patch(i, { first })}
+                onChange={(first) => first !== null && patch(i, { first })}
               />
-            </div>
-            <IconButton
-              variant="ghost"
-              label={`Remove range ${i + 1}`}
-              icon={IconTrash}
-              disabled={rows.length === 1}
-              onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}
-            />
-          </fieldset>
+            </Inline>
+          </Card>
         ))}
-        <div>
+        <Inline>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
-            leftIcon={<IconPlus size="sm" />}
+            icon={plus}
             onClick={() =>
               setRows((rs) => [
                 ...rs,
@@ -160,16 +162,8 @@ export function PageLabelsDialog({
           >
             Add range
           </Button>
-        </div>
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="secondary" onClick={() => apply([])}>
-          Remove labels
-        </Button>
-        <Button variant="primary" onClick={() => apply(ranges())}>
-          Save labels
-        </Button>
-      </DialogFooter>
+        </Inline>
+      </Stack>
     </Dialog>
   );
 }
