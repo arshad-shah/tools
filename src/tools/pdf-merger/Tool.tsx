@@ -2,13 +2,11 @@ import {
   Button,
   Card,
   DescriptionList,
-  FileDrop,
   Grid,
   GridItem,
   IconButton,
   Image,
   Inline,
-  LoadingDots,
   Notice,
   ProgressBar,
   Skeleton,
@@ -32,8 +30,8 @@ import {
   parsePageRanges,
   rangesToIndices,
 } from '@/pdf/edit';
-import { usePdfIntake, type PdfInputFile } from '@/pdf/intake/use-pdf-intake';
-import { PasswordForm } from '@/pdf/ui/PasswordForm';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
 import { useFirstPageImage } from '@/pdf/ui/use-first-page-image';
 import { stageDocument } from '@/pdf/workspace/workspace-store';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
@@ -152,12 +150,6 @@ export default function PdfMergerTool() {
     setItems((prev) => insertByOrder(prev, ok));
   };
 
-  const intake = usePdfIntake({
-    onFiles: (files) => void add(files),
-    multiple: true,
-    initialFiles: handed,
-  });
-
   const busy = job.status === 'running';
   const update = (next: MergeItem[]) => {
     job.reset();
@@ -175,61 +167,21 @@ export default function PdfMergerTool() {
   };
 
   const totalPages = items.reduce((n, i) => n + i.pageCount, 0);
-  const skipped = [...intake.rejected, ...addErrors];
   const result = job.status === 'done' ? job.result : null;
 
   return (
     <Stack gap="6">
-      <FileDrop
+      <PdfIntake
         multiple
-        accept=".pdf,application/pdf"
+        initialFiles={handed}
+        onFiles={(files) => void add(files)}
         size={items.length ? 'sm' : 'lg'}
-        disabled={busy || intake.busy || reading > 0}
+        disabled={busy || reading > 0}
         hint="Add two or more PDFs. They stay on this device."
-        labels={{ prompt: 'Drop PDFs here, or' }}
-        onFiles={intake.handle}
+        status={reading > 0 ? `Reading ${plural(reading, 'file')}` : null}
+        skipped={addErrors}
+        onDismissSkipped={() => setAddErrors([])}
       />
-      {reading > 0 || intake.busy ? (
-        <Inline gap="3" align="center" role="status">
-          <LoadingDots size="sm" tone="muted" />
-          <Text size="sm" tone="muted">
-            {reading > 0
-              ? `Reading ${plural(reading, 'file')}`
-              : 'Checking the files'}
-          </Text>
-        </Inline>
-      ) : null}
-      {skipped.length ? (
-        <Notice
-          tone="danger"
-          title={
-            skipped.length === 1
-              ? 'A file was skipped'
-              : `${skipped.length} files were skipped`
-          }
-          dismissible
-          onDismiss={() => setAddErrors([])}
-        >
-          <Stack gap="1">
-            {skipped.map((m) => (
-              <Text key={m} as="p">
-                {m}
-              </Text>
-            ))}
-          </Stack>
-        </Notice>
-      ) : null}
-      {intake.locked.map((l) => (
-        <PasswordForm
-          key={l.file.id}
-          fileName={l.file.name}
-          error={l.error}
-          busy={l.busy}
-          disabled={busy}
-          onSubmit={(pw) => intake.submit(l, pw)}
-          onCancel={() => intake.skip(l.file.id)}
-        />
-      ))}
 
       {items.length ? (
         <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">

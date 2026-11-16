@@ -1,69 +1,70 @@
-import React, { useMemo, useState } from 'react';
-import { IconScissors } from '@/shared/ui/icons';
 import {
   Button,
   Card,
-  ControlBar,
+  Grid,
+  GridItem,
   Inline,
-  SegmentedControl,
-  CardBody,
-  Input,
-  Label,
-  NumberInput,
+  NumberField,
+  RadioGroup,
   Stack,
   Text,
-} from '@/shared/ui';
-import type { ToolProps } from '@/app/tool';
-import { deriveFilename } from '@/shared/lib/download';
-import { useJob } from '@/shared/state/useJob';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { pageSplit } from '@arshad-shah/cynosure/icons';
+import { useMemo, useState } from 'react';
 import { extract, formatRange, rangesToIndices, split } from '@/pdf/edit';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
 import { usePdfDocument } from '@/pdf/render';
-import {
-  JobPanel,
-  PageGrid,
-  PdfFileHeader,
-  ResultFiles,
-  usePageSelection,
-  type PageTile,
-  type SelectionMods,
-  type ResultFile,
-  type PdfInputFile,
-  UNENCRYPTED_NOTE,
-} from '@/pdf/components';
+import { ChosenFile } from '@/pdf/ui/ChosenFile';
+import { PageGrid } from '@/pdf/ui/PageGrid';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { JobProgress, ResultCard, type ResultFile } from '@/pdf/ui/ResultCard';
+import { deriveFilename } from '@/shared/lib/download';
+import { toToolError } from '@/shared/lib/errors';
+import { useHandoff } from '@/shared/lib/handoff';
+import { useJob } from '@/shared/state/useJob';
 import { planSplit, selectionLabel, type SplitMode } from './lib/plan';
 import { useSplitterSettings } from './store';
-import { useHandoff } from '@/shared/lib/handoff';
 
-const MODES: { value: SplitMode; label: string }[] = [
-  { value: 'selection', label: 'Select pages' },
-  { value: 'ranges', label: 'Page ranges' },
-  { value: 'every-n', label: 'Every N pages' },
-  { value: 'individual', label: 'Every page' },
+const MODES: { value: SplitMode; label: string; description: string }[] = [
+  {
+    value: 'selection',
+    label: 'Pick pages',
+    description: 'The pages you tick become one new PDF.',
+  },
+  {
+    value: 'ranges',
+    label: 'Page ranges',
+    description: 'Each range becomes its own file.',
+  },
+  {
+    value: 'every-n',
+    label: 'Every N pages',
+    description: 'A new file every few pages.',
+  },
+  {
+    value: 'individual',
+    label: 'Every page',
+    description: 'One file per page.',
+  },
 ];
 
-const PdfSplitterTool: React.FC<ToolProps> = () => {
+const plural = (n: number, one: string, many = `${one}s`) =>
+  `${n} ${n === 1 ? one : many}`;
+
+/**
+ * PDF Splitter (redesign spec, file tool pattern): drop a PDF, see its
+ * pages beside the split options, split with one button that says what it
+ * makes, then download the files.
+ */
+export default function PdfSplitterTool() {
   // Files dropped on a hub land here once (spec §5.3).
   const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [rangeText, setRangeText] = useState('');
+  const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
   const { mode, everyN, setMode, setEveryN } = useSplitterSettings();
   const { doc, loading, error } = usePdfDocument(file);
-
-  const tiles = useMemo<PageTile[]>(
-    () =>
-      doc
-        ? Array.from({ length: doc.pageCount }, (_, i) => ({
-            key: String(i),
-            pageIndex: i,
-            rotation: 0,
-          }))
-        : [],
-    [doc],
-  );
-  const keys = useMemo(() => tiles.map((t) => t.key), [tiles]);
-  // Clicking pages builds up a selection; shift adds a range, ctrl toggles.
-  const selection = usePageSelection(keys, { plain: 'toggle' });
-  const { selected } = selection;
 
   const job = useJob(
     async (
@@ -77,16 +78,18 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
         selected: number[];
       },
     ): Promise<ResultFile[]> => {
-      const { mode } = snap;
-      const ranges = planSplit(mode, { ...snap, pageCount });
-      if (mode === 'selection') {
+      const ranges = planSplit(snap.mode, { ...snap, pageCount });
+      if (snap.mode === 'selection') {
         const indices = rangesToIndices(ranges);
-        const label = selectionLabel(ranges);
         return [
           {
-            name: deriveFilename(source.name, `pages-${label}`, 'pdf'),
+            name: deriveFilename(
+              source.name,
+              `pages-${selectionLabel(ranges)}`,
+              'pdf',
+            ),
             bytes: await extract(source.bytes, indices),
-            detail: `${indices.length} pages`,
+            detail: plural(indices.length, 'page'),
           },
         ];
       }
@@ -101,166 +104,204 @@ const PdfSplitterTool: React.FC<ToolProps> = () => {
           'pdf',
         ),
         bytes,
-        detail: `${ranges[i].end - ranges[i].start + 1} pages`,
+        detail: plural(ranges[i].end - ranges[i].start + 1, 'page'),
       }));
     },
   );
 
-  const pick = (picked: PdfInputFile) => {
-    job.reset();
-    selection.clear();
+  const reset =
+    <A extends unknown[]>(f: (...a: A) => void) =>
+    (...a: A) => {
+      job.reset();
+      f(...a);
+    };
+  const choose = reset((picked: PdfInputFile) => {
+    setSelected(new Set());
     setFile(picked);
-  };
+  });
+  const [anchor, setAnchor] = useState<number | null>(null);
+  const toggle = reset((index: number, checked: boolean, range: boolean) => {
+    const next = new Set(selected);
+    // Shift: every page from the last one ticked to this one.
+    const from = range && anchor !== null ? Math.min(anchor, index) : index;
+    const to = range && anchor !== null ? Math.max(anchor, index) : index;
+    for (let i = from; i <= to; i++)
+      if (checked) next.add(i);
+      else next.delete(i);
+    setAnchor(index);
+    setSelected(next);
+  });
 
-  const clearFile = () => {
-    job.reset();
-    selection.clear();
-    setFile(null);
-  };
-  const changeMode = (m: SplitMode) => {
-    job.reset();
-    setMode(m);
-  };
-  const changeRangeText = (v: string) => {
-    job.reset();
-    setRangeText(v);
-  };
-  const changeEveryN = (n: number) => {
-    if (!Number.isFinite(n)) return;
-    job.reset();
-    setEveryN(Math.max(1, Math.floor(n)));
-  };
-  const selectAll = () => {
-    job.reset();
-    selection.selectAll();
-  };
-  const clearSelection = () => {
-    job.reset();
-    selection.clear();
-  };
-  const toggle = (key: string, mods: SelectionMods) => {
-    job.reset();
-    selection.toggle(key, mods);
-  };
+  // What the button makes, worked out as the options change.
+  const plan = useMemo(() => {
+    if (!doc) return null;
+    try {
+      const ranges = planSplit(mode, {
+        pageCount: doc.pageCount,
+        rangeText,
+        everyN,
+        selected: [...selected],
+      });
+      return { ranges, error: null };
+    } catch (e) {
+      return { ranges: [], error: toToolError(e).message };
+    }
+  }, [doc, mode, rangeText, everyN, selected]);
+  const action = !plan?.ranges.length
+    ? 'Split PDF'
+    : mode === 'selection'
+      ? `Extract ${plural(rangesToIndices(plan.ranges).length, 'page')}`
+      : `Split into ${plural(plan.ranges.length, 'file')}`;
+  const busy = job.status === 'running';
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="5">
-          <PdfFileHeader
-            initialFiles={handed}
-            file={file}
-            onFile={pick}
-            onClear={clearFile}
-            loading={loading}
-            error={error}
-          />
-          {file && doc && (
-            <>
-              <ControlBar
-                tone="inset"
-                start={
-                  <SegmentedControl<SplitMode>
-                    label="Split mode"
-                    size="sm"
-                    value={mode}
-                    onChange={changeMode}
-                    options={MODES}
-                  />
-                }
-                end={
-                  mode === 'ranges' ? (
-                    <Inline gap="2" align="center" wrap={false}>
-                      <Label htmlFor="split-ranges">Ranges</Label>
-                      <div className="w-56">
-                        <Input
-                          id="split-ranges"
-                          value={rangeText}
-                          onChange={changeRangeText}
-                          placeholder="e.g. 1-3, 4-6, 10-"
-                        />
-                      </div>
-                    </Inline>
-                  ) : mode === 'every-n' ? (
-                    <Inline gap="2" align="center" wrap={false}>
-                      <Label htmlFor="split-every">Pages per file</Label>
-                      <NumberInput
-                        id="split-every"
-                        className="w-32"
-                        value={everyN}
-                        onValueChange={changeEveryN}
-                        min={1}
-                        max={doc.pageCount}
-                      />
-                    </Inline>
-                  ) : mode === 'selection' ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={selected.size === 0}
-                        onClick={clearSelection}
-                      >
-                        Clear selection
-                      </Button>
-                      <Button size="sm" variant="secondary" onClick={selectAll}>
-                        Select all
-                      </Button>
-                    </>
-                  ) : null
-                }
-                footer={
-                  <Text size="sm" tone="muted">
-                    {mode === 'ranges'
-                      ? `Each range becomes its own file. ${doc.pageCount} pages in total.`
-                      : mode === 'every-n'
-                        ? `Every ${everyN} ${everyN === 1 ? 'page becomes' : 'pages become'} a file.`
-                        : mode === 'individual'
-                          ? `Creates ${doc.pageCount} single-page files.`
-                          : `Click pages to select them (Shift-click selects a range). They are extracted into one new PDF (${selected.size} selected).`}
-                  </Text>
-                }
-              />
+    <Stack gap="6">
+      {file ? (
+        <ChosenFile
+          name={file.name}
+          size={file.size}
+          detail={
+            doc
+              ? plural(doc.pageCount, 'page')
+              : loading
+                ? 'Opening'
+                : undefined
+          }
+          disabled={busy}
+          onClear={reset(() => {
+            setSelected(new Set());
+            setFile(null);
+          })}
+        />
+      ) : (
+        <PdfIntake
+          initialFiles={handed}
+          onFiles={(files) => choose(files[0])}
+        />
+      )}
+      {error ? <Text tone="danger">{error.message}</Text> : null}
+
+      {file && doc ? (
+        <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
+          <GridItem span={{ base: 1, lg: 2 }} order={{ base: 2, lg: 1 }}>
+            <Card
+              as="section"
+              title="Pages"
+              description={
+                mode === 'selection'
+                  ? `Tick the pages to extract (${selected.size} selected).`
+                  : undefined
+              }
+            >
               <PageGrid
                 doc={doc}
-                tiles={tiles}
                 selected={mode === 'selection' ? selected : undefined}
                 onToggle={mode === 'selection' ? toggle : undefined}
               />
-              <Button
-                variant="primary"
-                className="self-start"
-                leftIcon={<IconScissors size="sm" />}
-                disabled={job.status === 'running'}
-                onClick={() =>
-                  job.run(file, doc.pageCount, {
-                    mode,
-                    rangeText,
-                    everyN,
-                    selected: [...selected].map(Number),
-                  })
-                }
-              >
-                Split PDF
-              </Button>
-            </>
-          )}
-          <JobPanel job={job} onCancel={job.cancel} runningLabel="Splitting">
-            {job.result && (
-              <ResultFiles
-                openInWorkspace
-                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
-                files={job.result}
-                zipName={
-                  file ? deriveFilename(file.name, 'split', 'zip') : 'split.zip'
-                }
-              />
-            )}
-          </JobPanel>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+            </Card>
+          </GridItem>
+          <GridItem order={{ base: 1, lg: 2 }}>
+            <Card as="section" title="Split">
+              <Stack gap="5">
+                <RadioGroup
+                  label="Split mode"
+                  labelHidden
+                  value={mode}
+                  onChange={reset((v: string) => setMode(v as SplitMode))}
+                  options={MODES}
+                />
+                {mode === 'ranges' ? (
+                  <TextField
+                    label="Ranges"
+                    description={`Separate ranges with commas. ${plural(doc.pageCount, 'page')} in total.`}
+                    placeholder="1-3, 4-6, 10-"
+                    value={rangeText}
+                    onChange={reset(setRangeText)}
+                    error={
+                      rangeText.trim() ? (plan?.error ?? undefined) : undefined
+                    }
+                  />
+                ) : mode === 'every-n' ? (
+                  <NumberField
+                    label="Pages per file"
+                    min={1}
+                    max={doc.pageCount}
+                    value={everyN}
+                    onChange={reset((n: number | null) => {
+                      if (n !== null && Number.isFinite(n))
+                        setEveryN(Math.max(1, Math.floor(n)));
+                    })}
+                  />
+                ) : mode === 'selection' ? (
+                  <Inline gap="2" wrap>
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      onClick={reset(() =>
+                        setSelected(
+                          new Set(
+                            Array.from({ length: doc.pageCount }, (_, i) => i),
+                          ),
+                        ),
+                      )}
+                    >
+                      Select all
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={selected.size === 0}
+                      onClick={reset(() => setSelected(new Set()))}
+                    >
+                      Clear selection
+                    </Button>
+                  </Inline>
+                ) : null}
+                <JobProgress
+                  job={job}
+                  label="Splitting"
+                  onCancel={job.cancel}
+                />
+                {busy ? null : (
+                  <Button
+                    variant="solid"
+                    tone="accent"
+                    size="lg"
+                    fullWidth
+                    icon={pageSplit}
+                    disabled={!plan?.ranges.length}
+                    onClick={() =>
+                      void job.run(file, doc.pageCount, {
+                        mode,
+                        rangeText,
+                        everyN,
+                        selected: [...selected],
+                      })
+                    }
+                  >
+                    {action}
+                  </Button>
+                )}
+              </Stack>
+            </Card>
+          </GridItem>
+        </Grid>
+      ) : null}
 
-export default PdfSplitterTool;
+      {job.status === 'done' && job.result ? (
+        <ResultCard
+          files={job.result}
+          openInWorkspace
+          note={
+            file?.wasEncrypted
+              ? 'The original was password-protected. This file is not'
+              : undefined
+          }
+          zipName={
+            file ? deriveFilename(file.name, 'split', 'zip') : 'split.zip'
+          }
+        />
+      ) : null}
+    </Stack>
+  );
+}

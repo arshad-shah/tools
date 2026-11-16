@@ -25,9 +25,6 @@ vi.mock('@/shared/lib/notify', () => ({
 }));
 
 const writeText = vi.fn(async () => {});
-// The shown pane is remembered across renders (R41): pick it explicitly.
-const showPane = (name: string) =>
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
 
 beforeEach(() => {
   localStorage.clear();
@@ -43,7 +40,6 @@ afterEach(() => {
 describe('FaviconGenerator', () => {
   it('a text source of one letter enables the download', async () => {
     render(<FaviconGenerator />);
-    showPane('Source');
     const download = screen.getByRole('button', { name: 'Download ZIP' });
     expect(download).toHaveProperty('disabled', true);
     fireEvent.change(
@@ -54,10 +50,7 @@ describe('FaviconGenerator', () => {
       'disabled',
       false,
     );
-    // The preview is its own pane (R41); it gets a dot when the icon changes.
-    const preview = screen.getByRole('tab', { name: /^Preview/ });
-    expect(preview.textContent).toMatch(/updated/);
-    fireEvent.click(preview);
+    // The preview sits beside the source and follows it.
     expect(
       await screen.findByRole('img', { name: '16 px favicon' }),
     ).toBeTruthy();
@@ -76,17 +69,14 @@ describe('FaviconGenerator', () => {
     await waitFor(() =>
       expect(writeText).toHaveBeenCalledWith(htmlSnippet({ svg: false })),
     );
-    expect(
-      await screen.findByRole('button', { name: 'Copied snippet' }),
-    ).toBeTruthy();
-    expect(screen.getByTestId('html-snippet').textContent).toBe(
-      htmlSnippet({ svg: false }),
+    // The snippet is shown as code on the page too.
+    expect(document.body.textContent).toContain(
+      htmlSnippet({ svg: false }).split('\n')[0],
     );
   });
 
   it('an SVG with a script lists what was removed', () => {
     render(<FaviconGenerator />);
-    showPane('Source');
     fireEvent.click(screen.getByRole('radio', { name: 'SVG' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'SVG markup' }), {
       target: {
@@ -114,11 +104,11 @@ describe('FaviconGenerator', () => {
     const id = putHandoff([svg]);
     window.history.replaceState(null, '', `/?${HANDOFF_PARAM}=${id}`);
     render(<FaviconGenerator />);
-    showPane('Source');
     await waitFor(() =>
       expect(
-        screen.getByRole('radio', { name: 'SVG' }).getAttribute('aria-checked'),
-      ).toBe('true'),
+        (screen.getByRole('radio', { name: 'SVG' }) as HTMLInputElement)
+          .checked,
+      ).toBe(true),
     );
     await waitFor(() =>
       expect(

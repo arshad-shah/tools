@@ -1,25 +1,18 @@
-import React, { useMemo, useState } from 'react';
-import { IconImages } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Card,
-  CardBody,
-  Input,
-  Label,
-  NumberInput,
+  Grid,
+  GridItem,
+  Notice,
+  NumberField,
+  SegmentedControl,
   Slider,
   Stack,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  Text,
-} from '@/shared/ui';
-import type { ToolProps } from '@/app/tool';
-import { deriveFilename } from '@/shared/lib/download';
-import { formatBytes } from '@/shared/lib/format';
-import { useJob } from '@/shared/state/useJob';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { images } from '@arshad-shah/cynosure/icons';
+import { useMemo, useState } from 'react';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
 import {
   MAX_EXPORT_DPI,
   MIN_EXPORT_DPI,
@@ -28,15 +21,15 @@ import {
   type DocInfo,
   type ImageFormat,
 } from '@/pdf/render';
-import {
-  JobPanel,
-  PageThumb,
-  PdfFileHeader,
-  ResultFiles,
-  type ResultFile,
-  type PdfInputFile,
-  UNENCRYPTED_NOTE,
-} from '@/pdf/components';
+import { ChosenFile } from '@/pdf/ui/ChosenFile';
+import { PageGrid } from '@/pdf/ui/PageGrid';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { JobProgress, ResultCard, type ResultFile } from '@/pdf/ui/ResultCard';
+import { deriveFilename } from '@/shared/lib/download';
+import { toToolError } from '@/shared/lib/errors';
+import { formatBytes } from '@/shared/lib/format';
+import { useHandoff } from '@/shared/lib/handoff';
+import { useJob } from '@/shared/state/useJob';
 import {
   estimateExportBytes,
   IMAGE_MIME,
@@ -45,7 +38,6 @@ import {
   pagesToExport,
 } from './lib/plan';
 import { useImageExportSettings } from './store';
-import { useHandoff } from '@/shared/lib/handoff';
 
 interface Snapshot {
   pages: string;
@@ -57,21 +49,33 @@ interface Snapshot {
 const clampDpi = (n: number) =>
   Math.min(MAX_EXPORT_DPI, Math.max(MIN_EXPORT_DPI, Math.round(n)));
 
-const PdfToImagesTool: React.FC<ToolProps> = () => {
-  // Files dropped on a hub land here once (spec §5.3).
+const plural = (n: number, one: string, many = `${one}s`) =>
+  `${n} ${n === 1 ? one : many}`;
+
+/**
+ * PDF to Images (redesign spec, file tool pattern): drop a PDF, see its
+ * pages beside the image options, convert, download the images.
+ */
+export default function PdfToImagesTool() {
   const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const [pages, setPages] = useState('');
   const { format, dpi, quality, setFormat, setDpi, setQuality } =
     useImageExportSettings();
   const { doc, loading, error } = usePdfDocument(file);
-  const estimate = useMemo(() => {
-    if (!doc) return 0;
+
+  // Which pages the button converts, and how much memory that needs.
+  const plan = useMemo(() => {
+    if (!doc) return null;
     try {
       const indices = pagesToExport(pages, doc.pageCount);
-      return estimateExportBytes(doc.pages, indices, clampDpi(dpi));
-    } catch {
-      return 0; // invalid ranges are reported when converting
+      return {
+        indices,
+        bytes: estimateExportBytes(doc.pages, indices, clampDpi(dpi)),
+        error: null,
+      };
+    } catch (e) {
+      return { indices: [], bytes: 0, error: toToolError(e).message };
     }
   }, [doc, pages, dpi]);
 
@@ -84,7 +88,6 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
     ): Promise<ResultFile[]> => {
       const indices = pagesToExport(snap.pages, info.pageCount);
       const out: ResultFile[] = [];
-      // Sequential on purpose: one full-size canvas in the worker at a time.
       for (const [i, pageIndex] of indices.entries()) {
         ctx.progress({
           done: i,
@@ -106,7 +109,7 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
           ),
           bytes: img.bytes,
           mime: IMAGE_MIME[snap.format],
-          detail: `${img.width}×${img.height} px · ${img.dpi} DPI${
+          detail: `${img.width} by ${img.height} px at ${img.dpi} DPI${
             img.capped ? ' (reduced to fit the size limit)' : ''
           }`,
         });
@@ -121,146 +124,142 @@ const PdfToImagesTool: React.FC<ToolProps> = () => {
       job.reset();
       apply(v);
     };
-  const pick = (picked: PdfInputFile) => {
-    job.reset();
-    setPages('');
-    setFile(picked);
-  };
-  const clearFile = () => {
-    job.reset();
-    setFile(null);
-  };
+  const busy = job.status === 'running';
+  const count = plan?.indices.length ?? 0;
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="5">
-          <PdfFileHeader
-            initialFiles={handed}
-            file={file}
-            onFile={pick}
-            onClear={clearFile}
-            loading={loading}
-            error={error}
-          />
-          {file && doc && (
-            <>
-              <div className="flex items-center gap-3">
-                <PageThumb
-                  docId={doc.docId}
-                  pageIndex={0}
-                  page={doc.pages[0]}
-                  width={56}
-                  label="Page 1"
-                />
-                <Text size="sm" tone="muted">
-                  {doc.pageCount} {doc.pageCount === 1 ? 'page' : 'pages'}
-                </Text>
-              </div>
-              <Stack gap="2">
-                <Label>Format</Label>
-                <Tabs
+    <Stack gap="6">
+      {file ? (
+        <ChosenFile
+          name={file.name}
+          size={file.size}
+          detail={
+            doc
+              ? plural(doc.pageCount, 'page')
+              : loading
+                ? 'Opening'
+                : undefined
+          }
+          disabled={busy}
+          onClear={() => {
+            job.reset();
+            setFile(null);
+          }}
+        />
+      ) : (
+        <PdfIntake
+          initialFiles={handed}
+          onFiles={(files) => {
+            job.reset();
+            setPages('');
+            setFile(files[0]);
+          }}
+        />
+      )}
+      {error ? <Notice tone="danger">{error.message}</Notice> : null}
+
+      {file && doc ? (
+        <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
+          <GridItem span={{ base: 1, lg: 2 }} order={{ base: 2, lg: 1 }}>
+            <Card as="section" title="Pages">
+              <PageGrid doc={doc} />
+            </Card>
+          </GridItem>
+          <GridItem order={{ base: 1, lg: 2 }}>
+            <Card as="section" title="Images">
+              <Stack gap="5">
+                <SegmentedControl
+                  label="Format"
                   value={format}
-                  onValueChange={(v) => changed(setFormat)(v as ImageFormat)}
-                  variant="soft"
-                >
-                  <TabsList aria-label="Format">
-                    <TabsTrigger value="png">PNG</TabsTrigger>
-                    <TabsTrigger value="jpeg">JPEG</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </Stack>
-              <Stack gap="2">
-                <Label htmlFor="img-dpi">Resolution (DPI)</Label>
-                <NumberInput
-                  id="img-dpi"
+                  onChange={(v) => changed(setFormat)(v as ImageFormat)}
+                  options={[
+                    { value: 'png', label: 'PNG' },
+                    { value: 'jpeg', label: 'JPEG' },
+                  ]}
+                />
+                <NumberField
+                  label="Resolution (DPI)"
+                  description={`${MIN_EXPORT_DPI} to ${MAX_EXPORT_DPI}. Very large pages are rendered smaller so they fit in memory; the result says when.`}
                   value={dpi}
                   min={MIN_EXPORT_DPI}
                   max={MAX_EXPORT_DPI}
-                  step={1}
-                  onValueChange={(n) => {
-                    if (!Number.isFinite(n)) return;
-                    changed(setDpi)(clampDpi(n));
+                  onChange={(n) => {
+                    if (n !== null && Number.isFinite(n))
+                      changed(setDpi)(clampDpi(n));
                   }}
                 />
-                <Text size="sm" tone="muted">
-                  {MIN_EXPORT_DPI}–{MAX_EXPORT_DPI} DPI. Very large pages are
-                  rendered at a lower resolution so they fit in memory; the
-                  result says when.
-                </Text>
-              </Stack>
-              {format === 'jpeg' && (
-                <Stack gap="2">
-                  <Label htmlFor="img-quality">JPEG quality</Label>
-                  <div className="flex items-center gap-3">
-                    <Slider
-                      id="img-quality"
-                      value={quality}
-                      min={0.5}
-                      max={1}
-                      step={0.05}
-                      onValueChange={changed(setQuality)}
-                    />
-                    <span className="w-12 font-mono text-sm text-fg">
-                      {Math.round(quality * 100)}%
-                    </span>
-                  </div>
-                </Stack>
-              )}
-              <Stack gap="2">
-                <Label htmlFor="img-pages">Pages</Label>
-                <Input
-                  id="img-pages"
+                {format === 'jpeg' ? (
+                  <Slider
+                    label="JPEG quality"
+                    labels={{ value: (v: number) => `${Math.round(v * 100)}%` }}
+                    value={quality}
+                    min={0.5}
+                    max={1}
+                    step={0.05}
+                    showValue
+                    onChange={(v) =>
+                      typeof v === 'number' && changed(setQuality)(v)
+                    }
+                  />
+                ) : null}
+                <TextField
+                  label="Pages to convert"
+                  placeholder={`All ${doc.pageCount} (or e.g. 1-3, 5)`}
                   value={pages}
                   onChange={changed(setPages)}
-                  placeholder={`All ${doc.pageCount} pages (or e.g. 1-3, 5)`}
+                  error={plan?.error ?? undefined}
                 />
+                {plan && plan.bytes > LARGE_EXPORT_BYTES ? (
+                  <Notice tone="warning">
+                    This needs roughly {formatBytes(plan.bytes)} of memory while
+                    the images wait to be downloaded. If your browser struggles,
+                    convert fewer pages or use a lower resolution.
+                  </Notice>
+                ) : null}
+                <JobProgress
+                  job={job}
+                  label="Rendering pages"
+                  onCancel={job.cancel}
+                />
+                {busy ? null : (
+                  <Button
+                    variant="solid"
+                    tone="accent"
+                    size="lg"
+                    fullWidth
+                    icon={images}
+                    disabled={count === 0}
+                    onClick={() =>
+                      void job.run(file, doc, {
+                        pages,
+                        format,
+                        dpi: clampDpi(dpi),
+                        quality,
+                      })
+                    }
+                  >
+                    {count
+                      ? `Convert ${plural(count, 'page')} to ${format === 'png' ? 'PNG' : 'JPEG'}`
+                      : 'Convert to images'}
+                  </Button>
+                )}
               </Stack>
-              {estimate > LARGE_EXPORT_BYTES && (
-                <Alert status="warning">
-                  <AlertDescription>
-                    This export needs roughly {formatBytes(estimate)} of memory
-                    while the images wait to be downloaded. If your browser
-                    struggles, export fewer pages or use a lower resolution.
-                  </AlertDescription>
-                </Alert>
-              )}
-              <div>
-                <Button
-                  variant="primary"
-                  leftIcon={<IconImages size="sm" />}
-                  disabled={job.status === 'running'}
-                  onClick={() =>
-                    job.run(file, doc, {
-                      pages,
-                      format,
-                      dpi: clampDpi(dpi),
-                      quality,
-                    })
-                  }
-                >
-                  Convert to images
-                </Button>
-              </div>
-            </>
-          )}
-          <JobPanel
-            job={job}
-            onCancel={job.cancel}
-            runningLabel="Rendering pages"
-          >
-            {job.result && file && (
-              <ResultFiles
-                note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
-                files={job.result}
-                zipName={deriveFilename(file.name, 'images', 'zip')}
-              />
-            )}
-          </JobPanel>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+            </Card>
+          </GridItem>
+        </Grid>
+      ) : null}
 
-export default PdfToImagesTool;
+      {job.status === 'done' && job.result && file ? (
+        <ResultCard
+          files={job.result}
+          note={
+            file.wasEncrypted
+              ? 'The original was password-protected. This file is not'
+              : undefined
+          }
+          zipName={deriveFilename(file.name, 'images', 'zip')}
+        />
+      ) : null}
+    </Stack>
+  );
+}

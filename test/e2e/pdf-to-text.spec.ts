@@ -9,9 +9,9 @@ test('extracts text into one file', async ({ page }) => {
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
   await page.getByRole('button', { name: 'Extract text' }).click();
-  await expect(page.getByLabel('Extracted text', { exact: true })).toHaveValue(
-    /Alpha 3/,
-  );
+  await expect(
+    page.getByRole('textbox', { name: 'Extracted text' }),
+  ).toHaveValue(/Alpha 3/);
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download text-3.txt', exact: true })
@@ -34,8 +34,11 @@ test('flags pages without a text layer and offers per-page files', async ({
   await expect(
     page.getByText('No text layer on page(s) 1, 2.', { exact: false }),
   ).toBeVisible();
-  await page.getByRole('tab', { name: 'One file per page' }).click();
-  await expect(page.getByText('2 files ready', { exact: false })).toBeVisible();
+  await page.getByRole('radio', { name: 'One file per page' }).focus();
+  await page.keyboard.press('Space');
+  await expect(
+    page.getByText('2 files are ready', { exact: false }),
+  ).toBeVisible();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download all (ZIP)' }).click();

@@ -83,7 +83,7 @@ describe('ExifTool', () => {
     expect(
       await screen.findByRole('heading', { name: 'GPS' }, { timeout: 5000 }),
     ).toBeTruthy();
-    expect(screen.getByTestId('risk-level').textContent).toBe('High risk');
+    expect(screen.getByText('High risk')).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Copy coordinates' }),
     ).toBeTruthy();
@@ -93,11 +93,12 @@ describe('ExifTool', () => {
   it('remove metadata produces a done row', async () => {
     drop([toFile(jpegWithMetadata(), 'photo.jpg', 'image/jpeg')]);
     await screen.findByRole('heading', { name: 'GPS' }, { timeout: 5000 });
-    fireEvent.click(screen.getByRole('button', { name: 'Remove metadata' }));
-    const grid = screen.getByRole('grid', { name: 'Files to clean' });
-    await waitFor(() => expect(within(grid).getByText('Done')).toBeTruthy(), {
-      timeout: 5000,
-    });
+    fireEvent.click(screen.getByRole('button', { name: /^Remove metadata/ }));
+    const grid = screen.getByRole('list', { name: 'Photos' });
+    await waitFor(
+      () => expect(within(grid).getByText(/Cleaned,/)).toBeTruthy(),
+      { timeout: 5000 },
+    );
     expect(
       screen.getByRole('button', { name: 'Download ZIP' }),
     ).not.toHaveProperty('disabled', true);
@@ -122,10 +123,10 @@ describe('ExifTool', () => {
     drop([toFile(heicBytes(), 'photo.heic', 'image/heic')]);
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Remove metadata' }),
+        screen.getByRole('button', { name: /^Remove metadata/ }),
       ).not.toHaveProperty('disabled', true),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Remove metadata' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Remove metadata/ }));
     const alert = await screen.findByRole('list', {
       name: 'Files not cleaned',
     });

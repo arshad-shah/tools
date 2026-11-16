@@ -31,25 +31,29 @@ test('combines PNG, JPEG, WebP and GIF into one PDF in the chosen order', async 
       fixture('tiny.gif', 'image/gif'),
       { name: 'red.webp', mimeType: 'image/webp', buffer: Buffer.from(webp) },
     ]);
-  const rows = page.locator('li[data-sortable-item]');
+  const rows = page
+    .getByRole('list', { name: 'Images in page order' })
+    .getByRole('listitem');
   await expect(rows).toHaveCount(4);
   for (const name of ['photo.png', 'photo.jpg', 'tiny.gif', 'red.webp']) {
     await expect(page.getByRole('img', { name, exact: true })).toBeVisible();
   }
 
-  // Move red.webp to the top with the keyboard.
-  const webpRow = page.locator('li[data-sortable-item]', {
-    hasText: 'red.webp',
-  });
-  for (let i = 0; i < 3; i++) {
-    await webpRow.focus();
-    await page.keyboard.press('Alt+ArrowUp');
-  }
+  // Move red.webp to the top with the keyboard: Space picks it up, Home
+  // moves it to the start, Space drops it.
+  await page
+    .getByRole('button', { name: 'Move red.webp', exact: true })
+    .focus();
+  await page.keyboard.press('Space');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Space');
   await expect(rows.first()).toContainText('red.webp');
 
-  await page.getByLabel('Page size', { exact: true }).selectOption('fit');
+  await page.getByRole('combobox', { name: 'Page size' }).click();
+  await page.getByRole('option', { name: 'Fit to image' }).click();
   await page.getByLabel('Margin (mm)', { exact: true }).fill('0');
-  await page.getByRole('button', { name: 'Create PDF' }).click();
+  await page.keyboard.press('Tab');
+  await page.getByRole('button', { name: /^Create a \d+-page PDF$/ }).click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download red.pdf', exact: true })
@@ -103,9 +107,9 @@ test('turns a sideways camera JPEG upright on an auto-oriented A4 page', async (
   await expect(
     page.getByRole('img', { name: 'camera.jpg', exact: true }),
   ).toBeVisible();
-  await page.getByLabel('Page size', { exact: true }).selectOption('a4');
-  await page.getByLabel('Orientation', { exact: true }).selectOption('auto');
-  await page.getByRole('button', { name: 'Create PDF' }).click();
+  await page.getByRole('combobox', { name: 'Page size' }).click();
+  await page.getByRole('option', { name: 'A4' }).click();
+  await page.getByRole('button', { name: /^Create a \d+-page PDF$/ }).click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download camera.pdf', exact: true })
@@ -129,8 +133,12 @@ test('names an image the browser cannot decode', async ({ page }) => {
     mimeType: 'image/webp',
     buffer: junk,
   });
-  await expect(page.locator('li[data-sortable-item]')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Create PDF' }).click();
+  await expect(
+    page
+      .getByRole('list', { name: 'Images in page order' })
+      .getByRole('listitem'),
+  ).toHaveCount(1);
+  await page.getByRole('button', { name: /^Create a \d+-page PDF$/ }).click();
   await expect(
     page.getByText('broken.webp could not be decoded as an image'),
   ).toBeVisible();

@@ -3,7 +3,9 @@ import { chromium, type FullConfig, type Page } from '@playwright/test';
 import { toolRoutes } from './tool-routes';
 
 const FIXTURE = 'test/fixtures/generated/text-3.pdf';
-const RENDERED = 'canvas[data-rendered="true"]';
+// Old tools draw pages on a canvas; redesigned ones show them as images.
+const RENDERED =
+  'canvas[data-rendered="true"], img[alt="Page 1"], img[alt$=", page 1"]';
 
 interface WarmRoute {
   route: string;
@@ -29,13 +31,14 @@ const TOOL_ROUTES: (string | WarmRoute)[] = [
   '/pdf/split',
   '/pdf/to-images',
   '/pdf/to-text',
-  '/pdf/compress',
-  '/pdf/protect',
+  // Compress and Protect show the opened file's page count, not its pages.
+  { route: '/pdf/compress', fixture: FIXTURE, ready: 'text=/^\\d+ pages?,/' },
+  { route: '/pdf/protect', fixture: FIXTURE, ready: 'text=/^\\d+ pages?,/' },
   // Image tools show <img> previews rather than pdf.js canvases.
   {
     route: '/pdf/images-to-pdf',
     fixture: 'test/fixtures/generated/photo.png',
-    ready: 'li[data-sortable-item] img',
+    ready: 'img[alt="photo.png"]',
   },
   // Fill & Sign: the mode's chunk and the render worker's detection.
   {

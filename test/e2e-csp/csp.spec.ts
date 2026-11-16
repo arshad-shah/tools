@@ -99,9 +99,11 @@ test('a PDF tool renders pages under the policy (pdf.js worker and wasm)', async
     .locator('input[type=file]')
     .first()
     .setInputFiles('test/fixtures/generated/text-3.pdf');
+  // The redesigned splitter shows each page as an image (a blob: URL) that
+  // the pdf.js worker rendered.
   await expect(
-    page.locator('canvas[data-rendered="true"]').first(),
-  ).toBeAttached();
+    page.getByRole('img', { name: 'Page 1', exact: true }),
+  ).toBeVisible();
   expect(await violations()).toEqual([]);
 });
 

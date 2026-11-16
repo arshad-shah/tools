@@ -80,8 +80,8 @@ function setup(files: File[]) {
 }
 
 const totals = () => within(screen.getByRole('group', { name: 'Totals' }));
-const cellTexts = () =>
-  screen.getAllByRole('gridcell').map((c) => c.textContent);
+/** The whole text of the file list (statuses included). */
+const listText = () => screen.getByRole('list', { name: 'Files' }).textContent;
 
 beforeEach(() => {
   localStorage.clear();
@@ -110,8 +110,8 @@ describe('ImageCompressor', () => {
     expect(h.process).toHaveBeenCalledTimes(2);
     expect(h.workers).toBe(2);
     expect(screen.getByText('Metadata removed (EXIF, GPS)')).toBeTruthy();
-    await waitFor(() => expect(cellTexts()).toContain('8 x 6'));
-    expect(cellTexts()).toContain('4 x 4');
+    await waitFor(() => expect(listText()).toContain('8 x 6'));
+    expect(listText()).toContain('4 x 4');
     expect(
       screen.getByRole('button', { name: 'Download all as ZIP' }),
     ).toHaveProperty('disabled', false);
@@ -129,13 +129,13 @@ describe('ImageCompressor', () => {
     setup([png('a.png'), png('b.png'), png('c.png')]);
 
     await waitFor(() => expect(h.process).toHaveBeenCalledTimes(2));
-    expect(cellTexts().filter((t) => t === 'Compressing')).toHaveLength(2);
-    expect(cellTexts()).toContain('Waiting');
+    expect(listText()?.match(/Compressing/g)).toHaveLength(2);
+    expect(listText()).toContain('Waiting');
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel all' }));
     await act(async () => {});
 
-    expect(cellTexts().filter((t) => t === 'Cancelled')).toHaveLength(3);
+    expect(listText()?.match(/Cancelled/g)).toHaveLength(3);
     expect(h.process).toHaveBeenCalledTimes(2);
     expect(h.terminate).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('button', { name: 'Cancel all' })).toBeNull();
@@ -149,14 +149,14 @@ describe('ImageCompressor', () => {
     const keep = await screen.findByRole('button', {
       name: 'Keep original for big.png',
     });
-    const grid = screen.getByRole('grid', { name: 'Files' });
+    const grid = screen.getByRole('list', { name: 'Files' });
     expect(grid.contains(keep)).toBe(true);
-    expect(cellTexts()).toContain('Not smaller');
+    expect(listText()).toContain('Not smaller');
     expect(totals().getByText(formatBytes(file.size + 100))).toBeTruthy();
 
     fireEvent.click(keep);
 
-    expect(cellTexts()).toContain('Kept original');
+    expect(listText()).toContain('Kept original');
     expect(
       screen.getByRole('button', { name: 'Use compressed for big.png' }),
     ).toBeTruthy();
@@ -164,7 +164,7 @@ describe('ImageCompressor', () => {
     expect(totals().getAllByText(formatBytes(file.size))).toHaveLength(2);
   });
 
-  it('downloads one finished file from its grid row', async () => {
+  it('downloads one finished file from its row', async () => {
     const file = png('small.png');
     h.process = vi.fn(() => Promise.resolve(result(10)));
     setup([file]);
@@ -172,7 +172,7 @@ describe('ImageCompressor', () => {
     const download = await screen.findByRole('button', {
       name: 'Download small.png',
     });
-    expect(screen.getByRole('grid', { name: 'Files' }).contains(download)).toBe(
+    expect(screen.getByRole('list', { name: 'Files' }).contains(download)).toBe(
       true,
     );
     fireEvent.click(download);
