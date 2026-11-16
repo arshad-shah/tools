@@ -12,9 +12,16 @@ import {
   historyKeymap,
   indentWithTab,
 } from '@codemirror/commands';
-import { bracketMatching, indentUnit } from '@codemirror/language';
+import {
+  bracketMatching,
+  foldGutter,
+  foldKeymap,
+  indentOnInput,
+  indentUnit,
+} from '@codemirror/language';
 import { lintGutter, lintKeymap, setDiagnostics } from '@codemirror/lint';
 import {
+  highlightSelectionMatches,
   openSearchPanel,
   search,
   searchKeymap,
@@ -71,6 +78,9 @@ import type { CodeEditorProps } from './types';
 /** Characters past which an editor enters large-document mode. */
 export const LARGE_DOCUMENT = 2_000_000;
 
+/** Languages whose brackets and quotes close themselves. */
+const PAIRED = new Set(['json', 'js', 'ts', 'css', 'html', 'xml', 'sql']);
+
 /** Marks a transaction that came from a new `value` prop, not the user. */
 const external = Transaction.userEvent.of('tools.external');
 
@@ -118,6 +128,14 @@ function diffChange(from: string, to: string) {
     to: from.length - end,
     insert: to.slice(start, to.length - end),
   };
+}
+
+/** The fold gutter's marker: a chevron drawn by the theme (no glyph). */
+function foldMarker(open: boolean): HTMLElement {
+  const el = document.createElement('span');
+  el.className = open ? 'cm-tl-fold-marker' : 'cm-tl-fold-marker cm-tl-closed';
+  el.setAttribute('aria-hidden', 'true');
+  return el;
 }
 
 interface Compartments {
@@ -226,7 +244,8 @@ export function CodeEditor({
     [],
   );
 
-  const locked = readOnly || (folds?.length ?? 0) > 0;
+  const hasFolds = (folds?.length ?? 0) > 0;
+  const locked = readOnly || hasFolds;
   const large =
     typeof largeDocument === 'boolean'
       ? largeDocument
@@ -236,12 +255,15 @@ export function CodeEditor({
   const label = ariaLabel ?? 'Code editor';
 
   // Each group of options as one extension, rebuilt when its inputs change.
+  // Brackets and quotes close themselves in code, not in prose, logs or
+  // one-line fields (a regex pattern means the "(" it types).
+  const pairs = !singleLine && PAIRED.has(language);
   const editableExt = useMemo<Extension>(
     () => [
       EditorState.readOnly.of(locked),
-      locked ? [] : [history(), closeBrackets()],
+      locked ? [] : [history(), pairs ? closeBrackets() : []],
     ],
-    [locked],
+    [locked, pairs],
   );
   const wrapExt = useMemo<Extension>(
     () => (wrap && !large && !singleLine ? EditorView.lineWrapping : []),
@@ -266,13 +288,27 @@ export function CodeEditor({
     if (diagnostics?.length) parts.push(lintGutter());
     if (!locked && !large)
       parts.push(highlightActiveLine(), highlightActiveLineGutter());
-    if (!large) parts.push(bracketMatching());
+    if (!large) parts.push(bracketMatching(), highlightSelectionMatches());
+    // Language folding (JSON objects, Markdown sections, XML elements), off
+    // where the tool folds lines itself or the document is huge.
+    if (gutter && !large && !hasFolds)
+      parts.push(foldGutter({ markerDOM: foldMarker }));
+    if (!locked && !large) parts.push(indentOnInput());
     return parts;
-  }, [singleLine, gutter, lineLabels, diagnostics?.length, locked, large]);
+  }, [
+    singleLine,
+    gutter,
+    lineLabels,
+    diagnostics?.length,
+    locked,
+    large,
+    hasFolds,
+  ]);
   const describedBy =
     [ariaDescribedBy, !locked && !singleLine ? hintId : undefined]
       .filter(Boolean)
       .join(' ') || undefined;
+  const invalid = !!diagnostics?.some((d) => d.severity === 'error');
   const attrsExt = useMemo<Extension>(() => {
     const attrs: Record<string, string> = {
       'aria-label': label,
@@ -287,8 +323,9 @@ export function CodeEditor({
     if (describedBy) attrs['aria-describedby'] = describedBy;
     if (locked) attrs['aria-readonly'] = 'true';
     if (singleLine) attrs['aria-multiline'] = 'false';
+    if (invalid) attrs['aria-invalid'] = 'true';
     return EditorView.contentAttributes.of(attrs);
-  }, [label, ariaLabelledBy, describedBy, locked, singleLine]);
+  }, [label, ariaLabelledBy, describedBy, locked, singleLine, invalid]);
   const sizeExt = useMemo(
     () =>
       sizeTheme(
@@ -399,6 +436,7 @@ export function CodeEditor({
             ...defaultKeymap,
             ...historyKeymap,
             ...lintKeymap,
+            ...foldKeymap,
             ...(singleLine ? [] : [indentWithTab]),
           ]),
           EditorView.updateListener.of((u) => {

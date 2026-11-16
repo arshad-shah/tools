@@ -6,6 +6,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { foldCode } from '@codemirror/language';
 import { EditorView } from '@codemirror/view';
 import { createRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -117,6 +118,7 @@ describe('CodeEditor', () => {
       expect(container.querySelector('.cm-lintRange-error')).not.toBeNull(),
     );
     expect(container.querySelector('.cm-lint-marker-error')).not.toBeNull();
+    expect(textbox().getAttribute('aria-invalid')).toBe('true');
     expect(screen.getByRole('status').textContent).toBe(
       'Error on line 2, column 9: Trailing comma',
     );
@@ -224,6 +226,39 @@ describe('CodeEditor', () => {
       screen.getByRole('button', { name: 'Show 3 hidden lines' }),
     );
     expect(onUnfold).toHaveBeenCalledWith(0);
+  });
+
+  it('folds language blocks from the gutter or the fold keys', async () => {
+    const { container } = render(
+      <CodeEditor
+        aria-label="Source"
+        language="json"
+        value={'{\n  "a": [\n    1,\n    2\n  ]\n}'}
+      />,
+    );
+    const view = viewOf(textbox());
+    // The JSON parser loads on demand; then the gutter offers folds.
+    await waitFor(() =>
+      expect(
+        container.querySelector('.cm-tl-fold-marker:not(.cm-tl-closed)'),
+      ).not.toBeNull(),
+    );
+    act(() => view.dispatch({ selection: { anchor: 8 } }));
+    act(() => {
+      foldCode(view);
+    });
+    expect(container.querySelector('.cm-foldPlaceholder')).not.toBeNull();
+  });
+
+  it('has no language folding where the tool folds lines itself', () => {
+    const { container } = render(
+      <CodeEditor
+        aria-label="Source"
+        value={'1\n2\n3'}
+        folds={[{ fromLine: 2, toLine: 2, label: '' }]}
+      />,
+    );
+    expect(container.querySelector('.cm-foldGutter')).toBeNull();
   });
 
   it('shows line labels instead of numbers', () => {

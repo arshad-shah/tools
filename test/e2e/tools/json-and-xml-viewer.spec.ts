@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { parse as parseYaml } from 'yaml';
 import { pathOf } from '../tool-routes';
+import { editorCaret, expectEditorValue } from '../editor';
 
 const BOOKSTORE = JSON.stringify(
   {
@@ -63,10 +64,9 @@ test('a JSON error shows its line and column, and Jump to error moves the caret'
   const alert = page.getByTestId('parse-error');
   await expect(alert).toContainText('line 3, column 1');
   await alert.getByRole('button', { name: 'Jump to error' }).click();
-  const caret = await editor(page).evaluate(
-    (el) => (el as HTMLTextAreaElement).selectionStart,
-  );
-  expect(caret).toBe('{\n  "a": 1,\n'.length);
+  await expect
+    .poll(() => editorCaret(editor(page)))
+    .toBe('{\n  "a": 1,\n'.length);
 });
 
 test('searching for ( is literal and never crashes', async ({ page }) => {
@@ -181,7 +181,8 @@ test('XML: XPath returns attribute rows and Format keeps the comment', async ({
   ).toContainText('/catalog/book[1]/@id');
   await editor(page).fill('<r><!-- keep me --><a>1</a></r>');
   await editor(page).press('ControlOrMeta+Shift+F');
-  await expect(editor(page)).toHaveValue(
+  await expectEditorValue(
+    editor(page),
     '<r>\n  <!-- keep me -->\n  <a>1</a>\n</r>\n',
   );
 });

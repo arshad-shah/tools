@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from './tool-routes';
+import { expectEditorValue } from './editor';
 
 /*
  * The cross-tool hand-off matrix (spec 10, plan H-1): one test per row.
@@ -51,7 +52,8 @@ test.describe('Mock Data', () => {
     await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
     await atTool(page, 'json-and-xml-viewer');
     await tab(page, 'Source');
-    await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+    await expectEditorValue(
+      page.getByRole('textbox', { name: 'Document' }),
       /^\[/,
     );
   });
@@ -73,7 +75,8 @@ test.describe('CSV Viewer', () => {
     await page.getByRole('menuitem', { name: /JSON & XML Viewer/ }).click();
     await atTool(page, 'json-and-xml-viewer');
     await tab(page, 'Source');
-    await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+    await expectEditorValue(
+      page.getByRole('textbox', { name: 'Document' }),
       /"Grace"/,
     );
   });
@@ -125,11 +128,13 @@ test('Formatter Show changes opens Text Diff with both sides', async ({
   await page.getByRole('button', { name: 'Show changes' }).click();
   await atTool(page, 'text-diff-checker');
   await tab(page, 'Original');
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue('{"b":1,"a":[1,2]}');
+    '{"b":1,"a":[1,2]}',
+  );
   await tab(page, 'Changed');
-  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Changed text' }),
     /\n/,
   );
 });
@@ -151,7 +156,8 @@ test.describe('Base64', () => {
     await page.getByRole('menuitem', { name: /JSON & XML Viewer/ }).click();
     await atTool(page, 'json-and-xml-viewer');
     await tab(page, 'Source');
-    await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+    await expectEditorValue(
+      page.getByRole('textbox', { name: 'Document' }),
       /"base64"/,
     );
   });
@@ -179,7 +185,8 @@ test.describe('JWT', () => {
     await page.getByRole('menuitem', { name: /JSON & XML Viewer/ }).click();
     await atTool(page, 'json-and-xml-viewer');
     await tab(page, 'Source');
-    await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+    await expectEditorValue(
+      page.getByRole('textbox', { name: 'Document' }),
       /workflow-user/,
     );
   });
@@ -218,7 +225,8 @@ test.describe('HTTP Client', () => {
     await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
     await atTool(page, 'json-and-xml-viewer');
     await tab(page, 'Source');
-    await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+    await expectEditorValue(
+      page.getByRole('textbox', { name: 'Document' }),
       /"token"/,
     );
   });
@@ -461,11 +469,13 @@ test('Log Viewer Compare selected opens Text Diff with both lines', async ({
   await page.getByRole('button', { name: /^Compare selected/ }).click();
   await atTool(page, 'text-diff-checker');
   await tab(page, 'Original');
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue(/left-line/);
+    /left-line/,
+  );
   await tab(page, 'Changed');
-  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Changed text' }),
     /right-line/,
   );
 });

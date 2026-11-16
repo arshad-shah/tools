@@ -110,6 +110,34 @@ const base = EditorView.theme({
   },
   '.cm-tl-range-diff-add': { backgroundColor: tint('success', 34) },
   '.cm-tl-range-diff-del': { backgroundColor: tint('danger', 34) },
+  '.cm-foldGutter .cm-gutterElement': {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '16px',
+    cursor: 'pointer',
+  },
+  // A chevron from two borders: down when open, right when folded.
+  '.cm-tl-fold-marker': {
+    width: '6px',
+    height: '6px',
+    borderRight: `1.5px solid ${c('muted')}`,
+    borderBottom: `1.5px solid ${c('muted')}`,
+    transform: 'translateY(-2px) rotate(45deg)',
+    opacity: '0.7',
+  },
+  '.cm-tl-fold-marker.cm-tl-closed': {
+    transform: 'rotate(-45deg)',
+    opacity: '1',
+  },
+  '.cm-gutterElement:hover .cm-tl-fold-marker': { opacity: '1' },
+  '.cm-foldPlaceholder': {
+    backgroundColor: c('soft'),
+    border: `1px solid ${c('line')}`,
+    color: c('muted'),
+    borderRadius: 'var(--cy-radius-sm)',
+    padding: '0 4px',
+  },
   '.cm-tl-fold': {
     padding: '2px 12px',
     backgroundColor: c('soft'),

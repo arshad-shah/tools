@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { applyPatch } from 'diff';
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
 const lines = (n: number, f: (i: number) => string = (i) => `line ${i}`) =>
   Array.from({ length: n }, (_, i) => f(i + 1)).join('\n');
@@ -30,9 +31,10 @@ test('text-diff-checker loads a file into the left pane', async ({ page }) => {
       mimeType: 'text/plain',
       buffer: Buffer.from('hello left'),
     });
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue('hello left');
+    'hello left',
+  );
 });
 
 test('text-diff-checker accepts a text/plain file of any extension', async ({
@@ -48,7 +50,8 @@ test('text-diff-checker accepts a text/plain file of any extension', async ({
       buffer: Buffer.from('print("right")'),
     });
   await show(page, 'Changed text');
-  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Changed text' }),
     'print("right")',
   );
 });
@@ -152,11 +155,13 @@ test('text-diff-checker takes a pair hand-off from the HTTP Client', async ({
   }, pathOf('text-diff-checker'));
   await expect(page.getByText('0 added, 0 removed, 1 changed')).toBeVisible();
   await show(page, 'Original text');
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue('{"v":1}');
+    '{"v":1}',
+  );
   await show(page, 'Changed text');
-  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Changed text' }),
     '{"v":2}',
   );
 });
