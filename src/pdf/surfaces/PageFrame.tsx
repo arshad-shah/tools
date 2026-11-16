@@ -5,6 +5,7 @@ import {
   type Viewport,
 } from '@/pdf/doc/geometry';
 import type { Box } from '@/pdf/doc/types';
+import { frameScale } from './geometry';
 
 export interface PageFrameProps {
   label: string;
@@ -19,6 +20,8 @@ export interface PageFrameProps {
   keepAspect?: boolean;
   /** Keep the box on the page. Default true. */
   bounded?: boolean;
+  /** Smallest width and height, in points. Default 4. */
+  minSize?: number;
   /** Adjust each proposed box, in page space. */
   snap?(box: Box): Box;
   onChange?(box: Box, rotate: number): void;
@@ -41,21 +44,30 @@ export function PageFrame({
   rotatable,
   keepAspect,
   bounded = true,
+  minSize = 4,
   snap,
   onChange,
   onCommit,
   'aria-describedby': describedBy,
 }: PageFrameProps) {
+  // Frame units are points across the page as shown (x right, y down), so
+  // the arrow keys move by a point at any zoom.
+  const s = frameScale(viewport);
   const toScreen = (b: Box): FrameBox => {
     const r = boxToScreen(viewport, b);
-    return { x: r.left, y: r.top, width: r.width, height: r.height };
+    return {
+      x: r.left / s,
+      y: r.top / s,
+      width: r.width / s,
+      height: r.height / s,
+    };
   };
   const toPage = (f: FrameBox): Box =>
     screenRectToBox(viewport, {
-      left: f.x,
-      top: f.y,
-      width: f.width,
-      height: f.height,
+      left: f.x * s,
+      top: f.y * s,
+      width: f.width * s,
+      height: f.height * s,
     });
   return (
     <SelectionFrame
@@ -66,10 +78,11 @@ export function PageFrame({
       resizable={resizable}
       rotatable={rotatable}
       keepAspect={keepAspect}
-      minSize={4}
+      scale={s}
+      minSize={minSize}
       bounds={
         bounded && viewport.width > 0 && viewport.height > 0
-          ? { width: viewport.width, height: viewport.height }
+          ? { width: viewport.width / s, height: viewport.height / s }
           : undefined
       }
       snap={snap ? (f) => toScreen(snap(toPage(f))) : undefined}

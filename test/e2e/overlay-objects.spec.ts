@@ -76,12 +76,16 @@ async function moveResizeDeleteUndo(
   { resize = true }: { resize?: boolean } = {},
 ) {
   await expect(obj).toHaveCount(1);
-  await obj.click();
+  // A placed object comes selected; its frame then lies over it.
+  if ((await obj.getAttribute('aria-pressed')) !== 'true') await obj.click();
   await expect(obj).toHaveAttribute('aria-pressed', 'true');
   await settled(page);
   await obj.scrollIntoViewIfNeeded();
   const p0 = await pageBox(page, obj);
-  const from = centre(await boxOf(obj));
+  // A third of the way across: on a thin object the frame's edge handles
+  // sit at the middle (Cynosure shows every handle).
+  const ob = await boxOf(obj);
+  const from = { x: ob.x + ob.width / 3, y: ob.y + ob.height / 2 };
   await drag(page, from, { x: from.x + 40, y: from.y + 30 });
   await settled(page);
   const p1 = await pageBox(page, obj);
@@ -176,22 +180,26 @@ test.describe('Edit objects', () => {
     await expect(shapes).toHaveCount(2);
     // Marquee from empty page space around both.
     await drag(page, await at(page, 80, 420), await at(page, 400, 340));
-    await expect(page.getByTestId('selection-frame')).toHaveCount(2);
+    // One frame moves the group; each object is marked.
+    await expect(page.getByTestId('selection-mark')).toHaveCount(2);
+    await expect(page.getByTestId('selection-frame')).toHaveCount(1);
     // Esc deselects.
-    await shapes.first().focus();
+    await page.getByRole('group', { name: '2 objects' }).focus();
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('selection-frame')).toHaveCount(0);
     // Shift-click builds a selection; arrows move both.
     await shapes.nth(0).click();
     await shapes.nth(1).click({ modifiers: ['Shift'] });
-    await expect(page.getByTestId('selection-frame')).toHaveCount(2);
+    await expect(page.getByTestId('selection-mark')).toHaveCount(2);
     const before = await boxOf(shapes.nth(1));
     await page.keyboard.press('Shift+ArrowRight');
     await expect
       .poll(async () => (await boxOf(shapes.nth(1))).x - before.x)
       .toBeGreaterThan(5);
-    // Right-click: Duplicate makes copies.
-    await shapes.nth(1).click({ button: 'right' });
+    // Right-click the selection: Duplicate makes copies.
+    await page
+      .getByRole('group', { name: '2 objects' })
+      .click({ button: 'right' });
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
     await expect(shapes).toHaveCount(4);
     await page.keyboard.press('ControlOrMeta+z');
@@ -443,7 +451,7 @@ test('hit-testing follows the pointer on a rotated page, zoomed in', async ({
   await expect(
     page.getByRole('button', { name: 'Undo Rotate page 1 clockwise' }),
   ).toBeAttached();
-  await page.getByRole('tab', { name: /Edit/ }).click();
+  await page.getByRole('radio', { name: /Edit/ }).click();
   await page.keyboard.press('ControlOrMeta+1');
   await page.keyboard.press('ControlOrMeta+=');
   await page.keyboard.press('ControlOrMeta+=');

@@ -1,5 +1,12 @@
-import { useRef, useState } from 'react';
-import { Button, Popover, Stack, Text, Textarea } from '@/shared/ui';
+import {
+  Button,
+  Inline,
+  Popover,
+  Stack,
+  Text,
+  TextArea,
+} from '@arshad-shah/cynosure';
+import { useState } from 'react';
 import type { TextPrompt as Prompt } from './ui-store';
 
 export const COVER_COPY =
@@ -18,60 +25,57 @@ export function TextPrompt({
   onCancel(): void;
 }) {
   const [text, setText] = useState('');
-  const field = useRef<HTMLTextAreaElement>(null);
   const cover = prompt.kind === 'cover';
   const label = cover ? 'Replacement text' : 'Text';
   const empty = text.trim() === '';
+  const save = () => {
+    if (cover || !empty) onSave(text);
+  };
   return (
     <Popover
       open
       onOpenChange={(open) => !open && onCancel()}
       anchor={{ getBoundingClientRect: anchor }}
       label={cover ? 'Cover and replace' : 'Add text'}
-      initialFocus={field}
+      initialFocus="first"
       modal
+      size="sm"
     >
-      <form
-        className="w-72 p-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (cover || !empty) onSave(text);
-        }}
-      >
-        <Stack gap="2">
-          {cover ? (
-            <Text size="xs" tone="muted">
-              {COVER_COPY}
-            </Text>
-          ) : null}
-          <Textarea
-            ref={field}
-            aria-label={label}
-            value={text}
-            onChange={setText}
-            rows={3}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                if (cover || !empty) onSave(text);
-              }
-            }}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              type="submit"
-              disabled={!cover && empty}
-            >
-              {cover ? 'Cover' : 'Add text'}
-            </Button>
-          </div>
-        </Stack>
-      </form>
+      <Stack gap="3">
+        {cover ? (
+          <Text as="p" size="sm" tone="muted">
+            {COVER_COPY}
+          </Text>
+        ) : null}
+        <TextArea
+          label={label}
+          labelHidden
+          value={text}
+          onChange={setText}
+          rows={3}
+          description="Ctrl Enter saves."
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              save();
+            }
+          }}
+        />
+        <Inline gap="2" justify="end">
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            tone="accent"
+            size="sm"
+            disabled={!cover && empty}
+            onClick={save}
+          >
+            {cover ? 'Cover' : 'Add text'}
+          </Button>
+        </Inline>
+      </Stack>
     </Popover>
   );
 }

@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import type React from 'react';
-import {
-  FieldBox,
-  SelectionFrame,
-  type FieldBoxState,
-  type OverlayTransform,
-} from '@/shared/ui';
+import type { OverlayTransform } from '@/shared/ui';
+import { FieldBox, type FieldBoxState } from '@/pdf/surfaces/FieldBox';
+import { matrixViewport } from '@/pdf/surfaces/geometry';
+import { PageFrame } from '@/pdf/surfaces/PageFrame';
 import type { Box } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { advance, resizeField, writeValue } from './actions';
@@ -85,8 +83,8 @@ export function FieldItem({
       <>
         {value}
         <FocusOnMount active onLeave={() => fillSign.set({ resizing: null })}>
-          <SelectionFrame
-            transform={transform}
+          <PageFrame
+            viewport={matrixViewport(transform)}
             box={preview ?? x.rect}
             resizable
             snap={snap}

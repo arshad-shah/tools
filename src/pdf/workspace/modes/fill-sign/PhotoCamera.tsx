@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { IconCamera } from '@/shared/ui/icons';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  CameraCapture,
-  CameraFrameGuide,
-  LoadingState,
-  Stack,
-} from '@/shared/ui';
+import { camera as cameraIcon } from '@arshad-shah/cynosure/icons';
+import { Button, Inline, Notice, Stack } from '@arshad-shah/cynosure';
+// Cynosure has no camera view (docs/cynosure-gaps.md): the video surface
+// stays the kit's; every control around it is Cynosure.
+import { CameraCapture, CameraFrameGuide } from '@/shared/ui';
+import { LoadingLine } from '../../ui/states';
 import { CAMERA_BLOCKED } from '@/shared/ui/camera-errors';
 import type { ToolError } from '@/shared/lib/errors';
 
@@ -59,12 +55,7 @@ export function PhotoCamera({
   );
 
   // getUserMedia exists only in secure contexts (https, localhost).
-  if (insecure())
-    return (
-      <Alert status="warning">
-        <AlertDescription>{CAMERA_UNAVAILABLE}</AlertDescription>
-      </Alert>
-    );
+  if (insecure()) return <Notice tone="warning">{CAMERA_UNAVAILABLE}</Notice>;
 
   return (
     <Stack gap="3">
@@ -86,30 +77,32 @@ export function PhotoCamera({
         onError={(e) => setProblem(problemText(e))}
       />
       {active && !hasFrame ? (
-        <LoadingState label="Waiting for camera permission" className="py-4" />
+        <LoadingLine label="Waiting for camera permission" />
       ) : null}
       {problem ? (
-        <Alert status={problem === CAMERA_DENIED ? 'warning' : 'danger'}>
-          <AlertDescription>{problem}</AlertDescription>
-        </Alert>
+        <Notice tone={problem === CAMERA_DENIED ? 'warning' : 'danger'}>
+          {problem}
+        </Notice>
       ) : null}
       {active ? (
-        <Button
-          variant="primary"
-          leftIcon={<IconCamera size="sm" />}
-          disabled={disabled || !hasFrame}
-          onClick={() => {
-            const b = frame.current;
-            if (!b) return;
-            frame.current = null;
-            setHasFrame(false);
-            setActive(false);
-            onCapture(b);
-          }}
-          className="self-start"
-        >
-          Capture
-        </Button>
+        <Inline>
+          <Button
+            variant="solid"
+            tone="accent"
+            icon={cameraIcon}
+            disabled={disabled || !hasFrame}
+            onClick={() => {
+              const b = frame.current;
+              if (!b) return;
+              frame.current = null;
+              setHasFrame(false);
+              setActive(false);
+              onCapture(b);
+            }}
+          >
+            Capture
+          </Button>
+        </Inline>
       ) : null}
     </Stack>
   );

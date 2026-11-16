@@ -1,13 +1,13 @@
 import { ColorField } from './ColorField';
 import {
   Button,
-  InspectorSection,
-  Label,
-  NumberInput,
+  Grid,
+  NumberField,
   Select,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { InspectorSection } from '../../ui/InspectorSection';
 import type { ContentFont } from '@/pdf/doc/ops/edit';
 import type { ModeProps } from '../types';
 import {
@@ -42,22 +42,24 @@ function Arrange(ctx: ModeProps) {
   return (
     <InspectorSection title="Arrange">
       <Stack gap="2">
-        <div className="grid grid-cols-2 gap-1">
+        <Grid columns={2} gap="2">
           {aligns.map(([how, label]) => (
             <Button
               key={how}
               size="sm"
-              variant="secondary"
+              variant="outline"
+              fullWidth
               onClick={() => act.align(how)}
             >
               {label}
             </Button>
           ))}
-        </div>
-        <div className="grid grid-cols-2 gap-1">
+        </Grid>
+        <Grid columns={2} gap="2">
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
+            fullWidth
             disabled={n < 3}
             onClick={() => act.distribute('horizontal')}
           >
@@ -65,13 +67,14 @@ function Arrange(ctx: ModeProps) {
           </Button>
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
+            fullWidth
             disabled={n < 3}
             onClick={() => act.distribute('vertical')}
           >
             Distribute down
           </Button>
-        </div>
+        </Grid>
       </Stack>
     </InspectorSection>
   );
@@ -83,27 +86,25 @@ function Defaults() {
   return (
     <InspectorSection title="New objects">
       <Stack gap="3">
-        <Stack gap="1">
-          <Label htmlFor="edit-default-font">Font</Label>
-          <Select
-            id="edit-default-font"
-            value={ui.text.font}
-            onValueChange={(font) =>
-              setEditUi({ text: { ...ui.text, font: font as ContentFont } })
-            }
-            items={FONTS}
-          />
-        </Stack>
-        <Stack gap="1">
-          <Label htmlFor="edit-default-size">Text size</Label>
-          <NumberInput
-            id="edit-default-size"
-            value={ui.text.size}
-            min={4}
-            max={288}
-            onValueChange={(size) => setEditUi({ text: { ...ui.text, size } })}
-          />
-        </Stack>
+        <Select
+          label="Font"
+          size="sm"
+          value={ui.text.font}
+          onChange={(font) =>
+            setEditUi({ text: { ...ui.text, font: font as ContentFont } })
+          }
+          options={FONTS}
+        />
+        <NumberField
+          label="Text size"
+          size="sm"
+          value={ui.text.size}
+          min={4}
+          max={288}
+          onChange={(size) =>
+            size !== null && setEditUi({ text: { ...ui.text, size } })
+          }
+        />
         <ColorField
           label="Text colour"
           value={ui.text.color}
@@ -149,19 +150,17 @@ export function EditInspector(ctx: ModeProps) {
     );
   const selected = selectedObjects(ctx.doc, ctx.selection);
   return (
-    <div>
+    <Stack gap="3">
       {HINTS[tool] ? (
-        <div className="p-3">
-          <Text size="sm" tone="muted">
-            {HINTS[tool]}
-          </Text>
-        </div>
+        <Text as="p" size="sm" tone="muted">
+          {HINTS[tool]}
+        </Text>
       ) : null}
       {selected.length === 1 ? (
         <ObjectInspector ctx={ctx} item={selected[0]} />
       ) : null}
       <Arrange {...ctx} />
       {selected.length === 0 ? <Defaults /> : null}
-    </div>
+    </Stack>
   );
 }

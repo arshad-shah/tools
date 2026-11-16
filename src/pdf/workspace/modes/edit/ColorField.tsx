@@ -1,7 +1,6 @@
-import { useId } from 'react';
-import { ColorInput, Label, Stack } from '@/shared/ui';
+import { ColorField as CyColorField } from '@arshad-shah/cynosure';
 
-/** A labelled colour field (visible label, hex input and picker). */
+/** A labelled colour (hex) with Cynosure's picker. */
 export function ColorField({
   label,
   value,
@@ -11,11 +10,7 @@ export function ColorField({
   value: string;
   onChange(hex: string): void;
 }) {
-  const id = useId();
   return (
-    <Stack gap="1">
-      <Label htmlFor={id}>{label}</Label>
-      <ColorInput id={id} label={label} value={value} onChange={onChange} />
-    </Stack>
+    <CyColorField label={label} value={value} onChange={onChange} size="sm" />
   );
 }

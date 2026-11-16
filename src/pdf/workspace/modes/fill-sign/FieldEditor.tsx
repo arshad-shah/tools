@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
-import { IconAlertTriangle } from '@/shared/ui/icons';
+import { warning as warningIcon } from '@arshad-shah/cynosure/icons';
 import {
-  DateInput,
-  Input,
-  PageTextInput,
+  Card,
+  DateField,
+  Inline,
+  Icon,
   Select,
+  Stack,
   Text,
-  Textarea,
-} from '@/shared/ui';
+  TextArea,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { PageTextInput } from '@/shared/ui';
+import { Below, Layer } from '@/pdf/surfaces/layers';
 import type { ViewField } from './fields';
 import { displayToIso, isoToDisplay } from './dates';
 import { fitsBox } from './text-measure';
@@ -72,15 +77,12 @@ export function FieldEditor({
   );
   const [value, setRaw] = useState(initial);
   const wrap = useRef<HTMLDivElement>(null);
-  const picker = useRef<HTMLSelectElement>(null);
   // A dropdown opens its list straight away: one click to choose, as in a
   // PDF viewer, not a second click on a small select box.
   useEffect(() => {
-    try {
-      picker.current?.showPicker?.();
-    } catch {
-      // No user activation left (opened from the keyboard): focus is enough.
-    }
+    wrap.current
+      ?.querySelector<HTMLElement>('[role="combobox"][aria-haspopup="listbox"]')
+      ?.click();
   }, []);
   // Enter, Tab, Esc or Done settled the edit; otherwise unmounting keeps it.
   const settled = useRef(false);
@@ -153,14 +155,16 @@ export function FieldEditor({
     !fitsBox(value, field.rect, field.type === 'multiline');
   const name = field.label ?? 'Field';
   const warning = tooLong ? (
-    <Text size="xs" className="flex items-center gap-1 px-1 text-warning">
-      <IconAlertTriangle size="xs" />
-      Text is too long for this field
-    </Text>
+    <Inline gap="1" align="center">
+      <Icon icon={warningIcon} size="sm" tone="warning" />
+      <Text size="xs" tone="warning">
+        Text is too long for this field
+      </Text>
+    </Inline>
   ) : null;
   if (inline && field.type === 'text')
     return (
-      <div ref={wrap} onKeyDown={onKeyDown} className="absolute inset-0">
+      <Layer ref={wrap} onKeyDown={onKeyDown}>
         <PageTextInput
           aria-label={name}
           aria-keyshortcuts={onSettings ? 'Alt+T' : undefined}
@@ -171,49 +175,62 @@ export function FieldEditor({
           cellPx={inline.cellPx}
         />
         {warning ? (
-          <div className="absolute top-full left-0 mt-1 w-max max-w-[60vw] rounded-md bg-surface shadow-e2">
-            {warning}
-          </div>
+          <Below minWidth={0}>
+            <Card padding="sm">{warning}</Card>
+          </Below>
         ) : null}
-      </div>
+      </Layer>
     );
   return (
-    <div
+    <Below
       ref={wrap}
       onKeyDown={onKeyDown}
-      className="absolute top-full left-0 z-10 mt-1 flex min-w-full flex-col gap-1 rounded-md bg-surface p-0.5 shadow-e3 data-[choice]:min-w-40"
-      data-choice={field.type === 'choice' ? '' : undefined}
+      minWidth={field.type === 'choice' ? 200 : undefined}
     >
-      {field.type === 'multiline' ? (
-        <Textarea
-          aria-label={name}
-          value={value}
-          onChange={setValue}
-          rows={3}
-        />
-      ) : field.type === 'date' ? (
-        <DateInput label={name} value={value} onChange={setValue} />
-      ) : field.type === 'choice' ? (
-        <Select
-          ref={picker}
-          aria-label={name}
-          value={value}
-          items={(field.widget?.options ?? []).map((o) => ({
-            value: o,
-            // Forms often start on a blank " " option.
-            label: o.trim() ? o : '(none)',
-          }))}
-          onValueChange={setValue}
-        />
-      ) : (
-        <Input
-          aria-label={name}
-          aria-keyshortcuts={onSettings ? 'Alt+T' : undefined}
-          value={value}
-          onChange={setValue}
-        />
-      )}
-      {warning}
-    </div>
+      <Card padding="sm">
+        <Stack gap="2">
+          {field.type === 'multiline' ? (
+            <TextArea
+              label={name}
+              labelHidden
+              value={value}
+              onChange={setValue}
+              rows={3}
+            />
+          ) : field.type === 'date' ? (
+            <DateField
+              label={name}
+              labelHidden
+              size="sm"
+              value={value || null}
+              onChange={(d) => setValue(d ?? '')}
+            />
+          ) : field.type === 'choice' ? (
+            <Select
+              label={name}
+              labelHidden
+              size="sm"
+              value={value}
+              options={(field.widget?.options ?? []).map((o) => ({
+                value: o,
+                // Forms often start on a blank " " option.
+                label: o.trim() ? o : '(none)',
+              }))}
+              onChange={setValue}
+            />
+          ) : (
+            <TextField
+              label={name}
+              labelHidden
+              size="sm"
+              aria-keyshortcuts={onSettings ? 'Alt+T' : undefined}
+              value={value}
+              onChange={setValue}
+            />
+          )}
+          {warning}
+        </Stack>
+      </Card>
+    </Below>
   );
 }

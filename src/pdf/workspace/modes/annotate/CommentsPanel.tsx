@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
-  Input,
-  InspectorSection,
-  Label,
+  Card,
+  Inline,
   Select,
   Stack,
   Switch,
   Text,
-} from '@/shared/ui';
-import { IconReply, IconTrash } from '@/shared/ui/icons';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { cornerDownLeft, trash } from '@arshad-shah/cynosure/icons';
+import { InspectorSection } from '../../ui/InspectorSection';
 import { currentAuthor } from '@/pdf/doc/ops';
 import type { ModeProps } from '../types';
 import { relativeTime } from '../../relative-time';
@@ -17,7 +18,7 @@ import { commentRows, type CommentRow } from './comments-rows';
 import { useAllExisting } from './existing';
 import { getAnnotateUi, setAnnotateUi, useAnnotateUi } from './ui-store';
 
-const ALL = '';
+const ALL = '*';
 
 /** Centres the annotation's anchor in the canvas and focuses its page. */
 function goTo(ctx: ModeProps, row: CommentRow) {
@@ -41,17 +42,15 @@ function AuthorField({ ctx }: { ctx: ModeProps }) {
       ctx.doc.dispatch({ type: 'annot.author', params: { name } });
   };
   return (
-    <Stack gap="1">
-      <Label htmlFor="annotate-author">Your name for comments</Label>
-      <Input
-        id="annotate-author"
-        value={value}
-        maxLength={200}
-        onChange={(v) => setDraft({ base: author, value: v })}
-        onBlur={commit}
-        onKeyDown={(e) => e.key === 'Enter' && commit()}
-      />
-    </Stack>
+    <TextField
+      label="Your name for comments"
+      size="sm"
+      value={value}
+      maxLength={200}
+      onChange={(v) => setDraft({ base: author, value: v })}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === 'Enter' && commit()}
+    />
   );
 }
 
@@ -60,16 +59,11 @@ function StyleSection() {
   const ui = useAnnotateUi();
   return (
     <InspectorSection title="Display">
-      <Stack gap="3">
-        <div className="flex items-center justify-between gap-2">
-          <Label htmlFor="annotate-hide">Hide existing annotations</Label>
-          <Switch
-            id="annotate-hide"
-            checked={ui.hideExisting}
-            onCheckedChange={(hideExisting) => setAnnotateUi({ hideExisting })}
-          />
-        </div>
-      </Stack>
+      <Switch
+        label="Hide existing annotations"
+        checked={ui.hideExisting}
+        onChange={(hideExisting) => setAnnotateUi({ hideExisting })}
+      />
     </InspectorSection>
   );
 }
@@ -90,29 +84,27 @@ function Row({
       params: { pageId: row.pageId, target: row.target },
     });
   return (
-    <li
-      className="border-b border-line py-2 last:border-b-0"
-      data-testid="comment-row"
-    >
-      <Stack gap="1">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+    <Card as="li" variant="outline" padding="sm" data-testid="comment-row">
+      <Stack gap="2">
+        <Inline gap="2" justify="between" align="baseline" wrap>
           <Text size="sm" weight="medium">
             {row.author}
           </Text>
           <Text size="xs" tone="muted">
-            {row.type}, page {row.pageNumber}
-            {row.at !== null ? (
-              <span data-dynamic>, {relativeTime(row.at)}</span>
-            ) : null}
+            {`${row.type}, page ${row.pageNumber}${row.at !== null ? `, ${relativeTime(row.at)}` : ''}`}
           </Text>
-        </div>
+        </Inline>
         {parent ? (
           <Text size="xs" tone="muted">
             Reply to {parent.author}
           </Text>
         ) : null}
-        {row.text ? <Text size="sm">{row.text}</Text> : null}
-        <div className="flex flex-wrap gap-1">
+        {row.text ? (
+          <Text as="p" size="sm">
+            {row.text}
+          </Text>
+        ) : null}
+        <Inline gap="1" wrap>
           <Button size="sm" variant="ghost" onClick={() => goTo(ctx, row)}>
             Go to
           </Button>
@@ -120,7 +112,7 @@ function Row({
             <Button
               size="sm"
               variant="ghost"
-              leftIcon={<IconReply size="sm" />}
+              icon={cornerDownLeft}
               onClick={() =>
                 setAnnotateUi({
                   editor: {
@@ -178,14 +170,15 @@ function Row({
           <Button
             size="sm"
             variant="ghost"
-            leftIcon={<IconTrash size="sm" />}
+            tone="danger"
+            icon={trash}
             onClick={del}
           >
             Delete
           </Button>
-        </div>
+        </Inline>
       </Stack>
-    </li>
+    </Card>
   );
 }
 
@@ -208,16 +201,18 @@ export function CommentsPanel(ctx: ModeProps) {
       (type === ALL || r.type === type),
   );
   return (
-    <div>
+    <Stack gap="2">
       <InspectorSection title="Comments">
         <Stack gap="3">
           <AuthorField ctx={ctx} />
-          <div className="grid grid-cols-1 gap-2">
+          <Stack gap="2">
             <Select
-              aria-label="Filter by page"
+              label="Filter by page"
+              labelHidden
+              size="sm"
               value={page}
-              onValueChange={setPage}
-              items={[
+              onChange={setPage}
+              options={[
                 { value: ALL, label: 'All pages' },
                 ...[...new Set(rows.map((r) => r.pageNumber))]
                   .sort((a, b) => a - b)
@@ -225,10 +220,12 @@ export function CommentsPanel(ctx: ModeProps) {
               ]}
             />
             <Select
-              aria-label="Filter by author"
+              label="Filter by author"
+              labelHidden
+              size="sm"
               value={author}
-              onValueChange={setAuthor}
-              items={[
+              onChange={setAuthor}
+              options={[
                 { value: ALL, label: 'All authors' },
                 ...distinct((r) => r.author).map((a) => ({
                   value: a,
@@ -237,31 +234,33 @@ export function CommentsPanel(ctx: ModeProps) {
               ]}
             />
             <Select
-              aria-label="Filter by type"
+              label="Filter by type"
+              labelHidden
+              size="sm"
               value={type}
-              onValueChange={setType}
-              items={[
+              onChange={setType}
+              options={[
                 { value: ALL, label: 'All types' },
                 ...distinct((r) => r.type).map((t) => ({ value: t, label: t })),
               ]}
             />
-          </div>
+          </Stack>
           {shown.length === 0 ? (
-            <Text size="sm" tone="muted">
+            <Text as="p" size="sm" tone="muted">
               {rows.length === 0
                 ? 'No annotations yet.'
                 : 'No annotations match these filters.'}
             </Text>
           ) : (
-            <ul aria-label="Annotations" className="m-0 list-none p-0">
+            <Stack as="ul" gap="2" aria-label="Annotations">
               {shown.map((r) => (
                 <Row key={r.key} row={r} ctx={ctx} all={rows} />
               ))}
-            </ul>
+            </Stack>
           )}
         </Stack>
       </InspectorSection>
       <StyleSection />
-    </div>
+    </Stack>
   );
 }

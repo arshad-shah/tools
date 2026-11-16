@@ -60,7 +60,7 @@ test('the old watermark and page-number tools are gone', async ({ page }) => {
   for (const path of ['/pdf/watermark', '/pdf/page-numbers']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      `No page at ${path}`,
+      'This page does not exist',
     );
   }
 });

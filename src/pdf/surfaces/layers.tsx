@@ -4,6 +4,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
+import { boxRect } from './geometry';
 
 /*
  * Drawing-surface layout for the PDF workspace (redesign spec rule 1: only
@@ -35,8 +36,13 @@ export const PageSlot = forwardRef<
 /** A layer over the whole page. `passive` lets the pointer through. */
 export const Layer = forwardRef<
   HTMLDivElement,
-  DivProps & { passive?: boolean; clip?: boolean }
->(function Layer({ passive, clip, children, ...rest }, ref) {
+  DivProps & {
+    passive?: boolean;
+    clip?: boolean;
+    /** A drawing tool: crosshair cursor, and touch draws instead of scrolling. */
+    crosshair?: boolean;
+  }
+>(function Layer({ passive, clip, crosshair, children, ...rest }, ref) {
   return (
     <div
       ref={ref}
@@ -45,6 +51,8 @@ export const Layer = forwardRef<
         inset: 0,
         pointerEvents: passive ? 'none' : undefined,
         overflow: clip ? 'hidden' : undefined,
+        cursor: crosshair ? 'crosshair' : undefined,
+        touchAction: crosshair ? 'none' : undefined,
       }}
       {...rest}
     >
@@ -138,6 +146,102 @@ export function Centre({ children }: { children: ReactNode }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A box hung under the page box it belongs to (an editor under a form
+ * field): at least as wide as the box, above the page's other layers.
+ */
+export const Below = forwardRef<
+  HTMLDivElement,
+  DivProps & { minWidth?: number }
+>(function Below({ minWidth, children, ...rest }, ref) {
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        zIndex: 10,
+        marginTop: 4,
+        minWidth: minWidth ?? '100%',
+      }}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+});
+
+/**
+ * Paper over a page box: hides what the page draws there (a value being
+ * replaced). White in both themes, as the page is.
+ */
+export function Paper({
+  transform,
+  box,
+}: {
+  transform: Matrix;
+  box: { x: number; y: number; width: number; height: number };
+}) {
+  const r = boxRect(transform, box);
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        left: r.x,
+        top: r.y,
+        width: r.width,
+        height: r.height,
+        pointerEvents: 'none',
+        background: '#fff',
+        border: '1px solid rgb(0 0 0 / 0.3)',
+      }}
+    />
+  );
+}
+
+/** Where something will go: a dashed accent outline filling its box. */
+export function Placeholder({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        border: '1px dashed var(--cy-color-accent)',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** A line of text on the paper (dark in both themes), cut short to its box. */
+export function PaperLine({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+        color: '#111',
+        fontSize: 12,
+        fontFamily: 'var(--cy-font-sans)',
       }}
     >
       {children}

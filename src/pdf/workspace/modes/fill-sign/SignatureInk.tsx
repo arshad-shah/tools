@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
-import { IconEraser, IconUndo } from '@/shared/ui/icons';
+import { eraser, undo as undoIcon } from '@arshad-shah/cynosure/icons';
 import {
   Button,
   Inline,
@@ -7,7 +7,7 @@ import {
   SignaturePad,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
 import { isTypingTarget, matchesHotkey } from '@/shared/lib/hotkeys';
 import {
   inkToVector,
@@ -78,17 +78,27 @@ export const SignatureInk: React.FC<
     if (!disabled && strokes.length > 0) commit(strokes.slice(0, -1));
   };
 
+  // The pad's own undo while focus is in its area, not the document's.
+  const area = useRef<HTMLElement>(null);
+  const undoRef = useRef(undo);
+  useEffect(() => {
+    undoRef.current = undo;
+  });
+  useEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target) || !matchesHotkey(e, UNDO)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      undoRef.current();
+    };
+    el.addEventListener('keydown', onKey);
+    return () => el.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
-    <Stack
-      gap="3"
-      onKeyDown={(e) => {
-        if (isTypingTarget(e.target) || !matchesHotkey(e, UNDO)) return;
-        // The pad's own undo, not the document's.
-        e.preventDefault();
-        e.stopPropagation();
-        undo();
-      }}
-    >
+    <Stack gap="3" ref={area}>
       <SignaturePad
         value={strokes}
         space={PAD}
@@ -98,7 +108,7 @@ export const SignatureInk: React.FC<
         ink={ink}
         weight={weight}
         disabled={disabled}
-        className="aspect-[8/3] w-full max-w-120 rounded-md border border-line bg-white"
+        style={{ inlineSize: '100%', maxInlineSize: 480 }}
       />
       <Text id={hintId} size="sm" tone="muted">
         Draw with a mouse, pen or finger. Using a keyboard? Use the Type tab.
@@ -114,12 +124,12 @@ export const SignatureInk: React.FC<
           size="sm"
           value={weight}
           options={WEIGHTS.map((o) => ({ ...o, disabled }))}
-          onChange={(w) => commit(strokes, ink, w)}
+          onChange={(w) => commit(strokes, ink, w as InkWeight)}
         />
         <Button
           size="sm"
-          variant="secondary"
-          leftIcon={<IconUndo size="sm" />}
+          variant="outline"
+          icon={undoIcon}
           disabled={disabled || strokes.length === 0}
           onClick={undo}
         >
@@ -128,7 +138,7 @@ export const SignatureInk: React.FC<
         <Button
           size="sm"
           variant="ghost"
-          leftIcon={<IconEraser size="sm" />}
+          icon={eraser}
           disabled={disabled || strokes.length === 0}
           onClick={() => commit([])}
         >

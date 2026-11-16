@@ -1,5 +1,5 @@
 import { newId } from '@/shared/lib/id';
-import type { ObjectChange, ObjectOrder } from '@/shared/ui';
+import type { ObjectChange, ObjectOrder } from '@/pdf/surfaces/ObjectLayer';
 import { fitGeometry } from '@/pdf/doc/object-geometry';
 import { findOverlay } from '@/pdf/doc/page-map';
 import type { NewOperation, OpId, OverlayItem, PageId } from '@/pdf/doc/types';

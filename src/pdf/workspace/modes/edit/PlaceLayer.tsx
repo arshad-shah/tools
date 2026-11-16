@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
-import { OverlayLayer, ShapeLayer, type Shape } from '@/shared/ui';
+import { ShapeLayer, type Shape } from '@/shared/ui/shape-layer';
+import { Layer } from '@/pdf/surfaces/layers';
 import { toPage, type Viewport } from '@/pdf/doc/geometry';
 import type { Box, OpId, PageRef } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';
@@ -116,17 +117,14 @@ export function PlaceLayer({
     : [];
 
   return (
-    <OverlayLayer
-      width={width}
-      height={height}
-      interactive
-      label={`Place on page ${pageNumber}`}
-      className="cursor-crosshair touch-none"
+    <Layer
+      role="group"
+      aria-label={`Place on page ${pageNumber}`}
       data-testid={`edit-place-${pageNumber}`}
+      crosshair
     >
-      <div
+      <Layer
         ref={ref}
-        className="absolute inset-0"
         onPointerDown={(ev) => {
           if (ev.button !== 0) return;
           ev.currentTarget.setPointerCapture(ev.pointerId);
@@ -150,6 +148,6 @@ export function PlaceLayer({
           shapes={preview}
         />
       ) : null}
-    </OverlayLayer>
+    </Layer>
   );
 }

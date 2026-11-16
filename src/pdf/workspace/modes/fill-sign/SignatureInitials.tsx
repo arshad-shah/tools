@@ -1,13 +1,13 @@
-import React, { useId, useState } from 'react';
-import { IconInitials } from '@/shared/ui/icons';
+import React, { useState } from 'react';
+import { signatureInitials } from '@arshad-shah/cynosure/icons';
 import {
   Button,
-  Input,
-  Label,
+  Inline,
   SegmentedControl,
   Stack,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
 import { deriveInitials } from '@/pdf/sign/initials';
 import type { SignatureSourceProps } from '@/pdf/sign';
 import { SignatureInk } from './SignatureInk';
@@ -35,7 +35,6 @@ export const SignatureInitials: React.FC<SignatureInitialsProps> = ({
   ready,
   onInitialPages,
 }) => {
-  const id = useId();
   const [initials, setInitials] = useState(() => deriveInitials(name));
   const [method, setMethod] = useState<Method>('type');
 
@@ -50,22 +49,20 @@ export const SignatureInitials: React.FC<SignatureInitialsProps> = ({
           { value: 'draw', label: 'Draw', disabled },
         ]}
         onChange={(m) => {
-          setMethod(m);
+          setMethod(m as Method);
           onChange(null);
         }}
       />
       {method === 'type' ? (
         <>
-          <Stack gap="2">
-            <Label htmlFor={`${id}-initials`}>Initials</Label>
-            <Input
-              id={`${id}-initials`}
-              value={initials}
-              disabled={disabled}
-              maxLength={8}
-              onChange={setInitials}
-            />
-          </Stack>
+          <TextField
+            label="Initials"
+            size="sm"
+            value={initials}
+            disabled={disabled}
+            maxLength={8}
+            onChange={setInitials}
+          />
           <SignatureTypeGallery
             name={initials}
             onChange={onChange}
@@ -80,15 +77,16 @@ export const SignatureInitials: React.FC<SignatureInitialsProps> = ({
         />
       )}
       <Stack gap="1">
-        <Button
-          variant="secondary"
-          leftIcon={<IconInitials size="sm" />}
-          disabled={disabled || !ready}
-          onClick={onInitialPages}
-          className="self-start"
-        >
-          Initial pages
-        </Button>
+        <Inline>
+          <Button
+            variant="outline"
+            icon={signatureInitials}
+            disabled={disabled || !ready}
+            onClick={onInitialPages}
+          >
+            Initial pages
+          </Button>
+        </Inline>
         <Text size="sm" tone="muted">
           Puts these initials at the same spot on every page, or on the pages
           you choose.

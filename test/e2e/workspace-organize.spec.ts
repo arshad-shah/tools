@@ -73,10 +73,7 @@ test('open, organize, undo, reload and export', async ({ page }) => {
   await page.reload();
   await expect(rendered(page)).toBeAttached();
   await expect(option(page, 2, 2)).toBeAttached();
-  await expect(page.getByRole('tab', { name: /Organize/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  await expect(page.getByRole('radio', { name: /Organize/ })).toBeChecked();
   await expect(
     page.getByRole('button', { name: 'Undo Delete page 3' }),
   ).toBeAttached();

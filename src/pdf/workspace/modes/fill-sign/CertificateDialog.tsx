@@ -1,28 +1,24 @@
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import {
-  IconCertificate,
-  IconCertificateNew,
-  IconDownload,
-} from '@/shared/ui/icons';
+  certificate as certificateIcon,
+  certificateNew,
+  download as downloadIcon,
+} from '@arshad-shah/cynosure/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  FilePicker,
-  Input,
-  Label,
+  Grid,
+  Inline,
+  Notice,
   SegmentedControl,
   Select,
   Stack,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { FilePicker } from '../../ui/FilePicker';
 import { importPkcs12, type SigningIdentity } from '@/pdf/sign/pades/pkcs12';
 import {
   createSelfSigned,
@@ -57,7 +53,6 @@ function CertificateDialogBody({
   onOpenChange,
   onIdentity,
 }: CertificateDialogProps) {
-  const id = useId();
   const [source, setSource] = useState<Source>('file');
   const [file, setFile] = useState<{ name: string; bytes: Uint8Array } | null>(
     null,
@@ -122,43 +117,87 @@ function CertificateDialogBody({
     });
 
   const field = (key: 'name' | 'email' | 'organisation', label: string) => (
-    <Stack gap="1">
-      <Label htmlFor={`${id}-${key}`}>{label}</Label>
-      <Input
-        id={`${id}-${key}`}
-        value={form[key] ?? ''}
-        autoComplete={
-          key === 'name' ? 'name' : key === 'email' ? 'email' : 'organization'
-        }
-        onChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
-      />
-    </Stack>
+    <TextField
+      label={label}
+      value={form[key] ?? ''}
+      autoComplete={
+        key === 'name' ? 'name' : key === 'email' ? 'email' : 'organization'
+      }
+      onChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
+    />
   );
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(o) : close())}>
-      <DialogHeader>
-        <DialogTitle>Signing certificate</DialogTitle>
-      </DialogHeader>
-      <DialogBody className="flex flex-col gap-4">
+    <Dialog
+      open={open}
+      onOpenChange={(o) => (o ? onOpenChange(o) : close())}
+      title="Signing certificate"
+      actions={
+        <>
+          <Button variant="ghost" onClick={close}>
+            Cancel
+          </Button>
+          {source === 'file' ? (
+            <Button
+              variant="solid"
+              tone="accent"
+              loading={busy}
+              disabled={!file}
+              onClick={() => void openFile()}
+            >
+              Use this certificate
+            </Button>
+          ) : created ? (
+            <Button
+              variant="solid"
+              tone="accent"
+              onClick={() => {
+                // The exportable key pair stays behind in this dialog.
+                onIdentity({
+                  privateKey: created.privateKey,
+                  algorithm: created.algorithm,
+                  certificate: created.certificate,
+                  chain: created.chain,
+                  info: created.info,
+                });
+                onOpenChange(false);
+              }}
+            >
+              Use this certificate
+            </Button>
+          ) : (
+            <Button
+              variant="solid"
+              tone="accent"
+              loading={busy}
+              disabled={!form.name.trim()}
+              onClick={() => void create()}
+            >
+              Create certificate
+            </Button>
+          )}
+        </>
+      }
+    >
+      <Stack gap="5">
         <SegmentedControl
           label="Certificate source"
           value={source}
           onChange={(v) => {
-            setSource(v);
+            setSource(v as Source);
             setError(null);
           }}
           options={[
-            { value: 'file', label: 'Certificate file', icon: IconCertificate },
+            { value: 'file', label: 'Certificate file', icon: certificateIcon },
             {
               value: 'create',
               label: 'Create self-signed',
-              icon: IconCertificateNew,
+              icon: certificateNew,
             },
           ]}
         />
         {source === 'file' ? (
-          <Stack gap="3">
+          <Stack gap="4">
             <FilePicker
               accept=".p12,.pfx,application/x-pkcs12"
               onFiles={async ([f]) => {
@@ -171,146 +210,88 @@ function CertificateDialogBody({
               }}
             >
               {(openPicker) => (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="secondary" size="sm" onClick={openPicker}>
+                <Inline gap="3" align="center" wrap>
+                  <Button variant="outline" size="sm" onClick={openPicker}>
                     Choose certificate file
                   </Button>
                   <Text size="sm" tone="muted">
                     {file ? file.name : '.p12 or .pfx'}
                   </Text>
-                </div>
+                </Inline>
               )}
             </FilePicker>
-            <Stack gap="1">
-              <Label htmlFor={`${id}-pw`}>Certificate password</Label>
-              <Input
-                id={`${id}-pw`}
-                type="password"
-                autoComplete="off"
-                value={password}
-                onChange={setPassword}
-              />
-            </Stack>
+            <TextField
+              label="Certificate password"
+              type="password"
+              revealable
+              autoComplete="off"
+              value={password}
+              onChange={setPassword}
+            />
           </Stack>
         ) : created ? (
-          <Stack gap="3">
+          <Stack gap="4">
             <CertificateSummary info={created.info} now={createdAt} />
-            <Stack gap="1">
-              <Label htmlFor={`${id}-export`}>
-                New password for the certificate file (at least 8 characters)
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  id={`${id}-export`}
-                  type="password"
-                  autoComplete="new-password"
-                  value={exportPw}
-                  onChange={setExportPw}
-                  className="min-w-0 flex-1"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<IconDownload size="sm" />}
-                  disabled={busy || exportPw.length < 8}
-                  onClick={() => void download()}
-                >
-                  Download certificate file (.p12)
-                </Button>
-              </div>
-            </Stack>
+            <Inline gap="2" align="end" wrap>
+              <TextField
+                label="New password for the certificate file (at least 8 characters)"
+                type="password"
+                revealable
+                autoComplete="new-password"
+                value={exportPw}
+                onChange={setExportPw}
+              />
+              <Button
+                variant="outline"
+                size="md"
+                icon={downloadIcon}
+                disabled={busy || exportPw.length < 8}
+                onClick={() => void download()}
+              >
+                Download certificate file (.p12)
+              </Button>
+            </Inline>
           </Stack>
         ) : (
-          <Stack gap="3">
+          <Stack gap="4">
             {field('name', 'Name')}
             {field('email', 'Email (optional)')}
             {field('organisation', 'Organisation (optional)')}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Stack gap="1">
-                <Label htmlFor={`${id}-years`}>Valid for</Label>
-                <Select
-                  id={`${id}-years`}
-                  value={String(form.years)}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, years: v === '3' ? 3 : 1 }))
-                  }
-                  items={[
-                    { value: '1', label: '1 year' },
-                    { value: '3', label: '3 years' },
-                  ]}
-                />
-              </Stack>
-              <Stack gap="1">
-                <Label htmlFor={`${id}-key`}>Key type</Label>
-                <Select
-                  id={`${id}-key`}
-                  value={form.keyType}
-                  onValueChange={(v) =>
-                    setForm((f) => ({
-                      ...f,
-                      keyType: v as SelfSignedOptions['keyType'],
-                    }))
-                  }
-                  items={[
-                    { value: 'ecdsa-p256', label: 'ECDSA P-256' },
-                    { value: 'rsa-2048', label: 'RSA 2048' },
-                  ]}
-                />
-              </Stack>
-            </div>
+            <Grid columns={2} minItemWidth="12rem" gap="4">
+              <Select
+                label="Valid for"
+                value={String(form.years)}
+                onChange={(v) =>
+                  setForm((f) => ({ ...f, years: v === '3' ? 3 : 1 }))
+                }
+                options={[
+                  { value: '1', label: '1 year' },
+                  { value: '3', label: '3 years' },
+                ]}
+              />
+              <Select
+                label="Key type"
+                value={form.keyType}
+                onChange={(v) =>
+                  setForm((f) => ({
+                    ...f,
+                    keyType: v as SelfSignedOptions['keyType'],
+                  }))
+                }
+                options={[
+                  { value: 'ecdsa-p256', label: 'ECDSA P-256' },
+                  { value: 'rsa-2048', label: 'RSA 2048' },
+                ]}
+              />
+            </Grid>
           </Stack>
         )}
-        {error ? (
-          <Alert status="danger">
-            <AlertDescription>{error.message}</AlertDescription>
-          </Alert>
-        ) : null}
-        <Text size="sm" tone="muted">
+        {error ? <Notice tone="danger">{error.message}</Notice> : null}
+        <Text as="p" size="sm" tone="muted">
           Your certificate and password stay in this browser tab and are
           forgotten after the export.
         </Text>
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="secondary" onClick={close}>
-          Cancel
-        </Button>
-        {source === 'file' ? (
-          <Button
-            variant="primary"
-            loading={busy}
-            disabled={!file}
-            onClick={() => void openFile()}
-          >
-            Use this certificate
-          </Button>
-        ) : created ? (
-          <Button
-            variant="primary"
-            onClick={() => {
-              // The exportable key pair stays behind in this dialog.
-              onIdentity({
-                privateKey: created.privateKey,
-                algorithm: created.algorithm,
-                certificate: created.certificate,
-                chain: created.chain,
-                info: created.info,
-              });
-              onOpenChange(false);
-            }}
-          >
-            Use this certificate
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            loading={busy}
-            disabled={!form.name.trim()}
-            onClick={() => void create()}
-          >
-            Create certificate
-          </Button>
-        )}
-      </DialogFooter>
+      </Stack>
     </Dialog>
   );
 }

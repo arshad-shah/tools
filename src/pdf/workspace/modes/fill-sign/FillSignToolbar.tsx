@@ -13,7 +13,7 @@ import {
   signatureInitials,
   signatureNext,
 } from '@arshad-shah/cynosure/icons';
-import { StatusDot, Text } from '@/shared/ui';
+import { Badge } from '@arshad-shah/cynosure';
 import { type ToolGroup } from '../../ui/tool-groups';
 import { useContext, useEffect } from 'react';
 import { ModeToolbar } from '../../ModeToolbar';
@@ -217,15 +217,9 @@ export function FillSignToolbar(ctx: ModeProps) {
         groups={groups}
         trailing={
           progress ? (
-            <Text
-              as="span"
-              size="xs"
-              tone="muted"
-              className="flex items-center gap-2 px-2"
-            >
-              <StatusDot tone="info" pulse decorative />
+            <Badge tone="info" dot="live">
               {`Detecting fields, page ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`}
-            </Text>
+            </Badge>
           ) : null
         }
       />

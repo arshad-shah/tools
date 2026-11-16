@@ -1,16 +1,14 @@
-import React, { useId, useState } from 'react';
-import { IconFieldSignature } from '@/shared/ui/icons';
+import React, { useState } from 'react';
+import { fieldSignature } from '@arshad-shah/cynosure/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Inline,
-  Input,
-  Label,
+  Notice,
   Stack,
   Switch,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
 import { formatBlockDate, type BlockContent } from '@/pdf/sign/block';
 import { todayIso, userLocale } from './dates';
 import type { ReadySignature } from './store';
@@ -34,7 +32,6 @@ export const SignatureBlockForm: React.FC<SignatureBlockFormProps> = ({
   disabled,
   onPlace,
 }) => {
-  const id = useId();
   const [printed, setPrinted] = useState(name);
   const [title, setTitle] = useState('');
   const [showDate, setShowDate] = useState(true);
@@ -44,44 +41,35 @@ export const SignatureBlockForm: React.FC<SignatureBlockFormProps> = ({
   return (
     <Stack gap="3">
       {signature ? null : (
-        <Alert status="info">
-          <AlertDescription>
-            Make your signature in the Draw, Type, Photo or Upload tab first.
-            The block uses it.
-          </AlertDescription>
-        </Alert>
+        <Notice tone="info" size="sm">
+          Make your signature in the Draw, Type, Photo or Upload tab first. The
+          block uses it.
+        </Notice>
       )}
-      <Stack gap="2">
-        <Label htmlFor={`${id}-name`}>Printed name</Label>
-        <Input
-          id={`${id}-name`}
-          value={printed}
-          disabled={disabled}
-          autoComplete="name"
-          maxLength={200}
-          onChange={setPrinted}
-        />
-      </Stack>
-      <Stack gap="2">
-        <Label htmlFor={`${id}-title`}>Title</Label>
-        <Input
-          id={`${id}-title`}
-          value={title}
-          disabled={disabled}
-          autoComplete="organization-title"
-          maxLength={200}
-          onChange={setTitle}
-        />
-      </Stack>
-      <Inline gap="3">
-        <Switch
-          id={`${id}-date`}
-          checked={showDate}
-          disabled={disabled}
-          onCheckedChange={setShowDate}
-        />
-        <Label htmlFor={`${id}-date`}>Include date</Label>
-      </Inline>
+      <TextField
+        label="Printed name"
+        size="sm"
+        value={printed}
+        disabled={disabled}
+        autoComplete="name"
+        maxLength={200}
+        onChange={setPrinted}
+      />
+      <TextField
+        label="Title"
+        size="sm"
+        value={title}
+        disabled={disabled}
+        autoComplete="organization-title"
+        maxLength={200}
+        onChange={setTitle}
+      />
+      <Switch
+        label="Include date"
+        checked={showDate}
+        disabled={disabled}
+        onChange={setShowDate}
+      />
       {showDate ? (
         <Text size="sm">
           {`Date line: ${formatBlockDate(dateIso, locale)}`}
@@ -91,28 +79,30 @@ export const SignatureBlockForm: React.FC<SignatureBlockFormProps> = ({
         The block is placed at the centre of the current page. Move or resize it
         there.
       </Text>
-      <Button
-        variant="primary"
-        leftIcon={<IconFieldSignature size="sm" />}
-        disabled={disabled || !signature || !printed.trim()}
-        onClick={() =>
-          signature &&
-          onPlace(
-            {
-              signature: signature.content,
-              name: printed.trim(),
-              title: title.trim(),
-              dateIso,
-              locale,
-              showDate,
-            },
-            signature.aspect,
-          )
-        }
-        className="self-start"
-      >
-        Place block
-      </Button>
+      <Inline>
+        <Button
+          variant="solid"
+          tone="accent"
+          icon={fieldSignature}
+          disabled={disabled || !signature || !printed.trim()}
+          onClick={() =>
+            signature &&
+            onPlace(
+              {
+                signature: signature.content,
+                name: printed.trim(),
+                title: title.trim(),
+                dateIso,
+                locale,
+                showDate,
+              },
+              signature.aspect,
+            )
+          }
+        >
+          Place block
+        </Button>
+      </Inline>
     </Stack>
   );
 };

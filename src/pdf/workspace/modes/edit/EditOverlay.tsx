@@ -1,5 +1,6 @@
+import { Layer } from '@/pdf/surfaces/layers';
 import { useEffect, useRef, useState } from 'react';
-import type { ObjectChange } from '@/shared/ui';
+import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
 import { toScreen } from '@/pdf/doc/geometry';
 import type { ImageParams } from '@/pdf/doc/ops/edit';
 import type { Box } from '@/pdf/doc/types';
@@ -12,9 +13,9 @@ import {
   previewItem,
 } from '../../objects/object-ops';
 import { objectsOn } from '../../objects/useObjectSelection';
-import { ContentPreview } from './ContentPreview';
+import { ContentPreview } from '@/pdf/surfaces/edit/ContentPreview';
 import { objectLabel } from './labels';
-import { MarkupPreview } from './MarkupPreview';
+import { MarkupPreview } from '@/pdf/surfaces/edit/MarkupPreview';
 import { addCover, addText } from './place';
 import { PlaceLayer } from './PlaceLayer';
 import { TextPrompt } from './TextPrompt';
@@ -53,11 +54,7 @@ export function EditOverlay(props: PageOverlayProps) {
   };
 
   return (
-    <div
-      ref={slot}
-      className="absolute inset-0"
-      data-testid={`edit-page-${pageNumber}`}
-    >
+    <Layer ref={slot} data-testid={`edit-page-${pageNumber}`}>
       <ContentPreview
         items={items}
         transform={t}
@@ -96,7 +93,7 @@ export function EditOverlay(props: PageOverlayProps) {
           }))}
           onEdit={(id) => {
             selection.selectObjects([id]);
-            focusProperties('#edit-text');
+            focusProperties('[aria-label="Properties"] textarea');
           }}
           onProperties={(id) => {
             selection.selectObjects([id]);
@@ -137,6 +134,6 @@ export function EditOverlay(props: PageOverlayProps) {
           }}
         />
       ) : null}
-    </div>
+    </Layer>
   );
 }

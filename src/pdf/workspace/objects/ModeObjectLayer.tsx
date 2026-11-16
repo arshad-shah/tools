@@ -3,7 +3,7 @@ import {
   type ChangeSource,
   type LayerObject,
   type ObjectChange,
-} from '@/shared/ui';
+} from '@/pdf/surfaces/ObjectLayer';
 import type { Viewport } from '@/pdf/doc/geometry';
 import type { NewOperation, OpId } from '@/pdf/doc/types';
 import type { DocumentApi, SelectionApi } from '../modes/types';
@@ -46,8 +46,6 @@ export function ModeObjectLayer({
   selection,
   pageNumber,
   viewport,
-  width,
-  height,
   objects,
   onPreview,
   adjust,
@@ -58,7 +56,6 @@ export function ModeObjectLayer({
   orderable = true,
   marquee,
 }: ModeObjectLayerProps) {
-  const [a, b, c, d, e, f] = viewport.transform;
   const rotatable = new Set(
     objects.filter((o) => o.rotatable).map((o) => o.id),
   );
@@ -75,9 +72,7 @@ export function ModeObjectLayer({
   };
   return (
     <ObjectLayer
-      transform={{ a, b, c, d, e, f }}
-      width={width}
-      height={height}
+      viewport={viewport}
       label={`Objects on page ${pageNumber}`}
       objects={objects}
       selected={selection.objects}

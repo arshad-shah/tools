@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react';
-import { IconPlus, IconTrash } from '@/shared/ui/icons';
+import { plus, trash } from '@arshad-shah/cynosure/icons';
 import {
   Button,
-  DateInput,
+  DateField,
   Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Grid,
   IconButton,
-  Input,
-  Label,
+  Inline,
+  Stack,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
 import type { AutofillKey } from '@/pdf/detect';
@@ -83,60 +80,71 @@ export function MyDetailsDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} size="lg">
-      <DialogHeader>
-        <DialogTitle>My details</DialogTitle>
-        <DialogDescription>
-          Stored only on this device and not encrypted.
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody className="flex flex-col gap-4">
-        <div className="grid gap-3 sm:grid-cols-2">
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      title="My details"
+      description="Stored only on this device and not encrypted."
+      actions={
+        <>
+          <Button
+            variant="soft"
+            tone="danger"
+            disabled={busy}
+            onClick={() => void persist(null)}
+          >
+            Clear my details
+          </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            tone="accent"
+            disabled={busy}
+            onClick={() => void persist(draft)}
+          >
+            Save
+          </Button>
+        </>
+      }
+    >
+      <Stack gap="5">
+        <Grid columns={2} minItemWidth="14rem" gap="4">
           {TEXT_KEYS.map((k) => (
-            <div key={k} className="flex flex-col gap-1">
-              <Label htmlFor={`my-${k}`}>{DETAIL_LABELS[k]}</Label>
-              <Input
-                id={`my-${k}`}
-                value={draft[k]}
-                onChange={(v) => set(k, v)}
-              />
-            </div>
-          ))}
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="my-dob">{DETAIL_LABELS.dob}</Label>
-            <DateInput
-              id="my-dob"
-              label={DETAIL_LABELS.dob}
-              value={draft.dob}
-              onChange={(v) => set('dob', v)}
+            <TextField
+              key={k}
+              label={DETAIL_LABELS[k]}
+              value={draft[k]}
+              onChange={(v) => set(k, v)}
             />
-          </div>
-        </div>
-        <div className="flex flex-col gap-2">
+          ))}
+          <DateField
+            label={DETAIL_LABELS.dob}
+            value={draft.dob || null}
+            onChange={(v) => set('dob', v ?? '')}
+          />
+        </Grid>
+        <Stack gap="3">
           <Text size="sm" weight="medium">
             Custom details
           </Text>
           {draft.custom.map((c, i) => (
-            <div key={i} className="flex items-end gap-2">
-              <div className="flex flex-1 flex-col gap-1">
-                <Label htmlFor={`my-custom-key-${i}`}>Detail name</Label>
-                <Input
-                  id={`my-custom-key-${i}`}
-                  value={c.key}
-                  onChange={(v) => setCustom(i, { key: v })}
-                />
-              </div>
-              <div className="flex flex-1 flex-col gap-1">
-                <Label htmlFor={`my-custom-value-${i}`}>Value</Label>
-                <Input
-                  id={`my-custom-value-${i}`}
-                  value={c.value}
-                  onChange={(v) => setCustom(i, { value: v })}
-                />
-              </div>
+            <Inline key={i} gap="2" align="end">
+              <TextField
+                label="Detail name"
+                value={c.key}
+                onChange={(v) => setCustom(i, { key: v })}
+              />
+              <TextField
+                label="Value"
+                value={c.value}
+                onChange={(v) => setCustom(i, { value: v })}
+              />
               <IconButton
                 label={`Remove custom detail ${i + 1}`}
-                icon={IconTrash}
+                icon={trash}
                 variant="ghost"
                 tone="danger"
                 onClick={() =>
@@ -146,13 +154,13 @@ export function MyDetailsDialog({
                   }))
                 }
               />
-            </div>
+            </Inline>
           ))}
-          <div>
+          <Inline>
             <Button
               size="sm"
-              variant="secondary"
-              leftIcon={<IconPlus size="sm" />}
+              variant="outline"
+              icon={plus}
               disabled={draft.custom.length >= MAX_CUSTOM}
               onClick={() =>
                 setDraft((d) => ({
@@ -163,28 +171,9 @@ export function MyDetailsDialog({
             >
               Add custom detail
             </Button>
-          </div>
-        </div>
-      </DialogBody>
-      <DialogFooter>
-        <Button
-          variant="danger"
-          disabled={busy}
-          onClick={() => void persist(null)}
-        >
-          Clear my details
-        </Button>
-        <Button variant="secondary" onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          disabled={busy}
-          onClick={() => void persist(draft)}
-        >
-          Save
-        </Button>
-      </DialogFooter>
+          </Inline>
+        </Stack>
+      </Stack>
     </Dialog>
   );
 }
