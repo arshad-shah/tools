@@ -1,20 +1,22 @@
-import type { StatusTone } from '@/shared/ui';
+import type { BadgeProps } from '@arshad-shah/cynosure';
 import { NO_LEVEL } from './filter';
 import { LEVELS } from './model';
 
 /** Levels in the order the filter chips show them. */
 export const LEVEL_ORDER: readonly string[] = [...LEVELS, NO_LEVEL];
 
-const TONE: Record<string, StatusTone> = {
+type Tone = NonNullable<BadgeProps['tone']>;
+
+const TONE: Record<string, Tone> = {
   fatal: 'danger',
   error: 'danger',
   warn: 'warning',
   info: 'info',
-  success: 'accent',
+  success: 'success',
 };
 
-export const levelTone = (level: string | undefined): StatusTone =>
-  TONE[level ?? NO_LEVEL] ?? 'muted';
+export const levelTone = (level: string | undefined): Tone =>
+  TONE[level ?? NO_LEVEL] ?? 'neutral';
 
 const LABEL: Record<string, string> = {
   fatal: 'Fatal',

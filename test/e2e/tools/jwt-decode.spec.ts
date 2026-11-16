@@ -203,11 +203,9 @@ test('Compare payloads in Text Diff fills both sides of the diff', async ({
     .getByRole('button', { name: 'Compare payloads in Text Diff' })
     .click();
   await expect(page).toHaveURL(new RegExp(pathOf('text-diff-checker')));
-  await page.getByRole('tab', { name: /^Original/ }).click();
   await expect(
     page.getByRole('textbox', { name: 'Original text' }),
   ).toHaveValue(/left-side/);
-  await page.getByRole('tab', { name: /^Changed/ }).click();
   await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
     /right-side/,
   );

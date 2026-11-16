@@ -1,16 +1,14 @@
-import React, { useMemo } from 'react';
 import {
-  Divider,
   Inline,
-  Input,
-  Label,
-  LoadingState,
+  LoadingDots,
   SegmentedControl,
   Slider,
   Stack,
-  SwitchField,
+  Switch,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import React, { useMemo } from 'react';
 import { useWordlist } from '../hooks/useWordlist';
 import {
   generatePassphrase,
@@ -27,6 +25,11 @@ interface PassphraseTabProps {
   update(patch: Partial<PasswordSettings>): void;
   nonce: number;
   onRegenerate(): void;
+  /** Places the result and the options (the tool's layout). */
+  children(parts: {
+    result: React.ReactNode;
+    options: React.ReactNode;
+  }): React.ReactNode;
 }
 
 export const PassphraseTab: React.FC<PassphraseTabProps> = ({
@@ -34,6 +37,7 @@ export const PassphraseTab: React.FC<PassphraseTabProps> = ({
   update,
   nonce,
   onRegenerate,
+  children,
 }) => {
   const list = useWordlist();
   const opts = {
@@ -51,73 +55,69 @@ export const PassphraseTab: React.FC<PassphraseTabProps> = ({
       : '';
   }, [list, key, nonce]);
 
-  return (
+  const result = list ? (
+    <ResultCard
+      value={value}
+      bits={passphraseEntropy(s.words, list.length, opts)}
+      label="passphrase"
+      onRegenerate={onRegenerate}
+    />
+  ) : (
+    <Inline gap="2" align="center">
+      <LoadingDots tone="muted" />
+      <Text tone="muted">Loading the word list</Text>
+    </Inline>
+  );
+
+  const options = (
     <Stack gap="5">
-      {list ? (
-        <ResultCard
-          value={value}
-          bits={passphraseEntropy(s.words, list.length, opts)}
-          label="passphrase"
-          onRegenerate={onRegenerate}
-        />
-      ) : (
-        <LoadingState label="Loading the word list" />
-      )}
-      <Divider />
-      <Stack gap="1">
-        <Inline justify="between" align="center">
-          <Label htmlFor="pp-words">Words</Label>
-          <Text size="sm" weight="semibold">
-            {s.words}
-          </Text>
-        </Inline>
-        <Slider
-          id="pp-words"
-          aria-label="Words"
-          value={s.words}
-          onValueChange={(v) => update({ words: v })}
-          min={MIN_WORDS}
-          max={MAX_WORDS}
-        />
-      </Stack>
-      <Inline gap="4" wrap align="end">
-        <Stack gap="1">
-          <Label htmlFor="pp-separator">Separator</Label>
-          <div className="w-24">
-            <Input
-              id="pp-separator"
-              value={s.separator}
-              onChange={(v) => update({ separator: v.slice(0, 3) })}
-            />
-          </div>
-        </Stack>
-        <SegmentedControl<PasswordSettings['capitalise']>
+      <Slider
+        label="Words"
+        showValue
+        value={s.words}
+        min={MIN_WORDS}
+        max={MAX_WORDS}
+        onChange={(v) => update({ words: v as number })}
+      />
+      <TextField
+        label="Separator"
+        width="sm"
+        value={s.separator}
+        onChange={(v) => update({ separator: v.slice(0, 3) })}
+      />
+      <Stack gap="2">
+        <Text weight="medium">Capitalise</Text>
+        <SegmentedControl
           label="Capitalise"
-          value={s.capitalise}
-          onChange={(v) => update({ capitalise: v })}
           size="sm"
+          value={s.capitalise}
+          onChange={(v) =>
+            update({ capitalise: v as PasswordSettings['capitalise'] })
+          }
           options={[
             { value: 'none', label: 'none' },
             { value: 'first', label: 'First letter' },
             { value: 'all', label: 'ALL' },
           ]}
         />
-        <SwitchField
-          id="pp-number"
+      </Stack>
+      <Stack gap="3">
+        <Switch
           label="Add a number"
           checked={s.addNumber}
-          onCheckedChange={(v) => update({ addNumber: v })}
+          onChange={(v) => update({ addNumber: v })}
         />
-        <SwitchField
-          id="pp-symbol"
+        <Switch
           label="Add a symbol"
           checked={s.addSymbol}
-          onCheckedChange={(v) => update({ addSymbol: v })}
+          onChange={(v) => update({ addSymbol: v })}
         />
-      </Inline>
-      <Text size="xs" tone="subtle">
+      </Stack>
+      <Text size="sm" tone="muted">
         Words from the EFF large wordlist (7,776 words, CC BY 3.0 US).
       </Text>
     </Stack>
   );
+
+  return <>{children({ result, options })}</>;
 };

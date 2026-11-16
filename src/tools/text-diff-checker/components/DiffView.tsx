@@ -1,6 +1,7 @@
 import { useImperativeHandle, useRef } from 'react';
 import type { LanguageId } from '@/shared/lib/syntax/tokenize';
-import { CodeSurface, Grid, type CodeSurfaceHandle } from '@/shared/ui';
+import { Grid } from '@arshad-shah/cynosure';
+import { CodeSurface, type CodeSurfaceHandle } from '@/shared/ui';
 import type { Fold, Surface, ViewModel } from '../lib/view-model';
 
 export interface DiffViewHandle {
@@ -110,7 +111,7 @@ export function DiffView({
       />
     );
   return (
-    <Grid cols={2} gap="2" className="min-w-0">
+    <Grid columns={2} gap="3" minSize="0">
       <SurfaceView
         surface={vm.left}
         label={`${names.left}, compared`}

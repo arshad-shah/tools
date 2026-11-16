@@ -1,5 +1,5 @@
+import { Badge, Inline, Stack, Text, TextField } from '@arshad-shah/cynosure';
 import React from 'react';
-import { Badge, Inline, Input, Label, Stack, Text } from '@/shared/ui';
 import { digestInfo, type DigestId } from '@/shared/lib/crypto/digest';
 import { matchExpected } from '../lib/verify';
 
@@ -20,27 +20,23 @@ export const VerifyField: React.FC<VerifyFieldProps> = ({
   const name = (id: DigestId) => digestInfo(id).name;
   return (
     <Stack gap="2">
-      <Label htmlFor="hash-expected">Expected hash</Label>
-      <Input
-        id="hash-expected"
+      <TextField
+        label="Expected hash"
+        description="Paste a hash to compare: hex or Base64, sha256: prefixes are fine."
         value={value}
         onChange={onChange}
-        placeholder="Paste a hash to compare (hex or Base64; sha256: prefixes are fine)"
         spellCheck={false}
         autoComplete="off"
+        clearable
       />
-      {verdict && (
-        <Inline gap="2" align="center" wrap role="status">
+      {verdict ? (
+        <Inline gap="2" align="center" wrap aria-live="polite">
           {verdict.match ? (
-            <Badge variant="soft" tone="success" size="sm">
-              Match: {name(verdict.match)}
-            </Badge>
+            <Badge tone="success">{`Match: ${name(verdict.match)}`}</Badge>
           ) : (
             <>
-              <Badge variant="soft" tone="danger" size="sm">
-                No match
-              </Badge>
-              <Text size="sm" tone="subtle">
+              <Badge tone="danger">No match</Badge>
+              <Text size="sm" tone="muted">
                 {verdict.candidates.length
                   ? `Same length as ${verdict.candidates.map(name).join(', ')}`
                   : 'No selected algorithm has a digest of this length'}
@@ -48,7 +44,7 @@ export const VerifyField: React.FC<VerifyFieldProps> = ({
             </>
           )}
         </Inline>
-      )}
+      ) : null}
     </Stack>
   );
 };

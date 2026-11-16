@@ -1,6 +1,6 @@
 import React from 'react';
 import { ToolError } from '@/shared/lib/errors';
-import { Alert, AlertDescription, ErrorState, Text } from '@/shared/ui';
+import { Button, Notice, Text } from '@arshad-shah/cynosure';
 import { REGEX_TIMEOUT_MS } from '../lib/runner';
 
 export const TIMEOUT_TITLE =
@@ -28,21 +28,22 @@ export const JobStatus: React.FC<JobStatusProps> = ({
 }) => {
   if (error?.code === 'TIMEOUT')
     return (
-      <ErrorState
-        error={TIMEOUT_DETAIL}
+      <Notice
+        tone="danger"
         title={TIMEOUT_TITLE}
-        actions={[{ label: 'Retry', onClick: onRetry, variant: 'primary' }]}
-      />
+        action={
+          <Button size="sm" variant="solid" tone="danger" onClick={onRetry}>
+            Retry
+          </Button>
+        }
+      >
+        {TIMEOUT_DETAIL.message}
+      </Notice>
     );
-  if (error)
-    return (
-      <Alert status="danger">
-        <AlertDescription>{error.message}</AlertDescription>
-      </Alert>
-    );
+  if (error) return <Notice tone="danger">{error.message}</Notice>;
   if (pending)
     return (
-      <Text size="sm" tone="subtle">
+      <Text size="sm" tone="muted">
         Running the pattern
       </Text>
     );

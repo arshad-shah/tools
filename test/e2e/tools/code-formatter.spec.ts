@@ -1,57 +1,68 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
 
-const input = (page: import('@playwright/test').Page) =>
-  page.getByRole('textbox', { name: 'Input' });
-const output = (page: import('@playwright/test').Page) =>
-  page.getByRole('textbox', { name: 'Output' });
+const input = (page: Page) => page.getByRole('textbox', { name: 'Input' });
+/** The result CodeBlock's code (named by the output file, e.g. formatted.js). */
+const output = (page: Page, name: string) =>
+  page.getByRole('figure', { name }).locator('code');
+/** Chooses a language in the Cynosure Select. */
+async function language(page: Page, name: string) {
+  await page.getByRole('combobox', { name: 'Language' }).click();
+  await page.getByRole('option', { name, exact: true }).click();
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto(pathOf('code-formatter'));
 });
 
-test('formats minified JavaScript and switches to the Output tab', async ({
-  page,
-}) => {
+test('formats minified JavaScript beside the input', async ({ page }) => {
+  await expect(
+    page.getByRole('heading', { name: 'No code yet' }),
+  ).toBeVisible();
   await input(page).fill('const a={b:1,c:[1,2]};function f(x){return x*2}');
-  await expect(page.getByLabel('Language')).toContainText('Auto (JavaScript)');
+  await expect(page.getByRole('combobox', { name: 'Language' })).toContainText(
+    'Auto (JavaScript)',
+  );
   await page.getByRole('button', { name: 'Format', exact: true }).click();
-  await expect(page.getByRole('tab', { name: 'Output' })).toHaveAttribute(
-    'aria-selected',
-    'true',
+  await expect(output(page, 'formatted.js')).toHaveText(
+    'const a = { b: 1, c: [1, 2] };\nfunction f(x) {\n  return x * 2;\n}',
   );
-  await expect(output(page)).toHaveValue(
-    'const a = { b: 1, c: [1, 2] };\nfunction f(x) {\n  return x * 2;\n}\n',
-  );
-  await page.getByRole('tab', { name: 'Input' }).click();
   await expect(input(page)).toBeVisible();
 });
 
 test('minifying CSS shows the size before and after', async ({ page }) => {
-  await page.getByLabel('Language').selectOption('css');
+  await language(page, 'CSS');
   await input(page).fill('.card {\n  color: #ff0000;\n  margin: 0px;\n}\n');
   await page.getByRole('button', { name: 'Minify' }).click();
-  await expect(output(page)).toHaveValue('.card{color:red;margin:0}');
+  await expect(output(page, 'minified.css')).toHaveText(
+    '.card{color:red;margin:0}',
+  );
   await expect(page.getByText(/Before 43 B, after 25 B/)).toBeVisible();
 });
 
-test('a syntax error shows a marker on line 1', async ({ page }) => {
-  await page.getByLabel('Language').selectOption('javascript');
+test('a syntax error is named under the input', async ({ page }) => {
+  await language(page, 'JavaScript');
   await input(page).fill('const = 1');
   await page.getByRole('button', { name: 'Format', exact: true }).click();
-  // The error is marked in the Input pane, which stays shown.
-  await expect(page.getByLabel('Error on line 1')).toBeVisible();
-  await page.getByRole('tab', { name: 'Output' }).click();
-  await expect(output(page)).toHaveValue('');
+  await expect(page.getByText(/^Line 1(:\d+)?: /)).toBeVisible();
+  await expect(input(page)).toHaveAttribute('aria-invalid', 'true');
+  await expect(
+    page.getByRole('heading', { name: 'Ready to format' }),
+  ).toBeVisible();
 });
 
 test('formats SQL with the keyboard shortcut', async ({ page }) => {
-  await page.getByLabel('Language').selectOption('sql');
+  await language(page, 'SQL');
   await input(page).fill('select a,b from t where x=1');
-  await page.keyboard.press('Escape');
   await page.getByRole('heading').first().click();
   await page.keyboard.press('ControlOrMeta+Shift+F');
-  await expect(output(page)).toHaveValue(
-    'SELECT\n  a,\n  b\nFROM\n  t\nWHERE\n  x = 1\n',
+  await expect(output(page, 'formatted.sql')).toHaveText(
+    'SELECT\n  a,\n  b\nFROM\n  t\nWHERE\n  x = 1',
   );
+});
+
+test('an example loads from the menu', async ({ page }) => {
+  await page.getByRole('button', { name: 'Try an example' }).first().click();
+  await page.getByRole('menuitem', { name: 'SQL' }).click();
+  await expect(input(page)).toHaveValue(/^select id,name from users/);
 });

@@ -1,31 +1,22 @@
-import { useId, useState } from 'react';
 import {
   Button,
   Checkbox,
   Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   IconButton,
   Inline,
-  Input,
-  Label,
+  Menu,
   Select,
   Stack,
-  Tooltip,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
 import {
-  IconChevronDown,
-  IconPlus,
-  IconRedo,
-  IconTrash,
-  IconUndo,
-} from '@/shared/ui/icons';
+  chevronDown,
+  plus,
+  redo,
+  trash,
+  undo,
+} from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
 import type { EditOp } from '../lib/edit';
 
 type DialogKind = 'add-column' | 'rename' | 'delete-column' | 'replace' | null;
@@ -60,13 +51,6 @@ export function EditToolbar({
   const [find, setFind] = useState('');
   const [replace, setReplace] = useState('');
   const [regex, setRegex] = useState(false);
-  const ids = {
-    col: useId(),
-    name: useId(),
-    find: useId(),
-    repl: useId(),
-    re: useId(),
-  };
   const column = columns.includes(col) ? col : (columns[0] ?? '');
 
   const start = (kind: DialogKind) => {
@@ -80,15 +64,12 @@ export function EditToolbar({
   };
 
   const columnSelect = (
-    <Stack gap="1">
-      <Label htmlFor={ids.col}>Column</Label>
-      <Select
-        id={ids.col}
-        value={column}
-        onValueChange={setCol}
-        items={columns.map((c) => ({ value: c, label: c }))}
-      />
-    </Stack>
+    <Select
+      label="Column"
+      value={column}
+      onChange={setCol}
+      options={columns.map((c) => ({ value: c, label: c }))}
+    />
   );
 
   const titles: Record<Exclude<DialogKind, null>, string> = {
@@ -98,44 +79,48 @@ export function EditToolbar({
     replace: 'Find and replace',
   };
 
+  const run = () => {
+    if (open === 'add-column')
+      submit({ kind: 'add-column', name, at: columns.length });
+    else if (open === 'rename')
+      submit({ kind: 'rename-column', col: column, name });
+    else if (open === 'delete-column')
+      submit({ kind: 'delete-column', col: column });
+    else submit({ kind: 'replace', col: column, find, replace, regex });
+  };
+
   return (
     <Inline gap="2" align="center" wrap>
-      <Tooltip content="Undo" shortcut="Mod+Z">
-        <IconButton
-          size="sm"
-          variant="ghost"
-          label="Undo"
-          showLabel="desktop"
-          aria-keyshortcuts="Control+Z"
-          icon={IconUndo}
-          disabled={!canUndo}
-          onClick={onUndo}
-        />
-      </Tooltip>
-      <Tooltip content="Redo" shortcut="Mod+Shift+Z">
-        <IconButton
-          size="sm"
-          variant="ghost"
-          label="Redo"
-          showLabel="desktop"
-          aria-keyshortcuts="Control+Shift+Z"
-          icon={IconRedo}
-          disabled={!canRedo}
-          onClick={onRedo}
-        />
-      </Tooltip>
+      <IconButton
+        size="sm"
+        variant="ghost"
+        label="Undo"
+        aria-keyshortcuts="Control+Z"
+        icon={undo}
+        disabled={!canUndo}
+        onClick={onUndo}
+      />
+      <IconButton
+        size="sm"
+        variant="ghost"
+        label="Redo"
+        aria-keyshortcuts="Control+Shift+Z"
+        icon={redo}
+        disabled={!canRedo}
+        onClick={onRedo}
+      />
       <Button
         size="sm"
-        variant="secondary"
-        leftIcon={<IconPlus size="sm" />}
+        variant="soft"
+        icon={plus}
         onClick={() => onEdit({ kind: 'add-row', at: rowCount })}
       >
         Add row
       </Button>
       <Button
         size="sm"
-        variant="secondary"
-        leftIcon={<IconTrash size="sm" />}
+        variant="soft"
+        icon={trash}
         disabled={selectedRows.length === 0}
         onClick={() => onEdit({ kind: 'delete-rows', rows: [...selectedRows] })}
       >
@@ -143,108 +128,83 @@ export function EditToolbar({
           ? `Delete ${selectedRows.length.toLocaleString('en-US')} rows`
           : 'Delete row'}
       </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button
-            size="sm"
-            variant="secondary"
-            rightIcon={<IconChevronDown size="sm" />}
-          >
+      <Menu
+        label="Edit"
+        items={[
+          {
+            items: [
+              { value: 'add-column', label: 'Add column' },
+              { value: 'rename', label: 'Rename column' },
+              {
+                value: 'delete-column',
+                label: 'Delete column',
+                tone: 'danger',
+              },
+            ],
+          },
+          {
+            items: [
+              { value: 'dedupe', label: 'Remove duplicate rows' },
+              { value: 'trim', label: 'Trim whitespace' },
+              { value: 'replace', label: 'Find and replace' },
+            ],
+          },
+        ]}
+        onSelect={(v) => {
+          if (v === 'dedupe') onEdit({ kind: 'dedupe', by: [] });
+          else if (v === 'trim') onEdit({ kind: 'trim' });
+          else start(v as DialogKind);
+        }}
+        trigger={(props) => (
+          <Button {...props} size="sm" variant="soft" iconEnd={chevronDown}>
             Edit
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={() => start('add-column')}>
-            Add column
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => start('rename')}>
-            Rename column
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => start('delete-column')}>
-            Delete column
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onEdit({ kind: 'dedupe', by: [] })}>
-            Remove duplicate rows
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onEdit({ kind: 'trim' })}>
-            Trim whitespace
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => start('replace')}>
-            Find and replace
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        )}
+      />
 
-      <Dialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)}>
-        {open && (
-          <>
-            <DialogHeader>
-              <DialogTitle>{titles[open]}</DialogTitle>
-            </DialogHeader>
-            <DialogBody>
-              <Stack gap="3">
-                {open !== 'add-column' && columnSelect}
-                {(open === 'add-column' || open === 'rename') && (
-                  <Stack gap="1">
-                    <Label htmlFor={ids.name}>New name</Label>
-                    <Input id={ids.name} value={name} onChange={setName} />
-                  </Stack>
-                )}
-                {open === 'replace' && (
-                  <>
-                    <Stack gap="1">
-                      <Label htmlFor={ids.find}>Find</Label>
-                      <Input id={ids.find} value={find} onChange={setFind} />
-                    </Stack>
-                    <Stack gap="1">
-                      <Label htmlFor={ids.repl}>Replace with</Label>
-                      <Input
-                        id={ids.repl}
-                        value={replace}
-                        onChange={setReplace}
-                      />
-                    </Stack>
-                    <Inline gap="2" align="center">
-                      <Checkbox
-                        id={ids.re}
-                        checked={regex}
-                        onCheckedChange={setRegex}
-                      />
-                      <Label htmlFor={ids.re}>Regular expression</Label>
-                    </Inline>
-                  </>
-                )}
-              </Stack>
-            </DialogBody>
-            <DialogFooter>
+      {open ? (
+        <Dialog
+          open
+          onOpenChange={(o) => !o && setOpen(null)}
+          title={titles[open]}
+          actions={
+            <>
               <Button variant="ghost" onClick={() => setOpen(null)}>
                 Cancel
               </Button>
               <Button
-                variant={open === 'delete-column' ? 'danger' : 'primary'}
-                onClick={() => {
-                  if (open === 'add-column')
-                    submit({ kind: 'add-column', name, at: columns.length });
-                  else if (open === 'rename')
-                    submit({ kind: 'rename-column', col: column, name });
-                  else if (open === 'delete-column')
-                    submit({ kind: 'delete-column', col: column });
-                  else
-                    submit({
-                      kind: 'replace',
-                      col: column,
-                      find,
-                      replace,
-                      regex,
-                    });
-                }}
+                variant="solid"
+                tone={open === 'delete-column' ? 'danger' : undefined}
+                onClick={run}
               >
                 {titles[open]}
               </Button>
-            </DialogFooter>
-          </>
-        )}
-      </Dialog>
+            </>
+          }
+        >
+          <Stack gap="3">
+            {open !== 'add-column' && columnSelect}
+            {(open === 'add-column' || open === 'rename') && (
+              <TextField label="New name" value={name} onChange={setName} />
+            )}
+            {open === 'replace' && (
+              <>
+                <TextField label="Find" value={find} onChange={setFind} />
+                <TextField
+                  label="Replace with"
+                  value={replace}
+                  onChange={setReplace}
+                />
+                <Checkbox
+                  label="Regular expression"
+                  checked={regex}
+                  onChange={setRegex}
+                />
+              </>
+            )}
+          </Stack>
+        </Dialog>
+      ) : null}
     </Inline>
   );
 }

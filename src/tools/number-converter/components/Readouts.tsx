@@ -1,17 +1,13 @@
-import React from 'react';
 import {
   Checkbox,
+  DescriptionList,
   Heading,
-  Inline,
   Stack,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Text,
-} from '@/shared/ui';
+  VisuallyHidden,
+} from '@arshad-shah/cynosure';
+import React from 'react';
 import type { FloatParts } from '@/shared/lib/numbers';
 
 interface ReadoutsProps {
@@ -50,30 +46,35 @@ const WHAT = [
 
 const isSet = (v: bigint, i: number) => ((v >> BigInt(i)) & 1n) === 1n;
 
+const code = (v: string) => (
+  <Text as="span" variant="code">
+    {v}
+  </Text>
+);
+
 const Characters: React.FC<Pick<ReadoutsProps, 'bytesBE' | 'ascii'>> = ({
   bytesBE,
   ascii,
 }) => {
-  const hex = bytesBE ? bytesBE.split(' ') : [];
+  const rows = (bytesBE ? bytesBE.split(' ') : []).map((hex, i) => ({
+    id: String(i),
+    n: i + 1,
+    hex,
+    ascii: ascii[i] ?? '',
+  }));
   return (
-    <Table aria-label="Bytes as characters">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Byte</TableHead>
-          <TableHead>Hex</TableHead>
-          <TableHead>ASCII</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {hex.map((h, i) => (
-          <TableRow key={i}>
-            <TableCell>{i + 1}</TableCell>
-            <TableCell className="font-mono">{h}</TableCell>
-            <TableCell className="font-mono">{ascii[i]}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <Table
+      caption="Bytes as characters"
+      captionHidden
+      size="sm"
+      rows={rows}
+      getRowId={(r) => r.id}
+      columns={[
+        { key: 'n', header: 'Byte', cell: (r) => r.n },
+        { key: 'hex', header: 'Hex', cell: (r) => code(r.hex) },
+        { key: 'ascii', header: 'ASCII', cell: (r) => code(r.ascii) },
+      ]}
+    />
   );
 };
 
@@ -89,101 +90,101 @@ const Float: React.FC<{ float?: FloatParts; bits: number }> = ({
           : 'Choose 32 or 64 bits to read the pattern as an IEEE-754 float.'}
       </Text>
     );
-  const rows: [string, string][] = [
-    ['Value', String(float.value)],
-    ['Kind', KIND[float.kind]],
-    ['Sign', float.sign ? '1 (negative)' : '0 (positive)'],
-    [
-      'Exponent',
-      `${float.exponent} biased (${float.exponentBits} bits), ${float.unbiased} unbiased`,
-    ],
-    [
-      'Mantissa',
-      `0x${float.mantissa.toString(16).toUpperCase()} (${float.mantissaBits} bits)`,
-    ],
-  ];
   return (
-    <Table aria-label={`IEEE-754 ${bits}-bit float`}>
-      <TableBody>
-        {rows.map(([k, v]) => (
-          <TableRow key={k}>
-            <TableHead>{k}</TableHead>
-            <TableCell className="font-mono">{v}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <DescriptionList
+      size="sm"
+      layout="inline"
+      items={[
+        { id: 'value', term: 'Value', detail: code(String(float.value)) },
+        { id: 'kind', term: 'Kind', detail: KIND[float.kind] },
+        {
+          id: 'sign',
+          term: 'Sign',
+          detail: float.sign ? '1 (negative)' : '0 (positive)',
+        },
+        {
+          id: 'exp',
+          term: 'Exponent',
+          detail: `${float.exponent} biased (${float.exponentBits} bits), ${float.unbiased} unbiased`,
+        },
+        {
+          id: 'mantissa',
+          term: 'Mantissa',
+          detail: code(
+            `0x${float.mantissa.toString(16).toUpperCase()} (${float.mantissaBits} bits)`,
+          ),
+        },
+      ]}
+    />
   );
 };
 
 const Permissions: React.FC<
   Pick<ReadoutsProps, 'perms' | 'pattern' | 'onToggleBit'>
 > = ({ perms, pattern, onToggleBit }) => (
-  <Stack gap="2">
-    <Text size="sm">
-      Symbolic:{' '}
-      <Text as="span" mono>
-        {perms ?? 'None'}
-      </Text>
-    </Text>
-    {!perms && (
+  <Stack gap="3">
+    <DescriptionList
+      size="sm"
+      items={[{ id: 'sym', term: 'Symbolic', detail: code(perms ?? 'None') }]}
+    />
+    {!perms ? (
       <Text size="sm" tone="muted">
         Permissions need a value of 7777 octal or less.
       </Text>
-    )}
-    <Table aria-label="Unix permissions">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Who</TableHead>
-          {WHAT.map((w) => (
-            <TableHead key={w.name}>{w.name}</TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {WHO.map((who) => (
-          <TableRow key={who.name}>
-            <TableHead>{who.name}</TableHead>
-            {WHAT.map((w) => {
-              const bit = who.shift + w.bit;
-              return (
-                <TableCell key={w.name}>
-                  <Checkbox
-                    aria-label={`${who.name} ${w.name}`}
-                    checked={!!perms && isSet(pattern, bit)}
-                    disabled={!perms}
-                    onCheckedChange={() => onToggleBit(bit)}
-                  />
-                </TableCell>
-              );
-            })}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    ) : null}
+    <Table
+      caption="Unix permissions"
+      captionHidden
+      size="sm"
+      rows={WHO.map((w) => ({ ...w }))}
+      getRowId={(r) => r.name}
+      columns={[
+        { key: 'who', header: 'Who', rowHeader: true, cell: (r) => r.name },
+        ...WHAT.map((w) => ({
+          key: w.name,
+          header: w.name[0].toUpperCase() + w.name.slice(1),
+          cell: (r: (typeof WHO)[number]) => {
+            const bit = r.shift + w.bit;
+            return (
+              <Checkbox
+                label={<VisuallyHidden>{`${r.name} ${w.name}`}</VisuallyHidden>}
+                checked={!!perms && isSet(pattern, bit)}
+                disabled={!perms}
+                onChange={() => onToggleBit(bit)}
+              />
+            );
+          },
+        })),
+      ]}
+    />
   </Stack>
 );
 
 /** Characters, the float decomposition and Unix permissions of the value. */
 export const Readouts: React.FC<ReadoutsProps> = (p) => (
   <Stack gap="6">
-    <Stack gap="2">
+    <Stack gap="3">
       <Heading level={3} size="sm">
         Characters
       </Heading>
       {p.hasValue ? (
         <>
           <Characters bytesBE={p.bytesBE} ascii={p.ascii} />
-          <Inline gap="2">
-            <Text size="sm">UTF-8 text:</Text>
-            <Text size="sm" mono>
-              {p.utf8 === null
-                ? 'Not valid UTF-8'
-                : p.utf8 === ''
-                  ? 'None'
-                  : p.utf8}
-            </Text>
-          </Inline>
+          <DescriptionList
+            size="sm"
+            items={[
+              {
+                id: 'utf8',
+                term: 'UTF-8 text',
+                detail:
+                  p.utf8 === null
+                    ? 'Not valid UTF-8'
+                    : p.utf8 === ''
+                      ? 'None'
+                      : code(p.utf8),
+              },
+            ]}
+          />
         </>
       ) : (
         <Text size="sm" tone="muted">
@@ -191,13 +192,13 @@ export const Readouts: React.FC<ReadoutsProps> = (p) => (
         </Text>
       )}
     </Stack>
-    <Stack gap="2">
+    <Stack gap="3">
       <Heading level={3} size="sm">
         IEEE-754 float
       </Heading>
       <Float float={p.hasValue ? p.float : undefined} bits={p.bits} />
     </Stack>
-    <Stack gap="2">
+    <Stack gap="3">
       <Heading level={3} size="sm">
         Unix permissions
       </Heading>

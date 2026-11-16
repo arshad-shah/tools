@@ -58,11 +58,8 @@ describe('Text Diff', () => {
     await waitFor(() =>
       expect(screen.getByText('0 added, 0 removed, 1 changed')).toBeTruthy(),
     );
-    tab('Original');
     expect(box('Original text').value).toBe('alpha');
-    // The inputs are tabs (R41): Changed is hidden until shown.
-    expect(screen.queryByRole('textbox', { name: 'Changed text' })).toBeNull();
-    tab('Changed');
+    // Both sides are shown side by side.
     expect(box('Changed text').value).toBe('beta');
     // The diff result is not tabbed: it stays on screen.
     expect(screen.getByText('0 added, 0 removed, 1 changed')).toBeTruthy();
@@ -81,16 +78,10 @@ describe('Text Diff', () => {
     );
     render(<TextDiff />);
     await screen.findByText('0 added, 0 removed, 1 changed');
-    tab('Original');
     expect(box('Original text').value).toBe('{"v":1}');
-    tab('Changed');
     expect(box('Changed text').value).toBe('{"v":2}');
   });
 });
-
-function tab(name: string) {
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
-}
 
 function box(name: string) {
   return screen.getByRole('textbox', { name }) as HTMLTextAreaElement;

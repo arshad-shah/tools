@@ -65,13 +65,11 @@ describe('Text Toolkit', () => {
     fake.timeout = false;
   });
 
-  it('panels use kit headings, switches and an empty state', () => {
+  it('shows the operations, find and replace, and statistics', () => {
     setup();
     for (const name of ['Operations', 'Find and replace', 'Statistics'])
-      expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy();
-    expect(
-      screen.getByRole('heading', { level: 3, name: 'No words yet' }),
-    ).toBeTruthy();
+      expect(screen.getByRole('region', { name })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'No words yet' })).toBeTruthy();
     expect(
       screen.getByRole('switch', { name: 'Hide common words' }),
     ).toBeTruthy();
@@ -83,7 +81,7 @@ describe('Text Toolkit', () => {
     type('Hello brave world.');
     expect(screen.getByText('3 words')).toBeTruthy();
     expect(
-      screen.getByRole('list', { name: 'Top words' }).textContent,
+      screen.getByRole('table', { name: 'Top words' }).textContent,
     ).toContain('brave');
   });
 

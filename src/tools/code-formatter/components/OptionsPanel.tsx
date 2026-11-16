@@ -1,12 +1,13 @@
-import { useId } from 'react';
 import {
-  Label,
-  NumberInput,
-  OptionsMenu,
+  Button,
+  Grid,
+  NumberField,
+  Popover,
   Select,
   Stack,
-  SwitchField,
-} from '@/shared/ui';
+  Switch,
+} from '@arshad-shah/cynosure';
+import { settings as settingsIcon } from '@arshad-shah/cynosure/icons';
 import {
   SQL_DIALECT_LABEL,
   SQL_DIALECTS,
@@ -37,123 +38,115 @@ export function OptionsPanel({
   mangle,
   onMangleChange,
 }: OptionsPanelProps) {
-  const indentId = useId();
-  const widthId = useId();
-  const commaId = useId();
-  const dialectId = useId();
-  const caseId = useId();
   const js = JS_LIKE.includes(language);
   const sql = language === 'sql';
   const prettier = !sql && language !== 'xml';
   return (
-    <OptionsMenu title="Formatting options" width="w-96">
-      <div className="grid grid-cols-2 gap-3">
-        <Stack gap="1">
-          <Label htmlFor={indentId}>Indent</Label>
+    <Popover
+      label="Formatting options"
+      size="lg"
+      trigger={(props) => (
+        <Button {...props} variant="soft" icon={settingsIcon}>
+          Options
+        </Button>
+      )}
+    >
+      <Stack gap="5">
+        <Grid columns={2} gap="4">
           <Select
-            id={indentId}
+            label="Indent"
             value={String(options.indent)}
-            onValueChange={(v) =>
+            onChange={(v) =>
               onChange({ indent: v === 'tab' ? 'tab' : (Number(v) as 2 | 4) })
             }
-            items={[
+            options={[
               { value: '2', label: '2 spaces' },
               { value: '4', label: '4 spaces' },
               { value: 'tab', label: 'Tab' },
             ]}
           />
-        </Stack>
-        {prettier && (
-          <Stack gap="1">
-            <Label htmlFor={widthId}>Print width</Label>
-            <NumberInput
-              id={widthId}
+          {prettier ? (
+            <NumberField
+              label="Print width"
               value={options.printWidth}
               min={20}
               max={320}
-              onValueChange={(v) => onChange({ printWidth: v })}
+              onChange={(v) => v !== null && onChange({ printWidth: v })}
             />
-          </Stack>
-        )}
-        {js && (
-          <Stack gap="1">
-            <Label htmlFor={commaId}>Trailing commas</Label>
+          ) : null}
+          {js ? (
             <Select
-              id={commaId}
+              label="Trailing commas"
               value={options.trailingComma}
-              onValueChange={(v) =>
+              onChange={(v) =>
                 onChange({ trailingComma: v as FormatOptions['trailingComma'] })
               }
-              items={[
+              options={[
                 { value: 'all', label: 'All' },
                 { value: 'es5', label: 'ES5' },
                 { value: 'none', label: 'None' },
               ]}
             />
-          </Stack>
-        )}
-        {sql && (
-          <>
-            <Stack gap="1">
-              <Label htmlFor={dialectId}>Dialect</Label>
+          ) : null}
+          {sql ? (
+            <>
               <Select
-                id={dialectId}
+                label="Dialect"
                 value={options.sqlDialect}
-                onValueChange={(v) =>
+                onChange={(v) =>
                   onChange({ sqlDialect: v as FormatOptions['sqlDialect'] })
                 }
-                items={SQL_DIALECTS.map((d) => ({
+                options={SQL_DIALECTS.map((d) => ({
                   value: d,
                   label: SQL_DIALECT_LABEL[d],
                 }))}
               />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor={caseId}>Keywords</Label>
               <Select
-                id={caseId}
+                label="Keywords"
                 value={options.keywordCase}
-                onValueChange={(v) =>
+                onChange={(v) =>
                   onChange({ keywordCase: v as FormatOptions['keywordCase'] })
                 }
-                items={[
+                options={[
                   { value: 'upper', label: 'Upper case' },
                   { value: 'lower', label: 'Lower case' },
                   { value: 'preserve', label: 'As written' },
                 ]}
               />
-            </Stack>
-          </>
-        )}
-      </div>
-      {js && (
-        <>
-          <SwitchField
-            label="Single quotes"
-            checked={options.singleQuote}
-            onCheckedChange={(v) => onChange({ singleQuote: v })}
-          />
-          <SwitchField
-            label="Semicolons"
-            checked={options.semi}
-            onCheckedChange={(v) => onChange({ semi: v })}
-          />
-        </>
-      )}
-      {prettier && (
-        <SwitchField
-          label="Bracket spacing"
-          checked={options.bracketSpacing}
-          onCheckedChange={(v) => onChange({ bracketSpacing: v })}
-        />
-      )}
-      {language === 'javascript' && (
-        <SwitchField
-          label="Mangle names"
-          checked={mangle}
-          onCheckedChange={onMangleChange}
-        />
-      )}
-    </OptionsMenu>
+            </>
+          ) : null}
+        </Grid>
+        <Stack gap="3">
+          {js ? (
+            <>
+              <Switch
+                label="Single quotes"
+                checked={options.singleQuote}
+                onChange={(v) => onChange({ singleQuote: v })}
+              />
+              <Switch
+                label="Semicolons"
+                checked={options.semi}
+                onChange={(v) => onChange({ semi: v })}
+              />
+            </>
+          ) : null}
+          {prettier ? (
+            <Switch
+              label="Bracket spacing"
+              checked={options.bracketSpacing}
+              onChange={(v) => onChange({ bracketSpacing: v })}
+            />
+          ) : null}
+          {language === 'javascript' ? (
+            <Switch
+              label="Mangle names"
+              checked={mangle}
+              onChange={onMangleChange}
+            />
+          ) : null}
+        </Stack>
+      </Stack>
+    </Popover>
   );
 }

@@ -1,28 +1,19 @@
-import React, { useMemo, useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Code,
-  DateInput,
+  DateField,
   Grid,
-  Input,
-  Label,
-  Select,
+  Notice,
   Stack,
   Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from '@/shared/ui';
+  Text,
+  TimeField,
+} from '@arshad-shah/cynosure';
+import React, { useMemo, useState } from 'react';
 import { toToolError } from '@/shared/lib/errors';
-import { listZones } from '@/shared/lib/time';
 import { convertWallClock } from '../lib/zone-convert';
+import { ZoneField } from './ZoneField';
 
-/** A wall-clock time in one zone, shown in the listed zones (spec §9.6). */
+/** A wall-clock time in one zone, shown in the listed zones. */
 export const ZoneConverter: React.FC<{
   zones: string[];
   defaultZone: string;
@@ -30,13 +21,9 @@ export const ZoneConverter: React.FC<{
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState('09:00');
   const [from, setFrom] = useState(defaultZone);
-  const items = useMemo(
-    () => listZones().map((z) => ({ value: z.id, label: z.label })),
-    [],
-  );
   const result = useMemo(() => {
     const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-    const t = /^(\d{2}):(\d{2})$/.exec(time);
+    const t = /^(\d{2}):(\d{2})/.exec(time);
     if (!d || !t) return { error: 'Enter a date and a time' };
     try {
       return convertWallClock(
@@ -57,64 +44,60 @@ export const ZoneConverter: React.FC<{
   }, [date, time, from, zones]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">Zone converter</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="4">
-          <Grid cols={{ base: 1, md: 3 }} gap="3">
-            <Stack gap="1">
-              <Label htmlFor="zc-date">Date</Label>
-              <DateInput
-                id="zc-date"
-                label="Date"
-                value={date}
-                onChange={setDate}
-              />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor="zc-time">Time</Label>
-              <Input id="zc-time" type="time" value={time} onChange={setTime} />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor="zc-zone">In zone</Label>
-              <Select
-                id="zc-zone"
-                value={from}
-                onValueChange={setFrom}
-                items={items}
-              />
-            </Stack>
-          </Grid>
-          {'error' in result ? (
-            <Alert status="danger">
-              <AlertDescription>{result.error}</AlertDescription>
-            </Alert>
-          ) : (
-            <>
-              {result.notice && (
-                <Alert status="warning">
-                  <AlertDescription>{result.notice}</AlertDescription>
-                </Alert>
-              )}
-              <Table aria-label="Converted times">
-                <TableBody>
-                  {result.rows.map((r) => (
-                    <TableRow key={r.zone}>
-                      <TableCell>{r.zone.replace(/_/g, ' ')}</TableCell>
-                      <TableCell>
-                        <Code>{r.iso.slice(0, 16).replace('T', ' ')}</Code>
-                      </TableCell>
-                      <TableCell>UTC{r.iso.slice(23)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </>
-          )}
-        </Stack>
-      </CardBody>
+    <Card as="section" title="Zone converter">
+      <Stack gap="5">
+        <Grid minItemWidth="11rem" gap="4">
+          <DateField
+            label="Date"
+            value={date}
+            onChange={(v) => setDate(v ?? '')}
+          />
+          <TimeField
+            label="Time"
+            value={time}
+            onChange={(v) => setTime(v ?? '')}
+          />
+          <ZoneField label="In zone" value={from} onChange={setFrom} />
+        </Grid>
+        {'error' in result ? (
+          <Notice tone="danger">{result.error}</Notice>
+        ) : (
+          <>
+            {result.notice ? (
+              <Notice tone="warning">{result.notice}</Notice>
+            ) : null}
+            <Table
+              caption="Converted times"
+              captionHidden
+              size="sm"
+              rows={result.rows}
+              getRowId={(r) => r.zone}
+              columns={[
+                {
+                  key: 'zone',
+                  header: 'Zone',
+                  rowHeader: true,
+                  cell: (r) => r.zone.replace(/_/g, ' '),
+                },
+                {
+                  key: 'time',
+                  header: 'Time there',
+                  cell: (r) => (
+                    <Text as="span" variant="code">
+                      {r.iso.slice(0, 16).replace('T', ' ')}
+                    </Text>
+                  ),
+                },
+                {
+                  key: 'offset',
+                  header: 'Offset',
+                  cell: (r) => `UTC${r.iso.slice(23)}`,
+                },
+              ]}
+            />
+          </>
+        )}
+      </Stack>
     </Card>
   );
 };

@@ -2,25 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { textWorker } from '@/shared/workers/text-client';
 import {
-  ErrorState,
   Badge,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Chart,
+  DescriptionList,
   Grid,
-  LoadingState,
-  MetaList,
+  Notice,
+  Skeleton,
   Stack,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { Chart } from '@/shared/ui';
 import { COLUMN_TYPE_LABEL, type ColumnType } from '../lib/columns';
 import type { Row } from '../lib/edit';
 import type { ColumnProfile } from '../lib/profile';
@@ -64,57 +56,66 @@ function ColumnCard({
       ['P75', fmt(p.p75)],
     );
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h4">{name}</CardTitle>
+    <Card
+      as="section"
+      title={name}
+      headingLevel={3}
+      padding="sm"
+      actions={
         <Badge variant="soft" size="sm">
           {COLUMN_TYPE_LABEL[type]}
         </Badge>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <MetaList items={stats.map(([k, v]) => `${k} ${v}`)} />
-          {p.histogram && p.histogram.length > 1 && (
-            <Chart
-              kind="bar"
-              xType="band"
-              height={140}
-              legend={false}
-              ariaLabel={`Histogram of ${name}`}
-              series={[
-                {
-                  id: name,
-                  label: name,
-                  points: p.histogram.map((b) => ({
-                    x: `${fmt(b.x0)} to ${fmt(b.x1)}`,
-                    y: b.n,
-                  })),
-                },
-              ]}
-            />
-          )}
-          {p.top.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    {p.topApprox ? 'Top values (partial)' : 'Top values'}
-                  </TableHead>
-                  <TableHead>Count</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {p.top.map(([v, n]) => (
-                  <TableRow key={v}>
-                    <TableCell className="max-w-48 truncate">{v}</TableCell>
-                    <TableCell>{fmt(n)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Stack>
-      </CardBody>
+      }
+    >
+      <Stack gap="3">
+        <DescriptionList
+          layout="inline"
+          size="sm"
+          items={stats.map(([k, v]) => ({ id: k, term: k, detail: v }))}
+        />
+        {p.histogram && p.histogram.length > 1 && (
+          <Chart
+            kind="bar"
+            xType="band"
+            height={140}
+            legend={false}
+            ariaLabel={`Histogram of ${name}`}
+            series={[
+              {
+                id: name,
+                label: name,
+                points: p.histogram.map((b) => ({
+                  x: `${fmt(b.x0)} to ${fmt(b.x1)}`,
+                  y: b.n,
+                })),
+              },
+            ]}
+          />
+        )}
+        {p.top.length > 0 && (
+          <Table<[string, number]>
+            caption={`Top values of ${name}`}
+            captionHidden
+            size="sm"
+            rows={p.top}
+            getRowId={([v]) => v}
+            columns={[
+              {
+                key: 'value',
+                header: p.topApprox ? 'Top values (partial)' : 'Top values',
+                rowHeader: true,
+                cell: ([v]) => <Text truncate>{v}</Text>,
+              },
+              {
+                key: 'count',
+                header: 'Count',
+                align: 'end',
+                cell: ([, n]) => fmt(n),
+              },
+            ]}
+          />
+        )}
+      </Stack>
     </Card>
   );
 }
@@ -147,17 +148,27 @@ export function ProfilePanel({ rows, columns, types }: ProfilePanelProps) {
     return () => ctrl.abort();
   }, [key, rows, sub]);
 
-  if (state.key !== key) return <LoadingState label="Profiling columns" />;
+  if (state.key !== key)
+    return (
+      <Stack gap="3">
+        <Text size="sm" tone="muted">
+          Profiling columns
+        </Text>
+        <Skeleton shape="block" height="12rem" />
+      </Stack>
+    );
   if (state.error)
     return (
-      <ErrorState title="Could not profile the columns" error={state.error} />
+      <Notice tone="danger" title="Could not profile the columns">
+        {state.error.message}
+      </Notice>
     );
   return (
     <Stack gap="3">
-      <Text size="sm" tone="subtle">
+      <Text size="sm" tone="muted">
         {`Profiled over ${rows.length.toLocaleString('en-US')} filtered rows.`}
       </Text>
-      <Grid gap="4" max={3}>
+      <Grid columns={{ base: 1, md: 2, xl: 3 }} gap="4">
         {columns.map((c) => (
           <ColumnCard key={c} name={c} type={sub[c]} p={state.profiles![c]} />
         ))}

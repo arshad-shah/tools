@@ -1,6 +1,5 @@
-import { useId, useRef, useState } from 'react';
-import { Button, Checkbox, Inline, Label, Popover, Stack } from '@/shared/ui';
-import { IconChevronDown, IconColumns } from '@/shared/ui/icons';
+import { Button, Menu } from '@arshad-shah/cynosure';
+import { columns as columnsIcon } from '@arshad-shah/cynosure/icons';
 import { LOG_COLUMNS, type LogColumn } from '../settings';
 
 const COLUMN_LABEL: Record<LogColumn, string> = {
@@ -17,44 +16,28 @@ export interface ColumnMenuProps {
 
 /** Which summary columns the entry rows show (persisted in settings). */
 export function ColumnMenu({ columns, onColumns }: ColumnMenuProps) {
-  const [open, setOpen] = useState(false);
-  const anchor = useRef<HTMLButtonElement>(null);
-  const base = useId();
-  const toggle = (c: LogColumn, on: boolean) =>
-    onColumns(LOG_COLUMNS.filter((x) => (x === c ? on : columns.includes(x))));
   return (
-    <>
-      <Button
-        ref={anchor}
-        size="sm"
-        variant="ghost"
-        leftIcon={<IconColumns size="sm" />}
-        rightIcon={<IconChevronDown size="sm" />}
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        Columns
-      </Button>
-      <Popover
-        open={open}
-        onOpenChange={setOpen}
-        anchor={anchor}
-        label="Columns"
-      >
-        <Stack gap="2" className="p-1">
-          {LOG_COLUMNS.map((c) => (
-            <Inline key={c} gap="2" wrap={false}>
-              <Checkbox
-                id={`${base}-${c}`}
-                size="sm"
-                checked={columns.includes(c)}
-                onCheckedChange={(on) => toggle(c, on)}
-              />
-              <Label htmlFor={`${base}-${c}`}>{COLUMN_LABEL[c]}</Label>
-            </Inline>
-          ))}
-        </Stack>
-      </Popover>
-    </>
+    <Menu
+      label="Columns"
+      items={LOG_COLUMNS.map((c) => ({
+        value: c,
+        label: COLUMN_LABEL[c],
+        kind: 'checkbox' as const,
+        checked: columns.includes(c),
+        keepOpen: true,
+      }))}
+      onSelect={(v) => {
+        const c = v as LogColumn;
+        const on = !columns.includes(c);
+        onColumns(
+          LOG_COLUMNS.filter((x) => (x === c ? on : columns.includes(x))),
+        );
+      }}
+      trigger={(props) => (
+        <Button {...props} size="sm" variant="ghost" icon={columnsIcon}>
+          Columns
+        </Button>
+      )}
+    />
   );
 }

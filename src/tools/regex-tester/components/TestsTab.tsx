@@ -1,15 +1,6 @@
 import React from 'react';
-import {
-  Badge,
-  Code,
-  CodeSurface,
-  Grid,
-  Inline,
-  List,
-  ListItem,
-  Stack,
-  Text,
-} from '@/shared/ui';
+import { Badge, Grid, Inline, List, Stack, Text } from '@arshad-shah/cynosure';
+import { CodeSurface } from '@/shared/ui';
 import { useRegexJob } from '../hooks/useRegexJob';
 import type { RegexRunner } from '../lib/runner';
 import {
@@ -33,12 +24,14 @@ interface TestsTabProps {
 }
 
 const Result: React.FC<{ c: TestCase; r: TestCaseResult }> = ({ c, r }) => (
-  <Inline gap="2" align="center">
-    <Badge variant="soft" tone={r.pass ? 'success' : 'danger'} size="sm">
+  <Inline gap="3" align="center" wrap>
+    <Badge tone={r.pass ? 'success' : 'danger'} size="sm">
       {r.pass ? 'Pass' : 'Fail'}
     </Badge>
-    <Code className="whitespace-pre-wrap">{c.text}</Code>
-    <Text as="span" size="xs" tone="subtle">
+    <Text as="span" variant="code" wrap="pre">
+      {c.text}
+    </Text>
+    <Text as="span" size="xs" tone="muted">
       {c.expect === 'match' ? 'should match' : 'should not match'}
       {r.pass ? '' : r.actual ? ', but matched' : ', but did not match'}
     </Text>
@@ -69,10 +62,10 @@ export const TestsTab: React.FC<TestsTabProps> = ({
 
   return (
     <Stack gap="3">
-      <Text size="sm" tone="subtle">
+      <Text size="sm" tone="muted">
         One case per line. Each line is checked on its own.
       </Text>
-      <Grid max={2} gap="3">
+      <Grid columns={{ base: 1, md: 2 }} gap="4">
         <CodeSurface
           value={shouldMatch}
           onChange={onShouldMatchChange}
@@ -93,7 +86,7 @@ export const TestsTab: React.FC<TestsTabProps> = ({
         />
       </Grid>
       <JobStatus error={job.error} pending={job.pending} onRetry={job.retry} />
-      {sum && (
+      {sum ? (
         <Inline>
           <Badge
             variant="solid"
@@ -103,16 +96,18 @@ export const TestsTab: React.FC<TestsTabProps> = ({
             {`${sum.passed} of ${sum.total} passing`}
           </Badge>
         </Inline>
-      )}
-      {results && results.length === cases.length && (
-        <List aria-label="Test results">
-          {cases.map((c, i) => (
-            <ListItem key={`${c.expect}:${i}`}>
-              <Result c={c} r={results[i]} />
-            </ListItem>
-          ))}
-        </List>
-      )}
+      ) : null}
+      {results && results.length === cases.length ? (
+        <List
+          label="Test results"
+          marker="none"
+          divided
+          items={cases.map((c, i) => ({
+            id: `${c.expect}:${i}`,
+            label: <Result c={c} r={results[i]} />,
+          }))}
+        />
+      ) : null}
     </Stack>
   );
 };

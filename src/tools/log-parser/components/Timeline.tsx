@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { Button, Chart, type ChartSeries } from '@/shared/ui';
-import { IconX } from '@/shared/ui/icons';
+import { Button, Inline, Stack, Text } from '@arshad-shah/cynosure';
+import { close } from '@arshad-shah/cynosure/icons';
+import { Chart, type ChartSeries } from '@/shared/ui';
 import type { Histogram } from '../hooks/useLogSource';
 import { levelLabel, orderLevels } from '../lib/level-style';
 import { rowTime } from '../lib/progress';
@@ -32,24 +33,24 @@ export function Timeline({ histogram, range, onRange }: TimelineProps) {
 
   if (series.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-fg-muted">
+    <Stack gap="2">
+      <Inline gap="2" align="center" justify="between" wrap>
+        <Text size="sm" tone="muted">
           {range
             ? `Showing ${rowTime(range[0])} to ${rowTime(range[1])}`
             : 'Drag across the timeline to filter a time range'}
-        </span>
+        </Text>
         {range ? (
           <Button
             size="sm"
             variant="ghost"
-            leftIcon={<IconX size="sm" />}
+            icon={close}
             onClick={() => onRange(undefined)}
           >
             Clear time range
           </Button>
         ) : null}
-      </div>
+      </Inline>
       <Chart
         kind="bar"
         stacked
@@ -62,6 +63,6 @@ export function Timeline({ histogram, range, onRange }: TimelineProps) {
           onRange(r ? [Math.floor(r[0]), Math.ceil(r[1])] : undefined)
         }
       />
-    </div>
+    </Stack>
   );
 }

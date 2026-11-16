@@ -1,27 +1,11 @@
-import React from 'react';
+import { Button, IconButton, Inline, Menu } from '@arshad-shah/cynosure';
 import {
-  IconBookOpen,
-  IconChevronDown,
-  IconCodeXml,
-  IconLayers,
-  IconSendTo,
-  IconSettings,
-  IconX,
-  IconZap,
-} from '@/shared/ui/icons';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  Inline,
-  ShareButton,
-  ToolActions,
-  type ShareControl,
-  IconButton,
-} from '@/shared/ui';
+  bookOpen,
+  layers,
+  share as shareIcon,
+  sliders,
+} from '@arshad-shah/cynosure/icons';
+import type { ShareControl } from '@/shared/ui';
 
 interface RegexToolbarProps {
   share: ShareControl;
@@ -38,22 +22,8 @@ interface RegexToolbarProps {
   onClearAll(): void;
 }
 
-const Item: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  onClick(): void;
-  disabled?: boolean;
-}> = ({ icon, label, onClick, disabled }) => (
-  <DropdownMenuItem onClick={onClick} disabled={disabled}>
-    <Inline align="center" gap="2">
-      {icon}
-      <span>{label}</span>
-    </Inline>
-  </DropdownMenuItem>
-);
-
-/** Templates, cheat sheet, the Actions menu and Share, in the tool header. */
-export const RegexToolbar: React.FC<RegexToolbarProps> = ({
+/** Templates, the cheat sheet, the Actions menu and Share. */
+export function RegexToolbar({
   share,
   onOpenTemplates,
   cheatSheetOpen,
@@ -64,62 +34,61 @@ export const RegexToolbar: React.FC<RegexToolbarProps> = ({
   canUseAsLogFormat,
   onUseAsLogFormat,
   onClearAll,
-}) => (
-  <ToolActions>
-    <IconButton
-      variant="ghost"
-      size="sm"
-      onClick={onOpenTemplates}
-      label="Templates"
-      showLabel="desktop"
-      icon={IconLayers}
-    />
-    <IconButton
-      variant="ghost"
-      size="sm"
-      aria-pressed={cheatSheetOpen}
-      onClick={onToggleCheatSheet}
-      label="Cheat sheet"
-      showLabel="desktop"
-      icon={IconBookOpen}
-    />
-    <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={<IconSettings size="sm" />}
-          rightIcon={<IconChevronDown size="sm" />}
-        >
-          Actions
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <Item
-          icon={<IconCodeXml size="sm" />}
-          label="Copy as JavaScript"
-          onClick={onCopyAsJs}
-          disabled={!canCopyJs}
-        />
-        <Item
-          icon={<IconZap size="sm" />}
-          label="Load sample text"
-          onClick={onLoadSample}
-        />
-        <Item
-          icon={<IconSendTo size="sm" />}
-          label="Use as log format"
-          onClick={onUseAsLogFormat}
-          disabled={!canUseAsLogFormat}
-        />
-        <DropdownMenuSeparator />
-        <Item
-          icon={<IconX size="sm" />}
-          label="Clear all"
-          onClick={onClearAll}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
-    <ShareButton share={share} />
-  </ToolActions>
-);
+}: RegexToolbarProps) {
+  return (
+    <Inline gap="2" wrap>
+      <Button size="sm" variant="soft" icon={layers} onClick={onOpenTemplates}>
+        Templates
+      </Button>
+      <IconButton
+        size="sm"
+        variant={cheatSheetOpen ? 'soft' : 'ghost'}
+        icon={bookOpen}
+        label="Cheat sheet"
+        aria-pressed={cheatSheetOpen}
+        onClick={onToggleCheatSheet}
+      />
+      <Menu
+        label="Actions"
+        items={[
+          {
+            items: [
+              {
+                value: 'js',
+                label: 'Copy as JavaScript',
+                disabled: !canCopyJs,
+              },
+              { value: 'sample', label: 'Load sample text' },
+              {
+                value: 'log',
+                label: 'Use as log format',
+                disabled: !canUseAsLogFormat,
+              },
+            ],
+          },
+          { items: [{ value: 'clear', label: 'Clear all', tone: 'danger' }] },
+        ]}
+        onSelect={(v) => {
+          if (v === 'js') onCopyAsJs();
+          else if (v === 'sample') onLoadSample();
+          else if (v === 'log') onUseAsLogFormat();
+          else if (v === 'clear') onClearAll();
+        }}
+        trigger={(props) => (
+          <Button {...props} size="sm" variant="soft" icon={sliders}>
+            Actions
+          </Button>
+        )}
+      />
+      <Button
+        size="sm"
+        variant="ghost"
+        icon={shareIcon}
+        disabled={!share.canShare}
+        onClick={() => void Promise.resolve(share.share()).catch(() => {})}
+      >
+        Share
+      </Button>
+    </Inline>
+  );
+}

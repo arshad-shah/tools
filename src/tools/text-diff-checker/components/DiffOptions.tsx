@@ -1,11 +1,14 @@
 import {
-  Label,
-  OptionsMenu,
+  Badge,
+  Button,
+  Grid,
+  Popover,
   SegmentedControl,
   Select,
   Stack,
-  SwitchField,
-} from '@/shared/ui';
+  Switch,
+} from '@arshad-shah/cynosure';
+import { sliders } from '@arshad-shah/cynosure/icons';
 import {
   DIFF_SETTINGS_DEFAULTS,
   type DiffContext,
@@ -30,9 +33,17 @@ const MENU_KEYS = [
   'syntaxHighlighting',
 ] as const satisfies readonly (keyof DiffSettings)[];
 
+const SWITCHES: { key: (typeof MENU_KEYS)[number]; label: string }[] = [
+  { key: 'ignoreWhitespace', label: 'Ignore whitespace' },
+  { key: 'ignoreCase', label: 'Ignore case' },
+  { key: 'ignoreBlankLines', label: 'Ignore blank lines' },
+  { key: 'trimTrailing', label: 'Trim trailing whitespace' },
+  { key: 'syntaxHighlighting', label: 'Syntax colours' },
+];
+
 /**
  * The view up front; granularity, context and normalisation behind the
- * Options button (persisted).
+ * Options button (persisted), which says how many are changed.
  */
 export function DiffOptions({ settings: s, update }: DiffOptionsProps) {
   const changed = MENU_KEYS.filter(
@@ -40,79 +51,70 @@ export function DiffOptions({ settings: s, update }: DiffOptionsProps) {
   ).length;
   return (
     <>
-      <SegmentedControl<DiffView>
+      <SegmentedControl
         size="sm"
         label="View"
         value={s.view}
-        onChange={(view) => update({ view })}
+        onChange={(view) => update({ view: view as DiffView })}
         options={[
           { value: 'split', label: 'Split' },
           { value: 'unified', label: 'Unified' },
           { value: 'inline', label: 'Inline' },
         ]}
       />
-      <OptionsMenu title="Diff options" changed={changed}>
-        <div className="grid grid-cols-2 gap-3">
-          <Stack gap="1">
-            <Label htmlFor="diff-granularity">Compare by</Label>
+      <Popover
+        label="Diff options"
+        trigger={(props) => (
+          <Button {...props} size="sm" variant="soft" icon={sliders}>
+            Options
+            {changed ? (
+              <Badge size="sm" tone="accent">
+                {changed}
+              </Badge>
+            ) : null}
+          </Button>
+        )}
+      >
+        <Stack gap="4">
+          <Grid columns={2} gap="4">
             <Select
-              id="diff-granularity"
+              label="Compare by"
+              size="sm"
               value={s.granularity}
-              onValueChange={(v) =>
+              onChange={(v) =>
                 update({ granularity: v as DiffSettings['granularity'] })
               }
-              items={[
+              options={[
                 { value: 'line', label: 'Line' },
                 { value: 'word', label: 'Word' },
                 { value: 'char', label: 'Character' },
               ]}
             />
-          </Stack>
-          <Stack gap="1">
-            <Label htmlFor="diff-context">Context lines</Label>
             <Select
-              id="diff-context"
+              label="Context lines"
+              size="sm"
               value={String(s.context)}
-              onValueChange={(v) =>
+              onChange={(v) =>
                 update({
                   context: v === 'all' ? 'all' : (Number(v) as DiffContext),
                 })
               }
-              items={CONTEXTS.map((c) => ({
+              options={CONTEXTS.map((c) => ({
                 value: String(c),
                 label: c === 'all' ? 'All' : String(c),
               }))}
             />
-          </Stack>
-        </div>
-        <SwitchField
-          label="Ignore whitespace"
-          checked={s.ignoreWhitespace}
-          onCheckedChange={(ignoreWhitespace) => update({ ignoreWhitespace })}
-        />
-        <SwitchField
-          label="Ignore case"
-          checked={s.ignoreCase}
-          onCheckedChange={(ignoreCase) => update({ ignoreCase })}
-        />
-        <SwitchField
-          label="Ignore blank lines"
-          checked={s.ignoreBlankLines}
-          onCheckedChange={(ignoreBlankLines) => update({ ignoreBlankLines })}
-        />
-        <SwitchField
-          label="Trim trailing whitespace"
-          checked={s.trimTrailing}
-          onCheckedChange={(trimTrailing) => update({ trimTrailing })}
-        />
-        <SwitchField
-          label="Syntax colours"
-          checked={s.syntaxHighlighting}
-          onCheckedChange={(syntaxHighlighting) =>
-            update({ syntaxHighlighting })
-          }
-        />
-      </OptionsMenu>
+          </Grid>
+          {SWITCHES.map(({ key, label }) => (
+            <Switch
+              key={key}
+              label={label}
+              checked={s[key] as boolean}
+              onChange={(v) => update({ [key]: v })}
+            />
+          ))}
+        </Stack>
+      </Popover>
     </>
   );
 }

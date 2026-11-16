@@ -1,5 +1,29 @@
+import {
+  Button,
+  Card,
+  CopyButton,
+  EmptyState,
+  IconButton,
+  Inline,
+  Menu,
+  Notice,
+  SegmentedControl,
+  Stack,
+  TextArea,
+  TextField,
+} from '@arshad-shah/cynosure';
+import {
+  clipboardPaste,
+  close,
+  link,
+  qrCode,
+  send,
+  sparkles,
+  type as typeIcon,
+} from '@arshad-shah/cynosure/icons';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShareButton, ToolActions, TransformLayout } from '@/app/ui/transform';
 import { readClipboardText, useClipboard } from '@/shared/lib/clipboard';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { sendTo, useHandoff } from '@/shared/lib/handoff';
@@ -7,40 +31,6 @@ import { notify } from '@/shared/lib/notify';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  CopyButton,
-  Inline,
-  Input,
-  Label,
-  ShareButton,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-  DropdownMenuContent,
-  DropdownMenu,
-  IconButton,
-  ToolActions,
-  Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui';
-import {
-  IconChevronDown,
-  IconClipboard,
-  IconQrCode,
-  IconSend,
-  IconSendTo,
-  IconType,
-} from '@/shared/ui/icons';
 import { AnatomyStrip } from './components/AnatomyStrip';
 import { CleanPanel } from './components/CleanPanel';
 import { DomainPanel } from './components/DomainPanel';
@@ -61,6 +51,8 @@ import {
 const SAMPLE =
   'https://user@www.example.com:8080/path/to/page.html?query=string&foo=bar&utm_source=news#section';
 
+type Section = 'parts' | 'params' | 'domain' | 'clean';
+
 type Parsed =
   | { model: UrlModel; error: null }
   | { model: null; error: ToolError };
@@ -75,13 +67,17 @@ function parse(text: string, base: string, prev: UrlModel | null): Parsed {
   }
 }
 
+/**
+ * URL Inspector (redesign spec, transform pattern): the URL and its anatomy
+ * beside its parts, query, domain and a clean link, every part editable.
+ */
 export default function UrlInspector() {
   const navigate = useNavigate();
   const [settings, update] = urlSettings.useSettings();
-  const [text, setText] = useState(SAMPLE);
-  const [parsed, setParsed] = useState<Parsed>(() => parse(SAMPLE, '', null));
+  const [text, setText] = useState('');
+  const [parsed, setParsed] = useState<Parsed>(() => parse('', '', null));
   const { copy } = useClipboard();
-  const [tab, setTab] = useState('parts');
+  const [tab, setTab] = useState<Section>('parts');
 
   const share = useShareableState({
     toolId: 'url-parser',
@@ -165,148 +161,186 @@ export default function UrlInspector() {
     },
   ]);
 
-  return (
-    <Stack gap="4">
-      <ToolActions>
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconSendTo size="sm" />}
-              rightIcon={<IconChevronDown size="sm" />}
-              disabled={!text}
-            >
-              Open in
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled={!canSendHttp} onClick={sendHttp}>
-              <IconSend size="sm" aria-hidden />
-              HTTP Client
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!model} onClick={makeQr}>
-              <IconQrCode size="sm" aria-hidden />
-              QR Code Generator
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!text} onClick={openEncoder}>
-              <IconType size="sm" aria-hidden />
-              Text Encoder
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <ShareButton share={share} />
-      </ToolActions>
-      <Card>
-        <CardBody>
-          <Stack gap="3">
-            <Label htmlFor="url-input">URL</Label>
-            <Inline gap="2" align="center" wrap={false}>
-              <Input
-                id="url-input"
-                inputMode="url"
-                autoCapitalize="none"
-                autoCorrect="off"
+  const openIn = (
+    <Menu
+      label="Open in"
+      items={[
+        {
+          value: 'http',
+          label: 'HTTP Client',
+          icon: send,
+          disabled: !canSendHttp,
+        },
+        {
+          value: 'qr',
+          label: 'QR Code Generator',
+          icon: qrCode,
+          disabled: !model,
+        },
+        {
+          value: 'encoder',
+          label: 'Text Encoder',
+          icon: typeIcon,
+          disabled: !text,
+        },
+      ]}
+      onSelect={(v) =>
+        v === 'http' ? sendHttp() : v === 'qr' ? makeQr() : openEncoder()
+      }
+      trigger={(props) => (
+        <Button {...props} variant="soft" icon={send} disabled={!text}>
+          Open in
+        </Button>
+      )}
+    />
+  );
+
+  const input = (
+    <Card as="section" title="URL">
+      <Stack gap="5">
+        <TextArea
+          label="URL"
+          labelHidden
+          rows={2}
+          maxRows={6}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="https://example.com/path?query=value"
+          value={text}
+          onChange={(v) => fromText(v)}
+          error={text && parsed.error ? parsed.error.message : undefined}
+        />
+        <Inline gap="2" align="center" wrap>
+          <Button
+            size="sm"
+            variant="soft"
+            icon={clipboardPaste}
+            onClick={() => void paste()}
+          >
+            Paste
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={sparkles}
+            onClick={() => fromText(SAMPLE)}
+          >
+            Try an example
+          </Button>
+          {text ? (
+            <>
+              <CopyButton
+                size="sm"
                 value={text}
-                onChange={(v) => fromText(v)}
-                invalid={!!parsed.error}
-                spellCheck={false}
-                className="font-mono"
-                placeholder="https://example.com/path?query=value"
-                aria-describedby={parsed.error ? 'url-error' : undefined}
+                labels={{ copy: 'Copy URL' }}
               />
               <IconButton
-                size="md"
+                size="sm"
                 variant="ghost"
-                label="Paste"
-                icon={IconClipboard}
-                onClick={() => void paste()}
+                tone="neutral"
+                icon={close}
+                label="Clear the URL"
+                onClick={() => fromText('')}
               />
-              <CopyButton label="URL" value={text} />
-            </Inline>
-            {parsed.error && (
-              <Alert status="danger" size="sm" id="url-error">
-                <AlertDescription>{parsed.error.message}</AlertDescription>
-              </Alert>
-            )}
-            <Stack gap="1">
-              <Label htmlFor="url-base">
-                Base URL for relative input (optional)
-              </Label>
-              <Input
-                id="url-base"
-                inputMode="url"
-                autoCapitalize="none"
-                autoCorrect="off"
-                value={settings.base}
-                onChange={(v) => {
-                  update({ base: v });
-                  setParsed((p) => parse(text, v, p.model));
-                }}
-                spellCheck={false}
-                placeholder="https://example.com/docs/"
-              />
-            </Stack>
-            {secrets.length > 0 && (
-              <Alert status="warning">
-                <AlertTitle>This URL may hold secrets</AlertTitle>
-                <AlertDescription>
-                  Query keys that look secret: {secrets.join(', ')}. Check
-                  before sharing the link; any password in the user info is
-                  removed from shared links.
-                </AlertDescription>
-              </Alert>
-            )}
+            </>
+          ) : null}
+        </Inline>
+        <TextField
+          label="Base URL for relative input"
+          description="Optional: resolves paths such as /docs/intro."
+          inputMode="url"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="https://example.com/docs/"
+          value={settings.base}
+          onChange={(v) => {
+            update({ base: v });
+            setParsed((p) => parse(text, v, p.model));
+          }}
+        />
+        {secrets.length > 0 ? (
+          <Notice tone="warning" title="This URL may hold secrets">
+            {`Query keys that look secret: ${secrets.join(', ')}. Check before sharing the link; any password in the user info is removed from shared links.`}
+          </Notice>
+        ) : null}
+        {model ? (
+          <Stack gap="3" as="section" aria-label="Anatomy">
+            <AnatomyStrip segments={segments} />
           </Stack>
-        </CardBody>
-      </Card>
+        ) : null}
+      </Stack>
+    </Card>
+  );
 
-      {model && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle as="h2">Anatomy</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <AnatomyStrip segments={segments} />
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Tabs value={tab} onValueChange={setTab} variant="soft">
-                <TabsList aria-label="URL sections">
-                  <TabsTrigger value="parts">Parts</TabsTrigger>
-                  <TabsTrigger value="params">
-                    Query ({model.params.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="domain">Domain</TabsTrigger>
-                  <TabsTrigger value="clean">Clean URL</TabsTrigger>
-                </TabsList>
-                <TabsContent value="parts">
-                  <PartsEditor model={model} onChange={fromModel} />
-                </TabsContent>
-                <TabsContent value="params">
-                  <ParamsEditor
-                    rows={model.params}
-                    onChange={(params) => fromModel({ ...model, params })}
-                  />
-                </TabsContent>
-                <TabsContent value="domain">
-                  <DomainPanel hostname={model.hostnamePunycode} />
-                </TabsContent>
-                <TabsContent value="clean">
-                  <CleanPanel
-                    url={text}
-                    patterns={settings.tracking}
-                    onPatternsChange={(tracking) => update({ tracking })}
-                    onApply={(url) => fromText(url)}
-                  />
-                </TabsContent>
-              </Tabs>
-            </CardBody>
-          </Card>
-        </>
-      )}
+  const output = model ? (
+    <Card as="section" title="Inspect and edit">
+      <Stack gap="5">
+        <SegmentedControl
+          label="URL sections"
+          fullWidth
+          value={tab}
+          onChange={(v) => setTab(v as Section)}
+          options={[
+            { value: 'parts', label: 'Parts' },
+            { value: 'params', label: `Query (${model.params.length})` },
+            { value: 'domain', label: 'Domain' },
+            { value: 'clean', label: 'Clean' },
+          ]}
+        />
+        {tab === 'parts' ? (
+          <PartsEditor model={model} onChange={fromModel} />
+        ) : null}
+        {tab === 'params' ? (
+          <ParamsEditor
+            rows={model.params}
+            onChange={(params) => fromModel({ ...model, params })}
+          />
+        ) : null}
+        {tab === 'domain' ? (
+          <DomainPanel hostname={model.hostnamePunycode} />
+        ) : null}
+        {tab === 'clean' ? (
+          <CleanPanel
+            url={text}
+            patterns={settings.tracking}
+            onPatternsChange={(tracking) => update({ tracking })}
+            onApply={(url) => fromText(url)}
+          />
+        ) : null}
+      </Stack>
+    </Card>
+  ) : (
+    <Card as="section" title="Inspect and edit">
+      <EmptyState
+        icon={link}
+        title={text ? 'Nothing to inspect' : 'No URL yet'}
+        description={
+          text
+            ? 'Fix the URL on the left: what is wrong is shown under it.'
+            : 'Paste a URL to see its parts, query, domain and a clean link.'
+        }
+        actions={
+          <Button
+            variant="soft"
+            icon={sparkles}
+            onClick={() => fromText(SAMPLE)}
+          >
+            Try an example
+          </Button>
+        }
+      />
+    </Card>
+  );
+
+  return (
+    <Stack gap="6">
+      <ToolActions>
+        {openIn}
+        <ShareButton share={share} />
+      </ToolActions>
+      <TransformLayout start={input} end={output} defaultSize={42} />
     </Stack>
   );
 }

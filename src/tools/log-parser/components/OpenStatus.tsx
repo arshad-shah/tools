@@ -1,4 +1,4 @@
-import { Button, Progress, Spinner } from '@/shared/ui';
+import { Button, Notice, ProgressBar, Stack } from '@arshad-shah/cynosure';
 import type { LogSource } from '../hooks/useLogSource';
 import { progressText } from '../lib/progress';
 
@@ -7,23 +7,25 @@ export function OpenStatus({ source }: { source: LogSource }) {
   if (source.status !== 'opening') return null;
   const text = progressText(source.progress, source.fromFile);
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface-2 p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span role="status" className="flex items-center gap-2 text-sm text-fg">
-          <Spinner size="sm" decorative />
-          {text}
-        </span>
+    <Notice
+      tone="info"
+      title={text}
+      action={
         <Button size="sm" variant="ghost" onClick={source.cancel}>
           Cancel
         </Button>
-      </div>
+      }
+    >
       {source.fromFile && source.progress ? (
-        <Progress
-          label="Parsing progress"
-          value={source.progress.done}
-          max={source.progress.total || 1}
-        />
+        <Stack paddingBlock="2">
+          <ProgressBar
+            label="Parsing progress"
+            labelHidden
+            value={source.progress.done}
+            max={source.progress.total || 1}
+          />
+        </Stack>
       ) : null}
-    </div>
+    </Notice>
   );
 }

@@ -80,9 +80,8 @@ describe('MapTab', () => {
     render(
       <MapTab doc={big} selectedId={null} onSelect={vi.fn()} fileBase="data" />,
     );
-    fireEvent.change(screen.getByLabelText('Node cap'), {
-      target: { value: '500' },
-    });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Node cap' }));
+    fireEvent.click(screen.getByRole('option', { name: '500' }));
     expect(screen.getByText('Showing 501 of 801 objects')).toBeTruthy();
     expect(last.diagram.nodes[0].rows.at(-1)).toMatchObject({
       kind: 'more',
