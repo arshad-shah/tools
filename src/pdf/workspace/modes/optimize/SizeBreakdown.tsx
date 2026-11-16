@@ -3,17 +3,14 @@ import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import {
   Button,
-  ErrorState,
-  Inline,
-  List,
-  ListItem,
-  LoadingState,
-  MetaList,
-  Progress,
+  ListRow,
+  ListRows,
+  ProgressBar,
   Stack,
   Text,
-} from '@/shared/ui';
-import { IconArrowRight } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import { arrowRight } from '@arshad-shah/cynosure/icons';
+import { ErrorNotice, LoadingLine } from '../../ui/states';
 import type { SizeBreakdown } from '@/pdf/edit/size-breakdown';
 import type { PageId } from '@/pdf/doc/types';
 import { useWorkspace } from '../../workspace-context';
@@ -44,27 +41,26 @@ export function SizeBreakdownView({
   onGoToPage,
 }: SizeBreakdownViewProps) {
   return (
-    <Stack gap="4">
-      <Text size="sm">Total {formatBytes(data.total)}</Text>
+    <Stack gap="5">
       <Stack gap="3">
+        <Text size="sm" weight="medium">
+          Total {formatBytes(data.total)}
+        </Text>
         {CATEGORIES.map(([key, label]) => (
-          <Stack key={key} gap="1">
-            <Inline justify="between" gap="2">
-              <Text size="sm">{label}</Text>
-              <Text size="sm" tone="muted" className="font-mono">
-                {formatBytes(data[key])} ({percent(data[key], data.total)})
-              </Text>
-            </Inline>
-            <Progress
-              value={data[key]}
-              max={Math.max(1, data.total)}
-              label={`${label}: ${formatBytes(data[key])} of ${formatBytes(data.total)}`}
-            />
-          </Stack>
+          <ProgressBar
+            key={key}
+            meter
+            size="sm"
+            label={label}
+            showValue
+            value={data[key]}
+            max={Math.max(1, data.total)}
+            valueText={`${formatBytes(data[key])} (${percent(data[key], data.total)})`}
+          />
         ))}
       </Stack>
       <Stack gap="2">
-        <Text size="sm" weight="semibold">
+        <Text size="sm" weight="medium">
           Largest images
         </Text>
         {data.largestImages.length === 0 ? (
@@ -72,37 +68,34 @@ export function SizeBreakdownView({
             This document has no images.
           </Text>
         ) : (
-          <List aria-label="Largest images">
+          <ListRows label="Largest images" size="sm" divided>
             {data.largestImages.map((img, i) => {
               const id = img.page >= 0 ? pageIds[img.page] : undefined;
               return (
-                <ListItem key={i}>
-                  <Stack gap="1">
-                    <MetaList
-                      items={[
-                        formatBytes(img.bytes),
-                        `${img.width} by ${img.height} px`,
-                      ]}
-                    />
-                    {id ? (
+                <ListRow
+                  key={i}
+                  label={formatBytes(img.bytes)}
+                  description={`${img.width} by ${img.height} px`}
+                  actions={
+                    id ? (
                       <Button
                         size="sm"
                         variant="ghost"
-                        rightIcon={<IconArrowRight size="sm" />}
+                        iconEnd={arrowRight}
                         onClick={() => onGoToPage(id)}
                       >
-                        Go to page {img.page + 1}
+                        {`Go to page ${img.page + 1}`}
                       </Button>
-                    ) : null}
-                  </Stack>
-                </ListItem>
+                    ) : undefined
+                  }
+                />
               );
             })}
-          </List>
+          </ListRows>
         )}
       </Stack>
       <Stack gap="2">
-        <Text size="sm" weight="semibold">
+        <Text size="sm" weight="medium">
           Fonts
         </Text>
         {data.fontList.length === 0 ? (
@@ -110,23 +103,17 @@ export function SizeBreakdownView({
             This document has no fonts.
           </Text>
         ) : (
-          <List aria-label="Fonts">
+          <ListRows label="Fonts" size="sm" divided>
             {data.fontList.map((f, i) => (
-              <ListItem key={i}>
-                <Stack gap="1">
-                  <Text size="sm" className="break-all">
-                    {f.name}
-                  </Text>
-                  <MetaList
-                    items={[
-                      f.embedded ? formatBytes(f.bytes) : 'Not embedded',
-                      ...(f.subset ? ['Subset'] : []),
-                    ]}
-                  />
-                </Stack>
-              </ListItem>
+              <ListRow
+                key={i}
+                wrap
+                label={f.name}
+                description={f.embedded ? formatBytes(f.bytes) : 'Not embedded'}
+                detail={f.subset ? 'Subset' : undefined}
+              />
             ))}
-          </List>
+          </ListRows>
         )}
       </Stack>
     </Stack>
@@ -174,8 +161,8 @@ export function SizeBreakdownPanel({
   }, [key, refresh, ws.session]);
 
   if (!result || result.key !== key)
-    return <LoadingState label="Measuring the document" />;
-  if (result.error) return <ErrorState error={result.error} headingLevel={4} />;
+    return <LoadingLine label="Measuring the document" />;
+  if (result.error) return <ErrorNotice error={result.error} />;
   return (
     <SizeBreakdownView
       data={result.data}

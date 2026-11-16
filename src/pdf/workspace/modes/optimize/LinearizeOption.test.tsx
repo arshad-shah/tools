@@ -21,8 +21,8 @@ describe('LinearizeOption', () => {
     );
     const sw = screen.getByRole('switch', {
       name: 'Optimise for fast web view',
-    });
-    expect(sw.getAttribute('aria-checked')).toBe('false');
+    }) as HTMLInputElement;
+    expect(sw.checked).toBe(false);
     fireEvent.click(sw);
     expect(set).toHaveBeenCalledWith({ linearize: true });
     rerender(
@@ -32,6 +32,6 @@ describe('LinearizeOption', () => {
         set={set}
       />,
     );
-    expect(sw.getAttribute('aria-checked')).toBe('true');
+    expect(sw.checked).toBe(true);
   });
 });

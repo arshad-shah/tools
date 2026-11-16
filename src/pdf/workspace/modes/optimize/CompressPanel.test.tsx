@@ -84,9 +84,8 @@ describe('CompressPanel', () => {
     const { doc } = fakeDoc('optimize.compress');
     render(<CompressPanel doc={doc} />);
     expect(screen.getByText(KEPT_ORIGINAL)).toBeTruthy();
-    expect(
-      screen.getByRole('cell', { name: 'Restructure (qpdf)' }),
-    ).toBeTruthy();
+    expect(screen.getByText('Restructure (qpdf)')).toBeTruthy();
+    expect(screen.getByText(/^2\.0 KB to 2\.1 KB/)).toBeTruthy();
     expect(screen.getByText(/This is not an error/)).toBeTruthy();
   });
 
