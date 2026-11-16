@@ -1,14 +1,5 @@
+import { Badge, DescriptionList, Inline, Text } from '@arshad-shah/cynosure';
 import { useEffect, useState } from 'react';
-import {
-  Badge,
-  Inline,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-  Text,
-} from '@/shared/ui';
 import { domainParts, type DomainParts } from '../lib/domain';
 
 /** Subdomain, registrable domain and public suffix (Public Suffix List). */
@@ -40,35 +31,34 @@ export function DomainPanel({ hostname }: { hostname: string }) {
         No registrable domain (an IP address, localhost or an unlisted suffix).
       </Text>
     );
+  const code = (v: string) => (
+    <Text as="span" variant="code">
+      {v}
+    </Text>
+  );
   return (
-    <Stack gap="2">
-      <Table aria-label="Domain parts">
-        <TableBody>
-          <TableRow>
-            <TableCell>Subdomain</TableCell>
-            <TableCell className="font-mono">{p.subdomain || 'none'}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell>Registrable domain</TableCell>
-            <TableCell className="font-mono">{p.domain}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell>Public suffix</TableCell>
-            <TableCell className="font-mono">
-              <Inline gap="2" align="center">
-                {p.publicSuffix}
-                <Badge
-                  variant="soft"
-                  tone={p.isIcann ? 'neutral' : 'info'}
-                  size="xs"
-                >
-                  {p.isIcann ? 'ICANN' : 'Private'}
-                </Badge>
-              </Inline>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </Stack>
+    <DescriptionList
+      divided
+      items={[
+        {
+          id: 'sub',
+          term: 'Subdomain',
+          detail: p.subdomain ? code(p.subdomain) : 'None',
+        },
+        { id: 'domain', term: 'Registrable domain', detail: code(p.domain) },
+        {
+          id: 'suffix',
+          term: 'Public suffix',
+          detail: (
+            <Inline gap="2" align="center" as="span">
+              {code(p.publicSuffix)}
+              <Badge size="sm" tone={p.isIcann ? 'neutral' : 'info'}>
+                {p.isIcann ? 'ICANN' : 'Private'}
+              </Badge>
+            </Inline>
+          ),
+        },
+      ]}
+    />
   );
 }

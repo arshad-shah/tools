@@ -7,8 +7,8 @@ const input = (page: import('@playwright/test').Page) =>
 test('editing a param rebuilds the URL', async ({ page }) => {
   await page.goto(pathOf('url-parser'));
   await input(page).fill('https://shop.test/list?page=1&sort=asc');
-  await page.getByRole('tab', { name: /Query/ }).click();
-  await page.getByRole('textbox', { name: 'Value, row 1' }).fill('2 3');
+  await page.getByRole('radio', { name: /Query/ }).click();
+  await page.getByRole('textbox', { name: 'Value (page)' }).fill('2 3');
   await expect(input(page)).toHaveValue(
     'https://shop.test/list?page=2%203&sort=asc',
   );
@@ -19,9 +19,21 @@ test('Clean URL removes utm_* params', async ({ page }) => {
   await input(page).fill(
     'https://news.test/a?utm_source=x&id=7&utm_medium=y&fbclid=z',
   );
-  await page.getByRole('tab', { name: 'Clean URL' }).click();
+  await page.getByRole('radio', { name: 'Clean' }).click();
   await page.getByRole('button', { name: 'Clean URL' }).click();
   await expect(input(page)).toHaveValue('https://news.test/a?id=7');
+});
+
+test('starts empty and inspects the example', async ({ page }) => {
+  await page.goto(pathOf('url-parser'));
+  await expect(page.getByRole('heading', { name: 'No URL yet' })).toBeVisible();
+  await page.getByRole('button', { name: 'Try an example' }).first().click();
+  await expect(
+    page.getByRole('button', { name: 'Copy host www.example.com' }),
+  ).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Port' })).toHaveValue('8080');
+  await page.getByRole('radio', { name: 'Domain' }).click();
+  await expect(page.getByText('Registrable domain')).toBeVisible();
 });
 
 test('Send to HTTP Client prefills the GET with params', async ({ page }) => {
