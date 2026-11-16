@@ -1,6 +1,7 @@
 // Test-only helpers (imported by *.test.ts files only).
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
 import { PDFDocument, type PDFPage } from 'pdf-lib';
 import { AnnotationMode, getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { DrawCtx } from '../draw';
@@ -11,6 +12,11 @@ import type { AnnotBase } from './common';
 const notoPath = createRequire(import.meta.url).resolve(
   '@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff',
 );
+/** pdfjs-dist's standard_fonts folder, as the path its Node font loader reads. */
+const standardFontDataUrl = `${dirname(
+  createRequire(import.meta.url).resolve('pdfjs-dist/package.json'),
+)}/standard_fonts/`;
+
 export const loadNoto = () =>
   Promise.resolve(new Uint8Array(readFileSync(notoPath)));
 
@@ -45,7 +51,15 @@ export async function readAnnotations(
   bytes: Uint8Array,
   pageIndex = 0,
 ): Promise<AnnotData[]> {
-  const task = getDocument({ data: bytes.slice(), verbosity: 0 });
+  const task = getDocument({
+    data: bytes.slice(),
+    verbosity: 0,
+    // pdf.js's own font programs for the standard 14 fonts (Helvetica…), so a
+    // render never depends on the fonts installed on the machine running it.
+    standardFontDataUrl,
+    useSystemFonts: false,
+    disableFontFace: true,
+  });
   try {
     const pdf = await task.promise;
     const page = await pdf.getPage(pageIndex + 1);
@@ -70,7 +84,15 @@ export async function renderPage(
   bytes: Uint8Array,
   pageIndex = 0,
 ): Promise<Rendered> {
-  const task = getDocument({ data: bytes.slice(), verbosity: 0 });
+  const task = getDocument({
+    data: bytes.slice(),
+    verbosity: 0,
+    // pdf.js's own font programs for the standard 14 fonts (Helvetica…), so a
+    // render never depends on the fonts installed on the machine running it.
+    standardFontDataUrl,
+    useSystemFonts: false,
+    disableFontFace: true,
+  });
   try {
     const pdf = await task.promise;
     const page = await pdf.getPage(pageIndex + 1);
