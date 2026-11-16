@@ -1,17 +1,14 @@
 import React from 'react';
 import {
-  Code,
-  Drawer,
+  DescriptionList,
+  Heading,
+  Inline,
   Kbd,
+  Sheet,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { hotkeyCaps } from '@/shared/lib/hotkeys';
 
 const SECTIONS: { title: string; rows: [string, string][] }[] = [
   {
@@ -80,43 +77,44 @@ export const CheatSheet: React.FC<CheatSheetProps> = ({
   open,
   onOpenChange,
 }) => (
-  <Drawer open={open} onOpenChange={onOpenChange} title="Regex cheat sheet">
-    <Stack gap="5">
+  <Sheet
+    open={open}
+    onOpenChange={onOpenChange}
+    side="end"
+    title="Regex cheat sheet"
+  >
+    <Stack gap="6">
       {SECTIONS.map((s) => (
-        <Stack gap="2" key={s.title}>
-          <Text size="sm" weight="semibold">
+        <Stack gap="3" key={s.title}>
+          <Heading level={3} size="sm">
             {s.title}
-          </Text>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Syntax</TableHead>
-                <TableHead>Meaning</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {s.rows.map(([syntax, meaning]) => (
-                <TableRow key={syntax}>
-                  <TableCell>
-                    <Code className="whitespace-pre">{syntax}</Code>
-                  </TableCell>
-                  <TableCell>{meaning}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          </Heading>
+          <DescriptionList
+            size="sm"
+            divided
+            items={s.rows.map(([syntax, meaning]) => ({
+              id: syntax,
+              term: (
+                <Text as="span" variant="code" wrap="pre">
+                  {syntax}
+                </Text>
+              ),
+              detail: meaning,
+            }))}
+          />
         </Stack>
       ))}
-      <Stack gap="2">
-        <Text size="sm" weight="semibold">
+      <Stack gap="3">
+        <Heading level={3} size="sm">
           Shortcuts
-        </Text>
+        </Heading>
         {SHORTCUTS.map(([keys, what]) => (
-          <Text as="div" size="sm" key={keys}>
-            <Kbd keys={keys} /> {what}
-          </Text>
+          <Inline gap="3" align="center" key={keys}>
+            <Kbd keys={hotkeyCaps(keys)} size="sm" />
+            <Text size="sm">{what}</Text>
+          </Inline>
         ))}
       </Stack>
     </Stack>
-  </Drawer>
+  </Sheet>
 );
