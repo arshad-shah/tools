@@ -1,6 +1,5 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Toaster } from '@/shared/ui';
 import ErrorBoundary from './ErrorBoundary';
 import { Theme } from './Theme';
 import { getEnabledTools, getWorkspaceTool } from './registry';
@@ -13,11 +12,6 @@ const WorkspaceFrame = lazy(() => import('./shell/WorkspaceFrame'));
 const Home = lazy(() => import('./pages/Home'));
 const HubRoute = lazy(() => import('./pages/HubRoute'));
 const NotFound = lazy(() => import('./pages/NotFound'));
-// Dev-only kit gallery (decision G18): absent from production builds. It
-// stays outside AppFrame: its AppShell example renders its own landmarks.
-const KitGallery = import.meta.env.DEV
-  ? lazy(() => import('./gallery/KitGallery'))
-  : null;
 
 // Built once at module scope: one lazy component per tool, stable across
 // renders. Disabled tools get no route (clean break, spec §3). The
@@ -47,17 +41,6 @@ const App: React.FC = () => (
           }
         >
           <Routes>
-            {KitGallery ? (
-              <Route
-                path="/__kit"
-                element={
-                  <>
-                    <Toaster />
-                    <KitGallery />
-                  </>
-                }
-              />
-            ) : null}
             {workspace && Workspace ? (
               <Route element={<WorkspaceFrame />}>
                 <Route

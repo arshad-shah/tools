@@ -43,7 +43,7 @@ pnpm install
 pnpm dev
 ```
 
-Then open the URL Vite prints (usually <http://localhost:5173>). The kit gallery, a dev-only page with every UI component in both themes, is at `/__kit`.
+Then open the URL Vite prints (usually <http://localhost:5173>).
 
 ## Scripts
 
