@@ -355,11 +355,11 @@ test.describe('Fill & Sign objects', () => {
       await fillTool(page, role).click();
       const dialog = page.getByRole('dialog', { name: role });
       if (role === 'Initials') {
-        await dialog.getByRole('tab', { name: 'Initials' }).click();
+        await dialog.getByRole('radio', { name: 'Initials' }).click();
         await dialog.getByLabel('Initials', { exact: true }).fill('JD');
         await dialog.getByRole('radio', { name: 'Great Vibes' }).click();
       } else {
-        await dialog.getByRole('tab', { name: 'Type' }).click();
+        await dialog.getByRole('radio', { name: 'Type' }).click();
         await dialog.getByLabel('Your name').fill('Jane Doe');
       }
       await dialog
@@ -381,7 +381,7 @@ test.describe('Fill & Sign objects', () => {
   async function typedSignature(page: Page) {
     await fillTool(page, 'Signature').click();
     const dialog = page.getByRole('dialog', { name: 'Signature' });
-    await dialog.getByRole('tab', { name: 'Type' }).click();
+    await dialog.getByRole('radio', { name: 'Type' }).click();
     await dialog.getByLabel('Your name').fill('Jane Doe');
     // The typed signature is ready once its font has loaded and been checked.
     await expect(
@@ -392,7 +392,7 @@ test.describe('Fill & Sign objects', () => {
 
   test('a signature block', async ({ page }) => {
     const dialog = await typedSignature(page);
-    await dialog.getByRole('tab', { name: 'Block' }).click();
+    await dialog.getByRole('radio', { name: 'Block' }).click();
     await dialog.getByRole('button', { name: 'Place block' }).click();
     await expect(dialog).toHaveCount(0);
     await moveResizeDeleteUndo(

@@ -75,7 +75,7 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
 
   // 1. Draw: a bold blue stroke, placed on the next place to sign (page 3).
   let sign = await openSignaturePanel(page);
-  await sign.getByRole('tab', { name: 'Draw' }).click();
+  await sign.getByRole('radio', { name: 'Draw' }).click();
   await sign.getByRole('radio', { name: 'Bold' }).click();
   const pad = sign.getByRole('img', { name: 'Draw your signature' });
   const box = (await pad.boundingBox())!;
@@ -98,14 +98,14 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
 
   // 2. Type: Jane Doe in the 4th style, slant 10, as initials on every page.
   sign = await openSignaturePanel(page);
-  await sign.getByRole('tab', { name: 'Type' }).click();
+  await sign.getByRole('radio', { name: 'Type' }).click();
   await sign.getByLabel('Your name').fill('Jane Doe');
   await sign.getByRole('radio').nth(3).click();
   const slant = sign.getByRole('slider', { name: 'Slant' });
   await slant.focus();
   for (let i = 0; i < 10; i++) await slant.press('ArrowRight');
   await expect(slant).toHaveAttribute('aria-valuetext', '10 degrees');
-  await sign.getByRole('tab', { name: 'Initials' }).click();
+  await sign.getByRole('radio', { name: 'Initials' }).click();
   await expect(sign.getByLabel('Initials')).toHaveValue('JD');
   await sign.getByRole('button', { name: 'Initial pages' }).click();
   const pagesDialog = page.getByRole('dialog', { name: 'Initial pages' });
@@ -118,7 +118,7 @@ test('signs with ink, type, photo and initials, then exports a verified PAdES si
   // 3. Photo: the fake camera shows a test pattern, so either outcome is
   // honest; then the uploaded photo is straightened and used.
   sign = await openSignaturePanel(page);
-  await sign.getByRole('tab', { name: 'Photo' }).click();
+  await sign.getByRole('radio', { name: 'Photo' }).click();
   await sign.getByRole('button', { name: 'Start' }).click();
   await sign
     .getByRole('button', { name: 'Capture' })

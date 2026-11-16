@@ -113,14 +113,14 @@ test('fills a flat form from My details, by hand and with a signature, then expo
   // A typed signature at the centre of page 3, nudged with the arrows.
   await toolbar.getByRole('button', { name: 'Signature', exact: true }).click();
   const sign = page.getByRole('dialog', { name: 'Signature' });
-  await sign.getByRole('tab', { name: 'Type' }).click();
+  await sign.getByRole('radio', { name: 'Type' }).click();
   await sign.getByLabel('Your name').fill('Jane Doe');
   await sign.getByRole('button', { name: 'Place at page centre' }).click();
   await expect(sign).toHaveCount(0);
   // Placed objects are buttons on the page's object layer.
   const frame = page
     .getByTestId('objects-page-3')
-    .getByRole('button', { name: 'Signature on page 3' });
+    .getByRole('group', { name: 'Resize Signature on page 3' });
   await expect(frame).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
@@ -220,7 +220,7 @@ test('the folded Sign and Fill Form tools are gone', async ({ page }) => {
   for (const path of ['/pdf/sign', '/pdf/fill-form']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      `No page at ${path}`,
+      'This page does not exist',
     );
   }
 });
@@ -353,7 +353,7 @@ test('a Word table form: answer cells, a Yes tick, a date and a signature in the
     .getByRole('button', { name: 'Signature field: Signature, empty' })
     .click();
   const sign = page.getByRole('dialog', { name: 'Signature' });
-  await sign.getByRole('tab', { name: 'Type' }).click();
+  await sign.getByRole('radio', { name: 'Type' }).click();
   await sign.getByLabel('Your name').fill('Jane Doe');
   await sign.getByRole('button', { name: 'Place in field' }).click();
   await expect(
@@ -424,8 +424,9 @@ test('a click-anywhere text box with 8 character boxes exports evenly spaced dig
   await input.click();
   await input.fill('20261002');
   await input.press('Enter');
+  // The selection frame around the box takes the keys.
   await expect(
-    page.getByRole('button', { name: 'Text field: Text, filled' }),
+    page.getByRole('group', { name: 'Resize Text field: Text, filled' }),
   ).toBeFocused();
 
   const bytes = await exportPdf(page);
@@ -458,7 +459,9 @@ test('a text box moves with the arrows, is deleted, and comes back with undo', a
   await expect(input).toBeFocused();
   await input.fill('Hello');
   await input.press('Enter');
-  const frame = page.getByRole('button', { name: 'Text field: Text, filled' });
+  const frame = page.getByRole('group', {
+    name: 'Resize Text field: Text, filled',
+  });
   await expect(frame).toBeFocused();
   const before = (await frame.boundingBox())!;
   await page.keyboard.press('ArrowRight');
