@@ -6,7 +6,6 @@ import {
   Inline,
   Stack,
   Text,
-  VisuallyHidden,
 } from '@arshad-shah/cynosure';
 import { chevronDown, chevronRight } from '@arshad-shah/cynosure/icons';
 
@@ -75,7 +74,8 @@ export const EntryRow = memo(function EntryRow({
           size="sm"
           checked={selected}
           disabled={!selected && !selectable}
-          label={<VisuallyHidden>{`Select line ${entry.line}`}</VisuallyHidden>}
+          label={`Select line ${entry.line}`}
+          labelHidden
           onChange={(v) => onSelect(entry, v)}
         />
         <IconButton

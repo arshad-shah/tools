@@ -5,7 +5,6 @@ import {
   Stack,
   Table,
   Text,
-  VisuallyHidden,
 } from '@arshad-shah/cynosure';
 import React from 'react';
 import type { FloatParts } from '@/shared/lib/numbers';
@@ -147,7 +146,8 @@ const Permissions: React.FC<
             const bit = r.shift + w.bit;
             return (
               <Checkbox
-                label={<VisuallyHidden>{`${r.name} ${w.name}`}</VisuallyHidden>}
+                label={`${r.name} ${w.name}`}
+                labelHidden
                 checked={!!perms && isSet(pattern, bit)}
                 disabled={!perms}
                 onChange={() => onToggleBit(bit)}

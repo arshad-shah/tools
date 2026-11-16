@@ -1,4 +1,5 @@
 import {
+  BitField,
   Button,
   Card,
   Grid,
@@ -21,7 +22,6 @@ import {
   type WordBits,
 } from '@/shared/lib/numbers';
 import { programmerEval } from '../lib/programmer';
-import { BitGrid } from './BitGrid';
 
 type Base = 16 | 10 | 8 | 2;
 
@@ -221,11 +221,11 @@ export const Programmer: React.FC<ProgrammerProps> = ({
               />
             ))}
           </Grid>
-          <BitGrid
+          <BitField
             bits={bits}
             value={pattern}
             label={`Bits of the ${bits}-bit word`}
-            onToggle={(i) => setValue(fit(pattern ^ (1n << BigInt(i))))}
+            onChange={(next) => setValue(fit(next))}
           />
           <Inline>
             <Button variant="soft" icon={binary} onClick={openInConverter}>
