@@ -1,9 +1,5 @@
-import type { ToolGroup } from '@/shared/ui';
-import {
-  IconMinimize2,
-  IconRepair,
-  IconSizeBreakdown,
-} from '@/shared/ui/icons';
+import { type ToolGroup } from '../../ui/tool-groups';
+import { fileChart, minimize, wrench } from '@arshad-shah/cynosure/icons';
 import { ModeToolbar } from '../../ModeToolbar';
 import type { ModeProps } from '../types';
 import { compress, repair } from './actions';
@@ -19,14 +15,14 @@ export function OptimizeToolbar({ doc }: ModeProps) {
         {
           id: 'compress',
           label: 'Compress',
-          icon: IconMinimize2,
+          icon: minimize,
           kind: 'button',
           onSelect: () => void compress(doc),
         },
         {
           id: 'repair',
           label: 'Repair',
-          icon: IconRepair,
+          icon: wrench,
           kind: 'button',
           onSelect: () => void repair(doc),
         },
@@ -39,7 +35,7 @@ export function OptimizeToolbar({ doc }: ModeProps) {
         {
           id: 'size-breakdown',
           label: 'Measure size again',
-          icon: IconSizeBreakdown,
+          icon: fileChart,
           kind: 'button',
           onSelect: refreshSizeBreakdown,
         },

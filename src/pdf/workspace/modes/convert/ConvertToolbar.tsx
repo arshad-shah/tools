@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import {
-  IconExtractPages,
-  IconFileCode,
-  IconFilePlus,
-  IconFileText,
-  IconImages,
-} from '@/shared/ui/icons';
-import { FilePicker, type ToolGroup } from '@/shared/ui';
+  fileCode,
+  filePlus,
+  fileText,
+  images as imagesIcon,
+  pageExtract,
+} from '@arshad-shah/cynosure/icons';
+import { FilePicker } from '../../ui/FilePicker';
+import { type ToolGroup } from '../../ui/tool-groups';
 import { ModeToolbar } from '../../ModeToolbar';
 import type { ModeProps } from '../types';
 import { IMAGE_ACCEPT, selectedPages, useConvertActions } from './actions';
@@ -46,28 +47,28 @@ export function ConvertToolbar(ctx: ModeProps) {
         {
           id: 'to-images',
           label: 'Pages to images',
-          icon: IconImages,
+          icon: imagesIcon,
           kind: 'button',
           onSelect: () => void act.images(),
         },
         {
           id: 'to-text',
           label: 'Text',
-          icon: IconFileText,
+          icon: fileText,
           kind: 'button',
           onSelect: () => void act.text(),
         },
         {
           id: 'to-markdown',
           label: 'Markdown (best-effort structure)',
-          icon: IconFileCode,
+          icon: fileCode,
           kind: 'button',
           onSelect: () => void act.markdown(),
         },
         {
           id: 'selected-pdf',
           label: 'Selected pages as PDF',
-          icon: IconExtractPages,
+          icon: pageExtract,
           kind: 'split',
           disabled: none ? 'Select pages to export' : false,
           onSelect: () => void act.selectedPdf('download'),
@@ -93,7 +94,7 @@ export function ConvertToolbar(ctx: ModeProps) {
         {
           id: 'insert-images',
           label: 'Insert images as pages',
-          icon: IconFilePlus,
+          icon: filePlus,
           kind: 'button',
           onSelect: pickImages,
         },

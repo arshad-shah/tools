@@ -1,11 +1,11 @@
-import type { ToolGroup } from '@/shared/ui';
+import { type ToolGroup } from '../../ui/tool-groups';
 import {
-  IconCheckCheck,
-  IconFileStack,
-  IconOcrLanguage,
-  IconOcrScan,
-  IconTextLayer,
-} from '@/shared/ui/icons';
+  checkCheck,
+  fileStack,
+  languages as languagesIcon,
+  ocrScan,
+  textLayer,
+} from '@arshad-shah/cynosure/icons';
 import { OCR_LANGUAGE_LABELS, OCR_LANGUAGES } from '@/pdf/ocr/types';
 import { ModeToolbar } from '../../ModeToolbar';
 import type { ModeProps } from '../types';
@@ -16,11 +16,11 @@ import { setOcrUi, useOcrUi, type OcrPagesChoice } from './ui-store';
 const PAGES: {
   id: OcrPagesChoice;
   label: string;
-  icon: typeof IconTextLayer;
+  icon: typeof textLayer;
 }[] = [
-  { id: 'auto', label: 'Pages without text', icon: IconTextLayer },
-  { id: 'force', label: 'All pages', icon: IconFileStack },
-  { id: 'selected', label: 'Selected pages', icon: IconCheckCheck },
+  { id: 'auto', label: 'Pages without text', icon: textLayer },
+  { id: 'force', label: 'All pages', icon: fileStack },
+  { id: 'selected', label: 'Selected pages', icon: checkCheck },
 ];
 
 /**
@@ -55,7 +55,7 @@ export function OcrToolbar({ doc, selection }: ModeProps) {
         {
           id: 'run-ocr',
           label: 'Run OCR',
-          icon: IconOcrScan,
+          icon: ocrScan,
           kind: 'button',
           disabled: ui.running
             ? 'OCR is running'
@@ -67,7 +67,7 @@ export function OcrToolbar({ doc, selection }: ModeProps) {
         {
           id: 'language',
           label: `Language: ${languageNames(ui.langs)}`,
-          icon: IconOcrLanguage,
+          icon: languagesIcon,
           kind: 'split',
           onSelect: () => setOcrUi({ dismissed: false }),
           menu: OCR_LANGUAGES.map((l) => ({

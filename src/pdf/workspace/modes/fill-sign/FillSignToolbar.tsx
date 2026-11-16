@@ -1,19 +1,20 @@
 import {
-  IconFieldCross,
-  IconFieldDate,
-  IconFieldSignature,
-  IconFieldSuggested,
-  IconFieldText,
-  IconFieldTick,
-  IconFlatFormDetect,
-  IconFlatten,
-  IconInitials,
-  IconMakeFillable,
-  IconMyDetails,
-  IconNextField,
-  IconNextSignTarget,
-} from '@/shared/ui/icons';
-import { StatusDot, Text, type ToolGroup } from '@/shared/ui';
+  fieldCross,
+  fieldDate,
+  fieldFillable,
+  fieldNext,
+  fieldSearch,
+  fieldSignature,
+  fieldSuggest,
+  fieldText,
+  fieldTick,
+  flatten as flattenIcon,
+  idCard,
+  signatureInitials,
+  signatureNext,
+} from '@arshad-shah/cynosure/icons';
+import { StatusDot, Text } from '@/shared/ui';
+import { type ToolGroup } from '../../ui/tool-groups';
 import { useContext, useEffect } from 'react';
 import { ModeToolbar } from '../../ModeToolbar';
 import { WorkspaceContext } from '../../workspace-context';
@@ -76,7 +77,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'detect',
           label: 'Detect fields',
-          icon: IconFlatFormDetect,
+          icon: fieldSearch,
           kind: 'toggle',
           pressed: detectedShown,
           onSelect: () => fillSign.set({ showDetected: !detectedShown }),
@@ -84,7 +85,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'next-field',
           label: 'Next empty field',
-          icon: IconNextField,
+          icon: fieldNext,
           shortcut: 'Tab',
           kind: 'button',
           onSelect: () => advance(ctx, fields, fillSign.get().focusKey),
@@ -92,7 +93,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'add-field',
           label: 'Add field',
-          icon: IconFieldSuggested,
+          icon: fieldSuggest,
           kind: 'split',
           pressed: tool.id === 'add-field',
           onSelect: () => toggleTool('add-field'),
@@ -113,7 +114,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'text',
           label: 'Text',
-          icon: IconFieldText,
+          icon: fieldText,
           shortcut: 'T',
           kind: 'split',
           pressed: tool.id === 'text',
@@ -129,7 +130,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'tick',
           label: 'Tick',
-          icon: IconFieldTick,
+          icon: fieldTick,
           kind: 'toggle',
           pressed: tool.id === 'tick',
           onSelect: () => toggleTool('tick'),
@@ -137,7 +138,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'cross',
           label: 'Cross',
-          icon: IconFieldCross,
+          icon: fieldCross,
           kind: 'toggle',
           pressed: tool.id === 'cross',
           onSelect: () => toggleTool('cross'),
@@ -145,7 +146,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'date',
           label: 'Date',
-          icon: IconFieldDate,
+          icon: fieldDate,
           kind: 'toggle',
           pressed: tool.id === 'date',
           onSelect: () => toggleTool('date'),
@@ -159,21 +160,21 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'signature',
           label: 'Signature',
-          icon: IconFieldSignature,
+          icon: fieldSignature,
           kind: 'button',
           onSelect: () => sign('signature'),
         },
         {
           id: 'initials',
           label: 'Initials',
-          icon: IconInitials,
+          icon: signatureInitials,
           kind: 'button',
           onSelect: () => sign('initials'),
         },
         {
           id: 'next-sign-target',
           label: 'Next place to sign',
-          icon: IconNextSignTarget,
+          icon: signatureNext,
           kind: 'button',
           onSelect: () => void nextPlaceToSign(ctx),
         },
@@ -186,14 +187,14 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'my-details',
           label: 'My details',
-          icon: IconMyDetails,
+          icon: idCard,
           kind: 'button',
           onSelect: () => void openMyDetails(fields),
         },
         {
           id: 'make-fillable',
           label: 'Make fillable',
-          icon: IconMakeFillable,
+          icon: fieldFillable,
           kind: 'button',
           disabled: accepted === 0 ? 'No accepted detected fields' : false,
           onSelect: () => void makeFillable(ctx, fields),
@@ -201,7 +202,7 @@ export function FillSignToolbar(ctx: ModeProps) {
         {
           id: 'flatten',
           label: 'Flatten',
-          icon: IconFlatten,
+          icon: flattenIcon,
           kind: 'button',
           disabled: hasWidgets ? false : 'This document has no form fields',
           onSelect: () => void flatten(ctx),

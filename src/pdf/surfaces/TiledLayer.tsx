@@ -1,9 +1,10 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { logToolError, toToolError } from '@/shared/lib/errors';
-import { BitmapCanvas, Positioned } from '@/shared/ui';
 import { bitmapCache, pdfRender } from '@/pdf/render';
 import type { Rotation } from '@/pdf/doc/types';
-import { planTiles, type Rect, type Tile } from './tile-plan';
+import { planTiles, type Rect, type Tile } from '@/pdf/workspace/tile-plan';
+import { BitmapSurface } from './BitmapSurface';
+import { Layer, Place } from './layers';
 
 // Tiles share the page bitmaps' pixel budget; an eviction re-renders the
 // mounted tiles so a visible one asks again.
@@ -71,21 +72,15 @@ function TileImage({
   const quarter = rotate === 90 || rotate === 270;
   const s = tile.shown;
   return (
-    <Positioned
-      x={s.left}
-      y={s.top}
-      width={s.width}
-      height={s.height}
-      className="flex items-center justify-center overflow-visible"
-    >
-      <BitmapCanvas
+    <Place x={s.left} y={s.top} width={s.width} height={s.height} centre>
+      <BitmapSurface
         bitmap={bitmap}
         width={quarter ? s.height : s.width}
         height={quarter ? s.width : s.height}
         rotation={rotate}
         label={label}
       />
-    </Positioned>
+    </Place>
   );
 }
 
@@ -118,7 +113,7 @@ export function TiledLayer({
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const tiles = planTiles({ shown, crop, rotate, visible, dpr });
   return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
+    <Layer passive aria-hidden>
       {tiles.map((t) => (
         <TileImage
           key={t.key}
@@ -130,6 +125,6 @@ export function TiledLayer({
           label={label}
         />
       ))}
-    </div>
+    </Layer>
   );
 }

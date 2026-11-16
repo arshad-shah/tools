@@ -43,6 +43,10 @@ const BANNED = new Set([
 const exempt = (f) =>
   /[\\/]src[\\/]shared[\\/]ui[\\/]/.test(f) ||
   /^src[\\/]shared[\\/]ui[\\/]/.test(f) ||
+  // The PDF workspace's drawing surfaces: page canvases, text layers and
+  // the layers that position objects on a page (redesign spec rule 1).
+  /[\\/]src[\\/]pdf[\\/]surfaces[\\/]/.test(f) ||
+  /^src[\\/]pdf[\\/]surfaces[\\/]/.test(f) ||
   // Test harnesses do not ship (decision G1).
   /\.test\.(ts|tsx)$/.test(f);
 
@@ -86,7 +90,18 @@ export default {
   },
   create(context) {
     if (exempt(context.filename)) return {};
+    // Cynosure components take `style` for layout only (their documented
+    // contract: a height for a viewport or a list); everything else is
+    // restyled through tokens. Only those imports may carry it.
+    /** @type {Set<string>} */
+    const cynosure = new Set();
     return {
+      /** @param {any} node */
+      ImportDeclaration(node) {
+        if (node.source.value !== '@arshad-shah/cynosure') return;
+        for (const s of node.specifiers)
+          if (s.type === 'ImportSpecifier') cynosure.add(s.local.name);
+      },
       /** @param {any} node */
       JSXOpeningElement(node) {
         const n = node.name;
@@ -100,7 +115,9 @@ export default {
             messageId: 'element',
             data: { name: n.name },
           });
+        const layoutStyle = n.type === 'JSXIdentifier' && cynosure.has(n.name);
         for (const attr of node.attributes) {
+          if (layoutStyle) continue;
           if (
             attr.type === 'JSXAttribute' &&
             attr.name.type === 'JSXIdentifier' &&

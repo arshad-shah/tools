@@ -9,16 +9,25 @@ import { useCommands } from '@/shared/lib/commands';
 import { useShortcuts } from '@/shared/lib/hotkeys';
 import { useMediaQuery } from '@/shared/lib/media-query';
 import {
-  Drawer,
-  FloatingDock,
-  Inspector,
-  ModeTabs,
-  SidePanel,
-  SkipLinks,
-  TopBar,
-  type ModeTabItem,
+  Divider,
+  DockedToolbar,
+  Heading,
+  IconButton,
+  Inline,
+  Popover,
+  SegmentedControl,
+  Select,
+  Sheet,
+  SkipLink,
+  SplitPane,
+  Stack,
+  StatusBar,
+  StatusBarSegment,
+  Switch,
+  ZoomControls,
   type ZoomSetting,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { close as closeIcon } from '@arshad-shah/cynosure/icons';
 import type { ModeId, PageId } from '@/pdf/doc/types';
 import { createDocumentApi } from './document-api';
 import { ExportDialog } from './ExportDialog';
@@ -38,6 +47,7 @@ import {
   workspaceShortcuts,
   type WorkspaceShortcutApi,
 } from './shortcuts';
+import { SAVE_TEXT, SAVE_TONE } from './save-status';
 import { TopBarControls, type TopBarMenuItem } from './TopBarControls';
 import { clearTrustedRootsCommand } from './modes/fill-sign/trusted-roots-command';
 import { SignedBadge } from './SignedBadge';
@@ -53,12 +63,6 @@ const SETTINGS_ITEMS: TopBarMenuItem[] = [clearTrustedRootsCommand()].map(
   (c) => ({ id: c.id, label: c.label, onSelect: () => void c.run() }),
 );
 
-/** The document first; the active mode's tools next (spec §13.2). */
-const SKIP_LINKS = [
-  { href: '#workspace-canvas', label: 'Skip to the document' },
-  { href: '#mode-panel', label: 'Skip to the tools' },
-];
-
 export interface WorkspaceShellProps {
   session: WorkspaceSession;
   mode: ModeId;
@@ -69,7 +73,7 @@ export interface WorkspaceShellProps {
   onSearch(): void;
   /** Restricted documents: ask for the owner password. */
   onUnlock(): void;
-  /** Usually the kit Breadcrumb. */
+  /** The header's breadcrumbs (pdf, edit). */
   breadcrumb: React.ReactNode;
   /** Opens new bytes (an extract) as a separate document. */
   onOpenNew(doc: { name: string; bytes: Uint8Array }): void;
@@ -332,11 +336,10 @@ export function WorkspaceShell({
     },
   };
 
-  const items: ModeTabItem[] = MODES.map((m) => ({
-    id: m.id,
+  const modeOptions = MODES.map((m) => ({
+    value: m.id,
     label: m.label,
     icon: m.icon,
-    shortcut: m.shortcut,
   }));
 
   // The inspector opens for a selection once a press (a drag on an
@@ -358,6 +361,7 @@ export function WorkspaceShell({
             sourceDocs={sourceDocs}
             current={currentPage}
             width={compact ? 220 : settings.railWidth}
+            height={compact ? '70vh' : '100%'}
             onCurrent={(id) => navigate(id)}
             onActivate={(id) => {
               navigate(id, { focus: true });
@@ -396,6 +400,138 @@ export function WorkspaceShell({
             onExport={() => setExportOpen(true)}
           />
         );
+        const modeName = `${manifest.label} mode`;
+        const pickMode = (id: string) => request(id as ModeId);
+        const inspectorBody = Inspect ? <Inspect {...ctx} /> : null;
+        const inspectorShown = showInspector && inspectorOpen;
+        const canvas = (
+          <Stack
+            as="section"
+            id="workspace-canvas"
+            aria-label="Document canvas"
+            fill
+            minSize="0"
+          >
+            <DocumentCanvas
+              mode={ctx}
+              module={module}
+              sourceDocs={sourceDocs}
+              zoom={effectiveZoom(settings.zoom, {
+                railOpen: layout === 'standard' && settings.railOpen,
+                inspectorOpen: layout === 'standard' && inspectorShown,
+              })}
+              onZoomChange={setZoom}
+              onScaleChange={setScale}
+              onCurrentPageChange={(id) => id && setCurrent(id)}
+              onVisiblePagesChange={(ids) =>
+                setVisiblePages((prev) =>
+                  prev.join(' ') === ids.join(' ') ? prev : ids,
+                )
+              }
+              scrollToPage={scrollTo}
+            />
+          </Stack>
+        );
+        const inspectorPanel = (
+          <Stack
+            as="aside"
+            aria-label="Properties"
+            fill
+            minSize="0"
+            overflow="auto"
+            padding="5"
+            gap="4"
+          >
+            <Inline justify="between" align="center" gap="2">
+              <Heading level={2} size="sm">
+                Properties
+              </Heading>
+              <IconButton
+                icon={closeIcon}
+                label="Close properties"
+                size="sm"
+                variant="ghost"
+                onClick={() => setInspectorOpen(false)}
+              />
+            </Inline>
+            {inspectorBody}
+          </Stack>
+        );
+        const railPanel = (
+          <Stack as="aside" aria-label="Pages" fill minSize="0">
+            {rail}
+          </Stack>
+        );
+        const statusBar = (
+          <StatusBar
+            label="Status"
+            start={
+              <>
+                <StatusBarSegment>
+                  {pageIds.length
+                    ? `Page ${at + 1} of ${pageIds.length}`
+                    : 'No pages'}
+                </StatusBarSegment>
+                {selection.pages.size > 1 ? (
+                  <StatusBarSegment>
+                    {`${selection.pages.size} pages selected`}
+                  </StatusBarSegment>
+                ) : null}
+                {selection.objects.size > 0 ? (
+                  <StatusBarSegment>
+                    {selection.objects.size === 1
+                      ? '1 object selected'
+                      : `${selection.objects.size} objects selected`}
+                  </StatusBarSegment>
+                ) : null}
+              </>
+            }
+            end={
+              state.encryptedInput && session.db ? (
+                <StatusBarSegment
+                  dot
+                  tone={SAVE_TONE[saving.status]}
+                  label={`${SAVE_TEXT[saving.status]}: change`}
+                  popoverLabel="Saving on this device"
+                  popover={
+                    <Switch
+                      label="Save on this device"
+                      description="An encrypted PDF is saved here only when you ask."
+                      checked={saving.status !== 'off'}
+                      onChange={saving.setEnabled}
+                    />
+                  }
+                >
+                  {SAVE_TEXT[saving.status]}
+                </StatusBarSegment>
+              ) : (
+                <StatusBarSegment dot tone={SAVE_TONE[saving.status]}>
+                  {SAVE_TEXT[saving.status]}
+                </StatusBarSegment>
+              )
+            }
+          />
+        );
+        const modeSwitch =
+          layout === 'phone' ? (
+            <Select
+              label="Mode"
+              labelHidden
+              size="lg"
+              options={modeOptions}
+              value={manifest.id}
+              onChange={pickMode}
+            />
+          ) : (
+            <SegmentedControl
+              label="Modes"
+              options={modeOptions}
+              value={manifest.id}
+              onChange={pickMode}
+              iconOnly={layout === 'focus'}
+              size={layout === 'focus' ? 'lg' : 'sm'}
+            />
+          );
         return (
           <WorkspaceContext.Provider
             value={{ ...actions, goToMode: (id) => request(id) }}
@@ -409,143 +545,170 @@ export function WorkspaceShell({
                   useWorkspaceSettings.setState({ palette }),
               }}
             >
-              <div
-                data-layout={layout}
-                className="grid h-dvh grid-rows-[auto_auto_1fr] overflow-hidden bg-canvas text-fg"
-              >
-                <SkipLinks links={SKIP_LINKS} />
-                <header role="banner">
-                  <TopBar
-                    compact={compact}
-                    breadcrumb={compact ? undefined : breadcrumb}
-                    // Compact bars size to their controls (the centre
-                    // slot); Standard keeps them on the right.
-                    center={compact ? controls : undefined}
-                    actions={compact ? undefined : controls}
-                  />
-                </header>
-                <div className="flex min-w-0 flex-col">
+              <Stack fill minSize="0" gap="0" overflow="hidden">
+                <SkipLink
+                  href="#workspace-canvas"
+                  labels={{ skip: 'Skip to the document' }}
+                />
+                <Stack as="header" role="banner" gap="0">
+                  <Inline
+                    gap="3"
+                    align="center"
+                    paddingInline="4"
+                    paddingBlock="2"
+                    justify="between"
+                  >
+                    {compact ? null : breadcrumb}
+                    {controls}
+                  </Inline>
+                  <Divider spacing="none" />
+                </Stack>
+                {layout === 'standard' ? (
+                  <Stack gap="0">
+                    <Inline
+                      as="nav"
+                      aria-label="Modes"
+                      paddingInline="4"
+                      paddingBlock="2"
+                      gap="3"
+                      align="center"
+                    >
+                      {modeSwitch}
+                    </Inline>
+                    <Divider spacing="none" />
+                    <Inline
+                      id="mode-panel"
+                      role="region"
+                      aria-label={modeName}
+                      aria-busy={busy}
+                      paddingInline="3"
+                      paddingBlock="1"
+                      gap="3"
+                      align="center"
+                      justify="between"
+                    >
+                      {toolbar}
+                      <ZoomControls
+                        zoom={settings.zoom}
+                        percent={Math.round(scale * 100)}
+                        onZoomChange={setZoom}
+                      />
+                    </Inline>
+                    <Divider spacing="none" />
+                  </Stack>
+                ) : layout === 'phone' ? (
+                  <Stack gap="0">
+                    <Inline
+                      as="nav"
+                      aria-label="Modes"
+                      paddingInline="4"
+                      paddingBlock="2"
+                    >
+                      {modeSwitch}
+                    </Inline>
+                    <Divider spacing="none" />
+                    <Stack
+                      id="mode-panel"
+                      role="region"
+                      aria-label={modeName}
+                      aria-busy={busy}
+                    >
+                      {toolbar}
+                    </Stack>
+                  </Stack>
+                ) : (
+                  <>
+                    <DockedToolbar label="Modes" floating>
+                      {modeSwitch}
+                    </DockedToolbar>
+                    <Stack
+                      id="mode-panel"
+                      role="region"
+                      aria-label={modeName}
+                      aria-busy={busy}
+                    >
+                      {toolbar}
+                    </Stack>
+                  </>
+                )}
+                <Stack grow minSize="0" overflow="hidden">
                   {layout === 'standard' ? (
-                    <>
-                      <nav
-                        aria-label="Modes"
-                        className="border-b border-line bg-surface px-2"
-                      >
-                        <ModeTabs
-                          label="Modes"
-                          items={items}
-                          value={manifest.id}
-                          onChange={(id) => request(id as ModeId)}
-                        />
-                      </nav>
-                      <div
-                        id="mode-panel"
-                        role="tabpanel"
-                        // A checkpoint job holds the document (no edits).
-                        inert={busy}
-                        aria-busy={busy}
-                        aria-label={`${manifest.label} mode`}
-                        className="flex min-h-11 min-w-0 items-center border-b border-line bg-surface px-2"
-                      >
-                        {toolbar}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <nav aria-label="Modes">
-                        <FloatingDock
-                          label="Modes"
-                          items={items}
-                          value={manifest.id}
-                          onChange={(id) => request(id as ModeId)}
-                          size={layout === 'phone' ? 'lg' : 'md'}
-                          labels="responsive"
-                        />
-                      </nav>
-                      <div
-                        id="mode-panel"
-                        role="tabpanel"
-                        // A checkpoint job holds the document (no edits).
-                        inert={busy}
-                        aria-busy={busy}
-                        aria-label={`${manifest.label} mode`}
-                      >
-                        {toolbar}
-                      </div>
-                    </>
-                  )}
-                </div>
-                <div className="flex min-h-0 min-w-0">
-                  {layout === 'standard' ? (
-                    <SidePanel
-                      side="left"
-                      label="Pages"
-                      width={settings.railWidth}
-                      minWidth={120}
-                      maxWidth={260}
+                    <SplitPane
+                      label="Resize the page rail"
+                      unit="px"
+                      size={settings.railWidth}
+                      min={120}
+                      max={260}
                       collapsed={!settings.railOpen}
-                      onResize={(railWidth) =>
+                      onResizeEnd={(railWidth) =>
                         useWorkspaceSettings.setState({ railWidth })
                       }
-                    >
-                      {rail}
-                    </SidePanel>
-                  ) : (
-                    <Drawer
-                      open={railDrawer}
-                      onOpenChange={setRailDrawer}
-                      side="left"
-                      title="Pages"
-                    >
-                      <div className="h-[70vh]">{rail}</div>
-                    </Drawer>
-                  )}
-                  <main
-                    id="workspace-canvas"
-                    tabIndex={-1}
-                    className="min-w-0 flex-1 outline-none"
-                  >
-                    <DocumentCanvas
-                      mode={ctx}
-                      module={module}
-                      sourceDocs={sourceDocs}
-                      zoom={effectiveZoom(settings.zoom, {
-                        railOpen: layout === 'standard' && settings.railOpen,
-                        inspectorOpen:
-                          layout === 'standard' &&
-                          showInspector &&
-                          inspectorOpen,
-                      })}
-                      onZoomChange={setZoom}
-                      onScaleChange={setScale}
-                      onCurrentPageChange={(id) => id && setCurrent(id)}
-                      onVisiblePagesChange={(ids) =>
-                        setVisiblePages((prev) =>
-                          prev.join(' ') === ids.join(' ') ? prev : ids,
+                      start={railPanel}
+                      end={
+                        Inspect ? (
+                          <SplitPane
+                            label="Resize the properties"
+                            unit="px"
+                            anchor="end"
+                            defaultSize={320}
+                            min={260}
+                            max={480}
+                            collapsed={!inspectorShown}
+                            start={canvas}
+                            end={inspectorShown ? inspectorPanel : null}
+                          />
+                        ) : (
+                          canvas
                         )
                       }
-                      scrollToPage={scrollTo}
                     />
-                  </main>
-                  {Inspect ? (
-                    <Inspector
-                      title="Properties"
-                      mode={
-                        layout === 'standard'
-                          ? 'panel'
-                          : layout === 'phone'
-                            ? 'sheet'
-                            : 'popover'
-                      }
-                      anchor={inspectorAnchor}
-                      open={showInspector && inspectorOpen}
-                      onOpenChange={setInspectorOpen}
-                    >
-                      <Inspect {...ctx} />
-                    </Inspector>
-                  ) : null}
-                </div>
-              </div>
+                  ) : (
+                    canvas
+                  )}
+                </Stack>
+                {layout === 'standard' ? statusBar : null}
+              </Stack>
+              {layout === 'standard' ? null : (
+                <Sheet
+                  open={railDrawer}
+                  onOpenChange={setRailDrawer}
+                  side="start"
+                  size="sm"
+                  title="Pages"
+                >
+                  <Stack as="aside" aria-label="Pages" gap="0">
+                    {rail}
+                  </Stack>
+                </Sheet>
+              )}
+              {Inspect && layout === 'phone' ? (
+                <Sheet
+                  open={inspectorShown}
+                  onOpenChange={setInspectorOpen}
+                  side="bottom"
+                  title="Properties"
+                >
+                  {inspectorBody}
+                </Sheet>
+              ) : null}
+              {Inspect && layout === 'focus' ? (
+                <Popover
+                  label="Properties"
+                  anchor={inspectorAnchor}
+                  open={inspectorShown}
+                  onOpenChange={setInspectorOpen}
+                  placement="end"
+                  size="md"
+                  initialFocus="none"
+                >
+                  <Stack gap="4">
+                    <Heading level={2} size="sm">
+                      Properties
+                    </Heading>
+                    {inspectorBody}
+                  </Stack>
+                </Popover>
+              ) : null}
               <WorkspaceKeys
                 api={shortcutApi(request)}
                 disabled={{

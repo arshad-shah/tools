@@ -65,6 +65,16 @@ tester.run('no-raw-ui-outside-kit', rule, {
       filename: 'C:\\repo\\src\\shared\\ui\\icons\\custom\\keys.tsx',
     },
     { code: `const a = <button />;`, filename: 'src/tools/x/Tool.test.tsx' },
+    // A Cynosure component's layout style (a height for a list or viewport).
+    {
+      code: `import { VirtualList } from '@arshad-shah/cynosure';\nconst a = <VirtualList style={{ blockSize: '100%' }} />;`,
+      filename: TOOL,
+    },
+    // The PDF workspace's drawing surfaces.
+    {
+      code: `const a = <div style={{ left: 3 }}><canvas /></div>;`,
+      filename: 'src/pdf/surfaces/PageSurface.tsx',
+    },
     { code: `const a = React.createElement('div');`, filename: TOOL },
     { code: `const a = <Input type="text" />;`, filename: TOOL },
     { code: `const a = <Image alt="x" src={b} />;`, filename: TOOL },
@@ -91,6 +101,11 @@ tester.run('no-raw-ui-outside-kit', rule, {
     })),
     {
       code: `const a = <div style={{ width: 3 }} />;`,
+      filename: 'src/app/a.tsx',
+      errors: [{ messageId: 'style' }],
+    },
+    {
+      code: `import { Box } from './box';\nconst a = <Box style={s} />;`,
       filename: 'src/app/a.tsx',
       errors: [{ messageId: 'style' }],
     },

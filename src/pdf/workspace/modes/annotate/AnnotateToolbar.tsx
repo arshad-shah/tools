@@ -1,21 +1,22 @@
-import { FilePicker, type ToolGroup, type ToolItem } from '@/shared/ui';
+import { FilePicker } from '../../ui/FilePicker';
+import { type ToolGroup, type ToolItem } from '../../ui/tool-groups';
 import {
-  IconCircle,
-  IconEraser,
-  IconHighlighter,
-  IconPen,
-  IconSquare,
-  IconStickyNote,
-  IconStrikethrough,
-  IconUnderline,
-  IconArrowAnnot,
-  IconLineAnnot,
-  IconSelectTool,
-  IconSquiggly,
-  IconStampPreset,
-  IconTextComment,
-  type IconComponent,
-} from '@/shared/ui/icons';
+  annotateText,
+  circle,
+  cursor,
+  edit,
+  eraser as eraserIcon,
+  highlighter,
+  shapeArrow,
+  shapeLine,
+  square,
+  stamp as stampIcon,
+  stickyNote,
+  strikethrough,
+  underline as underlineIcon,
+  underlineWavy,
+  type IconData,
+} from '@arshad-shah/cynosure/icons';
 import { STAMP_NAMES, STAMP_PRESETS } from '@/pdf/doc/ops/annotate-params';
 import { ModeToolbar } from '../../ModeToolbar';
 import type { ModeProps } from '../types';
@@ -24,21 +25,21 @@ import { activeTool, TOOLS, type AnnotateTool } from './tools';
 import { StyleControl } from './StyleControl';
 import { setAnnotateUi, useAnnotateUi } from './ui-store';
 
-const ICONS: Record<AnnotateTool, IconComponent> = {
-  select: IconSelectTool,
-  freetext: IconTextComment,
-  highlight: IconHighlighter,
-  underline: IconUnderline,
-  strike: IconStrikethrough,
-  squiggly: IconSquiggly,
-  note: IconStickyNote,
-  pen: IconPen,
-  rect: IconSquare,
-  ellipse: IconCircle,
-  line: IconLineAnnot,
-  arrow: IconArrowAnnot,
-  stamp: IconStampPreset,
-  eraser: IconEraser,
+const ICONS: Record<AnnotateTool, IconData> = {
+  select: cursor,
+  freetext: annotateText,
+  highlight: highlighter,
+  underline: underlineIcon,
+  strike: strikethrough,
+  squiggly: underlineWavy,
+  note: stickyNote,
+  pen: edit,
+  rect: square,
+  ellipse: circle,
+  line: shapeLine,
+  arrow: shapeArrow,
+  stamp: stampIcon,
+  eraser: eraserIcon,
 };
 
 const GROUPS: { id: string; label: string; tools: AnnotateTool[] }[] = [

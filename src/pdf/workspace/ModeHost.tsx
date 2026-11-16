@@ -1,17 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCommands } from '@/shared/lib/commands';
 import { useShortcuts } from '@/shared/lib/hotkeys';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  ErrorState,
-  LoadingState,
-} from '@/shared/ui';
+import { Button, Dialog } from '@arshad-shah/cynosure';
+import { ErrorNotice, LoadingLine } from './ui/states';
 import type { ModeId } from '@/pdf/doc/types';
 import type { ModeContext, ModeManifest, ModeModule } from './modes/types';
 import { useModeModule } from './use-mode-module';
@@ -75,11 +66,11 @@ export function ModeHost({
 
   const Toolbar = module?.Toolbar;
   const toolbar = error ? (
-    <ErrorState error={error} headingLevel={2} />
+    <ErrorNotice error={error} />
   ) : Toolbar ? (
     <Toolbar {...ctx} />
   ) : (
-    <LoadingState label={`Loading ${manifest.label}`} />
+    <LoadingLine label={`Loading ${manifest.label}`} />
   );
 
   return (
@@ -91,28 +82,28 @@ export function ModeHost({
       <Dialog
         open={leaving !== null}
         onOpenChange={(open) => !open && setLeaving(null)}
-      >
-        <DialogHeader>
-          <DialogTitle>Leave {manifest.label}?</DialogTitle>
-          <DialogDescription>{leaving?.reason}</DialogDescription>
-        </DialogHeader>
-        <DialogBody />
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setLeaving(null)}>
-            Stay
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              const to = leaving?.to;
-              setLeaving(null);
-              if (to) onModeChange(to);
-            }}
-          >
-            Leave
-          </Button>
-        </DialogFooter>
-      </Dialog>
+        title={`Leave ${manifest.label}?`}
+        description={leaving?.reason}
+        size="sm"
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => setLeaving(null)}>
+              Stay
+            </Button>
+            <Button
+              variant="solid"
+              tone="accent"
+              onClick={() => {
+                const to = leaving?.to;
+                setLeaving(null);
+                if (to) onModeChange(to);
+              }}
+            >
+              Leave
+            </Button>
+          </>
+        }
+      />
     </>
   );
 }

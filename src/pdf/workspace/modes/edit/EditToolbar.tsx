@@ -1,18 +1,19 @@
-import { FilePicker, type ToolGroup } from '@/shared/ui';
+import { FilePicker } from '../../ui/FilePicker';
+import { type ToolGroup } from '../../ui/tool-groups';
 import {
-  IconArrowAnnot,
-  IconCoverReplace,
-  IconEllipseAnnot,
-  IconHeaderFooter,
-  IconImage,
-  IconLineAnnot,
-  IconPageNumbers,
-  IconSelectTool,
-  IconSquare,
-  IconType,
-  IconWatermark,
-  type IconComponent,
-} from '@/shared/ui/icons';
+  cursor,
+  image as imageIcon,
+  pageHeaderFooter,
+  pageNumber,
+  pageWatermark,
+  shapeArrow,
+  shapeEllipse,
+  shapeLine,
+  square,
+  type as typeIcon,
+  whiteout,
+  type IconData,
+} from '@arshad-shah/cynosure/icons';
 import { ModeToolbar } from '../../ModeToolbar';
 import type { ModeProps } from '../types';
 import { IMAGE_ACCEPT, pickImage } from './pick-image';
@@ -24,11 +25,11 @@ import {
   type ShapeKind,
 } from './ui-store';
 
-const SHAPES: { id: ShapeKind; label: string; icon: IconComponent }[] = [
-  { id: 'rect', label: 'Rectangle', icon: IconSquare },
-  { id: 'ellipse', label: 'Ellipse', icon: IconEllipseAnnot },
-  { id: 'line', label: 'Line', icon: IconLineAnnot },
-  { id: 'arrow', label: 'Arrow', icon: IconArrowAnnot },
+const SHAPES: { id: ShapeKind; label: string; icon: IconData }[] = [
+  { id: 'rect', label: 'Rectangle', icon: square },
+  { id: 'ellipse', label: 'Ellipse', icon: shapeEllipse },
+  { id: 'line', label: 'Line', icon: shapeLine },
+  { id: 'arrow', label: 'Arrow', icon: shapeArrow },
 ];
 
 /** Edit tools (plan D-9). */
@@ -39,7 +40,7 @@ export function EditToolbar(ctx: ModeProps) {
   const toggle = (
     id: EditTool,
     label: string,
-    icon: IconComponent,
+    icon: IconData,
     shortcut?: string,
   ) => ({
     id,
@@ -56,9 +57,9 @@ export function EditToolbar(ctx: ModeProps) {
       id: 'content',
       label: 'Content',
       items: [
-        toggle('select', 'Select', IconSelectTool, 'V'),
-        toggle('text', 'Text', IconType, 'T'),
-        { ...toggle('image', 'Image', IconImage), onSelect: pick },
+        toggle('select', 'Select', cursor, 'V'),
+        toggle('text', 'Text', typeIcon, 'T'),
+        { ...toggle('image', 'Image', imageIcon), onSelect: pick },
         {
           ...toggle('shape', `Shape: ${shape.label}`, shape.icon),
           kind: 'split',
@@ -71,16 +72,16 @@ export function EditToolbar(ctx: ModeProps) {
             },
           })),
         },
-        toggle('cover', 'Cover and replace', IconCoverReplace),
+        toggle('cover', 'Cover and replace', whiteout),
       ],
     },
     {
       id: 'page',
       label: 'Page markup',
       items: [
-        toggle('watermark', 'Watermark', IconWatermark),
-        toggle('page-numbers', 'Page numbers', IconPageNumbers),
-        toggle('header-footer', 'Header and footer', IconHeaderFooter),
+        toggle('watermark', 'Watermark', pageWatermark),
+        toggle('page-numbers', 'Page numbers', pageNumber),
+        toggle('header-footer', 'Header and footer', pageHeaderFooter),
       ],
     },
   ];
