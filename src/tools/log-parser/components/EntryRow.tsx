@@ -1,7 +1,13 @@
 import { memo, useMemo } from 'react';
+import {
+  Badge,
+  Checkbox,
+  IconButton,
+  VisuallyHidden,
+} from '@arshad-shah/cynosure';
+import { chevronDown, chevronRight } from '@arshad-shah/cynosure/icons';
 import { cn } from '@/shared/lib/cn';
-import { Checkbox, CodeSurface, IconButton, StatusDot } from '@/shared/ui';
-import { IconChevronDown, IconChevronRight } from '@/shared/ui/icons';
+import { CodeSurface } from '@/shared/ui';
 import type { FieldFilter } from '../lib/filter';
 import { levelLabel, levelTone } from '../lib/level-style';
 import type { LogEntry } from '../lib/model';
@@ -67,20 +73,18 @@ export const EntryRow = memo(function EntryRow({
       <div className="flex min-w-0 items-start gap-2">
         <Checkbox
           size="sm"
-          tabIndex={-1}
           checked={selected}
           disabled={!selected && !selectable}
-          aria-label={`Select line ${entry.line}`}
-          onCheckedChange={(v) => onSelect(entry, v)}
+          label={<VisuallyHidden>{`Select line ${entry.line}`}</VisuallyHidden>}
+          onChange={(v) => onSelect(entry, v)}
         />
         <IconButton
           size="sm"
           variant="ghost"
           tabIndex={-1}
-          className="-my-1 size-6"
           label={`${expanded ? 'Collapse' : 'Expand'} line ${entry.line}`}
           aria-expanded={expanded}
-          icon={expanded ? IconChevronDown : IconChevronRight}
+          icon={expanded ? chevronDown : chevronRight}
           onClick={() => onToggle(entry.index)}
         />
         {show('line') ? (
@@ -92,12 +96,10 @@ export const EntryRow = memo(function EntryRow({
           </span>
         ) : null}
         {show('level') ? (
-          <span
-            data-column="level"
-            className="flex w-20 shrink-0 items-center gap-1.5"
-          >
-            <StatusDot tone={levelTone(entry.level)} decorative />
-            <span className="text-fg-muted">{levelLabel(entry.level)}</span>
+          <span data-column="level" className="w-20 shrink-0">
+            <Badge size="sm" variant="soft" tone={levelTone(entry.level)} dot>
+              {levelLabel(entry.level)}
+            </Badge>
           </span>
         ) : null}
         {show('time') && entry.ts !== undefined ? (
