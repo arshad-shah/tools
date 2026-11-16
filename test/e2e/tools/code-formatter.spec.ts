@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
 const input = (page: Page) => page.getByRole('textbox', { name: 'Input' });
 /** The result CodeBlock's code (named by the output file, e.g. formatted.js). */
@@ -64,5 +65,5 @@ test('formats SQL with the keyboard shortcut', async ({ page }) => {
 test('an example loads from the menu', async ({ page }) => {
   await page.getByRole('button', { name: 'Try an example' }).first().click();
   await page.getByRole('menuitem', { name: 'SQL' }).click();
-  await expect(input(page)).toHaveValue(/^select id,name from users/);
+  await expectEditorValue(input(page), /^select id,name from users/);
 });

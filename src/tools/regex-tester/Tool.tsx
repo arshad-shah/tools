@@ -12,7 +12,7 @@ import {
   SegmentedControl,
   Stack,
 } from '@arshad-shah/cynosure';
-import { CodeSurface } from '@/shared/ui';
+
 import { CheatSheet } from './components/CheatSheet';
 import { CodeExport } from './components/CodeExport';
 import { ExplainPanel } from './components/ExplainPanel';
@@ -42,6 +42,7 @@ import { casesFromLines, linesFromCases } from './lib/test-cases';
 import { REGEX_MODES, regexSettings, type RegexMode } from './settings';
 import { parseRegexShare, REGEX_SHARE_VERSION, type RegexShare } from './share';
 import type { RegexTemplate } from './types';
+import { CodeEditor } from '@/shared/editor';
 
 const isMode = (v: string): v is RegexMode =>
   (REGEX_MODES as readonly string[]).includes(v);
@@ -252,11 +253,11 @@ export default function RegexTester() {
       />
       <Grid columns={{ base: 1, lg: 2 }} gap="6" align="start">
         <Card as="section" title="Test text" headingLevel={2}>
-          <CodeSurface
+          <CodeEditor
             value={text}
             onChange={setText}
             language="plain"
-            label="Test string"
+            aria-label="Test string"
             placeholder="Enter text to test the pattern against"
             minHeight={160}
             maxHeight={420}

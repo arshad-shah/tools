@@ -14,7 +14,7 @@ import {
 } from '@/shared/lib/data-formats/mock-schema';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
-import { CodeSurface } from '@/shared/ui';
+
 import {
   isPresetId,
   PRESET_IDS,
@@ -23,6 +23,7 @@ import {
   type PresetId,
 } from '../lib/presets';
 import { schemaFromJson, schemaToJson } from '../lib/schema-io';
+import { CodeEditor } from '@/shared/editor';
 
 type Mode = 'import' | 'infer' | null;
 
@@ -137,8 +138,8 @@ export function SchemaIO({ schema, onSchema }: SchemaIOProps) {
           }
         >
           <Stack gap="3">
-            <CodeSurface
-              label={mode === 'infer' ? 'JSON sample' : 'Schema JSON'}
+            <CodeEditor
+              aria-label={mode === 'infer' ? 'JSON sample' : 'Schema JSON'}
               value={text}
               onChange={setText}
               language="json"

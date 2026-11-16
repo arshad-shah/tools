@@ -79,7 +79,9 @@ test('the workspace renders an open document under the policy', async ({
   expect(await violations()).toEqual([]);
 });
 
-test('the calculator plots under the policy (kit Chart)', async ({ page }) => {
+test('the calculator plots under the policy (swift-chart)', async ({
+  page,
+}) => {
   const violations = await watchPolicy(page);
   await page.goto(pathOf('calculator'));
   await page.getByRole('radio', { name: 'Grapher' }).click();
@@ -87,6 +89,23 @@ test('the calculator plots under the policy (kit Chart)', async ({ page }) => {
   await expect(
     page.getByRole('img', { name: 'Graph of the functions' }),
   ).toBeVisible();
+  expect(await violations()).toEqual([]);
+});
+
+test('the code editor highlights, finds and marks errors under the policy (CodeMirror)', async ({
+  page,
+}) => {
+  // CodeMirror writes its theme with style-mod (constructed or <style>
+  // sheets): style-src allows it, and nothing else is needed.
+  const violations = await watchPolicy(page);
+  await page.goto(pathOf('json-and-xml-viewer'));
+  const editor = page.getByRole('textbox', { name: 'Document' });
+  await editor.click();
+  await page.keyboard.insertText('{"a": [1, 2,], "b": true}');
+  await expect(page.getByTestId('parse-error')).toBeVisible();
+  await expect(editor.locator('span').first()).toBeAttached();
+  await page.keyboard.press('Control+f');
+  await expect(page.getByRole('textbox', { name: 'Find' })).toBeFocused();
   expect(await violations()).toEqual([]);
 });
 
@@ -116,7 +135,8 @@ test('the Rive player plays a real .riv under the policy (wasm runtime)', async 
     .locator('input[type=file]')
     .first()
     .setInputFiles('test/fixtures/rive/vehicles.riv');
-  await expect(page.getByRole('combobox', { name: 'Artboard' })).toHaveValue(
+  // Cynosure's Select is a button-like combobox showing the chosen option.
+  await expect(page.getByRole('combobox', { name: 'Artboard' })).toContainText(
     'Truck',
   );
   await expect(page.getByText(/^\d+\.\d\d s of /)).toBeVisible({

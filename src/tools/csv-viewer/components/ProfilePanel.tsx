@@ -12,7 +12,9 @@ import {
   Table,
   Text,
 } from '@arshad-shah/cynosure';
-import { Chart } from '@/shared/ui';
+import { Bar } from '@arshad-shah/swift-chart/react';
+// swift-chart draws the histogram (a canvas); everything else is Cynosure.
+import { ChartFrame, useChartTheme } from '@/shared/charts';
 import { COLUMN_TYPE_LABEL, type ColumnType } from '../lib/columns';
 import type { Row } from '../lib/edit';
 import type { ColumnProfile } from '../lib/profile';
@@ -55,6 +57,11 @@ function ColumnCard({
       ['P25', fmt(p.p25)],
       ['P75', fmt(p.p75)],
     );
+  const chart = useChartTheme();
+  const bins = p.histogram?.map((b) => ({
+    range: `${fmt(b.x0)} to ${fmt(b.x1)}`,
+    n: b.n,
+  }));
   return (
     <Card
       as="section"
@@ -73,24 +80,27 @@ function ColumnCard({
           size="sm"
           items={stats.map(([k, v]) => ({ id: k, term: k, detail: v }))}
         />
-        {p.histogram && p.histogram.length > 1 && (
-          <Chart
-            kind="bar"
-            xType="band"
-            height={140}
-            legend={false}
-            ariaLabel={`Histogram of ${name}`}
-            series={[
-              {
-                id: name,
-                label: name,
-                points: p.histogram.map((b) => ({
-                  x: `${fmt(b.x0)} to ${fmt(b.x1)}`,
-                  y: b.n,
-                })),
-              },
-            ]}
-          />
+        {bins && bins.length > 1 && (
+          <ChartFrame
+            table={{
+              caption: `Histogram of ${name}`,
+              rows: bins,
+              getRowId: (b) => b.range,
+              columns: [
+                { key: 'range', header: name },
+                { key: 'n', header: 'Rows', align: 'end' },
+              ],
+            }}
+          >
+            <Bar
+              data={bins}
+              mapping={{ x: 'range', y: 'n', seriesNames: ['Rows'] }}
+              theme={chart.name}
+              height={200}
+              showLegend={false}
+              ariaLabel={`Histogram of ${name}`}
+            />
+          </ChartFrame>
         )}
         {p.top.length > 0 && (
           <Table<[string, number]>

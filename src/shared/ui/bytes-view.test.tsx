@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { BytesView } from './bytes-view';
+import { editorView } from '@/shared/editor/testing';
+import { BytesView, MAX_DUMP_BYTES } from './bytes-view';
 import { asciiCell, formatRow } from './bytes-view-format';
 
 const sample = () => {
@@ -22,7 +23,7 @@ describe('BytesView', () => {
     );
     const view = screen.getByRole('textbox', { name: 'File bytes' });
     expect(view.getAttribute('aria-readonly')).toBe('true');
-    const rows = [...container.querySelectorAll('[data-cs-line]')].map(
+    const rows = [...container.querySelectorAll('.cm-line')].map(
       (r) => r.textContent ?? '',
     );
     expect(rows).toHaveLength(2);
@@ -48,12 +49,14 @@ describe('BytesView', () => {
     expect(asciiCell(0x80).text).toBe('.');
   });
 
-  it('stays virtual for a 16 MB buffer', () => {
-    const { container } = render(
+  it('shows the first MAX_DUMP_BYTES of a 16 MB buffer and says so', () => {
+    render(
       <BytesView bytes={new Uint8Array(16 * 1024 * 1024)} ariaLabel="Big" />,
     );
-    expect(container.querySelectorAll('[data-cs-line]').length).toBeLessThan(
-      200,
-    );
+    const view = screen.getByRole('textbox', { name: 'Big' });
+    expect(editorView(view).state.doc.lines).toBe(MAX_DUMP_BYTES / 16);
+    expect(
+      screen.getByText(/^Showing the first 1(\.0)? MB of 16(\.0)? MB/),
+    ).toBeTruthy();
   });
 });

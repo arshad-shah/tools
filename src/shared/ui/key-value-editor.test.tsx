@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { KeyValueEditor } from './key-value-editor';
 import type { KeyValueEditorProps } from './key-value-editor';
 import type { KeyValueRow } from './key-value-bulk';
+import { editorValue, setEditorValue } from '@/shared/editor/testing';
 
 /** The rows from the most recent onChange. */
 const state: { latest: KeyValueRow[] } = { latest: [] };
@@ -126,13 +127,11 @@ describe('KeyValueEditor', () => {
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
     const text = screen.getByRole('textbox', {
       name: 'Headers, one key: value per line',
-    }) as HTMLTextAreaElement;
-    expect(text.value).toBe(
+    });
+    expect(editorValue(text)).toBe(
       'Accept: application/json\nHost: example.com\n# X-Trace: off',
     );
-    fireEvent.change(text, {
-      target: { value: `${text.value}\n# Accept: text/plain` },
-    });
+    setEditorValue(text, `${editorValue(text)}\n# Accept: text/plain`);
     expect(state.latest).toHaveLength(4);
     expect(state.latest[3]).toMatchObject({
       enabled: false,

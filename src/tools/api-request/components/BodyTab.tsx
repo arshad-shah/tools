@@ -9,9 +9,13 @@ import {
   Select,
   Stack,
   Text,
-  TextArea,
   TextField,
 } from '@arshad-shah/cynosure';
+import {
+  CodeEditor,
+  type EditorDiagnostic,
+  type LanguageId,
+} from '@/shared/editor';
 import { formatBytes } from '@/shared/lib/format';
 import { fromPairs, toPairs } from '../lib/kv';
 import type { BodyKind, HttpRequest, RequestBody } from '../lib/model';
@@ -25,17 +29,63 @@ const KINDS: { value: BodyKind; label: string }[] = [
   { value: 'binary', label: 'File' },
 ];
 
-/** Where JSON text breaks, in words (nothing for valid or templated text). */
-function jsonError(text: string): string | undefined {
+/** Where JSON text breaks (nothing for valid or templated text). */
+function jsonError(text: string): EditorDiagnostic | undefined {
   if (!text.trim() || text.includes('{{')) return undefined;
   try {
     parseJsonWithLocations(text);
     return undefined;
   } catch (e) {
     const loc = e instanceof JsonLocateError ? e : null;
-    const message = e instanceof Error ? e.message : 'Invalid JSON';
-    return `Line ${loc?.line ?? 1}, column ${loc?.column ?? 1}: ${message}`;
+    return {
+      line: loc?.line ?? 1,
+      column: loc?.column ?? 1,
+      message: e instanceof Error ? e.message : 'Invalid JSON',
+      severity: 'error',
+    };
   }
+}
+
+/** A labelled code editor with its error under it. */
+function CodeField({
+  label,
+  value,
+  onChange,
+  language,
+  problem,
+  placeholder,
+  minHeight = 160,
+}: {
+  label: string;
+  value: string;
+  onChange(text: string): void;
+  language: LanguageId;
+  problem?: EditorDiagnostic;
+  placeholder?: string;
+  minHeight?: number;
+}) {
+  return (
+    <Stack gap="2">
+      <Text size="sm" weight="medium">
+        {label}
+      </Text>
+      <CodeEditor
+        aria-label={label}
+        language={language}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        diagnostics={problem ? [problem] : undefined}
+        minHeight={minHeight}
+        maxHeight={420}
+      />
+      {problem ? (
+        <Text size="sm" tone="danger">
+          {`Line ${problem.line}, column ${problem.column}: ${problem.message}`}
+        </Text>
+      ) : null}
+    </Stack>
+  );
 }
 
 /** Every body kind, or GraphQL query and variables. */
@@ -57,27 +107,24 @@ export function BodyTab({
   if (request.mode === 'graphql')
     return (
       <Stack gap="4">
-        <TextArea
+        <CodeField
           label="GraphQL query"
-          rows={8}
-          maxRows={20}
-          spellCheck={false}
+          language="plain"
           value={request.graphql.query}
           onChange={(query) =>
             onChange({ ...request, graphql: { ...request.graphql, query } })
           }
           placeholder="query { items { id } }"
         />
-        <TextArea
+        <CodeField
           label="GraphQL variables (JSON)"
-          rows={4}
-          maxRows={12}
-          spellCheck={false}
+          language="json"
+          minHeight={96}
           value={request.graphql.variables}
           onChange={(variables) =>
             onChange({ ...request, graphql: { ...request.graphql, variables } })
           }
-          error={jsonError(request.graphql.variables)}
+          problem={jsonError(request.graphql.variables)}
         />
       </Stack>
     );
@@ -97,14 +144,12 @@ export function BodyTab({
         </Text>
       ) : null}
       {b.kind === 'json' ? (
-        <TextArea
+        <CodeField
           label="JSON body"
-          rows={8}
-          maxRows={24}
-          spellCheck={false}
+          language="json"
           value={b.text}
           onChange={(text) => set({ text })}
-          error={bodyError}
+          problem={bodyError}
         />
       ) : null}
       {b.kind === 'raw' ? (
@@ -116,11 +161,9 @@ export function BodyTab({
             placeholder="text/plain"
             spellCheck={false}
           />
-          <TextArea
+          <CodeField
             label="Raw body"
-            rows={8}
-            maxRows={24}
-            spellCheck={false}
+            language="plain"
             value={b.text}
             onChange={(text) => set({ text })}
           />

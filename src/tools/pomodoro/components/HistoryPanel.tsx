@@ -10,11 +10,11 @@ import {
   calendar as calendarIcon,
   download,
 } from '@arshad-shah/cynosure/icons';
+import { Bar, Heatmap } from '@arshad-shah/swift-chart/react';
 import React, { useMemo, useState } from 'react';
-// The kit Chart is a drawing surface: Cynosure has no chart
-// (docs/cynosure-gaps.md).
-import { Chart } from '@/shared/ui/chart';
-import type { ChartSeries, HeatmapCell } from '@/shared/ui/chart';
+// swift-chart draws the charts (a canvas); the owner chose it over a
+// Cynosure chart. Everything around them is Cynosure.
+import { ChartFrame, useChartTheme } from '@/shared/charts';
 import { saveBlob } from '@/shared/lib/download';
 import { usePomodoroStore } from '../store';
 import { historyToCsv, lastDays, weeksGrid } from '../lib/history';
@@ -26,6 +26,15 @@ const dateOf = (iso: string) => {
 };
 
 const weekday = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
+const dayLabel = new Intl.DateTimeFormat(undefined, {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+});
+const weekOf = new Intl.DateTimeFormat(undefined, {
+  day: 'numeric',
+  month: 'short',
+});
 const sessions = (n: number) => `${n} ${n === 1 ? 'session' : 'sessions'}`;
 
 /**
@@ -36,23 +45,24 @@ export const HistoryPanel: React.FC = () => {
   const history = usePomodoroStore((s) => s.history);
   // Today as of opening the panel (it remounts each time the tab opens).
   const [now] = useState(() => Date.now());
-  const { series, cells, weekTotal } = useMemo(() => {
-    const week = lastDays(history, now);
-    const series: ChartSeries[] = [
-      {
-        id: 'work',
-        label: 'Work sessions',
-        points: week.map((d) => ({
-          x: weekday.format(dateOf(d.date)),
-          y: d.workSessions,
-        })),
-      },
-    ];
-    const cells: HeatmapCell[] = weeksGrid(history, now)
-      .flat()
-      .map((d) => ({ x: dateOf(d.date), y: 0, value: d.workSessions }));
-    const weekTotal = week.reduce((sum, d) => sum + d.workSessions, 0);
-    return { series, cells, weekTotal };
+  const chart = useChartTheme();
+  const { week, cells, weekTotal } = useMemo(() => {
+    const week = lastDays(history, now).map((d) => ({
+      date: d.date,
+      day: weekday.format(dateOf(d.date)),
+      sessions: d.workSessions,
+    }));
+    // One column per week (labelled by its Monday), one row per weekday.
+    const cells = weeksGrid(history, now).flatMap((days) =>
+      days.map((d) => ({
+        date: d.date,
+        week: weekOf.format(dateOf(days[0].date)),
+        day: weekday.format(dateOf(d.date)),
+        value: d.workSessions,
+      })),
+    );
+    const weekTotal = week.reduce((sum, d) => sum + d.sessions, 0);
+    return { week, cells, weekTotal };
   }, [history, now]);
 
   return (
@@ -76,26 +86,63 @@ export const HistoryPanel: React.FC = () => {
               </Text>
             }
           >
-            <Chart
-              kind="bar"
-              xType="band"
-              series={series}
-              legend={false}
-              height={180}
-              ariaLabel="Work sessions, last 7 days"
-              ariaSummary={`${sessions(weekTotal)} in the last 7 days.`}
-              formatY={(y) => String(Math.round(y))}
-            />
+            <ChartFrame
+              table={{
+                caption: 'Work sessions, last 7 days',
+                rows: week,
+                getRowId: (d) => d.date,
+                columns: [
+                  {
+                    key: 'date',
+                    header: 'Day',
+                    cell: (d) => dayLabel.format(dateOf(d.date)),
+                  },
+                  { key: 'sessions', header: 'Sessions', align: 'end' },
+                ],
+              }}
+            >
+              <Bar
+                data={week}
+                mapping={{
+                  x: 'day',
+                  y: 'sessions',
+                  seriesNames: ['Work sessions'],
+                }}
+                theme={chart.name}
+                height={200}
+                showLegend={false}
+                ariaLabel="Work sessions, last 7 days"
+                ariaDescription={`${sessions(weekTotal)} in the last 7 days.`}
+                formatValue={(y) => String(Math.round(y))}
+              />
+            </ChartFrame>
           </Card>
           <Card title="Last 12 weeks" headingLevel={4} variant="outline">
-            <Chart
-              kind="heatmap"
-              calendar
-              cells={cells}
-              height={160}
-              ariaLabel="Work sessions, last 12 weeks"
-              ariaSummary="Work sessions per day, one column per week."
-            />
+            <ChartFrame
+              table={{
+                caption: 'Days with work sessions, last 12 weeks',
+                rows: cells.filter((c) => c.value > 0),
+                getRowId: (c) => c.date,
+                columns: [
+                  {
+                    key: 'date',
+                    header: 'Day',
+                    cell: (c) => dayLabel.format(dateOf(c.date)),
+                  },
+                  { key: 'value', header: 'Sessions', align: 'end' },
+                ],
+              }}
+            >
+              <Heatmap
+                data={cells}
+                mapping={{ x: 'week', y: 'day', valueField: 'value' }}
+                theme={chart.name}
+                height={220}
+                ariaLabel="Work sessions, last 12 weeks"
+                ariaDescription="Work sessions per day, one column per week."
+                formatValue={(v) => String(Math.round(v))}
+              />
+            </ChartFrame>
           </Card>
         </>
       )}

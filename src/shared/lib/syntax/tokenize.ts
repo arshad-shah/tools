@@ -21,7 +21,7 @@ export type {
 } from './types';
 
 /**
- * Small incremental tokenisers for CodeSurface (spec §4.7): state machines
+ * Small incremental tokenisers (spec §4.7), used by the code editor for csv, log, regex and http: state machines
  * per language, one line at a time, no backtracking regex over whole text.
  * Worker-safe.
  */

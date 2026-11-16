@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { pathOf } from './tool-routes';
+import { expectEditorValue } from './editor';
 
 test('text-diff-checker loads a file into the left pane', async ({ page }) => {
   await page.goto(pathOf('text-diff-checker'));
@@ -11,9 +12,10 @@ test('text-diff-checker loads a file into the left pane', async ({ page }) => {
       mimeType: 'text/plain',
       buffer: Buffer.from('hello left'),
     });
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue('hello left');
+    'hello left',
+  );
 });
 
 test('calculator plots an expression without crashing', async ({ page }) => {
