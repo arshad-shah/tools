@@ -1,5 +1,4 @@
 import {
-  Badge,
   Card,
   DateField,
   EmptyState,
@@ -26,8 +25,7 @@ export interface MeetingPlannerProps {
 
 /**
  * The meeting planner: 24 UTC hours across, one row per zone, working
- * hours as badges and the best overlap marked in the header. Cynosure's
- * Table cannot tint a cell or a column (docs/cynosure-gaps.md).
+ * hours tinted (Table column tone) and the best overlap in green.
  */
 export const MeetingPlanner: React.FC<MeetingPlannerProps> = ({
   zones,
@@ -59,21 +57,23 @@ export const MeetingPlanner: React.FC<MeetingPlannerProps> = ({
     ...rows.map(
       (h): TableColumn<{ zone: string; zi: number }> => ({
         key: String(h.hourUTC),
-        header: best.has(h.hourUTC) ? (
-          <Badge size="sm" tone="success">
-            {p2(h.hourUTC)}
-          </Badge>
-        ) : (
-          p2(h.hourUTC)
-        ),
+        header: p2(h.hourUTC),
+        // A heat grid: working hours tinted, the best overlap in green
+        // (the tint is not read out, so the cell says "working").
+        tone: (r) =>
+          h.cells[r.zi].working
+            ? best.has(h.hourUTC)
+              ? 'success'
+              : 'accent'
+            : undefined,
         cell: (r) => {
           const cell = h.cells[r.zi];
           const text = `${p2(cell.localHour)}${cell.localMinute ? `:${p2(cell.localMinute)}` : ''}`;
           return cell.working ? (
-            <Badge size="sm" tone={best.has(h.hourUTC) ? 'success' : 'accent'}>
+            <Text as="span" size="sm" weight="medium" numeric>
               {text}
               <VisuallyHidden> working</VisuallyHidden>
-            </Badge>
+            </Text>
           ) : (
             <Text as="span" size="sm" tone="muted" numeric>
               {text}
@@ -132,7 +132,7 @@ export const MeetingPlanner: React.FC<MeetingPlannerProps> = ({
         )}
         <Text size="sm" tone="muted">
           Columns are UTC hours; each cell is the local hour in that zone.
-          Badges are working hours; green columns suit everyone best.
+          Tinted cells are working hours; green columns suit everyone best.
         </Text>
       </Stack>
     </Card>
