@@ -22,6 +22,7 @@ export const VerifyField: React.FC<VerifyFieldProps> = ({
     <Stack gap="2">
       <TextField
         label="Expected hash"
+        monospace
         description="Paste a hash to compare: hex or Base64, sha256: prefixes are fine."
         value={value}
         onChange={onChange}

@@ -108,6 +108,7 @@ export function SignaturePanel({
             <TextArea
               id="jwt-verify-key"
               label="Secret or public key"
+              monospace
               rows={5}
               spellCheck={false}
               autoComplete="off"

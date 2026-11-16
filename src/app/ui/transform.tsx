@@ -15,7 +15,6 @@ import { getEnabledTools, toolsAccepting } from '@/app/registry';
 import type { ToolManifest } from '@/app/tool';
 import { ToolError } from '@/shared/lib/errors';
 import { sendTo, type HandoffPayload } from '@/shared/lib/handoff';
-import { useMediaQuery } from '@/shared/lib/media-query';
 import { notify } from '@/shared/lib/notify';
 import { SEND_GROUP } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -30,31 +29,30 @@ export interface TransformLayoutProps {
 }
 
 /**
+ * Below this width of its own (px) a two-pane SplitPane stacks its panes:
+ * about a 1200px window beside the navigation.
+ */
+export const PANES_STACK_BELOW = 880;
+
+/**
  * The transform pattern's two panes (redesign spec): input and output side
- * by side in a SplitPane on wide screens, one above the other on narrow
- * ones (Cynosure gap 13: SplitPane cannot stack itself).
+ * by side in a SplitPane, stacked when it is narrow (`stackBelow`).
  */
 export function TransformLayout({
   start,
   end,
   defaultSize = 45,
 }: TransformLayoutProps) {
-  // Wide enough for both side by side (the JWT Decoder's breakpoint).
-  const wide = useMediaQuery('(min-width: 1200px)');
-  return wide ? (
+  return (
     <SplitPane
       label="Resize the input and output"
       defaultSize={defaultSize}
       min={30}
       max={70}
+      stackBelow={PANES_STACK_BELOW}
       start={<Stack paddingInline="3">{start}</Stack>}
       end={<Stack paddingInline="3">{end}</Stack>}
     />
-  ) : (
-    <Stack gap="6">
-      {start}
-      {end}
-    </Stack>
   );
 }
 

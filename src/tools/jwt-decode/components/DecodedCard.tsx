@@ -9,7 +9,10 @@ import {
   Notice,
   Select,
   Stack,
-  SegmentedControl,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
   Text,
 } from '@arshad-shah/cynosure';
 import { clock } from '@arshad-shah/cynosure/icons';
@@ -118,22 +121,15 @@ export function DecodedCard({
             ))}
           </Inline>
         ) : null}
-        <SegmentedControl
-          label="JWT sections"
-          fullWidth
-          value={tab}
-          onChange={(v) => onTab(v as JwtTab)}
-          options={[
-            { value: 'header', label: 'Header' },
-            {
-              value: 'payload',
-              label: `Payload (${Object.keys(decoded.payload).length})`,
-            },
-            { value: 'signature', label: 'Signature' },
-          ]}
-        />
-        {tab === 'header' ? (
-          <>
+        <Tabs value={tab} onChange={(v) => onTab(v as JwtTab)}>
+          <TabList label="JWT sections">
+            <Tab value="header">Header</Tab>
+            <Tab value="payload">
+              {`Payload (${Object.keys(decoded.payload).length})`}
+            </Tab>
+            <Tab value="signature">Signature</Tab>
+          </TabList>
+          <TabPanel value="header">
             <Stack gap="5">
               <Inline gap="2" wrap>
                 <Badge tone="accent">{decoded.header.alg}</Badge>
@@ -152,10 +148,8 @@ export function DecodedCard({
                 copyable
               />
             </Stack>
-          </>
-        ) : null}
-        {tab === 'payload' ? (
-          <>
+          </TabPanel>
+          <TabPanel value="payload">
             <Accordion type="multiple" defaultValue={openGroups}>
               {GROUPS.filter((g) => claims[g.id].length).map((g) => (
                 <AccordionItem
@@ -179,18 +173,16 @@ export function DecodedCard({
                 />
               </AccordionItem>
             </Accordion>
-          </>
-        ) : null}
-        {tab === 'signature' ? (
-          <>
+          </TabPanel>
+          <TabPanel value="signature">
             <SignaturePanel
               signature={decoded.signature}
               algorithm={decoded.header.alg}
               jwt={jwt}
               verify={verify}
             />
-          </>
-        ) : null}
+          </TabPanel>
+        </Tabs>
       </Stack>
     </Card>
   );

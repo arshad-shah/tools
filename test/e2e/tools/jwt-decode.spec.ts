@@ -22,7 +22,7 @@ async function fillToken(page: Page, token: string) {
 
 /** Shows a section of the decoded token (Header, Payload, Signature). */
 const section = (page: Page, name: string) =>
-  page.getByRole('radio', { name: new RegExp(`^${name}`) }).click();
+  page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
 
 /** Chooses an option in a Cynosure Select by its label. */
 async function choose(page: Page, label: string, option: string) {

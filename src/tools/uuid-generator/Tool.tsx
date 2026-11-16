@@ -248,6 +248,7 @@ const UuidGenerator: React.FC = () => {
             {customNs ? (
               <TextField
                 label="Namespace UUID"
+                monospace
                 value={s.v5Namespace}
                 onChange={(v) => update({ v5Namespace: v })}
                 spellCheck={false}
