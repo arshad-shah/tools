@@ -1,5 +1,5 @@
+import { Button, Inline } from '@arshad-shah/cynosure';
 import React from 'react';
-import { Button, Inline } from '@/shared/ui';
 import { fromUnix } from '../lib/flavour';
 import type { CronFlavour } from '../lib/parse';
 
@@ -21,9 +21,8 @@ export const Presets: React.FC<{
     {PRESETS.map((p) => (
       <Button
         key={p.label}
-        type="button"
         size="sm"
-        variant="secondary"
+        variant="soft"
         onClick={() => onPick(fromUnix(p.unix, flavour))}
       >
         {p.label}

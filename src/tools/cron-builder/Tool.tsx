@@ -1,19 +1,15 @@
-import React, { useMemo, useState } from 'react';
 import {
-  Box,
   Card,
-  CardBody,
   CopyButton,
   Grid,
   Heading,
-  Inline,
   SegmentedControl,
-  ShareButton,
-  ToolActions,
   Stack,
   Text,
-} from '@/shared/ui';
-import { CodeSurface } from '@/shared/ui/code-surface';
+  TextField,
+} from '@arshad-shah/cynosure';
+import React, { useMemo, useState } from 'react';
+import { ShareButton, ToolActions, TransformLayout } from '@/app/ui/transform';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { FieldEditor } from './components/FieldEditor';
 import { NextRuns } from './components/NextRuns';
@@ -69,6 +65,10 @@ function fieldsOf(expr: string, flavour: CronFlavour) {
   return fits ? parts.map((text, i) => ({ name: layout[i], text })) : null;
 }
 
+/**
+ * Cron Expression Builder (redesign spec, transform pattern): the
+ * expression and its fields beside what it means and when it runs next.
+ */
 const CronBuilder: React.FC = () => {
   const [settings, update] = cronSettings.useSettings();
   const { flavour, zone, count } = settings;
@@ -105,118 +105,87 @@ const CronBuilder: React.FC = () => {
     update({ flavour: to });
   };
 
+  const input = (
+    <Stack gap="6">
+      <Card as="section" title="Expression">
+        <Stack gap="5">
+          <SegmentedControl
+            label="Cron flavour"
+            size="sm"
+            value={flavour}
+            onChange={(v) => switchFlavour(v as CronFlavour)}
+            options={FLAVOURS}
+          />
+          <TextField
+            label="Cron expression"
+            labelHidden
+            size="lg"
+            value={expr}
+            onChange={setExpr}
+            spellCheck={false}
+            autoComplete="off"
+            autoCapitalize="none"
+            error={parsed.ok ? undefined : parsed.message}
+            addonEnd={
+              <CopyButton
+                size="sm"
+                value={expr.trim()}
+                labels={{ copy: 'Copy expression' }}
+              />
+            }
+          />
+          {parsed.ok ? null : (
+            <Text size="sm" tone="muted">{`Column ${parsed.column}`}</Text>
+          )}
+          {parsed.ok ? (
+            <Heading level={3} size="md" aria-live="polite">
+              {parsed.explanation}
+            </Heading>
+          ) : null}
+          <Presets flavour={flavour} onPick={setExpr} />
+        </Stack>
+      </Card>
+      <Card as="section" title="When it runs">
+        <NextRuns
+          ast={parsed.ok ? parsed.ast : null}
+          zone={zone}
+          onZone={(z) => update({ zone: z })}
+          count={count}
+          onCount={(c) => update({ count: c })}
+        />
+      </Card>
+    </Stack>
+  );
+
+  const output = (
+    <Card as="section" title="Fields">
+      {fields ? (
+        <Grid minItemWidth="18rem" gap="6">
+          {fields.map((f, i) => (
+            <FieldEditor
+              key={f.name}
+              field={f.name}
+              flavour={flavour}
+              text={f.text}
+              onText={(text) => setField(i, text)}
+            />
+          ))}
+        </Grid>
+      ) : (
+        <Text size="sm" tone="muted">
+          The field editors need an expression with the right number of fields
+          (macros such as @daily are edited as text).
+        </Text>
+      )}
+    </Card>
+  );
+
   return (
     <Stack gap="6">
       <ToolActions>
         <ShareButton share={shareState} />
       </ToolActions>
-      <Card>
-        <CardBody>
-          <Stack gap="3">
-            <Inline justify="between" align="center">
-              <Text as="span" size="sm" weight="medium">
-                Expression
-              </Text>
-              <SegmentedControl
-                label="Cron flavour"
-                size="sm"
-                value={flavour}
-                onChange={switchFlavour}
-                options={FLAVOURS}
-              />
-            </Inline>
-            <Inline gap="2" align="center" wrap={false}>
-              <Stack gap="1" className="min-w-0 flex-1">
-                <CodeSurface
-                  value={expr}
-                  onChange={setExpr}
-                  language="plain"
-                  label="Cron expression"
-                  singleLine
-                  aria-describedby="cron-status"
-                  markers={
-                    parsed.ok
-                      ? []
-                      : [
-                          {
-                            line: 1,
-                            column: parsed.column,
-                            message: parsed.message,
-                            severity: 'error',
-                          },
-                        ]
-                  }
-                />
-              </Stack>
-              <CopyButton
-                variant="text"
-                label="expression"
-                value={expr.trim()}
-              />
-            </Inline>
-            <Box id="cron-status">
-              {parsed.ok ? (
-                <Text size="md" weight="medium">
-                  {parsed.explanation}
-                </Text>
-              ) : (
-                <Stack gap="1">
-                  <Text size="sm" className="text-danger" role="alert">
-                    {parsed.message}
-                  </Text>
-                  <Text size="xs" tone="subtle">
-                    Column {parsed.column}
-                  </Text>
-                </Stack>
-              )}
-            </Box>
-            <Presets flavour={flavour} onPick={setExpr} />
-          </Stack>
-        </CardBody>
-      </Card>
-      <Card>
-        <CardBody>
-          <Stack gap="4">
-            <Heading level={2} size="sm">
-              Fields
-            </Heading>
-            {fields ? (
-              <Grid max={2} gap="6">
-                {fields.map((f, i) => (
-                  <FieldEditor
-                    key={f.name}
-                    field={f.name}
-                    flavour={flavour}
-                    text={f.text}
-                    onText={(text) => setField(i, text)}
-                  />
-                ))}
-              </Grid>
-            ) : (
-              <Text size="sm" tone="muted">
-                The field editors need an expression with the right number of
-                fields (macros such as @daily are edited as text).
-              </Text>
-            )}
-          </Stack>
-        </CardBody>
-      </Card>
-      <Card>
-        <CardBody>
-          <Stack gap="4">
-            <Heading level={2} size="sm">
-              Next runs
-            </Heading>
-            <NextRuns
-              ast={parsed.ok ? parsed.ast : null}
-              zone={zone}
-              onZone={(z) => update({ zone: z })}
-              count={count}
-              onCount={(c) => update({ count: c })}
-            />
-          </Stack>
-        </CardBody>
-      </Card>
+      <TransformLayout start={input} end={output} defaultSize={52} />
     </Stack>
   );
 };

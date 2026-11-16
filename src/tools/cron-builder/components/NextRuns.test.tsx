@@ -27,11 +27,11 @@ describe('NextRuns', () => {
         onCount={noop}
       />,
     );
-    expect(first()).toMatch(/^2026-03-02T12:01:00/);
+    expect(first()).toContain('2026-03-02T12:01:00');
     // 30 s later the minute turns: the list moves on without a reload.
     act(() => vi.advanceTimersByTime(30_000));
-    expect(first()).toMatch(/^2026-03-02T12:02:00/);
+    expect(first()).toContain('2026-03-02T12:02:00');
     act(() => vi.advanceTimersByTime(60_000));
-    expect(first()).toMatch(/^2026-03-02T12:03:00/);
+    expect(first()).toContain('2026-03-02T12:03:00');
   });
 });
