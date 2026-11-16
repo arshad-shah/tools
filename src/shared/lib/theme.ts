@@ -1,128 +1,61 @@
-import { useSyncExternalStore } from 'react';
+import { useColorMode } from '@arshad-shah/cynosure';
+import { useEffect } from 'react';
+import { THEME_KEY } from '@/theme/tools-theme';
 
 /**
- * Theme preference and the resolved data-theme (spec §4.2). The first paint
- * is resolved by public/theme-init.js with the same key and rules; this
- * module keeps it in sync afterwards.
+ * The colour mode (redesign spec, rule 4), through Cynosure's
+ * `useColorMode({ key: 'tools:theme' })`. The saved values are the same
+ * `system | light | dark` as before, so old preferences keep working.
+ * public/theme-init.js (Cynosure's themeInitScript) applies a saved mode
+ * before the first paint; `CynosureTheme target="document"` in App applies
+ * it afterwards. Every `useColorMode` with the same key follows the others.
  */
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type ResolvedTheme = 'light' | 'dark';
-export const THEME_KEY = 'tools:theme';
-
-const DARK_QUERY = '(prefers-color-scheme: dark)';
-const isPreference = (v: unknown): v is ThemePreference =>
-  v === 'system' || v === 'light' || v === 'dark';
-
-let memory: ThemePreference | null = null;
-const listeners = new Set<() => void>();
-
-const prefersDark = (): boolean =>
-  typeof window !== 'undefined' &&
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia(DARK_QUERY).matches;
-
-export function readThemePreference(): ThemePreference {
-  if (memory) return memory;
-  try {
-    const raw = localStorage.getItem(THEME_KEY);
-    if (isPreference(raw)) return raw;
-  } catch {
-    // Storage blocked: the in-memory preference (or 'system') applies.
-  }
-  return 'system';
-}
-
-export function resolveTheme(p: ThemePreference, dark: boolean): ResolvedTheme {
-  if (p === 'system') return dark ? 'dark' : 'light';
-  return p;
-}
-
-export function applyTheme(t: ResolvedTheme): void {
-  if (typeof document === 'undefined') return;
-  // color-scheme follows from tokens.css per data-theme (no inline style).
-  document.documentElement.dataset.theme = t;
-  // Cynosure components read the same resolved mode (tools#104).
-  document.documentElement.setAttribute('data-cy-mode', t);
-}
-
-function notify(): void {
-  for (const l of listeners) l();
-}
-
-/** Persists (best effort), applies and notifies subscribers. Never throws. */
-export function writeThemePreference(p: ThemePreference): void {
-  memory = p;
-  try {
-    localStorage.setItem(THEME_KEY, p);
-  } catch {
-    // Private mode or quota: keep the in-memory preference.
-  }
-  applyTheme(resolveTheme(p, prefersDark()));
-  notify();
-}
-
-let stopSync: (() => void) | null = null;
-
-/**
- * One module-level sync, independent of mounted components: follows OS
- * theme changes while the preference is 'system', and preference changes
- * made in other tabs (storage events). Idempotent; main.tsx starts it and
- * every subscriber ensures it.
- */
-export function startThemeSync(): void {
-  if (stopSync || typeof window === 'undefined') return;
-  const mq =
-    typeof window.matchMedia === 'function'
-      ? window.matchMedia(DARK_QUERY)
-      : null;
-  const onMedia = () => {
-    if (readThemePreference() === 'system')
-      applyTheme(resolveTheme('system', mq?.matches ?? false));
-    notify();
-  };
-  const onStorage = (e: StorageEvent) => {
-    if (e.key !== THEME_KEY) return;
-    memory = isPreference(e.newValue) ? e.newValue : null;
-    applyTheme(resolveTheme(readThemePreference(), prefersDark()));
-    notify();
-  };
-  mq?.addEventListener('change', onMedia);
-  window.addEventListener('storage', onStorage);
-  stopSync = () => {
-    mq?.removeEventListener('change', onMedia);
-    window.removeEventListener('storage', onStorage);
-    stopSync = null;
-  };
-}
-
-function subscribe(listener: () => void): () => void {
-  startThemeSync();
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-const snapshot = (): string => {
-  const p = readThemePreference();
-  return `${p}:${resolveTheme(p, prefersDark())}`;
-};
+export { THEME_KEY };
 
 export function useTheme(): {
   preference: ThemePreference;
   resolved: ResolvedTheme;
   setPreference(p: ThemePreference): void;
 } {
-  const snap = useSyncExternalStore(subscribe, snapshot, () => 'system:light');
-  const [preference, resolved] = snap.split(':') as [
-    ThemePreference,
-    ResolvedTheme,
-  ];
-  return { preference, resolved, setPreference: writeThemePreference };
+  const { mode, setMode, resolved } = useColorMode({ key: THEME_KEY });
+  return { preference: mode, resolved, setPreference: setMode };
 }
 
-/** Test seam: forget the in-memory preference and stop the sync. */
+/**
+ * Mounted once by App. Marks `<html data-theme>` with the resolved mode for
+ * code that reads computed colours (canvas bridges watch it), and follows
+ * a mode chosen in another tab (Cynosure's hook follows only this one).
+ */
+export function useThemeSync(): ResolvedTheme {
+  const { preference, resolved, setPreference } = useTheme();
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolved;
+  }, [resolved]);
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== THEME_KEY) return;
+      const next = e.newValue;
+      if (
+        (next === 'system' || next === 'light' || next === 'dark') &&
+        next !== preference
+      )
+        setPreference(next);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [preference, setPreference]);
+  return resolved;
+}
+
+/** Test seam: forget the saved mode. */
 export function resetThemeForTests(): void {
-  memory = null;
-  stopSync?.();
+  try {
+    localStorage.removeItem(THEME_KEY);
+  } catch {
+    // Storage blocked: nothing saved.
+  }
+  delete document.documentElement.dataset.theme;
+  document.documentElement.removeAttribute('data-cy-mode');
 }

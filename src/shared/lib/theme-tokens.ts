@@ -4,6 +4,8 @@
  * here holds a colour: every value comes from the token layer on `el`.
  */
 
+import { resolveColour } from '@/shared/ui/adapters/resolve-colour';
+
 const root = () => document.documentElement;
 
 /**
@@ -17,7 +19,8 @@ export function readThemeTokens(
   el: HTMLElement = root(),
 ): Record<string, string> {
   const cs = getComputedStyle(el);
-  const read = (prop: string) => cs.getPropertyValue(prop).trim();
+  const read = (prop: string) =>
+    resolveColour(el, cs.getPropertyValue(prop).trim());
   const out: Record<string, string> = {};
   for (const name of names) {
     out[name] = name.startsWith('--')

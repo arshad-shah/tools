@@ -14,7 +14,7 @@ describe('Cynosure theme stylesheet', () => {
     '\n',
   );
 
-  it('is what Cynosure generates for the tools accent', () => {
+  it('is what Cynosure generates for the tools theme', () => {
     expect(css).toBe(cynosureThemeCss());
     expect(css).toContain('--cy-color-accent:#3ddc97');
   });
@@ -26,6 +26,10 @@ describe('Cynosure theme stylesheet', () => {
       at("@import './cynosure-theme.css' layer(cynosure);"),
     ).toBeGreaterThan(
       at("@import '@arshad-shah/cynosure/styles.css' layer(cynosure);"),
+    );
+    // Cynosure's own font face, self-hosted by the package.
+    expect(tokens).toContain(
+      "@import '@arshad-shah/cynosure/fonts/hanken.css' layer(cynosure);",
     );
   });
 });
