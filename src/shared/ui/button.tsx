@@ -4,12 +4,13 @@ import {
   type ButtonProps as CyButtonProps,
 } from '@arshad-shah/cynosure';
 import { cn } from '@/shared/lib/cn';
-import type { IconComponent, IconSize } from './icons';
+import { facetOf, type IconComponent, type IconSize } from './icons';
 
 /*
  * Facade over Cynosure's Button (tools#104). The kit names stay; the look is
- * Cynosure's. Kit icons are React components, while Cynosure's `icon` slot
- * takes Facet icon data, so icons ride in the label until the icon swap.
+ * Cynosure's. A kit icon (`IconX` or a plain `<IconX />`) goes to Cynosure's
+ * `icon`/`iconEnd` slot as its Facet data, sized to the button; any other
+ * node (a styled icon, a spinner) rides in the label beside the text.
  */
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -109,6 +110,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const buttonRef = useCallerAria(ref, ariaDisabled, ariaBusy, loading);
+    const start = facetOf(leftIcon);
+    const end = facetOf(rightIcon);
     return (
       <CyButton
         ref={buttonRef}
@@ -118,8 +121,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         fullWidth={fullWidth ?? false}
         loading={loading ?? false}
         disabled={disabled || loading}
+        icon={start}
+        iconEnd={end}
       >
-        <WithIcons left={leftIcon} right={rightIcon}>
+        <WithIcons
+          left={start ? undefined : leftIcon}
+          right={end ? undefined : rightIcon}
+        >
           {children}
         </WithIcons>
       </CyButton>
@@ -141,7 +149,10 @@ export type IconButtonTone = 'danger' | 'warning' | 'accent';
 
 export interface IconButtonProps extends Omit<NativeButton, 'aria-label'> {
   label: string;
-  /** An icon component (sized to the button) or a rendered node. */
+  /**
+   * An icon component or a plain element of one (drawn in Cynosure's icon
+   * slot, sized to the button), or any other rendered node.
+   */
   icon: IconComponent | React.ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -161,7 +172,7 @@ function renderIcon(icon: IconComponent | React.ReactNode, size: IconSize) {
     const Icon = icon as IconComponent;
     return <Icon size={size} />;
   }
-  return icon;
+  return icon as React.ReactNode;
 }
 
 /**
@@ -195,6 +206,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   ) => {
     const look = LOOK[variant];
     const buttonRef = useCallerAria(ref, ariaDisabled, ariaBusy, loading);
+    const facet = facetOf(icon);
     return (
       <CyButton
         ref={buttonRef}
@@ -207,9 +219,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         loading={loading ?? false}
         disabled={disabled || loading}
         className={cn(showLabel && DESK_LABEL[size], className)}
+        icon={facet}
       >
         <WithIcons
-          left={renderIcon(icon, iconSizeFor[size])}
+          left={facet ? undefined : renderIcon(icon, iconSizeFor[size])}
           right={
             showLabel ? (
               <span aria-hidden className="hidden desk:inline">
