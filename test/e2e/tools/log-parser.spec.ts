@@ -14,14 +14,9 @@ const LOG = [
   '2024-01-15T08:24:10.567 [INFO] [com.example.StartupManager] Started in 3.45 seconds',
 ].join('\n');
 
-/** R41: Input and Output are tabs. */
-const show = (page: Page, name: 'Input' | 'Output') =>
-  page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
-
 async function pasteLog(page: Page) {
   await page.goto(pathOf('log-parser'));
   await page.getByRole('textbox', { name: 'Log' }).fill(LOG);
-  await show(page, 'Output');
   await expect(page.getByText('4 of 4 entries')).toBeVisible();
 }
 
@@ -55,13 +50,11 @@ test('log viewer hides a column from the Columns menu', async ({ page }) => {
   const lineCells = log.locator('[data-column="line"]');
   await expect(lineCells).toHaveCount(4);
   await page.getByRole('button', { name: 'Columns' }).click();
-  await page.getByRole('checkbox', { name: 'Line number' }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Line number' }).click();
   await expect(lineCells).toHaveCount(0);
+  await page.keyboard.press('Escape');
   await page.reload();
-  // The last pane (Output) is remembered too.
-  await show(page, 'Input');
   await page.getByRole('textbox', { name: 'Log' }).fill(LOG);
-  await show(page, 'Output');
   await expect(page.getByText('4 of 4 entries')).toBeVisible();
   // The choice is a setting: it survives a reload.
   await expect(log.locator('[data-column="level"]')).toHaveCount(4);
@@ -96,8 +89,6 @@ test('log viewer streams a large file with progress', async ({ page }) => {
     timeout: 55_000,
   });
   // The file is streamed to the worker, never read into the editor.
-  await show(page, 'Input');
-  await expect(page.getByRole('textbox', { name: 'Log' })).not.toContainText(
-    'worker-0',
-  );
+  await expect(page.getByText(/^large\.log, /)).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Log' })).toHaveCount(0);
 });

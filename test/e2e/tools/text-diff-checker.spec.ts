@@ -6,13 +6,9 @@ import { pathOf } from '../tool-routes';
 const lines = (n: number, f: (i: number) => string = (i) => `line ${i}`) =>
   Array.from({ length: n }, (_, i) => f(i + 1)).join('\n');
 
-/** R41: the two inputs are tabs; shows the side's tab first. */
+/** Both sides are side by side (stacked on phones): scroll to the side. */
 async function show(page: Page, side: 'Original text' | 'Changed text') {
-  await page
-    .getByRole('tab', {
-      name: side === 'Original text' ? /^Original/ : /^Changed/,
-    })
-    .click();
+  await page.getByRole('textbox', { name: side }).scrollIntoViewIfNeeded();
 }
 
 async function fill(
@@ -86,8 +82,8 @@ test('text-diff-checker shows a JSON semantic table', async ({ page }) => {
   await fill(page, 'Changed text', '{"a":1,"b":{"c":3},"d":4}');
   await page.getByRole('radio', { name: 'JSON' }).click();
   const table = page.getByRole('table', { name: 'JSON differences' });
-  await expect(table.getByRole('cell', { name: '$.b.c' })).toBeVisible();
-  await expect(table.getByRole('cell', { name: '$.d' })).toBeVisible();
+  await expect(table.getByText('$.b.c', { exact: true })).toBeVisible();
+  await expect(table.getByText('$.d', { exact: true })).toBeVisible();
 });
 
 test('text-diff-checker merges a change from the right and downloads it', async ({
@@ -101,15 +97,12 @@ test('text-diff-checker merges a change from the right and downloads it', async 
   await page
     .getByRole('radiogroup', { name: 'Change 1 source' })
     .getByRole('radio', { name: 'Take right' })
-    .click();
-  await expect(
-    page.getByRole('textbox', { name: 'Merged result' }),
-  ).toHaveValue('a\nB\nc\nd');
+    .check();
+  await expect(page.locator('pre', { hasText: 'B' })).toHaveText(
+    /a\s*B\s*c\s*d/,
+  );
   const download = page.waitForEvent('download');
-  await page
-    .getByRole('group', { name: 'Merged result panel' })
-    .getByRole('button', { name: /Download/ })
-    .click();
+  await page.getByRole('button', { name: 'Download merged.txt' }).click();
   const file = await (await download).path();
   expect(await readFile(file!, 'utf8')).toBe('a\nB\nc\nd');
 });

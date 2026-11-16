@@ -1,12 +1,4 @@
-import { useClipboard } from '@/shared/lib/clipboard';
-import {
-  IconBraces,
-  IconCheck,
-  IconCode,
-  IconCopy,
-  IconFileJson,
-} from '@/shared/ui/icons';
-import { Code, EmptyState, IconButton, Inline, Tooltip } from '@/shared/ui';
+import { CopyButton, Inline, Text } from '@arshad-shah/cynosure';
 import type { DocNode } from '../lib/doc-model';
 import { isXmlPath, toDisplayPath, toJsAccessor } from '../lib/paths';
 import { nodeValueText, subtreeJson } from '../lib/subtree';
@@ -19,16 +11,18 @@ export interface PathBarProps {
 
 /** The selection's JSONPath or XPath, with copy actions (spec §7.1). */
 export function PathBar({ node, value, xml }: PathBarProps) {
-  const { copy, copiedKey } = useClipboard();
   if (!node)
-    return <EmptyState size="sm" description="Select a node to see its path" />;
+    return (
+      <Text size="sm" tone="muted">
+        Select a node to see its path
+      </Text>
+    );
   const xmlDoc = isXmlPath(node.path);
   const path = toDisplayPath(node.path);
   const actions = [
     {
       key: 'path',
       label: xmlDoc ? 'Copy XPath' : 'Copy JSONPath',
-      icon: IconCopy,
       text: () => path,
     },
     ...(xmlDoc
@@ -37,46 +31,34 @@ export function PathBar({ node, value, xml }: PathBarProps) {
           {
             key: 'accessor',
             label: 'Copy JS accessor',
-            icon: IconCode,
             text: () => toJsAccessor(node.path),
           },
         ]),
     {
       key: 'value',
       label: 'Copy value',
-      icon: IconBraces,
       text: () => nodeValueText(node, value, xml),
     },
     {
       key: 'subtree',
       label: 'Copy subtree as JSON',
-      icon: IconFileJson,
       text: () => subtreeJson(node, value, xml),
     },
   ];
   return (
-    <Inline
-      gap="2"
-      className="min-w-0 rounded-md border border-line bg-surface-2 px-2 py-1"
-    >
-      <Code
-        className="min-w-0 flex-1 truncate bg-transparent"
-        aria-label="Selected path"
-        title={path}
-      >
-        {path}
-      </Code>
-      <Inline gap="1">
+    <Inline gap="2" align="center" wrap={false}>
+      <Text variant="code" size="sm" truncate>
+        <span aria-label="Selected path">{path}</span>
+      </Text>
+      <Inline gap="1" wrap={false}>
         {actions.map((a) => (
-          <Tooltip key={a.key} content={a.label}>
-            <IconButton
-              label={a.label}
-              icon={copiedKey === a.key ? IconCheck : a.icon}
-              size="sm"
-              variant="ghost"
-              onClick={() => void copy(a.text(), a.key)}
-            />
-          </Tooltip>
+          <CopyButton
+            key={a.key}
+            size="sm"
+            variant="ghost"
+            value={a.text}
+            labels={{ copy: a.label, copied: 'Copied' }}
+          />
         ))}
       </Inline>
     </Inline>

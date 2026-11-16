@@ -1,28 +1,30 @@
-import React, { useMemo, useRef, useState } from 'react';
 import {
-  IconArrowRightLeft,
-  IconChevronDown,
-  IconChevronUp,
-} from '@/shared/ui/icons';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-  ErrorState,
+  Button,
+  Card,
+  Disclosure,
+  FileDrop,
+  Grid,
+  IconButton,
   Inline,
   Kbd,
-  PaneTabs,
+  Notice,
   SegmentedControl,
-  ShareButton,
-  IconButton,
-  ToolActions,
-  ControlBar,
   Stack,
+  StatusBar,
+  StatusBarSegment,
   Text,
-  TextInputPanel,
-  usePaneTab,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  chevronDown,
+  chevronUp,
+  share as shareIcon,
+  sparkles,
+  swap as swapIcon,
+} from '@arshad-shah/cynosure/icons';
+import { useMemo, useRef, useState } from 'react';
+import { readText } from '@/shared/lib/files';
+import { formatBytes } from '@/shared/lib/format';
+import { CodeSurface } from '@/shared/ui';
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -53,7 +55,12 @@ const SAMPLE = {
 
 const isDiffHandoff = (p: HandoffPayload) => readDiffHandoff(p) !== null;
 
-const TextDiff: React.FC = () => {
+/**
+ * Text Diff (redesign spec, transform tool pattern): the two texts side by
+ * side, the comparison options, then the differences with navigation,
+ * merging and export.
+ */
+export default function TextDiff() {
   const [settings, update] = diffSettings.useSettings();
   const [left, setLeft] = useState('');
   const [right, setRight] = useState('');
@@ -61,8 +68,7 @@ const TextDiff: React.FC = () => {
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
   const [current, setCurrent] = useState(0);
   const view = useRef<DiffViewHandle>(null);
-  // R41: the inputs are tabs; the diff result below is not.
-  const tab = usePaneTab('text-diff-checker', 'left');
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const share = useShareableState<DiffShare>({
     toolId: 'text-diff-checker',
@@ -221,50 +227,98 @@ const TextDiff: React.FC = () => {
     },
   ]);
 
-  const side = (which: 'left' | 'right') => (
-    <TextInputPanel
-      label={which === 'left' ? 'Original text' : 'Changed text'}
-      value={which === 'left' ? left : right}
-      onChange={which === 'left' ? setLeft : setRight}
-      language={
-        settings.syntaxHighlighting
-          ? detectLanguage(which === 'left' ? left : right, names[which])
-          : 'plain'
-      }
-      accept={TEXT_ACCEPT}
-      maxBytes={MAX_BYTES}
-      samples={[{ label: 'Sample', value: SAMPLE[which] }]}
-      onFile={(f) => {
-        setNames((n) => ({ ...n, [which]: f.name }));
-        return false;
-      }}
-      maxHeight={280}
-    />
-  );
+  const open = (which: 'left' | 'right', file: File) => {
+    setFileError(null);
+    if (file.size > MAX_BYTES) {
+      setFileError(`${file.name} is larger than ${formatBytes(MAX_BYTES)}`);
+      return;
+    }
+    void readText(file).then(
+      (text) => {
+        if (which === 'left') setLeft(text);
+        else setRight(text);
+        setNames((n) => ({ ...n, [which]: file.name }));
+      },
+      () => setFileError(`${file.name} could not be read as text`),
+    );
+  };
+
+  const side = (which: 'left' | 'right') => {
+    const value = which === 'left' ? left : right;
+    const label = which === 'left' ? 'Original text' : 'Changed text';
+    return (
+      <Card
+        as="section"
+        title={which === 'left' ? 'Original' : 'Changed'}
+        description={
+          names[which] === (which === 'left' ? 'original' : 'changed')
+            ? undefined
+            : names[which]
+        }
+        headingLevel={2}
+        padding="sm"
+        actions={
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={sparkles}
+            onClick={() =>
+              (which === 'left' ? setLeft : setRight)(SAMPLE[which])
+            }
+          >
+            Sample
+          </Button>
+        }
+      >
+        <Stack gap="3">
+          <CodeSurface
+            value={value}
+            onChange={which === 'left' ? setLeft : setRight}
+            language={
+              settings.syntaxHighlighting
+                ? detectLanguage(value, names[which])
+                : 'plain'
+            }
+            label={label}
+            placeholder="Paste or type text"
+            minHeight={160}
+            maxHeight={280}
+          />
+          {value === '' ? (
+            <FileDrop
+              size="sm"
+              accept={TEXT_ACCEPT}
+              labels={{
+                prompt: 'Drop a text file here, or',
+                chooseOne: 'Open a file',
+              }}
+              onFiles={(files) => files[0] && open(which, files[0])}
+            />
+          ) : null}
+        </Stack>
+      </Card>
+    );
+  };
 
   const stats = job.result?.stats;
   return (
-    <Stack gap="4">
-      <ToolActions>
-        <IconButton
-          variant="ghost"
-          size="sm"
-          label="Swap"
-          showLabel="desktop"
-          icon={IconArrowRightLeft}
-          onClick={swap}
-          disabled={!left && !right}
-        />
-        <ExportMenu result={job.result} texts={texts} names={names} />
-        <ShareButton share={share} />
-      </ToolActions>
-      <ControlBar
-        start={
-          <SegmentedControl<DiffMode>
+    <Stack gap="6">
+      <Grid columns={{ base: 1, lg: 2 }} gap="5">
+        {side('left')}
+        {side('right')}
+      </Grid>
+      {fileError ? (
+        <Notice tone="danger" dismissible onDismiss={() => setFileError(null)}>
+          {fileError}
+        </Notice>
+      ) : null}
+      <Inline gap="3" align="center" justify="between" wrap>
+        <Inline gap="3" align="center" wrap>
+          <SegmentedControl
             label="Comparison"
             size="sm"
             value={settings.mode}
-            onChange={(mode) => update({ mode })}
+            onChange={(mode) => update({ mode: mode as DiffMode })}
             options={[
               { value: 'text', label: 'Text' },
               { value: 'json', label: 'JSON' },
@@ -272,102 +326,104 @@ const TextDiff: React.FC = () => {
               { value: 'ignore-order', label: 'Ignore order' },
             ]}
           />
-        }
-        end={
-          textMode ? <DiffOptions settings={settings} update={update} /> : null
-        }
-      />
-      <PaneTabs
-        id="text-diff-checker"
-        label="Texts to compare"
-        value={tab.value}
-        onValueChange={tab.show}
-        panes={[
-          {
-            id: 'left',
-            label: 'Original',
-            content: side('left'),
-            changeKey: left,
-          },
-          {
-            id: 'right',
-            label: 'Changed',
-            content: side('right'),
-            changeKey: right,
-          },
-        ]}
-      />
+          {textMode ? (
+            <DiffOptions settings={settings} update={update} />
+          ) : null}
+        </Inline>
+        <Inline gap="2" wrap>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={swapIcon}
+            onClick={swap}
+            disabled={!left && !right}
+          >
+            Swap
+          </Button>
+          <ExportMenu result={job.result} texts={texts} names={names} />
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={shareIcon}
+            disabled={!share.canShare}
+            onClick={() => void share.share().catch(() => {})}
+          >
+            Share
+          </Button>
+        </Inline>
+      </Inline>
       {textMode ? (
         <>
-          {job.error && (
-            <ErrorState error={job.error} title="Could not compare" />
-          )}
-          {vm && job.result && stats && (
-            <Stack gap="3" aria-busy={job.pending}>
-              <Inline gap="3" wrap justify="between">
-                <Text size="sm" aria-live="polite">
-                  {isIdentical(job.result)
-                    ? 'No differences'
-                    : `${stats.added} added, ${stats.removed} removed, ${stats.changed} changed`}
-                  {job.pending ? ' (updating)' : ''}
-                </Text>
-                <Inline gap="1" align="center" wrap={false}>
-                  <IconButton
-                    size="sm"
-                    variant="secondary"
-                    label="Previous change"
-                    icon={IconChevronUp}
-                    onClick={() => go('prev')}
-                    disabled={anchors.length === 0}
-                  />
-                  <Text
-                    size="sm"
-                    tone="muted"
-                    aria-live="polite"
-                    className="min-w-16 text-center tabular-nums"
-                  >
-                    {anchors.length === 0
-                      ? 'No changes'
-                      : `${position + 1 || '-'} of ${anchors.length}`}
-                  </Text>
-                  <IconButton
-                    size="sm"
-                    variant="secondary"
-                    label="Next change"
-                    icon={IconChevronDown}
-                    onClick={() => go('next')}
-                    disabled={anchors.length === 0}
-                  />
-                </Inline>
-              </Inline>
-              <ChangeStrip
-                anchors={anchors}
-                rows={vm.left.lines.length}
-                onJump={jump}
-              />
-              <DiffView
-                ref={view}
-                vm={vm}
-                language={language}
-                names={names}
-                wrap={false}
-                onUnfold={(i) => setExpanded((prev) => new Set(prev).add(i))}
-              />
-              {!isIdentical(job.result) && (
-                <Accordion>
-                  <AccordionItem value="merge">
-                    <AccordionTrigger>Merge changes</AccordionTrigger>
-                    <AccordionContent>
-                      <MergePanel result={job.result} texts={texts} />
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              )}
-            </Stack>
-          )}
+          {job.error ? (
+            <Notice tone="danger" title="Could not compare">
+              {job.error.message}
+            </Notice>
+          ) : null}
+          {vm && job.result && stats ? (
+            <Card as="section" title="Differences" headingLevel={2}>
+              <Stack gap="4" aria-busy={job.pending}>
+                <StatusBar
+                  label="Comparison"
+                  start={
+                    <StatusBarSegment
+                      tone={isIdentical(job.result) ? 'success' : 'neutral'}
+                    >
+                      {isIdentical(job.result)
+                        ? 'No differences'
+                        : `${stats.added} added, ${stats.removed} removed, ${stats.changed} changed`}
+                      {job.pending ? ' (updating)' : ''}
+                    </StatusBarSegment>
+                  }
+                  end={
+                    <Inline gap="1" align="center">
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        label="Previous change"
+                        icon={chevronUp}
+                        onClick={() => go('prev')}
+                        disabled={anchors.length === 0}
+                      />
+                      <StatusBarSegment>
+                        {anchors.length === 0
+                          ? 'No changes'
+                          : `${position + 1 || '-'} of ${anchors.length}`}
+                      </StatusBarSegment>
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        label="Next change"
+                        icon={chevronDown}
+                        onClick={() => go('next')}
+                        disabled={anchors.length === 0}
+                      />
+                    </Inline>
+                  }
+                />
+                <ChangeStrip
+                  anchors={anchors}
+                  rows={vm.left.lines.length}
+                  onJump={jump}
+                />
+                <DiffView
+                  ref={view}
+                  vm={vm}
+                  language={language}
+                  names={names}
+                  wrap={false}
+                  onUnfold={(i) => setExpanded((prev) => new Set(prev).add(i))}
+                />
+                {!isIdentical(job.result) ? (
+                  <Disclosure summary="Merge changes" variant="line">
+                    <MergePanel result={job.result} texts={texts} />
+                  </Disclosure>
+                ) : null}
+              </Stack>
+            </Card>
+          ) : null}
         </>
       ) : null}
-      {settings.mode !== 'text' && (
+      {settings.mode !== 'text' ? (
         <SemanticView
           mode={settings.mode}
           left={left}
@@ -375,12 +431,20 @@ const TextDiff: React.FC = () => {
           sortKeys={settings.sortKeys}
           onSortKeys={(sortKeys) => update({ sortKeys })}
         />
-      )}
-      <Text size="sm" tone="muted">
-        Press <Kbd keys="n" /> and <Kbd keys="p" /> to move between changes.
-      </Text>
+      ) : null}
+      <Inline gap="2" align="center" wrap>
+        <Text size="sm" tone="muted">
+          Press
+        </Text>
+        <Kbd keys="n" size="sm" />
+        <Text size="sm" tone="muted">
+          and
+        </Text>
+        <Kbd keys="p" size="sm" />
+        <Text size="sm" tone="muted">
+          to move between changes.
+        </Text>
+      </Inline>
     </Stack>
   );
-};
-
-export default TextDiff;
+}

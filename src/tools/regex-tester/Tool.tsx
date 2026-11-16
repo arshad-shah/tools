@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { sendTo } from '@/shared/lib/handoff';
@@ -12,17 +6,13 @@ import { notify } from '@/shared/lib/notify';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import {
+  Card,
   Grid,
-  PaneTabs,
+  GridItem,
+  SegmentedControl,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  TextInputPanel,
-  usePaneTab,
-  type CodeTreeHandle,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { CodeSurface } from '@/shared/ui';
 import { CheatSheet } from './components/CheatSheet';
 import { CodeExport } from './components/CodeExport';
 import { ExplainPanel } from './components/ExplainPanel';
@@ -56,7 +46,12 @@ import type { RegexTemplate } from './types';
 const isMode = (v: string): v is RegexMode =>
   (REGEX_MODES as readonly string[]).includes(v);
 
-const RegexTester: React.FC = () => {
+/**
+ * Regex Tester (redesign spec, transform tool pattern): the pattern, then
+ * the test text beside the results (match, replace, split, tests), then
+ * what the pattern means and the code for it.
+ */
+export default function RegexTester() {
   const [{ flags, mode, cheatSheetOpen }, updateSettings] =
     regexSettings.useSettings();
   const [pattern, setPattern] = useState('');
@@ -71,9 +66,6 @@ const RegexTester: React.FC = () => {
   const runner = useRegexRunner();
   const navigate = useNavigate();
   const { copy } = useClipboard();
-  // R41: the test text and the results are tabs, one at a time.
-  const pane = usePaneTab('regex-tester', 'text');
-  const treeRef = useRef<CodeTreeHandle>(null);
 
   const cases = useMemo(
     () => casesFromLines(shouldMatch, shouldNotMatch),
@@ -143,7 +135,6 @@ const RegexTester: React.FC = () => {
     setFlagsTo(t.flags);
     setText(t.samples.join('\n'));
     setTemplate(t.name);
-    pane.show('results');
   };
   const loadSample = () => setText(sampleTextFor(template));
   const clearAll = () => {
@@ -166,22 +157,26 @@ const RegexTester: React.FC = () => {
     canShare: share.canShare,
     clear: clearAll,
     loadSample,
-    focusExplain: () => treeRef.current?.focusId('r'),
+    focusExplain: () =>
+      document
+        .querySelector<HTMLElement>(
+          '[aria-label="Pattern explanation"] [role="treeitem"]',
+        )
+        ?.focus(),
   });
   useSendCommands('regex-tester', [
     { target: 'log-parser', run: sendLogFormat, enabled: logPayload !== null },
   ]);
 
   const results = (
-    <Tabs value={mode} onValueChange={(v) => isMode(v) && setMode(v)}>
-      <TabsList aria-label="Mode">
-        {REGEX_MODES.map((m) => (
-          <TabsTrigger key={m} value={m}>
-            {MODE_LABEL[m]}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      <TabsContent value="match" className="pt-4">
+    <Stack gap="5">
+      <SegmentedControl
+        label="Mode"
+        value={mode}
+        onChange={(v) => isMode(v) && setMode(v)}
+        options={REGEX_MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }))}
+      />
+      {mode === 'match' ? (
         <MatchTab
           text={text}
           matches={matchJob.matches}
@@ -191,8 +186,8 @@ const RegexTester: React.FC = () => {
           onRetry={matchJob.retry}
           group={selected?.groupIndex ?? null}
         />
-      </TabsContent>
-      <TabsContent value="replace" className="pt-4">
+      ) : null}
+      {mode === 'replace' ? (
         <ReplaceTab
           runner={runner}
           pattern={pattern}
@@ -202,8 +197,8 @@ const RegexTester: React.FC = () => {
           replacement={replacement}
           onReplacementChange={setReplacement}
         />
-      </TabsContent>
-      <TabsContent value="split" className="pt-4">
+      ) : null}
+      {mode === 'split' ? (
         <SplitTab
           runner={runner}
           pattern={pattern}
@@ -211,8 +206,8 @@ const RegexTester: React.FC = () => {
           text={text}
           valid={valid}
         />
-      </TabsContent>
-      <TabsContent value="tests" className="pt-4">
+      ) : null}
+      {mode === 'tests' ? (
         <TestsTab
           runner={runner}
           pattern={pattern}
@@ -224,12 +219,12 @@ const RegexTester: React.FC = () => {
           onShouldNotMatchChange={setShouldNotMatch}
           cases={cases}
         />
-      </TabsContent>
-    </Tabs>
+      ) : null}
+    </Stack>
   );
 
   return (
-    <Stack gap="4">
+    <Stack gap="6">
       <RegexToolbar
         share={share}
         onOpenTemplates={() => setTemplatesOpen(true)}
@@ -255,50 +250,36 @@ const RegexTester: React.FC = () => {
         highlight={selected}
         literal={toRegexLiteral(pattern, flags)}
       />
-      <PaneTabs
-        id="regex-tester"
-        label="Regex panes"
-        value={pane.value}
-        onValueChange={pane.show}
-        panes={[
-          {
-            id: 'text',
-            label: 'Test text',
-            content: (
-              <TextInputPanel
-                value={text}
-                onChange={setText}
-                language="plain"
-                label="Test string"
-                placeholder="Enter text to test the pattern against"
-                minHeight={120}
-                maxHeight={320}
-              />
-            ),
-          },
-          {
-            id: 'results',
-            label: 'Results',
-            changeKey: `${matchJob.matches.length}:${pattern}:${flags}:${text}`,
-            content: results,
-          },
-        ]}
-      />
-      <Grid max={2} gap="4">
+      <Grid columns={{ base: 1, lg: 2 }} gap="6" align="start">
+        <Card as="section" title="Test text" headingLevel={2}>
+          <CodeSurface
+            value={text}
+            onChange={setText}
+            language="plain"
+            label="Test string"
+            placeholder="Enter text to test the pattern against"
+            minHeight={160}
+            maxHeight={420}
+          />
+        </Card>
+        <Card as="section" title="Results" headingLevel={2}>
+          {results}
+        </Card>
         <ExplainPanel
           tree={tree}
           selectedId={selectedId}
           onSelect={(id) => setSelection({ pattern, id: id ?? '' })}
-          treeRef={treeRef}
         />
-        <CodeExport
-          pattern={pattern}
-          flags={flags}
-          text={text}
-          valid={valid}
-          language={snippetLang}
-          onLanguageChange={setSnippetLang}
-        />
+        <GridItem>
+          <CodeExport
+            pattern={pattern}
+            flags={flags}
+            text={text}
+            valid={valid}
+            language={snippetLang}
+            onLanguageChange={setSnippetLang}
+          />
+        </GridItem>
       </Grid>
       <TemplateDialog
         open={templatesOpen}
@@ -311,6 +292,4 @@ const RegexTester: React.FC = () => {
       />
     </Stack>
   );
-};
-
-export default RegexTester;
+}

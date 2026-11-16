@@ -26,27 +26,32 @@ const BOOKSTORE = JSON.stringify(
 const editor = (page: Page) => page.getByRole('textbox', { name: 'Document' });
 const tree = (page: Page) => page.getByRole('tree', { name: 'Document tree' });
 
-/** One pane at a time (ruling R41): Source, Tree, Map, Query, Convert. */
+/** The view beside the Source (one pane at a time on narrow screens). */
 const show = (page: Page, name: string) =>
-  page.getByRole('tab', { name, exact: true }).click();
+  page
+    .getByRole('radiogroup', { name: 'View' })
+    .getByRole('radio', { name, exact: true })
+    .check();
 
 async function open(page: Page, text: string) {
   await page.goto(pathOf('json-and-xml-viewer'));
   await editor(page).fill(text);
 }
 
-test('the panes are tabs, Source first, and a view before a document points back', async ({
+test('the Source sits beside the views; narrow, one pane shows at a time', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(pathOf('json-and-xml-viewer'));
-  await expect(page.getByRole('tab')).toHaveText([
-    'Source',
-    'Tree',
-    'Map',
-    'Query',
-    'Convert',
-  ]);
+  const views = page.getByRole('radiogroup', { name: 'View' });
+  await expect(views.getByRole('radio')).toHaveCount(4);
+  await expect(editor(page)).toBeVisible();
+  await expect(page.getByText('No document yet')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(views.getByRole('radio')).toHaveCount(5);
   await show(page, 'Map');
+  await expect(editor(page)).toBeHidden();
   await page.getByRole('button', { name: 'Go to Source' }).click();
   await expect(editor(page)).toBeVisible();
 });
@@ -104,7 +109,7 @@ test('the Map shows the selection and ] moves to a child', async ({ page }) => {
   await tree(page)
     .getByRole('treeitem', { name: /Sword of Honour/ })
     .click();
-  await page.getByRole('tab', { name: 'Map' }).click();
+  await show(page, 'Map');
   const canvas = page.getByTestId('diagram-canvas');
   await expect(canvas).toBeVisible();
   await canvas.focus();
@@ -120,20 +125,20 @@ test('a JSONPath query lists results and a click selects in the Tree', async ({
   page,
 }) => {
   await open(page, BOOKSTORE);
-  await page.getByRole('tab', { name: 'Query' }).click();
+  await show(page, 'Query');
   const q = page.getByRole('textbox', { name: 'JSONPath query' });
   await q.fill('$..price');
   await q.press('Enter');
   await expect(page.getByText('5 results')).toBeVisible();
   await page
-    .getByRole('list', { name: 'Query results' })
-    .getByRole('button')
+    .getByRole('listbox', { name: 'Query results' })
+    .getByRole('option')
     .nth(2)
     .click();
   await expect(page.getByLabel('Selected path')).toHaveText(
     '$.store.book[2].price',
   );
-  await page.getByRole('tab', { name: 'Tree' }).click();
+  await show(page, 'Tree');
   await expect(
     tree(page).getByRole('treeitem', { selected: true }),
   ).toContainText('8.99');
@@ -143,16 +148,15 @@ test('Convert to YAML downloads text that parses back equal', async ({
   page,
 }) => {
   await open(page, BOOKSTORE);
-  await page.getByRole('tab', { name: 'Convert' }).click();
-  await page
-    .getByRole('radiogroup', { name: 'Convert to' })
-    .getByRole('radio', { name: 'YAML' })
-    .click();
-  const out = page.getByRole('group', { name: 'YAML output' });
-  await expect(out.getByRole('textbox')).toContainText('store:');
+  await show(page, 'Convert');
+  await page.getByRole('combobox', { name: 'Convert to' }).click();
+  await page.getByRole('option', { name: 'YAML', exact: true }).click();
+  await expect(
+    page.getByRole('textbox', { name: 'YAML output' }),
+  ).toContainText('store:');
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    out.getByRole('button', { name: 'Download' }).click(),
+    page.getByRole('button', { name: 'Download YAML' }).click(),
   ]);
   expect(download.suggestedFilename()).toBe('data.yaml');
   const yaml = readFileSync(await download.path(), 'utf8');
@@ -167,15 +171,14 @@ test('XML: XPath returns attribute rows and Format keeps the comment', async ({
   await page.getByRole('menuitem', { name: 'XML catalogue' }).click();
   await show(page, 'Tree');
   await expect(tree(page)).toBeVisible();
-  await page.getByRole('tab', { name: 'Query' }).click();
+  await show(page, 'Query');
   const q = page.getByRole('textbox', { name: 'XPath query' });
   await q.fill('//book/@id');
   await q.press('Enter');
   await expect(page.getByText('3 results')).toBeVisible();
-  await expect(page.getByRole('list', { name: 'Query results' })).toContainText(
-    '/catalog/book[1]/@id',
-  );
-  await show(page, 'Source');
+  await expect(
+    page.getByRole('listbox', { name: 'Query results' }),
+  ).toContainText('/catalog/book[1]/@id');
   await editor(page).fill('<r><!-- keep me --><a>1</a></r>');
   await editor(page).press('ControlOrMeta+Shift+F');
   await expect(editor(page)).toHaveValue(

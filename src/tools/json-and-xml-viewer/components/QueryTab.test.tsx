@@ -26,7 +26,7 @@ describe('QueryTab', () => {
     fireEvent.change(input, { target: { value: '$.book[*].a' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(await screen.findByText('4 results')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /\$\.book\[2\]\.a/ }));
+    fireEvent.click(screen.getByRole('option', { name: /\$\.book\[2\]\.a/ }));
     expect(onSelect).toHaveBeenCalledWith('$.book[2].a');
   });
 
