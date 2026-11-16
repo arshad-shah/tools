@@ -95,4 +95,23 @@ test.describe('Calculator & Grapher', () => {
     await expect(line(other, 2)).toHaveValue('w ^ 2');
     await expect(result(other, 2)).toHaveText('16');
   });
+
+  test('the keypad types, = records and history puts a result back', async ({
+    page,
+  }) => {
+    await open(page);
+    const keypad = page.getByRole('group', { name: 'Keypad' });
+    await keypad.getByRole('button', { name: '7', exact: true }).click();
+    await keypad.getByRole('button', { name: 'Multiply' }).click();
+    await keypad.getByRole('button', { name: '6', exact: true }).click();
+    await expect(line(page, 1)).toHaveValue('7*6');
+    await keypad.getByRole('button', { name: 'Equals' }).click();
+    await expect(result(page, 1)).toHaveText('42');
+    const history = page.getByRole('region', { name: 'History' });
+    await history.getByRole('button', { name: 'Use 42' }).click();
+    await expect(line(page, 2)).toHaveValue('42');
+    await history.getByRole('button', { name: 'Add to favourites' }).click();
+    await page.getByRole('radio', { name: 'Favourites' }).click();
+    await expect(history.getByText('= 42')).toBeVisible();
+  });
 });

@@ -40,8 +40,14 @@ async function loadFile() {
   return { ...view, rive };
 }
 
+// The settings card's sections are a SegmentedControl (radios).
 const openTab = (name: string) =>
-  fireEvent.click(screen.getByRole('tab', { name }));
+  fireEvent.click(
+    within(screen.getByRole('radiogroup', { name: 'Settings' })).getByRole(
+      'radio',
+      { name },
+    ),
+  );
 
 beforeEach(() => {
   FakeRive.instances.length = 0;
@@ -81,15 +87,18 @@ describe('RiveAnimationPlayer timeline', () => {
 
   it('scrubs a linear animation from the slider', async () => {
     const { rive } = await loadFile();
-    fireEvent.change(screen.getByRole('slider', { name: 'Scrub' }), {
-      target: { value: '1' },
+    // The scrubber is a keyboard slider: End goes to the last frame.
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Scrub' }), {
+      key: 'End',
     });
-    expect(rive.scrub).toHaveBeenLastCalledWith('idle', 1);
+    const [name, at] = rive.scrub.mock.lastCall as [string, number];
+    expect(name).toBe('idle');
+    expect(at).toBeCloseTo(2, 3);
   });
 
   it('hides the scrubber for state machines', async () => {
     await loadFile();
-    fireEvent.click(screen.getByRole('tab', { name: 'State machines' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'State machines' }));
     expect(screen.queryByRole('slider', { name: 'Scrub' })).toBeNull();
     expect(screen.getByText(/Scrubbing and frame stepping work/)).toBeTruthy();
   });
@@ -127,12 +136,13 @@ describe('RiveAnimationPlayer panels', () => {
     const table = screen.getByRole('table', { name: 'Artboards' });
     const rows = within(table).getAllByRole('row').slice(1);
     expect(
-      rows.map((r) => within(r).getAllByRole('cell')[0].textContent),
-    ).toEqual(['Main Active', 'Alt', 'Icon']);
+      rows.map((r) => within(r).getByRole('rowheader').textContent),
+    ).toEqual(['MainActive', 'Alt', 'Icon']);
     expect(within(rows[2]).getByText('64 by 64')).toBeTruthy();
+    expect(screen.getByText('Format version')).toBeTruthy();
     expect(
-      screen.getByText('Format version: Not stored in this file'),
-    ).toBeTruthy();
+      screen.getAllByText('Not stored in this file').length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText(/Unknown/)).toBeNull();
   });
 
@@ -144,12 +154,11 @@ describe('RiveAnimationPlayer panels', () => {
     });
     await loadFile();
     openTab('Export');
-    // A read-only text panel: its toolbar holds Copy (and Download).
-    const panel = screen.getByRole('group', { name: 'Embed snippet panel' });
-    expect(
-      within(panel).getByRole('button', { name: 'Download' }),
-    ).toBeTruthy();
-    fireEvent.click(within(panel).getByRole('button', { name: 'Copy' }));
+    // A code block: its header holds Copy and Download.
+    expect(screen.getByRole('button', { name: 'Download' })).toBeTruthy();
+    const copy = () =>
+      fireEvent.click(screen.getByRole('button', { name: /^Cop(y|ied)/ }));
+    copy();
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const code = (writeText.mock.calls[0] as unknown as [string])[0];
     expect(code).toContain(
@@ -157,29 +166,34 @@ describe('RiveAnimationPlayer panels', () => {
     );
 
     fireEvent.click(screen.getByRole('radio', { name: 'Web' }));
-    fireEvent.click(within(panel).getByRole('button', { name: 'Copy' }));
+    copy();
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
     expect((writeText.mock.calls[1] as unknown as [string])[0]).toContain(
       "import { Rive } from '@rive-app/canvas';",
     );
   });
 
-  it('draws selections as pressed buttons, never primary', async () => {
+  it('picks a background preset and an alignment, shown as chosen', async () => {
     await loadFile();
     openTab('Stage');
-    const white = screen.getByRole('button', { name: 'White' });
-    fireEvent.click(white);
+    const presets = screen.getByRole('radiogroup', {
+      name: 'Background presets',
+    });
+    fireEvent.click(within(presets).getByRole('radio', { name: 'White' }));
     expect(
-      screen
-        .getByRole('button', { name: 'White' })
-        .getAttribute('aria-pressed'),
+      localStorage.getItem('kit:store:tool:rive-animation-player'),
+    ).toContain('"background":"white"');
+    expect(
+      within(presets)
+        .getByRole('radio', { name: 'White' })
+        .getAttribute('aria-checked'),
     ).toBe('true');
-    expect(screen.getByRole('button', { name: 'White' }).className).not.toMatch(
-      /bg-accent\b/,
-    );
     const center = screen.getByRole('button', { name: 'Center' });
     expect(center.getAttribute('aria-pressed')).toBe('true');
-    expect(center.className).not.toMatch(/bg-accent\b/);
+    const topLeft = screen.getByRole('button', { name: 'TopLeft' });
+    fireEvent.click(topLeft);
+    expect(topLeft.getAttribute('aria-pressed')).toBe('true');
+    expect(center.getAttribute('aria-pressed')).toBe('false');
   });
 
   it('says so when the file has no data bindings', async () => {

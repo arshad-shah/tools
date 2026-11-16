@@ -66,40 +66,40 @@ describe('Shell', () => {
     expect(editor().selectionStart).toBe('{\n  "a": 1,\n'.length);
   });
 
-  it('shows Source, Tree, Map, Query and Convert as tabs, Source first', async () => {
+  const views = () =>
+    screen
+      .getByRole('radiogroup', { name: 'View' })
+      .querySelectorAll<HTMLInputElement>('input[type="radio"]');
+  const checked = (name: string) =>
+    (screen.getByRole('radio', { name }) as HTMLInputElement).checked;
+
+  it('shows Source, Tree, Map, Query and Convert as views, Source first', async () => {
     mount();
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
-      'Source',
-      'Tree',
-      'Map',
-      'Query',
-      'Convert',
+    expect([...views()].map((r) => r.value)).toEqual([
+      'source',
+      'tree',
+      'map',
+      'query',
+      'convert',
     ]);
-    expect(
-      screen.getByRole('tab', { name: 'Source' }).getAttribute('aria-selected'),
-    ).toBe('true');
+    expect(checked('Source')).toBe(true);
     // A view before any document says why it is empty.
-    fireEvent.click(screen.getByRole('tab', { name: 'Tree' }));
-    expect(screen.getByRole('tabpanel').textContent).toContain(
-      'No document yet',
-    );
+    fireEvent.click(screen.getByRole('radio', { name: 'Tree' }));
+    expect(screen.getByText('No document yet')).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: 'Document' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Go to Source' }));
-    expect(screen.getByRole('tabpanel').textContent).toContain('Document');
+    expect(editor()).toBeTruthy();
   });
 
-  it('switches tabs with Alt+4 and back with Alt+2', async () => {
+  it('switches views with Alt+4 and back with Alt+2', async () => {
     mount();
     await type('{"a":1}');
     fireEvent.keyDown(window, { key: '4', code: 'Digit4', altKey: true });
     await settle();
-    expect(
-      screen.getByRole('tab', { name: 'Query' }).getAttribute('aria-selected'),
-    ).toBe('true');
+    expect(checked('Query')).toBe(true);
     fireEvent.keyDown(window, { key: '2', code: 'Digit2', altKey: true });
     await settle();
-    expect(
-      screen.getByRole('tab', { name: 'Tree' }).getAttribute('aria-selected'),
-    ).toBe('true');
+    expect(checked('Tree')).toBe(true);
   });
 
   it('Format re-indents the document', async () => {
@@ -115,12 +115,16 @@ describe('Shell', () => {
     expect(editor().value).toBe('{\n  "a": [\n    1\n  ]\n}\n');
   });
 
-  it('offers Send as CSV only for an array of objects', async () => {
+  it('offers rows as CSV only for an array of objects', async () => {
     mount();
     await type('{"a":1}');
-    expect(screen.queryByRole('button', { name: 'Send as CSV' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Send to' }));
+    expect(screen.getByRole('menu').textContent).toContain('Document');
+    expect(screen.getByRole('menu').textContent).not.toContain('As CSV');
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     await type('[{"a":1},{"a":2}]');
-    expect(screen.getByRole('button', { name: 'Send as CSV' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Send to' }));
+    expect(screen.getByRole('menu').textContent).toContain('As CSV');
   });
 
   it('fills the editor once from a JSON hand-off', async () => {

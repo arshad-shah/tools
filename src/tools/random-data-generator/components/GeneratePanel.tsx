@@ -1,27 +1,25 @@
-import React, { useId } from 'react';
+import {
+  Button,
+  CopyButton,
+  Grid,
+  IconButton,
+  Inline,
+  Notice,
+  NumberField,
+  ProgressBar,
+  Select,
+  Stack,
+  Text,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { dice, refreshCw } from '@arshad-shah/cynosure/icons';
+import type React from 'react';
 import {
   MOCK_LOCALES,
   type MockLocale,
 } from '@/shared/lib/data-formats/mock-schema';
 import { formatBytes } from '@/shared/lib/format';
 import type { JobProgress } from '@/shared/state/useJob';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  CopyButton,
-  Grid,
-  IconButton,
-  Inline,
-  Input,
-  Label,
-  NumberInput,
-  Progress,
-  Select,
-  Stack,
-  Text,
-} from '@/shared/ui';
-import { IconDice1, IconRefreshCw } from '@/shared/ui/icons';
 import { MAX_COUNT, WARN_COUNT } from '../lib/engine';
 import { LOCALE_LABEL } from '../lib/locales';
 import { memoryEstimate, newSeed } from '../lib/seed';
@@ -44,78 +42,71 @@ interface GeneratePanelProps {
 
 /** Row count (capped, with a memory warning), seed, locale and Generate. */
 export function GeneratePanel(p: GeneratePanelProps) {
-  const ids = { count: useId(), seed: useId(), locale: useId() };
   const over = p.count > MAX_COUNT;
   return (
     <Stack gap="3">
-      <Grid cols={{ base: 1, sm: 2, lg: 4 }} gap="3">
+      <Grid columns={{ base: 1, sm: 2, lg: 4 }} gap="3">
         {p.preset}
-        <Stack gap="1">
-          <Label htmlFor={ids.count}>Rows</Label>
-          <NumberInput
-            id={ids.count}
-            value={p.count}
-            min={1}
-            max={MAX_COUNT}
-            onValueChange={(v) => p.onCount(Math.max(1, Math.round(v)))}
-          />
-        </Stack>
-        <Stack gap="1">
-          <Label htmlFor={ids.seed}>Seed</Label>
-          <Inline gap="1" align="center" wrap={false}>
-            <Input
-              id={ids.seed}
-              value={p.seed}
-              onChange={p.onSeed}
-              placeholder="Random every time"
-            />
-            <IconButton
-              size="sm"
-              variant="ghost"
-              label="New seed"
-              icon={IconDice1}
-              onClick={() => p.onSeed(newSeed())}
-            />
-            <CopyButton label="seed" value={p.seed} />
-          </Inline>
-        </Stack>
-        <Stack gap="1">
-          <Label htmlFor={ids.locale}>Locale</Label>
-          <Select
-            id={ids.locale}
-            value={p.locale}
-            onValueChange={(v) => p.onLocale(v as MockLocale)}
-            items={MOCK_LOCALES.map((l) => ({
-              value: l,
-              label: LOCALE_LABEL[l],
-            }))}
-          />
-        </Stack>
+        <NumberField
+          label="Rows"
+          value={p.count}
+          min={1}
+          onChange={(v) => v !== null && p.onCount(Math.max(1, Math.round(v)))}
+        />
+        <TextField
+          label="Seed"
+          value={p.seed}
+          onChange={p.onSeed}
+          placeholder="Random every time"
+          addonEnd={
+            <Inline gap="0" wrap={false}>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                label="New seed"
+                icon={dice}
+                onClick={() => p.onSeed(newSeed())}
+              />
+              <CopyButton
+                size="sm"
+                variant="ghost"
+                value={p.seed}
+                disabled={!p.seed}
+                labels={{ copy: 'Copy seed', copied: 'Copied' }}
+              />
+            </Inline>
+          }
+        />
+        <Select
+          label="Locale"
+          value={p.locale}
+          onChange={(v) => p.onLocale(v as MockLocale)}
+          options={MOCK_LOCALES.map((l) => ({
+            value: l,
+            label: LOCALE_LABEL[l],
+          }))}
+        />
       </Grid>
-      <Text size="xs" tone="subtle">
+      <Text size="xs" tone="muted">
         {p.seed
           ? 'Seeded: the same schema, seed and row count give the same data. Deterministic, not for security.'
           : 'No seed: values come from the browser secure random source.'}
       </Text>
       {over ? (
-        <Alert status="danger" size="sm">
-          <AlertDescription>
-            {`At most ${MAX_COUNT.toLocaleString('en-US')} rows per table.`}
-          </AlertDescription>
-        </Alert>
+        <Notice tone="danger">
+          {`At most ${MAX_COUNT.toLocaleString('en-US')} rows per table.`}
+        </Notice>
       ) : (
         p.count > WARN_COUNT && (
-          <Alert status="warning" size="sm">
-            <AlertDescription>
-              {`Large output: about ${formatBytes(memoryEstimate(p.count, p.fieldCount))} in memory. The preview shows the first 1,000 rows.`}
-            </AlertDescription>
-          </Alert>
+          <Notice tone="warning">
+            {`Large output: about ${formatBytes(memoryEstimate(p.count, p.fieldCount))} in memory. The preview shows the first 1,000 rows.`}
+          </Notice>
         )
       )}
       <Inline gap="3" align="center" wrap>
         <Button
-          variant="primary"
-          leftIcon={<IconRefreshCw size="sm" />}
+          variant="solid"
+          icon={refreshCw}
           onClick={p.onGenerate}
           disabled={over || p.running}
           aria-keyshortcuts="Control+Enter"
@@ -125,14 +116,14 @@ export function GeneratePanel(p: GeneratePanelProps) {
         {p.running && (
           <>
             {p.progress && (
-              <Progress
-                className="w-48"
+              <ProgressBar
+                label="Generation progress"
+                labelHidden
                 value={p.progress.done}
                 max={p.progress.total}
-                label="Generation progress"
               />
             )}
-            <Text size="sm" tone="subtle">
+            <Text size="sm" tone="muted" numeric>
               {p.progress
                 ? `${p.progress.done.toLocaleString('en-US')} of ${p.progress.total.toLocaleString('en-US')} rows`
                 : 'Starting'}

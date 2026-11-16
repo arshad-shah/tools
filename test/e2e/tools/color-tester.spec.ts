@@ -6,8 +6,11 @@ test('#777 on white: AA large passes, AA normal fails, and a suggestion fixes it
   page,
 }) => {
   await page.goto(pathOf('color-tester'));
+  // ColorField reads typed text on Enter.
   await page.getByRole('textbox', { name: 'Background' }).fill('#ffffff');
+  await page.getByRole('textbox', { name: 'Background' }).press('Enter');
   await page.getByRole('textbox', { name: 'Foreground' }).fill('#777777');
+  await page.getByRole('textbox', { name: 'Foreground' }).press('Enter');
   const results = page.getByRole('group', { name: 'WCAG 2.2 results' });
   await expect(
     results.getByText('AA large: pass', { exact: true }),
@@ -26,7 +29,7 @@ test('#777 on white: AA large passes, AA normal fails, and a suggestion fixes it
 test('the Tailwind export is a @theme block', async ({ page }) => {
   await page.goto(pathOf('color-tester'));
   await page.getByRole('radio', { name: 'Tailwind' }).click();
-  const out = page.getByLabel('Export output');
+  const out = page.getByLabel('Export output').last();
   await expect(out).toContainText('@theme {');
   await expect(out).toContainText('--color-');
   const download = page.waitForEvent('download');
@@ -49,25 +52,42 @@ test('extracts a palette from an image', async ({ page }) => {
     return c.toDataURL('image/png').split(',')[1];
   });
   await page
-    .getByRole('button', { name: 'Choose image' })
-    .locator('xpath=ancestor::*[.//input[@type="file"]][1]')
+    .getByRole('region', { name: 'Palette from an image' })
     .locator('input[type=file]')
     .setInputFiles({
       name: 'flag.png',
       mimeType: 'image/png',
       buffer: Buffer.from(png, 'base64'),
     });
-  const swatches = page.getByRole('list', { name: 'Extracted colours' });
-  await expect(swatches.getByText(/60%/)).toBeVisible({ timeout: 20_000 });
-  await expect(swatches.getByText(/40%/)).toBeVisible();
+  const swatches = page.getByRole('radiogroup', { name: 'Extracted colours' });
+  await expect(swatches.getByRole('radio', { name: /60%/ })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(swatches.getByRole('radio', { name: /40%/ })).toBeVisible();
+  // A chosen colour can become the base colour.
+  await swatches.getByRole('radio', { name: /60%/ }).click();
+  await page
+    .getByRole('region', { name: 'Palette from an image' })
+    .getByRole('button', { name: 'Use as base' })
+    .click();
+  await expect(page.getByRole('textbox', { name: 'Base colour' })).toHaveValue(
+    /^#f/,
+  );
 });
 
-test('the colour vision toggle changes the simulated preview', async ({
+test('the colour vision select changes the simulated preview', async ({
   page,
 }) => {
   await page.goto(pathOf('color-tester'));
-  const root = page.locator('[data-cvd]');
-  await expect(root).toHaveAttribute('data-cvd', 'none');
-  await page.getByRole('radio', { name: 'Deutan' }).click();
-  await expect(root).toHaveAttribute('data-cvd', 'deutan');
+  await expect(page.getByText('As picked')).toBeVisible();
+  await page.getByRole('combobox', { name: 'Simulate colour vision' }).click();
+  await page.getByRole('option', { name: 'Deutan' }).click();
+  await expect(
+    page.getByText('As seen with deutan colour vision'),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('radiogroup', { name: 'Tonal scale 50 to 950' })
+      .getByRole('radio', { name: /as seen with deutan/ }),
+  ).toHaveCount(11);
 });

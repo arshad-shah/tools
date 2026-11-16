@@ -22,3 +22,12 @@ afterEach(async () => {
   const { cleanup } = await import('@testing-library/react');
   cleanup();
 });
+
+// jsdom has no ResizeObserver; Cynosure's Tooltip (IconButton, CopyButton)
+// observes its anchor. Tests that need sizes stub it themselves.
+if (typeof globalThis.ResizeObserver === 'undefined')
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;

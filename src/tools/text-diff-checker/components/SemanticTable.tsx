@@ -1,18 +1,7 @@
-import {
-  Badge,
-  EmptyState,
-  EmptyStateTitle,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Text,
-} from '@/shared/ui';
+import { Badge, EmptyState, Stack, Table, Text } from '@arshad-shah/cynosure';
 import type { CsvChange, JsonChange } from '../lib/semantic';
 
-const tone = {
+const TONE = {
   added: 'success',
   removed: 'danger',
   changed: 'warning',
@@ -27,42 +16,45 @@ const show = (v: unknown) =>
 
 function NoDifferences() {
   return (
-    <EmptyState>
-      <EmptyStateTitle>No differences</EmptyStateTitle>
-    </EmptyState>
+    <EmptyState
+      size="sm"
+      title="No differences"
+      description="Both sides hold the same data."
+    />
   );
 }
 
-/** JSON mode: one row per path that differs (spec §8.1). */
+const mono = (text: string) => (
+  <Text as="span" variant="code" wrap="break">
+    {text}
+  </Text>
+);
+
+/** JSON mode: one row per changed path. */
 export function JsonChangesTable({ changes }: { changes: JsonChange[] }) {
   if (changes.length === 0) return <NoDifferences />;
   return (
-    <Table aria-label="JSON differences">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Path</TableHead>
-          <TableHead>Change</TableHead>
-          <TableHead>Left</TableHead>
-          <TableHead>Right</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {changes.map((c) => (
-          <TableRow key={c.path}>
-            <TableCell className="font-mono">{c.path}</TableCell>
-            <TableCell>
-              <Badge tone={tone[c.kind]}>{c.kind}</Badge>
-            </TableCell>
-            <TableCell className="font-mono break-all">
-              {show(c.left)}
-            </TableCell>
-            <TableCell className="font-mono break-all">
-              {show(c.right)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <Table
+      caption="JSON differences"
+      captionHidden
+      getRowId={(c) => c.path}
+      rows={changes}
+      columns={[
+        {
+          key: 'path',
+          header: 'Path',
+          rowHeader: true,
+          cell: (c) => mono(c.path),
+        },
+        {
+          key: 'kind',
+          header: 'Change',
+          cell: (c) => <Badge tone={TONE[c.kind]}>{c.kind}</Badge>,
+        },
+        { key: 'left', header: 'Left', cell: (c) => mono(show(c.left)) },
+        { key: 'right', header: 'Right', cell: (c) => mono(show(c.right)) },
+      ]}
+    />
   );
 }
 
@@ -76,32 +68,38 @@ export function CsvChangesTable({
 }) {
   if (changes.length === 0) return <NoDifferences />;
   return (
-    <Table aria-label="CSV differences">
-      <TableHeader>
-        <TableRow>
-          <TableHead>{keyColumn}</TableHead>
-          <TableHead>Change</TableHead>
-          <TableHead>Cells</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {changes.map((c) => (
-          <TableRow key={`${c.kind}:${c.key}`}>
-            <TableCell className="font-mono">{c.key}</TableCell>
-            <TableCell>
-              <Badge tone={tone[c.kind]}>{c.kind}</Badge>
-            </TableCell>
-            <TableCell>
+    <Table
+      caption="CSV differences"
+      captionHidden
+      getRowId={(c) => `${c.kind}:${c.key}`}
+      rows={changes}
+      columns={[
+        {
+          key: 'key',
+          header: keyColumn,
+          rowHeader: true,
+          cell: (c) => mono(c.key),
+        },
+        {
+          key: 'kind',
+          header: 'Change',
+          cell: (c) => <Badge tone={TONE[c.kind]}>{c.kind}</Badge>,
+        },
+        {
+          key: 'cells',
+          header: 'Cells',
+          cell: (c) => (
+            <Stack gap="1">
               {c.cells?.map((cell) => (
                 <Text key={cell.column} size="sm">
                   {cell.column}: {cell.left} to {cell.right}
                 </Text>
               ))}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            </Stack>
+          ),
+        },
+      ]}
+    />
   );
 }
 
@@ -114,32 +112,29 @@ export function OrderlessTable({
   removed: string[];
 }) {
   if (added.length === 0 && removed.length === 0) return <NoDifferences />;
+  const rows = [
+    ...removed.map((line, i) => ({ id: `r${i}`, side: 'left' as const, line })),
+    ...added.map((line, i) => ({ id: `a${i}`, side: 'right' as const, line })),
+  ];
   return (
-    <Table aria-label="Line differences ignoring order">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Change</TableHead>
-          <TableHead>Line</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {removed.map((l, i) => (
-          <TableRow key={`r${i}`}>
-            <TableCell>
+    <Table
+      caption="Line differences ignoring order"
+      captionHidden
+      getRowId={(r) => r.id}
+      rows={rows}
+      columns={[
+        {
+          key: 'side',
+          header: 'Change',
+          cell: (r) =>
+            r.side === 'left' ? (
               <Badge tone="danger">only left</Badge>
-            </TableCell>
-            <TableCell className="font-mono whitespace-pre">{l}</TableCell>
-          </TableRow>
-        ))}
-        {added.map((l, i) => (
-          <TableRow key={`a${i}`}>
-            <TableCell>
+            ) : (
               <Badge tone="success">only right</Badge>
-            </TableCell>
-            <TableCell className="font-mono whitespace-pre">{l}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            ),
+        },
+        { key: 'line', header: 'Line', cell: (r) => mono(r.line) },
+      ]}
+    />
   );
 }

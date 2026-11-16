@@ -47,11 +47,16 @@ describe('TimerCard shortcuts', { timeout: 20_000 }, () => {
 
   it('shows the long-break cycle', async () => {
     const store = await setup();
-    expect(screen.getByText('Long break after 4 more sessions')).toBeTruthy();
+    const cycle = screen.getByRole('progressbar', {
+      name: 'Long break after 4 more sessions',
+    });
+    expect(cycle.getAttribute('aria-valuetext')).toBe('0 of 4 sessions');
     store.getState().complete();
     store.getState().complete();
     expect(
-      await screen.findByText('Long break after 3 more sessions'),
+      await screen.findByRole('progressbar', {
+        name: 'Long break after 3 more sessions',
+      }),
     ).toBeTruthy();
   });
 
@@ -72,15 +77,18 @@ describe('TimerCard shortcuts', { timeout: 20_000 }, () => {
     fireEvent.click(within(modes).getByRole('radio', { name: 'Short Break' }));
     expect(store.getState().timer.mode).toBe('shortBreak');
     expect(
-      within(modes)
-        .getByRole('radio', { name: 'Short Break' })
-        .getAttribute('aria-checked'),
-    ).toBe('true');
+      (
+        within(modes).getByRole('radio', {
+          name: 'Short Break',
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Start' }));
     const pause = screen.getByRole('button', { name: 'Pause' });
-    expect(pause.className).not.toMatch(/bg-danger/);
-    // Only the main action is primary: Start (now Pause) is not.
-    expect(pause.className).not.toMatch(/bg-accent\b/);
+    // Pause is not destructive: never a danger button.
+    expect(pause.closest('[data-tone="danger"]')).toBeNull();
+    fireEvent.click(pause);
+    expect(store.getState().timer.isActive).toBe(false);
   });
 
   it('the focus view starts and pauses the timer', async () => {

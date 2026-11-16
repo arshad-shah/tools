@@ -1,17 +1,22 @@
-import { useEffect, useState } from 'react';
-import { toToolError } from '@/shared/lib/errors';
 import {
-  Alert,
-  Input,
+  Button,
+  CopyButton,
   Inline,
-  Label,
-  SegmentedControl,
+  Menu,
+  Notice,
   Select,
-  SendToMenu,
   Stack,
-  TextInputPanel,
-  SwitchField,
-} from '@/shared/ui';
+  Switch,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { download, send } from '@arshad-shah/cynosure/icons';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toolsAccepting } from '@/app/registry';
+import { saveBlob } from '@/shared/lib/download';
+import { toToolError } from '@/shared/lib/errors';
+import { sendTo } from '@/shared/lib/handoff';
+import { CodeSurface } from '@/shared/ui';
 import { convert, escapeJsonString, unescapeJsonString } from '../lib/convert';
 import { inferJsonSchema, inferTypeScript } from '../lib/infer';
 import { TARGETS, type ConvertTabTarget } from '../lib/targets';
@@ -61,6 +66,7 @@ async function produce(
 
 /** The Convert tab (spec §7.2): live conversion to other formats and types. */
 export function ConvertTab(props: ConvertTabProps) {
+  const navigate = useNavigate();
   const [settings, update] = viewerSettings.useSettings();
   const [target, setTarget] = useState<ConvertTabTarget>('yaml');
   const [rootName, setRootName] = useState('root');
@@ -91,91 +97,111 @@ export function ConvertTab(props: ConvertTabProps) {
   }, [target, value, xml, text, indent, rootName, csvDelimiter, sortKeys]);
 
   const info = TARGETS[target];
+  const fileName = `${props.fileBase}.${info.ext}`;
+  const targets = toolsAccepting(info.mime).filter(
+    (t) => t.id !== props.sourceTool,
+  );
   return (
-    <Stack gap="2" className="h-full min-h-0">
-      <SegmentedControl<ConvertTabTarget>
-        label="Convert to"
-        size="sm"
-        value={target}
-        onChange={setTarget}
-        options={(Object.keys(TARGETS) as ConvertTabTarget[]).map((t) => ({
-          value: t,
-          label: TARGETS[t].label,
-        }))}
-      />
-      <Inline gap="3" wrap>
-        <Inline gap="2">
-          <Label htmlFor="json-xml-indent">Indent</Label>
-          <Select
-            id="json-xml-indent"
-            className="w-28"
-            value={indent === 'tab' ? 'tab' : String(indent)}
-            onValueChange={(v) =>
-              update({ indent: v === 'tab' ? 0 : Number(v) })
-            }
-            items={INDENTS}
-          />
-        </Inline>
+    <Stack gap="3" fill minSize="0">
+      <Inline gap="3" align="end" wrap>
+        <Select
+          label="Convert to"
+          size="sm"
+          value={target}
+          onChange={(v) => setTarget(v as ConvertTabTarget)}
+          options={(Object.keys(TARGETS) as ConvertTabTarget[]).map((t) => ({
+            value: t,
+            label: TARGETS[t].label,
+          }))}
+        />
+        <Select
+          label="Indent"
+          size="sm"
+          value={indent === 'tab' ? 'tab' : String(indent)}
+          onChange={(v) => update({ indent: v === 'tab' ? 0 : Number(v) })}
+          options={INDENTS}
+        />
         {target === 'xml' && !xml ? (
-          <Inline gap="2">
-            <Label htmlFor="json-xml-root">Root name</Label>
-            <Input
-              id="json-xml-root"
-              className="w-32"
-              value={rootName}
-              onChange={setRootName}
-            />
-          </Inline>
+          <TextField
+            label="Root name"
+            size="sm"
+            value={rootName}
+            onChange={setRootName}
+          />
         ) : null}
         {target === 'csv' ? (
-          <Inline gap="2">
-            <Label htmlFor="json-xml-delim">Delimiter</Label>
-            <Select
-              id="json-xml-delim"
-              className="w-32"
-              value={csvDelimiter}
-              onValueChange={setCsvDelimiter}
-              items={DELIMITERS}
-            />
-          </Inline>
+          <Select
+            label="Delimiter"
+            size="sm"
+            value={csvDelimiter}
+            onChange={setCsvDelimiter}
+            options={DELIMITERS}
+          />
         ) : null}
-        <SwitchField
-          label="Sort keys"
-          id="json-xml-sort"
-          checked={sortKeys}
-          onCheckedChange={setSortKeys}
-        />
-        <SendToMenu
+        <Switch
           size="sm"
-          sourceTool={props.sourceTool}
-          payload={() =>
-            out.text
-              ? {
-                  kind: 'text',
-                  mime: info.mime,
-                  text: out.text,
-                  sourceTool: props.sourceTool,
-                  filename: `${props.fileBase}.${info.ext}`,
-                }
-              : null
-          }
+          label="Sort keys"
+          checked={sortKeys}
+          onChange={setSortKeys}
         />
       </Inline>
-      {out.error ? (
-        <Alert status="danger" size="sm">
-          {out.error}
-        </Alert>
-      ) : null}
-      <TextInputPanel
-        className="min-h-0 flex-1"
-        readOnly
-        label={`${info.label} output`}
-        language={info.language}
-        value={out.text}
-        onChange={() => {}}
-        downloadName={`${props.fileBase}.${info.ext}`}
-        maxHeight="none"
-      />
+      {out.error ? <Notice tone="danger">{out.error}</Notice> : null}
+      <Inline gap="1" align="center" justify="end">
+        <CopyButton
+          size="sm"
+          variant="ghost"
+          disabled={!out.text}
+          value={() => out.text}
+          labels={{ copy: `Copy ${info.label}`, copied: 'Copied' }}
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={download}
+          disabled={!out.text}
+          onClick={() =>
+            saveBlob(new Blob([out.text], { type: info.mime }), fileName)
+          }
+        >
+          {`Download ${info.label}`}
+        </Button>
+        {targets.length ? (
+          <Menu
+            label={`Send ${info.label} to`}
+            items={targets.map((t) => ({ value: t.id, label: t.name }))}
+            onSelect={(id) =>
+              sendTo(navigate, id, {
+                kind: 'text',
+                mime: info.mime,
+                text: out.text,
+                sourceTool: props.sourceTool,
+                filename: fileName,
+              })
+            }
+            trigger={(p) => (
+              <Button
+                {...p}
+                size="sm"
+                variant="ghost"
+                icon={send}
+                disabled={!out.text}
+              >
+                Send to
+              </Button>
+            )}
+          />
+        ) : null}
+      </Inline>
+      <Stack grow minSize="0">
+        <CodeSurface
+          readOnly
+          label={`${info.label} output`}
+          language={info.language}
+          value={out.text}
+          minHeight="100%"
+          maxHeight="100%"
+        />
+      </Stack>
     </Stack>
   );
 }

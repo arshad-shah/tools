@@ -1,38 +1,33 @@
+import {
+  Badge,
+  Button,
+  Card,
+  CopyButton,
+  EmptyState,
+  Inline,
+  SegmentedControl,
+  Stack,
+  StatusBar,
+  StatusBarSegment,
+  Table,
+  Text,
+} from '@arshad-shah/cynosure';
+import {
+  clock,
+  download,
+  fileJson,
+  hardDrive,
+  key,
+  link,
+  split,
+} from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
+import { useMediaQuery } from '@/shared/lib/media-query';
 import { useSendCommands } from '@/shared/lib/send-commands';
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CopyButton,
-  EmptyState,
-  Inline,
-  MetaList,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui';
-import {
-  IconDownload,
-  IconFileJson,
-  IconKey,
-  IconLink,
-  IconSplit,
-} from '@/shared/ui/icons';
 import type { Sent } from '../hooks/useHttpClient';
 import {
   bodyView,
@@ -41,6 +36,8 @@ import {
   statusTone,
 } from '../lib/response-view';
 import { HexView, PrettyView, PreviewView, RawView } from './BodyViews';
+
+type ResponseTab = 'pretty' | 'raw' | 'preview' | 'hex' | 'headers';
 
 const TONE = {
   ok: 'success',
@@ -69,7 +66,7 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
   const navigate = useNavigate();
   const res = sent.response;
   const view = bodyView(res);
-  const [tab, setTab] = useState('pretty');
+  const [tab, setTab] = useState<ResponseTab>('pretty');
   const tokens = findTokens(res);
   const t = sent.timing;
   const src = 'api-request';
@@ -113,144 +110,158 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
     { target: 'url-parser', run: inspectUrl },
   ]);
 
+  // Phones: the status bar's segments would be cut short.
+  const phone = useMediaQuery('(max-width: 40rem)');
+  const status = `${res.status} ${reasonPhrase(res.status, res.statusText)}`;
   return (
-    <Card>
-      <CardHeader>
-        <Inline gap="3" align="center" wrap>
-          <Badge variant="solid" tone={TONE[statusTone(res.status)]} size="md">
-            {res.status} {reasonPhrase(res.status, res.statusText)}
-          </Badge>
-          <MetaList
-            items={[
-              <span key="t">{sent.durationMs} ms</span>,
-              <span key="s">{formatBytes(res.size)}</span>,
-              res.contentType ? <span key="c">{res.contentType}</span> : null,
-              t ? (
-                <span key="b">
-                  DNS {t.dns} ms, connect {t.connect} ms, TLS {t.tls} ms, wait{' '}
-                  {t.wait} ms, download {t.download} ms
-                </span>
-              ) : null,
-            ].filter(Boolean)}
-          />
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <Inline gap="2" wrap>
-            <CopyButton
-              variant="text"
-              label="body"
-              value={res.text ?? ''}
-              disabled={res.text === undefined}
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconDownload size="sm" />}
-              disabled={!res.size}
-              onClick={() =>
-                saveBlob(
-                  res.bytes,
-                  deriveFilename('response', '', EXT[res.contentType] ?? 'bin'),
-                  res.contentType || 'application/octet-stream',
-                )
-              }
-            >
-              Download body
-            </Button>
-            {view === 'json' && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconFileJson size="sm" />}
-                onClick={openJson}
-              >
-                Open in JSON Viewer
-              </Button>
-            )}
-            {canCompare && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconSplit size="sm" />}
-                onClick={comparePrevious}
-              >
-                Compare with previous response
-              </Button>
-            )}
-            {tokens[0] && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconKey size="sm" />}
-                onClick={decodeToken}
-              >
-                Decode token
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="ghost"
-              leftIcon={<IconLink size="sm" />}
-              onClick={inspectUrl}
-            >
-              Inspect URL
-            </Button>
+    <Card as="section" title="Response">
+      <Stack gap="5">
+        {phone ? (
+          <Inline gap="2" align="center" wrap>
+            <Badge variant="solid" tone={TONE[statusTone(res.status)]}>
+              {status}
+            </Badge>
+            <Text size="sm" tone="muted" numeric>
+              {[`${sent.durationMs} ms`, formatBytes(res.size), res.contentType]
+                .filter(Boolean)
+                .join(', ')}
+            </Text>
           </Inline>
-          <Tabs value={tab} onValueChange={setTab} variant="soft">
-            <TabsList aria-label="Response views">
-              <TabsTrigger value="pretty">Pretty</TabsTrigger>
-              <TabsTrigger value="raw">Raw</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-              <TabsTrigger value="hex">Hex</TabsTrigger>
-              <TabsTrigger value="headers">
-                Headers ({res.headers.length})
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="pretty">
-              <PrettyView res={res} view={view} />
-            </TabsContent>
-            <TabsContent value="raw">
-              <RawView res={res} />
-            </TabsContent>
-            <TabsContent value="preview">
-              <PreviewView res={res} view={view} />
-            </TabsContent>
-            <TabsContent value="hex">
-              <HexView res={res} />
-            </TabsContent>
-            <TabsContent value="headers">
-              {res.headers.length ? (
-                <Table aria-label="Response headers">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Value</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {res.headers.map(([k, v], i) => (
-                      <TableRow key={`${k}-${i}`}>
-                        <TableCell className="font-mono">{k}</TableCell>
-                        <TableCell className="font-mono break-all">
-                          {v}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <EmptyState
-                  size="sm"
-                  title="No headers"
-                  description="The browser exposed no headers (cross-origin responses show only safe ones)."
-                />
-              )}
-            </TabsContent>
-          </Tabs>
-        </Stack>
-      </CardBody>
+        ) : (
+          <StatusBar
+            label="Response summary"
+            start={
+              <>
+                <StatusBarSegment
+                  tone={TONE[statusTone(res.status)]}
+                  dot
+                  dotTone={TONE[statusTone(res.status)]}
+                  label="Status"
+                >
+                  {status}
+                </StatusBarSegment>
+                <StatusBarSegment icon={clock} label="Time" mono>
+                  {`${sent.durationMs} ms`}
+                </StatusBarSegment>
+                <StatusBarSegment icon={hardDrive} label="Size" mono>
+                  {formatBytes(res.size)}
+                </StatusBarSegment>
+              </>
+            }
+            end={
+              res.contentType ? (
+                <StatusBarSegment label="Content type" mono>
+                  {res.contentType}
+                </StatusBarSegment>
+              ) : undefined
+            }
+          />
+        )}
+        {t ? (
+          <Text size="sm" tone="muted" numeric>
+            {`DNS ${t.dns} ms, connect ${t.connect} ms, TLS ${t.tls} ms, wait ${t.wait} ms, download ${t.download} ms`}
+          </Text>
+        ) : null}
+        <Inline gap="2" wrap>
+          <CopyButton
+            size="sm"
+            variant="soft"
+            value={res.text ?? ''}
+            disabled={res.text === undefined}
+            labels={{ copy: 'Copy body', copied: 'Body copied' }}
+          />
+          <Button
+            size="sm"
+            variant="soft"
+            icon={download}
+            disabled={!res.size}
+            onClick={() =>
+              saveBlob(
+                res.bytes,
+                deriveFilename('response', '', EXT[res.contentType] ?? 'bin'),
+                res.contentType || 'application/octet-stream',
+              )
+            }
+          >
+            Download body
+          </Button>
+          {view === 'json' ? (
+            <Button size="sm" variant="soft" icon={fileJson} onClick={openJson}>
+              Open in JSON Viewer
+            </Button>
+          ) : null}
+          {canCompare ? (
+            <Button
+              size="sm"
+              variant="soft"
+              icon={split}
+              onClick={comparePrevious}
+            >
+              Compare with previous response
+            </Button>
+          ) : null}
+          {tokens[0] ? (
+            <Button size="sm" variant="soft" icon={key} onClick={decodeToken}>
+              Decode token
+            </Button>
+          ) : null}
+          <Button size="sm" variant="ghost" icon={link} onClick={inspectUrl}>
+            Inspect URL
+          </Button>
+        </Inline>
+        <SegmentedControl
+          label="Response views"
+          size="sm"
+          fullWidth
+          value={tab}
+          onChange={(v) => setTab(v as ResponseTab)}
+          options={[
+            { value: 'pretty', label: 'Pretty' },
+            { value: 'raw', label: 'Raw' },
+            { value: 'preview', label: 'Preview' },
+            { value: 'hex', label: 'Hex' },
+            { value: 'headers', label: `Headers (${res.headers.length})` },
+          ]}
+        />
+        {tab === 'pretty' ? <PrettyView res={res} view={view} /> : null}
+        {tab === 'raw' ? <RawView res={res} /> : null}
+        {tab === 'preview' ? <PreviewView res={res} view={view} /> : null}
+        {tab === 'hex' ? <HexView res={res} /> : null}
+        {tab === 'headers' ? (
+          res.headers.length ? (
+            <Table<[string, string]>
+              caption="Response headers"
+              captionHidden
+              size="sm"
+              rows={res.headers}
+              getRowId={([k, v]) => `${k}:${v}`}
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Name',
+                  rowHeader: true,
+                  cell: ([k]) => <Text variant="code">{k}</Text>,
+                },
+                {
+                  key: 'value',
+                  header: 'Value',
+                  cell: ([, v]) => (
+                    <Text variant="code" wrap="break">
+                      {v}
+                    </Text>
+                  ),
+                },
+              ]}
+            />
+          ) : (
+            <EmptyState
+              size="sm"
+              title="No headers"
+              description="The browser exposed no headers (cross-origin responses show only safe ones)."
+            />
+          )
+        ) : null}
+      </Stack>
     </Card>
   );
 }

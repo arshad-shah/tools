@@ -32,7 +32,7 @@ describe('Grapher', () => {
     expect(screen.getByText('f1 root at x = -1.414213562')).toBeTruthy();
     const root = screen.getByText('f1 root at x = 1.414213562');
     fireEvent.click(root);
-    expect(screen.getByLabelText('Minimum X value')).toHaveProperty(
+    expect(screen.getByLabelText('Min X')).toHaveProperty(
       'value',
       String(1.4142135623730951 - 10),
     );

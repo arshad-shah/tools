@@ -1,21 +1,17 @@
-import { useId, useRef, useState } from 'react';
-import { saveBlob } from '@/shared/lib/download';
-import { toToolError } from '@/shared/lib/errors';
-import { notify } from '@/shared/lib/notify';
 import {
   Button,
-  Chart,
   EmptyState,
-  EmptyStateDescription,
-  EmptyStateTitle,
   Inline,
-  Label,
   Select,
   Stack,
   Text,
-  type ChartHandle,
-} from '@/shared/ui';
-import { IconDownload } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import { chartLine, download } from '@arshad-shah/cynosure/icons';
+import { useRef, useState } from 'react';
+import { saveBlob } from '@/shared/lib/download';
+import { toToolError } from '@/shared/lib/errors';
+import { notify } from '@/shared/lib/notify';
+import { Chart, type ChartHandle } from '@/shared/ui';
 import { csvChart, ROW_NUMBER, type CsvChartKind } from '../lib/chart-data';
 import type { ColumnType } from '../lib/columns';
 import type { Row } from '../lib/edit';
@@ -39,7 +35,6 @@ const numeric = (t: ColumnType | undefined) =>
 
 /** Bar, line, scatter or histogram over all filtered rows; PNG export. */
 export function ChartPanel({ rows, columns, types, name }: ChartPanelProps) {
-  const ids = { kind: useId(), x: useId(), y: useId() };
   const chart = useRef<ChartHandle>(null);
   const numbers = columns.filter((c) => numeric(types[c]));
   const [kind, setKind] = useState<CsvChartKind>('line');
@@ -65,16 +60,16 @@ export function ChartPanel({ rows, columns, types, name }: ChartPanelProps) {
 
   if (numbers.length === 0 && kind !== 'bar')
     return (
-      <EmptyState>
-        <EmptyStateTitle>No numeric columns</EmptyStateTitle>
-        <EmptyStateDescription>
-          Line, scatter and histogram charts need a column of numbers. A bar
-          chart can count rows per value.
-        </EmptyStateDescription>
-        <Button size="sm" onClick={() => setKind('bar')}>
-          Show a bar chart
-        </Button>
-      </EmptyState>
+      <EmptyState
+        icon={chartLine}
+        title="No numeric columns"
+        description="Line, scatter and histogram charts need a column of numbers. A bar chart can count rows per value."
+        actions={
+          <Button size="sm" variant="soft" onClick={() => setKind('bar')}>
+            Show a bar chart
+          </Button>
+        }
+      />
     );
 
   const exportPng = async () => {
@@ -92,53 +87,47 @@ export function ChartPanel({ rows, columns, types, name }: ChartPanelProps) {
 
   return (
     <Stack gap="3">
-      <Inline gap="4" align="center" wrap>
-        <Inline gap="2" align="center" wrap={false}>
-          <Label htmlFor={ids.kind}>Chart</Label>
-          <Select
-            id={ids.kind}
-            value={kind}
-            onValueChange={(v) => setKind(v as CsvChartKind)}
-            items={KINDS}
-          />
-        </Inline>
+      <Inline gap="3" align="end" wrap>
+        <Select
+          label="Chart"
+          size="sm"
+          value={kind}
+          onChange={(v) => setKind(v as CsvChartKind)}
+          options={KINDS}
+        />
         {kind !== 'histogram' && (
-          <Inline gap="2" align="center" wrap={false}>
-            <Label htmlFor={ids.x}>X</Label>
-            <Select
-              id={ids.x}
-              value={x}
-              onValueChange={setX}
-              items={[
-                ...(kind === 'bar'
-                  ? []
-                  : [{ value: ROW_NUMBER, label: 'Row number' }]),
-                ...xChoices.map((c) => ({ value: c, label: c })),
-              ]}
-            />
-          </Inline>
-        )}
-        <Inline gap="2" align="center" wrap={false}>
-          <Label htmlFor={ids.y}>Y</Label>
           <Select
-            id={ids.y}
-            value={y}
-            onValueChange={setY}
-            items={[
+            label="X"
+            size="sm"
+            value={x}
+            onChange={setX}
+            options={[
               ...(kind === 'bar'
-                ? [{ value: ROW_NUMBER, label: 'Row count' }]
-                : []),
-              ...numbers.map((c) => ({ value: c, label: c })),
+                ? []
+                : [{ value: ROW_NUMBER, label: 'Row number' }]),
+              ...xChoices.map((c) => ({ value: c, label: c })),
             ]}
           />
-        </Inline>
+        )}
+        <Select
+          label="Y"
+          size="sm"
+          value={y}
+          onChange={setY}
+          options={[
+            ...(kind === 'bar'
+              ? [{ value: ROW_NUMBER, label: 'Row count' }]
+              : []),
+            ...numbers.map((c) => ({ value: c, label: c })),
+          ]}
+        />
         <Button
           size="sm"
-          variant="secondary"
-          leftIcon={<IconDownload size="sm" />}
+          variant="soft"
+          icon={download}
           onClick={() => void exportPng()}
         >
-          PNG
+          Download PNG
         </Button>
       </Inline>
       <Chart
@@ -153,7 +142,7 @@ export function ChartPanel({ rows, columns, types, name }: ChartPanelProps) {
         yLabel={kind === 'histogram' ? 'Rows' : y || 'Rows'}
         legend={false}
       />
-      <Text size="xs" tone="subtle">
+      <Text size="xs" tone="muted">
         {`Drawn from ${data.used.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} filtered rows${data.reduced ? (kind === 'bar' ? ', largest 50 categories' : ', downsampled for display') : ''}.`}
       </Text>
     </Stack>

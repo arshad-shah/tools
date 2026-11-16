@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Inline, Tooltip } from '@/shared/ui';
+import { Button, Inline } from '@arshad-shah/cynosure';
 import { FLAG_INFO } from '../lib/flags';
 
 interface FlagTogglesProps {
@@ -19,22 +19,18 @@ export const FlagToggles: React.FC<FlagTogglesProps> = ({
     {FLAG_INFO.map((f) => {
       const on = flags.includes(f.flag);
       return (
-        <Tooltip
+        <Button
           key={f.flag}
-          content={f.description}
-          shortcut={`Alt+${f.flag.toUpperCase()}`}
+          variant={on ? 'soft' : 'ghost'}
+          tone={on ? 'accent' : 'neutral'}
+          size="sm"
+          aria-pressed={on}
+          aria-label={`${f.label} (${f.flag})`}
+          aria-keyshortcuts={`Alt+${f.flag.toUpperCase()}`}
+          onClick={() => onToggle(f.flag)}
         >
-          <Button
-            variant={on ? 'secondary' : 'ghost'}
-            size="sm"
-            aria-pressed={on}
-            aria-label={`${f.label} (${f.flag})`}
-            className="font-mono"
-            onClick={() => onToggle(f.flag)}
-          >
-            {f.flag}
-          </Button>
-        </Tooltip>
+          {f.flag}
+        </Button>
       );
     })}
   </Inline>

@@ -1,17 +1,17 @@
 import { useRef, useState } from 'react';
 import { textWorker } from '@/shared/workers/text-client';
-import { IconPlay } from '@/shared/ui/icons';
 import {
-  Alert,
   Button,
-  CodeSurface,
   CopyButton,
   Inline,
+  Notice,
   Select,
   Stack,
   Text,
   VirtualList,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { play } from '@arshad-shah/cynosure/icons';
+import { CodeSurface } from '@/shared/ui';
 import { runQueryOffThread, type QueryOutcome } from '../lib/query';
 import { pushHistory, viewerSettings } from '../settings';
 
@@ -20,8 +20,6 @@ export interface QueryTabProps {
   xml: Document | null;
   onSelect(id: string): void;
 }
-
-const ROW_H = 44;
 
 /** The Query tab (spec §7.2): JSONPath for JSON and YAML, XPath for XML. */
 export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
@@ -50,55 +48,52 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
 
   const rows = outcome?.ok ? outcome.rows : [];
   return (
-    <Stack gap="2" className="h-full min-h-0">
-      <Inline gap="2" align="start">
-        <CodeSurface
-          className="min-w-0 flex-1"
-          singleLine
-          language="plain"
-          label={`${language} query`}
-          value={expr}
-          onChange={setExpr}
-          onSubmit={() => run()}
-          placeholder={xml ? '//book/@id' : '$.store.book[*].author'}
-        />
-        <Button
-          size="md"
-          variant="primary"
-          leftIcon={<IconPlay size="sm" />}
-          onClick={() => run()}
-        >
+    <Stack gap="3" fill minSize="0">
+      <Inline gap="2" align="start" wrap={false}>
+        <Stack grow minSize="0">
+          <CodeSurface
+            singleLine
+            language="plain"
+            label={`${language} query`}
+            value={expr}
+            onChange={setExpr}
+            onSubmit={() => run()}
+            placeholder={xml ? '//book/@id' : '$.store.book[*].author'}
+          />
+        </Stack>
+        <Button variant="solid" icon={play} onClick={() => run()}>
           Run
         </Button>
       </Inline>
       {settings.queryHistory.length ? (
-        <Select
-          aria-label="Recent queries"
-          value=""
-          onValueChange={(v) => {
-            if (!v) return;
-            setExpr(v);
-            run(v);
-          }}
-          items={[
-            { value: '', label: 'Recent queries' },
-            ...settings.queryHistory.map((h) => ({ value: h, label: h })),
-          ]}
-        />
+        <Inline>
+          <Select
+            label="Recent queries"
+            labelHidden
+            size="sm"
+            placeholder="Recent queries"
+            value=""
+            onChange={(v) => {
+              if (!v) return;
+              setExpr(v);
+              run(v);
+            }}
+            options={settings.queryHistory.map((h) => ({ value: h, label: h }))}
+          />
+        </Inline>
       ) : null}
       {outcome && !outcome.ok ? (
-        <Alert status="danger" size="sm">
-          {outcome.error.message}
-        </Alert>
+        <Notice tone="danger">{outcome.error.message}</Notice>
       ) : null}
       {outcome?.ok ? (
-        <Inline justify="between">
-          <Text size="sm" tone="muted" aria-live="polite">
-            {`${rows.length.toLocaleString('en-US')} ${rows.length === 1 ? 'result' : 'results'}`}
+        <Inline gap="2" align="center" justify="between">
+          <Text size="sm" tone="muted" numeric>
+            <span aria-live="polite">{`${rows.length.toLocaleString('en-US')} ${rows.length === 1 ? 'result' : 'results'}`}</span>
           </Text>
           <CopyButton
-            variant="text"
-            label="results as JSON"
+            size="sm"
+            variant="ghost"
+            labels={{ copy: 'Copy results as JSON', copied: 'Copied' }}
             disabled={!rows.length}
             value={() =>
               JSON.stringify(
@@ -111,30 +106,27 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
         </Inline>
       ) : null}
       {rows.length ? (
-        <VirtualList
-          className="min-h-0 flex-1 rounded-md border border-line"
-          height="100%"
-          items={rows}
-          estimateSize={ROW_H}
-          focusModel="none"
-          ariaLabel="Query results"
-          getKey={(_r, i) => i}
-          renderItem={(r) => (
-            <Button
-              variant="ghost"
-              className="h-11 w-full flex-col items-start justify-center gap-0 rounded-none px-3 text-left font-mono"
-              disabled={!r.id}
-              onClick={() => onSelect(r.id)}
-            >
-              <span className="w-full truncate text-xs text-fg-muted">
-                {r.path}
-              </span>
-              <span className="w-full truncate text-sm text-fg">
-                {r.preview}
-              </span>
-            </Button>
-          )}
-        />
+        <Stack grow minSize="0">
+          <VirtualList
+            label="Query results"
+            items={rows}
+            getKey={(r, i) => `${i}:${r.path}`}
+            selectionMode="none"
+            isDisabled={(r) => !r.id}
+            onAction={(r) => r.id && onSelect(r.id)}
+            className="h-full"
+            renderItem={(r) => (
+              <Stack gap="0">
+                <Text variant="code" size="xs" tone="muted" truncate>
+                  {r.path}
+                </Text>
+                <Text variant="code" size="sm" truncate>
+                  {r.preview}
+                </Text>
+              </Stack>
+            )}
+          />
+        </Stack>
       ) : null}
     </Stack>
   );

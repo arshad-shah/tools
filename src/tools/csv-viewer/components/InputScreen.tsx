@@ -1,18 +1,26 @@
 import {
   Button,
-  ErrorState,
+  Card,
+  FileDrop,
   Inline,
-  Progress,
+  Menu,
+  Notice,
+  ProgressBar,
   Stack,
   Text,
-  TextInputPanel,
-} from '@/shared/ui';
-import { IconTable } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import { sparkles, table as tableIcon } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
+import { CodeSurface } from '@/shared/ui';
+import { formatBytes } from '@/shared/lib/format';
+import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import type { useCsvTable } from '../hooks/useCsvTable';
 import { SAMPLES } from '../lib/samples';
 
 const MAX_BYTES = 200 * 1024 * 1024;
 const TEXT_MIMES = ['text/csv', 'text/tab-separated-values', 'text/plain'];
+const isCsvText = (p: HandoffPayload) =>
+  p.kind === 'text' && TEXT_MIMES.includes(p.mime);
 
 interface InputScreenProps {
   paste: string;
@@ -32,56 +40,116 @@ export function InputScreen({
 }: InputScreenProps) {
   const running = job.status === 'running';
   const progress = job.status === 'running' ? job.progress : null;
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  // CSV text handed over (Send to) opens like a paste.
+  const handed = useHandoff(isCsvText);
+  const [taken, setTaken] = useState<HandoffPayload | null>(null);
+  if (handed !== taken) {
+    setTaken(handed);
+    if (handed?.kind === 'text') onPasteChange(handed.text);
+  }
+
+  const open = (file: File) => {
+    setFileError(null);
+    if (!/\.(csv|tsv|txt)$/i.test(file.name)) {
+      setFileError(
+        `${file.name} is not a supported text file (.csv, .tsv, .txt)`,
+      );
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setFileError(`${file.name} is larger than ${formatBytes(MAX_BYTES)}`);
+      return;
+    }
+    onFile(file);
+  };
+
   return (
-    <Stack gap="4">
-      <TextInputPanel
-        label="CSV or TSV data"
-        value={paste}
-        onChange={onPasteChange}
-        language="csv"
-        samples={SAMPLES}
-        accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
-        maxBytes={MAX_BYTES}
-        handoff={(p) => p.kind === 'text' && TEXT_MIMES.includes(p.mime)}
-        onFile={(file) => {
-          onFile(file);
-          return true;
-        }}
-        placeholder="Paste rows copied from a spreadsheet, or open or drop a CSV or TSV file"
-        minHeight={240}
-      />
-      <Inline gap="3" align="center" wrap>
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={onOpenText}
-          disabled={!paste.trim() || running}
-          leftIcon={<IconTable size="sm" />}
-        >
-          Open as table
-        </Button>
-        {running && (
-          <>
-            <Text size="sm" tone="subtle">
-              {progress?.label ?? 'Reading'}
-            </Text>
-            {progress && (
-              <Progress
-                className="w-48"
-                value={progress.done}
-                max={progress.total}
-                label="Loading progress"
-              />
-            )}
-            <Button size="sm" variant="ghost" onClick={job.cancel}>
-              Cancel
+    <Card
+      as="section"
+      title="Data"
+      headingLevel={2}
+      padding="sm"
+      actions={
+        <Menu
+          label="Load a sample"
+          items={SAMPLES.map((s) => ({ value: s.label, label: s.label }))}
+          onSelect={(label) => {
+            const s = SAMPLES.find((x) => x.label === label);
+            if (s) onPasteChange(s.value);
+          }}
+          trigger={(props) => (
+            <Button {...props} size="sm" variant="ghost" icon={sparkles}>
+              Load a sample
             </Button>
-          </>
+          )}
+        />
+      }
+    >
+      <Stack gap="3">
+        <CodeSurface
+          label="CSV or TSV data"
+          language="csv"
+          value={paste}
+          onChange={onPasteChange}
+          placeholder="Paste rows copied from a spreadsheet, or open or drop a CSV or TSV file"
+          minHeight={200}
+          maxHeight={360}
+        />
+        {paste === '' ? (
+          <FileDrop
+            size="sm"
+            labels={{
+              prompt: 'Drop a CSV, TSV or text file here, or',
+              chooseOne: 'Open a file',
+            }}
+            onFiles={(files) => files[0] && open(files[0])}
+          />
+        ) : null}
+        {fileError ? (
+          <Notice
+            tone="danger"
+            dismissible
+            onDismiss={() => setFileError(null)}
+          >
+            {fileError}
+          </Notice>
+        ) : null}
+        <Inline gap="3" align="center" wrap>
+          <Button
+            variant="solid"
+            icon={tableIcon}
+            onClick={onOpenText}
+            disabled={!paste.trim() || running}
+          >
+            Open as table
+          </Button>
+          {running && (
+            <>
+              <Text size="sm" tone="muted">
+                {progress?.label ?? 'Reading'}
+              </Text>
+              {progress && (
+                <ProgressBar
+                  label="Loading progress"
+                  labelHidden
+                  value={progress.done}
+                  max={progress.total}
+                />
+              )}
+              <Button size="sm" variant="ghost" onClick={job.cancel}>
+                Cancel
+              </Button>
+            </>
+          )}
+        </Inline>
+        {job.error && (
+          <Notice tone="danger" title="Could not read the data">
+            {job.error.message}
+          </Notice>
         )}
-      </Inline>
-      {job.error && (
-        <ErrorState title="Could not read the data" error={job.error} />
-      )}
-    </Stack>
+      </Stack>
+    </Card>
   );
 }

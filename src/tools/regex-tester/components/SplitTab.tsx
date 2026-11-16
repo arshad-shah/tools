@@ -1,5 +1,11 @@
 import React from 'react';
-import { Badge, EmptyState, Inline, Stack, TextInputPanel } from '@/shared/ui';
+import {
+  Badge,
+  CodeBlock,
+  EmptyState,
+  Inline,
+  Stack,
+} from '@arshad-shah/cynosure';
 import { useRegexJob } from '../hooks/useRegexJob';
 import { plural } from '../lib/plural';
 import type { RegexRunner } from '../lib/runner';
@@ -39,22 +45,19 @@ export const SplitTab: React.FC<SplitTabProps> = ({
       <JobStatus error={job.error} pending={job.pending} onRetry={job.retry} />
       {job.value && (
         <Inline>
-          <Badge variant="soft" tone="accent" size="sm">
+          <Badge tone="accent" size="sm">
             {plural(job.value.length, 'item', 'items')}
           </Badge>
         </Inline>
       )}
-      {parts && !job.error && (
-        <TextInputPanel
-          value={JSON.stringify(parts, null, 2)}
-          onChange={() => {}}
+      {parts && !job.error ? (
+        <CodeBlock
+          title="Split result"
+          code={JSON.stringify(parts, null, 2)}
           language="json"
-          label="Split result"
-          readOnly
-          downloadName="split.json"
-          maxHeight={360}
+          copyable
         />
-      )}
+      ) : null}
     </Stack>
   );
 };

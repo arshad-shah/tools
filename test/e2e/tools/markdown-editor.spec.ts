@@ -4,9 +4,9 @@ import { pathOf } from '../tool-routes';
 
 const editor = (page: Page) =>
   page.getByRole('textbox', { name: 'Markdown', exact: true });
-/** R41: Edit and Preview are tabs. */
-const showPreview = (page: Page) =>
-  page.getByRole('tab', { name: /^Preview/ }).click();
+/** The preview is shown beside (or under) the editor: nothing to switch. */
+const showPreview = async (page: Page) =>
+  page.getByTitle('Preview').scrollIntoViewIfNeeded();
 
 // A 1x1 transparent PNG.
 const PNG = Buffer.from(
@@ -143,6 +143,8 @@ test('markdown-editor prints through a script-free frame it can reach', async ({
 test('markdown-editor outline scrolls the preview to the heading', async ({
   page,
 }) => {
+  // Wide: the editor and the preview side by side, both in view.
+  await page.setViewportSize({ width: 1440, height: 900 });
   const filler = Array.from({ length: 80 }, (_, i) => `Paragraph ${i}.`).join(
     '\n\n',
   );

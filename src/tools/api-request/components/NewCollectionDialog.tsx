@@ -1,15 +1,5 @@
+import { Button, Dialog, TextField } from '@arshad-shah/cynosure';
 import React from 'react';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
-  Stack,
-} from '@/shared/ui';
 
 interface NewCollectionDialogProps {
   open: boolean;
@@ -19,6 +9,7 @@ interface NewCollectionDialogProps {
   onCreate: () => void;
 }
 
+/** Name a new collection (Enter creates it). */
 export const NewCollectionDialog: React.FC<NewCollectionDialogProps> = ({
   open,
   onOpenChange,
@@ -26,30 +17,36 @@ export const NewCollectionDialog: React.FC<NewCollectionDialogProps> = ({
   setNewCollectionName,
   onCreate,
 }) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogHeader>
-      <DialogTitle>New collection</DialogTitle>
-    </DialogHeader>
-    <DialogBody>
-      <Stack gap="3">
-        <Stack gap="2">
-          <Label htmlFor="coll-name">Name</Label>
-          <Input
-            id="coll-name"
-            value={newCollectionName}
-            onChange={setNewCollectionName}
-            placeholder="My collection"
-          />
-        </Stack>
-      </Stack>
-    </DialogBody>
-    <DialogFooter>
-      <Button variant="secondary" onClick={() => onOpenChange(false)}>
-        Cancel
-      </Button>
-      <Button variant="primary" onClick={onCreate}>
-        Create
-      </Button>
-    </DialogFooter>
+  <Dialog
+    open={open}
+    onOpenChange={onOpenChange}
+    title="New collection"
+    actions={
+      <>
+        <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button
+          variant="solid"
+          disabled={!newCollectionName.trim()}
+          onClick={onCreate}
+        >
+          Create
+        </Button>
+      </>
+    }
+  >
+    <TextField
+      label="Name"
+      value={newCollectionName}
+      onChange={setNewCollectionName}
+      placeholder="My collection"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          onCreate();
+        }
+      }}
+    />
   </Dialog>
 );

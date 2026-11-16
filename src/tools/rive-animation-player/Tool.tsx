@@ -1,23 +1,15 @@
-'use client';
-
-import { useMemo, useState } from 'react';
-import { IconInfo } from '@/shared/ui/icons';
-
 import {
-  Box,
-  Button,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Container,
-  ErrorState,
+  Disclosure,
+  Divider,
   Grid,
-  Inline,
+  GridItem,
+  Heading,
+  Notice,
+  SegmentedControl,
   Stack,
-  Text,
-} from '@/shared/ui';
-import { ToolError } from '@/shared/lib/errors';
+} from '@arshad-shah/cynosure';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useHandoffFiles } from '@/shared/lib/handoff';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -31,7 +23,6 @@ import { FileInfo } from './components/FileInfo';
 import { InfoPanel } from './components/InfoPanel';
 import { LayoutControls } from './components/LayoutControls';
 import { PlaybackControls } from './components/PlaybackControls';
-import { Section, SidePanel } from './components/SidePanel';
 import { Stage } from './components/Stage';
 import { StagePanel, type DeviceChoice } from './components/StagePanel';
 import { TextRunsPanel } from './components/TextRunsPanel';
@@ -47,6 +38,34 @@ import { PlayerError, PlayerState, type AlignFitIndex } from './types';
 
 const TOOL_ID = 'rive-animation-player';
 
+const PANELS = [
+  { value: 'controls', label: 'Controls' },
+  { value: 'stage', label: 'Stage' },
+  { value: 'data', label: 'Data' },
+  { value: 'info', label: 'Info' },
+  { value: 'export', label: 'Export' },
+] as const;
+type Panel = (typeof PANELS)[number]['value'];
+
+/** A titled block in the settings card; blocks after the first are ruled off. */
+function Sections({ items }: { items: [string | null, ReactNode][] }) {
+  return (
+    <Stack gap="5">
+      {items.map(([title, body], i) => (
+        <Stack gap="4" key={title ?? i}>
+          {i > 0 ? <Divider /> : null}
+          {title ? (
+            <Heading level={3} size="sm">
+              {title}
+            </Heading>
+          ) : null}
+          {body}
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
 export default function RiveAnimationPlayer() {
   const [settings, updateSettings] = riveSettings.useSettings();
   const player = useRivePlayer(toAlignFit(settings));
@@ -56,7 +75,7 @@ export default function RiveAnimationPlayer() {
   const rive = loaded?.rive ?? null;
   const active = status.current === PlayerState.Active && !!loaded;
 
-  const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
+  const [panel, setPanel] = useState<Panel>('controls');
   const [device, setDevice] = useState<DeviceChoice>('none');
   const [snippetRuntime, setSnippetRuntime] = useState<SnippetRuntime>('react');
 
@@ -125,186 +144,171 @@ export default function RiveAnimationPlayer() {
     },
   ]);
 
+  const panels: Record<Panel, [string | null, ReactNode][]> = {
+    controls: [
+      [
+        null,
+        <ControlsTab
+          key="controls"
+          controller={player.controller}
+          setControllerState={player.setControllerState}
+          artboards={player.artboards}
+          selectedArtboard={player.selectedArtboard}
+          setSelectedArtboard={player.selectArtboard}
+          animationList={player.animationList}
+          setActiveAnimation={player.setActiveAnimation}
+          stateMachineList={player.stateMachineList}
+          setActiveStateMachine={player.setActiveStateMachine}
+          stateMachineInputs={player.stateMachineInputs}
+          booleanValues={player.booleanValues}
+          setBooleanValues={player.setBooleanValues}
+          numberValues={player.numberValues}
+          handleInputChange={player.handleInputChange}
+        />,
+      ],
+    ],
+    stage: [
+      [
+        'Stage',
+        <StagePanel
+          key="stage"
+          background={settings.background}
+          checkerboard={settings.checkerboard}
+          device={device}
+          onChange={updateSettings}
+          onDeviceChange={setDevice}
+        />,
+      ],
+      [
+        'Layout',
+        <LayoutControls
+          key="layout"
+          alignFitIndex={player.alignFitIndex}
+          setAlignFitIndex={setAlignFit}
+        />,
+      ],
+    ],
+    data: [
+      ['Text runs', <TextRunsPanel key="text" loaded={loaded} />],
+      ['Data binding', <BindingPanel key="binding" vmi={viewModel} />],
+    ],
+    info: [
+      [
+        'File',
+        <InfoPanel
+          key="file"
+          loaded={loaded}
+          selectedArtboard={player.selectedArtboard}
+          fps={timeline.fps}
+        />,
+      ],
+      [
+        'Events',
+        <EventsLog key="events" events={events} onClear={clearEvents} />,
+      ],
+    ],
+    export: [
+      [
+        'Export',
+        <ExportPanel
+          key="export"
+          canvasRef={player.canvasRef}
+          filename={filename}
+          disabled={!active}
+        />,
+      ],
+      [
+        'Embed snippet',
+        <EmbedSnippet
+          key="embed"
+          code={snippet}
+          runtime={snippetRuntime}
+          onRuntimeChange={setSnippetRuntime}
+        />,
+      ],
+    ],
+  };
+
   return (
-    <Container size="full" className="px-0 sm:px-0">
-      <Grid max={3} gap="4">
-        <Box className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <Inline justify="between" align="center" wrap gap="2">
-                <Stack gap="0">
-                  <CardTitle as="h2">Preview</CardTitle>
-                  <Text size="sm" tone="subtle">
-                    {filename ? (
-                      <>
-                        {filename}
-                        {fileSize && (
-                          <>
-                            {' '}
-                            <Text as="span" size="sm" tone="subtle">
-                              ({fileSize})
-                            </Text>
-                          </>
-                        )}
-                      </>
-                    ) : (
-                      'Choose a file to get started'
-                    )}
-                  </Text>
-                </Stack>
-                <PlaybackControls
-                  filename={filename}
-                  isPlaying={isPlaying}
-                  status={status}
-                  togglePlayback={player.togglePlayback}
-                  reset={player.reset}
-                />
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              <Stack gap="3">
-                <FileInfo
-                  filename={filename}
-                  fileSize={fileSize}
-                  riveInfo={riveInfo}
-                />
-
-                <Stage
-                  status={status}
-                  background={settings.background}
-                  checkerboard={settings.checkerboard}
-                  device={device}
-                  previewRef={player.previewRef}
-                  canvasRef={player.canvasRef}
-                  handleDrop={player.handleDrop}
-                  handleDragOver={player.handleDragOver}
-                  handleDragEnter={player.handleDragEnter}
-                  handleDragLeave={player.handleDragLeave}
-                  load={player.load}
-                />
-
-                {active && (
-                  <Timeline
-                    timeline={timeline}
-                    speed={settings.speed}
-                    onSpeedChange={(speed) => updateSettings({ speed })}
-                    speedSupported={speedSupported}
-                    disabled={!active}
-                  />
-                )}
-
-                {status.error != null && (
-                  <ErrorState
-                    title="Error loading animation"
-                    error={
-                      new ToolError(
-                        'INVALID_FILE',
-                        status.error === PlayerError.NoAnimation
-                          ? "The uploaded file doesn't contain any animations."
-                          : 'An error occurred while loading the animation.',
-                      )
-                    }
-                  />
-                )}
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<IconInfo size="sm" />}
-                  onClick={() => setIsDebugPanelOpen(!isDebugPanelOpen)}
-                  fullWidth
-                >
-                  {isDebugPanelOpen ? 'Hide debug panel' : 'Show debug panel'}
-                </Button>
-
-                {isDebugPanelOpen ? (
-                  <DebugLog
-                    debugLogs={player.debugLogs}
-                    onClear={player.clearDebugLogs}
-                  />
-                ) : null}
-              </Stack>
-            </CardBody>
-          </Card>
-        </Box>
-
-        <SidePanel
-          tabs={{
-            controls: [
-              <ControlsTab
-                key="controls"
-                controller={player.controller}
-                setControllerState={player.setControllerState}
-                artboards={player.artboards}
-                selectedArtboard={player.selectedArtboard}
-                setSelectedArtboard={player.selectArtboard}
-                animationList={player.animationList}
-                setActiveAnimation={player.setActiveAnimation}
-                stateMachineList={player.stateMachineList}
-                setActiveStateMachine={player.setActiveStateMachine}
-                stateMachineInputs={player.stateMachineInputs}
-                booleanValues={player.booleanValues}
-                setBooleanValues={player.setBooleanValues}
-                numberValues={player.numberValues}
-                handleInputChange={player.handleInputChange}
-              />,
-            ],
-            stage: [
-              <Section key="stage" title="Stage">
-                <StagePanel
-                  background={settings.background}
-                  checkerboard={settings.checkerboard}
-                  device={device}
-                  onChange={updateSettings}
-                  onDeviceChange={setDevice}
-                />
-              </Section>,
-              <Section key="layout" title="Layout">
-                <LayoutControls
-                  alignFitIndex={player.alignFitIndex}
-                  setAlignFitIndex={setAlignFit}
-                />
-              </Section>,
-            ],
-            data: [
-              <Section key="text" title="Text runs">
-                <TextRunsPanel loaded={loaded} />
-              </Section>,
-              <Section key="binding" title="Data binding">
-                <BindingPanel vmi={viewModel} />
-              </Section>,
-            ],
-            info: [
-              <Section key="file" title="File">
-                <InfoPanel
-                  loaded={loaded}
-                  selectedArtboard={player.selectedArtboard}
-                  fps={timeline.fps}
-                />
-              </Section>,
-              <Section key="events" title="Events">
-                <EventsLog events={events} onClear={clearEvents} />
-              </Section>,
-            ],
-            export: [
-              <Section key="export" title="Export">
-                <ExportPanel
-                  canvasRef={player.canvasRef}
-                  filename={filename}
-                  disabled={!active}
-                />
-              </Section>,
-              <Section key="embed" title="Embed snippet">
-                <EmbedSnippet
-                  code={snippet}
-                  runtime={snippetRuntime}
-                  onRuntimeChange={setSnippetRuntime}
-                />
-              </Section>,
-            ],
-          }}
-        />
-      </Grid>
-    </Container>
+    <Grid columns={{ base: 1, lg: 5 }} gap="6" align="start">
+      <GridItem span={{ base: 'full', lg: 3 }}>
+        <Card
+          as="section"
+          title="Preview"
+          description={
+            filename
+              ? `${filename}${fileSize ? ` (${fileSize})` : ''}`
+              : 'Choose a file to get started'
+          }
+          actions={
+            <PlaybackControls
+              filename={filename}
+              isPlaying={isPlaying}
+              status={status}
+              togglePlayback={player.togglePlayback}
+              reset={player.reset}
+            />
+          }
+        >
+          <Stack gap="5">
+            <FileInfo
+              filename={filename}
+              fileSize={fileSize}
+              riveInfo={riveInfo}
+            />
+            <Stage
+              status={status}
+              background={settings.background}
+              checkerboard={settings.checkerboard}
+              device={device}
+              previewRef={player.previewRef}
+              canvasRef={player.canvasRef}
+              handleDrop={player.handleDrop}
+              handleDragOver={player.handleDragOver}
+              handleDragEnter={player.handleDragEnter}
+              handleDragLeave={player.handleDragLeave}
+              load={player.load}
+            />
+            {active ? (
+              <Timeline
+                timeline={timeline}
+                speed={settings.speed}
+                onSpeedChange={(speed) => updateSettings({ speed })}
+                speedSupported={speedSupported}
+                disabled={!active}
+              />
+            ) : null}
+            {status.error != null ? (
+              <Notice tone="danger" title="Error loading animation">
+                {status.error === PlayerError.NoAnimation
+                  ? "The uploaded file doesn't contain any animations."
+                  : 'An error occurred while loading the animation.'}
+              </Notice>
+            ) : null}
+            <Disclosure summary="Debug log" variant="line">
+              <DebugLog
+                debugLogs={player.debugLogs}
+                onClear={player.clearDebugLogs}
+              />
+            </Disclosure>
+          </Stack>
+        </Card>
+      </GridItem>
+      <GridItem span={{ base: 'full', lg: 2 }}>
+        <Card as="section" aria-label="Settings" data-testid="side-panel">
+          <Stack gap="5">
+            <SegmentedControl
+              label="Settings"
+              size="sm"
+              fullWidth
+              value={panel}
+              onChange={(v) => setPanel(v as Panel)}
+              options={[...PANELS]}
+            />
+            <Sections items={panels[panel]} />
+          </Stack>
+        </Card>
+      </GridItem>
+    </Grid>
   );
 }

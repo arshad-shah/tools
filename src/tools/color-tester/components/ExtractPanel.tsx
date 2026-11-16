@@ -1,3 +1,15 @@
+import {
+  Button,
+  Card,
+  FileDrop,
+  Inline,
+  Notice,
+  ProgressBar,
+  Slider,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
+import { plus, qrCode } from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatColor } from '@/shared/lib/colour';
@@ -6,33 +18,22 @@ import { notify } from '@/shared/lib/notify';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useJob } from '@/shared/state/useJob';
 import { imageClient } from '@/shared/workers/image-client';
-import { IconPlus, IconQrCode } from '@/shared/ui/icons';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  DropZone,
-  Inline,
-  Label,
-  Slider,
-  Spinner,
-  Stack,
-  Swatch,
-  Text,
-} from '@/shared/ui';
 import { COLORS_MIME, qrColours } from '../lib/qr-colours';
-import { viewAs, type CvdMode } from '../lib/harmonies';
+import { type CvdMode } from '../lib/harmonies';
+import { SwatchSet } from './SwatchSet';
 
 export interface ExtractPanelProps {
   /** Adds hex colours to the working palette. */
   onAdd(colors: string[]): void;
+  /** Makes a colour the base colour. */
+  onUse(hex: string): void;
   cvd: CvdMode;
 }
 
 const ACCEPT = 'image/png,image/jpeg,image/webp';
 
 /** A palette from an image (seeded OKLab k-means in the image worker). */
-export function ExtractPanel({ onAdd, cvd }: ExtractPanelProps) {
+export function ExtractPanel({ onAdd, onUse, cvd }: ExtractPanelProps) {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [k, setK] = useState(6);
@@ -66,89 +67,85 @@ export function ExtractPanel({ onAdd, cvd }: ExtractPanelProps) {
   ]);
 
   return (
-    <Stack gap="4">
-      <DropZone
-        variant="inline"
-        onFiles={take}
-        accept={ACCEPT}
-        multiple={false}
-        title="Drop an image to extract its palette"
-        hint="PNG, JPEG or WebP. Read on this device only."
-        chooseLabel="Choose image"
-      />
-      <Stack gap="1">
-        <Label htmlFor="color-extract-k">{`Colours: ${k}`}</Label>
+    <Card as="section" title="Palette from an image">
+      <Stack gap="5">
+        <FileDrop
+          onFiles={take}
+          accept={ACCEPT}
+          multiple={false}
+          size="sm"
+          hint="PNG, JPEG or WebP. Read on this device only."
+          labels={{
+            prompt: 'Drop an image to extract its palette',
+            chooseOne: 'Choose image',
+          }}
+        />
         <Slider
-          id="color-extract-k"
+          label={`Colours: ${k}`}
           min={3}
           max={12}
           value={k}
-          onValueChange={(n) => {
+          onChange={(v) => {
+            const n = v as number;
             setK(n);
             if (file) void job.run(file, n);
           }}
         />
-      </Stack>
-      {file && (
-        <Text size="sm" tone="muted">
-          {file.name}
-        </Text>
-      )}
-      {job.status === 'running' && (
-        <Inline gap="2" align="center" wrap>
-          <Spinner size="sm" />
-          <Text size="sm">Extracting colours</Text>
-        </Inline>
-      )}
-      {job.status === 'error' && job.error && (
-        <Alert status="danger">
-          <AlertDescription>{job.error.message}</AlertDescription>
-        </Alert>
-      )}
-      {entries.length > 0 && (
-        <Stack gap="3">
-          <Inline gap="3" role="list" aria-label="Extracted colours" wrap>
-            {entries.map((e, i) => (
-              <Inline key={hexes[i]} gap="1" align="center" role="listitem">
-                <Swatch
-                  color={viewAs(e.color, cvd)}
-                  label={`${hexes[i]}, ${Math.round(e.share * 100)}%`}
-                  size="lg"
-                />
-                <Text as="span" size="xs" mono>
-                  {`${hexes[i]} ${Math.round(e.share * 100)}%`}
-                </Text>
-              </Inline>
-            ))}
-          </Inline>
-          <Inline gap="2" align="center" wrap>
-            <Button
-              size="sm"
-              leftIcon={<IconPlus size="sm" />}
-              onClick={() => {
-                onAdd(hexes);
-                notify.success(`Added ${hexes.length} colours to the palette`);
-              }}
-            >
-              Add to palette
-            </Button>
-            <Button
-              size="sm"
-              leftIcon={<IconQrCode size="sm" />}
-              disabled={!qr}
-              onClick={toQr}
-            >
-              Use colours in QR
-            </Button>
-            {!qr && (
-              <Text size="xs" tone="muted">
+        {file ? (
+          <Text size="sm" tone="muted" truncate>
+            {file.name}
+          </Text>
+        ) : null}
+        {job.status === 'running' ? (
+          <ProgressBar label="Extracting colours" indeterminate />
+        ) : null}
+        {job.status === 'error' && job.error ? (
+          <Notice tone="danger">{job.error.message}</Notice>
+        ) : null}
+        {entries.length > 0 ? (
+          <Stack gap="4">
+            <SwatchSet
+              label="Extracted colours"
+              colors={hexes}
+              names={entries.map(
+                (e, i) => `${hexes[i]}, ${Math.round(e.share * 100)}%`,
+              )}
+              cvd={cvd}
+              onUse={onUse}
+            />
+            <Inline gap="2" align="center" wrap>
+              <Button
+                size="sm"
+                variant="soft"
+                icon={plus}
+                onClick={() => {
+                  onAdd(hexes);
+                  notify.success(
+                    `Added ${hexes.length} colours to the palette`,
+                  );
+                }}
+              >
+                Add to palette
+              </Button>
+              <Button
+                size="sm"
+                variant="soft"
+                icon={qrCode}
+                disabled={!qr}
+                onClick={toQr}
+              >
+                Use colours in QR
+              </Button>
+            </Inline>
+            {!qr ? (
+              <Text size="sm" tone="muted">
                 The darkest and lightest colours contrast less than 4 to 1, too
                 low for a scannable QR code.
               </Text>
-            )}
-          </Inline>
-        </Stack>
-      )}
-    </Stack>
+            ) : null}
+          </Stack>
+        ) : null}
+      </Stack>
+    </Card>
   );
 }

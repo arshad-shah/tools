@@ -21,8 +21,8 @@ test('a .riv plays from this site only, at 2x, and exports the current frame as 
   });
   await page.goto(pathOf('rive-animation-player'));
   await page.locator('input[type=file]').first().setInputFiles(RIV);
-  await expect(page.getByRole('combobox', { name: 'Artboard' })).toHaveValue(
-    'Truck',
+  await expect(page.getByRole('combobox', { name: 'Artboard' })).toHaveText(
+    /Truck/,
   );
   await expect(page.getByText(/^\d+\.\d\d s of /)).toBeVisible({
     timeout: 15_000,
@@ -35,9 +35,11 @@ test('a .riv plays from this site only, at 2x, and exports the current frame as 
   // Loops wrap, so only check that time moves and at well over real time.
   expect(t1).not.toBe(t0);
 
-  await page.getByRole('tab', { name: 'Export' }).click();
+  await page.getByRole('radio', { name: 'Export' }).click();
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download PNG' }).click();
+  await page
+    .getByRole('button', { name: 'Download current frame (PNG)' })
+    .click();
   const bytes = await readFile(await (await download).path());
   expect([...bytes.subarray(1, 4)]).toEqual([0x50, 0x4e, 0x47]);
   expect(foreign).toEqual([]);
@@ -47,10 +49,14 @@ test('switching artboards follows a multi-artboard file', async ({ page }) => {
   await page.goto(pathOf('rive-animation-player'));
   await page.locator('input[type=file]').first().setInputFiles(RIV);
   const artboard = page.getByRole('combobox', { name: 'Artboard' });
-  await expect(artboard).toHaveValue('Truck');
-  await artboard.selectOption('Jeep');
-  await expect(artboard).toHaveValue('Jeep');
-  await artboard.selectOption('Truck');
+  const pick = async (name: string) => {
+    await artboard.click();
+    await page.getByRole('option', { name }).click();
+    await expect(artboard).toHaveText(new RegExp(name));
+  };
+  await expect(artboard).toHaveText(/Truck/);
+  await pick('Jeep');
+  await pick('Truck');
   await expect(page.getByRole('button', { name: 'curves' })).toBeVisible();
 });
 
@@ -69,12 +75,10 @@ test('rejects a non-Rive file with a toast', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('the side tabs fit their card at 1400 px (they scroll, not overflow)', async ({
-  page,
-}) => {
+test('the settings sections fit their card at 1400 px', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto(pathOf('rive-animation-player'));
-  const list = page.getByRole('tablist', { name: 'Settings' });
+  const list = page.getByRole('radiogroup', { name: 'Settings' });
   await expect(list).toBeVisible();
   const { listRight, cardRight, listWidth, cardWidth } = await list.evaluate(
     (el) => {

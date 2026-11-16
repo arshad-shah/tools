@@ -7,33 +7,23 @@ import {
   Badge,
   Button,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Code,
+  CodeBlock,
   CopyButton,
+  DescriptionList,
   Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Inline,
-  SecretText,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from '@/shared/ui';
+  Text,
+  TextField,
+} from '@arshad-shah/cynosure';
 import {
-  IconCalendar,
-  IconExternalLink,
-  IconLink,
-  IconQrCode,
-  IconType,
-  IconUser,
-} from '@/shared/ui/icons';
+  calendar,
+  external,
+  link as linkIcon,
+  qrCode,
+  type as typeIcon,
+  user,
+} from '@arshad-shah/cynosure/icons';
 import { resultHandoffs, type ResultTarget } from '../lib/handoffs';
 import { icsFor, interpret, KIND_LABELS, vcfFor } from '../lib/interpret';
 
@@ -47,7 +37,6 @@ export function ResultCard({
 }) {
   const navigate = useNavigate();
   const info = interpret(result.text);
-  const [revealed, setRevealed] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const link =
     info.fields.find(([l]) => l === 'URL')?.[1] ?? result.text.trim();
@@ -58,153 +47,156 @@ export function ResultCard({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <Inline gap="2" align="center" wrap>
-          <CardTitle as="h3">{KIND_LABELS[info.kind]}</CardTitle>
-          <Badge variant="soft" tone="neutral" size="xs">
-            {FORMAT_LABELS[result.format]}
-          </Badge>
-          <Badge variant="outline" tone="neutral" size="xs">
-            Code {index + 1}
-          </Badge>
+    <Card
+      as="section"
+      title={KIND_LABELS[info.kind]}
+      headingLevel={3}
+      actions={
+        <Inline gap="2">
+          <Badge tone="neutral">{FORMAT_LABELS[result.format]}</Badge>
+          <Badge tone="neutral" variant="outline">{`Code ${index + 1}`}</Badge>
         </Inline>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <Table aria-label={`Code ${index + 1} fields`}>
-            <TableBody>
-              {info.fields.map(([label, value], i) => (
-                <TableRow key={`${label}-${i}`}>
-                  <TableCell className="w-40 align-top text-fg-muted">
-                    {label}
-                  </TableCell>
-                  <TableCell className="break-all whitespace-pre-wrap">
-                    {info.secret !== undefined && label === 'Password' ? (
-                      <SecretText
-                        value={value}
-                        revealed={revealed}
-                        onRevealedChange={setRevealed}
-                        copyable
-                        label="WiFi password"
-                      />
-                    ) : (
-                      value
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {info.kind !== 'text' &&
-            info.kind !== 'url' &&
-            info.secret === undefined && (
-              <Code block className="break-all whitespace-pre-wrap">
-                {result.text}
-              </Code>
-            )}
-          <Inline gap="2" wrap>
-            <CopyButton variant="text" label="text" value={result.text} />
-            {info.actions.includes('open') && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconExternalLink size="sm" />}
-                onClick={() => setConfirmOpen(true)}
-              >
-                Open link
-              </Button>
-            )}
-            {handoffs['url-parser'] && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconLink size="sm" />}
-                onClick={() => send('url-parser')}
-              >
-                Open in URL Inspector
-              </Button>
-            )}
-            {handoffs['qr-code-generator'] && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconQrCode size="sm" />}
-                onClick={() => send('qr-code-generator')}
-              >
-                Make QR
-              </Button>
-            )}
-            {handoffs['url-encoder-decoder'] && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconType size="sm" />}
-                onClick={() => send('url-encoder-decoder')}
-              >
-                Send to Text Encoder
-              </Button>
-            )}
-            {info.actions.includes('vcf') && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconUser size="sm" />}
-                onClick={() =>
-                  saveBlob(
-                    new Blob([vcfFor(result.text)], { type: 'text/vcard' }),
-                    'contact.vcf',
-                  )
-                }
-              >
-                Add to contacts
-              </Button>
-            )}
-            {info.actions.includes('ics') && (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconCalendar size="sm" />}
-                onClick={() =>
-                  saveBlob(
-                    new Blob([icsFor(result.text)], { type: 'text/calendar' }),
-                    'event.ics',
-                  )
-                }
-              >
-                Save event
-              </Button>
-            )}
-          </Inline>
-        </Stack>
-      </CardBody>
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogHeader>
-          <DialogTitle>Open this link?</DialogTitle>
-          <DialogDescription>
-            Check the full address before you open it.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody>
-          <Code block className="break-all">
-            {link}
-          </Code>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            leftIcon={<IconExternalLink size="sm" />}
-            onClick={() => {
-              setConfirmOpen(false);
-              window.open(link, '_blank', 'noopener,noreferrer');
-            }}
-          >
-            Open
-          </Button>
-        </DialogFooter>
+      }
+    >
+      <Stack gap="5">
+        <DescriptionList
+          layout="auto"
+          divided
+          items={info.fields.map(([label, value], i) => ({
+            id: `${label}-${i}`,
+            term: label,
+            detail:
+              info.secret !== undefined && label === 'Password' ? (
+                <TextField
+                  label="WiFi password"
+                  labelHidden
+                  type="password"
+                  revealable
+                  readOnly
+                  size="sm"
+                  value={value}
+                  addonEnd={
+                    <CopyButton
+                      size="sm"
+                      variant="ghost"
+                      value={value}
+                      labels={{ copy: 'Copy password' }}
+                    />
+                  }
+                />
+              ) : (
+                <Text wrap="break">{value}</Text>
+              ),
+          }))}
+        />
+        {info.kind !== 'text' &&
+        info.kind !== 'url' &&
+        info.secret === undefined ? (
+          <CodeBlock title="Raw text" code={result.text} wrap copyable />
+        ) : null}
+        <Inline gap="2" wrap>
+          <CopyButton
+            size="sm"
+            variant="soft"
+            value={result.text}
+            labels={{ copy: 'Copy text' }}
+          />
+          {info.actions.includes('open') ? (
+            <Button
+              size="sm"
+              variant="solid"
+              icon={external}
+              onClick={() => setConfirmOpen(true)}
+            >
+              Open link
+            </Button>
+          ) : null}
+          {handoffs['url-parser'] ? (
+            <Button
+              size="sm"
+              variant="soft"
+              icon={linkIcon}
+              onClick={() => send('url-parser')}
+            >
+              Open in URL Inspector
+            </Button>
+          ) : null}
+          {handoffs['qr-code-generator'] ? (
+            <Button
+              size="sm"
+              variant="soft"
+              icon={qrCode}
+              onClick={() => send('qr-code-generator')}
+            >
+              Make QR
+            </Button>
+          ) : null}
+          {handoffs['url-encoder-decoder'] ? (
+            <Button
+              size="sm"
+              variant="soft"
+              icon={typeIcon}
+              onClick={() => send('url-encoder-decoder')}
+            >
+              Send to Text Encoder
+            </Button>
+          ) : null}
+          {info.actions.includes('vcf') ? (
+            <Button
+              size="sm"
+              variant="soft"
+              icon={user}
+              onClick={() =>
+                saveBlob(
+                  new Blob([vcfFor(result.text)], { type: 'text/vcard' }),
+                  'contact.vcf',
+                )
+              }
+            >
+              Add to contacts
+            </Button>
+          ) : null}
+          {info.actions.includes('ics') ? (
+            <Button
+              size="sm"
+              variant="soft"
+              icon={calendar}
+              onClick={() =>
+                saveBlob(
+                  new Blob([icsFor(result.text)], { type: 'text/calendar' }),
+                  'event.ics',
+                )
+              }
+            >
+              Save event
+            </Button>
+          ) : null}
+        </Inline>
+      </Stack>
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Open this link?"
+        description="Check the full address before you open it."
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              icon={external}
+              onClick={() => {
+                setConfirmOpen(false);
+                window.open(link, '_blank', 'noopener,noreferrer');
+              }}
+            >
+              Open
+            </Button>
+          </>
+        }
+      >
+        <CodeBlock code={link} wrap />
       </Dialog>
     </Card>
   );

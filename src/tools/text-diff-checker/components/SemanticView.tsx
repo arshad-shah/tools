@@ -1,12 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  ErrorState,
-  Inline,
-  Label,
-  Select,
-  Stack,
-  SwitchField,
-} from '@/shared/ui';
+import { Notice, Select, Stack, Switch } from '@arshad-shah/cynosure';
 import { toToolError } from '@/shared/lib/errors';
 import {
   csvColumns,
@@ -59,28 +52,23 @@ export function SemanticView({
   return (
     <Stack gap="3">
       {mode === 'json' && (
-        <SwitchField
-          label="Sort keys"
-          checked={sortKeys}
-          onCheckedChange={onSortKeys}
-        />
+        <Switch label="Sort keys" checked={sortKeys} onChange={onSortKeys} />
       )}
       {mode === 'csv' && columns.length > 0 && (
-        <Inline gap="2">
-          <Label htmlFor="diff-csv-key">Key column</Label>
-          <Select
-            id="diff-csv-key"
-            value={key}
-            onValueChange={setPicked}
-            items={columns.map((c) => ({ value: c, label: c }))}
-          />
-        </Inline>
+        <Select
+          label="Key column"
+          value={key}
+          onChange={setPicked}
+          options={columns.map((c) => ({ value: c, label: c }))}
+        />
       )}
       {outcome && 'error' in outcome && outcome.error && (
-        <ErrorState
-          error={outcome.error}
+        <Notice
+          tone="danger"
           title={`Could not compare as ${mode === 'json' ? 'JSON' : mode === 'csv' ? 'CSV' : 'lines'}`}
-        />
+        >
+          {outcome.error.message}
+        </Notice>
       )}
       {outcome && 'json' in outcome && outcome.json && (
         <JsonChangesTable changes={outcome.json} />

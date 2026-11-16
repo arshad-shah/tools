@@ -1,29 +1,30 @@
-import { IconBattery, IconBrain, IconCoffee } from '@/shared/ui/icons';
+import { battery, brain, coffee } from '@arshad-shah/cynosure/icons';
+import type { IconData } from '@arshad-shah/cynosure/icons';
 import type { TimerMode } from '../types';
 
 export const MODE_INFO: Record<
   TimerMode,
   {
-    icon: typeof IconBrain;
+    icon: IconData;
     label: string;
     shortLabel: string;
     colorScheme: 'accent' | 'success';
   }
 > = {
   work: {
-    icon: IconBrain,
+    icon: brain,
     label: 'Focus Time',
     shortLabel: 'Focus',
     colorScheme: 'accent',
   },
   shortBreak: {
-    icon: IconCoffee,
+    icon: coffee,
     label: 'Short Break',
     shortLabel: 'Break',
     colorScheme: 'accent',
   },
   longBreak: {
-    icon: IconBattery,
+    icon: battery,
     label: 'Long Break',
     shortLabel: 'Long',
     colorScheme: 'success',

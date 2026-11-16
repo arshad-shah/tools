@@ -1,18 +1,12 @@
-import { useMemo, useState } from 'react';
 import {
-  Button,
+  CodeBlock,
   Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Inline,
-  Label,
+  Grid,
   Select,
   Stack,
-  SwitchField,
-  TextInputPanel,
-} from '@/shared/ui';
+  Switch,
+} from '@arshad-shah/cynosure';
+import { useMemo, useState } from 'react';
 import type { HttpRequest } from '../lib/model';
 import { SNIPPET_LANGS, toSnippet, type SnippetLang } from '../lib/snippets';
 
@@ -32,47 +26,31 @@ export function SnippetDialog({ open, onOpenChange, request, vars }: Props) {
     [open, request, lang, withValues, vars],
   );
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Code snippet</DialogTitle>
-      </DialogHeader>
-      <DialogBody>
-        <Stack gap="3">
-          <Inline gap="3" align="end" wrap>
-            <Stack gap="1">
-              <Label htmlFor="snippet-lang">Language</Label>
-              <Select
-                id="snippet-lang"
-                value={lang}
-                onValueChange={(v) => setLang(v as SnippetLang)}
-                items={SNIPPET_LANGS.map((l) => ({
-                  value: l.id,
-                  label: l.label,
-                }))}
-              />
-            </Stack>
-            <SwitchField
-              label="Include variable values"
-              checked={withValues}
-              onCheckedChange={setWithValues}
-            />
-          </Inline>
-          <TextInputPanel
-            label="Snippet"
-            language="plain"
-            value={code}
-            onChange={() => {}}
-            readOnly
-            wrap
-            maxHeight={360}
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Code snippet"
+      size="lg"
+    >
+      <Stack gap="4">
+        <Grid columns={{ base: 1, sm: 2 }} gap="4" align="end">
+          <Select
+            label="Language"
+            value={lang}
+            onChange={(v) => setLang(v as SnippetLang)}
+            options={SNIPPET_LANGS.map((l) => ({
+              value: l.id,
+              label: l.label,
+            }))}
           />
-        </Stack>
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="primary" onClick={() => onOpenChange(false)}>
-          Done
-        </Button>
-      </DialogFooter>
+          <Switch
+            label="Include variable values"
+            checked={withValues}
+            onChange={setWithValues}
+          />
+        </Grid>
+        <CodeBlock title="Snippet" code={code} wrap />
+      </Stack>
     </Dialog>
   );
 }

@@ -1,12 +1,4 @@
-import {
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/ui';
+import { Button, Inline, Table, Text } from '@arshad-shah/cynosure';
 import type { FieldFilter } from '../lib/filter';
 
 export interface FieldTableProps {
@@ -14,25 +6,43 @@ export interface FieldTableProps {
   onFilter(f: FieldFilter): void;
 }
 
+type Row = [key: string, value: string];
+
 /** An entry's parsed fields, each with "Filter to" and "Exclude". */
 export function FieldTable({ fields, onFilter }: FieldTableProps) {
   return (
-    <Table className="text-sm">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Field</TableHead>
-          <TableHead>Value</TableHead>
-          <TableHead>
-            <span className="sr-only">Actions</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Object.entries(fields).map(([key, value]) => (
-          <TableRow key={key}>
-            <TableCell className="font-mono text-fg-muted">{key}</TableCell>
-            <TableCell className="font-mono break-all">{value}</TableCell>
-            <TableCell className="whitespace-nowrap">
+    <Table<Row>
+      caption="Fields"
+      captionHidden
+      size="sm"
+      rows={Object.entries(fields)}
+      getRowId={([key]) => key}
+      columns={[
+        {
+          key: 'field',
+          header: 'Field',
+          rowHeader: true,
+          cell: ([key]) => (
+            <Text variant="code" size="sm" tone="muted">
+              {key}
+            </Text>
+          ),
+        },
+        {
+          key: 'value',
+          header: 'Value',
+          cell: ([, value]) => (
+            <Text variant="code" size="sm" wrap="break">
+              {value}
+            </Text>
+          ),
+        },
+        {
+          key: 'actions',
+          header: 'Actions',
+          align: 'end',
+          cell: ([key, value]) => (
+            <Inline gap="1" wrap={false} justify="end">
               <Button
                 size="sm"
                 variant="ghost"
@@ -49,10 +59,10 @@ export function FieldTable({ fields, onFilter }: FieldTableProps) {
               >
                 Exclude
               </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+            </Inline>
+          ),
+        },
+      ]}
+    />
   );
 }

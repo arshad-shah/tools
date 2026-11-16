@@ -1,212 +1,91 @@
+import { Grid, Heading, Slider, Stack, Switch } from '@arshad-shah/cynosure';
 import React from 'react';
-import {
-  IconBattery,
-  IconClock,
-  IconCoffee,
-  IconPlay,
-  IconSettings2,
-  IconTimer,
-} from '@/shared/ui/icons';
-import {
-  Badge,
-  Card,
-  CardBody,
-  Heading,
-  Inline,
-  Label,
-  Slider,
-  Stack,
-  Switch,
-  Text,
-} from '@/shared/ui';
 import { usePomodoroStore } from '../store';
 import type { Settings } from '../types';
 import { AlertSettings } from './AlertSettings';
 
+const minutes = (v: number) => `${v} min`;
+const sessions = (v: number) => `${v} sessions`;
+
+/** Durations, the long-break cycle, automation and alerts. */
 export const SettingsPanel: React.FC = () => {
   const settings = usePomodoroStore((s) => s.settings);
   const update = (u: Partial<Settings>) =>
     usePomodoroStore.getState().updateSettings(u);
 
   return (
-    <Stack gap="6">
-      <Inline align="center" gap="2">
-        <IconSettings2 size="lg" />
-        <Heading level={3} size="md">
-          Settings
+    <Stack gap="8">
+      <Stack gap="5">
+        <Heading level={3} size="sm">
+          Timer durations
         </Heading>
-      </Inline>
-
-      <Stack gap="4">
-        <Inline align="center" gap="2">
-          <IconClock size="md" />
-          <Heading level={4} size="sm">
-            Timer durations
-          </Heading>
-        </Inline>
-
-        <Card>
-          <CardBody>
-            <Stack gap="3">
-              <Inline justify="between" align="center" wrap>
-                <Inline align="center" gap="2">
-                  <IconTimer size="sm" />
-                  <Label>Work duration</Label>
-                </Inline>
-                <Badge variant="soft" tone="accent" size="sm">
-                  {settings.workDuration} min
-                </Badge>
-              </Inline>
-              <Slider
-                value={settings.workDuration}
-                onValueChange={(v) => update({ workDuration: v })}
-                min={1}
-                max={60}
-                step={1}
-                aria-label="Work duration"
-              />
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Stack gap="3">
-              <Inline justify="between" align="center" wrap>
-                <Inline align="center" gap="2">
-                  <IconCoffee size="sm" />
-                  <Label>Short break</Label>
-                </Inline>
-                <Badge variant="soft" tone="info" size="sm">
-                  {settings.shortBreakDuration} min
-                </Badge>
-              </Inline>
-              <Slider
-                value={settings.shortBreakDuration}
-                onValueChange={(v) => update({ shortBreakDuration: v })}
-                min={1}
-                max={30}
-                step={1}
-                aria-label="Short break"
-              />
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Stack gap="3">
-              <Inline justify="between" align="center" wrap>
-                <Inline align="center" gap="2">
-                  <IconBattery size="sm" />
-                  <Label>Long break</Label>
-                </Inline>
-                <Badge variant="soft" tone="success" size="sm">
-                  {settings.longBreakDuration} min
-                </Badge>
-              </Inline>
-              <Slider
-                value={settings.longBreakDuration}
-                onValueChange={(v) => update({ longBreakDuration: v })}
-                min={5}
-                max={45}
-                step={5}
-                aria-label="Long break"
-              />
-            </Stack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Stack gap="3">
-              <Inline justify="between" align="center" wrap>
-                <Inline align="center" gap="2">
-                  <IconBattery size="sm" />
-                  <Label>Long break after</Label>
-                </Inline>
-                <Badge variant="soft" tone="success" size="sm">
-                  {settings.longBreakEvery} sessions
-                </Badge>
-              </Inline>
-              <Slider
-                value={settings.longBreakEvery}
-                onValueChange={(v) => update({ longBreakEvery: v })}
-                min={2}
-                max={8}
-                step={1}
-                aria-label="Long break after"
-              />
-            </Stack>
-          </CardBody>
-        </Card>
+        <Grid columns={{ base: 1, md: 2 }} gap="6">
+          <Slider
+            label="Work duration"
+            showValue
+            labels={{ value: minutes }}
+            value={settings.workDuration}
+            onChange={(v) => update({ workDuration: v as number })}
+            min={1}
+            max={60}
+          />
+          <Slider
+            label="Short break"
+            showValue
+            labels={{ value: minutes }}
+            value={settings.shortBreakDuration}
+            onChange={(v) => update({ shortBreakDuration: v as number })}
+            min={1}
+            max={30}
+          />
+          <Slider
+            label="Long break"
+            showValue
+            labels={{ value: minutes }}
+            value={settings.longBreakDuration}
+            onChange={(v) => update({ longBreakDuration: v as number })}
+            min={5}
+            max={45}
+            step={5}
+          />
+          <Slider
+            label="Long break after"
+            showValue
+            labels={{ value: sessions }}
+            value={settings.longBreakEvery}
+            onChange={(v) => update({ longBreakEvery: v as number })}
+            min={2}
+            max={8}
+          />
+        </Grid>
       </Stack>
 
-      <Stack gap="4">
-        <Inline align="center" gap="2">
-          <IconPlay size="md" />
-          <Heading level={4} size="sm">
-            Automation
-          </Heading>
-        </Inline>
-
-        <Card>
-          <CardBody>
-            <Inline justify="between" align="center" gap="3" wrap>
-              <Stack gap="1">
-                <Label htmlFor="auto-breaks">Auto-start breaks</Label>
-                <Text size="xs" tone="subtle">
-                  Automatically begin breaks when work sessions end
-                </Text>
-              </Stack>
-              <Switch
-                id="auto-breaks"
-                checked={settings.autoStartBreaks}
-                onCheckedChange={(c) => update({ autoStartBreaks: c })}
-              />
-            </Inline>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Inline justify="between" align="center" gap="3" wrap>
-              <Stack gap="1">
-                <Label htmlFor="auto-pomos">Auto-start pomodoros</Label>
-                <Text size="xs" tone="subtle">
-                  Automatically begin new work sessions after breaks
-                </Text>
-              </Stack>
-              <Switch
-                id="auto-pomos"
-                checked={settings.autoStartPomodoros}
-                onCheckedChange={(c) => update({ autoStartPomodoros: c })}
-              />
-            </Inline>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Inline justify="between" align="center" gap="3" wrap>
-              <Stack gap="1">
-                <Label htmlFor="sound">Sound notifications</Label>
-                <Text size="xs" tone="subtle">
-                  Play a sound when the timer completes
-                </Text>
-              </Stack>
-              <Switch
-                id="sound"
-                checked={settings.soundEnabled}
-                onCheckedChange={(c) => update({ soundEnabled: c })}
-              />
-            </Inline>
-          </CardBody>
-        </Card>
+      <Stack gap="5">
+        <Heading level={3} size="sm">
+          Automation
+        </Heading>
+        <Switch
+          label="Auto-start breaks"
+          description="Begin breaks when work sessions end"
+          checked={settings.autoStartBreaks}
+          onChange={(c) => update({ autoStartBreaks: c })}
+        />
+        <Switch
+          label="Auto-start pomodoros"
+          description="Begin new work sessions after breaks"
+          checked={settings.autoStartPomodoros}
+          onChange={(c) => update({ autoStartPomodoros: c })}
+        />
+        <Switch
+          label="Sound notifications"
+          description="Play a sound when the timer completes"
+          checked={settings.soundEnabled}
+          onChange={(c) => update({ soundEnabled: c })}
+        />
       </Stack>
 
-      <Stack gap="4">
-        <Heading level={4} size="sm">
+      <Stack gap="5">
+        <Heading level={3} size="sm">
           Alerts
         </Heading>
         <AlertSettings />

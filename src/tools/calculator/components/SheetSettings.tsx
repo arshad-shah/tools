@@ -1,13 +1,15 @@
-import React from 'react';
 import {
+  Badge,
+  Button,
   Inline,
-  Label,
-  NumberInput,
-  OptionsMenu,
+  NumberField,
+  Popover,
   SegmentedControl,
   Stack,
-  SwitchField,
-} from '@/shared/ui';
+  Switch,
+} from '@arshad-shah/cynosure';
+import { sliders } from '@arshad-shah/cynosure/icons';
+import React from 'react';
 import type { CalculatorSettings } from '../settings';
 
 type Patch = Partial<
@@ -34,44 +36,64 @@ export const SheetSettings: React.FC<SheetSettingsProps> = ({
     Number(settings.bigNumber) +
     Number(settings.thousands);
   return (
-    <Inline gap="2" align="center">
+    <Inline gap="2" align="center" wrap>
       <SegmentedControl
         label="Angle unit"
         size="sm"
         value={settings.angle}
-        onChange={(angle) => onChange({ angle })}
+        onChange={(angle) => onChange({ angle: angle as 'deg' | 'rad' })}
         options={[
           { value: 'deg', label: 'Degrees' },
           { value: 'rad', label: 'Radians' },
         ]}
       />
-      <OptionsMenu title="Calculator options" changed={changed}>
-        <Stack gap="1">
-          <Label htmlFor="calc-precision">Significant digits</Label>
-          <NumberInput
-            id="calc-precision"
+      <Popover
+        label="Calculator options"
+        placement="bottom"
+        trigger={(props) => (
+          <Button
+            {...props}
+            size="sm"
+            variant="ghost"
+            icon={sliders}
+            aria-label={changed ? `Options, ${changed} changed` : 'Options'}
+          >
+            <Inline as="span" gap="2" align="center">
+              Options
+              {changed ? (
+                <Badge size="sm" tone="accent">
+                  {changed}
+                </Badge>
+              ) : null}
+            </Inline>
+          </Button>
+        )}
+      >
+        <Stack gap="5" padding="4">
+          <NumberField
+            label="Significant digits"
             min={4}
             max={64}
             value={settings.precision}
-            onValueChange={(precision) =>
-              Number.isFinite(precision) && onChange({ precision })
+            onChange={(precision) =>
+              precision !== null &&
+              Number.isFinite(precision) &&
+              onChange({ precision })
             }
           />
+          <Switch
+            label="Exact decimals"
+            description="BigNumber arithmetic: 0.1 + 0.2 is exactly 0.3"
+            checked={settings.bigNumber}
+            onChange={(bigNumber) => onChange({ bigNumber })}
+          />
+          <Switch
+            label="Thousands separators"
+            checked={settings.thousands}
+            onChange={(thousands) => onChange({ thousands })}
+          />
         </Stack>
-        <SwitchField
-          id="calc-bignumber"
-          label="Exact decimals"
-          description="BigNumber arithmetic: 0.1 + 0.2 is exactly 0.3"
-          checked={settings.bigNumber}
-          onCheckedChange={(bigNumber) => onChange({ bigNumber })}
-        />
-        <SwitchField
-          id="calc-thousands"
-          label="Thousands separators"
-          checked={settings.thousands}
-          onCheckedChange={(thousands) => onChange({ thousands })}
-        />
-      </OptionsMenu>
+      </Popover>
     </Inline>
   );
 };

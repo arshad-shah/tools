@@ -1,6 +1,5 @@
+import { Grid, Stack, Text, TextField } from '@arshad-shah/cynosure';
 import React, { useEffect, useRef } from 'react';
-import { Box, Stack, Text } from '@/shared/ui';
-import { CodeSurface, type CodeSurfaceHandle } from '@/shared/ui/code-surface';
 import type { SheetApi } from '../hooks/useSheet';
 
 interface SheetProps {
@@ -8,70 +7,84 @@ interface SheetProps {
 }
 
 /**
- * The expression sheet: one single-line editor per line with its live
- * result right-aligned (or the line's error). Enter records the line and
- * moves to a new one; keypad edits put the caret back where they ended.
+ * The expression sheet: one field per line with its live result beside it
+ * (or the line's error). Enter records the line and moves to a new one;
+ * keypad edits put the caret back where they ended.
  */
 export const Sheet: React.FC<SheetProps> = ({ sheet }) => {
-  const handles = useRef<(CodeSurfaceHandle | null)[]>([]);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const focusNext = useRef(false);
   const { caretRequest, activeLine } = sheet;
 
   useEffect(() => {
     if (!caretRequest) return;
-    const h = handles.current[caretRequest.line];
-    h?.setSelection(caretRequest.pos, caretRequest.pos, { scroll: false });
+    const el = inputs.current[caretRequest.line];
+    if (!el) return;
     if (focusNext.current) {
       focusNext.current = false;
-      h?.focus();
+      el.focus();
     }
+    el.setSelectionRange(caretRequest.pos, caretRequest.pos);
   }, [caretRequest]);
 
+  const report = (i: number, el: HTMLInputElement) =>
+    sheet.select(i, el.selectionStart ?? 0, el.selectionEnd ?? 0);
+
   return (
-    <Stack gap="2" aria-label="Expression sheet" role="group">
+    <Stack gap="3" role="group" aria-label="Expression sheet">
       {sheet.lines.map((line, i) => {
         const result = sheet.results[i];
+        const active = i === activeLine;
         return (
-          <Box
+          <Grid
             key={i}
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
-            onFocus={() => sheet.setActiveLine(i)}
-            data-active={i === activeLine || undefined}
+            columns="minmax(0, 3fr) minmax(0, 2fr)"
+            gap="3"
+            align="center"
           >
-            <CodeSurface
-              ref={(h) => {
-                handles.current[i] = h;
+            <TextField
+              ref={(el) => {
+                inputs.current[i] = el;
               }}
-              value={line}
-              onChange={(text) => sheet.setLine(i, text)}
-              onSelectionChange={(start, end) => sheet.select(i, start, end)}
-              onSubmit={() => {
-                focusNext.current = true;
-                sheet.evaluateActive();
-              }}
-              language="plain"
               label={`Line ${i + 1}`}
+              labelHidden
+              variant={active ? 'outline' : 'soft'}
+              size="lg"
+              value={line}
+              spellCheck={false}
+              autoComplete="off"
               placeholder={
                 i === 0 ? 'Type an expression, e.g. 5 km to mi' : undefined
               }
-              singleLine
-              className={i === activeLine ? 'border-accent' : undefined}
+              onChange={(text) => sheet.setLine(i, text)}
+              onFocus={() => sheet.setActiveLine(i)}
+              onSelect={(e) => report(i, e.currentTarget)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                focusNext.current = true;
+                sheet.evaluateActive();
+              }}
             />
-            <Box
-              className="min-w-16 max-w-[45%] text-right"
-              data-testid={`result-${i + 1}`}
-            >
+            <Stack align="end" data-testid={`result-${i + 1}`}>
               {result && !result.ok ? (
-                <Text size="xs" className="text-danger break-words">
+                <Text size="sm" tone="danger" align="end" wrap="break">
                   {result.error}
                 </Text>
               ) : (
-                <Text mono weight="semibold" className="break-all tabular-nums">
+                <Text
+                  size="lg"
+                  weight="bold"
+                  numeric
+                  align="end"
+                  wrap="break"
+                  tone={active ? 'inherit' : 'muted'}
+                >
                   {result?.text ?? ''}
                 </Text>
               )}
-            </Box>
-          </Box>
+            </Stack>
+          </Grid>
         );
       })}
     </Stack>

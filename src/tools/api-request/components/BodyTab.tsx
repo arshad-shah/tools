@@ -3,21 +3,17 @@ import {
   JsonLocateError,
   parseJsonWithLocations,
 } from '@/shared/lib/data-formats/json-locate';
-import { formatBytes } from '@/shared/lib/format';
 import {
-  Button,
-  FilePicker,
-  Inline,
-  Input,
+  FileDrop,
   KeyValueEditor,
-  Label,
-  SegmentedControl,
+  Select,
   Stack,
   Text,
-  TextInputPanel,
-  type CodeMarker,
-} from '@/shared/ui';
-import { IconFileUp } from '@/shared/ui/icons';
+  TextArea,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { formatBytes } from '@/shared/lib/format';
+import { fromPairs, toPairs } from '../lib/kv';
 import type { BodyKind, HttpRequest, RequestBody } from '../lib/model';
 
 const KINDS: { value: BodyKind; label: string }[] = [
@@ -29,21 +25,16 @@ const KINDS: { value: BodyKind; label: string }[] = [
   { value: 'binary', label: 'File' },
 ];
 
-function jsonMarkers(text: string): CodeMarker[] {
-  if (!text.trim() || text.includes('{{')) return [];
+/** Where JSON text breaks, in words (nothing for valid or templated text). */
+function jsonError(text: string): string | undefined {
+  if (!text.trim() || text.includes('{{')) return undefined;
   try {
     parseJsonWithLocations(text);
-    return [];
+    return undefined;
   } catch (e) {
     const loc = e instanceof JsonLocateError ? e : null;
-    return [
-      {
-        line: loc?.line ?? 1,
-        column: loc?.column ?? 1,
-        message: e instanceof Error ? e.message : 'Invalid JSON',
-        severity: 'error',
-      },
-    ];
+    const message = e instanceof Error ? e.message : 'Invalid JSON';
+    return `Line ${loc?.line ?? 1}, column ${loc?.column ?? 1}: ${message}`;
   }
 }
 
@@ -58,114 +49,114 @@ export function BodyTab({
   const b = request.body;
   const set = (patch: Partial<RequestBody>) =>
     onChange({ ...request, body: { ...b, ...patch } });
-  const markers = useMemo(
-    () => (b.kind === 'json' ? jsonMarkers(b.text) : []),
+  const bodyError = useMemo(
+    () => (b.kind === 'json' ? jsonError(b.text) : undefined),
     [b.kind, b.text],
   );
 
   if (request.mode === 'graphql')
     return (
-      <Stack gap="3">
-        <TextInputPanel
+      <Stack gap="4">
+        <TextArea
           label="GraphQL query"
-          language="plain"
+          rows={8}
+          maxRows={20}
+          spellCheck={false}
           value={request.graphql.query}
           onChange={(query) =>
             onChange({ ...request, graphql: { ...request.graphql, query } })
           }
-          minHeight={160}
           placeholder="query { items { id } }"
         />
-        <TextInputPanel
+        <TextArea
           label="GraphQL variables (JSON)"
-          language="json"
+          rows={4}
+          maxRows={12}
+          spellCheck={false}
           value={request.graphql.variables}
           onChange={(variables) =>
             onChange({ ...request, graphql: { ...request.graphql, variables } })
           }
-          markers={jsonMarkers(request.graphql.variables)}
-          minHeight={80}
+          error={jsonError(request.graphql.variables)}
         />
       </Stack>
     );
 
   const noBody = request.method === 'GET' || request.method === 'HEAD';
   return (
-    <Stack gap="3">
-      <SegmentedControl
+    <Stack gap="4">
+      <Select
         label="Body type"
-        size="sm"
         value={b.kind}
         onChange={(kind) => set({ kind: kind as BodyKind })}
         options={KINDS}
       />
-      {noBody && b.kind !== 'none' && (
+      {noBody && b.kind !== 'none' ? (
         <Text size="sm" tone="muted">
-          {request.method} requests are sent without a body.
+          {`${request.method} requests are sent without a body.`}
         </Text>
-      )}
-      {b.kind === 'json' && (
-        <TextInputPanel
+      ) : null}
+      {b.kind === 'json' ? (
+        <TextArea
           label="JSON body"
-          language="json"
+          rows={8}
+          maxRows={24}
+          spellCheck={false}
           value={b.text}
           onChange={(text) => set({ text })}
-          markers={markers}
-          minHeight={180}
+          error={bodyError}
         />
-      )}
-      {b.kind === 'raw' && (
-        <Stack gap="2">
-          <Stack gap="1">
-            <Label htmlFor="body-type">Content type</Label>
-            <Input
-              id="body-type"
-              value={b.contentType}
-              onChange={(contentType) => set({ contentType })}
-              placeholder="text/plain"
-            />
-          </Stack>
-          <TextInputPanel
+      ) : null}
+      {b.kind === 'raw' ? (
+        <Stack gap="4">
+          <TextField
+            label="Content type"
+            value={b.contentType}
+            onChange={(contentType) => set({ contentType })}
+            placeholder="text/plain"
+            spellCheck={false}
+          />
+          <TextArea
             label="Raw body"
-            language="plain"
+            rows={8}
+            maxRows={24}
+            spellCheck={false}
             value={b.text}
             onChange={(text) => set({ text })}
-            minHeight={160}
           />
         </Stack>
-      )}
-      {(b.kind === 'form-data' || b.kind === 'urlencoded') && (
+      ) : null}
+      {b.kind === 'form-data' || b.kind === 'urlencoded' ? (
         <KeyValueEditor
-          rows={b.form}
-          onChange={(form) => set({ form })}
-          allowFiles={b.kind === 'form-data'}
-          ariaLabel={
+          label={
             b.kind === 'form-data' ? 'Form data fields' : 'URL encoded fields'
           }
-          keyLabel="Field"
+          pairs={toPairs(b.form)}
+          onChange={(pairs) => set({ form: fromPairs(pairs, b.form) })}
+          allowFiles={b.kind === 'form-data'}
+          labels={{ key: 'Field' }}
         />
-      )}
-      {b.kind === 'binary' && (
-        <Inline gap="2" align="center">
-          <FilePicker onFiles={(f) => f[0] && set({ file: f[0] })}>
-            {(open) => (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconFileUp size="sm" />}
-                onClick={open}
-              >
-                {b.file ? 'Change file' : 'Choose file'}
-              </Button>
-            )}
-          </FilePicker>
-          <Text size="sm" tone="muted">
-            {b.file
-              ? `${b.file.name} (${formatBytes(b.file.size)})`
-              : 'No file chosen'}
-          </Text>
-        </Inline>
-      )}
+      ) : null}
+      {b.kind === 'binary' ? (
+        <Stack gap="2">
+          <FileDrop
+            size="sm"
+            multiple={false}
+            value={b.file ? [b.file] : []}
+            onFiles={(f) => f[0] && set({ file: f[0] })}
+            onRemove={() => set({ file: null })}
+            labels={{
+              prompt: 'Drop the file to send as the body',
+              chooseOne: b.file ? 'Change file' : 'Choose file',
+            }}
+          />
+          {b.file ? (
+            <Text size="sm" tone="muted">
+              {`${b.file.name} (${formatBytes(b.file.size)})`}
+            </Text>
+          ) : null}
+        </Stack>
+      ) : null}
     </Stack>
   );
 }
