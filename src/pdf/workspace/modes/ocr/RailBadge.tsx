@@ -1,4 +1,4 @@
-import { Badge, StatusDot } from '@/shared/ui';
+import { Badge } from '@arshad-shah/cynosure';
 import type { PageRef } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';
 import { latestOcr } from './actions';
@@ -17,13 +17,12 @@ export function OcrRailBadge({
   if (!result || result.words === 0) return null;
   if (result.low)
     return (
-      <Badge tone="warning" variant="soft" size="xs">
-        <StatusDot tone="warning" decorative />
+      <Badge tone="warning" size="sm" dot>
         Low confidence
       </Badge>
     );
   return (
-    <Badge tone="neutral" variant="soft" size="xs">
+    <Badge tone="neutral" size="sm">
       Text added
     </Badge>
   );
