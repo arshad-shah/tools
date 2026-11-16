@@ -8,26 +8,25 @@ const ABC_SHA256 =
 
 beforeEach(() => localStorage.clear());
 
-const tab = (name: string) =>
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
-/** Types in the Input pane, then shows the Output pane (R41 tabs). */
-const typeMessage = (text: string) => {
-  tab('Input');
+const typeMessage = (text: string) =>
   fireEvent.change(screen.getByRole('textbox', { name: 'Text to hash' }), {
     target: { value: text },
   });
-  tab('Output');
-};
+/** A digest's value (its element id is `hash-<id>`). */
+const digestOf = (id: string) => document.getElementById(`hash-${id}`);
+const findDigest = (id: string) =>
+  waitFor(() => {
+    const el = digestOf(id);
+    if (!el) throw new Error(`no ${id} yet`);
+    return el;
+  });
 
 describe('HashGenerator', () => {
-  it('shows the text input and the hashes as tabs (R41)', async () => {
+  it('starts empty, then hashes beside the input with Copy', async () => {
     render(<HashGenerator />);
-    tab('Input');
-    expect(screen.queryByRole('list', { name: 'Hash results' })).toBeNull();
-    tab('Output');
-    expect(screen.getByText('No hashes yet')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'No hashes yet' })).toBeTruthy();
     typeMessage('abc');
-    await screen.findByTestId('hash-sha256');
+    await findDigest('sha256');
     expect(screen.getByRole('button', { name: 'Copy SHA-256' })).toBeTruthy();
   });
 
@@ -35,18 +34,16 @@ describe('HashGenerator', () => {
     render(<HashGenerator />);
     typeMessage('abc');
     await waitFor(() =>
-      expect(screen.getByTestId('hash-sha256').textContent).toBe(ABC_SHA256),
+      expect(digestOf('sha256')?.textContent).toBe(ABC_SHA256),
     );
-    expect(screen.queryByTestId('hash-blake3')).toBeNull();
+    expect(digestOf('blake3')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Algorithms/ }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'BLAKE3' }));
     await waitFor(() =>
-      expect(screen.getByTestId('hash-blake3').textContent).toMatch(
-        /^[0-9a-f]{64}$/,
-      ),
+      expect(digestOf('blake3')?.textContent).toMatch(/^[0-9a-f]{64}$/),
     );
     fireEvent.click(screen.getByRole('checkbox', { name: 'SHA-256' }));
-    await waitFor(() => expect(screen.queryByTestId('hash-sha256')).toBeNull());
+    await waitFor(() => expect(digestOf('sha256')).toBeNull());
     // Settings persist in the module store: put them back.
     fireEvent.click(screen.getByRole('checkbox', { name: 'SHA-256' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'BLAKE3' }));
@@ -55,7 +52,7 @@ describe('HashGenerator', () => {
   it('the verify field names the matching algorithm', async () => {
     render(<HashGenerator />);
     typeMessage('abc');
-    await screen.findByTestId('hash-sha256');
+    await findDigest('sha256');
     fireEvent.change(screen.getByLabelText('Expected hash'), {
       target: { value: `SHA256: ${ABC_SHA256.toUpperCase()}` },
     });
@@ -68,10 +65,9 @@ describe('HashGenerator', () => {
   it('switches the output format', async () => {
     render(<HashGenerator />);
     typeMessage('abc');
-    await screen.findByTestId('hash-sha256');
+    await findDigest('sha256');
     fireEvent.click(screen.getByRole('radio', { name: 'HEX' }));
-    expect(screen.getByTestId('hash-sha256').textContent).toBe(
-      ABC_SHA256.toUpperCase(),
-    );
+    expect(digestOf('sha256')?.textContent).toBe(ABC_SHA256.toUpperCase());
+    fireEvent.click(screen.getByRole('radio', { name: 'hex' }));
   });
 });

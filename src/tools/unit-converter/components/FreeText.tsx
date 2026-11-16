@@ -1,5 +1,6 @@
+import { Stack, Text, TextField } from '@arshad-shah/cynosure';
+import { search } from '@arshad-shah/cynosure/icons';
 import React from 'react';
-import { Input, Label, Stack, Text } from '@/shared/ui';
 
 export interface FreeTextProps {
   value: string;
@@ -16,19 +17,25 @@ export const FreeText: React.FC<FreeTextProps> = ({
   result,
   inputRef,
 }) => (
-  <Stack gap="1">
-    <Label htmlFor="unit-free-text">Convert</Label>
-    <Input
-      id="unit-free-text"
+  <Stack gap="3">
+    <TextField
       ref={inputRef}
+      label="Convert"
+      labelHidden
+      size="lg"
+      iconStart={search}
+      clearable
       value={value}
       onChange={onChange}
       placeholder="5 ft 3 in to cm, 72F or 3 kg in lb"
       spellCheck={false}
       autoComplete="off"
-      aria-describedby="unit-free-text-result"
     />
-    <Text size="sm" tone="subtle" id="unit-free-text-result" aria-live="polite">
+    <Text
+      size={result && value.trim() ? 'lg' : 'sm'}
+      weight={result && value.trim() ? 'medium' : 'regular'}
+      tone={result && value.trim() ? 'neutral' : 'muted'}
+    >
       {value.trim() === ''
         ? 'Type a quantity with its unit.'
         : result === null

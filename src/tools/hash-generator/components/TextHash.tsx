@@ -1,15 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
+  Button,
+  Card,
   EmptyState,
   Inline,
-  PaneTabs,
   Select,
   Stack,
-  SwitchField,
-  TextInputPanel,
-  usePaneTab,
-} from '@/shared/ui';
+  Switch,
+  TextArea,
+} from '@arshad-shah/cynosure';
+import { hash, sparkles } from '@arshad-shah/cynosure/icons';
+import React, { useEffect, useMemo, useState } from 'react';
+import { TextSourceActions } from '@/app/ui/text-source';
+import { TransformLayout } from '@/app/ui/transform';
 import {
   bytesFrom,
   digest,
@@ -21,7 +23,8 @@ import { toToolError } from '@/shared/lib/errors';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import { formatDigest, type DigestFormat } from '../lib/format';
 import { normalizeExpected } from '../lib/verify';
-import { ResultRow } from './ResultRow';
+import { HmacCard } from './HmacCard';
+import { ResultList } from './ResultRow';
 import { VerifyField } from './VerifyField';
 
 const ENCODINGS = [
@@ -29,6 +32,8 @@ const ENCODINGS = [
   { value: 'hex', label: 'Hex' },
   { value: 'base64', label: 'Base64' },
 ];
+
+const EXAMPLE = 'The quick brown fox jumps over the lazy dog';
 
 const acceptsText = (p: HandoffPayload) =>
   p.kind === 'text' && p.mime === 'text/plain';
@@ -38,20 +43,20 @@ interface TextHashProps {
   output: DigestFormat;
   inputEncoding: KeyFormat;
   onInputEncoding(e: KeyFormat): void;
-  /** The message bytes, for the HMAC card (null: nothing to hash). */
-  onMessage(bytes: Uint8Array | null): void;
+  hmacAlg: DigestId;
+  onHmacAlg(alg: DigestId): void;
 }
 
-/** Text in, every selected digest out, with the expected-hash check. */
+/** Text in; every selected digest, the expected-hash check and HMAC out. */
 export const TextHash: React.FC<TextHashProps> = ({
   selected,
   output,
   inputEncoding,
   onInputEncoding,
-  onMessage,
+  hmacAlg,
+  onHmacAlg,
 }) => {
   const [input, setInput] = useState('');
-  const tab = usePaneTab('hash-generator', 'input');
   // An empty message is valid (SHA-256("") is well known) but only hashed
   // when asked, so the page does not open full of results.
   const [hashEmpty, setHashEmpty] = useState(false);
@@ -70,8 +75,6 @@ export const TextHash: React.FC<TextHashProps> = ({
       return { bytes: null, error: toToolError(e).message };
     }
   }, [input, hashEmpty, inputEncoding]);
-
-  useEffect(() => onMessage(message.bytes), [message.bytes, onMessage]);
 
   useEffect(() => {
     let live = true;
@@ -98,88 +101,98 @@ export const TextHash: React.FC<TextHashProps> = ({
   const expectedHex = expected.trim() ? normalizeExpected(expected) : null;
   const shown = selected.filter((id) => results[id] !== undefined);
 
-  const inputPane = (
-    <Stack gap="4">
-      <TextInputPanel
-        label="Text to hash"
-        value={input}
-        onChange={setInput}
-        language="plain"
-        wrap
-        handoff={acceptsText}
-        placeholder="Type or paste the message"
-        minHeight={120}
-      />
-      <Inline gap="4" align="center" wrap>
-        <div className="w-44">
-          <Select
-            value={inputEncoding}
-            onValueChange={(v) => onInputEncoding(v as KeyFormat)}
-            items={ENCODINGS}
-            aria-label="Input encoding"
-          />
-        </div>
-        {input === '' && (
-          <SwitchField
-            label="Hash an empty message"
-            checked={hashEmpty}
-            onCheckedChange={setHashEmpty}
-          />
-        )}
-      </Inline>
-      {message.error && (
-        <Alert status="danger" size="sm">
-          {message.error}
-        </Alert>
-      )}
-    </Stack>
-  );
-
-  const outputPane = (
-    <Stack gap="4">
-      <VerifyField value={expected} onChange={setExpected} results={results} />
-      {shown.length > 0 ? (
-        <Stack gap="0" role="list" aria-label="Hash results">
-          {shown.map((id) => {
-            const hex = results[id]!;
-            return (
-              <div role="listitem" key={id}>
-                <ResultRow
-                  id={id}
-                  name={digestInfo(id).name}
-                  info={digestInfo(id)}
-                  value={formatDigest(hex, output)}
-                  match={expected.trim() ? expectedHex === hex : undefined}
-                />
-              </div>
-            );
-          })}
-        </Stack>
-      ) : (
-        <EmptyState
-          size="sm"
-          title="No hashes yet"
-          description="Type a message in the Input tab to see its hashes."
+  const inputCard = (
+    <Card as="section" title="Message">
+      <Stack gap="5">
+        <TextArea
+          label="Text to hash"
+          labelHidden
+          rows={5}
+          maxRows={16}
+          spellCheck={false}
+          placeholder="Type or paste the message."
+          value={input}
+          onChange={setInput}
+          error={message.error}
         />
-      )}
+        <TextSourceActions
+          value={input}
+          onChange={setInput}
+          label="Text to hash"
+          handoff={acceptsText}
+          onExample={() => setInput(EXAMPLE)}
+        />
+        <Inline gap="5" align="end" wrap>
+          <Select
+            label="Input encoding"
+            width="sm"
+            value={inputEncoding}
+            onChange={(v) => onInputEncoding(v as KeyFormat)}
+            options={ENCODINGS}
+          />
+          {input === '' ? (
+            <Switch
+              label="Hash an empty message"
+              checked={hashEmpty}
+              onChange={setHashEmpty}
+            />
+          ) : null}
+        </Inline>
+      </Stack>
+    </Card>
+  );
+
+  const outputCard = (
+    <Stack gap="6">
+      <Card as="section" title="Hashes">
+        <Stack gap="5">
+          {shown.length > 0 ? (
+            <>
+              <VerifyField
+                value={expected}
+                onChange={setExpected}
+                results={results}
+              />
+              <ResultList
+                results={shown.map((id) => ({
+                  id,
+                  name: digestInfo(id).name,
+                  info: digestInfo(id),
+                  value: formatDigest(results[id]!, output),
+                  // Only the matching row is marked; the verdict says the rest.
+                  match:
+                    expected.trim() && expectedHex === results[id]
+                      ? true
+                      : undefined,
+                }))}
+              />
+            </>
+          ) : (
+            <EmptyState
+              icon={hash}
+              title="No hashes yet"
+              description="Type a message to see its hashes, and check one against a hash you were given."
+              actions={
+                <Button
+                  variant="soft"
+                  icon={sparkles}
+                  onClick={() => setInput(EXAMPLE)}
+                >
+                  Try an example
+                </Button>
+              }
+            />
+          )}
+        </Stack>
+      </Card>
+      <HmacCard
+        message={message.bytes}
+        alg={hmacAlg}
+        onAlg={onHmacAlg}
+        output={output}
+      />
     </Stack>
   );
 
-  return (
-    <PaneTabs
-      id="hash-generator"
-      label="Text hash panes"
-      value={tab.value}
-      onValueChange={tab.show}
-      panes={[
-        { id: 'input', label: 'Input', content: inputPane },
-        {
-          id: 'output',
-          label: 'Output',
-          content: outputPane,
-          changeKey: shown.map((id) => results[id]).join(),
-        },
-      ]}
-    />
-  );
+  return <TransformLayout start={inputCard} end={outputCard} />;
 };

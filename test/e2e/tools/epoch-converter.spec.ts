@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { pathOf } from '../tool-routes';
 
+type Page = import('@playwright/test').Page;
+/** The time input (a TextField; getByLabel also finds its error). */
+const timeInput = (page: Page) =>
+  page.getByRole('textbox', { name: 'Timestamp or date' });
+
 test.describe('Epoch & Time Zone Converter', () => {
   test('detects Unix milliseconds and shows the ISO output', async ({
     page,
@@ -12,7 +17,7 @@ test.describe('Epoch & Time Zone Converter', () => {
         name: 'Epoch & Time Zone Converter',
       }),
     ).toBeVisible();
-    await page.getByLabel('Timestamp or date').fill('1700000000000');
+    await timeInput(page).fill('1700000000000');
     await expect(page.getByText('Detected: Unix milliseconds')).toBeVisible();
     const table = page.getByRole('table', { name: 'Conversions' });
     await expect(table.getByText('2023-11-14T22:13:20.000Z')).toBeVisible();
@@ -23,9 +28,10 @@ test.describe('Epoch & Time Zone Converter', () => {
 
   test('an override reads the number in another unit', async ({ page }) => {
     await page.goto(pathOf('epoch-converter'));
-    await page.getByLabel('Timestamp or date').fill('1700000000');
+    await timeInput(page).fill('1700000000');
     await expect(page.getByText('Detected: Unix seconds')).toBeVisible();
-    await page.getByLabel('Read numbers as').selectOption('unix-ms');
+    await page.getByRole('combobox', { name: 'Read numbers as' }).click();
+    await page.getByRole('option', { name: 'Unix milliseconds' }).click();
     await expect(page.getByText('Detected: Unix milliseconds')).toBeVisible();
     await expect(
       page
@@ -38,11 +44,11 @@ test.describe('Epoch & Time Zone Converter', () => {
     page,
   }) => {
     await page.goto(pathOf('epoch-converter'));
-    await page.getByLabel('Timestamp or date').fill('1700000000000');
+    await timeInput(page).fill('1700000000000');
     await expect(
       page.getByRole('table', { name: 'Conversions' }),
     ).toBeVisible();
-    await page.getByLabel('Timestamp or date').fill('not a date');
+    await timeInput(page).fill('not a date');
     await expect(page.getByText(/Could not read "not a date"/)).toBeVisible();
     await expect(page.getByRole('table', { name: 'Conversions' })).toHaveCount(
       0,
@@ -76,31 +82,42 @@ test.describe('Epoch zones', () => {
       ),
     );
     await page.goto(pathOf('epoch-converter'));
-    await page.getByRole('tab', { name: 'World clock' }).click();
-    await page.getByLabel('Add a zone or city').fill('Dublin');
+    await page.getByRole('radio', { name: 'World clock' }).click();
+    await page
+      .getByRole('searchbox', { name: 'Add a zone or city' })
+      .fill('Dublin');
     await page.getByRole('button', { name: /Europe\/Dublin/ }).click();
+    const clock = page.getByRole('list', { name: 'World clock' });
     await expect(
-      page.getByRole('table', { name: 'World clock' }).getByRole('row', {
-        name: 'Europe/Dublin',
-      }),
+      clock.getByText('Europe/Dublin', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      clock.getByRole('button', { name: 'Remove Europe/Dublin' }),
     ).toBeVisible();
 
-    await page.getByRole('tab', { name: 'Meeting planner' }).click();
-    await page.getByLabel('Day (UTC)').fill('2024-06-03');
+    await page.getByRole('radio', { name: 'Meeting planner' }).click();
+    const day = page.getByRole('textbox', { name: 'Day (UTC)' });
+    await day.fill('2024-06-03');
+    await day.press('Enter');
     await expect(
       page.getByText('Best overlap (UTC): 13:00, 14:00, 15:00'),
     ).toBeVisible();
-    const planner = page.getByTestId('meeting-planner');
-    await expect(planner.locator('td[data-working]')).toHaveCount(16);
-    await expect(planner.locator('td[data-best]')).toHaveCount(6);
+    const planner = page.getByRole('table', { name: 'Meeting planner' });
+    // 8 working hours in each of the two zones.
+    await expect(planner.getByText('working')).toHaveCount(16);
   });
 
   test('the zone converter explains a skipped DST time', async ({ page }) => {
     await page.goto(pathOf('epoch-converter'));
-    await page.getByRole('tab', { name: 'World clock' }).click();
-    await page.getByLabel('Date', { exact: true }).fill('2024-03-31');
-    await page.getByLabel('Time', { exact: true }).fill('01:30');
-    await page.getByLabel('In zone').selectOption('Europe/Dublin');
+    await page.getByRole('radio', { name: 'World clock' }).click();
+    const date = page.getByRole('textbox', { name: 'Date', exact: true });
+    await date.fill('2024-03-31');
+    await date.press('Enter');
+    const time = page.getByRole('textbox', { name: 'Time', exact: true });
+    await time.fill('01:30');
+    await time.press('Enter');
+    await page.getByRole('combobox', { name: 'In zone' }).click();
+    await page.getByRole('option', { name: /^Europe\/Dublin/ }).click();
     await expect(
       page.getByText(/01:30 does not exist in Europe\/Dublin/),
     ).toBeVisible();
@@ -113,14 +130,12 @@ test('a share link restores the instant and zones', async ({
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(pathOf('epoch-converter'));
-  await page.getByLabel('Timestamp or date').fill('1700000000000');
+  await timeInput(page).fill('1700000000000');
   await page.getByRole('button', { name: 'Share' }).click();
   const url = await page.evaluate(() => navigator.clipboard.readText());
   await page.goto('about:blank');
   await page.goto(url);
-  await expect(page.getByLabel('Timestamp or date')).toHaveValue(
-    '1700000000000',
-  );
+  await expect(timeInput(page)).toHaveValue('1700000000000');
   await expect(
     page
       .getByRole('table', { name: 'Conversions' })

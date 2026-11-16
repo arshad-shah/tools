@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { IconDownload, IconLock, IconUnlock, IconX } from '@/shared/ui/icons';
 import {
   Button,
-  DropZone,
-  ErrorState,
-  Inline,
-  LoadingState,
+  Card,
+  Divider,
+  EmptyState,
+  FileDrop,
+  Notice,
   Stack,
-  Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { download, fileLock, lock, unlock } from '@arshad-shah/cynosure/icons';
+import React, { useEffect, useState } from 'react';
+import { TransformLayout } from '@/app/ui/transform';
 import { ENVELOPE_MAGIC } from '@/shared/lib/crypto/aead';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
@@ -21,11 +22,14 @@ import {
   unpackFile,
 } from '../lib/file-envelope';
 import { KDF_PARAMS, type KdfChoice } from '../settings';
+import { JobButton } from './JobButton';
+import { KdfOptions } from './KdfOptions';
 import { PassphraseFields } from './PassphraseFields';
 
 interface FileModeProps {
   jobs: ReturnType<typeof useCryptoJob>;
   kdf: KdfChoice;
+  onKdf(kdf: KdfChoice): void;
   passphrase: string;
   onPassphrase(v: string): void;
   onGenerate(): void;
@@ -48,6 +52,7 @@ interface Done {
 export const FileMode: React.FC<FileModeProps> = ({
   jobs,
   kdf,
+  onKdf,
   passphrase,
   onPassphrase,
   onGenerate,
@@ -105,102 +110,105 @@ export const FileMode: React.FC<FileModeProps> = ({
   const shownError =
     error ?? (job.status === 'error' ? (job.error ?? null) : null);
 
-  return (
-    <Stack gap="4">
-      {file ? (
-        <Inline justify="between" align="center" wrap>
-          <Text size="sm">
-            {file.name} ({formatBytes(file.size)}){' '}
-            {decrypting ? 'is encrypted: enter its passphrase.' : ''}
-          </Text>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconX size="sm" />}
-            onClick={() => {
-              onFile(null);
-              setDone(null);
-              setError(null);
-              job.reset();
-            }}
-          >
-            Remove file
-          </Button>
-        </Inline>
-      ) : (
-        <DropZone
-          variant="inline"
-          onFiles={(fs) => {
-            onFile(fs[0]);
+  const inputCard = (
+    <Card as="section" title="File">
+      <Stack gap="5">
+        <FileDrop
+          hint="Any file to encrypt, or a .enc file to decrypt. Up to 2 GB, held in memory on this device."
+          labels={{ chooseOne: 'Choose a file', remove: () => 'Remove file' }}
+          value={file ? [file] : undefined}
+          onRemove={() => {
+            onFile(null);
             setDone(null);
+            setError(null);
+            job.reset();
           }}
-          title="Drop a file to encrypt, or a .enc file to decrypt"
-          hint="Up to 2 GB, held in memory on this device."
-          chooseLabel="Choose a file"
+          onFiles={(fs) => {
+            onFile(fs[0] ?? null);
+            setDone(null);
+            setError(null);
+          }}
         />
-      )}
-      {file && sealed?.file === file && (
-        <>
-          <PassphraseFields
-            value={passphrase}
-            onChange={onPassphrase}
-            confirm={
-              decrypting ? undefined : { value: confirm, onChange: setConfirm }
-            }
-            onGenerate={decrypting ? undefined : onGenerate}
-          />
-          <Inline gap="2" align="center" wrap>
-            <Button
-              variant="primary"
-              leftIcon={
-                decrypting ? <IconUnlock size="sm" /> : <IconLock size="sm" />
+        {file && sealed?.file === file ? (
+          <>
+            <Notice tone={decrypting ? 'info' : 'neutral'} size="sm">
+              {decrypting
+                ? `${file.name} (${formatBytes(file.size)}) is encrypted: enter its passphrase.`
+                : `${file.name} (${formatBytes(file.size)}) will be encrypted to ${encryptedName(file.name)}.`}
+            </Notice>
+            <Divider />
+            <PassphraseFields
+              value={passphrase}
+              onChange={onPassphrase}
+              confirm={
+                decrypting
+                  ? undefined
+                  : { value: confirm, onChange: setConfirm }
               }
-              disabled={!passphrase || mismatch || job.status === 'running'}
-              onClick={() => void run()}
-            >
-              {decrypting ? 'Decrypt file' : 'Encrypt file'}
-            </Button>
-            {job.status === 'running' && (
-              <>
-                <LoadingState label={job.progress?.label ?? 'Working'} />
-                <Button variant="ghost" size="sm" onClick={job.cancel}>
-                  Cancel
-                </Button>
-              </>
-            )}
-          </Inline>
-        </>
-      )}
-      {shownError && (
-        <ErrorState
-          title={
-            decrypting
-              ? 'Could not decrypt the file'
-              : 'Could not encrypt the file'
-          }
-          error={shownError}
-        />
-      )}
-      {done && (
-        <Inline gap="2" align="center" wrap>
-          <Text size="sm">
-            {done.name} ({formatBytes(done.bytes.length)}) is ready.
-          </Text>
-          <Button
-            variant="secondary"
-            leftIcon={<IconDownload size="sm" />}
-            onClick={() =>
-              saveBlob(
-                done.bytes,
-                done.name,
-                done.mime || 'application/octet-stream',
-              )
+              onGenerate={decrypting ? undefined : onGenerate}
+            />
+            {decrypting ? null : <KdfOptions value={kdf} onChange={onKdf} />}
+            <JobButton
+              label={decrypting ? 'Decrypt file' : 'Encrypt file'}
+              icon={decrypting ? unlock : lock}
+              disabled={!passphrase || mismatch}
+              job={job}
+              onRun={() => void run()}
+            />
+          </>
+        ) : null}
+      </Stack>
+    </Card>
+  );
+
+  const outputCard = (
+    <Card as="section" title="Result">
+      <Stack gap="5">
+        {shownError ? (
+          <Notice
+            tone="danger"
+            title={
+              decrypting
+                ? 'Could not decrypt the file'
+                : 'Could not encrypt the file'
             }
           >
-            Download {done.name}
-          </Button>
-        </Inline>
-      )}
-    </Stack>
+            {shownError.message}
+          </Notice>
+        ) : null}
+        {done ? (
+          <Notice
+            tone="success"
+            title={`${done.name} is ready`}
+            action={
+              <Button
+                variant="soft"
+                tone="success"
+                icon={download}
+                onClick={() =>
+                  saveBlob(
+                    done.bytes,
+                    done.name,
+                    done.mime || 'application/octet-stream',
+                  )
+                }
+              >
+                {`Download ${done.name}`}
+              </Button>
+            }
+          >
+            {`${formatBytes(done.bytes.length)}. It stays on this device until you download it.`}
+          </Notice>
+        ) : !shownError ? (
+          <EmptyState
+            icon={fileLock}
+            title="No file yet"
+            description="Choose a file and a passphrase to encrypt it, or open a .enc file to get the original back."
+          />
+        ) : null}
+      </Stack>
+    </Card>
   );
+
+  return <TransformLayout start={inputCard} end={outputCard} />;
 };

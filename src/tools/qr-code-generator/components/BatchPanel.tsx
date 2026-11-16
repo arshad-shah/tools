@@ -1,21 +1,20 @@
+import {
+  Button,
+  Card,
+  FileDrop,
+  Inline,
+  Notice,
+  SegmentedControl,
+  Select,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
+import { download } from '@arshad-shah/cynosure/icons';
 import { useMemo, useState } from 'react';
 import { saveZip } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { readText } from '@/shared/lib/files';
 import { notify } from '@/shared/lib/notify';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  FileUpload,
-  Inline,
-  Label,
-  SegmentedControl,
-  Select,
-  Stack,
-  Text,
-} from '@/shared/ui';
-import { IconDownload } from '@/shared/ui/icons';
 import { batchFromCsv, readCsv } from '../lib/batch';
 import type { QrStyle } from '../lib/render';
 
@@ -64,75 +63,76 @@ export function BatchPanel({ qrStyle: style }: { qrStyle: QrStyle }) {
   };
 
   return (
-    <Stack gap="3">
-      <FileUpload
-        accept=".csv,text/csv"
-        label="Choose a CSV with a header row"
-        hint="One QR code per row; at most 500"
-        onFiles={(files) => {
-          const f = files[0];
-          if (!f) return;
-          readText(f).then(
-            (t) => {
-              setCsv(t);
-              setName(f.name);
-            },
-            (e: unknown) =>
-              notify.error(toToolError(e, 'Could not read the CSV')),
-          );
-        }}
-      />
-      {table?.error && (
-        <Alert status="danger">
-          <AlertDescription>{table.error.message}</AlertDescription>
-        </Alert>
-      )}
-      {columns.length > 0 && (
-        <Stack gap="3">
-          <Text size="sm">
-            {name}: {table?.rows.length ?? 0} rows
-          </Text>
-          <Inline gap="3" wrap align="end">
-            <Stack gap="1">
-              <Label htmlFor="qr-batch-col">Content column</Label>
+    <Card
+      as="section"
+      title="Batch from a CSV"
+      description="One QR code per row, in the current style; at most 500."
+    >
+      <Stack gap="5">
+        <FileDrop
+          accept=".csv,text/csv"
+          hint="A CSV with a header row."
+          labels={{ chooseOne: 'Choose a CSV' }}
+          value={name ? [name] : undefined}
+          onFiles={(files) => {
+            const f = files[0];
+            if (!f) return;
+            readText(f).then(
+              (t) => {
+                setCsv(t);
+                setName(f.name);
+              },
+              (e: unknown) =>
+                notify.error(toToolError(e, 'Could not read the CSV')),
+            );
+          }}
+        />
+        {table?.error ? (
+          <Notice tone="danger">{table.error.message}</Notice>
+        ) : null}
+        {columns.length > 0 ? (
+          <Stack gap="4">
+            <Text>{`${name}: ${table?.rows.length ?? 0} rows`}</Text>
+            <Inline gap="3" wrap align="end">
               <Select
-                id="qr-batch-col"
+                label="Content column"
+                width="sm"
                 value={value}
-                onValueChange={setColumn}
-                items={columns.map((c) => ({ value: c, label: c }))}
+                onChange={setColumn}
+                options={columns.map((c) => ({ value: c, label: c }))}
               />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor="qr-batch-name">File name column</Label>
               <Select
-                id="qr-batch-name"
+                label="File name column"
+                width="sm"
                 value={naming}
-                onValueChange={setNameColumn}
-                items={columns.map((c) => ({ value: c, label: c }))}
+                onChange={setNameColumn}
+                options={columns.map((c) => ({ value: c, label: c }))}
               />
-            </Stack>
-            <SegmentedControl
-              label="Format"
-              value={format}
-              onChange={(v) => setFormat(v as 'png' | 'svg')}
-              options={[
-                { value: 'png', label: 'PNG' },
-                { value: 'svg', label: 'SVG' },
-              ]}
-            />
-          </Inline>
-          <Inline>
-            <Button
-              variant="primary"
-              leftIcon={<IconDownload size="sm" />}
-              disabled={busy}
-              onClick={() => void run()}
-            >
-              Download ZIP
-            </Button>
-          </Inline>
-        </Stack>
-      )}
-    </Stack>
+              <SegmentedControl
+                label="Format"
+                value={format}
+                onChange={(v) => setFormat(v as 'png' | 'svg')}
+                options={[
+                  { value: 'png', label: 'PNG' },
+                  { value: 'svg', label: 'SVG' },
+                ]}
+              />
+            </Inline>
+            <Inline>
+              <Button
+                variant="solid"
+                tone="accent"
+                icon={download}
+                loading={busy}
+                disabled={busy}
+                onClick={() => void run()}
+              >
+                Download ZIP
+              </Button>
+            </Inline>
+          </Stack>
+        ) : null}
+      </Stack>
+    </Card>
   );
 }

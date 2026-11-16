@@ -1,7 +1,6 @@
 /** @vitest-environment jsdom */
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mockViewport } from '@/shared/ui/data-grid/test-utils';
 
 interface Job {
   file: File;
@@ -33,7 +32,6 @@ vi.mock('@/shared/workers/text-client', () => ({
 const { FileHashes } = await import('./FileHashes');
 
 beforeEach(() => {
-  mockViewport(1200, 400);
   jobs.length = 0;
 });
 afterEach(() => {
@@ -50,9 +48,9 @@ describe('FileHashes', () => {
     render(
       <FileHashes selected={['sha256']} output="hex" incoming={incoming} />,
     );
-    const grid = screen.getByRole('grid', { name: 'File hashes' });
+    const grid = screen.getByRole('table', { name: 'File hashes' });
     act(() => jobs[0].onProgress?.({ done: 500 }));
-    const meter = screen.getByRole('meter', { name: 'Hashing a.bin' });
+    const meter = screen.getByRole('progressbar', { name: 'Hashing a.bin' });
     expect(grid.contains(meter)).toBe(true);
     expect(meter.getAttribute('aria-valuenow')).toBe('0.5');
 
@@ -64,7 +62,9 @@ describe('FileHashes', () => {
     expect(grid.textContent).toContain('Cancelled');
 
     await act(async () => jobs[0].resolve({ sha256: '0102' }));
-    expect(screen.queryByRole('meter', { name: 'Hashing a.bin' })).toBeNull();
+    expect(
+      screen.queryByRole('progressbar', { name: 'Hashing a.bin' }),
+    ).toBeNull();
     expect(grid.textContent).toContain('0102');
     expect(grid.textContent).toContain('Done');
   });
@@ -77,7 +77,7 @@ describe('FileHashes', () => {
         incoming={[file('a.bin', 10)]}
       />,
     );
-    const grid = screen.getByRole('grid', { name: 'File hashes' });
+    const grid = screen.getByRole('table', { name: 'File hashes' });
     for (const name of ['Copy all', 'Download checksums'])
       expect(
         screen.getByRole('button', { name }).compareDocumentPosition(grid) &

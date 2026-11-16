@@ -1,16 +1,16 @@
-import { useEffect, useId, useState } from 'react';
-import { toToolError } from '@/shared/lib/errors';
 import {
-  Alert,
   Button,
-  Heading,
+  Card,
+  Grid,
   Inline,
-  Input,
-  Label,
+  Notice,
   Stack,
-  SwitchField,
+  Switch,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { useEffect, useState } from 'react';
+import { toToolError } from '@/shared/lib/errors';
 import type { RegexRunner } from '@/tools/regex-tester/lib/runner';
 import {
   buildFindPattern,
@@ -57,9 +57,6 @@ export function ReplacePanel({
     message: string;
   } | null>(null);
   const [busy, setBusy] = useState(false);
-  const findId = useId();
-  const replaceId = useId();
-  const headingId = useId();
 
   const { pattern, flags } = buildFindPattern(find, options);
   const key = JSON.stringify([pattern, flags, text]);
@@ -115,73 +112,66 @@ export function ReplacePanel({
   };
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <Heading level={2} size="md" id={headingId}>
-        Find and replace
-      </Heading>
-      <Inline gap="3" wrap align="start">
-        <Stack gap="1" className="min-w-40 flex-1">
-          <Label htmlFor={findId}>Find</Label>
-          <Input
-            id={findId}
+    <Card as="section" title="Find and replace">
+      <Stack gap="4">
+        <Grid minItemWidth="12rem" gap="3">
+          <TextField
+            label="Find"
             value={find}
             onChange={setFind}
             spellCheck={false}
             autoComplete="off"
           />
-        </Stack>
-        <Stack gap="1" className="min-w-40 flex-1">
-          <Label htmlFor={replaceId}>Replace with</Label>
-          <Input
-            id={replaceId}
+          <TextField
+            label="Replace with"
             value={replacement}
             onChange={setReplacement}
             spellCheck={false}
             autoComplete="off"
           />
-        </Stack>
-      </Inline>
-      <Inline gap="4" wrap>
-        <SwitchField
-          label="Regular expression"
-          checked={options.regex}
-          onCheckedChange={(v) => onOptions({ regex: v })}
-        />
-        <SwitchField
-          label="Match case"
-          checked={options.caseSensitive}
-          onCheckedChange={(v) => onOptions({ caseSensitive: v })}
-        />
-        <SwitchField
-          label="Whole word"
-          checked={options.wholeWord}
-          onCheckedChange={(v) => onOptions({ wholeWord: v })}
-        />
-      </Inline>
-      <Inline gap="3" wrap>
-        <Button
-          type="button"
-          size="sm"
-          variant="primary"
-          disabled={find === '' || busy}
-          loading={busy}
-          onClick={replaceAll}
-        >
-          Replace all
-        </Button>
-        <Text size="sm" tone="muted" aria-live="polite">
-          {current && 'count' in current
-            ? current.count === 0
-              ? 'No matches'
-              : plural(current.count, 'match')
-            : ''}
-        </Text>
-      </Inline>
-      {shownError ? (
-        <Alert status="danger" size="sm">
-          {shownError}
-        </Alert>
-      ) : null}
-    </section>
+        </Grid>
+        <Inline gap="5" wrap>
+          <Switch
+            label="Regular expression"
+            checked={options.regex}
+            onChange={(v) => onOptions({ regex: v })}
+          />
+          <Switch
+            label="Match case"
+            checked={options.caseSensitive}
+            onChange={(v) => onOptions({ caseSensitive: v })}
+          />
+          <Switch
+            label="Whole word"
+            checked={options.wholeWord}
+            onChange={(v) => onOptions({ wholeWord: v })}
+          />
+        </Inline>
+        <Inline gap="3" align="center" wrap>
+          <Button
+            variant="solid"
+            tone="accent"
+            size="sm"
+            disabled={find === '' || busy}
+            loading={busy}
+            onClick={replaceAll}
+          >
+            Replace all
+          </Button>
+          <Text size="sm" tone="muted" aria-live="polite">
+            {current && 'count' in current
+              ? current.count === 0
+                ? 'No matches'
+                : plural(current.count, 'match')
+              : ''}
+          </Text>
+        </Inline>
+        {shownError ? (
+          <Notice tone="danger" size="sm">
+            {shownError}
+          </Notice>
+        ) : null}
+      </Stack>
+    </Card>
   );
 }

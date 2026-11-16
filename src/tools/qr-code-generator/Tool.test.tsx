@@ -7,7 +7,10 @@ import { putHandoff } from '@/shared/lib/handoff';
 import { qrSettings } from './settings';
 import QrCodeGenerator from './Tool';
 
-vi.mock('@/shared/ui/adapters/QrCode', () => ({ QrCode: () => null }));
+vi.mock('./lib/render', () => ({
+  qrSvg: async () => '<svg xmlns="http://www.w3.org/2000/svg"/>',
+  svgToPng: async () => new Blob([]),
+}));
 vi.mock('./components/ScanCheck', () => ({ ScanCheck: () => null }));
 
 const COLORS_MIME = 'application/vnd.tools.colors+json';
@@ -40,15 +43,20 @@ describe('QR Code Generator colours hand-off (Color "Use colours in QR")', () =>
     );
   });
 
-  it('takes {fg, bg} into the style and shows the Style pane', async () => {
+  it('takes {fg, bg} into the style shown beside the content', async () => {
     openWith(JSON.stringify({ fg: '#112233', bg: '#fafafa' }));
     await act(async () => {});
     const s = qrSettings.getSettings();
     expect(s.fg).toBe('#112233');
     expect(s.bg).toBe('#fafafa');
+    expect(screen.getByRole('region', { name: 'Style' })).toBeTruthy();
     expect(
-      screen.getByRole('tab', { name: 'Style' }).getAttribute('aria-selected'),
-    ).toBe('true');
+      screen
+        .getByRole('radio', { name: 'One code' })
+        .getAttribute('aria-checked') ??
+        (screen.getByRole('radio', { name: 'One code' }) as HTMLInputElement)
+          .checked,
+    ).toBeTruthy();
   });
 
   it('ignores values that are not hex colours', async () => {

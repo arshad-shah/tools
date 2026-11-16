@@ -1,16 +1,14 @@
-import React from 'react';
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  BitGrid,
+  DescriptionList,
   Inline,
-  MetaList,
+  Notice,
   SegmentedControl,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import React from 'react';
 import type { NumberSettings } from '../settings';
+import { BitGrid } from './BitGrid';
 
 type Bits = NumberSettings['bits'];
 
@@ -29,7 +27,13 @@ interface WidthPanelProps {
 
 const WIDTHS = [8, 16, 32, 64] as const;
 
-/** Word size, signedness, the overflow warning, bytes and the bit grid. */
+const code = (v: string) => (
+  <Text as="span" variant="code">
+    {v || 'None'}
+  </Text>
+);
+
+/** Word size, signedness, the overflow warning, the bit grid and bytes. */
 export const WidthPanel: React.FC<WidthPanelProps> = ({
   bits,
   signed,
@@ -41,16 +45,18 @@ export const WidthPanel: React.FC<WidthPanelProps> = ({
   bytesLE,
   onToggleBit,
 }) => (
-  <Stack gap="4">
-    <Inline gap="4" align="center">
+  <Stack gap="5">
+    <Inline gap="3" wrap>
       <SegmentedControl
         label="Word size"
+        size="sm"
         value={String(bits)}
         onChange={(v) => onBits(Number(v) as Bits)}
         options={WIDTHS.map((w) => ({ value: String(w), label: `${w}-bit` }))}
       />
       <SegmentedControl
         label="Signedness"
+        size="sm"
         value={signed ? 'signed' : 'unsigned'}
         onChange={(v) => onSigned(v === 'signed')}
         options={[
@@ -59,35 +65,23 @@ export const WidthPanel: React.FC<WidthPanelProps> = ({
         ]}
       />
     </Inline>
-    {overflow && (
-      <Alert status="warning">
-        <AlertTitle>Overflow</AlertTitle>
-        <AlertDescription>
-          The value does not fit in {bits} bits, signed or unsigned. The fields
-          show its low {bits} bits only.
-        </AlertDescription>
-      </Alert>
-    )}
+    {overflow ? (
+      <Notice tone="warning" title="Overflow">
+        {`The value does not fit in ${bits} bits, signed or unsigned. The fields show its low ${bits} bits only.`}
+      </Notice>
+    ) : null}
     <BitGrid
       bits={bits}
       value={pattern}
       onToggle={onToggleBit}
       label={`Bits of the ${bits}-bit pattern`}
     />
-    <MetaList
+    <DescriptionList
+      size="sm"
+      divided
       items={[
-        <Text key="be" as="span" size="sm">
-          Big-endian bytes:{' '}
-          <Text as="span" mono>
-            {bytesBE || 'None'}
-          </Text>
-        </Text>,
-        <Text key="le" as="span" size="sm">
-          Little-endian bytes:{' '}
-          <Text as="span" mono>
-            {bytesLE || 'None'}
-          </Text>
-        </Text>,
+        { id: 'be', term: 'Big-endian bytes', detail: code(bytesBE) },
+        { id: 'le', term: 'Little-endian bytes', detail: code(bytesLE) },
       ]}
     />
   </Stack>

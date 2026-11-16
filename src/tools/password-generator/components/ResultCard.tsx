@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IconChevronDown, IconRefreshCw, IconSendTo } from '@/shared/ui/icons';
 import {
   Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  CopyButton,
+  DescriptionList,
   Inline,
-  Meter,
-  SecretText,
+  Kbd,
+  Menu,
+  ProgressBar,
   Stack,
-  Text,
+  TextField,
   Tooltip,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { refreshCw, send } from '@arshad-shah/cynosure/icons';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { sendTo } from '@/shared/lib/handoff';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { crackTime, strengthLabel } from '../lib/entropy';
@@ -27,7 +26,7 @@ interface ResultCardProps {
   onRegenerate(): void;
 }
 
-/** The generated secret, masked until revealed, with its strength. */
+/** The generated secret, masked until shown, with its strength. */
 export const ResultCard: React.FC<ResultCardProps> = ({
   value,
   bits,
@@ -35,7 +34,6 @@ export const ResultCard: React.FC<ResultCardProps> = ({
   onRegenerate,
 }) => {
   const navigate = useNavigate();
-  const [revealed, setRevealed] = useState(false);
   const times = crackTime(bits);
   const targets = passwordTargets(value);
   useSendCommands(
@@ -45,71 +43,84 @@ export const ResultCard: React.FC<ResultCardProps> = ({
       run: () => sendTo(navigate, t.toolId, t.payload),
     })),
   );
+  const name = `Generated ${label}`;
   return (
-    <Stack gap="3">
-      <Inline gap="2" align="center" wrap={false}>
-        <div className="min-w-0 flex-1" data-dynamic="">
-          <SecretText
+    <Stack gap="5">
+      <TextField
+        label={name}
+        labelHidden
+        type="password"
+        revealable
+        readOnly
+        size="lg"
+        value={value}
+        labels={{ show: `Show the ${label}`, hide: `Hide the ${label}` }}
+        addonEnd={
+          <CopyButton
+            size="sm"
             value={value}
-            revealed={revealed}
-            onRevealedChange={setRevealed}
-            copyable
-            label={label}
+            labels={{ copy: `Copy the ${label}` }}
           />
-        </div>
+        }
+      />
+      <Inline gap="2" wrap>
         <Tooltip
-          content="Changing an option makes a new one too"
-          shortcut="Mod+Enter"
+          content={
+            <Inline gap="2" align="center" as="span">
+              Changing an option makes a new one too
+              <Kbd keys="mod+enter" size="sm" />
+            </Inline>
+          }
         >
           <Button
-            variant="primary"
-            leftIcon={<IconRefreshCw size="sm" />}
+            variant="solid"
+            tone="accent"
+            icon={refreshCw}
             aria-keyshortcuts="Control+Enter"
             onClick={onRegenerate}
           >
             Regenerate
           </Button>
         </Tooltip>
-      </Inline>
-      <Meter
-        label="Strength"
-        value={Math.min(1, bits / 100)}
-        valueText={`${strengthLabel(bits)}, ${Math.round(bits)} bits`}
-      />
-      <Inline justify="between" align="end" gap="3">
-        <Stack gap="1">
-          <Text size="sm" tone="muted">
-            Online attack at 10,000 guesses a second: {times.online}
-          </Text>
-          <Text size="sm" tone="muted">
-            Offline fast hash at 10 billion guesses a second: {times.offline}
-          </Text>
-        </Stack>
         {targets.length ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<IconSendTo size="sm" />}
-                rightIcon={<IconChevronDown size="sm" />}
-              >
+          <Menu
+            label="Use in"
+            items={targets.map((t) => ({ value: t.toolId, label: t.label }))}
+            onSelect={(id) => {
+              const t = targets.find((x) => x.toolId === id);
+              if (t) sendTo(navigate, t.toolId, t.payload);
+            }}
+            trigger={(props) => (
+              <Button {...props} variant="soft" icon={send}>
                 Use in
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {targets.map((t) => (
-                <DropdownMenuItem
-                  key={t.toolId}
-                  onClick={() => sendTo(navigate, t.toolId, t.payload)}
-                >
-                  {t.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )}
+          />
         ) : null}
       </Inline>
+      <ProgressBar
+        label="Strength"
+        meter
+        showValue
+        value={Math.min(100, bits)}
+        valueText={`${strengthLabel(bits)}, ${Math.round(bits)} bits`}
+        tone={bits < 40 ? 'danger' : bits < 60 ? 'warning' : 'success'}
+      />
+      <DescriptionList
+        size="sm"
+        items={[
+          {
+            id: 'online',
+            term: 'Online attack, 10,000 guesses a second',
+            detail: times.online,
+          },
+          {
+            id: 'offline',
+            term: 'Offline fast hash, 10 billion guesses a second',
+            detail: times.offline,
+          },
+        ]}
+      />
     </Stack>
   );
 };

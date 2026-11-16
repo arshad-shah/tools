@@ -1,15 +1,13 @@
-import React from 'react';
-import { IconSparkles } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
+  Grid,
   Inline,
-  Input,
-  Label,
-  Meter,
+  ProgressBar,
   Stack,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { sparkles } from '@arshad-shah/cynosure/icons';
+import React from 'react';
 import { estimateBits } from '../lib/strength';
 
 interface PassphraseFieldsProps {
@@ -30,55 +28,48 @@ export const PassphraseFields: React.FC<PassphraseFieldsProps> = ({
   const bits = estimateBits(value);
   const mismatch = confirm && confirm.value !== '' && confirm.value !== value;
   return (
-    <Stack gap="2">
-      <Inline gap="3" align="end" wrap>
-        <Stack gap="1" className="min-w-56 flex-1">
-          <Label htmlFor="enc-pass">Passphrase</Label>
-          <Input
-            id="enc-pass"
+    <Stack gap="4">
+      <Grid minItemWidth="14rem" gap="4">
+        <TextField
+          label="Passphrase"
+          type="password"
+          revealable
+          autoComplete="new-password"
+          spellCheck={false}
+          value={value}
+          onChange={onChange}
+        />
+        {confirm ? (
+          <TextField
+            label="Confirm passphrase"
             type="password"
-            value={value}
-            onChange={onChange}
+            revealable
             autoComplete="new-password"
             spellCheck={false}
+            value={confirm.value}
+            onChange={confirm.onChange}
+            error={mismatch ? 'The passphrases do not match' : undefined}
           />
-        </Stack>
-        {confirm && (
-          <Stack gap="1" className="min-w-56 flex-1">
-            <Label htmlFor="enc-pass-confirm">Confirm passphrase</Label>
-            <Input
-              id="enc-pass-confirm"
-              type="password"
-              value={confirm.value}
-              onChange={confirm.onChange}
-              autoComplete="new-password"
-              spellCheck={false}
-              invalid={!!mismatch}
-            />
-          </Stack>
-        )}
-        {onGenerate && (
-          <Button
-            variant="secondary"
-            leftIcon={<IconSparkles size="sm" />}
-            onClick={onGenerate}
-          >
+        ) : null}
+      </Grid>
+      {confirm && value ? (
+        <ProgressBar
+          label="Passphrase strength"
+          meter
+          showValue
+          value={Math.min(100, bits)}
+          valueText={`About ${Math.round(bits)} bits`}
+          tone={bits < 50 ? 'danger' : bits < 80 ? 'warning' : 'success'}
+          size="sm"
+        />
+      ) : null}
+      {onGenerate ? (
+        <Inline>
+          <Button size="sm" variant="soft" icon={sparkles} onClick={onGenerate}>
             Generate passphrase
           </Button>
-        )}
-      </Inline>
-      {mismatch && (
-        <Alert status="danger">
-          <AlertDescription>The passphrases do not match</AlertDescription>
-        </Alert>
-      )}
-      {confirm && value && (
-        <Meter
-          label="Passphrase strength"
-          value={Math.min(1, bits / 100)}
-          valueText={`About ${Math.round(bits)} bits`}
-        />
-      )}
+        </Inline>
+      ) : null}
     </Stack>
   );
 };
