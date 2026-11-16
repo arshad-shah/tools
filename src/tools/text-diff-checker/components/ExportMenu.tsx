@@ -3,10 +3,10 @@ import { download } from '@arshad-shah/cynosure/icons';
 import { copyText } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
-import { readThemeTokens } from '@/shared/lib/theme-tokens';
+import { paletteColors } from '@/shared/lib/palette';
 import type { DiffResult } from '../lib/engine';
 import {
-  REPORT_TOKEN_NAMES,
+  reportTokensFrom,
   toHtmlReport,
   type ReportTokens,
 } from '../lib/html-export';
@@ -19,12 +19,7 @@ interface ExportMenuProps {
 }
 
 function reportTokens(): ReportTokens {
-  const names = Object.values(REPORT_TOKEN_NAMES);
-  const read = readThemeTokens(names);
-  const out = {} as ReportTokens;
-  for (const [k, name] of Object.entries(REPORT_TOKEN_NAMES))
-    out[k as keyof ReportTokens] = read[name];
-  return out;
+  return reportTokensFrom(paletteColors());
 }
 
 /** Unified patch (copy or download) and the standalone HTML report. */

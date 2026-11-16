@@ -9,10 +9,8 @@ import { resolveColour } from '@/shared/surfaces/resolve-colour';
 const root = () => document.documentElement;
 
 /**
- * Reads tokens off `el` (`<html>` by default). A bare name such as `surface`
- * resolves `--color-surface`, then `--surface` (the `@theme inline` tokens
- * are only defined under their short name); a name starting with `--` is read
- * as given. Missing tokens read as an empty string.
+ * Reads custom properties (`--cy-color-surface`) off `el` (`<html>` by
+ * default) as concrete values. Missing tokens read as an empty string.
  */
 export function readThemeTokens(
   names: string[],
@@ -23,9 +21,7 @@ export function readThemeTokens(
     resolveColour(el, cs.getPropertyValue(prop).trim());
   const out: Record<string, string> = {};
   for (const name of names) {
-    out[name] = name.startsWith('--')
-      ? read(name)
-      : read(`--color-${name}`) || read(`--${name}`);
+    out[name] = read(name);
   }
   return out;
 }

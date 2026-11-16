@@ -10,6 +10,7 @@
  * the colour mode with no colour literal of its own. Callers re-read on `useCynosureTheme().palette`.
  */
 import { readThemeTokens } from '@/shared/lib/theme-tokens';
+import { resolveColour } from '@/shared/surfaces/resolve-colour';
 import {
   DEFAULT_FONT_SIZES,
   diagramFonts,
@@ -44,46 +45,47 @@ export interface DiagramTheme extends DiagramFonts {
   matchFill: string;
 }
 
-/** Each role: tokens tried in order. */
+/** Each role: Cynosure tokens tried in order. */
 const ROLES = {
-  surface: ['canvas', 'surface-2'],
-  grid: ['line-strong', 'line'],
-  card: ['surface'],
-  cardHeader: ['surface-2', 'surface'],
-  cardBorder: ['line-strong', 'line'],
-  cardBorderStrong: ['line-control', 'fg-subtle'],
-  divider: ['line'],
-  title: ['fg'],
-  eyebrow: ['fg-subtle', 'fg-muted'],
-  key: ['syntax-key'],
-  chip: ['surface-3', 'surface-2'],
-  chipText: ['fg-muted', 'fg'],
-  edge: ['fg-subtle', 'line-control'],
-  edgeMuted: ['line-strong', 'line'],
-  edgeActive: ['accent-fg', 'accent'],
-  select: ['focus', 'accent-fg'],
-  selectFill: ['accent-soft', 'surface-3'],
-  hoverFill: ['surface-3', 'surface-2'],
-  matchFill: ['match-soft'],
-  string: ['syntax-string'],
-  number: ['syntax-number'],
-  boolean: ['syntax-boolean'],
-  null: ['syntax-null'],
-  object: ['fg-muted'],
-  array: ['fg-muted'],
-  element: ['syntax-tag'],
-  attribute: ['syntax-attr'],
-  text: ['fg'],
-  more: ['fg-subtle'],
+  surface: ['--cy-color-bg'],
+  grid: ['--cy-color-line'],
+  card: ['--cy-color-surface'],
+  cardHeader: ['--cy-color-surface-raised', '--cy-color-surface'],
+  cardBorder: ['--cy-color-line'],
+  cardBorderStrong: ['--cy-color-muted'],
+  divider: ['--cy-color-line'],
+  title: ['--cy-color-ink'],
+  eyebrow: ['--cy-color-muted'],
+  key: ['--cy-color-syntax-property'],
+  chip: ['--cy-color-soft'],
+  chipText: ['--cy-color-muted'],
+  edge: ['--cy-color-muted'],
+  edgeMuted: ['--cy-color-line'],
+  edgeActive: ['--cy-color-accent-text'],
+  select: ['--cy-color-accent-text'],
+  selectFill: ['--cy-color-accent-soft'],
+  hoverFill: ['--cy-color-soft'],
+  // A soft warning, mixed below from the warning colour.
+  matchFill: ['--cy-color-warning'],
+  string: ['--cy-color-syntax-string'],
+  number: ['--cy-color-syntax-number'],
+  boolean: ['--cy-color-syntax-keyword'],
+  null: ['--cy-color-syntax-keyword'],
+  object: ['--cy-color-muted'],
+  array: ['--cy-color-muted'],
+  element: ['--cy-color-syntax-tag'],
+  attribute: ['--cy-color-syntax-attribute'],
+  text: ['--cy-color-ink'],
+  more: ['--cy-color-muted'],
 } as const;
 
 type Role = keyof typeof ROLES;
 
 const SIZE_TOKENS: Record<keyof FontSizes, string> = {
-  title: '--text-sm',
-  eyebrow: '--text-2xs',
-  row: '--text-xs',
-  chip: '--text-2xs',
+  title: '--cy-font-size-md',
+  eyebrow: '--cy-font-size-xs',
+  row: '--cy-font-size-sm',
+  chip: '--cy-font-size-xs',
 };
 
 /**
@@ -98,7 +100,7 @@ export function readDiagramTheme(
   for (const list of Object.values(ROLES)) for (const n of list) names.add(n);
   const sizeNames = Object.values(SIZE_TOKENS);
   const t = readThemeTokens(
-    [...names, ...sizeNames, '--font-mono', '--font-sans'],
+    [...names, ...sizeNames, '--cy-font-mono', '--cy-font-sans'],
     el,
   );
   // Last resort when no token resolves (a bare test document): the
@@ -114,7 +116,7 @@ export function readDiagramTheme(
     if (Number.isFinite(px) && px > 0) sizes[k] = px;
   }
   const family =
-    t['--font-mono'] || getComputedStyle(el).fontFamily || 'monospace';
+    t['--cy-font-mono'] || getComputedStyle(el).fontFamily || 'monospace';
 
   const kinds: RowKind[] = [
     'string',
@@ -152,6 +154,9 @@ export function readDiagramTheme(
     select: role('select'),
     selectFill: role('selectFill'),
     hoverFill: role('hoverFill'),
-    matchFill: role('matchFill'),
+    matchFill: resolveColour(
+      el,
+      `color-mix(in oklab, ${role('matchFill')} 30%, transparent)`,
+    ),
   };
 }
