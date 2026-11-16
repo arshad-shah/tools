@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
 const API = 'https://api.tools.test';
 const CORS = {
@@ -142,7 +143,8 @@ test('opens the response in the JSON Viewer', async ({ page }) => {
   await send(page);
   await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
   await expect(page).toHaveURL(new RegExp(`${pathOf('json-and-xml-viewer')}`));
-  await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Document' }),
     /"world"/,
   );
 });

@@ -159,7 +159,6 @@ export {
 export { ColorBlock, type ColorBlockProps } from './color-block';
 export { Indent, type IndentProps } from './indent';
 export { type SelectGroup } from './select';
-export { LineChart, type LineChartProps } from './line-chart';
 export { FontSample, type FontSampleProps } from './font-sample';
 export {
   RadioGroup,
@@ -311,12 +310,10 @@ export {
 export { cameraError, CAMERA_BLOCKED, NO_CAMERA } from './camera-errors';
 export * from './code-tree';
 export * from './code-tree-model';
-export * from './chart';
 export * from './data-grid';
-export * from './code-surface';
-export * from './text-input-panel';
-export * from './bytes-view';
-export * from './key-value-editor';
+// TextInputPanel, BytesView and KeyValueEditor draw a CodeEditor
+// (CodeMirror): import them by path, so the app shell never pulls the
+// editor in through this barrel.
 export * from './key-value-bulk';
 export { renderFaviconImage, useFavicon } from './use-favicon';
 export * from './copy-button';

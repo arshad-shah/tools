@@ -24,7 +24,7 @@ import {
 import { useMemo, useRef, useState } from 'react';
 import { readText } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
-import { CodeSurface } from '@/shared/ui';
+
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -43,6 +43,7 @@ import { normaliseJson } from './lib/semantic';
 import { buildViewModel, stepAnchor } from './lib/view-model';
 import { diffSettings, type DiffMode } from './settings';
 import { DIFF_SHARE_VERSION, parseDiffShare, type DiffShare } from './share';
+import { CodeEditor } from '@/shared/editor';
 
 const TEXT_ACCEPT =
   '.txt,.md,.json,.html,.css,.js,.ts,.jsx,.tsx,.xml,.yaml,.yml,.log,.csv,.patch,.diff,text/plain';
@@ -271,7 +272,7 @@ export default function TextDiff() {
         }
       >
         <Stack gap="3">
-          <CodeSurface
+          <CodeEditor
             value={value}
             onChange={which === 'left' ? setLeft : setRight}
             language={
@@ -279,7 +280,7 @@ export default function TextDiff() {
                 ? detectLanguage(value, names[which])
                 : 'plain'
             }
-            label={label}
+            aria-label={label}
             placeholder="Paste or type text"
             minHeight={160}
             maxHeight={280}

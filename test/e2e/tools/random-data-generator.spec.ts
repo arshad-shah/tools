@@ -1,15 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { editorValue } from '../editor';
 
 const firstRowJson = async (page: Page) => {
   await page
     .getByRole('radiogroup', { name: 'Preview as' })
     .getByRole('radio', { name: 'JSON' })
     .check();
-  const text = await page
-    .getByRole('textbox', { name: 'Generated JSON' })
-    .inputValue();
+  const json = page.getByRole('textbox', { name: 'Generated JSON' });
+  await expect(json).toContainText('[');
+  const text = await editorValue(json);
   return (JSON.parse(text) as unknown[])[0];
 };
 

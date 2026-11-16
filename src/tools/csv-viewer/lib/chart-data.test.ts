@@ -17,11 +17,10 @@ describe('csvChart', () => {
       'n',
       types,
     );
-    expect(c.series[0].points).toEqual([
-      { x: 'B', y: 5 },
-      { x: 'A', y: 3 },
+    expect(c.rows).toEqual([
+      { label: 'B', x: 'B', y: 5 },
+      { label: 'A', x: 'A', y: 3 },
     ]);
-    expect(c.xType).toBe('band');
   });
 
   it('counts rows when bars have no y column', () => {
@@ -32,7 +31,7 @@ describe('csvChart', () => {
       ROW_NUMBER,
       types,
     );
-    expect(c.series[0].points).toEqual([{ x: 'A', y: 2 }]);
+    expect(c.rows).toEqual([{ label: 'A', x: 'A', y: 2 }]);
   });
 
   it('downsamples long lines to the point budget over all rows', () => {
@@ -40,7 +39,8 @@ describe('csvChart', () => {
       n: Math.sin(i / 100),
     }));
     const c = csvChart(rows, 'line', ROW_NUMBER, 'n', types);
-    expect(c.series[0].points).toHaveLength(CHART_POINTS);
+    expect(c.rows).toHaveLength(CHART_POINTS);
+    expect(c.rows[0]).toEqual({ label: '1', x: 1, y: 0 });
     expect(c.used).toBe(50_000);
     expect(c.reduced).toBe(true);
   });
@@ -56,18 +56,23 @@ describe('csvChart', () => {
       'n',
       types,
     );
-    expect(c.xType).toBe('time');
-    expect(c.series[0].points.map((p) => p.y)).toEqual([1, 2]);
+    expect(c.time).toBe(true);
+    expect(c.rows.map((p) => [p.label, p.y])).toEqual([
+      ['2024-01-01', 1],
+      ['2024-02-01', 2],
+    ]);
   });
 
-  it('passes histogram samples', () => {
+  it('bins histogram samples, skipping non-numbers', () => {
     const c = csvChart(
-      [{ n: 1 }, { n: 'x' }, { n: 3 }],
+      [{ n: 1 }, { n: 'x' }, { n: 3 }, { n: 3 }],
       'histogram',
       '',
       'n',
       types,
     );
-    expect(c.series[0].points.map((p) => p.y)).toEqual([1, 3]);
+    expect(c.used).toBe(3);
+    expect(c.rows.reduce((sum, b) => sum + b.y, 0)).toBe(3);
+    expect(c.rows[0].label).toMatch(/^1 to /);
   });
 });

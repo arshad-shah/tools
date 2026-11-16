@@ -1,10 +1,11 @@
 import React from 'react';
 import { Badge, CodeBlock, Inline, Stack, Text } from '@arshad-shah/cynosure';
-import { CodeSurface } from '@/shared/ui';
+
 import { useRegexJob } from '../hooks/useRegexJob';
 import { plural } from '../lib/plural';
 import type { RegexRunner } from '../lib/runner';
 import { JobStatus } from './JobStatus';
+import { CodeEditor } from '@/shared/editor';
 
 interface ReplaceTabProps {
   runner: Pick<RegexRunner, 'replace'>;
@@ -44,11 +45,11 @@ export const ReplaceTab: React.FC<ReplaceTabProps> = ({
 
   return (
     <Stack gap="3">
-      <CodeSurface
+      <CodeEditor
         value={replacement}
         onChange={onReplacementChange}
         language="plain"
-        label="Replacement"
+        aria-label="Replacement"
         singleLine
         placeholder="Replacement text, for example $1"
       />

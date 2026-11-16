@@ -78,6 +78,35 @@ describe.skipIf(!built)('lazy-only libraries (spec 12.5)', () => {
     expect(leaks).toEqual([]);
   });
 
+  it('keeps CodeMirror and swift-chart out of the app shell', () => {
+    const leaks: string[] = [];
+    for (const k of staticClosure(manifest, 'index.html'))
+      for (const pkg of packages[manifest[k].file] ?? [])
+        if (/^@codemirror\/|^@lezer\/|^@arshad-shah\/swift-chart$/.test(pkg))
+          leaks.push(`${manifest[k].file} (${pkg})`);
+    expect(leaks).toEqual([]);
+  });
+
+  it('loads each CodeMirror language on demand, never with a tool', () => {
+    const leaks: string[] = [];
+    for (const t of tools) {
+      const root = `src/tools/${t.folder}/Tool.tsx`;
+      if (!manifest[root]) continue;
+      for (const k of staticClosure(manifest, root))
+        for (const pkg of packages[manifest[k].file] ?? [])
+          if (/^@codemirror\/lang-/.test(pkg)) leaks.push(`${t.id} (${pkg})`);
+    }
+    expect(leaks).toEqual([]);
+    // They exist, as their own chunks.
+    const all = Object.values(packages).flat();
+    expect(all).toEqual(
+      expect.arrayContaining([
+        '@codemirror/lang-json',
+        '@codemirror/lang-markdown',
+      ]),
+    );
+  });
+
   it('lists the packages of every emitted chunk', () => {
     // Guards the chunk-packages plugin itself: some chunk must name a
     // package, or the lazy-only check above proves nothing.

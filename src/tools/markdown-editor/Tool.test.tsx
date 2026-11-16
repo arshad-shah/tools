@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { queryCommands } from '@/shared/lib/commands';
 import { IconFileCode } from '@/shared/ui/icons';
 import type { ToolDefinition } from '@/app/tool';
+import {
+  editorSelection,
+  editorValue,
+  selectInEditor,
+  setEditorValue,
+} from '@/shared/editor/testing';
 import MarkdownEditor from './Tool';
 
 const saved = vi.hoisted(() => ({
@@ -31,11 +37,9 @@ const definition: ToolDefinition = {
   enabled: true,
 };
 
-const editor = () =>
-  screen.getByRole('textbox', { name: 'Markdown' }) as HTMLTextAreaElement;
+const editor = () => screen.getByRole('textbox', { name: 'Markdown' });
 const frame = () => screen.getByTitle('Preview') as HTMLIFrameElement;
-const type = (value: string) =>
-  fireEvent.change(editor(), { target: { value } });
+const type = (value: string) => setEditorValue(editor(), value);
 const srcdoc = () => frame().getAttribute('srcdoc') ?? '';
 
 describe('Markdown Editor', () => {
@@ -80,32 +84,29 @@ describe('Markdown Editor', () => {
   it('formats the selection and moves the selection inside the marks', () => {
     render(<MarkdownEditor definition={definition} />);
     type('hello world');
-    editor().setSelectionRange(0, 5);
-    fireEvent.select(editor());
+    selectInEditor(editor(), 0, 5);
     fireEvent.click(screen.getByRole('button', { name: 'Bold' }));
-    expect(editor().value).toBe('**hello** world');
-    expect([editor().selectionStart, editor().selectionEnd]).toEqual([2, 7]);
+    expect(editorValue(editor())).toBe('**hello** world');
+    expect(editorSelection(editor())).toEqual([2, 7]);
   });
 
   it('binds Mod+B and Mod+Shift+L, and Shift+7 by physical key', () => {
     render(<MarkdownEditor definition={definition} />);
     type('word');
-    editor().setSelectionRange(0, 4);
-    fireEvent.select(editor());
+    selectInEditor(editor(), 0, 4);
     fireEvent.keyDown(editor(), { key: 'b', ctrlKey: true });
-    expect(editor().value).toBe('**word**');
+    expect(editorValue(editor())).toBe('**word**');
     fireEvent.keyDown(editor(), { key: 'L', ctrlKey: true, shiftKey: true });
-    expect(editor().value).toBe('**[word](url)**');
+    expect(editorValue(editor())).toBe('**[word](url)**');
     type('a\nb');
-    editor().setSelectionRange(0, 3);
-    fireEvent.select(editor());
+    selectInEditor(editor(), 0, 3);
     fireEvent.keyDown(editor(), {
       key: '&',
       code: 'Digit7',
       ctrlKey: true,
       shiftKey: true,
     });
-    expect(editor().value).toBe('1. a\n2. b');
+    expect(editorValue(editor())).toBe('1. a\n2. b');
   });
 
   it('registers formatting with the command palette', () => {
@@ -125,7 +126,7 @@ describe('Markdown Editor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Outline' }));
     fireEvent.click(screen.getByRole('button', { name: 'Two' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(editor().selectionStart).toBe('# One\n\ntext\n\n'.length);
+    expect(editorSelection(editor())[0]).toBe('# One\n\ntext\n\n'.length);
     expect(document.activeElement).toBe(editor());
   });
 
@@ -198,7 +199,7 @@ describe('Markdown Editor', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Try the sample document' }),
     );
-    expect(editor().value).toContain('# Project notes');
+    expect(editorValue(editor())).toContain('# Project notes');
     await vi.waitFor(() => expect(srcdoc()).toContain('<table'), {
       timeout: 5000,
     });

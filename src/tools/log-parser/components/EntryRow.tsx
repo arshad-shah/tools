@@ -7,7 +7,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { chevronDown, chevronRight } from '@arshad-shah/cynosure/icons';
 import { cn } from '@/shared/lib/cn';
-import { CodeSurface } from '@/shared/ui';
+
 import type { FieldFilter } from '../lib/filter';
 import { levelLabel, levelTone } from '../lib/level-style';
 import type { LogEntry } from '../lib/model';
@@ -15,6 +15,7 @@ import { rowTime } from '../lib/progress';
 import type { LogColumn } from '../settings';
 import { searchRanges, type SearchSpec } from '../lib/search-ranges';
 import { FieldTable } from './FieldTable';
+import { CodeEditor } from '@/shared/editor';
 
 export interface EntryRowProps {
   entry: LogEntry | undefined;
@@ -132,10 +133,10 @@ export const EntryRow = memo(function EntryRow({
       </div>
       {expanded ? (
         <div className="mt-2 mb-1 flex flex-col gap-2 pl-14">
-          <CodeSurface
+          <CodeEditor
             value={entry.message}
             language="log"
-            label={`Line ${entry.line} message`}
+            aria-label={`Line ${entry.line} message`}
             readOnly
             wrap={wrap}
             ranges={ranges}

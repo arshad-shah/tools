@@ -29,16 +29,17 @@ function renderSplit(left: string, right: string) {
 const scrollerOf = (name: string) =>
   screen
     .getByRole('textbox', { name })
-    .closest('[data-cs-scroller]') as HTMLDivElement;
+    .closest('.cm-scroller') as HTMLDivElement;
 
 describe('DiffView', () => {
   it('the gutter shows original line numbers, blank on padding rows', () => {
     const { container } = renderSplit('a\nb\nc', 'a\nc\nd\ne');
     const gutter = (side: number) => {
-      const col = container.querySelectorAll('[data-cs-gutter]')[side];
-      return [...col.querySelectorAll('[data-cs-gutter-row]')].map(
-        (c) => c.textContent,
-      );
+      const col = container.querySelectorAll('.cm-lineNumbers')[side];
+      // The first cell is CodeMirror's hidden width spacer.
+      return [...col.querySelectorAll<HTMLElement>('.cm-gutterElement')]
+        .filter((c) => c.style.visibility !== 'hidden')
+        .map((c) => c.textContent);
     };
     // Left: a, b (removed), c, then padding for the added d and e.
     expect(gutter(0)).toEqual(['1', '2', '3', '', '']);

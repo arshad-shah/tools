@@ -10,8 +10,14 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { putHandoff } from '@/shared/lib/handoff';
 import { hotkeyLabel } from '@/shared/lib/hotkeys';
-import type { CodeSurfaceHandle } from './code-surface';
+import type { CodeEditorHandle } from '@/shared/editor';
 import { TextInputPanel, type TextInputPanelProps } from './text-input-panel';
+import {
+  editorSelection,
+  editorValue,
+  selectInEditor,
+  setEditorValue,
+} from '@/shared/editor/testing';
 
 const notify = vi.hoisted(() => ({
   info: vi.fn(),
@@ -44,8 +50,7 @@ function Panel({
 }
 
 const group = () => screen.getByRole('group', { name: 'Input panel' });
-const editor = () =>
-  screen.getByRole('textbox', { name: 'Input' }) as HTMLTextAreaElement;
+const editor = () => screen.getByRole('textbox', { name: 'Input' });
 const drop = (file: File) =>
   fireEvent.drop(group(), {
     dataTransfer: { types: ['Files'], files: [file] },
@@ -60,7 +65,7 @@ afterEach(() => {
 
 describe('TextInputPanel', () => {
   it('exposes the editor and reports caret moves', () => {
-    const ref = { current: null as CodeSurfaceHandle | null };
+    const ref = { current: null as CodeEditorHandle | null };
     const onSelectionChange = vi.fn();
     render(
       <Panel
@@ -69,13 +74,10 @@ describe('TextInputPanel', () => {
         onSelectionChange={onSelectionChange}
       />,
     );
-    const box = screen.getByRole('textbox', {
-      name: 'Input',
-    }) as HTMLTextAreaElement;
+    const box = screen.getByRole('textbox', { name: 'Input' });
     act(() => ref.current!.setSelection(1, 4));
-    expect([box.selectionStart, box.selectionEnd]).toEqual([1, 4]);
-    box.setSelectionRange(5, 5);
-    fireEvent.select(box);
+    expect(editorSelection(box)).toEqual([1, 4]);
+    selectInEditor(box, 5);
     expect(onSelectionChange).toHaveBeenLastCalledWith(5, 5);
   });
 
@@ -158,7 +160,7 @@ describe('TextInputPanel', () => {
     expect(opts.action.label).toBe('Undo');
     act(() => opts.action.onClick());
     expect(onValue).toHaveBeenLastCalledWith('keep me');
-    expect(editor().value).toBe('keep me');
+    expect(editorValue(editor())).toBe('keep me');
   });
 
   it('the status line counts characters, lines and UTF-8 bytes', () => {
@@ -181,8 +183,10 @@ describe('TextInputPanel', () => {
       />,
     );
     expect(screen.getByText('Large input')).toBeTruthy();
-    fireEvent.change(editor(), { target: { value: 'x'.repeat(21) } });
+    setEditorValue(editor(), 'x'.repeat(21));
     expect(onValue).not.toHaveBeenCalled();
+    // The refused text does not stay in the editor.
+    expect(editorValue(editor())).toBe('0123456789ab');
     expect(screen.getByRole('alert').textContent).toBe(
       'The text is larger than the 20 B limit',
     );

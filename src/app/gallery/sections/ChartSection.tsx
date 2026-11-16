@@ -1,10 +1,18 @@
 import { useMemo } from 'react';
 import {
-  Chart,
-  type ChartFunction,
-  type ChartSeries,
-  type HeatmapCell,
-} from '@/shared/ui';
+  Bar,
+  Heatmap,
+  Line,
+  Scatter,
+  StackedArea,
+} from '@arshad-shah/swift-chart/react';
+import { useChartTheme } from '@/shared/charts';
+
+interface ChartSeries {
+  id: string;
+  label: string;
+  points: { x: unknown; y: number | null }[];
+}
 import { Row, Section } from '../Section';
 import { normals, seeded } from '../demo-data';
 
@@ -67,107 +75,138 @@ function buildData() {
     points: normals(rand, 600, 180, 40).map((y, i) => ({ x: i, y })),
   };
 
-  const cells: HeatmapCell[] = [];
+  const cells: { week: string; day: string; value: number }[] = [];
   for (let i = 0; i < 26 * 7; i++) {
     const weekday = (weekDay(i).getDay() + 6) % 7;
     const busy = weekday < 5 ? 1 : 0.25;
     cells.push({
-      x: weekDay(i),
-      y: 0,
+      week: shortDate(weekDay(i - weekday)),
+      day: weekDay(i).toLocaleString('en-GB', { weekday: 'short' }),
       value: Math.floor(rand() * rand() * 14 * busy),
     });
   }
   return { visits, signups, sources, revenue, scatter, latency, cells };
 }
 
-const FNS: ChartFunction[] = [
-  { id: 'sin', label: 'sin(x)', fn: Math.sin },
-  { id: 'damped', label: 'sin(3x) / x', fn: (x) => Math.sin(3 * x) / x },
-  { id: 'parabola', label: 'x squared / 20', fn: (x) => (x * x) / 20 },
-];
+/** Rows for swift-chart from parallel series: one row per x. */
+function rowsOf(
+  series: { label: string; points: { x: unknown; y: number | null }[] }[],
+  label: (x: unknown) => string,
+) {
+  return series[0].points.map((p, i) => ({
+    x: label(p.x),
+    ...Object.fromEntries(
+      series.map((s) => [s.label, s.points[i].y ?? Number.NaN]),
+    ),
+  }));
+}
+
+const xs = Array.from({ length: 161 }, (_, i) => -8 + i * 0.1);
+const FUNCTION_ROWS = xs.map((x) => ({
+  x: x.toFixed(1),
+  'sin(x)': Math.sin(x),
+  'sin(3x) / x': x === 0 ? 3 : Math.sin(3 * x) / x,
+  'x squared / 20': (x * x) / 20,
+}));
 
 const shortDate = (x: unknown) =>
   x instanceof Date
     ? `${x.getDate()} ${x.toLocaleString('en-GB', { month: 'short' })}`
     : String(x);
 
+/** Histogram bins of `values` (20 equal bins). */
+function bins(values: number[]) {
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const w = (hi - lo) / 20 || 1;
+  const out = Array.from({ length: 20 }, (_, i) => ({
+    bin: `${Math.round(lo + i * w)}`,
+    n: 0,
+  }));
+  for (const v of values) out[Math.min(19, Math.floor((v - lo) / w))].n++;
+  return out;
+}
+
 export function ChartSection() {
   const d = useMemo(() => buildData(), []);
+  const theme = useChartTheme();
+  const t = theme.name;
   return (
-    <Section name="chart" title="Charts">
+    <Section name="chart" title="Charts (swift-chart)">
       <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-2">
-        <Row label="line: time axis, two series, a gap">
-          <Chart
-            kind="line"
-            series={[d.visits, d.signups]}
-            xType="time"
+        <Row label="Line: two series, a gap">
+          <Line
+            data={rowsOf([d.visits, d.signups], shortDate)}
+            mapping={{ x: 'x', y: ['Visits', 'Sign-ups'] }}
+            theme={t}
+            dots={false}
+            height={260}
             ariaLabel="Daily visits and sign-ups"
-            ariaSummary="Visits rise from about 1,400 to 2,000 a day over the quarter; sign-ups follow, with a two-day gap in February."
-            yLabel="Per day"
-            className="w-full"
+            ariaDescription="Visits rise from about 1,400 to 2,000 a day over the quarter; sign-ups follow, with a two-day gap in February."
           />
         </Row>
-        <Row label="area: stacked">
-          <Chart
-            kind="area"
-            stacked
-            series={d.sources}
-            xType="time"
+        <Row label="StackedArea">
+          <StackedArea
+            data={rowsOf(d.sources, shortDate)}
+            mapping={{ x: 'x', y: ['Search', 'Direct', 'Referral'] }}
+            theme={t}
+            height={260}
             ariaLabel="Visits by source"
-            formatX={shortDate}
-            className="w-full"
           />
         </Row>
-        <Row label="bar: band axis, grouped">
-          <Chart
-            kind="bar"
-            series={d.revenue}
-            xType="band"
+        <Row label="Bar: grouped">
+          <Bar
+            data={rowsOf(d.revenue, String)}
+            mapping={{ x: 'x', y: ['2025', '2026'] }}
+            theme={t}
+            height={260}
+            formatValue={(y) => `${y}k`}
             ariaLabel="Revenue by month"
-            yLabel="Revenue, thousands"
-            formatY={(y) => `${y}k`}
-            className="w-full"
           />
         </Row>
-        <Row label="scatter">
-          <Chart
-            kind="scatter"
-            series={d.scatter}
+        <Row label="Scatter: two groups">
+          <Scatter
+            data={d.scatter.flatMap((s) =>
+              s.points.map((p) => ({ ...p, group: s.label })),
+            )}
+            mapping={{ x: 'x', y: 'y', groupField: 'group' }}
+            theme={t}
+            height={260}
             ariaLabel="Price against weight"
-            xLabel="Weight, kg"
-            yLabel="Price"
-            className="w-full"
           />
         </Row>
-        <Row label="histogram: auto bins">
-          <Chart
-            kind="histogram"
-            series={[d.latency]}
+        <Row label="Bar: histogram">
+          <Bar
+            data={bins(d.latency.points.map((p) => p.y as number))}
+            mapping={{ x: 'bin', y: 'n', seriesNames: ['Requests'] }}
+            theme={t}
+            height={260}
+            showLegend={false}
             ariaLabel="Response time distribution"
-            xLabel="Milliseconds"
-            legend={false}
-            className="w-full"
           />
         </Row>
-        <Row label="function: zoomable">
-          <Chart
-            kind="function"
-            fns={FNS}
-            xDomain={[-10, 10]}
-            zoomable
+        <Row label="Line: functions">
+          <Line
+            data={FUNCTION_ROWS}
+            mapping={{
+              x: 'x',
+              y: ['sin(x)', 'sin(3x) / x', 'x squared / 20'],
+            }}
+            theme={t}
+            dots={false}
+            smooth={false}
+            height={260}
             ariaLabel="Function plot"
-            className="w-full"
           />
         </Row>
       </div>
-      <Row label="heatmap: calendar">
-        <Chart
-          kind="heatmap"
-          calendar
-          cells={d.cells}
-          height={200}
+      <Row label="Heatmap: weeks by weekday">
+        <Heatmap
+          data={d.cells}
+          mapping={{ x: 'week', y: 'day', valueField: 'value' }}
+          theme={t}
+          height={240}
           ariaLabel="Commits per day, first half of 2026"
-          className="w-full"
         />
       </Row>
     </Section>

@@ -23,7 +23,7 @@ import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useSendCommands } from '@/shared/lib/send-commands';
-import { CodeSurface } from '@/shared/ui';
+
 import type { Row } from '../lib/engine';
 import {
   exportRows,
@@ -31,6 +31,7 @@ import {
   MOCK_EXPORT_LABEL,
   type MockExportFormat,
 } from '../lib/export';
+import { CodeEditor } from '@/shared/editor';
 
 const PREVIEW = 1000;
 const TOOL_ID = 'random-data-generator';
@@ -209,8 +210,8 @@ export function OutputPanel({ tables }: OutputPanelProps) {
           selectionMode="range"
         />
       ) : (
-        <CodeSurface
-          label="Generated JSON"
+        <CodeEditor
+          aria-label="Generated JSON"
           value={json}
           language="json"
           readOnly

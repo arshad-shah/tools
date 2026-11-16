@@ -11,11 +11,12 @@ import {
 } from '@arshad-shah/cynosure';
 import { sparkles, table as tableIcon } from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
-import { CodeSurface } from '@/shared/ui';
+
 import { formatBytes } from '@/shared/lib/format';
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import type { useCsvTable } from '../hooks/useCsvTable';
 import { SAMPLES } from '../lib/samples';
+import { CodeEditor } from '@/shared/editor';
 
 const MAX_BYTES = 200 * 1024 * 1024;
 const TEXT_MIMES = ['text/csv', 'text/tab-separated-values', 'text/plain'];
@@ -88,8 +89,8 @@ export function InputScreen({
       }
     >
       <Stack gap="3">
-        <CodeSurface
-          label="CSV or TSV data"
+        <CodeEditor
+          aria-label="CSV or TSV data"
           language="csv"
           value={paste}
           onChange={onPasteChange}
