@@ -9,26 +9,15 @@ export const VIEWPORTS = {
 } as const;
 
 /**
- * Applies a theme without a reload: stores the preference the bootstrap
- * script reads (so later navigations keep it) and sets data-theme now.
+ * Applies a colour mode: stores it under the key Cynosure's useColorMode and
+ * the init script read, then reloads so the page starts in it.
  */
 export async function setTheme(page: Page, theme: Theme): Promise<void> {
   await page.evaluate((t) => {
-    try {
-      localStorage.setItem('tools:theme', t);
-    } catch {
-      // storage blocked: data-theme below still applies
-    }
-    document.documentElement.dataset.theme = t;
-    document.documentElement.style.colorScheme = t;
-    // The theme store reads storage on its next render, so the header and
-    // footer theme controls flipped only if something happened to re-render
-    // before the shot. Its cross-tab sync re-renders them now, every run.
-    window.dispatchEvent(
-      new StorageEvent('storage', { key: 'tools:theme', newValue: t }),
-    );
+    localStorage.setItem('tools:theme', t);
   }, theme);
-  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-cy-mode', theme);
 }
 
 /**

@@ -1,43 +1,64 @@
 /** @vitest-environment jsdom */
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { themeInitJs } from '../scripts/gen-cynosure-theme';
 
 /*
- * public/theme-init.js resolves the theme before first paint for both
- * tools' tokens (data-theme) and Cynosure's (data-cy-mode), so neither
- * flashes the wrong mode (tools#104, Phase 0 Task 2).
+ * No flash of the wrong theme (redesign spec, rule 4). public/theme-init.js
+ * is Cynosure's themeInitScript for tools:theme, loaded as a file (the CSP
+ * forbids inline scripts) before anything paints. With a saved mode it
+ * marks <html data-cy-mode>; with nothing saved, tokens.css lets the
+ * document follow the OS until the app mounts.
  */
 const script = readFileSync('public/theme-init.js', 'utf8');
 const run = () => new Function(script)();
 const html = document.documentElement;
 
-function osDark(dark: boolean) {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn(() => ({ matches: dark })),
-  );
-}
-
 beforeEach(() => {
   localStorage.clear();
-  html.removeAttribute('data-theme');
   html.removeAttribute('data-cy-mode');
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => vi.restoreAllMocks());
 
 describe('theme-init.js', () => {
-  it.each([
-    [null, false, 'light'],
-    [null, true, 'dark'],
-    ['system', true, 'dark'],
-    ['light', true, 'light'],
-    ['dark', false, 'dark'],
-    ['purple', true, 'dark'],
-  ])('saved %s, OS dark %s: %s on both attributes', (saved, dark, out) => {
-    if (saved) localStorage.setItem('tools:theme', saved);
-    osDark(dark);
+  it("is Cynosure's script for tools:theme, byte for byte", () => {
+    expect(script).toBe(themeInitJs());
+  });
+
+  it.each(['light', 'dark', 'system'])('applies a saved %s mode', (saved) => {
+    localStorage.setItem('tools:theme', saved);
     run();
-    expect(html.dataset.theme).toBe(out);
-    expect(html.getAttribute('data-cy-mode')).toBe(out);
+    expect(html.getAttribute('data-cy-mode')).toBe(saved);
+  });
+
+  it.each([null, 'purple'])('leaves %s to the OS', (saved) => {
+    if (saved) localStorage.setItem('tools:theme', saved);
+    run();
+    expect(html.hasAttribute('data-cy-mode')).toBe(false);
+  });
+
+  it('never throws when storage is blocked', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    expect(run).not.toThrow();
+    expect(html.hasAttribute('data-cy-mode')).toBe(false);
+  });
+
+  it('runs from <head> before the app, as a file', () => {
+    const page = readFileSync('index.html', 'utf8');
+    const head = page.slice(0, page.indexOf('</head>'));
+    expect(head).toContain('<script src="/theme-init.js"></script>');
+    expect(page.indexOf('/theme-init.js')).toBeLessThan(
+      page.indexOf('/src/main.tsx'),
+    );
+  });
+
+  it('lets an unmarked document follow the OS and dark: follow the mode', () => {
+    const tokens = readFileSync('src/theme/tokens.css', 'utf8');
+    expect(tokens).toMatch(
+      /:root:not\(\[data-cy-mode\]\)\s*\{\s*color-scheme: light dark;/,
+    );
+    expect(tokens).toContain("[data-cy-mode='dark']");
   });
 });

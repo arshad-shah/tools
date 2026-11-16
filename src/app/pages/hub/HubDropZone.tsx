@@ -1,55 +1,52 @@
-import { useRef, useState } from 'react';
+import {
+  Button,
+  Dialog,
+  FileDrop,
+  IconTile,
+  ListRow,
+  ListRows,
+  Notice,
+  Stack,
+} from '@arshad-shah/cynosure';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { putHandoff, HANDOFF_PARAM } from '@/shared/lib/handoff';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
-import { IconX } from '@/shared/ui/icons';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  Dialog,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DropZone,
-  IconButton,
-} from '@/shared/ui';
 import type { CategoryDef } from '../../categories';
 import { routeDrop, type DropDecision } from '../../drop-routing';
 import { TOOLS } from '../../registry';
+import { toolGlyph } from '../../ui/glyphs';
 import { imagesAsPdfs } from './images-as-pdfs';
-import { ToolChooser } from './ToolChooser';
 
 export interface HubDropZoneProps {
   category: CategoryDef;
-  title?: string;
+  /** The zone's prompt. */
+  prompt?: string;
   hint?: string;
+  size?: 'sm' | 'md' | 'lg';
   /** Hub-specific routing (the PDF hub); default: match tools' accepts rules. */
   route?: (files: File[]) => Promise<DropDecision>;
 }
 
+type Choice = Extract<DropDecision, { type: 'choose' }>;
+type Merge = Extract<DropDecision, { type: 'confirm-merge' }>;
+
 /**
- * Hub drop target (spec §5.3): one matching tool opens with the files
- * handed off, several offer a chooser, none shows an inline error.
+ * Drop files to open the right tool (spec §5.3, existing drop routing):
+ * one matching tool opens with the files handed off, several offer a
+ * choice, none says why next to the zone.
  */
 export function HubDropZone({
   category,
-  title = 'Drop files to pick a tool',
+  prompt = 'Drop files here to pick a tool, or',
   hint,
+  size = 'md',
   route = (files) => routeDrop(files, TOOLS, category.id),
 }: HubDropZoneProps) {
   const navigate = useNavigate();
-  const anchor = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<ToolError | null>(null);
-  const [choice, setChoice] = useState<Extract<
-    DropDecision,
-    { type: 'choose' }
-  > | null>(null);
-  const [merge, setMerge] = useState<Extract<
-    DropDecision,
-    { type: 'confirm-merge' }
-  > | null>(null);
+  const [choice, setChoice] = useState<Choice | null>(null);
+  const [merge, setMerge] = useState<Merge | null>(null);
   const [busy, setBusy] = useState(false);
 
   const go = (path: string, files: File[]) =>
@@ -80,52 +77,64 @@ export function HubDropZone({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div ref={anchor}>
-        <DropZone
-          variant="hero"
-          title={title}
-          hint={hint}
-          onFiles={(files) => void onFiles(files)}
-        />
-      </div>
-      <ToolChooser
-        open={choice !== null}
-        onOpenChange={(open) => !open && setChoice(null)}
-        anchor={anchor}
-        options={choice?.options ?? []}
-        onChoose={(path) => choice && go(path, choice.files)}
+    <Stack gap="4">
+      <FileDrop
+        multiple
+        size={size}
+        hint={hint ?? 'Files stay on this device'}
+        labels={{ prompt }}
+        onFiles={(files) => void onFiles(files)}
       />
-      <Dialog open={merge !== null} onOpenChange={(o) => !o && setMerge(null)}>
-        <DialogHeader>
-          <DialogTitle>PDFs and images</DialogTitle>
-          <DialogDescription>{merge?.message}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setMerge(null)}>
-            Cancel
-          </Button>
-          <Button loading={busy} onClick={() => void convertAndMerge()}>
-            Convert and merge
-          </Button>
-        </DialogFooter>
-      </Dialog>
       {error ? (
-        <Alert status="danger">
-          <div className="flex items-start justify-between gap-3">
-            <AlertDescription className="mt-0 text-danger">
-              {error.message}
-            </AlertDescription>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Dismiss"
-              icon={IconX}
-              onClick={() => setError(null)}
-            />
-          </div>
-        </Alert>
+        <Notice tone="danger" dismissible onDismiss={() => setError(null)}>
+          {error.message}
+        </Notice>
       ) : null}
-    </div>
+      <Dialog
+        open={choice !== null}
+        onOpenChange={(o) => !o && setChoice(null)}
+        title="Choose a tool for these files"
+        description="More than one tool takes them."
+        size="sm"
+      >
+        <ListRows label="Tools">
+          {(choice?.options ?? []).map(({ tool, path }) => (
+            <ListRow
+              key={tool.id}
+              label={tool.name}
+              description={tool.description}
+              leading={<IconTile icon={toolGlyph(tool.id)} size="sm" />}
+              onClick={() => {
+                const files = choice?.files ?? [];
+                setChoice(null);
+                go(path, files);
+              }}
+            />
+          ))}
+        </ListRows>
+      </Dialog>
+      <Dialog
+        open={merge !== null}
+        onOpenChange={(o) => !o && setMerge(null)}
+        title="PDFs and images"
+        description={merge?.message}
+        size="sm"
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => setMerge(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              tone="accent"
+              loading={busy}
+              onClick={() => void convertAndMerge()}
+            >
+              Convert and merge
+            </Button>
+          </>
+        }
+      />
+    </Stack>
   );
 }

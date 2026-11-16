@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTheme } from '@/shared/lib/theme';
+import { useCynosureTheme } from '@arshad-shah/cynosure';
 import { readThemeTokens } from '@/shared/lib/theme-tokens';
 
 export type TokenName =
@@ -27,15 +27,15 @@ export function tokenColor(name: TokenName): string {
 export function useTokenColors<T extends TokenName>(
   names: readonly T[],
 ): Record<T, string> {
-  const { resolved } = useTheme();
+  const { palette } = useCynosureTheme();
   const key = names.join(',');
   return useMemo(
     () =>
       Object.fromEntries(
         key.split(',').map((n) => [n, tokenColor(n as T)]),
       ) as Record<T, string>,
-    // resolved: the theme the values were read under.
+    // palette: the theme the values were read under.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key, resolved],
+    [key, palette],
   );
 }

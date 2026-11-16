@@ -1,6 +1,6 @@
-import { Heading, SegmentedControl, Stack, Text } from '@/shared/ui';
-import { IconMonitor, IconMoon, IconSun } from '@/shared/ui/icons';
-import { useTheme, type ThemePreference } from '@/shared/lib/theme';
+import { Heading, Stack, Text } from '@/shared/ui';
+import { ThemeToggle } from '@arshad-shah/cynosure';
+import { THEME_KEY } from '@/theme/tools-theme';
 import { AnnotateSection } from './sections/AnnotateSection';
 import { ButtonsSection } from './sections/ButtonsSection';
 import { CardsSection } from './sections/CardsSection';
@@ -33,7 +33,6 @@ import { WidgetsSection } from './sections/WidgetsSection';
  * in both themes. Each section is a visual-regression target.
  */
 export default function KitGallery() {
-  const { preference, setPreference } = useTheme();
   return (
     // A div, not main: the AppShell example renders the main landmark.
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
@@ -44,16 +43,7 @@ export default function KitGallery() {
         <Text tone="muted">
           Development only. Every kit primitive, both themes.
         </Text>
-        <SegmentedControl<ThemePreference>
-          label="Theme"
-          value={preference}
-          onChange={setPreference}
-          options={[
-            { value: 'system', label: 'System', icon: IconMonitor },
-            { value: 'light', label: 'Light', icon: IconSun },
-            { value: 'dark', label: 'Dark', icon: IconMoon },
-          ]}
-        />
+        <ThemeToggle storageKey={THEME_KEY} />
       </Stack>
       <ButtonsSection />
       <InputsSection />

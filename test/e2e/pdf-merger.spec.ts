@@ -12,53 +12,38 @@ test('merges two PDFs honouring order and page selection', async ({ page }) => {
       'test/fixtures/generated/text-3.pdf',
       'test/fixtures/generated/text-12.pdf',
     ]);
-  await expect(page.getByText('text-12.pdf')).toBeVisible();
+  await expect(
+    page.getByText('text-12.pdf', { exact: true }).first(),
+  ).toBeVisible();
 
-  // Every row shows a rendered thumbnail.
-  const rows = page.getByRole('list', { name: /^Files/ }).getByRole('listitem');
+  // Every row shows page 1 as an image, rendered by the pdf.js worker.
+  const rows = page
+    .getByRole('list', { name: 'Files to merge' })
+    .getByRole('listitem');
   await expect(rows).toHaveCount(2);
-  for (let i = 0; i < 2; i++) {
-    const img = rows.nth(i).getByRole('img');
+  for (const name of ['text-3.pdf', 'text-12.pdf']) {
+    const img = page.getByRole('img', { name: `${name}, page 1` });
     await expect(img).toBeVisible();
     await expect
-      .poll(() => img.evaluate((c) => (c as HTMLCanvasElement).width))
+      .poll(() => img.evaluate((i) => (i as HTMLImageElement).naturalWidth))
       .toBeGreaterThan(0);
   }
   await expect(rows.nth(1)).toContainText('12 pages');
 
-  // Hovering the first thumbnail shows a larger preview inside the viewport.
-  await rows.first().getByRole('img').hover();
-  const popover = page.getByLabel('Preview of text-3.pdf', { exact: true });
-  await expect(popover).toBeVisible();
-  await expect
-    .poll(async () => {
-      const box = await popover.boundingBox();
-      const vp = page.viewportSize()!;
-      return (
-        !!box &&
-        box.x >= 0 &&
-        box.y >= 0 &&
-        box.x + box.width <= vp.width &&
-        box.y + box.height <= vp.height
-      );
-    })
-    .toBe(true);
-  await page.mouse.move(0, 0);
-
-  // Move text-12 above text-3 with the keyboard (Alt+ArrowUp on the row).
-  const second = page
-    .getByRole('list', { name: /^Files/ })
-    .getByRole('listitem')
-    .filter({
-      hasText: 'text-12.pdf',
-    });
-  await second.focus();
-  await page.keyboard.press('Alt+ArrowUp');
+  // Move text-12 above text-3 with the keyboard: Space picks the row up,
+  // the arrow moves it, Space drops it.
+  const handle = page.getByRole('button', {
+    name: 'Move text-12.pdf',
+    exact: true,
+  });
+  await handle.focus();
+  await page.keyboard.press('Space');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Space');
   await expect(rows.first()).toContainText('text-12.pdf');
-  await expect(second).toBeFocused();
 
   await page.getByLabel('Pages from text-12.pdf').fill('1-2');
-  await page.getByRole('button', { name: 'Merge PDFs' }).click();
+  await page.getByRole('button', { name: 'Merge 2 files' }).click();
 
   const downloadPromise = page.waitForEvent('download');
   await page
@@ -85,9 +70,8 @@ test('rejects an invalid file by name', async ({ page }) => {
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4 not really a pdf'),
   });
-  await expect(
-    page.getByRole('alert').filter({ hasText: 'broken.pdf' }),
-  ).toBeVisible();
+  await expect(page.getByText(/broken\.pdf/).first()).toBeVisible();
+  await expect(page.getByText('A file was skipped')).toBeVisible();
 });
 
 test('names the file when a page range is out of range', async ({ page }) => {
@@ -99,10 +83,11 @@ test('names the file when a page range is out of range', async ({ page }) => {
       'test/fixtures/generated/text-12.pdf',
     ]);
   await page.getByLabel('Pages from text-3.pdf').fill('9');
-  await page.getByRole('button', { name: 'Merge PDFs' }).click();
+  await page.getByRole('button', { name: 'Merge 2 files' }).click();
+  // The error sits next to the merge button that caused it.
   await expect(
     page
-      .getByRole('alert')
-      .filter({ hasText: 'text-3.pdf: Page 9 is out of range (1–3)' }),
+      .getByRole('region', { name: 'Merge' })
+      .getByText('text-3.pdf: Page 9 is out of range (1–3)'),
   ).toBeVisible();
 });

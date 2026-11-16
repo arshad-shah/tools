@@ -1,6 +1,8 @@
 /** @vitest-environment jsdom */
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
+import { ColourModeWrapper } from '../../../test/helpers/colour-mode';
+import { setColourMode } from '../../../test/helpers/colour-mode-store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   HEADER_H,
@@ -98,7 +100,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   observers.length = 0;
-  document.documentElement.removeAttribute('data-theme');
+  setColourMode('light');
 });
 
 const flush = () =>
@@ -151,6 +153,7 @@ function mount(
       onLayout={(info) => layouts.push(info)}
       {...props}
     />,
+    { wrapper: ColourModeWrapper },
   );
   const canvas = screen.getByTestId('diagram-canvas');
   const card = (id: string) =>
@@ -251,8 +254,7 @@ describe('DiagramCanvas host', () => {
     mount();
     flush();
     expect(frames.size).toBe(0);
-    document.documentElement.setAttribute('data-theme', 'dark');
-    await act(async () => {});
+    await act(async () => setColourMode('dark'));
     expect(frames.size).toBe(1);
     const canvas = screen.getByTestId('diagram-canvas') as HTMLCanvasElement;
     const ctx = contexts.get(canvas)!;

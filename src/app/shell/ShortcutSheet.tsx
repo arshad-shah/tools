@@ -1,43 +1,42 @@
-import { useMemo, useState } from 'react';
-import { listShortcuts } from '@/shared/lib/hotkeys';
 import {
   Dialog,
-  DialogBody,
-  DialogHeader,
-  DialogTitle,
   EmptyState,
   Heading,
-  SearchInput,
-  ShortcutHint,
+  Inline,
+  Kbd,
+  ListRow,
+  ListRows,
+  SearchField,
   Stack,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { useMemo, useState } from 'react';
+import { hotkeyCaps, hotkeyLabel, listShortcuts } from '@/shared/lib/hotkeys';
 import { groupShortcuts, type ShortcutGroup } from './shortcut-groups';
 
-function Section({ group, rows }: ShortcutGroup) {
+function Group({ group, rows }: ShortcutGroup) {
   const id = `shortcut-group-${group.toLowerCase().replace(/\W+/g, '-')}`;
   return (
-    <section aria-labelledby={id}>
-      <Stack gap="2">
-        <Heading level={3} size="sm" id={id}>
-          {group}
-        </Heading>
-        <ul className="flex list-none flex-col divide-y divide-line">
-          {rows.map((r) => (
-            <li
-              key={r.description}
-              className="flex items-center justify-between gap-4 py-1.5 text-sm text-fg"
-            >
-              <span>{r.description}</span>
-              <span className="flex shrink-0 items-center gap-2">
+    <Stack as="section" gap="3" aria-labelledby={id}>
+      <Heading level={3} size="sm" id={id}>
+        {group}
+      </Heading>
+      <ListRows size="sm" divided>
+        {rows.map((r) => (
+          <ListRow
+            key={r.description}
+            label={r.description}
+            wrap
+            trailing={
+              <Inline gap="2" as="span">
                 {r.combos.map((c) => (
-                  <ShortcutHint key={c} keys={c} />
+                  <Kbd key={c} keys={hotkeyCaps(c)} label={hotkeyLabel(c)} />
                 ))}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Stack>
-    </section>
+              </Inline>
+            }
+          />
+        ))}
+      </ListRows>
+    </Stack>
   );
 }
 
@@ -48,19 +47,20 @@ function SheetBody() {
   const defs = useMemo(() => listShortcuts(), []);
   const groups = groupShortcuts(defs, filter);
   return (
-    <DialogBody className="flex flex-col gap-4">
-      <SearchInput
+    <Stack gap="6">
+      <SearchField
+        label="Filter shortcuts"
+        labelHidden
+        placeholder="Filter shortcuts"
         value={filter}
         onChange={setFilter}
-        aria-label="Filter shortcuts"
-        placeholder="Filter shortcuts"
       />
       {groups.length ? (
-        groups.map((g) => <Section key={g.group} {...g} />)
+        groups.map((g) => <Group key={g.group} {...g} />)
       ) : (
-        <EmptyState title="No shortcuts match" />
+        <EmptyState size="sm" title="No shortcuts match" />
       )}
-    </DialogBody>
+    </Stack>
   );
 }
 
@@ -73,10 +73,12 @@ export function ShortcutSheet({
   onOpenChange(open: boolean): void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} size="lg">
-      <DialogHeader>
-        <DialogTitle>Keyboard shortcuts</DialogTitle>
-      </DialogHeader>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="lg"
+      title="Keyboard shortcuts"
+    >
       {open ? <SheetBody /> : null}
     </Dialog>
   );

@@ -4,9 +4,9 @@
  * typed record cards for src/shared/diagram.
  */
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { readThemeTokens } from '@/shared/lib/theme-tokens';
-import { readDiagramTheme, watchTheme } from './theme-bridge';
+import { readDiagramTheme } from './theme-bridge';
 
 const html = () => document.documentElement;
 // Token values are opaque strings to the bridge; rgb() keeps them obviously
@@ -37,7 +37,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   html().removeAttribute('style');
-  html().removeAttribute('data-theme');
 });
 
 describe('readDiagramTheme', () => {
@@ -78,19 +77,5 @@ describe('readDiagramTheme', () => {
       '--fg': 'rgb(8, 8, 8)',
       nope: '',
     });
-  });
-});
-
-describe('watchTheme', () => {
-  it('fires on a data-theme change and stops after unsubscribe', async () => {
-    const cb = vi.fn();
-    const stop = watchTheme(cb);
-    html().setAttribute('data-theme', 'light');
-    await new Promise((r) => setTimeout(r, 0));
-    expect(cb).toHaveBeenCalledTimes(1);
-    stop();
-    html().setAttribute('data-theme', 'dark');
-    await new Promise((r) => setTimeout(r, 0));
-    expect(cb).toHaveBeenCalledTimes(1);
   });
 });

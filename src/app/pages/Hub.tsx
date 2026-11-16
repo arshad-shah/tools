@@ -1,13 +1,21 @@
+import {
+  Container,
+  Grid,
+  Heading,
+  IconTile,
+  Inline,
+  PageHeader,
+  Section,
+  Stack,
+} from '@arshad-shah/cynosure';
 import type React from 'react';
-import { HubLayout, ToolCard } from '@/shared/ui';
-import type { CategoryDef } from '../categories';
+import { getCategory, type CategoryDef } from '../categories';
 import { hubTools } from '../drop-routing';
-import { useFavorites } from '../favorites';
 import { TOOLS } from '../registry';
-import { toolPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
-import { routerLink } from '../shell/router-link';
 import type { ToolManifest } from '../tool';
+import { categoryGlyph } from '../ui/glyphs';
+import { ToolCard } from '../ui/ToolCard';
 import { HubDropZone, type HubDropZoneProps } from './hub/HubDropZone';
 
 /** Tools grouped as the category table says; the rest in a trailing group. */
@@ -25,7 +33,7 @@ function groupTools(category: CategoryDef, tools: ToolManifest[]) {
   if (rest.length)
     groups.push({
       id: 'tools',
-      label: groups.length ? 'Other tools' : '',
+      label: groups.length ? 'Other tools' : 'Tools',
       tools: rest,
     });
   return groups.filter((g) => g.tools.length);
@@ -41,52 +49,76 @@ export interface HubProps {
   extraGroups?: { id: string; label: string; children: React.ReactNode[] }[];
 }
 
-/** One layout for every category hub (spec §5.3). */
+function Group({
+  id,
+  label,
+  children,
+}: {
+  id: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const heading = `hub-group-${id}`;
+  return (
+    <Section contained={false} paddingBlock="0" aria-labelledby={heading}>
+      <Stack gap="5">
+        <Heading level={2} size="lg" id={heading}>
+          {label}
+        </Heading>
+        <Grid minItemWidth="15rem" columns={4} gap="5">
+          {children}
+        </Grid>
+      </Stack>
+    </Section>
+  );
+}
+
+/** One layout for every category hub (redesign spec, Pages). */
 export function Hub({
   category,
   route,
   dropAddon,
   extraGroups = [],
 }: HubProps) {
-  const { isFavorite, toggle } = useFavorites();
   useBreadcrumb([{ label: category.label }]);
   const groups = groupTools(category, hubTools(TOOLS, category.id));
   return (
-    <HubLayout
-      icon={category.icon}
-      title={category.label}
-      blurb={category.blurb}
-      dropZone={
-        category.fileBased ? (
-          <div className="flex flex-col gap-3">
+    <Container size="lg" paddingBlock="9">
+      <Stack gap="9">
+        <Inline gap="6" align="start">
+          {/* Phones: the title takes the full width. */}
+          <Stack hideBelow="md">
+            <IconTile icon={categoryGlyph(category.id)} size="lg" />
+          </Stack>
+          <PageHeader title={category.label} description={category.blurb} />
+        </Inline>
+        {category.fileBased ? (
+          <Stack gap="5">
             <HubDropZone category={category} route={route} />
             {dropAddon}
-          </div>
-        ) : undefined
-      }
-      groups={[
-        ...groups.map((g) => ({
-          id: g.id,
-          label: g.label || undefined,
-          children: g.tools.map((t) => (
-            <ToolCard
-              key={t.id}
-              href={toolPath(t)}
-              renderLink={routerLink}
-              icon={t.icon}
-              title={t.name}
-              description={t.description}
-              tag={t.category === category.id ? undefined : t.category}
-              isNew={t.isNew}
-              favourite={{
-                active: isFavorite(t.id),
-                onToggle: () => toggle(t.id),
-              }}
-            />
-          )),
-        })),
-        ...extraGroups,
-      ]}
-    />
+          </Stack>
+        ) : null}
+        {groups.map((g) => (
+          <Group key={g.id} id={g.id} label={g.label}>
+            {g.tools.map((t) => (
+              <ToolCard
+                key={t.id}
+                tool={t}
+                tag={
+                  t.category === category.id
+                    ? undefined
+                    : (getCategory(t.category)?.label ?? t.category)
+                }
+              />
+            ))}
+          </Group>
+        ))}
+        {extraGroups.map((g) => (
+          <Group key={g.id} id={g.id} label={g.label}>
+            {g.children}
+          </Group>
+        ))}
+      </Stack>
+    </Container>
   );
 }

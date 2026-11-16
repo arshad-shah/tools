@@ -7,9 +7,9 @@
  * palette is read out of the live token layer and handed over as concrete
  * values. Every colour comes from a token (6-A1's syntax and match tokens
  * included; the interim fallbacks are gone), so the diagram follows
- * `data-theme` with no colour literal of its own. `watchTheme` signals a repaint on theme change.
+ * the colour mode with no colour literal of its own. Callers re-read on `useCynosureTheme().palette`.
  */
-import { readThemeTokens, watchTheme } from '@/shared/lib/theme-tokens';
+import { readThemeTokens } from '@/shared/lib/theme-tokens';
 import {
   DEFAULT_FONT_SIZES,
   diagramFonts,
@@ -17,8 +17,6 @@ import {
   type FontSizes,
 } from './fonts';
 import type { RowKind } from './model';
-
-export { watchTheme };
 
 export interface DiagramTheme extends DiagramFonts {
   surface: string;
@@ -90,7 +88,7 @@ const SIZE_TOKENS: Record<keyof FontSizes, string> = {
 
 /**
  * Snapshot the current theme's palette and type ramp off `el` (the element
- * carrying `data-theme`, `<html>` by default). Rows and titles use the mono
+ * `<html>` by default). Rows and titles use the mono
  * family so the worker and the main thread measure identically.
  */
 export function readDiagramTheme(

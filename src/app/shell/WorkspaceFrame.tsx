@@ -1,10 +1,13 @@
+import { Toaster } from '@arshad-shah/cynosure';
 import { useCallback, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { CommandPalette, Toaster, useCommandPaletteHotkey } from '@/shared/ui';
+import { AppPalette } from './AppPalette';
+import { NotifyBridge } from './AppFrame';
 import { HelpContext } from './help-context';
 import { useHelpDialogs } from './HelpDialogs';
 import { PaletteContext } from './palette';
 import { useAppCommands } from './use-app-commands';
+import { useClientLinks } from './use-client-links';
 
 /**
  * Layout route for the PDF workspace: the workspace draws its own full-height
@@ -14,16 +17,18 @@ import { useAppCommands } from './use-app-commands';
 export default function WorkspaceFrame() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
-  useCommandPaletteHotkey(setPaletteOpen);
   useAppCommands();
+  useClientLinks();
   const { dialogs: helpDialogs, ...help } = useHelpDialogs();
   return (
     <PaletteContext.Provider value={openPalette}>
       <HelpContext.Provider value={help}>
-        <Outlet />
-        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-        {helpDialogs}
-        <Toaster />
+        <Toaster position={'bottom-end'}>
+          <NotifyBridge />
+          <Outlet />
+          <AppPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+          {helpDialogs}
+        </Toaster>
       </HelpContext.Provider>
     </PaletteContext.Provider>
   );

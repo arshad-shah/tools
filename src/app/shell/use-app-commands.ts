@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCommands } from '@/shared/lib/commands';
-import { useTheme } from '@/shared/lib/theme';
+import { useColorMode } from '@arshad-shah/cynosure';
+import { THEME_KEY } from '@/theme/tools-theme';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
@@ -35,15 +36,16 @@ const BACK_COMMANDS = {
 /** The global Mod+K sources: favourites, routes, tools, theme and cURL import. */
 export function useAppCommands(): void {
   const navigate = useNavigate();
-  const { setPreference } = useTheme();
+  const { setMode } = useColorMode({ key: THEME_KEY });
   // Registration order is the empty-query group order: favourites first.
   useCommands(
     favouriteCommands(navigate, () => useFavoritesStore.getState().ids, TOOLS),
     [navigate],
   );
-  useCommands(routeCommands(navigate), [navigate]);
+  // People come for tools: they are listed before the pages.
   useCommands(toolCommands(navigate, TOOLS), [navigate]);
-  useCommands(themeCommands(setPreference), [setPreference]);
+  useCommands(routeCommands(navigate), [navigate]);
+  useCommands(themeCommands(setMode), [setMode]);
   useCommands(BACK_COMMANDS, []);
   useCommands(
     curlCommand(navigate, readClipboardText, (e) =>

@@ -1,8 +1,20 @@
 /** @vitest-environment jsdom */
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { CATEGORIES } from '../categories';
+import { getEnabledTools } from '../registry';
+
+function Where() {
+  const l = useLocation();
+  return <p data-testid="where">{l.pathname + l.search}</p>;
+}
 
 beforeEach(() => {
   localStorage.clear();
@@ -10,19 +22,29 @@ beforeEach(() => {
 });
 
 const setup = async () => {
+  // Fresh modules per test: the favourites and recents stores read storage once.
   const { default: Home } = await import('./Home');
-  // Same module instance as Home's (modules are reset per test).
-  const { PaletteContext } = await import('../shell/palette');
-  const open = vi.fn();
+  const { useRecentToolsStore } = await import('../recents');
   render(
     <MemoryRouter>
-      <PaletteContext.Provider value={open}>
-        <Home />
-      </PaletteContext.Provider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="*" element={<Where />} />
+      </Routes>
     </MemoryRouter>,
   );
-  return open;
+  return {
+    visit: (id: string) => act(() => useRecentToolsStore.getState().visit(id)),
+  };
 };
+
+const search = () => screen.getByRole('searchbox', { name: 'Search tools' });
+const cardLinks = () =>
+  within(screen.getByRole('region', { name: /tools$/i }))
+    .getAllByRole('link')
+    .map((a) => a.getAttribute('href'))
+    // Tool cards; the category links ("Open PDF") have one segment.
+    .filter((h) => h?.split('/').length === 3);
 
 describe('Home', () => {
   it('states the promise as the page heading', async () => {
@@ -30,46 +52,88 @@ describe('Home', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'Free, private tools. Nothing leaves your browser.',
+        name: 'Private tools that run in your browser',
       }),
     ).toBeTruthy();
   });
-  it('renders the nine category cards in order', async () => {
+
+  it('lists every enabled tool under All tools', async () => {
     await setup();
-    const section = screen
-      .getByRole('heading', { name: 'Categories' })
-      .closest('section') as HTMLElement;
-    const hrefs = within(section)
-      .getAllByRole('link')
-      .map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(CATEGORIES.map((c) => `/${c.id}`));
+    expect(cardLinks()).toHaveLength(getEnabledTools().length);
   });
-  it('hides favourites when there are none', async () => {
+
+  it('filters the grid live as you type', async () => {
     await setup();
-    expect(screen.queryByRole('heading', { name: 'Favourites' })).toBeNull();
+    fireEvent.change(search(), { target: { value: 'jwt' } });
+    expect(cardLinks()).toEqual(['/encoding/jwt']);
+    // Every word must match: name, description, keywords or category.
+    fireEvent.change(search(), { target: { value: 'pdf merge' } });
+    expect(cardLinks()).toEqual(['/pdf/merge']);
   });
-  it('shows a starred tool under favourites', async () => {
-    localStorage.setItem('favoriteTools', JSON.stringify(['regex-tester']));
+
+  it('says when nothing matches and clears the search', async () => {
     await setup();
-    const section = screen
-      .getByRole('heading', { name: 'Favourites' })
-      .closest('section') as HTMLElement;
+    fireEvent.change(search(), { target: { value: 'zzqx' } });
     expect(
-      within(section).getByRole('link', { name: 'Regex Tester' }),
+      screen.getByRole('heading', { name: 'No tools match "zzqx"' }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect((search() as HTMLInputElement).value).toBe('');
+    expect(cardLinks()).toHaveLength(getEnabledTools().length);
+  });
+
+  it('puts the cursor in the search field on /', async () => {
+    await setup();
+    fireEvent.keyDown(document.body, { key: '/' });
+    expect(document.activeElement).toBe(search());
+  });
+
+  it('hides Pick up where you left off until there is something to pick up', async () => {
+    const { visit } = await setup();
+    expect(
+      screen.queryByRole('heading', { name: 'Pick up where you left off' }),
+    ).toBeNull();
+    visit('regex-tester');
+    const recent = screen.getByRole('list', { name: 'Recently used tools' });
+    expect(
+      within(recent).getByRole('link', { name: /Regex Tester/ }),
     ).toBeTruthy();
   });
-  it('opens the palette from the search button and the / key', async () => {
-    const open = await setup();
-    fireEvent.click(
-      screen.getByRole('button', { name: /Search tools and actions/ }),
-    );
-    expect(open).toHaveBeenCalledTimes(1);
-    fireEvent.keyDown(document.body, { key: '/' });
-    expect(open).toHaveBeenCalledTimes(2);
-  });
-  it('offers the PDF drop card', async () => {
+
+  it('starring a tool card lists it under Favourites', async () => {
     await setup();
-    expect(screen.getByRole('heading', { name: 'PDF workspace' })).toBeTruthy();
-    expect(screen.getByText('Drop a PDF to start')).toBeTruthy();
+    const star = screen.getAllByRole('button', {
+      name: 'Add Regex Tester to favourites',
+    })[0]!;
+    expect(star.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(star);
+    expect(star.getAttribute('aria-pressed')).toBe('true');
+    const favourites = screen.getByRole('list', { name: 'Favourite tools' });
+    expect(
+      within(favourites).getByRole('link', { name: /Regex Tester/ }),
+    ).toBeTruthy();
+    // Kept under the old key's replacement across reloads.
+    expect(localStorage.getItem('kit:store:tool:app-favorites')).toContain(
+      'regex-tester',
+    );
+  });
+
+  it('routes two PDFs dropped on the workspace card to the merger', async () => {
+    await setup();
+    const card = screen.getByRole('region', { name: 'PDF workspace' });
+    const input = card.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: {
+        files: [
+          new File(['%PDF-1.7'], 'a.pdf'),
+          new File(['%PDF-1.7'], 'b.pdf'),
+        ],
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('where').textContent).toMatch(
+        /^\/pdf\/merge\?handoff=.+/,
+      ),
+    );
   });
 });

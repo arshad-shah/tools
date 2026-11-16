@@ -1,3 +1,4 @@
+import { useCynosureTheme } from '@arshad-shah/cynosure';
 /**
  * Ported from arshad-shah/verql src/renderer/src/components/er/ErdView.tsx
  * (MIT, Copyright (c) 2026 Arshad Shah). Generalised from ERD tables to
@@ -26,7 +27,6 @@ import {
   readDiagramTheme,
   toPng,
   toSvg,
-  watchTheme,
   type Card,
   type Diagram,
   type Direction,
@@ -129,7 +129,16 @@ export function DiagramCanvas({
   }
 
   const [theme, setTheme] = useState(readDiagramTheme);
-  useEffect(() => watchTheme(() => setTheme(readDiagramTheme())), []);
+  // Repaint in the new colours when the Cynosure theme or mode changes.
+  const { palette } = useCynosureTheme();
+  useEffect(() => {
+    // After CynosureTheme has marked the document with the new mode.
+    let live = true;
+    queueMicrotask(() => live && setTheme(readDiagramTheme()));
+    return () => {
+      live = false;
+    };
+  }, [palette]);
   const [announcement, setAnnouncement] = useState('');
   const measure = useMemo(
     () => createMeasure({ family: theme.fontFamily }),

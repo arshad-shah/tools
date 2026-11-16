@@ -1,20 +1,25 @@
+import {
+  Button,
+  Container,
+  EmptyState,
+  Grid,
+  Heading,
+  SearchField,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
+import { home, signpost } from '@arshad-shah/cynosure/icons';
 import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { rankCommands } from '@/shared/lib/fuzzy';
-import {
-  AutoGrid,
-  CategoryCard,
-  Code,
-  SearchInput,
-  ToolCard,
-} from '@/shared/ui';
 import { CATEGORIES } from '../categories';
 import { getEnabledTools } from '../registry';
-import { categoryPath, toolPath } from '../routes';
+import { categoryPath } from '../routes';
 import { useBreadcrumb } from '../shell/breadcrumb';
-import { routerLink } from '../shell/router-link';
+import { categoryGlyph } from '../ui/glyphs';
+import { LinkCard, ToolCard } from '../ui/ToolCard';
 
-/** Unknown path (spec §3.2): says so, offers search and categories. Never redirects. */
+/** Unknown path (spec §3.2): says so, offers search and the categories. Never redirects. */
 export default function NotFound() {
   const { pathname } = useLocation();
   const [query, setQuery] = useState('');
@@ -30,78 +35,73 @@ export default function NotFound() {
               label: t.name,
               keywords: [...t.keywords, t.category],
             })),
-            6,
+            8,
           ).map((r) => r.tool)
         : [],
     [query, tools],
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 md:px-6">
-      <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
-          No page at <Code>{pathname}</Code>
-        </h1>
-        <p className="text-base text-fg-muted">
-          Tools moved to category paths. Search for the one you need.
-        </p>
-        <SearchInput
-          aria-label="Search tools"
-          placeholder="Search tools"
-          value={query}
-          onChange={setQuery}
-          size="lg"
-          className="max-w-xl"
+    <Container size="lg" paddingBlock="10">
+      <Stack gap="9">
+        <EmptyState
+          headingLevel={1}
+          icon={signpost}
+          title="This page does not exist"
+          description={
+            <>
+              There is no page at <Text variant="code">{pathname}</Text>. Tools
+              moved to category paths: search for the one you need.
+            </>
+          }
+          actions={
+            <Button href="/" variant="soft" icon={home}>
+              Go to Home
+            </Button>
+          }
         />
-      </div>
-      {query.trim() ? (
-        <section aria-label="Search results" className="flex flex-col gap-3">
-          {results.length ? (
-            <AutoGrid min={240} gap="3">
-              {results.map((t) => (
-                <ToolCard
-                  key={t.id}
-                  href={toolPath(t)}
-                  renderLink={routerLink}
-                  icon={t.icon}
-                  title={t.name}
-                  description={t.description}
-                />
-              ))}
-            </AutoGrid>
-          ) : (
-            <p className="text-sm text-fg-muted">
-              No tools match &quot;{query}&quot;.
-            </p>
-          )}
-        </section>
-      ) : null}
-      <section
-        aria-labelledby="notfound-categories"
-        className="flex flex-col gap-3"
-      >
-        <h2 id="notfound-categories" className="text-lg font-semibold text-fg">
-          Categories
-        </h2>
-        <AutoGrid min={240} gap="3">
-          {CATEGORIES.map((c) => {
-            const inCategory = tools
-              .filter((t) => t.category === c.id)
-              .sort((a, b) => a.name.localeCompare(b.name));
-            return (
-              <CategoryCard
+        <Stack gap="6" align="stretch">
+          <SearchField
+            size="lg"
+            label="Search tools"
+            labelHidden
+            placeholder="Search tools"
+            value={query}
+            onChange={setQuery}
+          />
+          {query.trim() ? (
+            <Stack as="section" gap="5" aria-label="Search results">
+              {results.length ? (
+                <Grid minItemWidth="15rem" columns={4} gap="5">
+                  {results.map((t) => (
+                    <ToolCard key={t.id} tool={t} />
+                  ))}
+                </Grid>
+              ) : (
+                <Text tone="muted">
+                  No tools match &quot;{query.trim()}&quot;.
+                </Text>
+              )}
+            </Stack>
+          ) : null}
+        </Stack>
+        <Stack as="section" gap="5" aria-labelledby="notfound-categories">
+          <Heading level={2} size="lg" id="notfound-categories">
+            Categories
+          </Heading>
+          <Grid minItemWidth="15rem" columns={4} gap="5">
+            {CATEGORIES.map((c) => (
+              <LinkCard
                 key={c.id}
                 href={categoryPath(c.id)}
-                renderLink={routerLink}
-                icon={c.icon}
-                label={c.label}
-                count={inCategory.length}
-                topTools={inCategory.slice(0, 3).map((t) => t.name)}
+                icon={categoryGlyph(c.id)}
+                title={c.label}
+                description={c.blurb}
               />
-            );
-          })}
-        </AutoGrid>
-      </section>
-    </div>
+            ))}
+          </Grid>
+        </Stack>
+      </Stack>
+    </Container>
   );
 }

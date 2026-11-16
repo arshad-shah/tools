@@ -1,7 +1,7 @@
 import type { CommandSource } from '@/shared/lib/commands';
 import { ToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
-import type { ThemePreference } from '@/shared/lib/theme';
+import type { ColorMode } from '@arshad-shah/cynosure';
 import {
   IconClipboard,
   IconHome,
@@ -86,7 +86,7 @@ export function favouriteCommands(
 }
 
 export function themeCommands(
-  setPreference: (p: ThemePreference) => void,
+  setPreference: (p: ColorMode) => void,
 ): CommandSource {
   const commands = [
     {
