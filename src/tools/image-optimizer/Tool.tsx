@@ -1,4 +1,23 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  FileDrop,
+  Grid,
+  GridItem,
+  Inline,
+  Notice,
+  ProgressBar,
+  Stack,
+  Stat,
+} from '@arshad-shah/cynosure';
+import {
+  close,
+  download,
+  shieldCheck,
+  trash,
+} from '@arshad-shah/cynosure/icons';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { deriveFilename, saveBlob, saveZip } from '@/shared/lib/download';
 import { ToolError } from '@/shared/lib/errors';
 import { readBytes } from '@/shared/lib/files';
@@ -7,29 +26,7 @@ import { useHandoffFiles } from '@/shared/lib/handoff';
 import { EXTENSION, type ImageJob } from '@/shared/lib/image/pipeline';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Badge,
-  Box,
-  Button,
-  DropZone,
-  Grid,
-  Inline,
-  Progress,
-  Stack,
-  IconButton,
-  ToolActions,
-  Statistic,
-} from '@/shared/ui';
-import {
-  IconDownload,
-  IconShieldCheck,
-  IconTrash,
-  IconX,
-} from '@/shared/ui/icons';
-import { BatchTable } from './components/BatchTable';
+import { BatchList } from './components/BatchList';
 import { ComparePanel } from './components/ComparePanel';
 import { EstimateCard } from './components/EstimateCard';
 import { HandoffActions, TOOL_ID } from './components/HandoffActions';
@@ -57,7 +54,12 @@ function outputFile(e: BatchEntry): File {
   });
 }
 
-const ImageCompressor: React.FC = () => {
+/**
+ * Image Compressor and Resizer (redesign spec, file tool pattern): drop
+ * images, set the preset (with a size estimate per format) beside the
+ * files, and download them one by one or as a ZIP.
+ */
+export default function ImageCompressor() {
   const [settings, update] = imageSettings.useSettings();
   const job = useMemo(() => jobFromSettings(settings), [settings]);
   const jobKey = JSON.stringify(job);
@@ -153,20 +155,22 @@ const ImageCompressor: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <DropZone
-        variant={hasEntries ? 'inline' : 'hero'}
-        accept={ACCEPT}
+      <FileDrop
         multiple
+        accept={ACCEPT}
+        size={hasEntries ? 'sm' : 'lg'}
+        labels={{
+          prompt: hasEntries ? 'Add more images, or' : 'Drop images here, or',
+          choose: 'Choose images',
+        }}
+        hint="PNG, JPEG, WebP or GIF. Many at once is fine. Images stay on this device."
         onFiles={addFiles}
-        title={hasEntries ? 'Add more images' : 'Drop images here'}
-        hint="PNG, JPEG, WebP or GIF. Many at once is fine."
-        chooseLabel="Choose images"
       />
 
-      <Grid max={3} gap="4" className="items-start">
-        <Stack gap="4">
+      <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
+        <Stack gap="6">
           <PresetPanel settings={settings} update={update} />
-          {firstFile && (
+          {firstFile ? (
             <EstimateCard
               file={firstFile}
               quality={settings.quality}
@@ -175,123 +179,136 @@ const ImageCompressor: React.FC = () => {
               current={settings.encoding}
               onUse={(encoding) => update({ encoding })}
             />
-          )}
+          ) : null}
         </Stack>
 
-        <Stack gap="4" className="sm:col-span-1 lg:col-span-2">
-          {hasEntries && (
-            <>
-              <ToolActions>
-                {running && (
+        {hasEntries ? (
+          <GridItem span={{ base: 1, lg: 2 }}>
+            <Stack gap="6">
+              <Card
+                as="section"
+                title={`Files (${rows.length})`}
+                headingLevel={2}
+                actions={
                   <Button
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
-                    leftIcon={<IconX size="sm" />}
-                    onClick={cancel}
+                    icon={trash}
+                    onClick={clearAll}
                   >
-                    Cancel all
+                    Clear
                   </Button>
-                )}
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  label="Clear"
-                  showLabel="desktop"
-                  icon={IconTrash}
-                  onClick={clearAll}
-                />
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<IconDownload size="sm" />}
-                  disabled={done.length === 0}
-                  onClick={() => void downloadZip()}
-                >
-                  Download all as ZIP
-                </Button>
-              </ToolActions>
-
-              {running && (
-                <Progress
-                  value={finished}
-                  max={rows.length}
-                  label="Compression progress"
-                />
-              )}
-
-              <BatchTable
-                rows={rows}
-                onSelect={setSelectedId}
-                onDownload={(id) => {
-                  const e = done.find((d) => d.row.id === id);
-                  if (e) downloadOne(e);
-                }}
-                onKeepOriginal={setKeepOriginal}
-              />
-
-              <Box role="group" aria-label="Totals">
-                <Grid cols={{ base: 2, md: 4 }} gap="3">
-                  <Statistic label="Files done" value={totals.files} />
-                  <Statistic
-                    label="Total before"
-                    value={formatBytes(totals.before)}
+                }
+              >
+                <Stack gap="5">
+                  {running ? (
+                    <Inline gap="4" align="center">
+                      <Stack grow>
+                        <ProgressBar
+                          label="Compression progress"
+                          value={finished}
+                          max={rows.length}
+                        />
+                      </Stack>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={close}
+                        onClick={cancel}
+                      >
+                        Cancel all
+                      </Button>
+                    </Inline>
+                  ) : null}
+                  <BatchList
+                    rows={rows}
+                    selected={selected?.row.id ?? null}
+                    onSelect={setSelectedId}
+                    onDownload={(id) => {
+                      const e = done.find((d) => d.row.id === id);
+                      if (e) downloadOne(e);
+                    }}
+                    onKeepOriginal={setKeepOriginal}
                   />
-                  <Statistic
-                    label="Total after"
-                    value={formatBytes(totals.after)}
-                  />
-                  <Statistic
-                    label="Saving"
-                    value={
-                      totals.saving === null
-                        ? 'None yet'
-                        : `${totals.saving.toFixed(1)}%`
-                    }
-                  />
-                </Grid>
-              </Box>
-
-              {done.length > 0 && (
-                <Inline gap="2" justify="between" align="center">
-                  <Badge
-                    tone="success"
-                    variant="soft"
-                    icon={<IconShieldCheck size="sm" />}
+                  <Grid
+                    role="group"
+                    aria-label="Totals"
+                    columns={{ base: 2, md: 4 }}
+                    gap="4"
                   >
-                    Metadata removed (EXIF, GPS)
-                  </Badge>
-                  <HandoffActions
-                    outputs={() => done.map(outputFile)}
-                    originals={entries.map((e) => e.file)}
-                  />
-                </Inline>
-              )}
-
-              {larger.length > 0 && (
-                <Alert status="warning">
-                  <AlertTitle>Not smaller than the original</AlertTitle>
-                  <AlertDescription>
-                    Try another format or a lower quality, or choose Keep
-                    original in the file list for{' '}
-                    {larger.map((e) => e.row.name).join(', ')}.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {selected && (
+                    <Stat
+                      size="sm"
+                      variant="soft"
+                      label="Files done"
+                      value={totals.files}
+                    />
+                    <Stat
+                      size="sm"
+                      variant="soft"
+                      label="Total before"
+                      value={formatBytes(totals.before)}
+                    />
+                    <Stat
+                      size="sm"
+                      variant="soft"
+                      label="Total after"
+                      value={formatBytes(totals.after)}
+                    />
+                    <Stat
+                      size="sm"
+                      variant="soft"
+                      label="Saving"
+                      value={
+                        totals.saving === null
+                          ? 'None yet'
+                          : `${totals.saving.toFixed(1)}%`
+                      }
+                    />
+                  </Grid>
+                  {larger.length ? (
+                    <Notice
+                      tone="warning"
+                      title="Not smaller than the original"
+                    >
+                      Try another format or a lower quality, or keep the
+                      original for {larger.map((e) => e.row.name).join(', ')}.
+                    </Notice>
+                  ) : null}
+                  {done.length ? (
+                    <Inline gap="3" align="center" justify="between" wrap>
+                      <Badge tone="success" icon={shieldCheck}>
+                        Metadata removed (EXIF, GPS)
+                      </Badge>
+                      <Inline gap="2" wrap>
+                        <HandoffActions
+                          outputs={() => done.map(outputFile)}
+                          originals={entries.map((e) => e.file)}
+                        />
+                        <Button
+                          variant="solid"
+                          tone="accent"
+                          icon={download}
+                          onClick={() => void downloadZip()}
+                        >
+                          Download all as ZIP
+                        </Button>
+                      </Inline>
+                    </Inline>
+                  ) : null}
+                </Stack>
+              </Card>
+              {selected ? (
                 <ComparePanel
                   entries={done}
                   selected={selected}
                   onSelect={setSelectedId}
                   onDownload={downloadOne}
                 />
-              )}
-            </>
-          )}
-        </Stack>
+              ) : null}
+            </Stack>
+          </GridItem>
+        ) : null}
       </Grid>
     </Stack>
   );
-};
-
-export default ImageCompressor;
+}

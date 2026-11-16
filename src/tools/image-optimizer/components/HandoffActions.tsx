@@ -1,18 +1,11 @@
-import React from 'react';
+import { Button, Menu } from '@arshad-shah/cynosure';
+import { external } from '@arshad-shah/cynosure/icons';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTool } from '@/app/registry';
+import { routeDrop } from '@/app/drop-routing';
+import { getEnabledTools, getTool } from '@/app/registry';
 import { sendTo } from '@/shared/lib/handoff';
 import { useSendCommands } from '@/shared/lib/send-commands';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  Inline,
-  SendToMenu,
-} from '@/shared/ui';
-import { IconChevronDown, IconExternalLink } from '@/shared/ui/icons';
 
 export const TOOL_ID = 'image-optimizer';
 
@@ -28,13 +21,13 @@ interface Target {
   files: () => File[];
 }
 
-/** "Open in" shortcuts for the media workflows, plus the generic Send to. */
-export const HandoffActions: React.FC<HandoffActionsProps> = ({
-  outputs,
-  originals,
-}) => {
+/**
+ * "Open in": the media workflows first (with what each takes), then every
+ * other tool that takes the compressed files.
+ */
+export function HandoffActions({ outputs, originals }: HandoffActionsProps) {
   const navigate = useNavigate();
-  const targets: Target[] = [
+  const fixed: Target[] = [
     { id: 'images-to-pdf', label: 'Images to PDF', files: outputs },
     {
       id: 'favicon-generator',
@@ -52,6 +45,33 @@ export const HandoffActions: React.FC<HandoffActionsProps> = ({
       files: () => originals.slice(0, 1),
     },
   ].filter((t) => getTool(t.id)?.enabled);
+  // Other tools that take the compressed files (by sniffed kind).
+  const [others, setOthers] = useState<Target[]>([]);
+  useEffect(() => {
+    let live = true;
+    const files = outputs();
+    if (!files.length) return;
+    void routeDrop(files, getEnabledTools()).then((d) => {
+      if (!live) return;
+      const tools =
+        d.type === 'navigate'
+          ? [d.tool]
+          : d.type === 'choose'
+            ? d.options.map((o) => o.tool)
+            : [];
+      setOthers(
+        tools
+          .filter((t) => t.id !== TOOL_ID && !fixed.some((f) => f.id === t.id))
+          .map((t) => ({ id: t.id, label: t.name, files: outputs })),
+      );
+    });
+    return () => {
+      live = false;
+    };
+    // outputs is a fresh function each render; the files are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originals]);
+  const targets = [...fixed, ...others];
   const open = (t: Target) =>
     sendTo(navigate, t.id, {
       kind: 'files',
@@ -62,39 +82,20 @@ export const HandoffActions: React.FC<HandoffActionsProps> = ({
     TOOL_ID,
     targets.map((t) => ({ target: t.id, run: () => open(t) })),
   );
-
+  if (!targets.length) return null;
   return (
-    <Inline gap="2" wrap>
-      {targets.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconExternalLink size="sm" />}
-              rightIcon={<IconChevronDown size="sm" />}
-            >
-              Open in
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent aria-label="Open in" className="min-w-56">
-            {targets.map((t) => (
-              <DropdownMenuItem key={t.id} onClick={() => open(t)}>
-                {t.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <Menu
+      label="Open in"
+      items={targets.map((t) => ({ value: t.id, label: t.label }))}
+      onSelect={(id) => {
+        const t = targets.find((x) => x.id === id);
+        if (t) open(t);
+      }}
+      trigger={(props) => (
+        <Button {...props} variant="soft" icon={external}>
+          Open in
+        </Button>
       )}
-      <SendToMenu
-        sourceTool={TOOL_ID}
-        payload={() => {
-          const files = outputs();
-          return files.length
-            ? { kind: 'files', files, sourceTool: TOOL_ID }
-            : null;
-        }}
-      />
-    </Inline>
+    />
   );
-};
+}

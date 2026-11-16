@@ -1,25 +1,19 @@
-import React from 'react';
-import { formatColor, gamutMap } from '@/shared/lib/colour';
-import {
-  isLossy,
-  needsBackground,
-  type ImageEncoding,
-} from '@/shared/lib/image/pipeline';
 import {
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   ColorField,
   Grid,
-  Label,
-  NumberInput,
+  NumberField,
   SegmentedControl,
   Select,
   Slider,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  isLossy,
+  needsBackground,
+  type ImageEncoding,
+} from '@/shared/lib/image/pipeline';
 import { ENCODING_LABELS } from '../lib/labels';
 import type { ImageSettings, ResizeMode } from '../settings';
 
@@ -36,142 +30,103 @@ export interface PresetPanelProps {
   update(patch: Partial<ImageSettings>): void;
 }
 
+const num = (v: number | null, fallback: number) =>
+  v === null || !Number.isFinite(v) ? fallback : v;
+
 /** The one preset every file in the batch is compressed with. */
-export const PresetPanel: React.FC<PresetPanelProps> = ({
-  settings,
-  update,
-}) => {
+export function PresetPanel({ settings, update }: PresetPanelProps) {
   const { encoding, resize } = settings;
-  const quality = Math.round(settings.quality * 100);
   const setResize = (patch: Partial<ImageSettings['resize']>) =>
     update({ resize: { ...resize, ...patch } });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">Preset</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="5">
-          <Stack gap="2">
-            <Label htmlFor="image-format">Format</Label>
-            <Select
-              id="image-format"
-              value={encoding}
-              onValueChange={(v) => update({ encoding: v as ImageEncoding })}
-              items={ENCODINGS.map((e) => ({
-                value: e,
-                label: ENCODING_LABELS[e],
-              }))}
-            />
-          </Stack>
-
-          {isLossy(encoding) ? (
-            <Stack gap="2">
-              <Label htmlFor="image-quality">Quality: {quality}</Label>
-              <Slider
-                id="image-quality"
-                value={quality}
-                min={1}
-                max={100}
-                onValueChange={(v) => update({ quality: v / 100 })}
+    <Card as="section" title="Preset" headingLevel={2}>
+      <Stack gap="5">
+        <Select
+          label="Format"
+          value={encoding}
+          onChange={(v) => update({ encoding: v as ImageEncoding })}
+          options={ENCODINGS.map((e) => ({
+            value: e,
+            label: ENCODING_LABELS[e],
+          }))}
+        />
+        {isLossy(encoding) ? (
+          <Slider
+            label="Quality"
+            value={Math.round(settings.quality * 100)}
+            min={1}
+            max={100}
+            showValue
+            onChange={(v) =>
+              typeof v === 'number' && update({ quality: v / 100 })
+            }
+          />
+        ) : (
+          <Text size="sm" tone="muted">
+            {encoding === 'png'
+              ? 'PNG is lossless: there is no quality setting, and the file can end up larger than the original.'
+              : 'Reduces the image to at most 256 colours, which often makes graphics much smaller.'}
+          </Text>
+        )}
+        {needsBackground(encoding) ? (
+          <ColorField
+            label="Background colour"
+            description="JPEG has no transparency: transparent areas get this colour."
+            format="hex"
+            value={settings.background}
+            onChange={(v) => update({ background: v.slice(0, 7) })}
+          />
+        ) : null}
+        <Stack gap="3">
+          <SegmentedControl
+            label="Resize"
+            size="sm"
+            value={resize.mode}
+            onChange={(mode) => setResize({ mode: mode as ResizeMode })}
+            options={RESIZE_OPTIONS}
+          />
+          {resize.mode === 'max' ? (
+            <Grid columns={2} gap="4">
+              <NumberField
+                label="Max width (px)"
+                value={resize.maxWidth}
+                min={0}
+                step={10}
+                onChange={(v) => setResize({ maxWidth: num(v, 0) })}
               />
-            </Stack>
-          ) : (
-            <Text size="sm" tone="subtle">
-              {encoding === 'png'
-                ? 'PNG is lossless: there is no quality setting, and the file can end up larger than the original.'
-                : 'Reduces the image to at most 256 colours, which often makes graphics much smaller.'}
-            </Text>
-          )}
-
-          {needsBackground(encoding) && (
-            <Stack gap="1">
-              <ColorField
-                label="Background colour"
-                value={settings.background}
-                alpha={false}
-                onChange={(_css, color) =>
-                  update({
-                    background: formatColor(
-                      gamutMap({ ...color, alpha: 1 }),
-                      'hex',
-                    ).slice(0, 7),
-                  })
-                }
+              <NumberField
+                label="Max height (px)"
+                value={resize.maxHeight}
+                min={0}
+                step={10}
+                onChange={(v) => setResize({ maxHeight: num(v, 0) })}
               />
-              <Text size="xs" tone="subtle">
-                JPEG has no transparency: transparent areas get this colour.
-              </Text>
-            </Stack>
-          )}
-
-          <Stack gap="2">
-            <SegmentedControl
-              label="Resize"
-              size="sm"
-              value={resize.mode}
-              onChange={(mode) => setResize({ mode })}
-              options={RESIZE_OPTIONS}
+            </Grid>
+          ) : null}
+          {resize.mode === 'percent' ? (
+            <NumberField
+              label="Scale (percent)"
+              value={resize.percent}
+              min={1}
+              max={100}
+              onChange={(v) => setResize({ percent: num(v, 100) })}
             />
-            {resize.mode === 'max' && (
-              <Grid max={2} gap="3">
-                <Stack gap="1">
-                  <Label htmlFor="image-max-width">Max width (px)</Label>
-                  <NumberInput
-                    id="image-max-width"
-                    value={resize.maxWidth}
-                    min={0}
-                    step={10}
-                    onValueChange={(maxWidth) => setResize({ maxWidth })}
-                  />
-                </Stack>
-                <Stack gap="1">
-                  <Label htmlFor="image-max-height">Max height (px)</Label>
-                  <NumberInput
-                    id="image-max-height"
-                    value={resize.maxHeight}
-                    min={0}
-                    step={10}
-                    onValueChange={(maxHeight) => setResize({ maxHeight })}
-                  />
-                </Stack>
-              </Grid>
-            )}
-            {resize.mode === 'percent' && (
-              <Stack gap="1">
-                <Label htmlFor="image-percent">Scale (percent)</Label>
-                <NumberInput
-                  id="image-percent"
-                  value={resize.percent}
-                  min={1}
-                  max={100}
-                  onValueChange={(percent) => setResize({ percent })}
-                />
-              </Stack>
-            )}
-            <Text size="xs" tone="subtle">
-              Keeps the aspect ratio and never enlarges. 0 leaves a side
-              unlimited.
-            </Text>
-          </Stack>
-
-          <Stack gap="1">
-            <Label htmlFor="image-target">Target size (KB)</Label>
-            <NumberInput
-              id="image-target"
-              value={settings.targetKB}
-              min={0}
-              step={10}
-              onValueChange={(targetKB) => update({ targetKB })}
-            />
-            <Text size="xs" tone="subtle">
-              0 is off. Lowers the quality until each file fits (JPEG, WebP and
-              AVIF).
-            </Text>
-          </Stack>
+          ) : null}
+          <Text size="xs" tone="muted">
+            Keeps the aspect ratio and never enlarges. 0 leaves a side
+            unlimited.
+          </Text>
         </Stack>
-      </CardBody>
+        <NumberField
+          label="Target size (KB)"
+          description="0 is off. Lowers the quality until each file fits (JPEG, WebP and AVIF)."
+          value={settings.targetKB}
+          min={0}
+          step={10}
+          onChange={(v) => update({ targetKB: num(v, 0) })}
+        />
+      </Stack>
     </Card>
   );
-};
+}
