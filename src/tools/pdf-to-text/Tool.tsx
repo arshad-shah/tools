@@ -1,39 +1,31 @@
-import React, { useMemo, useState } from 'react';
-import { IconCopy, IconFileText } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Button,
   Card,
-  CardBody,
-  Label,
+  CopyButton,
+  Grid,
+  GridItem,
+  Notice,
+  SegmentedControl,
   Stack,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   Text,
-  Textarea,
-} from '@/shared/ui';
-import type { ToolProps } from '@/app/tool';
-import { deriveFilename } from '@/shared/lib/download';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { notify } from '@/shared/lib/notify';
-import { useJob } from '@/shared/state/useJob';
+  TextArea,
+} from '@arshad-shah/cynosure';
+import { fileText } from '@arshad-shah/cynosure/icons';
+import { useMemo, useState } from 'react';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
 import {
   pdfRender,
   usePdfDocument,
   type DocInfo,
   type PageText,
 } from '@/pdf/render';
-import {
-  JobPanel,
-  PageThumb,
-  PdfFileHeader,
-  ResultFiles,
-  type PdfInputFile,
-  UNENCRYPTED_NOTE,
-} from '@/pdf/components';
+import { ChosenFile } from '@/pdf/ui/ChosenFile';
+import { PageGrid } from '@/pdf/ui/PageGrid';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { JobProgress, ResultCard } from '@/pdf/ui/ResultCard';
+import { deriveFilename } from '@/shared/lib/download';
+import { useHandoff } from '@/shared/lib/handoff';
+import { useJob } from '@/shared/state/useJob';
 import {
   combinedText,
   pagesWithoutText,
@@ -42,15 +34,20 @@ import {
   type TextMode,
 } from './lib/output';
 import { useTextSettings } from './store';
-import { useHandoff } from '@/shared/lib/handoff';
 
-const PdfToTextTool: React.FC<ToolProps> = () => {
+const plural = (n: number, one: string, many = `${one}s`) =>
+  `${n} ${n === 1 ? one : many}`;
+
+/**
+ * PDF to Text (redesign spec, file tool pattern): drop a PDF, choose one
+ * file or one per page, extract, then read, copy or download the text.
+ */
+export default function PdfToTextTool() {
   // Files dropped on a hub land here once (spec §5.3).
   const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
   const { mode, setMode } = useTextSettings();
   const { doc, loading, error } = usePdfDocument(file);
-  const { copied, copy } = useClipboard();
 
   const job = useJob(async (ctx, info: DocInfo): Promise<PageText[]> => {
     const pages: PageText[] = [];
@@ -62,134 +59,135 @@ const PdfToTextTool: React.FC<ToolProps> = () => {
   });
 
   // Derived, so switching the output mode never re-extracts.
+  const result = job.status === 'done' ? job.result : null;
   const outputs = useMemo(
-    () => (job.result && file ? textOutputs(file.name, job.result, mode) : []),
-    [job.result, file, mode],
+    () => (result && file ? textOutputs(file.name, result, mode) : []),
+    [result, file, mode],
   );
   const fullText = useMemo(
-    () => (job.result ? combinedText(job.result) : ''),
-    [job.result],
+    () => (result ? combinedText(result) : ''),
+    [result],
   );
   const preview = useMemo(() => previewText(fullText), [fullText]);
-  const missing = job.result ? pagesWithoutText(job.result) : [];
-
-  const pick = (picked: PdfInputFile) => {
-    job.reset();
-    setFile(picked);
-  };
-  const clearFile = () => {
-    job.reset();
-    setFile(null);
-  };
-  const copyAll = async () => {
-    // useClipboard reports failures itself.
-    if (await copy(fullText)) notify.success('Copied');
-  };
+  const missing = result ? pagesWithoutText(result) : [];
+  const busy = job.status === 'running';
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="5">
-          <PdfFileHeader
-            initialFiles={handed}
-            file={file}
-            onFile={pick}
-            onClear={clearFile}
-            loading={loading}
-            error={error}
-          />
-          {file && doc && (
-            <>
-              <div className="flex items-center gap-3">
-                <PageThumb
-                  docId={doc.docId}
-                  pageIndex={0}
-                  page={doc.pages[0]}
-                  width={56}
-                  label="Page 1"
-                />
-                <Text size="sm" tone="muted">
-                  {doc.pageCount} {doc.pageCount === 1 ? 'page' : 'pages'}
-                </Text>
-              </div>
-              <Stack gap="2">
-                <Label>Output</Label>
-                <Tabs
-                  value={mode}
-                  onValueChange={(v) => setMode(v as TextMode)}
-                  variant="soft"
-                >
-                  <TabsList aria-label="Output">
-                    <TabsTrigger value="combined">One file</TabsTrigger>
-                    <TabsTrigger value="per-page">
-                      One file per page
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </Stack>
-              <div>
-                <Button
-                  variant="primary"
-                  leftIcon={<IconFileText size="sm" />}
-                  disabled={job.status === 'running'}
-                  onClick={() => job.run(doc)}
-                >
-                  Extract text
-                </Button>
-              </div>
-            </>
-          )}
-          <JobPanel
-            job={job}
-            onCancel={job.cancel}
-            runningLabel="Reading pages"
-          >
-            {job.result && file && (
-              <Stack gap="4">
-                {missing.length > 0 && (
-                  <Alert status="warning">
-                    <AlertTitle>Some pages have no text</AlertTitle>
-                    <AlertDescription>
-                      No text layer on page(s) {missing.join(', ')}. They are
-                      probably scanned images; OCR is not supported.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                <Stack gap="2">
-                  <Label htmlFor="text-preview">Extracted text</Label>
-                  <Textarea
-                    id="text-preview"
-                    readOnly
-                    rows={12}
-                    value={preview.text}
-                  />
-                  {preview.truncated && (
-                    <Text size="sm" tone="muted">
-                      Preview truncated; the download has everything.
-                    </Text>
-                  )}
-                </Stack>
-                <div>
-                  <Button
-                    variant="secondary"
-                    leftIcon={<IconCopy size="sm" />}
-                    onClick={() => void copyAll()}
-                  >
-                    {copied ? 'Copied' : 'Copy text'}
-                  </Button>
-                </div>
-                <ResultFiles
-                  note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
-                  files={outputs}
-                  zipName={deriveFilename(file.name, 'text', 'zip')}
-                />
-              </Stack>
-            )}
-          </JobPanel>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+    <Stack gap="6">
+      {file ? (
+        <ChosenFile
+          name={file.name}
+          size={file.size}
+          detail={
+            doc
+              ? plural(doc.pageCount, 'page')
+              : loading
+                ? 'Opening'
+                : undefined
+          }
+          disabled={busy}
+          onClear={() => {
+            job.reset();
+            setFile(null);
+          }}
+        />
+      ) : (
+        <PdfIntake
+          initialFiles={handed}
+          onFiles={(files) => {
+            job.reset();
+            setFile(files[0]);
+          }}
+        />
+      )}
+      {error ? <Notice tone="danger">{error.message}</Notice> : null}
 
-export default PdfToTextTool;
+      {file && doc ? (
+        <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
+          <GridItem span={{ base: 1, lg: 2 }} order={{ base: 2, lg: 1 }}>
+            <Card as="section" title="Pages">
+              <PageGrid doc={doc} />
+            </Card>
+          </GridItem>
+          <GridItem order={{ base: 1, lg: 2 }}>
+            <Card as="section" title="Text">
+              <Stack gap="5">
+                <SegmentedControl
+                  label="Output"
+                  value={mode}
+                  onChange={(v) => setMode(v as TextMode)}
+                  options={[
+                    { value: 'combined', label: 'One file' },
+                    { value: 'per-page', label: 'One file per page' },
+                  ]}
+                />
+                <JobProgress
+                  job={job}
+                  label="Reading pages"
+                  onCancel={job.cancel}
+                />
+                {busy ? null : (
+                  <Button
+                    variant="solid"
+                    tone="accent"
+                    size="lg"
+                    fullWidth
+                    icon={fileText}
+                    onClick={() => void job.run(doc)}
+                  >
+                    Extract text
+                  </Button>
+                )}
+              </Stack>
+            </Card>
+          </GridItem>
+        </Grid>
+      ) : null}
+
+      {result && file ? (
+        <Stack gap="6">
+          {missing.length ? (
+            <Notice tone="warning" title="Some pages have no text">
+              No text layer on page(s) {missing.join(', ')}. They are probably
+              scanned images: open the PDF in the workspace and run OCR.
+            </Notice>
+          ) : null}
+          <Card
+            as="section"
+            title="Extracted text"
+            actions={
+              <CopyButton
+                value={fullText}
+                labels={{ copy: 'Copy text', copied: 'Copied' }}
+              />
+            }
+          >
+            <Stack gap="3">
+              <TextArea
+                label="Extracted text"
+                labelHidden
+                readOnly
+                rows={12}
+                value={preview.text}
+              />
+              {preview.truncated ? (
+                <Text size="sm" tone="muted">
+                  The preview is cut short; the download has everything.
+                </Text>
+              ) : null}
+            </Stack>
+          </Card>
+          <ResultCard
+            files={outputs}
+            note={
+              file.wasEncrypted
+                ? 'The original was password-protected. The text is not'
+                : undefined
+            }
+            zipName={deriveFilename(file.name, 'text', 'zip')}
+          />
+        </Stack>
+      ) : null}
+    </Stack>
+  );
+}
