@@ -31,18 +31,15 @@ vi.mock('@/shared/workers/text-client', () => ({
 }));
 beforeEach(() => localStorage.clear());
 
-/** The panes remember the last one shown, so each test starts on Input. */
-const showPane = (name: 'Input' | 'Output') =>
-  fireEvent.click(screen.getByRole('tab', { name }));
-const renderTool = () => {
-  const r = render(
+const renderTool = () =>
+  render(
     <MemoryRouter>
       <TextEncrypt />
     </MemoryRouter>,
   );
-  showPane('Input');
-  return r;
-};
+/** A result CodeBlock's code. */
+const block = (name: string) =>
+  screen.getByRole('figure', { name }).querySelector('pre, code')?.textContent;
 const pass = ['amber', 'quartz', 'river'].join(' ');
 const box = (name: string) =>
   screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
@@ -57,23 +54,17 @@ async function encrypt(text: string) {
   });
   fireEvent.click(screen.getByRole('button', { name: 'Encrypt' }));
   await waitFor(
-    () =>
-      expect(box('Encrypted message').value).toMatch(/BEGIN TOOLS ENCRYPTED/),
+    () => expect(block('Encrypted message')).toMatch(/BEGIN TOOLS ENCRYPTED/),
     { timeout: 10_000 },
   );
-  return box('Encrypted message').value;
+  return block('Encrypted message')!;
 }
 
 describe('TextEncrypt', () => {
   it('round-trips and reports a wrong passphrase', async () => {
     renderTool();
     const armoured = await encrypt('meet at noon');
-    // Encrypt showed the Output pane (R41); the next input goes in Input.
-    expect(
-      screen.getByRole('tab', { name: 'Output' }).getAttribute('aria-selected'),
-    ).toBe('true');
     fireEvent.click(screen.getByRole('radio', { name: 'Decrypt' }));
-    showPane('Input');
     fireEvent.change(box('Encrypted message'), { target: { value: armoured } });
     fireEvent.change(screen.getByLabelText('Passphrase'), {
       target: { value: 'wrong' },
@@ -91,10 +82,20 @@ describe('TextEncrypt', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Decrypt' }));
     await waitFor(
-      () => expect(box('Decrypted message').value).toBe('meet at noon'),
+      () => expect(block('Decrypted message')).toBe('meet at noon'),
       { timeout: 10_000 },
     );
   }, 30_000);
+
+  it('starts with an empty result that says what to do', () => {
+    renderTool();
+    expect(
+      screen.getByRole('heading', { name: 'Nothing encrypted yet' }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: 'File' }));
+    expect(screen.getByRole('heading', { name: 'No file yet' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: 'Text' }));
+  });
 
   it('a mismatched confirmation blocks encrypt', () => {
     renderTool();
@@ -106,6 +107,9 @@ describe('TextEncrypt', () => {
       target: { value: 'other' },
     });
     expect(screen.getByText('The passphrases do not match')).toBeTruthy();
+    expect(
+      screen.getByRole('meter', { name: 'Passphrase strength' }),
+    ).toBeTruthy();
     expect(
       (screen.getByRole('button', { name: 'Encrypt' }) as HTMLButtonElement)
         .disabled,
