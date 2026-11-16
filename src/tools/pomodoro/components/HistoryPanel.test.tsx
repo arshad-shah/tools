@@ -18,7 +18,6 @@ describe('HistoryPanel', () => {
 
   it('shows an empty state and a disabled export with no history', () => {
     render(<HistoryPanel />);
-    expect(screen.getByRole('heading', { name: 'History' })).toBeTruthy();
     expect(screen.getByText('No sessions yet')).toBeTruthy();
     expect(screen.queryByRole('img', { name: /sessions/i })).toBeNull();
     const exportButton = screen.getByRole('button', { name: 'Export CSV' });

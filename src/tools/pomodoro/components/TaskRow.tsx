@@ -1,64 +1,52 @@
+import { Badge, IconButton, ListRow } from '@arshad-shah/cynosure';
+import { checkCircle, circle, trash } from '@arshad-shah/cynosure/icons';
 import React from 'react';
-import {
-  IconCheckCircle2,
-  IconCircle,
-  IconTimer,
-  IconTrash2,
-} from '@/shared/ui/icons';
-import { Badge, Card, CardBody, IconButton, Inline, Text } from '@/shared/ui';
 import type { Task } from '../types';
 
+/**
+ * One task: pressing it makes it the current task; its actions tick it off
+ * and delete it.
+ */
 export const TaskRow: React.FC<{
   task: Task;
+  current: boolean;
+  onSelect: () => void;
   onToggle: () => void;
   onDelete: () => void;
-}> = ({ task, onToggle, onDelete }) => (
-  <Card>
-    <CardBody>
-      <Inline justify="between" align="center" gap="3" wrap>
-        <Inline align="center" gap="3" wrap>
-          <IconButton
-            variant="ghost"
-            size="sm"
-            label={task.completed ? 'Mark incomplete' : 'Mark complete'}
-            icon={
-              task.completed ? (
-                <IconCheckCircle2 size="lg" />
-              ) : (
-                <IconCircle size="lg" />
-              )
-            }
-            onClick={onToggle}
-          />
-          <Text
-            size="sm"
-            weight="medium"
-            className={task.completed ? 'line-through opacity-60' : undefined}
-          >
-            {task.title}
-          </Text>
-        </Inline>
-        <Inline gap="2" align="center">
-          <Badge
-            variant="soft"
-            tone={
-              task.completedPomodoros >= task.pomodoros ? 'success' : 'accent'
-            }
-            size="sm"
-            pill
-            icon={<IconTimer size="xs" />}
-          >
-            {task.completedPomodoros}/{task.pomodoros}
-          </Badge>
-          <IconButton
-            variant="danger"
-            size="sm"
-            label="Delete task"
-            icon={<IconTrash2 size="sm" />}
-            onClick={onDelete}
-          />
-        </Inline>
-      </Inline>
-    </CardBody>
-  </Card>
+}> = ({ task, current, onSelect, onToggle, onDelete }) => (
+  <ListRow
+    label={task.title}
+    description={current ? 'Current task' : undefined}
+    active={current}
+    dimmed={task.completed}
+    onClick={onSelect}
+    trailing={
+      <Badge
+        tone={task.completedPomodoros >= task.pomodoros ? 'success' : 'accent'}
+      >
+        {`${task.completedPomodoros}/${task.pomodoros}`}
+      </Badge>
+    }
+    actions={
+      <>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          tone={task.completed ? 'success' : 'neutral'}
+          label={task.completed ? 'Mark incomplete' : 'Mark complete'}
+          aria-pressed={task.completed}
+          icon={task.completed ? checkCircle : circle}
+          onClick={onToggle}
+        />
+        <IconButton
+          variant="ghost"
+          size="sm"
+          tone="danger"
+          label="Delete task"
+          icon={trash}
+          onClick={onDelete}
+        />
+      </>
+    }
+  />
 );

@@ -1,18 +1,18 @@
-import { calendar as calendarIcon } from '@arshad-shah/cynosure/icons';
-import React, { useMemo, useState } from 'react';
-import { IconCalendar, IconDownload } from '@/shared/ui/icons';
 import {
   Button,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   EmptyState,
-  Heading,
   Inline,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  calendar as calendarIcon,
+  download,
+} from '@arshad-shah/cynosure/icons';
+import React, { useMemo, useState } from 'react';
+// The kit Chart is a drawing surface: Cynosure has no chart
+// (docs/cynosure-gaps.md).
 import { Chart } from '@/shared/ui/chart';
 import type { ChartSeries, HeatmapCell } from '@/shared/ui/chart';
 import { saveBlob } from '@/shared/lib/download';
@@ -57,13 +57,6 @@ export const HistoryPanel: React.FC = () => {
 
   return (
     <Stack gap="6">
-      <Inline align="center" gap="2">
-        <IconCalendar size="lg" />
-        <Heading level={3} size="md">
-          History
-        </Heading>
-      </Inline>
-
       {history.length === 0 ? (
         <EmptyState
           icon={calendarIcon}
@@ -73,76 +66,66 @@ export const HistoryPanel: React.FC = () => {
         />
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <Inline justify="between" align="center" wrap>
-                <CardTitle as="h4">This week</CardTitle>
-                <Text size="sm" tone="subtle">
-                  {sessions(weekTotal)} in the last 7 days
-                </Text>
-              </Inline>
-            </CardHeader>
-            <CardBody>
-              <Chart
-                kind="bar"
-                xType="band"
-                series={series}
-                legend={false}
-                height={180}
-                ariaLabel="Work sessions, last 7 days"
-                ariaSummary={`${sessions(weekTotal)} in the last 7 days.`}
-                formatY={(y) => String(Math.round(y))}
-              />
-            </CardBody>
+          <Card
+            title="This week"
+            headingLevel={4}
+            variant="outline"
+            actions={
+              <Text size="sm" tone="muted">
+                {`${sessions(weekTotal)} in the last 7 days`}
+              </Text>
+            }
+          >
+            <Chart
+              kind="bar"
+              xType="band"
+              series={series}
+              legend={false}
+              height={180}
+              ariaLabel="Work sessions, last 7 days"
+              ariaSummary={`${sessions(weekTotal)} in the last 7 days.`}
+              formatY={(y) => String(Math.round(y))}
+            />
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle as="h4">Last 12 weeks</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <Chart
-                kind="heatmap"
-                calendar
-                cells={cells}
-                height={160}
-                ariaLabel="Work sessions, last 12 weeks"
-                ariaSummary="Work sessions per day, one column per week."
-              />
-            </CardBody>
+          <Card title="Last 12 weeks" headingLevel={4} variant="outline">
+            <Chart
+              kind="heatmap"
+              calendar
+              cells={cells}
+              height={160}
+              ariaLabel="Work sessions, last 12 weeks"
+              ariaSummary="Work sessions per day, one column per week."
+            />
           </Card>
         </>
       )}
 
-      <Card>
-        <CardBody>
-          <Inline justify="between" align="center" gap="3" wrap>
-            <Stack gap="1">
-              <Text size="sm" weight="medium">
-                Session log
-              </Text>
-              <Text size="xs" tone="subtle">
-                {history.length === 0
-                  ? 'Nothing to export yet'
-                  : `${history.length} ${history.length === 1 ? 'day' : 'days'} logged (up to 365)`}
-              </Text>
-            </Stack>
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<IconDownload size="sm" />}
-              disabled={history.length === 0}
-              onClick={() =>
-                saveBlob(
-                  new Blob([historyToCsv(history)], { type: 'text/csv' }),
-                  'pomodoro-history.csv',
-                )
-              }
-            >
-              Export CSV
-            </Button>
-          </Inline>
-        </CardBody>
-      </Card>
+      <Inline justify="between" align="center" gap="3" wrap>
+        <Stack gap="1">
+          <Text size="sm" weight="medium">
+            Session log
+          </Text>
+          <Text size="sm" tone="muted">
+            {history.length === 0
+              ? 'Nothing to export yet'
+              : `${history.length} ${history.length === 1 ? 'day' : 'days'} logged (up to 365)`}
+          </Text>
+        </Stack>
+        <Button
+          variant="soft"
+          size="sm"
+          icon={download}
+          disabled={history.length === 0}
+          onClick={() =>
+            saveBlob(
+              new Blob([historyToCsv(history)], { type: 'text/csv' }),
+              'pomodoro-history.csv',
+            )
+          }
+        >
+          Export CSV
+        </Button>
+      </Inline>
     </Stack>
   );
 };

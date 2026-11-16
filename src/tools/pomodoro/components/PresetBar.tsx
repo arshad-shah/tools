@@ -1,5 +1,5 @@
+import { SegmentedControl } from '@arshad-shah/cynosure';
 import React from 'react';
-import { SegmentedControl } from '@/shared/ui';
 import { usePomodoroStore } from '../store';
 
 const PRESETS = [
@@ -17,12 +17,12 @@ export const PresetBar: React.FC = () => {
   const current: PresetValue =
     PRESETS.find((p) => p.work === work && p.rest === rest)?.value ?? 'custom';
   return (
-    <SegmentedControl<PresetValue>
+    <SegmentedControl
       label="Session preset"
       size="sm"
       value={current}
       onChange={(v) => {
-        const p = PRESETS.find((x) => x.value === v);
+        const p = PRESETS.find((x) => x.value === (v as PresetValue));
         if (p)
           usePomodoroStore.getState().updateSettings({
             workDuration: p.work,
