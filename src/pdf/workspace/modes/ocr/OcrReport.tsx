@@ -1,4 +1,4 @@
-import { List, Notice, Stack, Text } from '@arshad-shah/cynosure';
+import { Inline, List, Notice, Stack, Text } from '@arshad-shah/cynosure';
 import { check, minus, textLayer, warning } from '@arshad-shah/cynosure/icons';
 import { LOW_CONFIDENCE } from '@/pdf/doc/checkpoints/ocr';
 import type { DocumentApi } from '../types';
@@ -16,12 +16,12 @@ export function OcrReport({ doc }: { doc: DocumentApi }) {
   return (
     <Stack gap="3" aria-label="OCR report">
       <Notice tone="success" size="sm" icon={textLayer} title={report.title}>
-        {[
-          `${plural(words, 'word')} in total`,
-          ...(capped.length
-            ? [`${plural(capped.length, 'large page')} read below 300 DPI`]
-            : []),
-        ].join(' · ')}
+        <Inline separator="dot" wrap>
+          <Text as="span">{`${plural(words, 'word')} in total`}</Text>
+          {capped.length ? (
+            <Text as="span">{`${plural(capped.length, 'large page')} read below 300 DPI`}</Text>
+          ) : null}
+        </Inline>
       </Notice>
       <List
         label="Pages read"
