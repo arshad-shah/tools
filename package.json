@@ -102,7 +102,6 @@
     "perfect-freehand": "^1.2.3",
     "pkijs": "^3.4.1",
     "prettier": "^3.8.3",
-    "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.18.4",

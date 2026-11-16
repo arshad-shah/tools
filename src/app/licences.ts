@@ -203,12 +203,6 @@ export const LICENCES: LicenceEntry[] = [
     note: 'CSV parsing',
   },
   {
-    name: 'qrcode.react',
-    licence: 'ISC',
-    url: 'https://github.com/zpao/qrcode.react',
-    note: 'QR code rendering',
-  },
-  {
     name: '@rive-app/canvas, react-canvas',
     licence: 'MIT',
     url: 'https://github.com/rive-app/rive-wasm',

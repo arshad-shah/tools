@@ -1,5 +1,5 @@
 import { ToolError } from '@/shared/lib/errors';
-import { QrCode } from '@/shared/surfaces/qr-code';
+import { qrToSvg } from '@arshad-shah/cynosure';
 
 export type EccLevel = 'L' | 'M' | 'Q' | 'H';
 
@@ -11,48 +11,32 @@ export interface QrStyle {
   margin: number;
   /** A local logo as a data URL; '' for none. */
   logo: string;
-  /** Share of the code's area the logo covers (0 to 0.3). */
+  /** The logo's width as a share of the code's (0.1 to 0.3). */
   logoFraction: number;
+  /** Kept for saved styles: Cynosure always clears the modules behind a logo. */
   excavate: boolean;
 }
 
-/** One QR code as standalone SVG text (vector, any size). */
+/** One QR code as standalone SVG text (vector, any size), drawn by Cynosure. */
 export async function qrSvg(
   value: string,
   style: QrStyle,
   size = 512,
 ): Promise<string> {
-  const { renderToStaticMarkup } = await import('react-dom/server');
-  const side = Math.round(size * Math.sqrt(style.logoFraction));
-  const logo = style.logo
-    ? {
-        src: style.logo,
-        width: side,
-        height: side,
-        excavate: style.excavate,
-      }
-    : undefined;
-  const html = renderToStaticMarkup(
-    <QrCode
-      value={value || ' '}
-      size={size}
-      level={style.ecc}
-      fg={style.fg}
-      bg={style.bg}
-      label="QR code"
-      format="svg"
-      includeMargin={style.margin > 0}
-      imageSettings={logo}
-    />,
-  );
-  const start = html.indexOf('<svg');
-  const end = html.lastIndexOf('</svg>');
-  if (start < 0 || end < 0)
-    throw new ToolError('UNKNOWN', 'Could not draw the QR code');
-  const svg = html.slice(start, end + 6);
-  return svg.includes('xmlns=')
-    ? svg
-    : svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  try {
+    return qrToSvg(value || ' ', {
+      level: style.ecc,
+      quietZone: style.margin,
+      size,
+      color: style.fg,
+      background: style.bg,
+      logo: style.logo
+        ? { href: style.logo, size: Math.min(0.3, style.logoFraction) }
+        : undefined,
+    });
+  } catch (cause) {
+    throw new ToolError('UNKNOWN', 'Could not draw the QR code', { cause });
+  }
 }
 
 /** Rasterises SVG text to a PNG of `px` square (browser only). */

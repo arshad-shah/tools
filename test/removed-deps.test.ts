@@ -31,6 +31,8 @@ const REMOVED = [
   'clsx',
   '@fontsource-variable/inter',
   '@fontsource-variable/jetbrains-mono',
+  // QR codes are drawn by Cynosure (QRCode, qrToSvg).
+  'qrcode.react',
 ];
 
 describe('removed dependencies (spec 11.1)', () => {
