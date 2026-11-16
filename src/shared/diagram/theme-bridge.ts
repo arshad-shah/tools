@@ -9,8 +9,6 @@
  * included; the interim fallbacks are gone), so the diagram follows
  * the colour mode with no colour literal of its own. Callers re-read on `useCynosureTheme().palette`.
  */
-import { readThemeTokens } from '@/shared/lib/theme-tokens';
-import { resolveColour } from '@/shared/surfaces/resolve-colour';
 import {
   DEFAULT_FONT_SIZES,
   diagramFonts,
@@ -88,35 +86,39 @@ const SIZE_TOKENS: Record<keyof FontSizes, string> = {
   chip: '--cy-font-size-xs',
 };
 
+/** Resolves a CSS colour (`var(--x)`, a bare `--x`, `color-mix()`) to a value. */
+export type ResolveColor = (value: string) => string;
+
 /**
- * Snapshot the current theme's palette and type ramp off `el` (the element
- * `<html>` by default). Rows and titles use the mono
- * family so the worker and the main thread measure identically.
+ * Snapshot the current theme's palette and type ramp. Colours come from
+ * `resolve` (Cynosure's `useCynosureTheme().resolveColor`); sizes and the
+ * family are read off `el` (`<html>` by default). Rows and titles use the
+ * mono family so the worker and the main thread measure identically.
  */
 export function readDiagramTheme(
+  resolve: ResolveColor,
   el: HTMLElement = document.documentElement,
 ): DiagramTheme {
-  const names = new Set<string>();
-  for (const list of Object.values(ROLES)) for (const n of list) names.add(n);
-  const sizeNames = Object.values(SIZE_TOKENS);
-  const t = readThemeTokens(
-    [...names, ...sizeNames, '--cy-font-mono', '--cy-font-sans'],
-    el,
-  );
+  const cs = getComputedStyle(el);
   // Last resort when no token resolves (a bare test document): the
   // element's own text colour, then the CSS system text colour.
-  const last = getComputedStyle(el).color || 'canvastext';
+  const last = cs.color || 'canvastext';
   const role = (r: Role) => {
-    for (const n of ROLES[r]) if (t[n]) return t[n];
+    for (const n of ROLES[r]) {
+      const c = resolve(n);
+      if (c) return c;
+    }
     return last;
   };
   const sizes = { ...DEFAULT_FONT_SIZES };
   for (const k of Object.keys(SIZE_TOKENS) as (keyof FontSizes)[]) {
-    const px = parseFloat(t[SIZE_TOKENS[k]]);
+    const px = parseFloat(cs.getPropertyValue(SIZE_TOKENS[k]));
     if (Number.isFinite(px) && px > 0) sizes[k] = px;
   }
   const family =
-    t['--cy-font-mono'] || getComputedStyle(el).fontFamily || 'monospace';
+    cs.getPropertyValue('--cy-font-mono').trim() ||
+    cs.fontFamily ||
+    'monospace';
 
   const kinds: RowKind[] = [
     'string',
@@ -154,9 +156,8 @@ export function readDiagramTheme(
     select: role('select'),
     selectFill: role('selectFill'),
     hoverFill: role('hoverFill'),
-    matchFill: resolveColour(
-      el,
-      `color-mix(in oklab, ${role('matchFill')} 30%, transparent)`,
-    ),
+    matchFill:
+      resolve(`color-mix(in oklab, ${role('matchFill')} 30%, transparent)`) ||
+      role('matchFill'),
   };
 }

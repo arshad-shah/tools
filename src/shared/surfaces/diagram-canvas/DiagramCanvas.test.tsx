@@ -81,7 +81,16 @@ beforeEach(() => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
     function (this: HTMLCanvasElement) {
       let ctx = contexts.get(this);
-      if (!ctx) contexts.set(this, (ctx = recordingContext()));
+      // getImageData: Cynosure's resolveColor reads a painted pixel.
+      if (!ctx)
+        contexts.set(
+          this,
+          (ctx = Object.assign(recordingContext(), {
+            getImageData: () => ({
+              data: new Uint8ClampedArray([1, 2, 3, 255]),
+            }),
+          })),
+        );
       return ctx as unknown as CanvasRenderingContext2D;
     } as unknown as typeof HTMLCanvasElement.prototype.getContext,
   );

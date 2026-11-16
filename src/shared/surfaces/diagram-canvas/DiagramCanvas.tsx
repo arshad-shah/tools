@@ -125,17 +125,13 @@ export function DiagramCanvas({
     setShowMinimap(initialMinimap);
   }
 
-  const [theme, setTheme] = useState(readDiagramTheme);
-  // Repaint in the new colours when the Cynosure theme or mode changes.
-  const { palette } = useCynosureTheme();
+  // Repaint in the new colours when the Cynosure theme or mode changes:
+  // resolveColor is a new function with each palette.
+  const { resolveColor } = useCynosureTheme();
+  const [theme, setTheme] = useState(() => readDiagramTheme(resolveColor));
   useEffect(() => {
-    // After CynosureTheme has marked the document with the new mode.
-    let live = true;
-    queueMicrotask(() => live && setTheme(readDiagramTheme()));
-    return () => {
-      live = false;
-    };
-  }, [palette]);
+    setTheme(readDiagramTheme((v) => resolveColor(v, host.current)));
+  }, [resolveColor]);
   const [announcement, setAnnouncement] = useState('');
   const measure = useMemo(
     () => createMeasure({ family: theme.fontFamily }),

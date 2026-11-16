@@ -5,8 +5,13 @@
  */
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { readThemeTokens } from '@/shared/lib/theme-tokens';
-import { readDiagramTheme } from './theme-bridge';
+import { readDiagramTheme, type ResolveColor } from './theme-bridge';
+
+/** As Cynosure's resolveColor for a bare `--x`: the property's value here. */
+const resolve: ResolveColor = (v) =>
+  v.startsWith('--')
+    ? getComputedStyle(document.documentElement).getPropertyValue(v).trim()
+    : '';
 
 const html = () => document.documentElement;
 // Token values are opaque strings to the bridge; rgb() keeps them obviously
@@ -34,7 +39,7 @@ afterEach(() => {
 
 describe('readDiagramTheme', () => {
   it('returns every field as a non-empty string', () => {
-    const t = readDiagramTheme();
+    const t = readDiagramTheme(resolve);
     for (const [k, v] of Object.entries(t)) {
       if (k === 'value') {
         for (const [kind, c] of Object.entries(v as Record<string, string>))
@@ -47,7 +52,7 @@ describe('readDiagramTheme', () => {
   });
 
   it('builds font shorthands with a pixel size and the mono family', () => {
-    const t = readDiagramTheme();
+    const t = readDiagramTheme(resolve);
     for (const f of [t.fontTitle, t.fontEyebrow, t.fontRow, t.fontChip]) {
       expect(f).toMatch(/^\d+\s+\d+(\.\d+)?px\s+Mono Test, monospace$/);
     }
@@ -56,19 +61,9 @@ describe('readDiagramTheme', () => {
 
   it('reflects a token set on the element', () => {
     html().style.setProperty('--cy-color-surface', 'rgb(9, 8, 7)');
-    expect(readDiagramTheme().card).toBe('rgb(9, 8, 7)');
+    expect(readDiagramTheme(resolve).card).toBe('rgb(9, 8, 7)');
     // A syntax token, once defined, wins over the last resort.
     html().style.setProperty('--cy-color-syntax-number', 'rgb(1, 2, 3)');
-    expect(readDiagramTheme().value.number).toBe('rgb(1, 2, 3)');
-  });
-
-  it('reads Cynosure tokens by name; a missing one reads empty', () => {
-    expect(
-      readThemeTokens(['--cy-color-surface', '--cy-color-ink', '--nope']),
-    ).toEqual({
-      '--cy-color-surface': 'rgb(2, 2, 2)',
-      '--cy-color-ink': 'rgb(8, 8, 8)',
-      '--nope': '',
-    });
+    expect(readDiagramTheme(resolve).value.number).toBe('rgb(1, 2, 3)');
   });
 });
