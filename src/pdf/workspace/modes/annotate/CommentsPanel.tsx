@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   Button,
   Card,
+  Form,
   Inline,
   Select,
   Stack,
@@ -42,15 +43,16 @@ function AuthorField({ ctx }: { ctx: ModeProps }) {
       ctx.doc.dispatch({ type: 'annot.author', params: { name } });
   };
   return (
-    <TextField
-      label="Your name for comments"
-      size="sm"
-      value={value}
-      maxLength={200}
-      onChange={(v) => setDraft({ base: author, value: v })}
-      onBlur={commit}
-      onKeyDown={(e) => e.key === 'Enter' && commit()}
-    />
+    <Form label="Comment author" onSubmit={commit}>
+      <TextField
+        label="Your name for comments"
+        size="sm"
+        value={value}
+        maxLength={200}
+        onChange={(v) => setDraft({ base: author, value: v })}
+        onBlur={commit}
+      />
+    </Form>
   );
 }
 

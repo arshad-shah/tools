@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Form,
   Grid,
   ListRows,
   Stack,
@@ -37,29 +38,25 @@ export const TaskList: React.FC = () => {
       }
     >
       <Stack gap="4">
-        <Grid columns="minmax(0, 1fr) auto" gap="2" align="end">
-          <TextField
-            label="New task"
-            labelHidden
-            placeholder="Add a new task"
-            value={newTitle}
-            onChange={setNewTitle}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                add();
-              }
-            }}
-          />
-          <Button
-            variant="soft"
-            icon={plus}
-            disabled={!newTitle.trim()}
-            onClick={add}
-          >
-            Add
-          </Button>
-        </Grid>
+        <Form label="Add a task" onSubmit={add}>
+          <Grid columns="minmax(0, 1fr) auto" gap="2" align="end">
+            <TextField
+              label="New task"
+              labelHidden
+              placeholder="Add a new task"
+              value={newTitle}
+              onChange={setNewTitle}
+            />
+            <Button
+              variant="soft"
+              icon={plus}
+              disabled={!newTitle.trim()}
+              type="submit"
+            >
+              Add
+            </Button>
+          </Grid>
+        </Form>
         {tasks.length === 0 ? (
           <EmptyState
             size="sm"

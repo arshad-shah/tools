@@ -1,4 +1,4 @@
-import { Button, Grid, Select, TextField } from '@arshad-shah/cynosure';
+import { Button, Form, Grid, Select, TextField } from '@arshad-shah/cynosure';
 import { close, send } from '@arshad-shah/cynosure/icons';
 import { METHODS, type HttpRequest } from '../lib/model';
 
@@ -24,48 +24,52 @@ export function RequestBar({
   unresolved,
 }: Props) {
   return (
-    <Grid columns="7rem minmax(0, 1fr) auto" gap="2" align="end">
-      {request.mode === 'rest' ? (
-        <Select
-          label="Method"
+    <Form
+      label="Request"
+      onSubmit={() => {
+        if (!running) onSend();
+      }}
+    >
+      <Grid columns="7rem minmax(0, 1fr) auto" gap="2" align="end">
+        {request.mode === 'rest' ? (
+          <Select
+            label="Method"
+            labelHidden
+            value={request.method}
+            onChange={(method) => onChange({ ...request, method })}
+            options={METHODS.map((m) => ({ value: m, label: m }))}
+          />
+        ) : (
+          <Button variant="soft" tone="neutral" disabled>
+            POST
+          </Button>
+        )}
+        <TextField
+          label="Request URL"
           labelHidden
-          value={request.method}
-          onChange={(method) => onChange({ ...request, method })}
-          options={METHODS.map((m) => ({ value: m, label: m }))}
+          inputMode="url"
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          value={request.url}
+          onChange={(url) => {
+            if (/^\s*curl\s/i.test(url) && onCurl(url)) return;
+            onChange({ ...request, url });
+          }}
+          aria-invalid={unresolved.length > 0 || undefined}
+          placeholder="https://api.example.com/items or paste a cURL command"
+          spellCheck={false}
         />
-      ) : (
-        <Button variant="soft" tone="neutral" disabled>
-          POST
-        </Button>
-      )}
-      <TextField
-        label="Request URL"
-        labelHidden
-        inputMode="url"
-        autoCapitalize="none"
-        autoCorrect="off"
-        autoComplete="off"
-        value={request.url}
-        onChange={(url) => {
-          if (/^\s*curl\s/i.test(url) && onCurl(url)) return;
-          onChange({ ...request, url });
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !running) onSend();
-        }}
-        aria-invalid={unresolved.length > 0 || undefined}
-        placeholder="https://api.example.com/items or paste a cURL command"
-        spellCheck={false}
-      />
-      {running ? (
-        <Button variant="soft" icon={close} onClick={onCancel}>
-          Cancel
-        </Button>
-      ) : (
-        <Button variant="solid" icon={send} onClick={onSend}>
-          Send
-        </Button>
-      )}
-    </Grid>
+        {running ? (
+          <Button variant="soft" icon={close} onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : (
+          <Button variant="solid" icon={send} type="submit">
+            Send
+          </Button>
+        )}
+      </Grid>
+    </Form>
   );
 }

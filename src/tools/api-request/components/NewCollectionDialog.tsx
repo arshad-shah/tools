@@ -1,4 +1,4 @@
-import { Button, Dialog, TextField } from '@arshad-shah/cynosure';
+import { Button, Dialog, Form, TextField } from '@arshad-shah/cynosure';
 import React from 'react';
 
 interface NewCollectionDialogProps {
@@ -36,17 +36,13 @@ export const NewCollectionDialog: React.FC<NewCollectionDialogProps> = ({
       </>
     }
   >
-    <TextField
-      label="Name"
-      value={newCollectionName}
-      onChange={setNewCollectionName}
-      placeholder="My collection"
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          onCreate();
-        }
-      }}
-    />
+    <Form label="New collection" onSubmit={onCreate}>
+      <TextField
+        label="Name"
+        value={newCollectionName}
+        onChange={setNewCollectionName}
+        placeholder="My collection"
+      />
+    </Form>
   </Dialog>
 );
