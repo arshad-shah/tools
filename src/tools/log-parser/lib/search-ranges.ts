@@ -1,4 +1,4 @@
-import type { CodeRange } from '@/shared/ui';
+import type { CodeRange } from '@/shared/editor';
 
 export interface SearchSpec {
   value: string;
@@ -7,7 +7,7 @@ export interface SearchSpec {
 
 const MAX_HIGHLIGHTS = 500;
 
-/** Search highlights in `text` for CodeSurface (case-insensitive). */
+/** Search highlights in `text` for the code editor (case-insensitive). */
 export function searchRanges(text: string, search?: SearchSpec): CodeRange[] {
   if (!search?.value) return [];
   const out: CodeRange[] = [];

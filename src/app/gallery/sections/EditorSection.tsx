@@ -1,13 +1,9 @@
 import { useMemo, useState } from 'react';
-import {
-  BytesView,
-  CodeSurface,
-  KeyValueEditor,
-  TextInputPanel,
-  type CodeFold,
-  type KeyValueRow,
-  type TextSample,
-} from '@/shared/ui';
+import type { KeyValueRow } from '@/shared/ui';
+import { BytesView } from '@/shared/ui/bytes-view';
+import { KeyValueEditor } from '@/shared/ui/key-value-editor';
+import { TextInputPanel, type TextSample } from '@/shared/ui/text-input-panel';
+import { CodeEditor, type CodeFold } from '@/shared/editor';
 import { Row, Section } from '../Section';
 
 const ORDER = `{
@@ -96,14 +92,14 @@ export function EditorSection() {
   return (
     <Section name="editor" title="Editor and text">
       <div className="grid grid-cols-1 gap-6 [&>*]:min-w-0 lg:grid-cols-2">
-        <Row label="CodeSurface: json, error marker, added line, match range">
-          <CodeSurface
+        <Row label="CodeEditor: json, error marker, added line, match range">
+          <CodeEditor
             value={json}
             onChange={setJson}
             language="json"
-            label="Order JSON"
+            aria-label="Order JSON"
             lineNumbers
-            markers={[
+            diagnostics={[
               {
                 line: 10,
                 column: 4,
@@ -120,30 +116,28 @@ export function EditorSection() {
               },
             ]}
             maxHeight={280}
-            className="w-full"
           />
         </Row>
-        <Row label="CodeSurface: read-only log with a fold">
-          <CodeSurface
+        <Row label="CodeEditor: read-only log with a fold">
+          <CodeEditor
             value={LOG}
             language="log"
-            label="Server log"
+            aria-label="Server log"
             readOnly
             lineNumbers
             folds={LOG_FOLDS}
             lineDecorations={[{ line: 18, kind: 'removed' }]}
             maxHeight={280}
-            className="w-full"
           />
         </Row>
       </div>
-      <Row label="CodeSurface: single-line regex">
+      <Row label="CodeEditor: single-line regex">
         <div className="w-full max-w-md">
-          <CodeSurface
+          <CodeEditor
             value={regex}
             onChange={setRegex}
             language="regex"
-            label="Pattern"
+            aria-label="Pattern"
             singleLine
           />
         </div>

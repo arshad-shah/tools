@@ -3,7 +3,7 @@ import { useSortable } from '@arshad-shah/detent-react';
 import { cn } from '@/shared/lib/cn';
 import { newId } from '@/shared/lib/id';
 import { Button } from './button';
-import { CodeSurface } from './code-surface';
+import { CodeEditor } from '@/shared/editor';
 import { IconList, IconPlus } from './icons';
 import { fromBulkText, rowName, toBulkText } from './key-value-bulk';
 import type { KeyValueRow } from './key-value-bulk';
@@ -150,14 +150,13 @@ export function KeyValueEditor({
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       {bulk ? (
-        <CodeSurface
+        <CodeEditor
           value={draft}
           onChange={(text) => {
             setDraft(text);
             onChange(fromBulkText(text, rows));
           }}
-          language="plain"
-          label={`${ariaLabel}, one key: value per line`}
+          aria-label={`${ariaLabel}, one key: value per line`}
           placeholder="Key: value"
           minHeight={160}
         />

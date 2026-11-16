@@ -11,9 +11,10 @@ import {
   VirtualList,
 } from '@arshad-shah/cynosure';
 import { play } from '@arshad-shah/cynosure/icons';
-import { CodeSurface } from '@/shared/ui';
+
 import { runQueryOffThread, type QueryOutcome } from '../lib/query';
 import { pushHistory, viewerSettings } from '../settings';
+import { CodeEditor } from '@/shared/editor';
 
 export interface QueryTabProps {
   value: unknown;
@@ -51,10 +52,10 @@ export function QueryTab({ value, xml, onSelect }: QueryTabProps) {
     <Stack gap="3" fill minSize="0">
       <Inline gap="2" align="start" wrap={false}>
         <Stack grow minSize="0">
-          <CodeSurface
+          <CodeEditor
             singleLine
             language="plain"
-            label={`${language} query`}
+            aria-label={`${language} query`}
             value={expr}
             onChange={setExpr}
             onSubmit={() => run()}

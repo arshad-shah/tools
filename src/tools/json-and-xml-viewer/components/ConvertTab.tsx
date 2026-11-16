@@ -16,11 +16,12 @@ import { toolsAccepting } from '@/app/registry';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
-import { CodeSurface } from '@/shared/ui';
+
 import { convert, escapeJsonString, unescapeJsonString } from '../lib/convert';
 import { inferJsonSchema, inferTypeScript } from '../lib/infer';
 import { TARGETS, type ConvertTabTarget } from '../lib/targets';
 import { viewerSettings } from '../settings';
+import { CodeEditor } from '@/shared/editor';
 
 const INDENTS = [
   { value: '2', label: '2 spaces' },
@@ -193,9 +194,9 @@ export function ConvertTab(props: ConvertTabProps) {
         ) : null}
       </Inline>
       <Stack grow minSize="0">
-        <CodeSurface
+        <CodeEditor
           readOnly
-          label={`${info.label} output`}
+          aria-label={`${info.label} output`}
           language={info.language}
           value={out.text}
           minHeight="100%"

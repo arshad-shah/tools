@@ -25,11 +25,7 @@ import {
 import { download, listTree, sparkles } from '@arshad-shah/cynosure/icons';
 import { readText } from '@/shared/lib/files';
 import { useMediaQuery } from '@/shared/lib/media-query';
-import {
-  CodeSurface,
-  type CodeSurfaceHandle,
-  type SandboxedHtmlHandle,
-} from '@/shared/ui';
+import { type SandboxedHtmlHandle } from '@/shared/ui';
 import { textStats } from '@/tools/text-toolkit/lib/stats';
 import { FORMAT_ITEMS } from './components/format-items';
 import { Outline } from './components/Outline';
@@ -46,6 +42,7 @@ import {
 import { renderMarkdown } from './lib/render';
 import { SAMPLE_MARKDOWN } from './lib/sample';
 import { markdownSettings } from './settings';
+import { CodeEditor, type CodeEditorHandle } from '@/shared/editor';
 
 const plural = (n: number, word: string) =>
   `${n.toLocaleString('en-US')} ${word}${n === 1 ? '' : 's'}`;
@@ -61,7 +58,7 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   const [exported, setExported] = useState<string | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [tokens, setTokens] = useState(() => readDocTokens());
-  const editor = useRef<CodeSurfaceHandle>(null);
+  const editor = useRef<CodeEditorHandle>(null);
   const preview = useRef<SandboxedHtmlHandle>(null);
   const selection = useRef<Selection>({ start: 0, end: 0 });
   const pendingSelection = useRef<Selection | null>(null);
@@ -280,12 +277,12 @@ export default function MarkdownEditor({ definition }: ToolProps) {
             />
           </Inline>
         </Inline>
-        <CodeSurface
+        <CodeEditor
           ref={editor}
           value={text}
           onChange={setText}
           language="markdown"
-          label="Markdown"
+          aria-label="Markdown"
           wrap={settings.wrap}
           placeholder="Type Markdown here"
           onSelectionChange={(start, end) => {

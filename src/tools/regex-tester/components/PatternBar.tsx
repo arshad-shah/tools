@@ -8,9 +8,14 @@ import {
   Stack,
   Text,
 } from '@arshad-shah/cynosure';
-import { CodeSurface, type CodeMarker, type CodeRange } from '@/shared/ui';
+
 import type { SyntaxCheck } from '../lib/syntax';
 import { FlagToggles } from './FlagToggles';
+import {
+  CodeEditor,
+  type CodeRange,
+  type EditorDiagnostic,
+} from '@/shared/editor';
 
 interface PatternBarProps {
   pattern: string;
@@ -35,7 +40,7 @@ export const PatternBar: React.FC<PatternBarProps> = ({
   literal,
 }) => {
   const errorId = useId();
-  const markers: CodeMarker[] =
+  const markers: EditorDiagnostic[] =
     !syntax.ok && syntax.column !== null
       ? [
           {
@@ -60,14 +65,14 @@ export const PatternBar: React.FC<PatternBarProps> = ({
             /
           </Text>
           <Stack grow minSize="0">
-            <CodeSurface
+            <CodeEditor
               value={pattern}
               onChange={onPatternChange}
               language="regex"
-              label="Regex pattern"
+              aria-label="Regex pattern"
               singleLine
               placeholder="Enter a regular expression"
-              markers={markers}
+              diagnostics={markers}
               ranges={ranges}
               aria-describedby={syntax.ok ? undefined : errorId}
             />

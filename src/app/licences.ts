@@ -168,6 +168,24 @@ export const LICENCES: LicenceEntry[] = [
     url: 'https://github.com/arshad-shah/detent',
   },
   {
+    name: '@arshad-shah/swift-chart',
+    licence: 'MIT',
+    url: 'https://github.com/arshad-shah/swiftchart',
+    note: 'Charts: calculator graphs, CSV charts, log timeline, Pomodoro history',
+  },
+  {
+    name: '@codemirror/view, state, language, commands, search, autocomplete, lint, lang-json, lang-xml, lang-yaml, lang-markdown, lang-javascript, lang-css, lang-html, lang-sql',
+    licence: 'MIT',
+    url: 'https://github.com/codemirror/dev',
+    note: 'CodeMirror 6, the code editor (with style-mod, w3c-keyname and crelt, MIT)',
+  },
+  {
+    name: '@lezer/highlight',
+    licence: 'MIT',
+    url: 'https://github.com/lezer-parser/highlight',
+    note: 'Lezer highlighting and the language parsers CodeMirror loads (MIT)',
+  },
+  {
     name: '@arshad-shah/qpdf-wasm',
     licence: 'MIT',
     url: 'https://github.com/arshad-shah/qpdf-wasm',

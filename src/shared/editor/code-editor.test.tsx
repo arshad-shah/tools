@@ -8,27 +8,9 @@ import {
 } from '@testing-library/react';
 import { EditorView } from '@codemirror/view';
 import { createRef, useState } from 'react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CodeEditor } from './CodeEditor';
 import type { CodeEditorHandle, CodeEditorProps } from './types';
-
-// jsdom has no layout: CodeMirror measures text ranges.
-beforeAll(() => {
-  const rect = () =>
-    ({
-      x: 0,
-      y: 0,
-      top: 0,
-      left: 0,
-      bottom: 0,
-      right: 0,
-      width: 0,
-      height: 0,
-    }) as DOMRect;
-  Range.prototype.getClientRects = () =>
-    Object.assign([], { item: () => null }) as unknown as DOMRectList;
-  Range.prototype.getBoundingClientRect = rect;
-});
 
 function Controlled({
   initial,

@@ -1,8 +1,9 @@
 import { useImperativeHandle, useRef } from 'react';
 import type { LanguageId } from '@/shared/lib/syntax/tokenize';
 import { Grid } from '@arshad-shah/cynosure';
-import { CodeSurface, type CodeSurfaceHandle } from '@/shared/ui';
+
 import type { Fold, Surface, ViewModel } from '../lib/view-model';
+import { CodeEditor, type CodeEditorHandle } from '@/shared/editor';
 
 export interface DiffViewHandle {
   /** Scrolls every surface to 1-based row `n`. */
@@ -40,15 +41,15 @@ function SurfaceView({
   folds: Fold[];
   wrap: boolean;
   onUnfold(i: number): void;
-  handle: React.Ref<CodeSurfaceHandle>;
+  handle: React.Ref<CodeEditorHandle>;
   onScroll?(pos: ScrollPos): void;
 }) {
   return (
-    <CodeSurface
+    <CodeEditor
       ref={handle}
       value={surface.lines.join('\n')}
       language={language}
-      label={label}
+      aria-label={label}
       readOnly
       wrap={wrap}
       lineLabels={surface.numbers}
@@ -76,8 +77,8 @@ export function DiffView({
   onUnfold,
   ref,
 }: DiffViewProps) {
-  const left = useRef<CodeSurfaceHandle>(null);
-  const right = useRef<CodeSurfaceHandle>(null);
+  const left = useRef<CodeEditorHandle>(null);
+  const right = useRef<CodeEditorHandle>(null);
   // The position last pushed to each side, so its echo is not pushed back.
   const pushed = useRef<{ left?: ScrollPos; right?: ScrollPos }>({});
   const onLeftScroll = (pos: ScrollPos) => {

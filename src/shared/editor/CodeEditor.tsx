@@ -51,6 +51,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { runAppShortcut } from '@/shared/lib/hotkeys';
 import {
   buildFolds,
   buildMarks,
@@ -94,6 +95,30 @@ const oneLineFilter = EditorState.transactionFilter.of((tr) => {
     userEvent: tr.annotation(Transaction.userEvent),
   };
 });
+
+/**
+ * The one change turning `from` into `to` (their common start and end
+ * kept), so the selection and undo history survive an outside update.
+ */
+function diffChange(from: string, to: string) {
+  if (from === to) return null;
+  const max = Math.min(from.length, to.length);
+  let start = 0;
+  while (start < max && from.charCodeAt(start) === to.charCodeAt(start))
+    start++;
+  let end = 0;
+  while (
+    end < max - start &&
+    from.charCodeAt(from.length - 1 - end) ===
+      to.charCodeAt(to.length - 1 - end)
+  )
+    end++;
+  return {
+    from: start,
+    to: from.length - end,
+    insert: to.slice(start, to.length - end),
+  };
+}
 
 interface Compartments {
   language: Compartment;
@@ -172,6 +197,9 @@ export function CodeEditor({
   } | null>(null);
   const [panelTick, setPanelTick] = useState(0);
   const [focusTick, setFocusTick] = useState(0);
+  // Bumped after each user edit: a controlled editor whose owner kept the
+  // old value (an input limit) goes back to it on the next render.
+  const [edits, setEdits] = useState(0);
   const [foldSlots, setFoldSlots] = useState<ReadonlyMap<HTMLElement, number>>(
     () => new Map(),
   );
@@ -356,6 +384,11 @@ export function CodeEditor({
                 ),
               ]
             : [],
+          // A tool's shortcut (Mod+B in Markdown) wins over a CodeMirror
+          // binding for the same key: the key goes on to the app.
+          Prec.highest(
+            EditorView.domEventHandlers({ keydown: (e) => runAppShortcut(e) }),
+          ),
           highlightSpecialChars(),
           drawSelection(),
           marksField,
@@ -375,7 +408,10 @@ export function CodeEditor({
               const fromProp = u.transactions.some((tr) =>
                 tr.isUserEvent('tools.external'),
               );
-              if (!fromProp) emitChange(next);
+              if (!fromProp) {
+                emitChange(next);
+                setEdits((n) => n + 1);
+              }
             }
             if (u.selectionSet) {
               const m = u.state.selection.main;
@@ -403,22 +439,15 @@ export function CodeEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // A new controlled value replaces the text (keeping the caret in range).
+  // A new controlled value replaces the text (keeping the caret in range),
+  // and an edit the owner did not take is undone.
   useEffect(() => {
     const view = viewRef.current;
     if (!view || value === undefined || value === known.current) return;
-    if (value === view.state.doc.toString()) {
-      known.current = value;
-      return;
-    }
     known.current = value;
-    const head = Math.min(view.state.selection.main.head, value.length);
-    view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: value },
-      selection: { anchor: head },
-      annotations: external,
-    });
-  }, [value]);
+    const change = diffChange(view.state.doc.toString(), value);
+    if (change) view.dispatch({ changes: change, annotations: external });
+  }, [value, edits]);
 
   const reconfigure = (c: Compartment, ext: Extension) =>
     viewRef.current?.dispatch({ effects: c.reconfigure(ext) });
