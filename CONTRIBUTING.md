@@ -38,12 +38,15 @@ The pre-commit hook runs `eslint --fix` and `prettier --write` on staged files.
 ```
 src/
   app/          router, category routes, tool registry, pages (Home, hubs,
-                PDF hub, tool page), shell (top bar, Mod+K, shortcut sheet),
-                gallery/ (the dev-only kit gallery at /__kit)
+                PDF hub, tool page), shell (navigation, Mod+K, shortcut sheet)
   shared/
-    ui/         the UI kit, imported from '@/shared/ui'; icons/ and adapters/
+    surfaces/   drawing surfaces: canvases, the sandboxed HTML frame, the
+                code tree, the virtual list, the logo (raw elements allowed)
+    editor/     CodeMirror 6, themed from Cynosure
+    charts/     swift-chart, themed from Cynosure
     lib/        browser plumbing: download, clipboard, files, format, errors,
-                notify, id, hotkeys, commands, worker-rpc, theme
+                notify, id, hotkeys, commands, worker-rpc, grid sort/filters
+    ui/         the old kit, kept only for the PDF workspace (going away)
     state/      createToolStore (persisted zustand stores) and useJob
   pdf/
     doc/        the workspace document model (no React)
@@ -52,7 +55,8 @@ src/
     edit/       pdf-lib in a worker: materialisation and page edits
     detect/ redact/ ocr/ sign/ compress/ qpdf/ convert/   domain modules
     components/ shared PDF UI used by the quick tasks
-  theme/        tokens.css: colour, type, spacing and motion tokens
+  theme/        the generated Cynosure theme and tokens.css (Cynosure imports;
+                the Tailwind layer the old kit still needs)
   tools/<id>/   one folder per tool
 eslint-rules/   the local design-system ESLint plugin
 test/           e2e, visual, fixtures and build-level tests
@@ -65,24 +69,17 @@ Everything is client-side: document bytes never leave the browser.
 
 These rules are enforced by lint and tests; a PR that breaks them fails CI.
 
-- Compose the kit. Tools, modes, `src/app`, `src/pdf/components` and `src/pdf/workspace` use components from `@/shared/ui` only. Raw `button`, `input`, `select`, `textarea`, `svg`, `img`, `canvas`, `video`, `audio` and `iframe` elements, `style` props and imperative style writes (`element.style.left = ...`, `setAttribute('style', ...)`) are allowed only inside `src/shared/ui` (rule b).
-- Icons are Facet icons, from `@/shared/ui/icons`. Use an existing `Icon...` export; if none fits, add one (see below). No icon package (`lucide-react` and the like) anywhere (rule c).
+- Compose Cynosure. Pages and tools use `@arshad-shah/cynosure` components only: `Container`, `Section`, `Stack`, `Inline`, `Grid` for layout, `Heading`, `Text`, `Link`, `List` for text. No raw element (`div`, `span`, `p`, `ul`, `button`, `input`, `a`, `svg`...), no `className`, no `style` prop and no imperative style write outside `src/shared/surfaces/` and the editor and chart mount points (`local/no-raw-ui`). `src/pdf` and `src/tools/pdf-edit` are exempt until the PDF workspace rebuild merges.
+- When Cynosure lacks something, write it down in `docs/cynosure-gaps.md` and use the closest Cynosure composition; it is fixed in Cynosure, never patched here. A genuine drawing surface goes in `src/shared/surfaces/`, styled by its own CSS from `--cy-*` tokens.
+- Icons are Facet icons from `@arshad-shah/cynosure/icons` (tool and category manifests carry Facet `IconData`), drawn with Cynosure's `Icon`, `IconTile` or a component's `icon` prop. No icon package (`lucide-react` and the like) anywhere (rule c).
 - No glyphs in product text: no emoji, pictographs, dingbats, arrows, geometric shapes, box drawing or technical symbols in strings, JSX text, toasts, labels or test names in `src` (rule a). Use icons, the `Kbd` component for keys, `MetaList` for separated values, or plain words ("to", "and", "Copyright"). Code that must recognise such characters builds them from code points, for example `String.fromCodePoint(0x2192)`.
-- Colours come from tokens (`bg-surface`, `text-fg-muted`, `border-line`, `text-danger`), never literals. Every surface works in the light and dark themes and with reduced motion: animate with `motion-safe:` variants.
+- Colours come from Cynosure's tokens (`--cy-color-*`) through components and their `tone`s, never literals. Every page works in the light and dark themes and with reduced motion.
 - The design-system rules are never disabled inline; `test/no-inline-disable.test.ts` fails on any such comment.
 - WCAG 2.2 AA: every control has an accessible name, every pointer action has a keyboard path, and the visual suite's axe check reports no serious or critical findings.
 
-## Add a kit component first
+## When Cynosure lacks something
 
-When a tool or mode needs something the kit does not have, add it to the kit before using it:
-
-1. Create `src/shared/ui/<component-name>.tsx`. Build it from tokens and existing primitives. This is where raw elements and data-driven `style` values (positions, sizes) belong.
-2. Add `src/shared/ui/<component-name>.test.tsx` next to it: roles and accessible names, keyboard behaviour, and every state it has.
-3. Export it from `src/shared/ui/index.ts` with one added line (the barrel is append-only, so parallel work merges cleanly).
-4. Add a gallery entry in `src/app/gallery/sections/` (an existing section, or a new one listed in `KitGallery.tsx`) showing each variant and state. Add the section to `test/visual/kit-gallery.visual.ts` so it gets a baseline in both themes.
-5. Then use it from the tool or mode.
-
-A new icon is one line in `src/shared/ui/icons/facet.ts`: `export const IconName = fromFacet('IconName', facetIcon);` with a Facet icon from `@arshad-shah/cynosure/icons` (or a brand mark from `@arshad-shah/cynosure/brands`). Update the icon snapshot (`pnpm exec vitest run src/shared/ui/icons -u`). tools never draws an icon: when Facet has none that fits, it is drawn in Cynosure first (list it in `GAPS-icons.md`). Kit facades pass `IconName.data` (or `facetOf(node)`) to Cynosure's `icon` slots.
+Add a row to `docs/cynosure-gaps.md` (what, where, what tools does meanwhile) and compose the closest Cynosure components. Only a drawing surface (a canvas, a frame, a virtualised scroller Cynosure does not have yet) is written here, in `src/shared/surfaces/<name>/`, with a test and its own stylesheet that reads `--cy-*` tokens. When Facet has no icon that fits, it is drawn in Cynosure first (list it in `GAPS-icons.md`).
 
 ## Code conventions
 
@@ -112,14 +109,14 @@ src/tools/<tool-id>/
 
 ```ts
 // src/tools/your-tool/index.ts
-import { IconCalculator } from '@/shared/ui/icons';
+import { calculator } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'your-tool', // must equal the folder name
   name: 'Your Tool',
   description: 'One-line description shown on cards and in search',
-  icon: IconCalculator,
+  icon: calculator, // a Facet icon
   category: 'math', // see ToolCategory in src/app/tool.ts
   slug: 'your-tool', // the route is /<category>/<slug>
   kind: 'tool',
@@ -136,15 +133,13 @@ export default defineTool({
 ```tsx
 // src/tools/your-tool/Tool.tsx
 import type { ToolProps } from '@/app/tool';
-import { Card, CardBody, Stack, Text } from '@/shared/ui';
+import { Card, Stack, Text } from '@arshad-shah/cynosure';
 
 export default function YourTool({ definition }: ToolProps) {
   return (
     <Stack gap="4">
-      <Card>
-        <CardBody>
-          <Text>{definition.description}</Text>
-        </CardBody>
+      <Card title="Input">
+        <Text>{definition.description}</Text>
       </Card>
     </Stack>
   );

@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-A fully client-side React 19 + TypeScript tools dashboard: developer and productivity utilities plus a set of PDF tools, each a self-contained folder under `src/tools/`. Built with Vite and styled with Tailwind CSS v4 through a small in-repo UI kit. No document bytes leave the browser.
+A fully client-side React 19 + TypeScript tools dashboard: developer and productivity utilities plus a set of PDF tools, each a self-contained folder under `src/tools/`. Built with Vite; every component and icon comes from the Cynosure UI library (`@arshad-shah/cynosure`). No document bytes leave the browser.
 
 ## Key Development Commands
 
@@ -45,7 +45,7 @@ src/tools/<tool-id>/
 ### Shared code
 
 - `src/app/`: router (`App.tsx`), `Dashboard.tsx`, `ToolLayout.tsx`, error boundaries, `registry.ts`, `tool.ts` (`defineTool`, `ToolProps`, `ToolCategory`).
-- `src/shared/ui/`: the UI kit (`@/shared/ui`), built on Tailwind theme tokens.
+- UI is `@arshad-shah/cynosure` (components and Facet icons). `src/shared/surfaces/`: drawing surfaces (canvases, sandboxed HTML, code tree, virtual list, logo). `src/shared/ui/`: the old kit, kept only for the PDF workspace.
 - `src/shared/lib/`: `download` (`saveBlob`, `saveZip`, `deriveFilename`), `clipboard`, `files` (`loadFile`, `readBytes`), `format` (`formatBytes`), `errors` (`ToolError`), `notify`, `id` (`newId`), `worker-rpc`.
 - `src/shared/state/`: `createToolStore` (zustand + persistence under `kit:store:tool:<id>`) and `useJob` (async work with progress and cancel).
 - `src/pdf/`, shared by the PDF tools:
@@ -54,7 +54,7 @@ src/tools/<tool-id>/
   - `qpdf/`: qpdf-wasm encrypt, unlock and optimise. It arrives with the PDF security tools.
   - `compress/`: the compression pipeline. It also arrives with the PDF security tools.
   - `components/`: dropzone, page grid, job panel, result files.
-- `src/theme/terminal.css`: Tailwind v4 theme tokens. The app is dark-only.
+- `src/theme/`: the generated Cynosure theme (`cynosure-theme.css`, light and dark) and `tokens.css` (Cynosure imports, plus the Tailwind layer the old kit still needs for the PDF workspace).
 
 ### State
 
@@ -64,7 +64,7 @@ src/tools/<tool-id>/
 ### Error handling
 
 - Global `ErrorBoundary` plus a per-tool `ToolErrorBoundary`.
-- User-visible failures go through `notify.error(...)` or an inline kit `Alert`, never silently.
+- User-visible failures go through `notify.error(...)` or an inline Cynosure `Notice`, never silently.
 
 ## Testing
 
