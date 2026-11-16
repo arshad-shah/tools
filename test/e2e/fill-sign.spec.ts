@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { textPositions } from '../fixtures/builders';
 import type { TruthField } from '../fixtures/flat-form';
+import { expectNotFound } from './not-found';
 
 /*
  * Spec §1 criterion 1, §15: a flat form filled from detection, My details,
@@ -219,9 +220,7 @@ test('fills an AcroForm: a text field and a checkbox', async ({ page }) => {
 test('the folded Sign and Fill Form tools are gone', async ({ page }) => {
   for (const path of ['/pdf/sign', '/pdf/fill-form']) {
     await page.goto(path);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'This page does not exist',
-    );
+    await expectNotFound(page, path);
   }
 });
 

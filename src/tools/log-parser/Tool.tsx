@@ -18,7 +18,7 @@ import {
 } from '@arshad-shah/cynosure/icons';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CodeSurface, type VirtualListHandle } from '@/shared/ui';
+import { type VirtualListHandle } from '@/shared/ui';
 import { formatBytes } from '@/shared/lib/format';
 import {
   useHandoff,
@@ -47,6 +47,7 @@ import type { LogEntry } from './lib/model';
 import { entryCount } from './lib/progress';
 import { LOG_SAMPLE } from './lib/sample';
 import { logSettings, type SavedFormat } from './settings';
+import { CodeEditor } from '@/shared/editor';
 
 const FILTER_DEBOUNCE_MS = 150;
 const isRegexHandoff = (p: HandoffPayload) => readRegexHandoff(p) !== null;
@@ -217,8 +218,8 @@ const LogViewer = () => {
     >
       {input?.kind === 'file' ? null : (
         <Stack gap="3">
-          <CodeSurface
-            label="Log"
+          <CodeEditor
+            aria-label="Log"
             language="log"
             value={pasted}
             onChange={(text) => setInput(text ? { kind: 'text', text } : null)}

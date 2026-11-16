@@ -49,16 +49,21 @@ for (const tool of ENABLED) {
   }) => {
     const label = labelOf(tool.category);
     await page.goto('/');
+    // Home lists every category as a section with a link to its hub.
     await page
-      .getByRole('region', { name: 'Categories' })
-      .getByRole('link', { name: label, exact: true })
+      .getByRole('region', { name: label, exact: true })
+      .getByRole('link', { name: `Open ${label}`, exact: true })
       .click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(label);
     expect(new URL(page.url()).pathname).toBe(`/${tool.category}`);
 
+    // A tool card is one link holding the tool's name as its heading.
     await page
       .getByRole('main')
-      .getByRole('link', { name: tool.name, exact: true })
+      .getByRole('link')
+      .filter({
+        has: page.getByRole('heading', { name: tool.name, exact: true }),
+      })
       .click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(tool.name);
     expect(new URL(page.url()).pathname).toBe(tool.path);

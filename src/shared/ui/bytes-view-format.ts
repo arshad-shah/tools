@@ -1,5 +1,17 @@
 import type { Token, TokenKind } from '@/shared/lib/syntax/tokenize';
-import type { LineSource } from './code-surface';
+
+/**
+ * Dump rows supplied on demand: `line` and `tokens` per row, `text` for
+ * the whole dump.
+ */
+export interface LineSource {
+  count: number;
+  line(index: number): string;
+  tokens?(index: number): Token[];
+  /** Longest line in characters. */
+  maxLength?: number;
+  text?(): string;
+}
 
 /** ASCII control character names, 0x00 to 0x1f; 0x7f is DEL. */
 export const CONTROL_NAMES = [
@@ -104,7 +116,7 @@ export function rowWidth(mode: BytesMode, perRow: number): number {
   return 8 + 2 + cells + 2 + perRow * 4;
 }
 
-/** Dump rows on demand for CodeSurface: nothing is formatted up front. */
+/** Dump rows on demand: nothing is formatted until asked for. */
 export function createBytesSource(
   bytes: Uint8Array,
   mode: BytesMode,

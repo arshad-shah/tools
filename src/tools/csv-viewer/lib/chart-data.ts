@@ -1,6 +1,7 @@
-import { lttb, type ChartSeries, type XType } from '@/shared/ui';
 import type { ColumnType } from './columns';
 import type { Row } from './edit';
+import { histogram } from './histogram';
+import { lttb } from './lttb';
 
 export type CsvChartKind = 'bar' | 'line' | 'scatter' | 'histogram';
 
@@ -11,9 +12,18 @@ export const BAR_CATEGORIES = 50;
 /** `x` value meaning "row number". */
 export const ROW_NUMBER = '';
 
+/** One drawn point: `label` is the x shown on the axis and in the table. */
+export interface ChartRow {
+  label: string;
+  /** Numeric x (row number, number or time in ms); the category for bars. */
+  x: number | string;
+  y: number;
+}
+
 export interface CsvChart {
-  series: ChartSeries[];
-  xType: XType;
+  rows: ChartRow[];
+  /** x holds times (ms since the epoch). */
+  time: boolean;
   /** Rows that had usable values. */
   used: number;
   /** True when LTTB or the category cap reduced what is drawn. */
@@ -31,10 +41,27 @@ function xValue(v: unknown, type: ColumnType | undefined): number | null {
   return num(v);
 }
 
+/** Short, stable text for a number (no -0, up to 6 significant digits). */
+export function fmtNumber(n: number): string {
+  const v = Number(n.toPrecision(6));
+  return (Object.is(v, -0) ? 0 : v).toLocaleString('en-US', {
+    maximumFractionDigits: 6,
+  });
+}
+
+/** A time as `YYYY-MM-DD`, with the time of day when it has one. */
+export function fmtTime(ms: number): string {
+  const iso = new Date(ms).toISOString();
+  return iso.endsWith('T00:00:00.000Z')
+    ? iso.slice(0, 10)
+    : iso.slice(0, 16).replace('T', ' ');
+}
+
 /**
- * Series for the chosen kind over every given (filtered) row. Line and
+ * Points for the chosen kind over every given (filtered) row. Line and
  * scatter sort by x and keep CHART_POINTS points by LTTB; bar sums y per x
- * category (or counts rows without y); histogram passes the y samples.
+ * category (or counts rows without y); histogram bins the y values
+ * (Freedman-Diaconis).
  */
 export function csvChart(
   rows: readonly Row[],
@@ -44,15 +71,19 @@ export function csvChart(
   types: Record<string, ColumnType>,
 ): CsvChart {
   if (kind === 'histogram') {
-    const points: { x: number; y: number }[] = [];
+    const values: number[] = [];
     for (const r of rows) {
       const v = num(r[y]);
-      if (v !== null) points.push({ x: points.length, y: v });
+      if (v !== null) values.push(v);
     }
     return {
-      series: [{ id: y, label: y, points }],
-      xType: 'linear',
-      used: points.length,
+      rows: histogram(values, 'auto').map((b) => ({
+        label: `${fmtNumber(b.x0)} to ${fmtNumber(b.x1)}`,
+        x: b.x0,
+        y: b.count,
+      })),
+      time: false,
+      used: values.length,
       reduced: false,
     };
   }
@@ -71,14 +102,8 @@ export function csvChart(
     const all = [...sums].sort((a, b) => b[1] - a[1]);
     const top = all.slice(0, BAR_CATEGORIES);
     return {
-      series: [
-        {
-          id: y || 'count',
-          label: y || 'Rows',
-          points: top.map(([k, v]) => ({ x: k, y: v })),
-        },
-      ],
-      xType: 'band',
+      rows: top.map(([k, v]) => ({ label: k, x: k, y: v })),
+      time: false,
       used,
       reduced: all.length > top.length,
     };
@@ -94,14 +119,12 @@ export function csvChart(
     points.length > CHART_POINTS ? lttb(points, CHART_POINTS) : points;
   const time = x !== ROW_NUMBER && types[x] === 'date';
   return {
-    series: [
-      {
-        id: y,
-        label: y,
-        points: time ? shown.map((p) => ({ x: new Date(p.x), y: p.y })) : shown,
-      },
-    ],
-    xType: time ? 'time' : 'linear',
+    rows: shown.map((p) => ({
+      label: time ? fmtTime(p.x) : fmtNumber(p.x),
+      x: p.x,
+      y: p.y,
+    })),
+    time,
     used: points.length,
     reduced: shown.length < points.length,
   };

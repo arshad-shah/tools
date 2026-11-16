@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Grid, Inline, List, Stack, Text } from '@arshad-shah/cynosure';
-import { CodeSurface } from '@/shared/ui';
+
 import { useRegexJob } from '../hooks/useRegexJob';
 import type { RegexRunner } from '../lib/runner';
 import {
@@ -10,6 +10,7 @@ import {
   type TestCaseResult,
 } from '../lib/test-cases';
 import { JobStatus } from './JobStatus';
+import { CodeEditor } from '@/shared/editor';
 
 interface TestsTabProps {
   runner: Pick<RegexRunner, 'tests'>;
@@ -66,20 +67,20 @@ export const TestsTab: React.FC<TestsTabProps> = ({
         One case per line. Each line is checked on its own.
       </Text>
       <Grid columns={{ base: 1, md: 2 }} gap="4">
-        <CodeSurface
+        <CodeEditor
           value={shouldMatch}
           onChange={onShouldMatchChange}
           language="plain"
-          label="Should match"
+          aria-label="Should match"
           placeholder="Lines the pattern should match"
           minHeight={96}
           maxHeight={240}
         />
-        <CodeSurface
+        <CodeEditor
           value={shouldNotMatch}
           onChange={onShouldNotMatchChange}
           language="plain"
-          label="Should not match"
+          aria-label="Should not match"
           placeholder="Lines the pattern should not match"
           minHeight={96}
           maxHeight={240}

@@ -1,7 +1,7 @@
 import { LANGUAGES, type LanguageId } from '@/shared/lib/syntax/tokenize';
 
 /**
- * The CodeSurface language for a diff side: from the file name when there
+ * The editor language for a diff side: from the file name when there
  * is one, else sniffed from the first lines. `plain` when unsure.
  */
 export function detectLanguage(text: string, name?: string): LanguageId {

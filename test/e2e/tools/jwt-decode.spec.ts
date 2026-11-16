@@ -1,6 +1,7 @@
 import { createHmac, createSign, generateKeyPairSync } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
 const part = (v: unknown) =>
   Buffer.from(JSON.stringify(v)).toString('base64url');
@@ -203,10 +204,12 @@ test('Compare payloads in Text Diff fills both sides of the diff', async ({
     .getByRole('button', { name: 'Compare payloads in Text Diff' })
     .click();
   await expect(page).toHaveURL(new RegExp(pathOf('text-diff-checker')));
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue(/left-side/);
-  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+    /left-side/,
+  );
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Changed text' }),
     /right-side/,
   );
 });
@@ -218,7 +221,9 @@ test('Open exp in Epoch Converter hands over the seconds', async ({ page }) => {
     .getByRole('button', { name: 'Open exp in Epoch Converter' })
     .click();
   await expect(page).toHaveURL(new RegExp(pathOf('epoch-converter')));
-  await expect(page.locator('#epoch-input')).toHaveValue('1700000000');
+  await expect(
+    page.getByRole('textbox', { name: 'Timestamp or date' }),
+  ).toHaveValue('1700000000');
 });
 
 test('accordion triggers have accessible names', async ({ page }) => {

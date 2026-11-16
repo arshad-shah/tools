@@ -10,6 +10,7 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { stubChartCanvas } from '@/shared/charts/testing';
 import { putHandoff } from '@/shared/lib/handoff';
 import { exposeRpc, type RpcEndpoint } from '@/shared/lib/worker-rpc';
 import { textHandlers } from '@/shared/workers/handlers';
@@ -57,6 +58,7 @@ vi.mock('@/shared/workers/text-client', async (importOriginal) => {
 });
 
 beforeEach(() => {
+  stubChartCanvas();
   logSettings.getSettings();
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
     x: 0,

@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import type { ToolError } from '@/shared/lib/errors';
 import { Badge, EmptyState, Inline, Stack } from '@arshad-shah/cynosure';
-import { CodeSurface, type CodeRange } from '@/shared/ui';
+
 import { matchCoverage } from '../lib/coverage';
 import { plural } from '../lib/plural';
 import type { Match } from '../lib/match';
 import { JobStatus } from './JobStatus';
 import { MatchList } from './MatchList';
+import { CodeEditor, type CodeRange } from '@/shared/editor';
 
 interface MatchTabProps {
   text: string;
@@ -69,10 +70,10 @@ export const MatchTab: React.FC<MatchTabProps> = ({
         )}
       </Inline>
       <JobStatus error={error} pending={pending} onRetry={onRetry} />
-      <CodeSurface
+      <CodeEditor
         value={text}
         language="plain"
-        label="Live preview"
+        aria-label="Live preview"
         readOnly
         wrap
         ranges={ranges}

@@ -39,6 +39,7 @@ vi.mock('./hooks/useRegexRunner', () => ({
 
 import RegexTester from './Tool';
 import { regexSettings } from './settings';
+import { editorValue, setEditorValue } from '@/shared/editor/testing';
 
 const renderTool = () =>
   render(
@@ -46,8 +47,7 @@ const renderTool = () =>
       <RegexTester />
     </MemoryRouter>,
   );
-const textbox = (name: string) =>
-  screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
+const textbox = (name: string) => screen.getByRole('textbox', { name });
 /** The result modes are a segmented control (radios). */
 const mode = (name: string) =>
   fireEvent.click(screen.getByRole('radio', { name }));
@@ -71,8 +71,8 @@ describe('RegexTester', () => {
     shareState.loaded = shared;
     renderTool();
 
-    expect(textbox('Regex pattern').value).toBe('(\\d+)');
-    expect(textbox('Test string').value).toBe('a1 b22');
+    expect(editorValue(textbox('Regex pattern'))).toBe('(\\d+)');
+    expect(editorValue(textbox('Test string'))).toBe('a1 b22');
     await waitFor(() =>
       expect(
         screen
@@ -96,8 +96,8 @@ describe('RegexTester', () => {
 
   it('shows the test text beside the results; flags toggle without primary', async () => {
     renderTool();
-    fireEvent.change(textbox('Test string'), { target: { value: 'a1 b2' } });
-    fireEvent.change(textbox('Regex pattern'), { target: { value: '\\d' } });
+    setEditorValue(textbox('Test string'), 'a1 b2');
+    setEditorValue(textbox('Regex pattern'), '\\d');
     mode('Match');
     expect(await screen.findAllByText('2 matches')).not.toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Copy match 1' })).toBeTruthy();
@@ -112,15 +112,9 @@ describe('RegexTester', () => {
   it('shows pass and fail for each test case with a summary', async () => {
     renderTool();
     mode('Tests');
-    fireEvent.change(textbox('Regex pattern'), {
-      target: { value: '^\\d+$' },
-    });
-    fireEvent.change(textbox('Should match'), {
-      target: { value: '123\nabc' },
-    });
-    fireEvent.change(textbox('Should not match'), {
-      target: { value: 'xyz\n456' },
-    });
+    setEditorValue(textbox('Regex pattern'), '^\\d+$');
+    setEditorValue(textbox('Should match'), '123\nabc');
+    setEditorValue(textbox('Should not match'), 'xyz\n456');
 
     expect(await screen.findByText('2 of 4 passing')).toBeTruthy();
     const results = screen.getByRole('list', { name: 'Test results' });

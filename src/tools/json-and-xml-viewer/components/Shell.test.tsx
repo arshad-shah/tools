@@ -10,6 +10,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { putHandoff } from '@/shared/lib/handoff';
 import { viewerSettings } from '../settings';
+import {
+  editorSelection,
+  editorValue,
+  setEditorValue,
+} from '@/shared/editor/testing';
 import { Shell } from './Shell';
 
 vi.mock('@/shared/ui/diagram-canvas', () => ({ DiagramCanvas: () => null }));
@@ -47,11 +52,10 @@ function mount() {
   );
 }
 
-const editor = () =>
-  screen.getByRole('textbox', { name: 'Document' }) as HTMLTextAreaElement;
+const editor = () => screen.getByRole('textbox', { name: 'Document' });
 
 async function type(text: string) {
-  fireEvent.change(editor(), { target: { value: text } });
+  setEditorValue(editor(), text);
   await settle();
 }
 
@@ -63,7 +67,7 @@ describe('Shell', () => {
       'line 3, column 1',
     );
     fireEvent.click(screen.getByRole('button', { name: 'Jump to error' }));
-    expect(editor().selectionStart).toBe('{\n  "a": 1,\n'.length);
+    expect(editorSelection(editor())[0]).toBe('{\n  "a": 1,\n'.length);
   });
 
   const views = () =>
@@ -112,7 +116,7 @@ describe('Shell', () => {
       shiftKey: true,
     });
     await settle();
-    expect(editor().value).toBe('{\n  "a": [\n    1\n  ]\n}\n');
+    expect(editorValue(editor())).toBe('{\n  "a": [\n    1\n  ]\n}\n');
   });
 
   it('offers rows as CSV only for an array of objects', async () => {
@@ -137,7 +141,7 @@ describe('Shell', () => {
     window.history.replaceState(null, '', `/data/json-xml?handoff=${id}`);
     mount();
     await settle();
-    expect(editor().value).toBe('{"from":"csv"}');
+    expect(editorValue(editor())).toBe('{"from":"csv"}');
     expect(window.location.search).toBe('');
   });
 });

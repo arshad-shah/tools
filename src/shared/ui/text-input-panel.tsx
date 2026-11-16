@@ -10,10 +10,10 @@ import { notify } from '@/shared/lib/notify';
 import { Alert } from './alert';
 import { Badge } from './badge';
 import {
-  CodeSurface,
-  type CodeMarker,
-  type CodeSurfaceHandle,
-} from './code-surface';
+  CodeEditor,
+  type CodeEditorHandle,
+  type EditorDiagnostic,
+} from '@/shared/editor';
 import type { LanguageId } from '@/shared/lib/syntax/tokenize';
 import { MetaList } from './meta-list';
 import {
@@ -62,7 +62,7 @@ export interface TextInputPanelProps {
   maxBytes?: number;
   /** Above this a "Large input" badge shows. Default 5 MB. */
   warnBytes?: number;
-  markers?: readonly CodeMarker[];
+  markers?: readonly EditorDiagnostic[];
   /** Output pane: read-only, with Copy (and Download when named). */
   readOnly?: boolean;
   extraMeta?: React.ReactNode[];
@@ -81,7 +81,7 @@ export interface TextInputPanelProps {
   maxHeight?: number | string;
   className?: string;
   /** The editor, for selecting a range from outside (source sync). */
-  editorRef?: React.Ref<CodeSurfaceHandle>;
+  editorRef?: React.Ref<CodeEditorHandle>;
   /** Caret or selection moves in the editor (offsets into `value`). */
   onSelectionChange?(start: number, end: number): void;
 }
@@ -89,7 +89,7 @@ export interface TextInputPanelProps {
 /**
  * The one source panel for text tools (spec §4.1): a labelled group with a
  * toolbar (Paste, Open file, Sample, Clear, Download; Copy when read-only),
- * a CodeSurface, file drop, hand-off intake, size limits and a polite
+ * a CodeEditor, file drop, hand-off intake, size limits and a polite
  * status line (characters, lines, UTF-8 bytes) updated at most once a
  * second. Errors show inline as an alert and go to `onError`.
  */
@@ -250,6 +250,7 @@ export function TextInputPanel({
     <div
       role="group"
       aria-label={`${label} panel`}
+      data-dragging={dragging || undefined}
       className={cn('flex flex-col gap-2', className)}
       onKeyDown={onKeyDown}
       {...dropHandlers}
@@ -294,24 +295,19 @@ export function TextInputPanel({
           {error.message}
         </Alert>
       ) : null}
-      <CodeSurface
+      <CodeEditor
         ref={editorRef}
         onSelectionChange={onSelectionChange}
         value={value}
         onChange={readOnly ? undefined : (v) => accept_(v, 'The text')}
         language={language}
-        label={label}
+        aria-label={label}
         readOnly={readOnly}
-        markers={markers}
+        diagnostics={markers}
         placeholder={placeholder}
         wrap={wrap}
         minHeight={minHeight}
         maxHeight={maxHeight}
-        className={
-          dragging
-            ? 'outline-2 outline-offset-2 outline-dashed outline-accent-indicator'
-            : undefined
-        }
       />
       <div
         aria-live="polite"

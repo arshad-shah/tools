@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
 /** The test text and the results are side by side: scroll to one. */
 const show = (page: Page, name: 'Test text' | 'Results') =>
@@ -118,11 +119,13 @@ test('regex-tester share link restores pattern and text', async ({
 
   const other = await context.newPage();
   await other.goto(url);
-  await expect(
+  await expectEditorValue(
     other.getByRole('textbox', { name: 'Regex pattern' }),
-  ).toHaveValue('id=(?<n>\\d+)');
+    'id=(?<n>\\d+)',
+  );
   await show(other, 'Test text');
-  await expect(other.getByRole('textbox', { name: 'Test string' })).toHaveValue(
+  await expectEditorValue(
+    other.getByRole('textbox', { name: 'Test string' }),
     'id=42, id=7',
   );
   await show(other, 'Results');

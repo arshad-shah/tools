@@ -33,11 +33,7 @@ import { readText } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo, useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import { useMediaQuery } from '@/shared/lib/media-query';
-import {
-  CodeSurface,
-  type CodeMarker,
-  type CodeSurfaceHandle,
-} from '@/shared/ui';
+
 import { useParsedDocument } from '../hooks/useParsedDocument';
 import {
   TAB_LABEL,
@@ -57,6 +53,11 @@ import { MapTab } from './MapTab';
 import { PathBar } from './PathBar';
 import { QueryTab } from './QueryTab';
 import { TreeTab, type TreeSearchState } from './TreeTab';
+import {
+  CodeEditor,
+  type CodeEditorHandle,
+  type EditorDiagnostic,
+} from '@/shared/editor';
 
 const TOOL_ID = 'json-and-xml-viewer';
 const ACCEPT = '.json,.xml,.yaml,.yml,.geojson,.svg';
@@ -145,7 +146,7 @@ export function Shell() {
 
   // Source sync: a selection made in a view selects its source range; the
   // caret in the editor selects the deepest node under it.
-  const editor = useRef<CodeSurfaceHandle>(null);
+  const editor = useRef<CodeEditorHandle>(null);
   const fromEditor = useRef(false);
   const select = (id: string | null) => {
     fromEditor.current = false;
@@ -169,8 +170,8 @@ export function Shell() {
     }, CARET_SYNC_MS);
   };
 
-  const markers = useMemo<CodeMarker[]>(() => {
-    const out: CodeMarker[] = parsed.warnings.map((w) => ({
+  const markers = useMemo<EditorDiagnostic[]>(() => {
+    const out: EditorDiagnostic[] = parsed.warnings.map((w) => ({
       line: w.line,
       column: w.column,
       message: w.message,
@@ -386,14 +387,14 @@ export function Shell() {
             </Notice>
           </Stack>
         ) : null}
-        <CodeSurface
+        <CodeEditor
           ref={editor}
-          label="Document"
+          aria-label="Document"
           language={format}
           value={text}
           onChange={setText}
           placeholder="Paste JSON, XML or YAML"
-          markers={markers}
+          diagnostics={markers}
           wrap={settings.wrap}
           minHeight={wide ? 560 : 320}
           maxHeight={wide ? 640 : 480}
