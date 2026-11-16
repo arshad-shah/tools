@@ -16,6 +16,7 @@ import {
   send,
   table as tableIcon,
 } from '@arshad-shah/cynosure/icons';
+import { useMediaQuery } from '@/shared/lib/media-query';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toolsAccepting } from '@/app/registry';
@@ -58,6 +59,7 @@ const TOOL_ID = 'csv-viewer';
  * a profile of each column or a chart of the shown rows.
  */
 export default function CsvViewer() {
+  const narrow = useMediaQuery('(max-width: 44.99rem)');
   const navigate = useNavigate();
   const { copy } = useClipboard();
   const [settings, updateSettings] = csvSettings.useSettings();
@@ -251,6 +253,55 @@ export default function CsvViewer() {
     },
   ].filter((x) => x.items.length);
 
+  // A Card header keeps its actions beside the title (Cynosure gap 45):
+  // on phones they go in the body, where they wrap.
+  const actions = (
+    <Inline gap="2" wrap>
+      <Button size="sm" variant="ghost" icon={refreshCw} onClick={newData}>
+        New data
+      </Button>
+      <ParseOptions
+        choices={csv.choices}
+        onChange={(patch) => {
+          if (patch.delimiter)
+            updateSettings({ delimiterChoice: patch.delimiter });
+          if (patch.encoding) updateSettings({ encoding: patch.encoding });
+          resetView();
+          csv.changeChoices(patch);
+        }}
+        detected={{
+          delimiter: loaded.delimiter,
+          encoding: loaded.encoding,
+        }}
+        fromFile={csv.source?.kind === 'file'}
+        columns={loaded.columns}
+        disabled={csv.job.status === 'running'}
+      />
+      {sendSections.length ? (
+        <Menu
+          label="Send to"
+          items={sendSections}
+          onSelect={(v) => {
+            const [kind, id] = v.split(':');
+            if (kind && id) sendTo(navigate, id, payloads[kind]());
+          }}
+          trigger={(props) => (
+            <Button {...props} size="sm" variant="soft" icon={send}>
+              Send to
+            </Button>
+          )}
+        />
+      ) : null}
+      <ExportMenu
+        table={() => ({ columns: visibleColumns, rows: viewRows })}
+        filteredRows={filtered}
+        sourceName={loaded.name}
+        settings={settings}
+        onSettings={updateSettings}
+      />
+    </Inline>
+  );
+
   return (
     <Stack gap="5">
       <Card
@@ -258,59 +309,9 @@ export default function CsvViewer() {
         title={loaded.name}
         headingLevel={2}
         padding="sm"
-        actions={
-          <Inline gap="2" wrap>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={refreshCw}
-              onClick={newData}
-            >
-              New data
-            </Button>
-            <ParseOptions
-              choices={csv.choices}
-              onChange={(patch) => {
-                if (patch.delimiter)
-                  updateSettings({ delimiterChoice: patch.delimiter });
-                if (patch.encoding)
-                  updateSettings({ encoding: patch.encoding });
-                resetView();
-                csv.changeChoices(patch);
-              }}
-              detected={{
-                delimiter: loaded.delimiter,
-                encoding: loaded.encoding,
-              }}
-              fromFile={csv.source?.kind === 'file'}
-              columns={loaded.columns}
-              disabled={csv.job.status === 'running'}
-            />
-            {sendSections.length ? (
-              <Menu
-                label="Send to"
-                items={sendSections}
-                onSelect={(v) => {
-                  const [kind, id] = v.split(':');
-                  if (kind && id) sendTo(navigate, id, payloads[kind]());
-                }}
-                trigger={(props) => (
-                  <Button {...props} size="sm" variant="soft" icon={send}>
-                    Send to
-                  </Button>
-                )}
-              />
-            ) : null}
-            <ExportMenu
-              table={() => ({ columns: visibleColumns, rows: viewRows })}
-              filteredRows={filtered}
-              sourceName={loaded.name}
-              settings={settings}
-              onSettings={updateSettings}
-            />
-          </Inline>
-        }
+        actions={narrow ? undefined : actions}
       >
+        {narrow ? actions : null}
         <Inline align="center" gap="2" wrap>
           <Badge variant="soft" tone="accent" size="sm">
             {`${table.rows.length.toLocaleString('en-US')} rows`}

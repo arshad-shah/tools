@@ -188,9 +188,11 @@ export const BusinessTab: React.FC<BusinessTabProps> = ({
               max={10000}
               onChange={(v) => v !== null && setAddN(v)}
             />
-            <Text size="lg" weight="medium" aria-live="polite">
-              {added ? `gives ${added}` : ''}
-            </Text>
+            <Inline aria-live="polite">
+              <Text size="lg" weight="medium">
+                {added ? `gives ${added}` : ''}
+              </Text>
+            </Inline>
           </Grid>
         </Stack>
       )}

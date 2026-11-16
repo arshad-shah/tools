@@ -221,11 +221,13 @@ export function MapTab({
           />
         </Toolbar>
         <Inline gap="3" align="center">
-          <Text size="sm" tone="muted" aria-live="polite">
-            {shown < total
-              ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
-              : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
-          </Text>
+          <Inline aria-live="polite">
+            <Text size="sm" tone="muted">
+              {shown < total
+                ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
+                : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
+            </Text>
+          </Inline>
           <Select
             label="Node cap"
             size="sm"

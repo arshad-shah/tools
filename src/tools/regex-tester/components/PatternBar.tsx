@@ -61,9 +61,9 @@ export const PatternBar: React.FC<PatternBarProps> = ({
     <Card as="section" title="Pattern" headingLevel={2}>
       <Stack gap="4">
         <Inline gap="3" align="center">
-          <Text variant="code" aria-hidden>
-            /
-          </Text>
+          <Inline aria-hidden>
+            <Text variant="code">/</Text>
+          </Inline>
           <Stack grow minSize="0">
             <CodeEditor
               value={pattern}
@@ -77,9 +77,9 @@ export const PatternBar: React.FC<PatternBarProps> = ({
               aria-describedby={syntax.ok ? undefined : errorId}
             />
           </Stack>
-          <Text variant="code" aria-hidden>
-            /{flags}
-          </Text>
+          <Inline aria-hidden>
+            <Text variant="code">/{flags}</Text>
+          </Inline>
           <CopyButton
             value={literal}
             disabled={!pattern || !syntax.ok}
@@ -91,9 +91,11 @@ export const PatternBar: React.FC<PatternBarProps> = ({
         </Inline>
         <Inline gap="3" align="center" justify="between" wrap>
           <Inline gap="3" align="center">
-            <Text size="sm" tone="muted" aria-hidden>
-              Flags
-            </Text>
+            <Inline aria-hidden>
+              <Text size="sm" tone="muted">
+                Flags
+              </Text>
+            </Inline>
             <FlagToggles flags={flags} onToggle={onToggleFlag} />
           </Inline>
           {pattern ? (
