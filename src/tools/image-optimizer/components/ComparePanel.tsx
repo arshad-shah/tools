@@ -2,13 +2,13 @@ import {
   Button,
   Card,
   CompareSlider,
+  Grid,
   Image,
   Select,
   Stack,
 } from '@arshad-shah/cynosure';
 import { download } from '@arshad-shah/cynosure/icons';
-import { useEffect, useMemo } from 'react';
-import { useObjectUrl } from '@/shared/lib/object-url';
+import { useBlobUrl, useObjectUrl } from '@/shared/lib/object-url';
 import type { BatchEntry } from '../useBatch';
 
 export interface ComparePanelProps {
@@ -19,13 +19,6 @@ export interface ComparePanelProps {
   onDownload(entry: BatchEntry): void;
 }
 
-/** An object URL of a picked file, revoked when it changes. */
-function useFileUrl(file: File): string {
-  const url = useMemo(() => URL.createObjectURL(file), [file]);
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
-  return url;
-}
-
 /** Before and after for one file, with its own download. */
 export function ComparePanel({
   entries,
@@ -34,12 +27,17 @@ export function ComparePanel({
   onDownload,
 }: ComparePanelProps) {
   const { row, result, file } = selected;
-  const before = useFileUrl(file);
+  const before = useBlobUrl(file);
   const after = useObjectUrl(
     result?.bytes ?? null,
     result?.mime ?? 'image/png',
   );
   if (!result) return null;
+  // Both sides at the original's shape, so the divider compares like for like.
+  const ratio =
+    row.before.width && row.before.height
+      ? row.before.width / row.before.height
+      : undefined;
   return (
     <Card as="section" title="Compare" headingLevel={2}>
       <Stack gap="5">
@@ -53,14 +51,24 @@ export function ComparePanel({
           <CompareSlider
             key={row.id}
             before={
-              <Image src={before} alt={`${row.name}, original`} fit="contain" />
+              <Grid columns="1fr">
+                <Image
+                  src={before}
+                  alt={`${row.name}, original`}
+                  ratio={ratio}
+                  fit="contain"
+                />
+              </Grid>
             }
             after={
-              <Image
-                src={after}
-                alt={`${row.name}, compressed`}
-                fit="contain"
-              />
+              <Grid columns="1fr">
+                <Image
+                  src={after}
+                  alt={`${row.name}, compressed`}
+                  ratio={ratio}
+                  fit="contain"
+                />
+              </Grid>
             }
             labels={{ before: 'Original', after: 'Compressed' }}
           />
