@@ -3,7 +3,9 @@ import { chromium, type FullConfig, type Page } from '@playwright/test';
 import { toolRoutes } from './tool-routes';
 
 const FIXTURE = 'test/fixtures/generated/text-3.pdf';
-const RENDERED = 'canvas[data-rendered="true"]';
+// Old tools draw pages on a canvas; redesigned ones show them as images.
+const RENDERED =
+  'canvas[data-rendered="true"], img[alt="Page 1"], img[alt$=", page 1"]';
 
 interface WarmRoute {
   route: string;

@@ -2,31 +2,28 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePageBitmap, usePdfDocument } from '@/pdf/render';
 import type { ToolError } from '@/shared/lib/errors';
 
-export interface FirstPageImage {
-  /** An object URL of page 1, for an image (null while it renders). */
+export interface PageImage {
+  /** An object URL of the page, for an image (null while it renders). */
   src: string | null;
-  /** Width over height of page 1, once the document is open. */
-  ratio: number | null;
   error: ToolError | null;
 }
 
 /**
- * Page 1 of a PDF as an image URL, rendered by the pdf.js worker (no canvas
- * in the page: the bitmap is encoded off screen). The URL is revoked when
- * the bytes change or the caller unmounts.
+ * One page of an open document as an image URL, rendered by the pdf.js
+ * worker (no canvas in the page: the bitmap is encoded off screen). The URL
+ * is revoked when the page changes or the caller unmounts.
  */
-export function useFirstPageImage(
-  bytes: Uint8Array,
+export function usePageImage(
+  docId: string | null,
+  pageIndex: number,
   widthPx: number,
-): FirstPageImage {
-  const file = useMemo(() => ({ bytes }), [bytes]);
-  const { doc, error } = usePdfDocument(file);
-  const page = doc?.pages[0];
-  const { bitmap, error: renderError } = usePageBitmap(
-    doc?.docId ?? null,
-    0,
+  enabled = true,
+): PageImage {
+  const { bitmap, error } = usePageBitmap(
+    docId,
+    pageIndex,
     widthPx,
-    !!page,
+    enabled && docId !== null,
     1,
   );
   const [src, setSrc] = useState<string | null>(null);
@@ -49,9 +46,26 @@ export function useFirstPageImage(
     };
   }, [bitmap]);
 
+  return { src, error };
+}
+
+export interface FirstPageImage extends PageImage {
+  /** Width over height of page 1, once the document is open. */
+  ratio: number | null;
+}
+
+/** Page 1 of a PDF's bytes as an image URL (the file list's thumbnail). */
+export function useFirstPageImage(
+  bytes: Uint8Array,
+  widthPx: number,
+): FirstPageImage {
+  const file = useMemo(() => ({ bytes }), [bytes]);
+  const { doc, error } = usePdfDocument(file);
+  const page = doc?.pages[0];
+  const image = usePageImage(doc?.docId ?? null, 0, widthPx, !!page);
   return {
-    src,
+    src: image.src,
     ratio: page ? page.width / page.height : null,
-    error: error ?? renderError,
+    error: error ?? image.error,
   };
 }
