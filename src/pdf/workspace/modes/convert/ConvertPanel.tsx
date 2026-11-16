@@ -1,20 +1,19 @@
 import {
-  IconFileCode,
-  IconFilePlus,
-  IconFileText,
-  IconImages,
-} from '@/shared/ui/icons';
-import {
   Button,
-  FilePicker,
-  InspectorSection,
-  Label,
-  NumberInput,
+  NumberField,
   SegmentedControl,
   Slider,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  fileCode,
+  filePlus,
+  fileText,
+  images,
+} from '@arshad-shah/cynosure/icons';
+import { FilePicker } from '../../ui/FilePicker';
+import { InspectorSection } from '../../ui/InspectorSection';
 import type { ImageFormat } from '@/pdf/render';
 import { MAX_EXPORT_DPI, MIN_EXPORT_DPI } from '@/pdf/render';
 import type { PageSizeName } from '@/pdf/edit/images';
@@ -35,14 +34,15 @@ export function ConvertPanel(ctx: ModeProps) {
   const picked = selectedPages(ctx).length;
 
   return (
-    <div className="flex flex-col">
+    <>
       <InspectorSection title="Pages">
         <Stack gap="2">
           <SegmentedControl
             label="Pages to convert"
             size="sm"
+            fullWidth
             value={s.scope}
-            onChange={(scope) => set({ scope })}
+            onChange={(scope) => set({ scope: scope as typeof s.scope })}
             options={[
               { value: 'all', label: 'All pages' },
               { value: 'selected', label: 'Selected' },
@@ -56,66 +56,73 @@ export function ConvertPanel(ctx: ModeProps) {
         </Stack>
       </InspectorSection>
       <InspectorSection title="Images">
-        <Stack gap="3">
+        <Stack gap="4">
           <SegmentedControl
             label="Image format"
             size="sm"
+            fullWidth
             value={s.format}
-            onChange={(format: ImageFormat) => set({ format })}
+            onChange={(format) => set({ format: format as ImageFormat })}
             options={[
               { value: 'png', label: 'PNG' },
               { value: 'jpeg', label: 'JPEG' },
             ]}
           />
-          <Stack gap="1">
-            <Label htmlFor="convert-dpi">Resolution (DPI)</Label>
-            <NumberInput
-              id="convert-dpi"
-              value={s.dpi}
-              min={MIN_EXPORT_DPI}
-              max={MAX_EXPORT_DPI}
-              onValueChange={(n) =>
-                Number.isFinite(n) && set({ dpi: clampDpi(n) })
+          <NumberField
+            label="Resolution (DPI)"
+            size="sm"
+            value={s.dpi}
+            min={MIN_EXPORT_DPI}
+            max={MAX_EXPORT_DPI}
+            description={`${MIN_EXPORT_DPI} to ${MAX_EXPORT_DPI} DPI. Very large pages are rendered at a lower resolution to fit in memory; you are told when.`}
+            onChange={(n) =>
+              n !== null && Number.isFinite(n) && set({ dpi: clampDpi(n) })
+            }
+          />
+          {s.format === 'jpeg' ? (
+            <Slider
+              label="JPEG quality"
+              size="sm"
+              value={s.quality}
+              min={0.5}
+              max={1}
+              step={0.05}
+              showValue
+              labels={{ value: (v: number) => `${Math.round(v * 100)}` }}
+              onChange={(quality) =>
+                typeof quality === 'number' && set({ quality })
               }
             />
-            <Text size="xs" tone="muted">
-              {MIN_EXPORT_DPI} to {MAX_EXPORT_DPI} DPI. Very large pages are
-              rendered at a lower resolution to fit in memory; you are told
-              when.
-            </Text>
-          </Stack>
-          {s.format === 'jpeg' ? (
-            <Stack gap="1">
-              <Label htmlFor="convert-quality">
-                JPEG quality {Math.round(s.quality * 100)}
-              </Label>
-              <Slider
-                id="convert-quality"
-                value={s.quality}
-                min={0.5}
-                max={1}
-                step={0.05}
-                onValueChange={(quality) => set({ quality })}
-              />
-            </Stack>
           ) : null}
-          <Button leftIcon={<IconImages />} onClick={() => void act.images()}>
+          <Button
+            variant="outline"
+            fullWidth
+            icon={images}
+            onClick={() => void act.images()}
+          >
             Pages to images
           </Button>
         </Stack>
       </InspectorSection>
       <InspectorSection title="Text and Markdown">
         <Stack gap="2">
-          <Button leftIcon={<IconFileText />} onClick={() => void act.text()}>
+          <Button
+            variant="outline"
+            fullWidth
+            icon={fileText}
+            onClick={() => void act.text()}
+          >
             Save as text
           </Button>
           <Button
-            leftIcon={<IconFileCode />}
+            variant="outline"
+            fullWidth
+            icon={fileCode}
             onClick={() => void act.markdown()}
           >
             Save as Markdown
           </Button>
-          <Text size="xs" tone="muted">
+          <Text size="sm" tone="muted">
             Markdown is a best-effort structural conversion: headings,
             paragraphs and lists are guessed from the layout, and tables come
             out as plain paragraphs. Check the result before use.
@@ -123,12 +130,13 @@ export function ConvertPanel(ctx: ModeProps) {
         </Stack>
       </InspectorSection>
       <InspectorSection title="Insert images">
-        <Stack gap="2">
+        <Stack gap="3">
           <SegmentedControl
             label="Page size for images"
             size="sm"
+            fullWidth
             value={s.pageSize}
-            onChange={(pageSize: PageSizeName) => set({ pageSize })}
+            onChange={(pageSize) => set({ pageSize: pageSize as PageSizeName })}
             options={[
               { value: 'fit', label: 'Fit image' },
               { value: 'a4', label: 'A4' },
@@ -141,16 +149,21 @@ export function ConvertPanel(ctx: ModeProps) {
             multiple
           >
             {(pick) => (
-              <Button leftIcon={<IconFilePlus />} onClick={pick}>
+              <Button
+                variant="outline"
+                fullWidth
+                icon={filePlus}
+                onClick={pick}
+              >
                 Insert images as pages
               </Button>
             )}
           </FilePicker>
-          <Text size="xs" tone="muted">
+          <Text size="sm" tone="muted">
             PNG, JPEG, WebP or GIF, one page each, after the current page.
           </Text>
         </Stack>
       </InspectorSection>
-    </div>
+    </>
   );
 }

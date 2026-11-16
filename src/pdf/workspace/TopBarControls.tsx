@@ -1,33 +1,30 @@
-import { useState, type ReactNode } from 'react';
-import {
-  IconLayoutFocus,
-  IconLayoutStandard,
-  IconLock,
-  IconMenu,
-  IconMoreHorizontal,
-  IconPanelLeft,
-  IconRedo,
-  IconSearch,
-  IconUndo,
-  IconDownload,
-} from '@/shared/ui/icons';
 import {
   Badge,
   Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   IconButton,
-  Input,
-  ShortcutHint,
-  StatusDot,
-  Switch,
-  ToolButton,
+  Inline,
+  Kbd,
+  Menu,
+  TextField,
   Tooltip,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  download,
+  layoutFocus,
+  layoutWorkspace,
+  lock,
+  moreHorizontal,
+  redo as redoIcon,
+  search,
+  sidebar,
+  undo as undoIcon,
+} from '@arshad-shah/cynosure/icons';
+import { useState, type ReactElement, type ReactNode } from 'react';
+import { hotkeyCaps } from '@/shared/lib/hotkeys';
 
-export type SaveStatus = 'saved' | 'saving' | 'error' | 'off' | 'unavailable';
+import { SAVE_TEXT, SAVE_TONE, type SaveStatus } from './save-status';
+
+export type { SaveStatus } from './save-status';
 
 export interface TopBarControlsProps {
   compact: boolean;
@@ -39,7 +36,7 @@ export interface TopBarControlsProps {
   onRedo(): void;
   layout: 'standard' | 'focus' | 'phone';
   onToggleFocus(): void;
-  /** Compact: opens the Pages drawer. Standard: shows or hides the rail. */
+  /** Compact: opens the Pages sheet. Standard: shows or hides the rail. */
   onOpenPages(): void;
   /** Standard: whether the rail is shown (the toggle's pressed state). */
   railOpen?: boolean;
@@ -49,17 +46,13 @@ export interface TopBarControlsProps {
   onToggleSave(on: boolean): void;
   restricted: boolean;
   onUnlock(): void;
-  /** Document status badges (the "Signed" badge, plan H-14). */
+  /** Document status (the "Signed" button). */
   badges?: ReactNode;
   onSearch(): void;
   onExport(): void;
   /** The app's help menu (keyboard shortcuts, privacy), at the bar's size. */
   helpMenu?: (size: 'md' | 'lg') => ReactNode;
-  /**
-   * Workspace settings actions (e.g. "Clear trusted roots"), listed in the
-   * More menu. The standard layout has no More menu: there they stay in
-   * Mod+K under Settings.
-   */
+  /** Workspace settings actions (e.g. "Clear trusted roots") in More. */
   settingsItems?: TopBarMenuItem[];
 }
 
@@ -69,32 +62,14 @@ export interface TopBarMenuItem {
   onSelect(): void;
 }
 
-const SAVE_TEXT: Record<SaveStatus, string> = {
-  saved: 'Saved on this device',
-  saving: 'Saving',
-  error: 'Not saved: storage problem',
-  off: 'Not saved locally',
-  unavailable: 'Not saved locally',
-};
-const SAVE_TONE = {
-  saved: 'accent',
-  saving: 'info',
-  error: 'danger',
-  off: 'muted',
-  unavailable: 'muted',
-} as const;
-
-/** Filename field that renames on Enter or blur. */
+/** Filename field that renames on Enter or blur; Escape cancels. */
 function NameField({
   name,
   onRename,
-  narrow,
   touch,
 }: {
   name: string;
   onRename(n: string): void;
-  narrow?: boolean;
-  /** 44px field (Focus and phone). */
   touch?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -103,216 +78,256 @@ function NameField({
     setDraft(null);
   };
   return (
-    <div className={narrow ? 'w-24 min-w-0' : 'w-40 min-w-0 sm:w-56'}>
-      <Input
-        aria-label="Document name"
-        size={touch ? 'lg' : 'md'}
-        value={draft ?? name}
-        onChange={setDraft}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            commit();
-          } else if (e.key === 'Escape') {
-            // Cancels the edit only: the workspace's Esc (clear the
-            // selection) skips handled keys.
-            e.preventDefault();
-            setDraft(null);
-          }
-        }}
-      />
-    </div>
+    <TextField
+      label="Document name"
+      labelHidden
+      size={touch ? 'lg' : 'sm'}
+      width="sm"
+      value={draft ?? name}
+      onChange={setDraft}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commit();
+        } else if (e.key === 'Escape') {
+          // Cancels the edit only: the workspace's Escape skips handled keys.
+          e.preventDefault();
+          setDraft(null);
+        }
+      }}
+    />
   );
 }
 
-/** The workspace top bar's centre and actions (spec §6.1). */
+/** A shortcut after a name in a tooltip: "Undo rotate page 3  Ctrl Z". */
+function Tip({
+  text,
+  keys,
+  children,
+}: {
+  text: string;
+  keys?: string;
+  children: ReactElement<Record<string, unknown>>;
+}) {
+  return (
+    <Tooltip
+      content={
+        <Inline gap="2" align="center">
+          {text}
+          {keys ? <Kbd keys={hotkeyCaps(keys)} size="sm" /> : null}
+        </Inline>
+      }
+    >
+      {children}
+    </Tooltip>
+  );
+}
+
+/** The workspace header's document controls and actions (spec §6.1). */
 export function TopBarControls(p: TopBarControlsProps) {
   const undo = p.undoLabel ? `Undo ${p.undoLabel}` : 'Nothing to undo';
   const redo = p.redoLabel ? `Redo ${p.redoLabel}` : 'Nothing to redo';
   const saveText = SAVE_TEXT[p.save];
   const phone = p.layout === 'phone';
-  // Focus and phone are touch layouts: 44px targets (spec §13.2).
-  const size = p.compact ? 'lg' : 'md';
-  // Labels beside the icons on desktop, icon-only on phones (owner note).
-  const undoButton = (
-    <Tooltip content={undo} shortcut="Mod+Z">
-      <ToolButton
-        labels="responsive"
-        size={size}
-        label={undo}
-        text="Undo"
-        icon={IconUndo}
-        aria-disabled={!p.undoLabel}
-        className={p.undoLabel ? undefined : 'opacity-50'}
-        onClick={() => p.undoLabel && p.onUndo()}
-      />
-    </Tooltip>
-  );
-  const redoButton = (
-    <Tooltip content={redo} shortcut="Mod+Shift+Z">
-      <ToolButton
-        labels="responsive"
-        size={size}
-        label={redo}
-        text="Redo"
-        icon={IconRedo}
-        aria-disabled={!p.redoLabel}
-        className={p.redoLabel ? undefined : 'opacity-50'}
-        onClick={() => p.redoLabel && p.onRedo()}
-      />
-    </Tooltip>
-  );
-  const exportButton = phone ? (
-    <IconButton
-      variant="primary"
-      size="lg"
-      label="Export"
-      icon={IconDownload}
-      onClick={p.onExport}
-    />
-  ) : (
-    <Button
-      variant="primary"
-      size={p.compact ? 'lg' : 'md'}
-      onClick={p.onExport}
-      leftIcon={<IconDownload size="sm" />}
-      rightIcon={p.compact ? undefined : <ShortcutHint keys="Mod+S" />}
-    >
-      Export
-    </Button>
-  );
+  // Focus and phone are touch layouts: large controls (spec §13.2).
+  const size = p.compact ? 'lg' : 'sm';
   const restricted = p.restricted ? (
     <Button
-      variant="secondary"
-      size={p.compact ? 'lg' : 'sm'}
+      variant="soft"
+      tone="warning"
+      size={size}
+      icon={lock}
+      aria-label="Restricted: enter the owner password to edit"
       onClick={p.onUnlock}
-      leftIcon={<IconLock size="sm" />}
     >
-      <Badge tone="warning" variant="soft">
-        Restricted
-      </Badge>
-      <span className="sr-only">Enter the owner password to edit</span>
+      Restricted
     </Button>
   ) : null;
 
-  if (p.compact)
+  if (p.compact) {
+    const more = [
+      ...(phone
+        ? [{ value: 'redo', label: redo, disabled: !p.redoLabel }]
+        : []),
+      { value: 'search', label: 'Search tools and actions', icon: search },
+      ...(phone
+        ? []
+        : [
+            {
+              value: 'layout',
+              label: 'Standard layout',
+              icon: layoutWorkspace,
+            },
+          ]),
+      ...(p.canToggleSave
+        ? [
+            {
+              value: 'save',
+              label:
+                p.save === 'off'
+                  ? 'Save on this device'
+                  : 'Stop saving on this device',
+            },
+          ]
+        : []),
+      ...(p.settingsItems ?? []).map((i) => ({ value: i.id, label: i.label })),
+    ];
     return (
-      <div className="flex min-w-0 items-center justify-end gap-1">
-        <NameField name={p.name} onRename={p.onRename} narrow={phone} touch />
+      <Inline gap="1" align="center" justify="end" grow minSize="0">
+        <NameField name={p.name} onRename={p.onRename} touch />
         {restricted}
         {p.badges}
-        {undoButton}
-        {phone ? null : redoButton}
-        <ToolButton
-          labels="responsive"
-          size={size}
+        <IconButton
+          variant="ghost"
+          size="lg"
+          icon={undoIcon}
+          label={undo}
+          disabled={!p.undoLabel}
+          onClick={p.onUndo}
+        />
+        {phone ? null : (
+          <IconButton
+            variant="ghost"
+            size="lg"
+            icon={redoIcon}
+            label={redo}
+            disabled={!p.redoLabel}
+            onClick={p.onRedo}
+          />
+        )}
+        <IconButton
+          variant="ghost"
+          size="lg"
+          icon={sidebar}
           label="Pages"
-          icon={IconMenu}
           onClick={p.onOpenPages}
         />
-        {p.helpMenu?.(size)}
-        {exportButton}
-        <DropdownMenu>
-          <DropdownMenuTrigger>
+        {p.helpMenu?.('lg')}
+        {phone ? (
+          <IconButton
+            variant="solid"
+            tone="accent"
+            size="lg"
+            icon={download}
+            label="Export"
+            onClick={p.onExport}
+          />
+        ) : (
+          <Button
+            variant="solid"
+            tone="accent"
+            size="lg"
+            icon={download}
+            onClick={p.onExport}
+          >
+            Export
+          </Button>
+        )}
+        <Menu
+          label="More"
+          items={more}
+          onSelect={(v) => {
+            if (v === 'redo') p.onRedo();
+            else if (v === 'search') p.onSearch();
+            else if (v === 'layout') p.onToggleFocus();
+            else if (v === 'save') p.onToggleSave(p.save === 'off');
+            else p.settingsItems?.find((i) => i.id === v)?.onSelect();
+          }}
+          trigger={(t) => (
             <IconButton
+              {...t}
               variant="ghost"
-              size={size}
+              size="lg"
               label="More"
-              icon={IconMoreHorizontal}
+              icon={moreHorizontal}
             />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {phone ? (
-              <DropdownMenuItem
-                aria-disabled={!p.redoLabel}
-                onClick={() => p.redoLabel && p.onRedo()}
-              >
-                {redo}
-              </DropdownMenuItem>
-            ) : null}
-            <DropdownMenuItem onClick={p.onSearch}>
-              Search tools and actions
-            </DropdownMenuItem>
-            {p.layout !== 'phone' ? (
-              <DropdownMenuItem onClick={p.onToggleFocus}>
-                Standard layout
-              </DropdownMenuItem>
-            ) : null}
-            {p.canToggleSave ? (
-              <DropdownMenuItem
-                onClick={() => p.onToggleSave(p.save === 'off')}
-              >
-                {p.save === 'off'
-                  ? 'Save on this device'
-                  : 'Stop saving on this device'}
-              </DropdownMenuItem>
-            ) : null}
-            {p.settingsItems?.map((item) => (
-              <DropdownMenuItem key={item.id} onClick={item.onSelect}>
-                {item.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <StatusDot tone={SAVE_TONE[p.save]} label={saveText} />
-      </div>
+          )}
+        />
+        <Badge tone={SAVE_TONE[p.save]} dot label={saveText} />
+      </Inline>
     );
+  }
 
   return (
-    <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+    <Inline gap="2" align="center" justify="end" grow minSize="0">
       <NameField name={p.name} onRename={p.onRename} />
       {restricted}
       {p.badges}
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={p.onSearch}
-        leftIcon={<IconSearch size="sm" />}
-        rightIcon={<ShortcutHint keys="Mod+K" />}
-        className="text-fg-muted"
-      >
-        Search
-      </Button>
-      {undoButton}
-      {redoButton}
-      <Tooltip content="Page rail" shortcut="Mod+\\">
-        <ToolButton
-          labels="responsive"
-          size="md"
-          label="Page rail"
-          text="Pages"
-          icon={IconPanelLeft}
-          aria-pressed={!!p.railOpen}
-          className={p.railOpen ? 'bg-accent-soft text-accent-fg' : undefined}
-          onClick={p.onOpenPages}
-        />
-      </Tooltip>
-      <Tooltip content="Focus layout" shortcut="F">
-        <ToolButton
-          labels="responsive"
-          size="md"
-          label="Focus layout"
-          text="Focus"
-          icon={p.layout === 'focus' ? IconLayoutStandard : IconLayoutFocus}
-          aria-pressed={p.layout === 'focus'}
-          onClick={p.onToggleFocus}
-        />
-      </Tooltip>
-      <span className="flex items-center gap-2 text-sm text-fg-muted">
-        <StatusDot tone={SAVE_TONE[p.save]} decorative />
-        {/* Read by screen readers at every width; shown from lg up. */}
-        <span className="sr-only lg:not-sr-only">{saveText}</span>
-        {p.canToggleSave ? (
-          <Switch
-            checked={p.save !== 'off'}
-            onCheckedChange={p.onToggleSave}
-            aria-label="Save on this device"
+      <Inline gap="1" align="center">
+        <Tip text={undo} keys="Mod+Z">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={undoIcon}
+            aria-label={undo}
+            disabled={!p.undoLabel}
+            onClick={p.onUndo}
+          >
+            Undo
+          </Button>
+        </Tip>
+        <Tip text={redo} keys="Mod+Shift+Z">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={redoIcon}
+            aria-label={redo}
+            disabled={!p.redoLabel}
+            onClick={p.onRedo}
+          >
+            Redo
+          </Button>
+        </Tip>
+      </Inline>
+      <Inline gap="1" align="center">
+        <Tip text="Page rail" keys="Mod+\\">
+          <Button
+            variant={p.railOpen ? 'soft' : 'ghost'}
+            tone={p.railOpen ? 'accent' : 'neutral'}
+            size="sm"
+            icon={sidebar}
+            aria-label="Page rail"
+            pressed={!!p.railOpen}
+            onClick={p.onOpenPages}
+          >
+            Pages
+          </Button>
+        </Tip>
+        <Tip text="Focus layout" keys="F">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={p.layout === 'focus' ? layoutWorkspace : layoutFocus}
+            aria-label="Focus layout"
+            pressed={p.layout === 'focus'}
+            onClick={p.onToggleFocus}
+          >
+            Focus
+          </Button>
+        </Tip>
+        <Tip text="Search tools and actions" keys="Mod+K">
+          <IconButton
+            variant="ghost"
+            size="sm"
+            icon={search}
+            label="Search"
+            onClick={p.onSearch}
           />
-        ) : null}
-      </span>
-      {p.helpMenu?.(size)}
-      {exportButton}
-    </div>
+        </Tip>
+      </Inline>
+      {p.helpMenu?.('md')}
+      <Tip text="Export" keys="Mod+S">
+        <Button
+          variant="solid"
+          tone="accent"
+          size="sm"
+          icon={download}
+          onClick={p.onExport}
+        >
+          Export
+        </Button>
+      </Tip>
+    </Inline>
   );
 }

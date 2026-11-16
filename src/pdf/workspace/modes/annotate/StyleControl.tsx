@@ -1,12 +1,7 @@
-import {
-  ColorSwatchPicker,
-  Label,
-  SegmentedControl,
-  Slider,
-  Stack,
-  Swatch,
-} from '@/shared/ui';
+import { SegmentedControl, Slider, Stack } from '@arshad-shah/cynosure';
+import { palette } from '@arshad-shah/cynosure/icons';
 import { ToolbarPanel } from '../../ToolbarPanel';
+import { InkPicker } from '../../ui/InkPicker';
 import type { ModeProps } from '../types';
 import { INKS, setAnnotateUi, useAnnotateUi, WIDTHS } from './ui-store';
 
@@ -31,8 +26,8 @@ export function StyleFields({ ctx }: { ctx: ModeProps }) {
   const pickedColor = (picked?.item.params as { color?: string } | undefined)
     ?.color;
   return (
-    <Stack gap="3">
-      <ColorSwatchPicker
+    <Stack gap="5">
+      <InkPicker
         label={pickedColor ? 'Colour of the selected annotation' : 'Colour'}
         value={pickedColor ?? ui.color}
         onChange={(color) => {
@@ -47,21 +42,18 @@ export function StyleFields({ ctx }: { ctx: ModeProps }) {
               },
             });
         }}
-        options={INKS}
-        allowCustom
+        swatches={INKS}
       />
-      <Stack gap="1">
-        <Label htmlFor="annotate-opacity">Opacity</Label>
-        <Slider
-          id="annotate-opacity"
-          aria-label="Opacity"
-          value={Math.round(ui.opacity * 100)}
-          min={10}
-          max={100}
-          step={5}
-          onValueChange={(v) => setAnnotateUi({ opacity: v / 100 })}
-        />
-      </Stack>
+      <Slider
+        label="Opacity"
+        showValue
+        labels={{ value: (v: number) => `${v}%` }}
+        value={Math.round(ui.opacity * 100)}
+        min={10}
+        max={100}
+        step={5}
+        onChange={(v) => setAnnotateUi({ opacity: Number(v) / 100 })}
+      />
       <SegmentedControl
         label="Width"
         size="sm"
@@ -85,7 +77,7 @@ export function StyleControl({ ctx }: { ctx: ModeProps }) {
       layout={ctx.layout}
       label={`Style: ${ink}`}
       text="Style"
-      leading={<Swatch color={ui.color} label={ink} size="sm" variant="dot" />}
+      icon={palette}
       title="Annotation style"
     >
       <StyleFields ctx={ctx} />

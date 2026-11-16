@@ -1,10 +1,15 @@
+import { Icon, LoadingDots } from '@arshad-shah/cynosure';
+import { warning } from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
-import { IconAlertTriangle } from '@/shared/ui/icons';
-import { BitmapCanvas, Sized, Spinner } from '@/shared/ui';
 import { boxToScreen, pageViewport } from '@/pdf/doc/geometry';
 import type { PageRef, SourceRef } from '@/pdf/doc/types';
 import { usePageBitmap, type Priority } from '@/pdf/render';
-import { pageGeom } from './page-display';
+import { pageGeom } from '@/pdf/workspace/page-display';
+import { BitmapSurface } from './BitmapSurface';
+import { Centre } from './layers';
+
+/** Paper is white in both themes: it is the page, not the app. */
+const PAPER = '#fff';
 
 export interface PageImageProps {
   page: PageRef;
@@ -68,23 +73,27 @@ export function PageImage({
 
   if (page.blank)
     return (
-      <Sized
-        width={shown.width}
-        height={shown.height}
-        className="bg-white"
+      <div
         role="img"
         aria-label={label}
         data-rendered="true"
+        style={{ width: shown.width, height: shown.height, background: PAPER }}
       />
     );
 
   return (
-    <Sized
-      width={shown.width}
-      height={shown.height}
-      className="flex items-center justify-center overflow-hidden bg-white"
+    <div
+      style={{
+        width: shown.width,
+        height: shown.height,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        background: PAPER,
+      }}
     >
-      <BitmapCanvas
+      <BitmapSurface
         bitmap={bitmap}
         width={boxW}
         height={boxH}
@@ -103,19 +112,15 @@ export function PageImage({
         onDrawn={() => setDrawn(true)}
       >
         {!drawn && !bitmap ? (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <Centre>
             {failed ? (
-              <span role="img" aria-label={failed} className="text-danger">
-                <IconAlertTriangle size="md" />
-              </span>
+              <Icon icon={warning} label={failed} tone="danger" size="md" />
             ) : (
-              <span aria-hidden>
-                <Spinner size="sm" />
-              </span>
+              <LoadingDots size="sm" tone="muted" />
             )}
-          </div>
+          </Centre>
         ) : null}
-      </BitmapCanvas>
-    </Sized>
+      </BitmapSurface>
+    </div>
   );
 }

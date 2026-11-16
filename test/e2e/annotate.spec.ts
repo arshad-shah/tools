@@ -105,7 +105,7 @@ test('existing annotations: delete one, recolour one; Link and Widget survive', 
     .click();
   // Colour lives in the toolbar's Style control (P5-G).
   await page.getByRole('button', { name: /^Style/ }).click();
-  await page.getByRole('radio', { name: 'Red' }).click();
+  await page.getByRole('radio', { name: 'Red', exact: true }).click();
   await page.keyboard.press('Escape');
   await list
     .getByTestId('comment-row')

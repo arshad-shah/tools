@@ -2,19 +2,9 @@ import { useState } from 'react';
 import { saveZip, deriveFilename } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Label,
-  NumberInput,
-  RadioGroup,
-} from '@/shared/ui';
+import { Button, NumberField, RadioGroup, Stack } from '@arshad-shah/cynosure';
 import type { ModeProps } from '../types';
+import { ToolDialog } from '../../ui/ToolDialog';
 import type { OrganizeSurface } from './surface';
 import { useWorkspace } from '../../workspace-context';
 import { splitDocument, splitGroups } from './split-extract';
@@ -67,49 +57,42 @@ export function SplitDialog({
     }
   };
   return (
-    <Dialog
+    <ToolDialog
       open={open}
       onOpenChange={onOpenChange}
-      label="Split into files"
-      {...surface}
+      title="Split into files"
+      description="Makes new PDFs from this document. The document itself does not change."
+      surface={surface}
+      actions={
+        <>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="solid" tone="accent" onClick={() => void split()}>
+            Split
+          </Button>
+        </>
+      }
     >
-      <DialogHeader>
-        <DialogTitle>Split into files</DialogTitle>
-        <DialogDescription>
-          Makes new PDFs from this document. The document itself does not
-          change.
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody className="flex flex-col gap-4">
+      <Stack gap="4">
         <RadioGroup
           label="Where to split"
           value={how}
-          onValueChange={(v) => setHow(v as typeof how)}
+          onChange={(v) => setHow(v as typeof how)}
           options={[
             { value: 'selected', label: 'At selected pages' },
             { value: 'every', label: 'Every N pages' },
           ]}
         />
         {how === 'every' ? (
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="split-every">Pages per file</Label>
-            <NumberInput
-              id="split-every"
-              value={every}
-              min={1}
-              onValueChange={setEvery}
-            />
-          </div>
+          <NumberField
+            label="Pages per file"
+            value={every}
+            min={1}
+            onChange={(v) => v !== null && setEvery(v)}
+          />
         ) : null}
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="secondary" onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-        <Button variant="primary" onClick={() => void split()}>
-          Split
-        </Button>
-      </DialogFooter>
-    </Dialog>
+      </Stack>
+    </ToolDialog>
   );
 }

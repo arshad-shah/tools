@@ -2,8 +2,8 @@
 import { render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OverlayItem } from '@/pdf/doc/types';
-import { ContentPreview } from './ContentPreview';
-import { MarkupPreview } from './MarkupPreview';
+import { ContentPreview } from '@/pdf/surfaces/edit/ContentPreview';
+import { MarkupPreview } from '@/pdf/surfaces/edit/MarkupPreview';
 import type { DocumentApi } from '../types';
 
 const ws = vi.hoisted(() => {

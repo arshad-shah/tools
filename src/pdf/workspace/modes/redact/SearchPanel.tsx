@@ -1,18 +1,18 @@
-import { useEffect, useEffectEvent, useId, useMemo, useState } from 'react';
-import { newId } from '@/shared/lib/id';
-import { toToolError } from '@/shared/lib/errors';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import {
   Button,
   Checkbox,
-  Highlight,
-  Input,
-  Label,
-  Spinner,
+  HighlightedText,
+  Inline,
+  ScrollArea,
   Stack,
   Switch,
   Text,
-} from '@/shared/ui';
-import { IconRedactSearch } from '@/shared/ui/icons';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { redactSearch } from '@arshad-shah/cynosure/icons';
+import { newId } from '@/shared/lib/id';
+import { toToolError } from '@/shared/lib/errors';
 import { searchMarkLabel } from '@/pdf/doc/ops/redact';
 import { PRESETS, type RedactPreset } from '@/pdf/redact/patterns';
 import {
@@ -21,29 +21,12 @@ import {
   type SearchMatch,
   type SearchQuery,
 } from '@/pdf/redact/search';
+import { LoadingLine } from '../../ui/states';
 import type { DocumentApi } from '../types';
 import { pageFieldValues, type FormInfoCache } from './field-values';
 import { useRedactUi } from './ui-store';
 
 const PRESET_IDS = Object.keys(PRESETS) as RedactPreset[];
-
-function SwitchRow({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange(v: boolean): void;
-}) {
-  const id = useId();
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <Label htmlFor={id}>{label}</Label>
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
-    </div>
-  );
-}
 
 /**
  * Find and mark (spec 10.1): literal or regex search with case and
@@ -52,7 +35,6 @@ function SwitchRow({
  */
 export function SearchPanel({ doc }: { doc: DocumentApi }) {
   const ui = useRedactUi();
-  const findId = useId();
   const [text, setText] = useState('');
   const [regex, setRegex] = useState(false);
   const [caseSensitive, setCaseSensitive] = useState(false);
@@ -163,107 +145,93 @@ export function SearchPanel({ doc }: { doc: DocumentApi }) {
 
   const chosen = (results ?? []).filter((_, i) => selected.has(i));
   return (
-    <Stack gap="3" aria-label="Find and mark">
-      <div className="flex flex-col gap-1">
-        <Label htmlFor={findId}>Find</Label>
-        <Input
-          id={findId}
-          value={text}
-          onChange={(v) => {
-            setText(v);
-            if (v) setPreset(null);
-          }}
-          invalid={!!error}
-          aria-invalid={!!error || undefined}
-          aria-describedby={error ? `${findId}-error` : undefined}
-          autoFocus={ui.searchOpen}
-          leadingSlot={<IconRedactSearch size="sm" />}
+    <Stack gap="4" aria-label="Find and mark">
+      <TextField
+        label="Find"
+        size="sm"
+        iconStart={redactSearch}
+        value={text}
+        onChange={(v) => {
+          setText(v);
+          if (v) setPreset(null);
+        }}
+        error={error ?? undefined}
+        autoFocus={ui.searchOpen}
+      />
+      <Stack gap="2">
+        <Switch
+          label="Regular expression"
+          size="sm"
+          checked={regex}
+          onChange={setRegex}
         />
-        {error ? (
-          <Text id={`${findId}-error`} size="sm" className="text-danger">
-            {error}
-          </Text>
-        ) : null}
-      </div>
-      <SwitchRow
-        label="Regular expression"
-        checked={regex}
-        onChange={setRegex}
-      />
-      <SwitchRow
-        label="Match case"
-        checked={caseSensitive}
-        onChange={setCaseSensitive}
-      />
-      <SwitchRow
-        label="Whole words"
-        checked={wholeWord}
-        onChange={setWholeWord}
-      />
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Patterns">
+        <Switch
+          label="Match case"
+          size="sm"
+          checked={caseSensitive}
+          onChange={setCaseSensitive}
+        />
+        <Switch
+          label="Whole words"
+          size="sm"
+          checked={wholeWord}
+          onChange={setWholeWord}
+        />
+      </Stack>
+      <Inline gap="2" wrap role="group" aria-label="Patterns">
         {PRESET_IDS.map((id) => (
           <Button
             key={id}
             size="sm"
-            variant={preset === id ? 'primary' : 'secondary'}
-            aria-pressed={preset === id}
+            variant={preset === id ? 'solid' : 'outline'}
+            tone={preset === id ? 'accent' : 'neutral'}
+            pressed={preset === id}
             onClick={() => setPreset(preset === id ? null : id)}
           >
             {PRESETS[id].label}
           </Button>
         ))}
-      </div>
-      {busy ? (
-        <div className="flex items-center gap-2">
-          <Spinner size="sm" decorative />
-          <Text size="sm" tone="muted">
-            Searching
-          </Text>
-        </div>
-      ) : null}
+      </Inline>
+      {busy ? <LoadingLine label="Searching" /> : null}
       {results ? (
-        <Stack gap="2">
+        <Stack gap="3">
           <Text size="sm" tone="muted" aria-live="polite">
             {results.length === 1 ? '1 match' : `${results.length} matches`}
           </Text>
           {results.length ? (
-            <ul
-              className="flex max-h-72 flex-col gap-1 overflow-y-auto"
-              aria-label="Matches"
-            >
-              {results.map((m, i) => (
-                <li
-                  key={`${m.pageId}-${i}`}
-                  className="flex items-start gap-2 rounded-md p-1 hover:bg-surface-2"
-                >
+            <ScrollArea label="Matches" style={{ maxBlockSize: '18rem' }}>
+              <Stack gap="2">
+                {results.map((m, i) => (
                   <Checkbox
+                    key={`${m.pageId}-${i}`}
+                    size="sm"
                     checked={selected.has(i)}
-                    aria-label={`Match ${i + 1} on page ${m.pageNumber}: ${m.text}`}
-                    onCheckedChange={(on) => {
+                    label={
+                      <HighlightedText
+                        text={m.context}
+                        positions={Array.from(
+                          { length: m.text.length },
+                          (_, k) => m.contextStart + k,
+                        )}
+                      />
+                    }
+                    description={`Match ${i + 1}, page ${m.pageNumber}`}
+                    onChange={(on) => {
                       const next = new Set(selected);
                       if (on) next.add(i);
                       else next.delete(i);
                       setSelected(next);
                     }}
                   />
-                  <span className="min-w-0 text-sm">
-                    <Text size="xs" tone="muted" as="span" className="mr-2">
-                      Page {m.pageNumber}
-                    </Text>
-                    <Highlight
-                      text={m.context}
-                      start={m.contextStart}
-                      length={m.text.length}
-                    />
-                  </span>
-                </li>
-              ))}
-            </ul>
+                ))}
+              </Stack>
+            </ScrollArea>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+          <Inline gap="2" wrap>
             <Button
               size="sm"
-              variant="primary"
+              variant="solid"
+              tone="accent"
               disabled={!results.length}
               onClick={() => mark(results)}
             >
@@ -271,12 +239,13 @@ export function SearchPanel({ doc }: { doc: DocumentApi }) {
             </Button>
             <Button
               size="sm"
+              variant="outline"
               disabled={!chosen.length}
               onClick={() => mark(chosen)}
             >
               Mark selected
             </Button>
-          </div>
+          </Inline>
         </Stack>
       ) : null}
     </Stack>

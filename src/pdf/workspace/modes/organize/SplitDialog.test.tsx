@@ -81,6 +81,7 @@ describe('SplitDialog', () => {
   it('splits every N pages and saves the parts as one ZIP', async () => {
     const { runJob, onOpenChange } = setup();
     fireEvent.change(every(), { target: { value: '2' } });
+    fireEvent.blur(every());
     split();
     await waitFor(() => expect(saveZip).toHaveBeenCalled());
     expect(runJob).toHaveBeenCalledWith('Splitting', expect.any(Function));
@@ -131,6 +132,7 @@ describe('SplitDialog', () => {
   it('stays open when the document is too short for N', async () => {
     const { onOpenChange } = setup();
     fireEvent.change(every(), { target: { value: '4' } });
+    fireEvent.blur(every());
     split();
     await waitFor(() => expect(notify.error).toHaveBeenCalled());
     expect(notify.error.mock.calls[0][0]).toMatchObject({

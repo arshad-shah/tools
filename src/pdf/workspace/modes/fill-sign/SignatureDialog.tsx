@@ -1,4 +1,4 @@
-import { Dialog, DialogBody, DialogHeader, DialogTitle } from '@/shared/ui';
+import { Dialog } from '@arshad-shah/cynosure';
 import type { ModeProps } from '../types';
 import { SignaturePanel } from './SignaturePanel';
 import { fillSign, useFillSign } from './store';
@@ -15,15 +15,10 @@ export function SignatureDialog({ ctx }: { ctx: ModeProps }) {
           o ? { dialog: 'signature' } : { dialog: null, signTarget: null },
         )
       }
+      title={role === 'initials' ? 'Initials' : 'Signature'}
+      size="lg"
     >
-      <DialogHeader>
-        <DialogTitle>
-          {role === 'initials' ? 'Initials' : 'Signature'}
-        </DialogTitle>
-      </DialogHeader>
-      <DialogBody>
-        <SignaturePanel ctx={ctx} />
-      </DialogBody>
+      <SignaturePanel ctx={ctx} />
     </Dialog>
   );
 }

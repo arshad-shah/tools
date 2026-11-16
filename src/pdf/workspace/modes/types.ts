@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import type { Command } from '@/shared/lib/commands';
 import type { ShortcutDef } from '@/shared/lib/hotkeys';
-import type { IconComponent } from '@/shared/ui/icons';
+import type { IconData } from '@arshad-shah/cynosure/icons';
 import type { DocumentState } from '@/pdf/doc/model';
 import type { OperationDefinition } from '@/pdf/doc/registry';
 import type { Viewport } from '@/pdf/doc/geometry';
@@ -25,7 +25,7 @@ import type { DocInfo, PageTextItems, PdfRender } from '@/pdf/render';
 export interface ModeManifest {
   id: ModeId;
   label: string;
-  icon: IconComponent;
+  icon: IconData;
   /** '1'..'9', fixed by spec order (G7). */
   shortcut: string;
   order: number;

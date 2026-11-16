@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import {
   useLocation,
   useNavigate,
@@ -7,7 +7,8 @@ import {
 } from 'react-router-dom';
 import { useHandoff } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
-import { Breadcrumb, FilePicker } from '@/shared/ui';
+import { Breadcrumbs } from '@arshad-shah/cynosure';
+import { FilePicker } from '@/pdf/workspace/ui/FilePicker';
 import type { ModeId } from '@/pdf/doc/types';
 import { getMode, MODES } from '@/pdf/workspace/modes/registry';
 import { OpenDocument } from '@/pdf/workspace/OpenDocument';
@@ -16,7 +17,6 @@ import { useWorkspaceDocument } from '@/pdf/workspace/use-workspace-document';
 import { WorkspaceShell } from '@/pdf/workspace/WorkspaceShell';
 import { takeStagedDocument } from '@/pdf/workspace/workspace-store';
 import { useOpenPalette } from '@/app/shell/palette';
-import { routerLink } from '@/app/shell/router-link';
 import { HelpMenu } from '@/app/shell/HelpMenu';
 import { UnlockEditingDialog } from './UnlockEditingDialog';
 
@@ -100,10 +100,22 @@ export default function PdfEditTool() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoredUi]);
 
+  // Router links (gap 3): a plain click navigates in the app.
+  const crumb = (href: string) => ({
+    href,
+    onClick: (e: MouseEvent<HTMLElement>) => {
+      e.preventDefault();
+      navigate(href);
+    },
+  });
   const breadcrumb = (
-    <Breadcrumb
-      segments={[{ label: 'pdf', href: '/pdf' }, { label: 'edit' }]}
-      onNavigate={navigate}
+    <Breadcrumbs
+      size="sm"
+      items={[
+        { label: 'Home', ...crumb('/') },
+        { label: 'PDF', ...crumb('/pdf') },
+        { label: 'Workspace' },
+      ]}
     />
   );
 
@@ -112,7 +124,6 @@ export default function PdfEditTool() {
       <OpenDocument
         phase={ws.phase}
         breadcrumb={breadcrumb}
-        renderLink={routerLink}
         onFiles={(files) => void ws.openFiles(files)}
         onRestore={(id) => {
           setSearch({ doc: id }, { replace: true });

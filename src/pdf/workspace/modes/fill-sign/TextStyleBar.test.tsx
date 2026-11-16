@@ -138,7 +138,8 @@ describe('TextStyleBar', () => {
 
   it('More is a bottom sheet on a phone, and Done stays pinned', () => {
     const { bar } = setup({ layout: 'phone' });
-    expect(within(bar).getByRole('button', { name: 'Done' })).toBeTruthy();
+    // Done sits at the docked bar's end, outside the scrolling tools.
+    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
     fireEvent.click(
       within(bar).getByRole('button', { name: 'More text settings' }),
     );
@@ -178,9 +179,9 @@ describe('TextStyleBar', () => {
   });
 
   it('takes focus when asked (Alt+T)', () => {
-    setup({ focusNonce: 1 });
-    expect(document.activeElement?.getAttribute('aria-label')).toBe(
-      'Text size in points',
+    const { bar } = setup({ focusNonce: 1 });
+    expect(document.activeElement).toBe(
+      within(bar).getByRole('spinbutton', { name: 'Text size in points' }),
     );
   });
 });

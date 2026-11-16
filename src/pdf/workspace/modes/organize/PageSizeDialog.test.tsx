@@ -54,7 +54,9 @@ describe('PageSizeDialog', () => {
     expect(screen.queryByLabelText('Width in points')).toBeNull();
     fireEvent.click(screen.getByRole('radio', { name: 'Custom' }));
     fireEvent.change(width(), { target: { value: '300' } });
+    fireEvent.blur(width());
     fireEvent.change(height(), { target: { value: '400' } });
+    fireEvent.blur(height());
     submit();
     expect(dispatch).toHaveBeenCalledWith({
       type: 'page.resize',
@@ -66,9 +68,11 @@ describe('PageSizeDialog', () => {
     const { dispatch } = setup(['p0']);
     fireEvent.click(screen.getByRole('radio', { name: 'Custom' }));
     fireEvent.change(width(), { target: { value: '0' } });
+    fireEvent.blur(width());
     fireEvent.change(height(), { target: { value: '99999' } });
+    fireEvent.blur(height());
     expect(width().value).toBe('1');
-    expect(height().value).toBe('14400');
+    expect(height().value).toBe('14,400');
     submit();
     expect(dispatch).toHaveBeenCalledWith({
       type: 'page.resize',

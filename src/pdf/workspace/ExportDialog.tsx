@@ -7,21 +7,18 @@ import {
 } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
 import type { JobProgress } from '@/shared/state/useJob';
-import { IconEye } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  ErrorState,
-  Input,
-  Label,
-  ProgressOverlay,
-} from '@/shared/ui';
+  Heading,
+  Icon,
+  Inline,
+  Notice,
+  Stack,
+  Text,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { eye } from '@arshad-shah/cynosure/icons';
 import { exportDocument } from '@/pdf/doc/export';
 import type { ExportOptions } from '@/pdf/doc/export-stages';
 import { MODE_LABELS } from '@/pdf/doc/modes';
@@ -34,6 +31,8 @@ import type { DocumentApi } from './modes/types';
 import { PreviewAsExported } from './PreviewAsExported';
 import type { WorkspaceSession } from './session';
 import { exportWarnings } from './export-warnings';
+import { JobOverlay } from './ui/JobOverlay';
+import { ErrorNotice } from './ui/states';
 
 export interface ExportDialogProps {
   open: boolean;
@@ -175,132 +174,123 @@ function ExportDialogBody({
     }
   };
 
+  const told = [...warnings, ...(notes ?? [])];
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange} size="lg">
-        <DialogHeader>
-          <DialogTitle>Export PDF</DialogTitle>
-        </DialogHeader>
-        <DialogBody className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={nameId}>File name</Label>
-            <Input
-              id={nameId}
-              value={options.filename}
-              onChange={(filename) => set({ filename })}
-            />
-          </div>
+      <Dialog
+        open={open}
+        onOpenChange={onOpenChange}
+        size="lg"
+        title="Export PDF"
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              {notes ? 'Done' : 'Cancel'}
+            </Button>
+            {notes ? null : (
+              <Button
+                variant="solid"
+                tone="accent"
+                onClick={() => void start()}
+                loading={running}
+                disabled={state.restricted || blockers.length > 0}
+                aria-describedby={
+                  blockers.length ? `${nameId}-blockers` : undefined
+                }
+              >
+                {exportLabel}
+              </Button>
+            )}
+          </>
+        }
+      >
+        <Stack gap="6">
+          <TextField
+            label="File name"
+            value={options.filename}
+            onChange={(filename) => set({ filename })}
+          />
 
-          <section
-            aria-labelledby={`${nameId}-changes`}
-            className="flex flex-col gap-2"
-          >
-            <h3
-              id={`${nameId}-changes`}
-              className="text-sm font-semibold text-fg"
-            >
+          <Stack as="section" gap="2" aria-labelledby={`${nameId}-changes`}>
+            <Heading level={3} size="xs" id={`${nameId}-changes`}>
               Changes
-            </h3>
+            </Heading>
             {summary.length === 0 ? (
-              <p className="text-sm text-fg-muted">
+              <Text size="sm" tone="muted">
                 No changes. The export is a copy of the original.
-              </p>
+              </Text>
             ) : (
-              <ul className="flex flex-col gap-1.5">
+              <Stack gap="2">
                 {summary.map((s) => {
-                  const Icon = getMode(s.mode)?.icon;
+                  const icon = getMode(s.mode)?.icon;
                   return (
-                    <li key={s.mode} className="flex items-start gap-2 text-sm">
-                      {Icon ? (
-                        <span className="mt-0.5 text-fg-muted">
-                          <Icon size="sm" />
-                        </span>
+                    <Inline key={s.mode} gap="2" align="start">
+                      {icon ? (
+                        <Icon icon={icon} size="sm" tone="muted" />
                       ) : null}
-                      <span className="font-medium text-fg">
+                      <Text size="sm" weight="medium">
                         {MODE_LABELS[s.mode]}
-                      </span>
-                      <span className="text-fg-muted">
+                      </Text>
+                      <Text size="sm" tone="muted">
                         {s.lines.join(', ')}
-                      </span>
-                    </li>
+                      </Text>
+                    </Inline>
                   );
                 })}
-              </ul>
+              </Stack>
             )}
-          </section>
+          </Stack>
 
           {sections.map(({ id, title, Component }) => (
-            <section
-              key={id}
-              aria-label={title}
-              className="flex flex-col gap-2"
-            >
-              <h3 className="text-sm font-semibold text-fg">{title}</h3>
+            <Stack as="section" key={id} gap="3" aria-label={title}>
+              <Heading level={3} size="xs">
+                {title}
+              </Heading>
               <Component doc={doc} options={options} set={set} />
-            </section>
+            </Stack>
           ))}
 
           {state.restricted ? (
-            <Alert status="warning">
-              <AlertDescription>{RESTRICTED_MESSAGE}</AlertDescription>
-            </Alert>
+            <Notice tone="warning">{RESTRICTED_MESSAGE}</Notice>
           ) : null}
 
-          {warnings.length || notes?.length ? (
-            <Alert status="warning">
-              <AlertDescription>
-                <ul className="flex flex-col gap-1">
-                  {[...warnings, ...(notes ?? [])].map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
+          {told.length ? (
+            <Notice tone="warning">
+              <Stack gap="1">
+                {told.map((w) => (
+                  <Text key={w} as="p" size="sm">
+                    {w}
+                  </Text>
+                ))}
+              </Stack>
+            </Notice>
           ) : null}
 
           {preview ? (
             <PreviewAsExported session={session} pageId={preview} />
           ) : currentPage ? (
-            <div>
+            <Inline>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                leftIcon={<IconEye size="sm" />}
+                icon={eye}
                 onClick={() => setPreview(currentPage)}
               >
                 Preview page as exported
               </Button>
-            </div>
+            </Inline>
           ) : null}
 
           {blockers.length ? (
-            <p id={`${nameId}-blockers`} className="text-sm text-fg-muted">
+            <Text as="p" size="sm" tone="muted" id={`${nameId}-blockers`}>
               {blockers.join(' ')}
-            </p>
+            </Text>
           ) : null}
 
-          {error ? <ErrorState error={error} headingLevel={3} /> : null}
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            {notes ? 'Done' : 'Cancel'}
-          </Button>
-          {notes ? null : (
-            <Button
-              variant="primary"
-              onClick={() => void start()}
-              loading={running}
-              disabled={state.restricted || blockers.length > 0}
-              aria-describedby={
-                blockers.length ? `${nameId}-blockers` : undefined
-              }
-            >
-              {exportLabel}
-            </Button>
-          )}
-        </DialogFooter>
+          {error ? <ErrorNotice error={error} /> : null}
+        </Stack>
       </Dialog>
-      <ProgressOverlay
+      <JobOverlay
         open={running}
         title="Exporting"
         progress={progress}

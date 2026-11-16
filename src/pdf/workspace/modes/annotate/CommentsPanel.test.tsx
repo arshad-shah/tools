@@ -82,6 +82,12 @@ const highlight = (author: string) => ({
   },
 });
 
+/** Chooses an option of a Cynosure Select by their names. */
+function pick(select: string, option: string) {
+  fireEvent.click(screen.getByRole('combobox', { name: select }));
+  fireEvent.click(screen.getByRole('option', { name: option }));
+}
+
 describe('CommentsPanel', () => {
   beforeEach(() => setAnnotateUi({ editor: null }));
 
@@ -98,24 +104,12 @@ describe('CommentsPanel', () => {
     );
     expect(within(list).getByText('Please check')).toBeTruthy();
 
-    fireEvent.change(
-      screen.getByRole('combobox', { name: 'Filter by author' }),
-      {
-        target: { value: 'Bob' },
-      },
-    );
+    pick('Filter by author', 'Bob');
     expect(within(list).getAllByTestId('comment-row')).toHaveLength(1);
     expect(within(list).getByText('Bob highlight')).toBeTruthy();
 
-    fireEvent.change(
-      screen.getByRole('combobox', { name: 'Filter by author' }),
-      {
-        target: { value: '' },
-      },
-    );
-    fireEvent.change(screen.getByRole('combobox', { name: 'Filter by type' }), {
-      target: { value: 'Note' },
-    });
+    pick('Filter by author', 'All authors');
+    pick('Filter by type', 'Note');
     expect(within(list).getAllByTestId('comment-row')).toHaveLength(1);
     expect(within(list).getByText('Please check')).toBeTruthy();
   });

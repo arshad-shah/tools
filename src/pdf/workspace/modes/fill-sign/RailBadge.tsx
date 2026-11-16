@@ -1,4 +1,4 @@
-import { StatusDot, Text } from '@/shared/ui';
+import { Badge } from '@arshad-shah/cynosure';
 import { asDetectionCache, detectionKey } from '@/pdf/doc/detection';
 import type { PageRef } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';
@@ -20,26 +20,23 @@ export function FillSignRailBadge({
     asDetectionCache(doc.state.detection)?.pages[key]?.skipped ?? null;
   if (crashed)
     return (
-      <Text as="span" size="xs" className="flex items-center gap-1">
-        <StatusDot tone="danger" decorative />
+      <Badge tone="danger" size="sm" dot>
         Detection failed on this page
-      </Text>
+      </Badge>
     );
   if (skipped === 'too-complex')
     return (
-      <Text as="span" size="xs" className="flex items-center gap-1">
-        <StatusDot tone="warning" decorative />
+      <Badge tone="warning" size="sm" dot>
         No detection: page too complex
-      </Text>
+      </Badge>
     );
   const left = fields.filter(
     (f) => f.page.id === page.id && f.status === 'field' && !f.filled,
   ).length;
   if (!left) return null;
   return (
-    <Text as="span" size="xs" className="flex items-center gap-1">
-      <StatusDot tone="info" decorative />
+    <Badge tone="info" size="sm" dot>
       {`${left} ${left === 1 ? 'field' : 'fields'} left`}
-    </Text>
+    </Badge>
   );
 }

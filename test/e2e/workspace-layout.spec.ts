@@ -41,7 +41,7 @@ function measure(page: Page) {
       );
     };
     const bars = [
-      ...document.querySelectorAll('[role="toolbar"], [role="tablist"]'),
+      ...document.querySelectorAll('[role="toolbar"], [role="radiogroup"]'),
     ].filter(visible);
     const rows = bars.map((bar) => {
       const items = [
@@ -71,16 +71,18 @@ function measure(page: Page) {
       ])
       .filter(visible)
       .map((el) => {
-        // A kit Input's whole box is its target.
-        const box = el.closest('[data-field-box]') ?? el;
-        const r = box.getBoundingClientRect();
+        // Cynosure grows a control's hit area to --_hit (44px on a coarse
+        // pointer) around a smaller visible box.
+        const r = el.getBoundingClientRect();
+        const hit =
+          parseFloat(getComputedStyle(el).getPropertyValue('--_hit')) || 0;
         return {
           name:
             el.getAttribute('aria-label') ??
             el.textContent?.trim() ??
             el.tagName,
-          w: Math.round(r.width),
-          h: Math.round(r.height),
+          w: Math.round(Math.max(r.width, hit)),
+          h: Math.round(Math.max(r.height, hit)),
         };
       })
       .filter((t) => t.w < 44 || t.h < 44);
@@ -168,6 +170,9 @@ for (const size of [
   }) => {
     await page.setViewportSize(size);
     await openAt(page, 'fill-sign');
+    // Standard shows labelled tools; icon-only tools (Focus, phones) name
+    // themselves in a tooltip.
+    if (size.width > 900) await page.keyboard.press('f');
     const bar = page.getByRole('toolbar', { name: /Fill & Sign tools/ });
     const buttons = bar.getByRole('button');
     for (const i of [0, 1]) await tooltipInside(page, buttons.nth(i));

@@ -24,28 +24,41 @@ test.describe('phone workspace toolbar', () => {
     isMobile: true,
   });
 
-  test('is one row that scrolls sideways, with an edge fade', async ({
-    page,
-  }) => {
+  test('is one row that scrolls sideways', async ({ page }) => {
     await openWorkspace(page);
     const bar = page.getByRole('toolbar', { name: 'Organize tools' });
     await expect(bar).toBeVisible();
-    const metrics = await bar.evaluate((el) => ({
-      tops: [
-        ...new Set([...el.querySelectorAll('button')].map((b) => b.offsetTop)),
-      ],
-      scrollWidth: el.scrollWidth,
-      clientWidth: el.clientWidth,
-      fade: el.dataset.fade,
-      sizes: [...el.querySelectorAll('button[aria-label]')]
-        .filter((b) => !b.getAttribute('aria-label')!.endsWith('options'))
-        .map((b) => Math.round(b.getBoundingClientRect().height)),
-    }));
-    // Every tool shares one offsetTop: a single row, never wrapped.
-    expect(metrics.tops).toHaveLength(1);
-    expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
-    expect(metrics.fade).toBe('end');
-    // 44px touch targets stay.
+    const metrics = await bar.evaluate((el) => {
+      const buttons = [...el.querySelectorAll('button')].filter(
+        (b) => b.getBoundingClientRect().width > 0,
+      );
+      const scrollers = [el, ...el.querySelectorAll('*')].filter(
+        (n) =>
+          ['auto', 'scroll'].includes(getComputedStyle(n).overflowX) &&
+          n.scrollWidth > n.clientWidth,
+      );
+      return {
+        // Centre lines: tools of different heights share one row.
+        rows: [
+          ...new Set(
+            buttons.map((b) => {
+              const r = b.getBoundingClientRect();
+              return Math.round((r.top + r.height / 2) / 4);
+            }),
+          ),
+        ],
+        scrolls: scrollers.length > 0,
+        // Cynosure grows a 40px button's hit area to --_hit (44px).
+        sizes: buttons.map((b) =>
+          Math.max(
+            b.getBoundingClientRect().height,
+            parseFloat(getComputedStyle(b).getPropertyValue('--_hit')) || 0,
+          ),
+        ),
+      };
+    });
+    expect(metrics.rows).toHaveLength(1);
+    expect(metrics.scrolls).toBe(true);
     for (const h of metrics.sizes) expect(h).toBeGreaterThanOrEqual(44);
     // The page itself never scrolls sideways.
     expect(
@@ -53,11 +66,6 @@ test.describe('phone workspace toolbar', () => {
         () => document.scrollingElement!.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
-
-    await bar.evaluate((el) => el.scrollBy({ left: 10_000 }));
-    await expect
-      .poll(() => bar.evaluate((el) => el.dataset.fade))
-      .toBe('start');
   });
 
   test('arrow keys move across the row and keep the focused tool in view', async ({

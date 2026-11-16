@@ -95,9 +95,11 @@ describe('existing annotations on the object layer', () => {
       fireEvent.pointerUp(obj, { pointerId: 1 });
     });
     expect(getAnnotateUi().selectedExisting).toMatchObject({ ref: '12R' });
+    // The selection frame takes the keys once the object is selected.
+    const frame = await screen.findByLabelText(/^Resize Square by Alice/);
     act(() => {
-      fireEvent.keyDown(obj, { key: 'ArrowRight', shiftKey: true });
-      fireEvent.keyUp(obj, { key: 'ArrowRight', shiftKey: true });
+      fireEvent.keyDown(frame, { key: 'ArrowRight', shiftKey: true });
+      fireEvent.keyUp(frame, { key: 'ArrowRight', shiftKey: true });
     });
     const [op] = model.getState().log;
     expect(op).toMatchObject({

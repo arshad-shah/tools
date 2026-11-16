@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { Button, Label, NumberInput, Select, Stack } from '@/shared/ui';
+import {
+  Button,
+  Inline,
+  NumberField,
+  Select,
+  Stack,
+} from '@arshad-shah/cynosure';
 import {
   EDGE_ANCHOR_OPTIONS,
   trySelectPages,
   type EdgeAnchor,
 } from '@/pdf/edit/geometry';
 import type { PageNumberFormat } from '@/pdf/edit/markup-layout';
-import { PageRangeField } from '@/pdf/components/PageRangeField';
+import { PageRangeField } from '../../ui/PageRangeField';
 import type { ModeProps } from '../types';
 import { activeMarkup } from './markup-state';
 import {
@@ -44,55 +50,47 @@ export function PageNumbersForm({ doc }: ModeProps) {
   const { error } = trySelectPages(pages, doc.view.pages.length);
   return (
     <Stack gap="3">
-      <Stack gap="1">
-        <Label htmlFor="pn-format">Format</Label>
-        <Select
-          id="pn-format"
-          value={format}
-          onValueChange={(v) => setFormat(v as PageNumberFormat)}
-          items={FORMATS}
-        />
-      </Stack>
-      <Stack gap="1">
-        <Label htmlFor="pn-position">Position</Label>
-        <Select
-          id="pn-position"
-          value={position}
-          onValueChange={(v) => setPosition(v as EdgeAnchor)}
-          items={EDGE_ANCHOR_OPTIONS}
-        />
-      </Stack>
-      <Stack gap="1">
-        <Label htmlFor="pn-start">Start at</Label>
-        <NumberInput
-          id="pn-start"
-          value={startAt}
-          onValueChange={setStartAt}
-          min={0}
-          max={9999}
-        />
-      </Stack>
-      <Stack gap="1">
-        <Label htmlFor="pn-size">Font size</Label>
-        <NumberInput
-          id="pn-size"
-          value={fontSize}
-          onValueChange={setFontSize}
-          min={6}
-          max={72}
-        />
-      </Stack>
+      <Select
+        label="Format"
+        size="sm"
+        value={format}
+        onChange={(v) => setFormat(v as PageNumberFormat)}
+        options={FORMATS}
+      />
+      <Select
+        label="Position"
+        size="sm"
+        value={position}
+        onChange={(v) => setPosition(v as EdgeAnchor)}
+        options={EDGE_ANCHOR_OPTIONS}
+      />
+      <NumberField
+        label="Start at"
+        size="sm"
+        value={startAt}
+        onChange={(v) => v !== null && setStartAt(v)}
+        min={0}
+        max={9999}
+      />
+      <NumberField
+        label="Font size"
+        size="sm"
+        value={fontSize}
+        onChange={(v) => v !== null && setFontSize(v)}
+        min={6}
+        max={72}
+      />
       <PageRangeField
-        id="pn"
         mode={pageMode}
         text={ranges}
         onModeChange={setPageMode}
         onTextChange={setRanges}
         error={error}
       />
-      <div className="flex flex-wrap gap-2">
+      <Inline gap="2" wrap>
         <Button
-          variant="primary"
+          variant="solid"
+          tone="accent"
           size="sm"
           disabled={!!error}
           onClick={() =>
@@ -110,14 +108,14 @@ export function PageNumbersForm({ doc }: ModeProps) {
         </Button>
         {activeMarkupId(doc, TYPE) ? (
           <Button
-            variant="secondary"
+            variant="ghost"
             size="sm"
             onClick={() => removeMarkup(doc, TYPE)}
           >
             Remove page numbers
           </Button>
         ) : null}
-      </div>
+      </Inline>
     </Stack>
   );
 }

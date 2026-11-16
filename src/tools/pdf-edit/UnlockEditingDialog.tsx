@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
-import {
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui';
-import { PasswordPrompt } from '@/pdf/components/PasswordPrompt';
+import { Dialog } from '@arshad-shah/cynosure';
+import { PasswordForm } from '@/pdf/ui/PasswordForm';
 import { blobKey } from '@/pdf/doc/serialize';
 import type { WorkspaceSession } from '@/pdf/workspace/session';
 
@@ -59,27 +53,26 @@ export function UnlockEditingDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Unlock editing</DialogTitle>
-        <DialogDescription>
-          {original
-            ? 'The owner of this PDF restricted changes. Enter the owner password to edit it.'
-            : 'Open the original file again to unlock editing: it is not kept on this device.'}
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody>
-        {original ? (
-          <PasswordPrompt
-            fileName={name}
-            error={error}
-            busy={busy}
-            onSubmit={(pw) => void submit(pw)}
-            submitLabel="Unlock editing"
-            description="The password is checked in your browser and never uploaded."
-          />
-        ) : null}
-      </DialogBody>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Unlock editing"
+      description={
+        original
+          ? 'The owner of this PDF restricted changes. Enter the owner password to edit it.'
+          : 'Open the original file again to unlock editing: it is not kept on this device.'
+      }
+    >
+      {original ? (
+        <PasswordForm
+          fileName={name}
+          error={error}
+          busy={busy}
+          onSubmit={(pw) => void submit(pw)}
+          submitLabel="Unlock editing"
+          description="The password is checked in your browser and never uploaded."
+        />
+      ) : null}
     </Dialog>
   );
 }

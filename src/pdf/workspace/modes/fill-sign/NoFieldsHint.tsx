@@ -1,5 +1,6 @@
-import { IconFieldSuggested, IconFieldText } from '@/shared/ui/icons';
-import { Button, Card, CardBody, Text } from '@/shared/ui';
+import { fieldSuggest, fieldText } from '@arshad-shah/cynosure/icons';
+import { Button, Card, Inline, Stack } from '@arshad-shah/cynosure';
+import { Place } from '@/pdf/surfaces/layers';
 import type { ModeProps } from '../types';
 import type { ViewField } from './fields';
 import { useFillSign } from './store';
@@ -11,41 +12,44 @@ import { useFillSign } from './store';
 export function NoFieldsHint({
   ctx,
   fields,
+  width,
 }: {
   ctx: ModeProps;
   fields: readonly ViewField[];
+  /** The page's width on screen. */
+  width: number;
 }) {
   const progress = useFillSign((s) => s.progress);
   const draft = useFillSign((s) => s.draft);
   if (progress || fields.length > 0 || ctx.tool.id || draft) return null;
   return (
-    <div className="pointer-events-auto absolute inset-x-4 top-4 flex justify-center">
-      <Card className="max-w-sm">
-        <CardBody className="flex flex-col gap-3">
-          <Text weight="medium">No form fields found</Text>
-          <Text size="sm" tone="muted">
-            Draw the fields yourself, or click anywhere on the page to type.
-          </Text>
-          <div className="flex flex-wrap gap-2">
+    <Place x={16} y={16} width={Math.min(384, Math.max(0, width - 32))}>
+      <Card
+        title="No form fields found"
+        headingLevel={3}
+        description="Draw the fields yourself, or click anywhere on the page to type."
+      >
+        <Stack gap="3">
+          <Inline gap="2" wrap>
             <Button
               size="sm"
-              variant="secondary"
-              leftIcon={<IconFieldSuggested size="sm" />}
+              variant="outline"
+              icon={fieldSuggest}
               onClick={() => ctx.tool.set('add-field')}
             >
               Detect manually
             </Button>
             <Button
               size="sm"
-              variant="secondary"
-              leftIcon={<IconFieldText size="sm" />}
+              variant="outline"
+              icon={fieldText}
               onClick={() => ctx.tool.set('text')}
             >
               Click anywhere to type
             </Button>
-          </div>
-        </CardBody>
+          </Inline>
+        </Stack>
       </Card>
-    </div>
+    </Place>
   );
 }

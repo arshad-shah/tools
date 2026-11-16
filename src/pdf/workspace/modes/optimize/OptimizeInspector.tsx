@@ -1,4 +1,4 @@
-import { InspectorSection } from '@/shared/ui';
+import { InspectorSection } from '../../ui/InspectorSection';
 import type { ModeProps } from '../types';
 import { CompressPanel } from './CompressPanel';
 import { useSizeBreakdownRefresh } from './settings-store';

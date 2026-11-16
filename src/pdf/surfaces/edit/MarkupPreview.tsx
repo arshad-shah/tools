@@ -1,10 +1,6 @@
 import { useState } from 'react';
-import {
-  Image,
-  OverlayText,
-  PagePlaced,
-  type OverlayTransform,
-} from '@/shared/ui';
+import { OverlayText, PagePlaced, type OverlayTransform } from '@/shared/ui';
+import { BytesImage } from '../BytesImage';
 import type { HeaderFooterParams, WatermarkParams } from '@/pdf/doc/ops/markup';
 import type { PageRef } from '@/pdf/doc/types';
 import type { PageFrame } from '@/pdf/edit/geometry';
@@ -16,11 +12,11 @@ import {
   pageNumberPlacement,
   watermarkPlacement,
 } from '@/pdf/edit/markup-layout';
-import type { DocumentApi } from '../types';
-import { activeMarkup, frameOf } from './markup-state';
-import { metricsOf, useTextLayout } from '../../text-layout';
-import { useWorkspace } from '../../workspace-context';
-import { useAssetBytes } from './use-asset';
+import type { DocumentApi } from '@/pdf/workspace/modes/types';
+import { activeMarkup, frameOf } from '@/pdf/workspace/modes/edit/markup-state';
+import { metricsOf, useTextLayout } from '@/pdf/workspace/text-layout';
+import { useWorkspace } from '@/pdf/workspace/workspace-context';
+import { useAssetBytes } from '@/pdf/workspace/modes/edit/use-asset';
 
 export interface MarkupPreviewProps {
   doc: DocumentApi;
@@ -67,11 +63,9 @@ function WatermarkImage({
       rotate={at.rotate}
       opacity={wm.opacity}
     >
-      <Image
-        src={bytes}
+      <BytesImage
+        bytes={bytes}
         mime={content.format === 'png' ? 'image/png' : 'image/jpeg'}
-        decorative
-        className="size-full"
         onLoad={(e) => {
           const img = e.currentTarget;
           if (img.naturalWidth > 0)
@@ -132,7 +126,7 @@ export function MarkupPreview({
           metrics={metricsOf(f)}
           width={width}
           height={height}
-          className="font-bold"
+          bold
         />,
       );
     } else {

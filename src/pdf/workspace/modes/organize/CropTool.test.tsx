@@ -73,7 +73,7 @@ describe('CropTool', () => {
     const { dispatch } = setup({
       crop: { x: 100, y: 100, width: 200, height: 300 },
     });
-    const left = () => frame().style.left;
+    const left = () => frame().style.getPropertyValue('--_x');
     const before = left();
     fireEvent.keyDown(frame(), { key: 'ArrowRight', shiftKey: true });
     expect(left()).not.toBe(before);

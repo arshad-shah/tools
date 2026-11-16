@@ -10,7 +10,7 @@ import {
   vi,
 } from 'vitest';
 import { queryCommands } from '@/shared/lib/commands';
-import { IconModeOrganize, IconRotateCw } from '@/shared/ui/icons';
+import { fileStack, pageRotate } from '@arshad-shah/cynosure/icons';
 import { BlobStore } from '@/pdf/doc/blob-store';
 import { registerCoreOperations } from '@/pdf/doc/ops';
 import { inProcessServices } from '@/pdf/doc/test-services';
@@ -27,7 +27,7 @@ vi.mock('./modes/registry', async (orig) => {
   const organize: ModeManifest = {
     id: 'organize',
     label: 'Organize',
-    icon: IconModeOrganize,
+    icon: fileStack,
     shortcut: '1',
     order: 1,
     load: async () => ({
@@ -45,7 +45,7 @@ vi.mock('./modes/registry', async (orig) => {
                   {
                     id: 'rotate-right',
                     label: 'Rotate right',
-                    icon: IconRotateCw,
+                    icon: pageRotate,
                     kind: 'button',
                     onSelect: () =>
                       doc.dispatch({
@@ -56,7 +56,7 @@ vi.mock('./modes/registry', async (orig) => {
                   {
                     id: 'select-1',
                     label: 'Select page 1',
-                    icon: IconRotateCw,
+                    icon: pageRotate,
                     kind: 'button',
                     onSelect: () =>
                       selection.selectPages([doc.view.pages[0].id]),
@@ -64,7 +64,7 @@ vi.mock('./modes/registry', async (orig) => {
                   {
                     id: 'select-2',
                     label: 'Select page 2',
-                    icon: IconRotateCw,
+                    icon: pageRotate,
                     kind: 'button',
                     onSelect: () =>
                       selection.selectPages([doc.view.pages[1].id]),
@@ -175,13 +175,13 @@ describe('WorkspaceShell', () => {
   it('Standard: mode tabs, the mode toolbar and the page rail', async () => {
     const { ui } = setup();
     render(ui);
-    expect(screen.getByRole('tablist', { name: 'Modes' })).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'Modes' })).toBeTruthy();
     expect(
       await screen.findByRole('toolbar', { name: 'Organize tools' }),
     ).toBeTruthy();
     expect(screen.getByRole('complementary', { name: 'Pages' })).toBeTruthy();
     expect(screen.getByRole('listbox', { name: 'Pages' })).toBeTruthy();
-    expect(screen.getByRole('main')).toBeTruthy();
+    expect(screen.getByRole('main').id).toBe('workspace-canvas');
     expect(screen.getByRole('banner')).toBeTruthy();
   });
 
@@ -194,7 +194,7 @@ describe('WorkspaceShell', () => {
     const props = () =>
       screen.queryByRole('complementary', { name: 'Properties' });
     expect(props()).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Close Properties' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close properties' }));
     expect(props()).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Select page 2' }));
     expect(props()).toBeTruthy();
@@ -219,10 +219,17 @@ describe('WorkspaceShell', () => {
     await screen.findByRole('toolbar', { name: 'Organize tools' });
     const toggle = screen.getByRole('button', { name: 'Page rail' });
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    // The rail's split pane collapses (Cynosure hides a collapsed pane).
+    const pane = () =>
+      screen
+        .getByRole('complementary', { name: 'Pages' })
+        .closest('[data-pane]')!;
+    expect(pane().hasAttribute('data-collapsed')).toBe(false);
     fireEvent.click(toggle);
-    expect(screen.queryByRole('complementary', { name: 'Pages' })).toBeNull();
+    expect(pane().hasAttribute('data-collapsed')).toBe(true);
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(screen.getByRole('button', { name: 'Page rail' }));
-    expect(screen.getByRole('complementary', { name: 'Pages' })).toBeTruthy();
+    expect(pane().hasAttribute('data-collapsed')).toBe(false);
   });
 
   it('registers the workspace commands in the command palette', async () => {
@@ -272,26 +279,29 @@ describe('WorkspaceShell', () => {
       await screen.findByRole('button', { name: 'Rotate right' }),
     );
     expect(
-      screen
-        .getByRole('button', { name: /^Undo/ })
-        .getAttribute('aria-disabled'),
-    ).toBe('false');
+      (screen.getByRole('button', { name: /^Undo/ }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
     let end = () => {};
     act(() => {
       end = model.beginJob();
     });
     expect(
-      screen
-        .getByRole('button', { name: 'Nothing to undo' })
-        .getAttribute('aria-disabled'),
-    ).toBe('true');
+      (
+        screen.getByRole('button', {
+          name: 'Nothing to undo',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
     const panel = document.getElementById('mode-panel')!;
-    expect(panel.hasAttribute('inert')).toBe(true);
+    const rotate = () =>
+      within(panel).getByRole('button', {
+        name: 'Rotate right',
+      }) as HTMLButtonElement;
+    expect(rotate().disabled).toBe(true);
     expect(panel.getAttribute('aria-busy')).toBe('true');
     act(() => end());
-    expect(document.getElementById('mode-panel')!.hasAttribute('inert')).toBe(
-      false,
-    );
+    expect(rotate().disabled).toBe(false);
   });
 
   it('F switches to Focus and remembers it', async () => {
@@ -300,7 +310,7 @@ describe('WorkspaceShell', () => {
     await screen.findByRole('toolbar', { name: 'Organize tools' });
     key('f');
     expect(useWorkspaceSettings.getState().layout).toBe('focus');
-    expect(screen.getByRole('tablist', { name: 'Modes' })).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'Modes' })).toBeTruthy();
     // The palette is the toolbar now; the docked rail is a drawer.
     expect(screen.queryByRole('complementary', { name: 'Pages' })).toBeNull();
     expect(
@@ -314,7 +324,13 @@ describe('WorkspaceShell', () => {
     render(ui);
     await screen.findByRole('toolbar', { name: 'Organize tools' });
     expect(screen.queryByRole('button', { name: 'Focus layout' })).toBeNull();
-    expect(screen.getByRole('tablist', { name: 'Modes' })).toBeTruthy();
+    // On a phone the mode switch is a picker.
+    expect(
+      within(screen.getByRole('navigation', { name: 'Modes' })).getByRole(
+        'combobox',
+        { name: 'Mode' },
+      ),
+    ).toBeTruthy();
   });
 
   it('Mod+Z undoes and the announcer says what', async () => {
@@ -401,13 +417,15 @@ describe('WorkspaceShell', () => {
     await screen.findByRole('toolbar', { name: 'Organize tools' });
     const [doc, tools] = [...container.querySelectorAll('a')];
     expect(doc.textContent).toBe('Skip to the document');
-    expect(document.querySelector(doc.getAttribute('href')!)?.tagName).toBe(
-      'MAIN',
-    );
+    // The document's own viewport sits in the skip target.
+    expect(doc.getAttribute('href')).toBe('#workspace-canvas');
+    expect(document.getElementById('workspace-canvas')).toBeTruthy();
     expect(tools.textContent).toBe('Skip to the tools');
     expect(
-      document.querySelector(tools.getAttribute('href')!)?.getAttribute('role'),
-    ).toBe('tabpanel');
+      document
+        .querySelector(tools.getAttribute('href')!)
+        ?.getAttribute('aria-label'),
+    ).toBe('Organize mode');
   });
 
   it('digit 1 activates Organize', async () => {
@@ -415,11 +433,13 @@ describe('WorkspaceShell', () => {
     render(ui);
     await screen.findByRole('toolbar', { name: 'Organize tools' });
     key('1');
-    const tabs = screen.getByRole('tablist', { name: 'Modes' });
+    const modes = screen.getByRole('radiogroup', { name: 'Modes' });
     expect(
-      within(tabs)
-        .getByRole('tab', { name: /Organize/ })
-        .getAttribute('aria-selected'),
-    ).toBe('true');
+      (
+        within(modes).getByRole('radio', {
+          name: /Organize/,
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
   });
 });

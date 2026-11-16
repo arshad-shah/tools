@@ -1,3 +1,4 @@
+import { LiveRegion, Stack } from '@arshad-shah/cynosure';
 import { useCallback, useState } from 'react';
 
 /**
@@ -15,26 +16,15 @@ export function useLiveRegion() {
       })),
     [],
   );
+  // Cynosure's LiveRegion: a new sequence says an identical message again.
   const regions = (
     <>
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        data-testid="workspace-announcer"
-      >
-        {/* Keyed so an identical message is announced again. */}
-        <span key={polite.n}>{polite.text}</span>
-      </div>
-      <div
-        role="alert"
-        aria-live="assertive"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        <span key={assertive.n}>{assertive.text}</span>
-      </div>
+      <Stack data-testid="workspace-announcer">
+        <LiveRegion sequence={polite.n}>{polite.text}</LiveRegion>
+      </Stack>
+      <LiveRegion sequence={assertive.n} politeness="assertive">
+        {assertive.text}
+      </LiveRegion>
     </>
   );
   return { announce, regions };

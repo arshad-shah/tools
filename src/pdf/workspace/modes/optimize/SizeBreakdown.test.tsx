@@ -38,11 +38,10 @@ describe('SizeBreakdownView', () => {
         onGoToPage={onGoToPage}
       />,
     );
-    const images = screen.getByRole('progressbar', {
-      name: 'Images: 8.0 KB of 10.0 KB',
-    });
+    const images = screen.getByRole('meter', { name: 'Images' });
     expect(images.getAttribute('aria-valuenow')).toBe('8192');
-    expect(screen.getAllByRole('progressbar')).toHaveLength(4);
+    expect(images.getAttribute('aria-valuetext')).toBe('8.0 KB (80%)');
+    expect(screen.getAllByRole('meter')).toHaveLength(4);
     expect(screen.getByText('8.0 KB (80%)')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Go to page 3' }));
     expect(onGoToPage).toHaveBeenCalledWith('p3');

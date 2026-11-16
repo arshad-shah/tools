@@ -13,11 +13,8 @@ export async function openInWorkspace(page: Page, file: string, mode?: RegExp) {
   await page.locator('input[type=file]').first().setInputFiles(file);
   await expect(rendered(page)).toBeAttached();
   if (mode) {
-    await page.getByRole('tab', { name: mode }).click();
-    await expect(page.getByRole('tab', { name: mode })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    await page.getByRole('radio', { name: mode }).click();
+    await expect(page.getByRole('radio', { name: mode })).toBeChecked();
   }
 }
 

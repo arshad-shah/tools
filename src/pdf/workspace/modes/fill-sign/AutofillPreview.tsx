@@ -1,16 +1,5 @@
 import { useState } from 'react';
-import {
-  Button,
-  Checkbox,
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Label,
-  Text,
-} from '@/shared/ui';
+import { Button, Checkbox, Dialog, Stack, Text } from '@arshad-shah/cynosure';
 import type { NewOperation } from '@/pdf/doc/types';
 
 export interface AutofillRow {
@@ -71,63 +60,62 @@ export function AutofillPreview({
     onOpenChange(false);
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Fill from My details</DialogTitle>
-        <DialogDescription>
-          {rows.length
-            ? 'Check the values to fill. Nothing is filled until you confirm.'
-            : 'No empty field matches your details.'}
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody className="flex flex-col gap-2">
-        {groups.map(({ key, members }, i) => {
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Fill from My details"
+      description={
+        rows.length
+          ? 'Check the values to fill. Nothing is filled until you confirm.'
+          : 'No empty field matches your details.'
+      }
+      actions={
+        <>
+          <Button variant="ghost" onClick={onEditDetails}>
+            Edit my details
+          </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            tone="accent"
+            disabled={chosen.length === 0}
+            onClick={apply}
+          >
+            {`Fill ${fields(chosen.length)}`}
+          </Button>
+        </>
+      }
+    >
+      <Stack gap="3">
+        {groups.map(({ key, members }) => {
           const r = members[0];
-          const id = `autofill-${i}`;
           return (
-            <div key={key} className="flex items-center gap-2">
-              <Checkbox
-                id={id}
-                checked={!off.has(key)}
-                onCheckedChange={(checked) =>
-                  setOff((s) => {
-                    const next = new Set(s);
-                    if (checked) next.delete(key);
-                    else next.add(key);
-                    return next;
-                  })
-                }
-              />
-              <Label htmlFor={id}>{`${r.label}: ${r.value}`}</Label>
-              {members.length > 1 ? (
-                <Text as="span" size="xs" tone="muted">
-                  {`${members.length} places`}
-                </Text>
-              ) : null}
-            </div>
+            <Checkbox
+              key={key}
+              label={`${r.label}: ${r.value}`}
+              description={
+                members.length > 1 ? `${members.length} places` : undefined
+              }
+              checked={!off.has(key)}
+              onChange={(checked) =>
+                setOff((s) => {
+                  const next = new Set(s);
+                  if (checked) next.delete(key);
+                  else next.add(key);
+                  return next;
+                })
+              }
+            />
           );
         })}
         {rows.length === 0 ? (
-          <Text size="sm" tone="muted">
+          <Text as="p" size="sm" tone="muted">
             Add more details, or fill the fields by hand.
           </Text>
         ) : null}
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="ghost" onClick={onEditDetails}>
-          Edit my details
-        </Button>
-        <Button variant="secondary" onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          disabled={chosen.length === 0}
-          onClick={apply}
-        >
-          {`Fill ${fields(chosen.length)}`}
-        </Button>
-      </DialogFooter>
+      </Stack>
     </Dialog>
   );
 }
