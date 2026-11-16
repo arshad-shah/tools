@@ -129,34 +129,21 @@ describe('Markdown Editor', () => {
     expect(document.activeElement).toBe(editor());
   });
 
-  it('shows Edit and Preview as tabs (R41)', async () => {
+  it('shows the editor and the preview together', async () => {
     render(<MarkdownEditor definition={definition} />);
-    fireEvent.click(screen.getByRole('tab', { name: /^Edit/ }));
     type('# Hi');
-    // Live: no auto switch; the Preview tab gets a dot when it changes.
-    await vi.waitFor(() =>
-      expect(
-        screen.getByRole('tab', { name: /^Preview, updated/ }),
-      ).toBeTruthy(),
-    );
-    fireEvent.click(screen.getByRole('tab', { name: /^Preview/ }));
-    expect(screen.queryByRole('textbox', { name: 'Markdown' })).toBeNull();
-    expect(frame().closest('[role="tabpanel"]')?.hasAttribute('hidden')).toBe(
-      false,
-    );
-    fireEvent.click(screen.getByRole('tab', { name: /^Edit/ }));
+    await vi.waitFor(() => expect(srcdoc()).toContain('Hi'));
+    expect(editor()).toBeTruthy();
+    expect(frame()).toBeTruthy();
   });
 
   it('the outline moves the shown preview to the heading', async () => {
     render(<MarkdownEditor definition={definition} />);
-    fireEvent.click(screen.getByRole('tab', { name: /^Edit/ }));
     type('# One\n\ntext\n\n## Two');
     await vi.waitFor(() => expect(srcdoc()).toContain('id="two"'));
-    fireEvent.click(screen.getByRole('tab', { name: /^Preview/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Outline' }));
     fireEvent.click(screen.getByRole('button', { name: 'Two' }));
     expect(srcdoc()).toContain('[id="two"]{scroll-initial-target:nearest}');
-    fireEvent.click(screen.getByRole('tab', { name: /^Edit/ }));
   });
 
   it('downloads a standalone HTML file and clears the leave guard', async () => {
@@ -208,7 +195,9 @@ describe('Markdown Editor', () => {
 
   it('loads the sample document', async () => {
     render(<MarkdownEditor definition={definition} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Load sample' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Try the sample document' }),
+    );
     expect(editor().value).toContain('# Project notes');
     await vi.waitFor(() => expect(srcdoc()).toContain('<table'), {
       timeout: 5000,

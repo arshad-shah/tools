@@ -1,12 +1,5 @@
 import { useHandoff } from '@/shared/lib/handoff';
-import {
-  useDeferredValue,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { ToolProps } from '@/app/tool';
 import { copyText } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
@@ -15,24 +8,29 @@ import { notify } from '@/shared/lib/notify';
 import { useCynosureTheme } from '@arshad-shah/cynosure';
 import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
 import {
-  Alert,
   Button,
+  Card,
+  FileDrop,
+  IconButton,
   Inline,
-  MetaList,
-  PaneTabs,
+  Menu,
+  Notice,
+  SplitPane,
   Stack,
-  ControlBar,
-  ToolActions,
-  SwitchField,
-  TextInputPanel,
-  usePaneTab,
+  StatusBar,
+  StatusBarSegment,
+  Switch,
+  Toolbar,
+} from '@arshad-shah/cynosure';
+import { download, listTree, sparkles } from '@arshad-shah/cynosure/icons';
+import { readText } from '@/shared/lib/files';
+import { useMediaQuery } from '@/shared/lib/media-query';
+import {
+  CodeSurface,
   type CodeSurfaceHandle,
   type SandboxedHtmlHandle,
 } from '@/shared/ui';
-import { IconList } from '@/shared/ui/icons';
 import { textStats } from '@/tools/text-toolkit/lib/stats';
-import { ExportMenu, type ExportActions } from './components/ExportMenu';
-import { FormatToolbar } from './components/FormatToolbar';
 import { FORMAT_ITEMS } from './components/format-items';
 import { Outline } from './components/Outline';
 import { Preview } from './components/Preview';
@@ -68,9 +66,8 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   const selection = useRef<Selection>({ start: 0, end: 0 });
   const pendingSelection = useRef<Selection | null>(null);
   const pendingJump = useRef<number | null>(null);
-  const remoteNoteId = useId();
-  // R41: Edit and Preview are tabs, one at a time.
-  const tab = usePaneTab('markdown-editor', 'edit');
+  // Wide screens: editor and preview side by side; narrow: stacked.
+  const wide = useMediaQuery('(min-width: 1200px)');
 
   // Text handed over from another tool (Text Toolkit, Send to) opens once.
   const handed = useHandoff(
@@ -153,7 +150,7 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   const fail = (e: unknown, fallback: string) =>
     notify.error(toToolError(e, fallback));
 
-  const actions: ExportActions = {
+  const actions = {
     downloadHtml: () =>
       void fresh().then(
         ({ html, title, base }) => {
@@ -251,115 +248,199 @@ export default function MarkdownEditor({ definition }: ToolProps) {
 
   const remote = rendered.remoteImages;
 
-  const editPane = (
-    <Stack gap="2">
-      <ControlBar
-        className="py-1"
-        start={<FormatToolbar onFormat={format} />}
-        end={
-          <SwitchField
-            label="Wrap lines"
-            checked={settings.wrap}
-            onCheckedChange={(wrap) => update({ wrap })}
-          />
-        }
+  const editor_ = (
+    <Card as="section" title="Markdown" headingLevel={2} padding="sm">
+      <Stack gap="3">
+        <Inline gap="3" align="center" justify="between" wrap>
+          <Toolbar label="Formatting">
+            {FORMAT_ITEMS.map((item) => (
+              <IconButton
+                key={item.action}
+                label={item.label}
+                icon={item.icon}
+                size="sm"
+                variant="ghost"
+                tone="neutral"
+                keepFocus
+                onClick={() => format(item.action)}
+              />
+            ))}
+          </Toolbar>
+          <Inline gap="4" align="center">
+            {text ? (
+              <Button size="sm" variant="ghost" onClick={() => setText('')}>
+                Clear
+              </Button>
+            ) : null}
+            <Switch
+              size="sm"
+              label="Wrap lines"
+              checked={settings.wrap}
+              onChange={(wrap) => update({ wrap })}
+            />
+          </Inline>
+        </Inline>
+        <CodeSurface
+          ref={editor}
+          value={text}
+          onChange={setText}
+          language="markdown"
+          label="Markdown"
+          wrap={settings.wrap}
+          placeholder="Type Markdown here"
+          onSelectionChange={(start, end) => {
+            selection.current = { start, end };
+          }}
+          minHeight={384}
+          maxHeight={720}
+        />
+        {text === '' ? (
+          <Stack gap="3">
+            <FileDrop
+              size="sm"
+              accept=".md,.markdown,.txt,text/markdown,text/plain"
+              labels={{
+                prompt: 'Drop a Markdown file here, or',
+                chooseOne: 'Open a file',
+              }}
+              onFiles={(files) =>
+                files[0] &&
+                void readText(files[0]).then(setText, (e: unknown) =>
+                  fail(e, 'Could not open the file'),
+                )
+              }
+            />
+            <Inline>
+              <Button
+                variant="soft"
+                size="sm"
+                icon={sparkles}
+                onClick={() => setText(SAMPLE_MARKDOWN)}
+              >
+                Try the sample document
+              </Button>
+            </Inline>
+          </Stack>
+        ) : null}
+      </Stack>
+    </Card>
+  );
+  const preview_ = (
+    <Card as="section" title="Preview" headingLevel={2} padding="sm">
+      <Preview
+        ref={preview}
+        html={rendered.html}
+        baseCss={baseCss}
+        allowRemoteImages={allowRemote}
       />
-      <TextInputPanel
-        editorRef={editor}
-        value={text}
-        onChange={setText}
-        language="markdown"
-        label="Markdown"
-        accept=".md,.markdown,.txt,text/markdown,text/plain"
-        samples={[{ label: 'Sample document', value: SAMPLE_MARKDOWN }]}
-        wrap={settings.wrap}
-        placeholder="Type Markdown here"
-        onSelectionChange={(start, end) => {
-          selection.current = { start, end };
-        }}
-        minHeight={384}
-        maxHeight={720}
-      />
-    </Stack>
+    </Card>
   );
 
   return (
-    <Stack gap="3">
+    <Stack gap="5">
+      <Inline gap="2" align="center" justify="between" wrap>
+        <Inline />
+        <Inline gap="2" wrap>
+          <Button
+            size="sm"
+            variant="soft"
+            icon={listTree}
+            onClick={() => setOutlineOpen(true)}
+          >
+            Outline
+          </Button>
+          <Menu
+            label="Export"
+            items={[
+              {
+                items: [
+                  { value: 'html', label: 'Download HTML' },
+                  { value: 'md', label: 'Download Markdown' },
+                ],
+              },
+              {
+                items: [
+                  { value: 'rich', label: 'Copy rich text' },
+                  { value: 'copy-html', label: 'Copy HTML' },
+                ],
+              },
+              { items: [{ value: 'print', label: 'Print' }] },
+            ]}
+            onSelect={(v) => {
+              if (v === 'html') actions.downloadHtml();
+              else if (v === 'md') actions.downloadMarkdown();
+              else if (v === 'rich') actions.copyRich();
+              else if (v === 'copy-html') actions.copyHtml();
+              else if (v === 'print') actions.print();
+            }}
+            trigger={(props) => (
+              <Button
+                {...props}
+                size="sm"
+                variant="soft"
+                icon={download}
+                disabled={text === ''}
+              >
+                Export
+              </Button>
+            )}
+          />
+        </Inline>
+      </Inline>
       {remote > 0 && !allowRemote ? (
-        <Alert status="warning" size="sm">
-          <Inline gap="2" wrap justify="between">
-            <Stack gap="1">
-              <span className="font-medium">
-                {plural(remote, 'remote image')} blocked
-              </span>
-              <span id={remoteNoteId}>
-                Loading them is a network request to the image hosts.
-              </span>
-            </Stack>
+        <Notice
+          tone="warning"
+          title={`${plural(remote, 'remote image')} blocked`}
+          action={
             <Button
-              type="button"
               size="sm"
-              variant="secondary"
-              aria-describedby={remoteNoteId}
+              variant="soft"
               onClick={() => setAllowRemote(true)}
             >
               Load for this document
             </Button>
-          </Inline>
-        </Alert>
-      ) : null}
-      <ToolActions>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          leftIcon={<IconList size="sm" />}
-          onClick={() => setOutlineOpen(true)}
+          }
         >
-          Outline
-        </Button>
-        <ExportMenu actions={actions} disabled={text === ''} />
-      </ToolActions>
-      <PaneTabs
-        id="markdown-editor"
-        label="Markdown panes"
-        value={tab.value}
-        onValueChange={tab.show}
-        panes={[
-          { id: 'edit', label: 'Edit', content: editPane },
-          {
-            id: 'preview',
-            label: 'Preview',
-            changeKey: rendered.html,
-            content: (
-              <Preview
-                ref={preview}
-                html={rendered.html}
-                baseCss={baseCss}
-                allowRemoteImages={allowRemote}
-              />
-            ),
-          },
-        ]}
-      />
-      <div aria-live="polite">
-        <MetaList
-          items={[
-            plural(words, 'word'),
-            plural(rendered.outline.length, 'heading'),
-            dirty ? 'Not exported' : text === '' ? 'Empty' : 'Exported',
-          ]}
+          Loading them is a network request to the image hosts.
+        </Notice>
+      ) : null}
+      {wide ? (
+        <SplitPane
+          label="Resize the editor and the preview"
+          start={<Stack paddingInline="3">{editor_}</Stack>}
+          end={<Stack paddingInline="3">{preview_}</Stack>}
         />
-      </div>
+      ) : (
+        <Stack gap="5">
+          {editor_}
+          {preview_}
+        </Stack>
+      )}
+      <StatusBar
+        label="Document"
+        start={
+          <>
+            <StatusBarSegment>{plural(words, 'word')}</StatusBarSegment>
+            <StatusBarSegment>
+              {plural(rendered.outline.length, 'heading')}
+            </StatusBarSegment>
+          </>
+        }
+        end={
+          <StatusBarSegment tone={dirty ? 'warning' : 'neutral'} dot={dirty}>
+            {dirty ? 'Not exported' : text === '' ? 'Empty' : 'Exported'}
+          </StatusBarSegment>
+        }
+      />
       <Outline
         open={outlineOpen}
         onOpenChange={setOutlineOpen}
         items={rendered.outline}
         onJump={(item) => {
           // Preview shown: scroll the preview there; else move the caret.
-          if (tab.value === 'preview')
-            preview.current?.scrollToFragment(item.id);
-          else pendingJump.current = item.line;
+          // Both are shown: scroll the preview there and move the caret.
+          preview.current?.scrollToFragment(item.id);
+          pendingJump.current = item.line;
         }}
       />
     </Stack>
