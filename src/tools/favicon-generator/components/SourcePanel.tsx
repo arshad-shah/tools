@@ -1,27 +1,17 @@
-import { useId } from 'react';
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   ColorField,
-  DropZone,
+  FileDrop,
   Inline,
-  Input,
-  Label,
   List,
-  ListItem,
+  Notice,
   SegmentedControl,
   Select,
   Slider,
   Stack,
-  Text,
-  TextInputPanel,
-} from '@/shared/ui';
-import { IconImage } from '@/shared/ui/icons';
+  TextArea,
+  TextField,
+} from '@arshad-shah/cynosure';
 import type { IconFont, IconShape } from '../lib/render';
 import type { FaviconSettings } from '../settings';
 
@@ -43,6 +33,7 @@ export interface SourcePanelProps {
   onImage(file: File): void;
   svg: SvgState;
   onSvgText(text: string): void;
+  onSvgFile(file: File): void;
   text: string;
   onTextChange(t: string): void;
   textError: string | null;
@@ -57,22 +48,19 @@ const FONTS: { value: IconFont; label: string }[] = [
 
 function ImageSource(p: SourcePanelProps) {
   return (
-    <Stack gap="2">
-      <DropZone
-        variant="inline"
-        multiple={false}
+    <Stack gap="4">
+      <FileDrop
         accept="image/png,image/jpeg,image/webp"
-        icon={IconImage}
-        title={p.imageName ?? 'Drop a square image'}
-        hint="PNG, JPEG or WebP, at least 512 px for sharp icons"
-        chooseLabel="Choose image"
+        labels={{
+          prompt: 'Drop a square image here, or',
+          chooseOne: 'Choose image',
+        }}
+        hint={
+          p.imageName ?? 'PNG, JPEG or WebP, at least 512 px for sharp icons'
+        }
         onFiles={(f) => f[0] && p.onImage(f[0])}
       />
-      {p.imageError ? (
-        <Alert status="danger">
-          <AlertDescription>{p.imageError}</AlertDescription>
-        </Alert>
-      ) : null}
+      {p.imageError ? <Notice tone="danger">{p.imageError}</Notice> : null}
     </Stack>
   );
 }
@@ -80,30 +68,33 @@ function ImageSource(p: SourcePanelProps) {
 function SvgSource(p: SourcePanelProps) {
   const { svg } = p;
   return (
-    <Stack gap="2">
-      <TextInputPanel
+    <Stack gap="4">
+      <TextArea
         label="SVG markup"
-        language="xml"
-        accept=".svg,image/svg+xml"
+        rows={8}
+        spellCheck={false}
+        placeholder="Paste SVG markup, or open an .svg file below"
         value={svg.text}
         onChange={p.onSvgText}
-        placeholder="Paste SVG markup, open or drop an .svg file"
-        minHeight={180}
+        error={svg.error ?? undefined}
       />
-      {svg.error ? (
-        <Alert status="danger">
-          <AlertDescription>{svg.error}</AlertDescription>
-        </Alert>
-      ) : null}
-      {svg.removed.length > 0 ? (
-        <Alert status="warning">
-          <AlertTitle>Removed from the SVG for safety</AlertTitle>
-          <List aria-label="Removed from the SVG">
-            {svg.removed.map((r, i) => (
-              <ListItem key={`${r}-${i}`}>{r}</ListItem>
-            ))}
-          </List>
-        </Alert>
+      <FileDrop
+        size="sm"
+        accept=".svg,image/svg+xml"
+        labels={{
+          prompt: 'Drop an .svg file here, or',
+          chooseOne: 'Open SVG file',
+        }}
+        onFiles={(f) => f[0] && p.onSvgFile(f[0])}
+      />
+      {svg.removed.length ? (
+        <Notice tone="warning" title="Removed from the SVG for safety">
+          <List
+            label="Removed from the SVG"
+            size="sm"
+            items={svg.removed.map((r, i) => ({ id: `${r}-${i}`, label: r }))}
+          />
+        </Notice>
       ) : null}
     </Stack>
   );
@@ -116,74 +107,57 @@ function TextSource({
   settings,
   update,
 }: SourcePanelProps) {
-  const textId = useId();
-  const fontId = useId();
-  const padId = useId();
   return (
-    <Stack gap="3">
-      <Stack gap="1">
-        <Label htmlFor={textId}>Text (1 to 3 characters)</Label>
-        <Input
-          id={textId}
-          value={text}
-          onChange={onTextChange}
-          maxLength={6}
-          invalid={!!textError}
-          aria-describedby={textError ? `${textId}-error` : undefined}
-          autoComplete="off"
-        />
-        {textError ? (
-          <Text id={`${textId}-error`} size="xs" className="text-danger">
-            {textError}
-          </Text>
-        ) : null}
-      </Stack>
-      <Stack gap="1">
-        <Label htmlFor={fontId}>Font</Label>
-        <Select
-          id={fontId}
-          value={settings.font}
-          onValueChange={(v) => update({ font: v as IconFont })}
-          items={FONTS}
-        />
-      </Stack>
-      <Inline gap="3" wrap>
+    <Stack gap="5">
+      <TextField
+        label="Text (1 to 3 characters)"
+        value={text}
+        onChange={onTextChange}
+        maxLength={6}
+        autoComplete="off"
+        error={textError ?? undefined}
+      />
+      <Select
+        label="Font"
+        value={settings.font}
+        onChange={(v) => update({ font: v as IconFont })}
+        options={FONTS}
+      />
+      <Inline gap="4" wrap>
         <ColorField
           label="Text colour"
+          format="hex"
           value={settings.fg}
           onChange={(fg) => update({ fg })}
-          defaultFormat="hex"
         />
         <ColorField
           label="Background colour"
+          format="hex"
           value={settings.bg}
           onChange={(bg) => update({ bg })}
-          defaultFormat="hex"
         />
       </Inline>
-      <SegmentedControl<IconShape>
+      <SegmentedControl
         label="Shape"
         value={settings.shape}
-        onChange={(shape) => update({ shape })}
+        onChange={(shape) => update({ shape: shape as IconShape })}
         options={[
           { value: 'square', label: 'Square' },
           { value: 'rounded', label: 'Rounded' },
           { value: 'circle', label: 'Circle' },
         ]}
       />
-      <Stack gap="1">
-        <Label htmlFor={padId}>
-          Padding {Math.round(settings.padding * 100)}%
-        </Label>
-        <Slider
-          id={padId}
-          min={0}
-          max={0.3}
-          step={0.01}
-          value={settings.padding}
-          onValueChange={(padding) => update({ padding })}
-        />
-      </Stack>
+      <Slider
+        label="Padding"
+        min={0}
+        max={0.3}
+        step={0.01}
+        showValue
+        value={settings.padding}
+        onChange={(padding) =>
+          typeof padding === 'number' && update({ padding })
+        }
+      />
     </Stack>
   );
 }
@@ -191,27 +165,22 @@ function TextSource({
 /** Where the icon comes from: an image, an SVG or 1 to 3 characters. */
 export function SourcePanel(p: SourcePanelProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">Source</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <SegmentedControl<SourceMode>
-            label="Source"
-            value={p.mode}
-            onChange={p.onModeChange}
-            options={[
-              { value: 'image', label: 'Image' },
-              { value: 'svg', label: 'SVG' },
-              { value: 'text', label: 'Text' },
-            ]}
-          />
-          {p.mode === 'image' ? <ImageSource {...p} /> : null}
-          {p.mode === 'svg' ? <SvgSource {...p} /> : null}
-          {p.mode === 'text' ? <TextSource {...p} /> : null}
-        </Stack>
-      </CardBody>
+    <Card as="section" title="Source" headingLevel={2}>
+      <Stack gap="5">
+        <SegmentedControl
+          label="Source"
+          value={p.mode}
+          onChange={(m) => p.onModeChange(m as SourceMode)}
+          options={[
+            { value: 'image', label: 'Image' },
+            { value: 'svg', label: 'SVG' },
+            { value: 'text', label: 'Text' },
+          ]}
+        />
+        {p.mode === 'image' ? <ImageSource {...p} /> : null}
+        {p.mode === 'svg' ? <SvgSource {...p} /> : null}
+        {p.mode === 'text' ? <TextSource {...p} /> : null}
+      </Stack>
     </Card>
   );
 }

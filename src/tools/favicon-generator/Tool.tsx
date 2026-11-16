@@ -1,5 +1,17 @@
+import {
+  Button,
+  Card,
+  CodeBlock,
+  ColorField,
+  Grid,
+  Inline,
+  Notice,
+  Stack,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { download as downloadIcon } from '@arshad-shah/cynosure/icons';
 import { useCallback, useMemo, useState } from 'react';
-import { useClipboard } from '@/shared/lib/clipboard';
+import { copyText } from '@/shared/lib/clipboard';
 import { saveZip } from '@/shared/lib/download';
 import { ToolError } from '@/shared/lib/errors';
 import { readText } from '@/shared/lib/files';
@@ -7,14 +19,6 @@ import { useHandoffFiles } from '@/shared/lib/handoff';
 import { sniffAcceptKind } from '@/shared/lib/sniff';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useJob } from '@/shared/state/useJob';
-import {
-  Container,
-  PaneTabs,
-  PrivacyNote,
-  Stack,
-  usePaneTab,
-} from '@/shared/ui';
-import { ExportPanel } from './components/ExportPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import {
   SourcePanel,
@@ -46,6 +50,11 @@ function svgState(text: string): SvgState {
   }
 }
 
+/**
+ * Favicon and App Icon Generator (redesign spec, file tool pattern): the
+ * source beside a live preview, then the manifest fields and one button
+ * that downloads every icon.
+ */
 export default function FaviconGenerator() {
   const [settings, update] = faviconSettings.useSettings();
   const [mode, setMode] = useState<SourceMode>('text');
@@ -58,7 +67,6 @@ export default function FaviconGenerator() {
   const [svg, setSvg] = useState<SvgState>(EMPTY_SVG);
   const [name, setName] = useState('');
   const [shortName, setShortName] = useState('');
-  const { copy } = useClipboard();
 
   const loadImage = useCallback(async (file: File) => {
     setMode('image');
@@ -87,7 +95,6 @@ export default function FaviconGenerator() {
   useHandoffFiles((files) => {
     if (files[0]) void loadFile(files[0]);
   });
-  const tab = usePaneTab('favicon-generator', 'source');
 
   let textError: string | null = null;
   if (text.trim())
@@ -127,7 +134,7 @@ export default function FaviconGenerator() {
     await runJob(source);
   }, [source, runJob]);
 
-  const copySnippet = useCallback(() => void copy(snippet), [copy, snippet]);
+  const copySnippet = useCallback(() => void copyText(snippet), [snippet]);
 
   useToolCommands('favicon-generator', [
     {
@@ -140,67 +147,83 @@ export default function FaviconGenerator() {
   ]);
 
   return (
-    <Container size="full" className="px-0 sm:px-0">
-      <Stack gap="4">
-        <PaneTabs
-          id="favicon-generator"
-          label="Favicon panes"
-          value={tab.value}
-          onValueChange={tab.show}
-          panes={[
-            {
-              id: 'source',
-              label: 'Source',
-              content: (
-                <SourcePanel
-                  mode={mode}
-                  onModeChange={setMode}
-                  imageName={image?.name ?? null}
-                  imageError={imageError}
-                  onImage={(f) => void loadImage(f)}
-                  svg={svg}
-                  onSvgText={(t) => setSvg(svgState(t))}
-                  text={text}
-                  onTextChange={setText}
-                  textError={textError}
-                  settings={settings}
-                  update={update}
-                />
-              ),
-            },
-            {
-              id: 'preview',
-              label: 'Preview',
-              changeKey: source,
-              content: (
-                <PreviewPanel
-                  source={source}
-                  backgroundColor={settings.backgroundColor}
-                  name={name}
-                  shortName={shortName}
-                />
-              ),
-            },
-          ]}
+    <Stack gap="6">
+      <Grid columns={{ base: 1, lg: 2 }} gap="6" align="start">
+        <SourcePanel
+          mode={mode}
+          onModeChange={setMode}
+          imageName={image?.name ?? null}
+          imageError={imageError}
+          onImage={(f) => void loadImage(f)}
+          svg={svg}
+          onSvgText={(t) => setSvg(svgState(t))}
+          onSvgFile={(f) => void loadSvgFile(f)}
+          text={text}
+          onTextChange={setText}
+          textError={textError}
+          settings={settings}
+          update={update}
         />
-        <ExportPanel
-          name={name}
-          onNameChange={setName}
-          shortName={shortName}
-          onShortNameChange={setShortName}
-          themeColor={settings.themeColor}
+        <PreviewPanel
+          source={source}
           backgroundColor={settings.backgroundColor}
-          onColours={update}
-          snippet={snippet}
-          canDownload={!!source}
-          downloading={job.status === 'running'}
-          error={job.error?.message ?? null}
-          onDownload={() => void download()}
+          name={name}
+          shortName={shortName}
         />
-        <PrivacyNote variant="local">
-          Icons are drawn on this device.
-        </PrivacyNote>
-      </Stack>
-    </Container>
+      </Grid>
+      <Card as="section" title="Manifest and download" headingLevel={2}>
+        <Stack gap="5">
+          <Grid columns={{ base: 1, md: 2 }} gap="5">
+            <TextField
+              label="App name"
+              placeholder="My app"
+              value={name}
+              onChange={setName}
+            />
+            <TextField
+              label="Short name"
+              placeholder="App"
+              value={shortName}
+              onChange={setShortName}
+            />
+            <ColorField
+              label="Theme colour"
+              format="hex"
+              value={settings.themeColor}
+              onChange={(themeColor) => update({ themeColor })}
+            />
+            <ColorField
+              label="Manifest background colour"
+              format="hex"
+              value={settings.backgroundColor}
+              onChange={(backgroundColor) => update({ backgroundColor })}
+            />
+          </Grid>
+          {job.error ? (
+            <Notice tone="danger">{job.error.message}</Notice>
+          ) : null}
+          <Inline>
+            <Button
+              variant="solid"
+              tone="accent"
+              size="lg"
+              icon={downloadIcon}
+              disabled={!source}
+              loading={job.status === 'running'}
+              onClick={() => void download()}
+            >
+              Download ZIP
+            </Button>
+          </Inline>
+          <CodeBlock
+            title="HTML for the page head"
+            code={snippet}
+            language="html"
+            copyable
+            labels={{ copy: 'Copy snippet' }}
+          />
+        </Stack>
+      </Card>
+    </Stack>
   );
 }

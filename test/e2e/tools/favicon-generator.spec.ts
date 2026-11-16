@@ -12,7 +12,6 @@ test('a text icon "T" downloads a ZIP of seven files with a valid ICO and a 512 
     .getByRole('textbox', { name: 'Text (1 to 3 characters)' })
     .fill('T');
   // Source and Preview are tabs (R41): the preview is one click away.
-  await page.getByRole('tab', { name: /^Preview/ }).click();
   await expect(page.getByRole('img', { name: '16 px favicon' })).toBeVisible();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download ZIP' }).click();
