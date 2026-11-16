@@ -1,99 +1,132 @@
-import React, { useState } from 'react';
-import { IconMinimize2 } from '@/shared/ui/icons';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Badge,
   Button,
   Card,
-  CardBody,
-  Inline,
-  Label,
-  NumberInput,
+  CodeBlock,
+  DescriptionList,
+  Disclosure,
+  Grid,
+  GridItem,
+  List,
+  Notice,
+  NumberField,
+  RadioGroup,
   Slider,
   Stack,
   Switch,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   Text,
-} from '@/shared/ui';
-import type { ToolProps } from '@/app/tool';
-import { deriveFilename } from '@/shared/lib/download';
-import { formatBytes, formatSizeChange } from '@/shared/lib/format';
-import { useJob } from '@/shared/state/useJob';
-import { usePdfDocument } from '@/pdf/render';
-import {
-  JobPanel,
-  PageThumb,
-  PdfFileHeader,
-  ResultFiles,
-  type PdfInputFile,
-  UNENCRYPTED_NOTE,
-} from '@/pdf/components';
+} from '@arshad-shah/cynosure';
+import { fileCompress } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
 import {
   browserCompressDeps,
   compressPdf,
   type CompressSettings,
   type PresetId,
 } from '@/pdf/compress';
-import { CompressReportView } from '@/pdf/components/CompressReport';
+import type { CompressReport } from '@/pdf/compress/pipeline';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
+import { usePdfDocument } from '@/pdf/render';
+import { ChosenFile } from '@/pdf/ui/ChosenFile';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { JobProgress, ResultCard } from '@/pdf/ui/ResultCard';
+import { deriveFilename } from '@/shared/lib/download';
+import { formatBytes, formatSizeChange } from '@/shared/lib/format';
+import { useHandoff } from '@/shared/lib/handoff';
+import { useJob } from '@/shared/state/useJob';
 import { fromAdvanced, type AdvancedSettings } from './lib/settings';
 import { useCompressorSettings } from './store';
-import { useHandoff } from '@/shared/lib/handoff';
 
-const PRESET_LABELS: Record<PresetId, string> = {
-  lossless: 'Lossless',
-  balanced: 'Balanced',
-  strong: 'Strong',
-};
-
-const PRESET_DESCRIPTIONS: Record<PresetId, string> = {
-  lossless:
-    'Restructures the file without touching images. Never lowers quality.',
-  balanced:
-    'Downsamples images above 150 DPI and re-encodes them as JPEG at 75% quality. Good for sharing.',
-  strong:
-    'Downsamples images above 96 DPI at 60% quality and removes document metadata. Smallest files.',
-};
-
-type SwitchKey = Exclude<keyof AdvancedSettings, 'targetDpi' | 'quality'>;
-
-const SWITCHES: { key: SwitchKey; id: string; label: string }[] = [
-  { key: 'recompressImages', id: 'cmp-images', label: 'Recompress images' },
+const PRESETS: { value: PresetId; label: string; description: string }[] = [
   {
-    key: 'objectStreams',
-    id: 'cmp-objstm',
-    label: 'Generate object streams',
+    value: 'lossless',
+    label: 'Lossless',
+    description:
+      'Restructures the file without touching images. Never lowers quality.',
   },
   {
-    key: 'recompressFlate',
-    id: 'cmp-flate',
-    label: 'Recompress Flate streams',
+    value: 'balanced',
+    label: 'Balanced',
+    description:
+      'Images above 150 DPI are downsampled and saved as JPEG at 75%. Good for sharing.',
   },
   {
-    key: 'removeUnreferenced',
-    id: 'cmp-unref',
-    label: 'Remove unreferenced objects',
-  },
-  {
-    key: 'linearize',
-    id: 'cmp-linearize',
-    label: 'Linearize for fast web view',
-  },
-  {
-    key: 'stripMetadata',
-    id: 'cmp-metadata',
-    label: 'Remove metadata (Info and XMP)',
+    value: 'strong',
+    label: 'Strong',
+    description:
+      'Images above 96 DPI at 60%, and the document metadata removed. Smallest files.',
   },
 ];
 
-const PdfCompressorTool: React.FC<ToolProps> = () => {
+type SwitchKey = Exclude<keyof AdvancedSettings, 'targetDpi' | 'quality'>;
+
+const SWITCHES: { key: SwitchKey; label: string }[] = [
+  { key: 'recompressImages', label: 'Recompress images' },
+  { key: 'objectStreams', label: 'Generate object streams' },
+  { key: 'recompressFlate', label: 'Recompress Flate streams' },
+  { key: 'removeUnreferenced', label: 'Remove unreferenced objects' },
+  { key: 'linearize', label: 'Linearize for fast web view' },
+  { key: 'stripMetadata', label: 'Remove metadata (Info and XMP)' },
+];
+
+/** What each stage did, which images were touched, and qpdf's warnings. */
+function Report({ report }: { report: CompressReport }) {
+  const { images, warnings } = report;
+  const skipped = images?.skipped.reduce((n, s) => n + s.count, 0) ?? 0;
+  return (
+    <Card as="section" title="What changed">
+      <Stack gap="5">
+        <DescriptionList
+          size="sm"
+          divided
+          items={report.stages.map((s) => ({
+            id: s.id,
+            term: s.label,
+            detail: `${formatBytes(s.before)} to ${formatBytes(s.after)} (${formatSizeChange(s.before, s.after)})`,
+          }))}
+        />
+        {images ? (
+          <Stack gap="3">
+            <Text size="sm">
+              Images: {images.processed} recompressed, {images.unchanged}{' '}
+              already optimal, {skipped} left untouched.
+            </Text>
+            {images.grayToRgb > 0 ? (
+              <Text size="sm" tone="muted">
+                {images.grayToRgb === 1
+                  ? '1 grayscale image was'
+                  : `${images.grayToRgb} grayscale images were`}{' '}
+                re-encoded as colour JPEG: browsers cannot write grayscale
+                JPEGs.
+              </Text>
+            ) : null}
+            {skipped > 0 ? (
+              <List
+                label="Left untouched"
+                size="sm"
+                items={images.skipped.map((s) => ({
+                  id: s.reason,
+                  label: `${s.reason} (${s.count})`,
+                }))}
+              />
+            ) : null}
+          </Stack>
+        ) : null}
+        {warnings.length ? (
+          <Disclosure summary={`Warnings (${warnings.length})`} variant="line">
+            <CodeBlock code={warnings.join('\n')} wrap size="sm" />
+          </Disclosure>
+        ) : null}
+      </Stack>
+    </Card>
+  );
+}
+
+/**
+ * PDF Compressor (redesign spec, file tool pattern): drop a PDF, pick a
+ * preset (or tune the advanced settings), compress, and see what changed.
+ */
+export default function PdfCompressorTool() {
   // Files dropped on a hub land here once (spec §5.3).
   const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
@@ -104,180 +137,176 @@ const PdfCompressorTool: React.FC<ToolProps> = () => {
   const job = useJob((ctx, source: PdfInputFile, settings: CompressSettings) =>
     compressPdf(source.bytes, settings, browserCompressDeps, ctx),
   );
-
-  const pick = (picked: PdfInputFile) => {
-    job.reset();
-    setFile(picked);
-  };
-  const clearFile = () => {
-    job.reset();
-    setFile(null);
-  };
-  const onPreset = (id: PresetId) => {
-    job.reset();
-    choosePreset(id);
-  };
   const onAdvanced = (patch: Partial<AdvancedSettings>) => {
     job.reset();
     updateAdvanced(patch);
   };
-
-  const result = job.result;
-  const lastStage = result?.report.stages[result.report.stages.length - 1];
+  const busy = job.status === 'running';
+  const result = job.status === 'done' ? job.result : null;
+  const lastStage = result?.report.stages.at(-1);
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="5">
-          <PdfFileHeader
-            initialFiles={handed}
-            file={file}
-            onFile={pick}
-            onClear={clearFile}
-            loading={loading}
-            error={error}
-          />
-          {file && doc && (
-            <>
-              <div className="flex items-center gap-3">
-                <PageThumb
-                  docId={doc.docId}
-                  pageIndex={0}
-                  page={doc.pages[0]}
-                  width={56}
-                  label="Page 1"
+    <Stack gap="6">
+      {file ? (
+        <ChosenFile
+          name={file.name}
+          size={file.size}
+          detail={
+            doc
+              ? `${doc.pageCount} ${doc.pageCount === 1 ? 'page' : 'pages'}`
+              : loading
+                ? 'Opening'
+                : undefined
+          }
+          disabled={busy}
+          onClear={() => {
+            job.reset();
+            setFile(null);
+          }}
+        />
+      ) : (
+        <PdfIntake
+          initialFiles={handed}
+          onFiles={(files) => {
+            job.reset();
+            setFile(files[0]);
+          }}
+        />
+      )}
+      {error ? <Notice tone="danger">{error.message}</Notice> : null}
+
+      {file && doc ? (
+        <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
+          <GridItem span={{ base: 1, lg: 2 }}>
+            <Card as="section" title="How much to compress">
+              <Stack gap="5">
+                <RadioGroup
+                  label="Preset"
+                  description={
+                    preset === 'custom'
+                      ? 'Your own combination of the advanced settings.'
+                      : undefined
+                  }
+                  variant="card"
+                  columns={3}
+                  value={preset === 'custom' ? '' : preset}
+                  onChange={(v) => {
+                    job.reset();
+                    choosePreset(v as PresetId);
+                  }}
+                  options={PRESETS}
                 />
-                <Text size="sm" tone="muted">
-                  {doc.pageCount} {doc.pageCount === 1 ? 'page' : 'pages'} ·{' '}
-                  {formatBytes(file.size)}
-                </Text>
-              </div>
-              <Stack gap="2">
-                <Label>Preset</Label>
-                <Inline gap="3" align="center" wrap>
-                  <Tabs
-                    value={preset === 'custom' ? '' : preset}
-                    onValueChange={(v) => onPreset(v as PresetId)}
-                    variant="soft"
-                  >
-                    <TabsList aria-label="Preset">
-                      {(Object.keys(PRESET_LABELS) as PresetId[]).map((id) => (
-                        <TabsTrigger key={id} value={id}>
-                          {PRESET_LABELS[id]}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </Tabs>
-                  {preset === 'custom' && <Badge tone="accent">Custom</Badge>}
-                </Inline>
-                <Text size="sm" tone="muted">
-                  {preset === 'custom'
-                    ? 'Your own combination of the advanced settings below.'
-                    : PRESET_DESCRIPTIONS[preset]}
-                </Text>
+                {preset === 'custom' ? (
+                  <Badge tone="accent">Custom settings</Badge>
+                ) : null}
+                <Disclosure summary="Advanced settings" variant="line">
+                  <Stack gap="4">
+                    {SWITCHES.map(({ key, label }) => (
+                      <Switch
+                        key={key}
+                        label={label}
+                        checked={advanced[key]}
+                        onChange={(v) => onAdvanced({ [key]: v })}
+                      />
+                    ))}
+                    <NumberField
+                      label="Target resolution (DPI)"
+                      min={50}
+                      max={600}
+                      step={10}
+                      value={advanced.targetDpi}
+                      disabled={!advanced.recompressImages}
+                      onChange={(v) =>
+                        v !== null && onAdvanced({ targetDpi: v })
+                      }
+                    />
+                    <Slider
+                      label="JPEG quality"
+                      min={0.3}
+                      max={0.95}
+                      step={0.05}
+                      showValue
+                      labels={{
+                        value: (v: number) => `${Math.round(v * 100)}%`,
+                      }}
+                      value={advanced.quality}
+                      disabled={!advanced.recompressImages}
+                      onChange={(v) =>
+                        typeof v === 'number' && onAdvanced({ quality: v })
+                      }
+                    />
+                  </Stack>
+                </Disclosure>
               </Stack>
-              <Accordion type="single">
-                <AccordionItem value="advanced">
-                  <AccordionTrigger>Advanced settings</AccordionTrigger>
-                  <AccordionContent>
-                    <Stack gap="4">
-                      {SWITCHES.map(({ key, id, label }) => (
-                        <Inline key={key} gap="3" align="center">
-                          <Switch
-                            id={id}
-                            checked={advanced[key]}
-                            onCheckedChange={(v) => onAdvanced({ [key]: v })}
-                            aria-label={label}
-                          />
-                          <Label htmlFor={id}>{label}</Label>
-                        </Inline>
-                      ))}
-                      <Stack gap="2">
-                        <Label htmlFor="cmp-dpi">Target resolution (DPI)</Label>
-                        <NumberInput
-                          id="cmp-dpi"
-                          min={50}
-                          max={600}
-                          step={10}
-                          value={advanced.targetDpi}
-                          disabled={!advanced.recompressImages}
-                          onValueChange={(v) => onAdvanced({ targetDpi: v })}
-                          className="max-w-48"
-                        />
-                      </Stack>
-                      <Stack gap="2">
-                        <Label htmlFor="cmp-quality">JPEG quality</Label>
-                        <Inline gap="3" align="center">
-                          <Slider
-                            id="cmp-quality"
-                            min={0.3}
-                            max={0.95}
-                            step={0.05}
-                            value={advanced.quality}
-                            disabled={!advanced.recompressImages}
-                            onValueChange={(v) => onAdvanced({ quality: v })}
-                            className="max-w-64"
-                          />
-                          <Text size="sm" className="font-mono">
-                            {Math.round(advanced.quality * 100)}%
-                          </Text>
-                        </Inline>
-                      </Stack>
-                    </Stack>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <div>
+            </Card>
+          </GridItem>
+          <Card as="section" title="Compress">
+            <Stack gap="5">
+              <DescriptionList
+                size="sm"
+                layout="inline"
+                items={[
+                  { term: 'Size now', detail: formatBytes(file.size) },
+                  {
+                    term: 'Preset',
+                    detail:
+                      preset === 'custom'
+                        ? 'Custom'
+                        : PRESETS.find((p) => p.value === preset)?.label,
+                  },
+                ]}
+              />
+              <JobProgress
+                job={job}
+                label="Compressing"
+                onCancel={job.cancel}
+              />
+              {busy ? null : (
                 <Button
-                  variant="primary"
-                  leftIcon={<IconMinimize2 size="sm" />}
-                  disabled={job.status === 'running'}
-                  onClick={() => job.run(file, fromAdvanced(advanced))}
+                  variant="solid"
+                  tone="accent"
+                  size="lg"
+                  fullWidth
+                  icon={fileCompress}
+                  onClick={() => void job.run(file, fromAdvanced(advanced))}
                 >
                   Compress PDF
                 </Button>
-              </div>
-            </>
-          )}
-          <JobPanel job={job} onCancel={job.cancel} runningLabel="Compressing">
-            {result && file && (
-              <Stack gap="4">
-                {result.report.keptOriginal ? (
-                  <Alert status="info">
-                    <AlertTitle>Already optimised</AlertTitle>
-                    <AlertDescription>
-                      The compressed version was not smaller (
-                      {formatBytes(result.report.inputSize)} to{' '}
-                      {formatBytes(lastStage?.after ?? result.report.inputSize)}
-                      ), so your original is unchanged. There is nothing to
-                      download.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <ResultFiles
-                    openInWorkspace
-                    note={file?.wasEncrypted ? UNENCRYPTED_NOTE : undefined}
-                    files={[
-                      {
-                        name: deriveFilename(file.name, 'compressed', 'pdf'),
-                        bytes: result.bytes,
-                        detail: formatSizeChange(
-                          result.report.inputSize,
-                          result.bytes.length,
-                        ),
-                      },
-                    ]}
-                    inputSize={file.size}
-                  />
-                )}
-                <CompressReportView report={result.report} />
-              </Stack>
-            )}
-          </JobPanel>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+              )}
+            </Stack>
+          </Card>
+        </Grid>
+      ) : null}
 
-export default PdfCompressorTool;
+      {result && file ? (
+        <Stack gap="6">
+          {result.report.keptOriginal ? (
+            <Notice tone="info" title="Already optimised">
+              The compressed version was not smaller (
+              {formatBytes(result.report.inputSize)} to{' '}
+              {formatBytes(lastStage?.after ?? result.report.inputSize)}), so
+              your original is unchanged. There is nothing to download.
+            </Notice>
+          ) : (
+            <ResultCard
+              openInWorkspace
+              inputSize={file.size}
+              note={
+                file.wasEncrypted
+                  ? 'The original was password-protected. This file is not'
+                  : undefined
+              }
+              files={[
+                {
+                  name: deriveFilename(file.name, 'compressed', 'pdf'),
+                  bytes: result.bytes,
+                },
+              ]}
+            />
+          )}
+          <Report report={result.report} />
+        </Stack>
+      ) : null}
+    </Stack>
+  );
+}

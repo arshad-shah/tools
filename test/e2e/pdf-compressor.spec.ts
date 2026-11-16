@@ -10,15 +10,13 @@ test('Balanced compresses images for real and reports each stage', async ({
 }) => {
   await page.goto(pathOf('pdf-compressor'));
   await page.locator('input[type=file]').setInputFiles(FIXTURE);
-  await page.getByRole('tab', { name: 'Balanced' }).click();
+  await page.getByRole('radio', { name: 'Balanced' }).check({ force: true });
   await page.getByRole('button', { name: 'Compress PDF' }).click();
   await expect(
     page.getByText('Images: 3 recompressed', { exact: false }),
   ).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText('CMYK colour (1)')).toBeVisible();
-  await expect(
-    page.getByRole('cell', { name: 'Restructure (qpdf)' }),
-  ).toBeVisible();
+  await expect(page.getByText('Restructure (qpdf)')).toBeVisible();
   const promise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download images-heavy.compressed.pdf' })
@@ -52,17 +50,22 @@ test('changing an advanced setting switches the preset to Custom', async ({
 }) => {
   await page.goto(pathOf('pdf-compressor'));
   await page.locator('input[type=file]').setInputFiles(FIXTURE);
-  await page.getByRole('tab', { name: 'Balanced' }).click();
+  await page.getByRole('radio', { name: 'Balanced' }).check({ force: true });
   await page.getByRole('button', { name: 'Advanced settings' }).click();
   await page
     .getByRole('switch', { name: 'Linearize for fast web view' })
     .click();
   await expect(page.getByText('Custom', { exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: 'Lossless' }).click();
+  // The card is the target: its description is part of the label.
+  await page
+    .getByText('Restructures the file without touching images', {
+      exact: false,
+    })
+    .click();
   await expect(page.getByText('Custom', { exact: true })).toHaveCount(0);
   await expect(
     page.getByRole('switch', { name: 'Recompress images' }),
-  ).toHaveAttribute('aria-checked', 'false');
+  ).not.toBeChecked();
 });
 
 test('JPEGs tagged with EXIF orientation keep their pixels, and gray images are processed (review I1)', async ({
@@ -72,7 +75,7 @@ test('JPEGs tagged with EXIF orientation keep their pixels, and gray images are 
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/exif-photos.pdf');
-  await page.getByRole('tab', { name: 'Balanced' }).click();
+  await page.getByRole('radio', { name: 'Balanced' }).check({ force: true });
   await page.getByRole('button', { name: 'Compress PDF' }).click();
   await expect(
     page.getByText('Images: 3 recompressed', { exact: false }),
