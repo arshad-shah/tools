@@ -1,54 +1,74 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import Base64Converter from './Tool';
 
 beforeEach(() => localStorage.clear());
 
-const renderTool = () =>
+/** Renders the tool in Encode mode (the mode is a remembered setting). */
+const renderTool = () => {
   render(
     <MemoryRouter>
       <Base64Converter />
     </MemoryRouter>,
   );
+  fireEvent.click(screen.getByRole('radio', { name: 'Encode' }));
+};
 const box = (name: string) =>
   screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
-const tab = (name: string) =>
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
+const block = (name: string) => screen.getByRole('figure', { name });
 
 describe('Base64 Converter', () => {
-  it('shows Input and Output as tabs (R41)', () => {
+  it('starts empty and encodes the example on request', () => {
     renderTool();
-    tab('Input');
-    fireEvent.change(box('Text to encode'), { target: { value: 'hello' } });
-    expect(screen.queryByRole('textbox', { name: 'Result' })).toBeNull();
-    tab('Output');
-    expect(box('Result').value).toBe('aGVsbG8=');
-    // Copy and Download sit on the read-only output panel.
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Download' })).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: 'Nothing to encode yet' }),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Try an example' })[0]!,
+    );
+    expect(block('Base64').textContent).toContain('SGVsbG8s');
   });
 
-  it('options are SwitchFields above the tabs', () => {
+  it('encodes text beside the input, with copy and download', () => {
     renderTool();
-    tab('Input');
+    fireEvent.change(box('Text to encode'), { target: { value: 'hello' } });
+    const result = block('Base64');
+    expect(result.textContent).toContain('aGVsbG8=');
+    expect(
+      within(result).getByRole('button', { name: 'Copy Base64' }),
+    ).toBeTruthy();
+    expect(
+      within(result).getByRole('button', { name: 'Download Base64' }),
+    ).toBeTruthy();
+  });
+
+  it('URL-safe drops the padding', () => {
+    renderTool();
     fireEvent.click(screen.getByRole('switch', { name: 'URL-safe' }));
     fireEvent.change(box('Text to encode'), { target: { value: 'a' } });
-    tab('Output');
-    expect(box('Result').value).toBe('YQ');
+    expect(block('Base64').textContent).toContain('YQ');
+    expect(block('Base64').textContent).not.toContain('YQ==');
+    // Settings are remembered: put URL-safe (and padding) back.
     fireEvent.click(screen.getByRole('switch', { name: 'URL-safe' }));
+    expect(block('Base64').textContent).toContain('YQ==');
   });
 
-  it('a decode failure is an error state in the Output pane', () => {
+  it('a decode failure is a danger notice in the output', () => {
     renderTool();
-    tab('Input');
     fireEvent.click(screen.getByRole('radio', { name: 'Decode' }));
     fireEvent.change(box('Base64 to decode'), { target: { value: '@@@' } });
-    tab('Output');
     expect(screen.getByRole('alert').textContent).toContain(
       'Could not decode this Base64',
     );
-    fireEvent.click(screen.getByRole('radio', { name: 'Encode' }));
+  });
+
+  it('swap moves the output to the input and flips the mode', () => {
+    renderTool();
+    fireEvent.change(box('Text to encode'), { target: { value: 'hello' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Swap' }));
+    expect(box('Base64 to decode').value).toBe('aGVsbG8=');
+    expect(block('Decoded text').textContent).toContain('hello');
   });
 });
