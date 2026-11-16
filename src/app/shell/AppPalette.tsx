@@ -1,7 +1,9 @@
 import { CommandPalette, type Command } from '@arshad-shah/cynosure';
 import type { IconData } from '@arshad-shah/cynosure/icons';
 import {
+  arrowLeft,
   clipboardPaste,
+  command,
   home,
   keyboard,
   monitor,
@@ -24,6 +26,7 @@ import { categoryGlyph, toolGlyph } from '../ui/glyphs';
 
 const FIXED: Record<string, IconData> = {
   'route:home': home,
+  'app:back': arrowLeft,
   'theme:light': sun,
   'theme:dark': moon,
   'theme:system': monitor,
@@ -33,12 +36,13 @@ const FIXED: Record<string, IconData> = {
 };
 
 /** The Facet icon for a registered command, by its id. */
-function glyphFor(id: string): IconData | undefined {
+function glyphFor(id: string): IconData {
   if (FIXED[id]) return FIXED[id];
   const [kind, rest] = id.split(':', 2);
   if (kind === 'tool' || kind === 'favourite') return toolGlyph(rest);
   if (kind === 'route') return categoryGlyph(rest as ToolCategory);
-  return undefined;
+  // Every row has an icon, so the labels line up.
+  return command;
 }
 
 /** tools' fuzzy ranking (higher is better); Cynosure ranks lower first. */
@@ -78,7 +82,7 @@ export function AppPalette({
           group: g.group,
           ...(c.keywords ? { keywords: c.keywords } : {}),
           ...(c.shortcut ? { shortcut: hotkeyCaps(c.shortcut) } : {}),
-          ...(glyphFor(c.id) ? { icon: glyphFor(c.id) } : {}),
+          icon: glyphFor(c.id),
           disabled: !!c.disabled,
         }),
       ),

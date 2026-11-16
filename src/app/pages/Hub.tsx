@@ -83,7 +83,7 @@ export function Hub({
   useBreadcrumb([{ label: category.label }]);
   const groups = groupTools(category, hubTools(TOOLS, category.id));
   return (
-    <Container size="xl" paddingBlock="9">
+    <Container size="lg" paddingBlock="9">
       <Stack gap="9">
         <Inline gap="6" align="start">
           <IconTile icon={categoryGlyph(category.id)} size="lg" />

@@ -125,34 +125,39 @@ export default function Home() {
   const searching = query.trim() !== '';
 
   return (
-    <Container size="xl" paddingBlock="9">
+    <Container size="lg" paddingBlock="9">
       <Stack gap="10">
         <PageHeader
-          size="lg"
+          titleSize="3xl"
           title="Private tools that run in your browser"
           description="Nothing you open is uploaded: every tool works on this device, offline too."
         >
-          <Stack gap="3">
-            <SearchField
-              ref={field}
-              size="lg"
-              label="Search tools"
-              labelHidden
-              placeholder={`Search ${tools.length} tools`}
-              value={query}
-              onChange={setQuery}
-              trailing={searching ? `${matches} of ${tools.length}` : undefined}
-            />
-            <Inline gap="2" align="center" wrap>
-              <Text size="sm" tone="muted">
-                Press
-              </Text>
-              <Kbd keys="mod+k" size="sm" />
-              <Text size="sm" tone="muted">
-                on any page to search tools and actions.
-              </Text>
-            </Inline>
-          </Stack>
+          {/* A readable width: the search is a field, not a banner. */}
+          <Container size="sm" center={false} padding="0">
+            <Stack gap="3">
+              <SearchField
+                ref={field}
+                size="lg"
+                label="Search tools"
+                labelHidden
+                placeholder={`Search ${tools.length} tools`}
+                value={query}
+                onChange={setQuery}
+                trailing={
+                  searching ? `${matches} of ${tools.length}` : undefined
+                }
+              />
+              <Inline gap="2" align="center" wrap>
+                <Text size="sm" tone="muted">
+                  Press
+                </Text>
+                <Kbd keys="mod+k" size="sm" />
+                <Text size="sm" tone="muted">
+                  on any page to search tools and actions.
+                </Text>
+              </Inline>
+            </Stack>
+          </Container>
         </PageHeader>
 
         {searching ? null : <PickUp />}
@@ -179,7 +184,6 @@ export default function Home() {
               </Inline>
               <HubDropZone
                 category={pdf}
-                size="lg"
                 prompt="Drop PDFs or images here, or"
                 route={(files) => routePdfHubDrop(files, TOOLS)}
               />

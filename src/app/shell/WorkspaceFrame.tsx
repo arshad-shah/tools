@@ -23,11 +23,11 @@ export default function WorkspaceFrame() {
   return (
     <PaletteContext.Provider value={openPalette}>
       <HelpContext.Provider value={help}>
-        <Outlet />
-        <AppPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-        {helpDialogs}
-        <Toaster position="bottom-end">
+        <Toaster position={'bottom-end'}>
           <NotifyBridge />
+          <Outlet />
+          <AppPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+          {helpDialogs}
         </Toaster>
       </HelpContext.Provider>
     </PaletteContext.Provider>

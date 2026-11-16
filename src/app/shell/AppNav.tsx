@@ -102,7 +102,7 @@ export function AppNav({
 
   return (
     <Stack fill gap="0">
-      <Stack grow minSize="0">
+      <Stack grow minSize="0" overflow="auto">
         <SideNav
           label="Tools navigation"
           items={items}

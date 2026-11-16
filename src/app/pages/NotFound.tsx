@@ -42,7 +42,7 @@ export default function NotFound() {
   );
 
   return (
-    <Container size="xl" paddingBlock="10">
+    <Container size="lg" paddingBlock="10">
       <Stack gap="9">
         <EmptyState
           headingLevel={1}

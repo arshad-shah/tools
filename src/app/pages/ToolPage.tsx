@@ -48,7 +48,7 @@ export function ToolPage({ tool, children }: ToolPageProps) {
   ]);
 
   return (
-    <Container size="xl" paddingBlock="8">
+    <Container size="lg" paddingBlock="8">
       <Stack gap="8">
         <Inline gap="6" align="start">
           <IconTile icon={toolGlyph(tool.id)} size="lg" />

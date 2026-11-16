@@ -42,8 +42,9 @@ export function useAppCommands(): void {
     favouriteCommands(navigate, () => useFavoritesStore.getState().ids, TOOLS),
     [navigate],
   );
-  useCommands(routeCommands(navigate), [navigate]);
+  // People come for tools: they are listed before the pages.
   useCommands(toolCommands(navigate, TOOLS), [navigate]);
+  useCommands(routeCommands(navigate), [navigate]);
   useCommands(themeCommands(setMode), [setMode]);
   useCommands(BACK_COMMANDS, []);
   useCommands(

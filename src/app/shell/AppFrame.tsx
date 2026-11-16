@@ -197,48 +197,48 @@ function Frame() {
   return (
     <PaletteContext.Provider value={openPalette}>
       <HelpContext.Provider value={help}>
-        <AppShell
-          collapseBelow={1024}
-          onNarrowChange={setNarrow}
-          labels={{ nav: 'Menu', openNav: 'Menu' }}
-          header={<HeaderBar collapsed={collapsed} onToggle={toggleNav} />}
-          nav={
-            <AppNav
-              collapsed={collapsed && !narrow}
-              onCollapsedChange={(c) => c !== collapsed && toggleNav()}
-              onSearch={openPalette}
-              onPrivacy={help.openPrivacy}
-            />
-          }
-          tabs={
-            <SideNav
-              label="Sections"
-              layout="bar"
-              current={tab}
-              renderLink={(props) => <NavRouterLink {...props} />}
-              onNavigate={(id) => {
-                if (id === 'search') openPalette();
-                else if (id === 'favourites') setFavouritesOpen(true);
-              }}
-              items={[
-                { id: '/', label: 'Home', href: '/', icon: home },
-                { id: 'search', label: 'Search', icon: search },
-                { id: 'favourites', label: 'Favourites', icon: star },
-                { id: '/pdf', label: 'PDF', href: '/pdf', icon: fileText },
-              ]}
-            />
-          }
-        >
-          <KeepAliveOutlet />
-        </AppShell>
-        <AppPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-        <FavouritesSheet
-          open={favouritesOpen}
-          onOpenChange={setFavouritesOpen}
-        />
-        {helpDialogs}
         <Toaster position={narrow ? 'top-center' : 'bottom-end'}>
           <NotifyBridge />
+          <AppShell
+            collapseBelow={1024}
+            onNarrowChange={setNarrow}
+            labels={{ nav: 'Menu', openNav: 'Menu' }}
+            header={<HeaderBar collapsed={collapsed} onToggle={toggleNav} />}
+            nav={
+              <AppNav
+                collapsed={collapsed && !narrow}
+                onCollapsedChange={(c) => c !== collapsed && toggleNav()}
+                onSearch={openPalette}
+                onPrivacy={help.openPrivacy}
+              />
+            }
+            tabs={
+              <SideNav
+                label="Sections"
+                layout="bar"
+                current={tab}
+                renderLink={(props) => <NavRouterLink {...props} />}
+                onNavigate={(id) => {
+                  if (id === 'search') openPalette();
+                  else if (id === 'favourites') setFavouritesOpen(true);
+                }}
+                items={[
+                  { id: '/', label: 'Home', href: '/', icon: home },
+                  { id: 'search', label: 'Search', icon: search },
+                  { id: 'favourites', label: 'Favourites', icon: star },
+                  { id: '/pdf', label: 'PDF', href: '/pdf', icon: fileText },
+                ]}
+              />
+            }
+          >
+            <KeepAliveOutlet />
+          </AppShell>
+          <AppPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+          <FavouritesSheet
+            open={favouritesOpen}
+            onOpenChange={setFavouritesOpen}
+          />
+          {helpDialogs}
         </Toaster>
       </HelpContext.Provider>
     </PaletteContext.Provider>
