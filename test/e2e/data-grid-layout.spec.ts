@@ -37,7 +37,17 @@ async function headersOf(page: Page, name: string) {
     .locator('xpath=..')
     .getByRole('columnheader');
   await expect(headers.first()).toBeVisible();
-  return (await headers.allInnerTexts()).map((t) => t.trim());
+  // The label alone: the kit header also holds a type badge and its
+  // visually hidden description.
+  return headers.evaluateAll((hs) =>
+    hs.map((h) =>
+      (
+        h.querySelector(
+          '[data-grid-header-label], .cy-data-grid-label, .cy-sort-button-label',
+        ) ?? h
+      ).textContent!.trim(),
+    ),
+  );
 }
 
 /**
@@ -94,19 +104,18 @@ async function checkGrid(page: Page, name: string, headers: string[]) {
       body: g.clientHeight,
       overflowX: g.scrollWidth > g.clientWidth,
       bar: g.offsetHeight - g.clientHeight,
-      // A header whose text overflows its cell is clipped: the label is
-      // the cell's text, whatever element holds it.
+      // A header label whose text overflows its box is clipped (visually
+      // hidden descriptions are clipped on purpose and not checked).
       clipped: [
         ...header.querySelectorAll<HTMLElement>('[role="columnheader"]'),
       ]
-        .flatMap((h) =>
-          [h, ...h.querySelectorAll<HTMLElement>('*')].filter(
-            (el) =>
-              el.textContent?.trim() &&
-              getComputedStyle(el).overflowX !== 'visible' &&
-              el.scrollWidth > el.clientWidth,
-          ),
+        .map(
+          (h) =>
+            h.querySelector<HTMLElement>(
+              '[data-grid-header-label], .cy-data-grid-label, .cy-sort-button-label',
+            ) ?? h,
         )
+        .filter((el) => el.scrollWidth > el.clientWidth)
         .map((el) => el.textContent),
     };
   });
