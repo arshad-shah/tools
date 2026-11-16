@@ -22,6 +22,7 @@ import {
 } from '@arshad-shah/cynosure/icons';
 import { useMemo, useRef, useState } from 'react';
 import { useShortcuts } from '@/shared/lib/hotkeys';
+import { useMediaQuery } from '@/shared/lib/media-query';
 import { CATEGORIES, getCategory, type CategoryDef } from '../categories';
 import { routePdfHubDrop } from '../drop-routing';
 import { getEnabledTools, TOOLS } from '../registry';
@@ -123,6 +124,7 @@ export default function Home() {
   );
   const matches = groups.reduce((n, g) => n + g.tools.length, 0);
   const searching = query.trim() !== '';
+  const keyboard = useMediaQuery('(hover: hover) and (pointer: fine)');
 
   return (
     <Container size="lg" paddingBlock="9">
@@ -147,15 +149,18 @@ export default function Home() {
                   searching ? `${matches} of ${tools.length}` : undefined
                 }
               />
-              <Inline gap="2" align="center" wrap>
-                <Text size="sm" tone="muted">
-                  Press
-                </Text>
-                <Kbd keys="mod+k" size="sm" />
-                <Text size="sm" tone="muted">
-                  on any page to search tools and actions.
-                </Text>
-              </Inline>
+              {/* Keyboards only: a touch screen has no Mod+K. */}
+              {keyboard ? (
+                <Inline gap="2" align="center" wrap>
+                  <Text size="sm" tone="muted">
+                    Press
+                  </Text>
+                  <Kbd keys="mod+k" size="sm" />
+                  <Text size="sm" tone="muted">
+                    on any page to search tools and actions.
+                  </Text>
+                </Inline>
+              ) : null}
             </Stack>
           </Container>
         </PageHeader>
@@ -165,28 +170,29 @@ export default function Home() {
         {searching || !pdf ? null : (
           <Card padding="lg" as="section" aria-label="PDF workspace">
             <Stack gap="6">
-              <Inline gap="5" align="start" justify="between" wrap>
-                <Inline gap="5" align="start">
-                  <IconTile icon={filePen} size="lg" />
-                  <Stack gap="2">
-                    <Heading level={2} size="lg">
-                      PDF workspace
-                    </Heading>
-                    <Text tone="muted">
-                      Drop one PDF to edit, sign or redact it. Drop several to
-                      merge them, or images to make a PDF.
-                    </Text>
-                  </Stack>
-                </Inline>
-                <Button href="/pdf" variant="ghost" iconEnd={arrowRight}>
-                  All PDF tools
-                </Button>
+              <Inline gap="5" align="start">
+                <IconTile icon={filePen} size="lg" />
+                <Stack gap="2">
+                  <Heading level={2} size="lg">
+                    PDF workspace
+                  </Heading>
+                  <Text tone="muted">
+                    Drop one PDF to edit, sign or redact it. Drop several to
+                    merge them, or images to make a PDF.
+                  </Text>
+                </Stack>
               </Inline>
               <HubDropZone
                 category={pdf}
+                size="sm"
                 prompt="Drop PDFs or images here, or"
                 route={(files) => routePdfHubDrop(files, TOOLS)}
               />
+              <Inline>
+                <Button href="/pdf" variant="soft" iconEnd={arrowRight}>
+                  All PDF tools
+                </Button>
+              </Inline>
             </Stack>
           </Card>
         )}

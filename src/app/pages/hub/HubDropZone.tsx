@@ -23,7 +23,7 @@ export interface HubDropZoneProps {
   /** The zone's prompt. */
   prompt?: string;
   hint?: string;
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
   /** Hub-specific routing (the PDF hub); default: match tools' accepts rules. */
   route?: (files: File[]) => Promise<DropDecision>;
 }

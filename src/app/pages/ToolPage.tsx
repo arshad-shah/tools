@@ -51,7 +51,10 @@ export function ToolPage({ tool, children }: ToolPageProps) {
     <Container size="lg" paddingBlock="8">
       <Stack gap="8">
         <Inline gap="6" align="start">
-          <IconTile icon={toolGlyph(tool.id)} size="lg" />
+          {/* Phones: the title takes the full width. */}
+          <Stack hideBelow="md">
+            <IconTile icon={toolGlyph(tool.id)} size="lg" />
+          </Stack>
           <PageHeader
             title={tool.name}
             description={tool.description}
@@ -63,8 +66,8 @@ export function ToolPage({ tool, children }: ToolPageProps) {
               ) : undefined
             }
             actions={
-              <Inline gap="2" align="center" wrap>
-                <Inline ref={setActions} gap="2" align="center" wrap />
+              // Tools' own actions (Send to) are portalled in after the star.
+              <Inline ref={setActions} gap="2" align="center" wrap>
                 <FavouriteToggle tool={tool} />
               </Inline>
             }

@@ -86,7 +86,10 @@ export function Hub({
     <Container size="lg" paddingBlock="9">
       <Stack gap="9">
         <Inline gap="6" align="start">
-          <IconTile icon={categoryGlyph(category.id)} size="lg" />
+          {/* Phones: the title takes the full width. */}
+          <Stack hideBelow="md">
+            <IconTile icon={categoryGlyph(category.id)} size="lg" />
+          </Stack>
           <PageHeader title={category.label} description={category.blurb} />
         </Inline>
         {category.fileBased ? (
