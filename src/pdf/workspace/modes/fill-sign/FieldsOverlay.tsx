@@ -4,12 +4,15 @@ import { moreHorizontal } from '@arshad-shah/cynosure/icons';
 import { IconButton } from '@arshad-shah/cynosure';
 import {
   PointerLayer,
-  type OverlayTransform,
   type PagePoint,
-} from '@/shared/ui';
-import { boxRect } from '@/pdf/surfaces/geometry';
-import { Layer, Place } from '@/pdf/surfaces/layers';
-import type { LayerObject, ObjectChange } from '@/pdf/surfaces/ObjectLayer';
+} from '@/shared/surfaces/page/pointer-layer';
+import { type OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { boxRect } from '@/shared/surfaces/pdf/geometry';
+import { Layer, Place } from '@/shared/surfaces/pdf/layers';
+import type {
+  LayerObject,
+  ObjectChange,
+} from '@/shared/surfaces/pdf/ObjectLayer';
 import { detectionKey } from '@/pdf/doc/detection';
 import type {
   SignInitialPagesParams,

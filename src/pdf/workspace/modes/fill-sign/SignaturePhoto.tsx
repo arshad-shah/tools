@@ -8,7 +8,7 @@ import {
   Stack,
   Text,
 } from '@arshad-shah/cynosure';
-import { InkSample, SamplePaper } from '@/pdf/surfaces/InkSample';
+import { InkSample, SamplePaper } from '@/shared/surfaces/pdf/InkSample';
 import { FilePicker } from '../../ui/FilePicker';
 import { ErrorNotice, LoadingLine } from '../../ui/states';
 import { useJob } from '@/shared/state/useJob';

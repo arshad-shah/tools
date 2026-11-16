@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { OverlayTransform } from '@/shared/ui';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
 import type { PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { boxAnchor } from './anchor';

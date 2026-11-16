@@ -1,10 +1,10 @@
 import { Text } from '@arshad-shah/cynosure';
-import type { OverlayTransform } from '@/shared/ui';
-import { BytesImage } from '@/pdf/surfaces/BytesImage';
-import { InkSample, TypedSample } from '@/pdf/surfaces/InkSample';
-import { boxRect } from '@/pdf/surfaces/geometry';
-import { Place, Placeholder } from '@/pdf/surfaces/layers';
-import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { BytesImage } from '@/shared/surfaces/pdf/BytesImage';
+import { InkSample, TypedSample } from '@/shared/surfaces/pdf/InkSample';
+import { boxRect } from '@/shared/surfaces/pdf/geometry';
+import { Place, Placeholder } from '@/shared/surfaces/pdf/layers';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import type { SignPlaceParams } from '@/pdf/doc/ops/fill-sign';
 import type { PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';

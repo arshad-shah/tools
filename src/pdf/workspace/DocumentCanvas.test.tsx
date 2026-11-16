@@ -21,7 +21,7 @@ vi.mock('@arshad-shah/cynosure', async (orig) => ({
     return null;
   },
 }));
-vi.mock('@/pdf/surfaces/PageImage', () => ({ PageImage: () => null }));
+vi.mock('@/shared/surfaces/pdf/PageImage', () => ({ PageImage: () => null }));
 
 beforeAll(() => registerCoreOperations());
 

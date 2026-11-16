@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { ShapeLayer, type Shape } from '@/shared/ui';
-import { Layer } from '@/pdf/surfaces/layers';
+import { ShapeLayer, type Shape } from '@/shared/surfaces/page/shape-layer';
+import { Layer } from '@/shared/surfaces/pdf/layers';
 import { toPage, type Viewport } from '@/pdf/doc/geometry';
 import type { Box, PageRef } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';

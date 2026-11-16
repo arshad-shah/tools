@@ -1,4 +1,4 @@
-import type { Shape } from '@/shared/ui';
+import type { Shape } from '@/shared/surfaces/page/shape-layer';
 import {
   arrowBarbs,
   darker,

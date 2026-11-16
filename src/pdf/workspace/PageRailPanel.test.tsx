@@ -30,7 +30,7 @@ vi.mock('@arshad-shah/cynosure', async (orig) => ({
     </div>
   ),
 }));
-vi.mock('@/pdf/surfaces/PageImage', () => ({ PageImage: () => null }));
+vi.mock('@/shared/surfaces/pdf/PageImage', () => ({ PageImage: () => null }));
 
 function setup(selected: string[] = []) {
   const model = makeModel();

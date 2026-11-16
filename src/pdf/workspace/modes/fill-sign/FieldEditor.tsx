@@ -12,8 +12,8 @@ import {
   TextArea,
   TextField,
 } from '@arshad-shah/cynosure';
-import { PageTextInput } from '@/shared/ui';
-import { Below, Layer } from '@/pdf/surfaces/layers';
+import { PageTextInput } from '@/shared/surfaces/page/page-text';
+import { Below, Layer } from '@/shared/surfaces/pdf/layers';
 import type { ViewField } from './fields';
 import { displayToIso, isoToDisplay } from './dates';
 import { fitsBox } from './text-measure';

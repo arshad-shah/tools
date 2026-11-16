@@ -3,7 +3,7 @@ import {
   type ChangeSource,
   type LayerObject,
   type ObjectChange,
-} from '@/pdf/surfaces/ObjectLayer';
+} from '@/shared/surfaces/pdf/ObjectLayer';
 import type { Viewport } from '@/pdf/doc/geometry';
 import type { NewOperation, OpId } from '@/pdf/doc/types';
 import type { DocumentApi, SelectionApi } from '../modes/types';

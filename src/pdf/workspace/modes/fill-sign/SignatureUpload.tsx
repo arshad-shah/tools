@@ -11,8 +11,8 @@ import type { LoadedFile } from '@/shared/lib/files';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { uprightJpeg } from '@/pdf/components/upright-jpeg';
 import { PdfIntake } from '@/pdf/ui/PdfIntake';
-import { SamplePaper } from '@/pdf/surfaces/InkSample';
-import { BytesImage } from '@/pdf/surfaces/BytesImage';
+import { SamplePaper } from '@/shared/surfaces/pdf/InkSample';
+import { BytesImage } from '@/shared/surfaces/pdf/BytesImage';
 import { opaqueBounds, removeWhiteBackground } from '@/pdf/sign';
 import {
   canvasToPng,

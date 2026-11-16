@@ -1,12 +1,11 @@
-import { BitmapSurface } from '@/pdf/surfaces/BitmapSurface';
-import { HitArea } from '@/pdf/surfaces/HitArea';
-import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
+import { BitmapSurface } from '@/shared/surfaces/pdf/BitmapSurface';
+import { HitArea } from '@/shared/surfaces/pdf/HitArea';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import {
   PageBox,
-  ShapeLayer,
   type OverlayTransform,
-  type Shape,
-} from '@/shared/ui';
+} from '@/shared/surfaces/page/overlay-layer';
+import { ShapeLayer, type Shape } from '@/shared/surfaces/page/shape-layer';
 import type { ExistingAnnotation } from '@/pdf/render/annotations';
 import type { Box, PageRef } from '@/pdf/doc/types';
 import { boxToScreen, type Viewport } from '@/pdf/doc/geometry';

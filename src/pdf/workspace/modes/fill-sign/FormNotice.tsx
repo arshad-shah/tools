@@ -1,5 +1,5 @@
 import { Notice } from '@arshad-shah/cynosure';
-import { Place } from '@/pdf/surfaces/layers';
+import { Place } from '@/shared/surfaces/pdf/layers';
 import type { ModeProps } from '../types';
 import { formNotice } from './form-notice';
 import { useFillSign } from './store';

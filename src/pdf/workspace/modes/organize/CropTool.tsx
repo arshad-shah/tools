@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@arshad-shah/cynosure';
 import { rotateCcw } from '@arshad-shah/cynosure/icons';
-import { Layer, Place } from '@/pdf/surfaces/layers';
-import { PageFrame } from '@/pdf/surfaces/PageFrame';
+import { Layer, Place } from '@/shared/surfaces/pdf/layers';
+import { PageFrame } from '@/shared/surfaces/pdf/PageFrame';
 import type { Box } from '@/pdf/doc/types';
 import type { PageOverlayProps } from '../types';
 

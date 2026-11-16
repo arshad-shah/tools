@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { newId } from '@/shared/lib/id';
-import { ShapeLayer, type Shape } from '@/shared/ui';
-import { PageFrame } from '@/pdf/surfaces/PageFrame';
-import { Layer } from '@/pdf/surfaces/layers';
-import type { ObjectChange } from '@/pdf/surfaces/ObjectLayer';
+import { ShapeLayer, type Shape } from '@/shared/surfaces/page/shape-layer';
+import { PageFrame } from '@/shared/surfaces/pdf/PageFrame';
+import { Layer } from '@/shared/surfaces/pdf/layers';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import { geometryBounds } from '@/pdf/doc/object-geometry';
 import type { RedactMarkParams } from '@/pdf/doc/ops/redact';
 import type { Box } from '@/pdf/doc/types';

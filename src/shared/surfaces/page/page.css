@@ -1,0 +1,75 @@
+/* Page drawing surfaces: layers placed over a rendered PDF page in its
+   own coordinates. Positions and transforms are inline; the rest is here. */
+.tools-page-positioned,
+.tools-page-placed,
+.tools-page-shapes,
+.tools-page-svg {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}
+.tools-page-placed {
+  transform-origin: top left;
+}
+.tools-page-layer {
+  overflow: hidden;
+}
+.tools-page-inert,
+.tools-page-shapes,
+.tools-page-svg,
+.tools-page-text {
+  pointer-events: none;
+}
+.tools-page-svg,
+.tools-page-text,
+.tools-page-text-svg {
+  overflow: visible;
+}
+.tools-page-bold {
+  font-weight: 700;
+}
+.tools-page-multiply {
+  mix-blend-mode: multiply;
+}
+.tools-page-pointer {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+.tools-page-pointer[data-cursor='crosshair'] {
+  cursor: crosshair;
+}
+.tools-page-pointer[data-cursor='copy'] {
+  cursor: copy;
+}
+.tools-page-pointer[data-cursor='text'] {
+  cursor: text;
+}
+.tools-page-text-svg {
+  position: absolute;
+  inset: 0;
+  font-family: Helvetica, Arial, sans-serif;
+}
+/* Typing into a page: the text drawn under the input shows, the input's
+   own glyphs are transparent; only the caret and selection show. */
+.tools-page-text-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
+  background: transparent;
+  line-height: 1;
+  color: transparent;
+  caret-color: var(--cy-color-accent-text);
+  outline: none;
+  font-family: Helvetica, Arial, sans-serif;
+}
+.tools-page-text-input[data-mono] {
+  font-family: 'Courier New', Courier, 'Liberation Mono', monospace;
+}
+.tools-page-text-input::selection {
+  background: var(--cy-color-accent-soft);
+}
