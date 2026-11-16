@@ -58,7 +58,8 @@ function ToolButton({
   touch: boolean;
   vertical: boolean;
 }) {
-  const disabled = Boolean(item.disabled);
+  const busy = useContext(ModeToolbarContext).busy === true;
+  const disabled = Boolean(item.disabled) || busy;
   const pressed =
     item.kind === 'toggle' ||
     (item.kind === 'split' && item.pressed !== undefined)

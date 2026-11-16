@@ -543,12 +543,17 @@ export function WorkspaceShell({
                 palette: settings.palette,
                 onPaletteChange: (palette) =>
                   useWorkspaceSettings.setState({ palette }),
+                busy,
               }}
             >
               <Stack fill minSize="0" gap="0" overflow="hidden">
                 <SkipLink
                   href="#workspace-canvas"
                   labels={{ skip: 'Skip to the document' }}
+                />
+                <SkipLink
+                  href="#mode-panel"
+                  labels={{ skip: 'Skip to the tools' }}
                 />
                 <Stack as="header" role="banner" gap="0">
                   <Inline

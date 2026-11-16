@@ -114,11 +114,11 @@ describe('SignaturePhoto: upload', () => {
     render(<SignaturePhoto onChange={() => {}} client={client} />);
     upload('sig.webp', 'image/webp');
     await screen.findByRole('img', { name: 'Signature preview' });
-    fireEvent.change(screen.getByRole('slider', { name: 'Contrast' }), {
-      target: { value: '0.2' },
-    });
-    await waitFor(() => expect(client.clean).toHaveBeenCalledTimes(2));
-    expect(client.clean.mock.calls[1][1]).toEqual({ t: 0.2 });
+    // Five steps up from 0.15 by keyboard.
+    const contrast = screen.getByRole('slider', { name: 'Contrast' });
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(contrast, { key: 'ArrowUp' });
+    await waitFor(() => expect(client.clean).toHaveBeenCalledTimes(6));
+    expect(client.clean.mock.calls.at(-1)![1]).toEqual({ t: 0.2 });
     // The file is decoded once; each run gets a copy of that bitmap.
     const decode = vi.mocked(createImageBitmap);
     expect(
@@ -132,8 +132,8 @@ describe('SignaturePhoto: upload', () => {
     await screen.findByRole('img', { name: 'Signature preview' });
     const slider = screen.getByRole('slider', { name: 'Contrast' });
     expect(slider.getAttribute('aria-label')).toBeNull();
-    expect(slider.id).not.toBe('sig-photo-contrast');
-    expect(document.querySelector(`label[for="${slider.id}"]`)).toBeTruthy();
+    const by = slider.getAttribute('aria-labelledby')!;
+    expect(document.getElementById(by)?.textContent).toBe('Contrast');
   });
 
   it('refuses a photo over 25 MB before decoding it', async () => {

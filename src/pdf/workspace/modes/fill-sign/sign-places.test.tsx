@@ -161,7 +161,8 @@ describe('placed signatures', () => {
     fillSign.set({ signTargets: { 's0:0': [target({})] } });
     const id = placeOne(model, { x: 80, y: 582, width: 100, height: 25 });
     render(<Harness model={model} selected={[id]} />);
-    const frame = screen.getByRole('button', { name: 'Signature on page 1' });
+    // The selection frame takes the keys of a selected signature.
+    const frame = screen.getByLabelText(/^Resize Signature on page 1/);
     fireEvent.keyDown(frame, { key: ']' });
     fireEvent.keyUp(frame, { key: ']' });
     // 15 degrees clockwise on screen: 345 counter-clockwise, as the writer
@@ -178,11 +179,21 @@ describe('placed signatures', () => {
     fillSign.set({ signTargets: { 's0:0': [target({})] } });
     const id = placeOne(model);
     render(<Harness model={model} selected={[id]} announce={announce} />);
-    const frame = screen.getByRole('button', { name: 'Signature on page 1' });
+    const frame = screen.getByLabelText(/^Resize Signature on page 1/);
     // Page y 500 to about 585: the overlay's y axis points down.
-    fireEvent.pointerDown(frame, { button: 0, clientX: 100, clientY: 100 });
-    fireEvent.pointerMove(frame, { clientX: 110, clientY: 18 });
-    fireEvent.pointerUp(frame, { clientX: 110, clientY: 18 });
+    const at = (x: number, y: number) => ({
+      button: 0,
+      buttons: 1,
+      pointerId: 1,
+      isPrimary: true,
+      pointerType: 'mouse',
+      clientX: x,
+      clientY: y,
+    });
+    fireEvent.pointerDown(frame, at(100, 100));
+    fireEvent.pointerMove(frame, at(105, 60));
+    fireEvent.pointerMove(frame, at(110, 18));
+    fireEvent.pointerUp(frame, at(110, 18));
     expect(placed(model)[0].rect).toEqual(
       snapToTarget({ aspect: 4 }, target({}), 30),
     );

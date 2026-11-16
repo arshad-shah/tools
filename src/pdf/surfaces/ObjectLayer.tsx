@@ -496,6 +496,11 @@ export function ObjectLayer({
           role="group"
           aria-label={label}
           data-testid={testId}
+          // The frame commits on its own key handler, before the event
+          // bubbles here: note the source on the way down.
+          onKeyDownCapture={() => {
+            via.current = 'keyboard';
+          }}
           onKeyDown={(e) => {
             target.onKeyDown?.(e);
             if (!e.defaultPrevented || e.key.startsWith('Arrow')) onKeyDown(e);

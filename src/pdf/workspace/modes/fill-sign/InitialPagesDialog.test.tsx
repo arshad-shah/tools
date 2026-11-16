@@ -34,12 +34,12 @@ describe('InitialPagesDialog', () => {
     const { dispatch, onOpenChange } = open();
     fireEvent.click(screen.getByRole('radio', { name: 'Every page' }));
     expect(
-      screen
-        .getByRole('checkbox', {
+      (
+        screen.getByRole('checkbox', {
           name: 'Same spot as the selected initials',
-        })
-        .getAttribute('aria-checked'),
-    ).toBe('true');
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Initial 4 pages' }));
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith({

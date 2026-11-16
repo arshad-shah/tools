@@ -6,6 +6,8 @@ export interface ModeToolbarSettings {
   label: string;
   palette: 'left' | 'right';
   onPaletteChange(side: 'left' | 'right'): void;
+  /** A checkpoint job holds the document: every tool is off meanwhile. */
+  busy?: boolean;
 }
 
 export const ModeToolbarContext = createContext<ModeToolbarSettings>({
