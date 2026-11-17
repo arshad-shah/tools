@@ -220,17 +220,19 @@ describe('TOOLS', () => {
     const ids = TOOLS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
     // One per src/tools/*/index.ts at this commit.
-    expect(ids).toHaveLength(42);
+    expect(ids).toHaveLength(46);
     // Exact: an extra or missing manifest fails.
     expect([...ids].sort()).toEqual(
       [
         'api-request',
         'base64-converter',
         'calculator',
+        'cert-decoder',
         'code-formatter',
         'color-tester',
         'cron-builder',
         'css-playground',
+        'curl-converter',
         'csv-viewer',
         'date-calculator',
         'epoch-converter',
@@ -239,11 +241,13 @@ describe('TOOLS', () => {
         'hash-generator',
         'image-optimizer',
         'images-to-pdf',
+        'ip-calculator',
         'json-and-xml-viewer',
         'jwt-decode',
         'log-parser',
         'markdown-editor',
         'number-converter',
+        'openapi-viewer',
         'password-generator',
         'pdf-compressor',
         'pdf-edit',

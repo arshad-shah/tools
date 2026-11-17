@@ -22,7 +22,7 @@ export default defineTool({
     'php',
   ],
   // A curl command from the HTTP Client, the palette or any text source.
-  accepts: [{ mimes: ['application/x-curl', 'text/plain'] }],
+  accepts: [{ mimes: ['application/x-curl'] }],
   version: '1.0.0',
   enabled: true,
   load: () => import('./Tool'),

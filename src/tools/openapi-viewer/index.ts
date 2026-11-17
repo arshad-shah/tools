@@ -21,7 +21,7 @@ export default defineTool({
   ],
   accepts: [
     {
-      kinds: ['json', 'text'],
+      kinds: ['json'],
       mimes: [
         'application/json',
         'application/yaml',
