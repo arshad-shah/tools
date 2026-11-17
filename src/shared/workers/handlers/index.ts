@@ -8,6 +8,7 @@ import mock from './mock';
 import ping from './ping';
 import regex from './regex';
 import jsonQuery from './json-query';
+import css from './css';
 
 /**
  * Every text-worker handler (spec §4.4). Append-only: each Part adds one
@@ -26,6 +27,7 @@ export const textHandlers = {
   ...mock,
   ...format,
   ...jsonQuery,
+  ...css,
 };
 
 export type TextHandlers = typeof textHandlers;
