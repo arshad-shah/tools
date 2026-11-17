@@ -15,15 +15,19 @@ export function jsonPayload(rows: readonly Row[], sourceName: string) {
   };
 }
 
-/** The shown rows as CSV text, for Text Diff and other text tools (spec 8.2). */
+/**
+ * The shown rows as CSV text, for Text Diff and other text tools (spec 8.2),
+ * or as `text/csv` for tools that load tables (the SQL Playground).
+ */
 export function csvTextPayload(
   rows: readonly Row[],
   columns: readonly string[],
   sourceName: string,
+  mime: 'text/plain' | 'text/csv' = 'text/plain',
 ) {
   return {
     kind: 'text' as const,
-    mime: 'text/plain',
+    mime,
     text: toCsv(rows, { columns: [...columns] }),
     sourceTool: TOOL_ID,
     filename: deriveFilename(sourceName, '', 'csv'),

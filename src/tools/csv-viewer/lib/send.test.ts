@@ -24,4 +24,10 @@ describe('csv-viewer Send to payloads (spec 8.2)', () => {
     expect(p.text.split(/\r?\n/)[0]).toBe('name,n');
     expect(ids(p.mime)).toContain('text-diff-checker');
   });
+
+  it('sends the shown rows as text/csv to tools that load tables', () => {
+    const p = csvTextPayload(rows, ['name', 'n'], 'people.csv', 'text/csv');
+    expect(p.mime).toBe('text/csv');
+    expect(ids(p.mime)).toContain('sql-playground');
+  });
 });

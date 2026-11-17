@@ -10,7 +10,7 @@ import {
   Text,
 } from '@arshad-shah/cynosure';
 import { sparkles, table as tableIcon } from '@arshad-shah/cynosure/icons';
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { formatBytes } from '@/shared/lib/format';
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
@@ -43,13 +43,17 @@ export function InputScreen({
   const progress = job.status === 'running' ? job.progress : null;
   const [fileError, setFileError] = useState<string | null>(null);
 
-  // CSV text handed over (Send to) opens like a paste.
+  // CSV text handed over (Send to) opens like a paste. Delivered from an
+  // effect: the paste updates the parent, which must not happen while this
+  // component renders.
   const handed = useHandoff(isCsvText);
-  const [taken, setTaken] = useState<HandoffPayload | null>(null);
-  if (handed !== taken) {
-    setTaken(handed);
-    if (handed?.kind === 'text') onPasteChange(handed.text);
-  }
+  const taken = useRef<HandoffPayload | null>(null);
+  const deliver = useEffectEvent((text: string) => onPasteChange(text));
+  useEffect(() => {
+    if (!handed || taken.current === handed) return;
+    taken.current = handed;
+    if (handed.kind === 'text') deliver(handed.text);
+  }, [handed]);
 
   const open = (file: File) => {
     setFileError(null);
