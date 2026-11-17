@@ -17,7 +17,7 @@ Free, private browser tools: a PDF workspace and 32 everyday tools for text, dat
 | Math      | Calculator & Grapher, Number Base Converter, Unit Converter                                                                                                                                                                |
 | Time      | Cron Expression Builder, Date & Time Calculator, Epoch & Time Zone Converter, Pomodoro Timer                                                                                                                               |
 | Media     | Color & Contrast, EXIF Viewer & Remover, Favicon & App Icon Generator, Image Compressor & Resizer, Rive Animation Player                                                                                                   |
-| Web & dev | HTTP Client, Code Formatter & Minifier, QR Code Generator, QR & Barcode Scanner, URL Inspector & Builder                                                                                                                   |
+| Web & dev | HTTP Client, Code Formatter & Minifier, CSS Playground & Optimizer, QR Code Generator, QR & Barcode Scanner, URL Inspector & Builder                                                                                       |
 
 Tools hand results to each other ("Send to", and "Send result to" in the Mod+K palette), and several can share their state as a link (the state lives in the URL fragment, which browsers never send to a server).
 
