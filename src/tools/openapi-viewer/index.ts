@@ -1,4 +1,4 @@
-import { bookOpen as icon } from '@arshad-shah/cynosure/icons';
+import { api as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({

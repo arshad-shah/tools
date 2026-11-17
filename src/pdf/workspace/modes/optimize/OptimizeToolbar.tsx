@@ -1,6 +1,6 @@
 import { requestProperties } from '../../properties-request';
 import { type ToolGroup } from '../../ui/tool-groups';
-import { fileChart, minimize, wrench } from '@arshad-shah/cynosure/icons';
+import { fileChart, fileRepair, minimize } from '@arshad-shah/cynosure/icons';
 import { ModeToolbar } from '../../ModeToolbar';
 import type { ModeProps } from '../types';
 import { compress, repair } from './actions';
@@ -23,7 +23,7 @@ export function OptimizeToolbar({ doc }: ModeProps) {
         {
           id: 'repair',
           label: 'Repair',
-          icon: wrench,
+          icon: fileRepair,
           kind: 'button',
           onSelect: () => void repair(doc),
         },

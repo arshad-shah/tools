@@ -1,5 +1,5 @@
 import { Button, Grid, Stack } from '@arshad-shah/cynosure';
-import { arrowLeft } from '@arshad-shah/cynosure/icons';
+import { deleteLeft } from '@arshad-shah/cynosure/icons';
 import React from 'react';
 
 /** What a key does: insert text, or one of the sheet's commands. */
@@ -124,7 +124,7 @@ const KeyGrid: React.FC<{
           {...LOOK[k.tone ?? 'digit']}
           aria-label={k.name}
           // Cynosure Facet has no backspace glyph yet (docs/cynosure-gaps.md).
-          icon={backspace ? arrowLeft : undefined}
+          icon={backspace ? deleteLeft : undefined}
           onClick={() => onKey(k.effect)}
         >
           {k.face}
