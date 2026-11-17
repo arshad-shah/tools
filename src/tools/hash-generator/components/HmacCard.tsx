@@ -7,6 +7,7 @@ import {
   TextField,
 } from '@arshad-shah/cynosure';
 import React, { useEffect, useMemo, useState } from 'react';
+import { ProductionUseNotice } from '@/app/ui/production-use';
 import {
   bytesFrom,
   digestInfo,
@@ -120,6 +121,21 @@ export const HmacCard: React.FC<HmacCardProps> = ({
             ]}
           />
         ) : null}
+        <ProductionUseNotice
+          title="For test keys"
+          commandsLabel="Compute it on your own machine"
+          commands={[
+            {
+              label: `${name}, key read from an environment variable`,
+              command: `printf '%s' "$MESSAGE" | openssl dgst -${alg} -hmac "$HMAC_KEY"`,
+            },
+          ]}
+        >
+          Good for checking a webhook or API signature with a test secret. Do
+          not paste a production secret: it can sign requests as your service.
+          Compute those locally with the key read from your secret store, so it
+          never sits in a web page or your shell history.
+        </ProductionUseNotice>
       </Stack>
     </Card>
   );

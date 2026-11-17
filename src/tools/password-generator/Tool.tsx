@@ -6,6 +6,10 @@ import {
   Stack,
 } from '@arshad-shah/cynosure';
 import React, { useState } from 'react';
+import {
+  ProductionUseNotice,
+  type LocalCommand,
+} from '@/app/ui/production-use';
 import { TransformLayout } from '@/app/ui/transform';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { BulkPanel } from './components/BulkPanel';
@@ -17,6 +21,12 @@ import { optionsFrom } from './lib/options';
 import { generatePassword } from './lib/generate';
 import { generatePassphrase } from './lib/passphrase';
 import { passwordSettings, type PasswordSettings } from './settings';
+
+/** 32 random bytes, as most secret managers and frameworks expect. */
+const SERVICE_SECRET_COMMANDS: readonly LocalCommand[] = [
+  { label: 'Random secret (Base64)', command: 'openssl rand -base64 32' },
+  { label: 'Random secret (hex)', command: 'openssl rand -hex 32' },
+];
 
 type Tab = PasswordSettings['mode'] | 'check';
 
@@ -73,6 +83,17 @@ const PasswordGenerator: React.FC = () => {
           >
             {result}
           </Card>
+          <ProductionUseNotice
+            title="For real accounts and services"
+            commandsLabel="Make a service secret on your own machine"
+            commands={SERVICE_SECRET_COMMANDS}
+          >
+            Made with your browser's secure random generator and never stored.
+            For a real account, let your password manager generate and save it,
+            so it is never pasted around. For production service secrets
+            (database passwords, API keys) use your secret manager, or make them
+            locally with the commands below.
+          </ProductionUseNotice>
         </Stack>
       }
       end={

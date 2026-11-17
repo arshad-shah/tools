@@ -17,7 +17,7 @@ describe('KeypairGenerator', () => {
   it('starts empty, with the local-only warning', () => {
     renderTool();
     expect(screen.getByText('No key pair yet')).toBeTruthy();
-    expect(screen.getByText('Generated on this device')).toBeTruthy();
+    expect(screen.getByText('For development and testing')).toBeTruthy();
     expect(screen.getByLabelText('OpenSSH comment')).toBeTruthy();
   });
 

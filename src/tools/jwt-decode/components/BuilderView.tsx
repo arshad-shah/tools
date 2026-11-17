@@ -13,6 +13,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { arrowRight, clock, key } from '@arshad-shah/cynosure/icons';
 import { useEffect, useMemo, useState } from 'react';
+import { ProductionUseNotice } from '@/app/ui/production-use';
 import { toToolError } from '@/shared/lib/errors';
 import { SECRET_ENCODINGS } from '../lib/constants';
 import {
@@ -208,6 +209,13 @@ export function BuilderView({
             ) : null}
           </Stack>
         )}
+        <ProductionUseNotice title="For test tokens">
+          Sign test and development tokens here. Do not paste a production
+          signing secret or key: anyone holding it can mint valid tokens for
+          your users. Production tokens should come from your auth server or a
+          KMS-backed signer. Decoding and verifying production tokens with a
+          public key is fine.
+        </ProductionUseNotice>
       </Stack>
     </Card>
   );

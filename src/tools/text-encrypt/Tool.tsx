@@ -1,5 +1,9 @@
 import { Inline, SegmentedControl, Stack } from '@arshad-shah/cynosure';
 import React, { useEffect, useState } from 'react';
+import {
+  ProductionUseNotice,
+  type LocalCommand,
+} from '@/app/ui/production-use';
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
 import {
   generatePassphrase,
@@ -9,6 +13,17 @@ import { FileMode } from './components/FileMode';
 import { TextMode, type Direction } from './components/TextMode';
 import { useCryptoJob } from './hooks/useCryptoJob';
 import { encryptSettings } from './settings';
+
+const STANDARD_TOOL_COMMANDS: readonly LocalCommand[] = [
+  {
+    label: 'age, with a passphrase',
+    command: 'age --passphrase --output secret.txt.age secret.txt',
+  },
+  {
+    label: 'GPG, with a passphrase',
+    command: 'gpg --symmetric --cipher-algo AES256 secret.txt',
+  },
+];
 
 const isSecret = (p: HandoffPayload) =>
   p.kind === 'text' && p.mime === 'application/vnd.tools.secret';
@@ -103,6 +118,17 @@ const TextEncrypt: React.FC = () => {
       ) : (
         <FileMode {...shared} file={file} onFile={setFile} />
       )}
+      <ProductionUseNotice
+        title="For sharing, not for production data"
+        commandsLabel="Encrypt a file with a standard tool"
+        commands={STANDARD_TOOL_COMMANDS}
+      >
+        Good for sending a secret to someone or locking a file you will open
+        here again. The output is this tool's own format, so only this tool
+        opens it. For production data, backups and anything you must still open
+        in years, use a standard tool such as age or GPG, or your platform's
+        encryption with keys held in a KMS.
+      </ProductionUseNotice>
     </Stack>
   );
 };

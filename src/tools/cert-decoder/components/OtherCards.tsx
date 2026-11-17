@@ -9,6 +9,7 @@ import {
   Stack,
   Text,
 } from '@arshad-shah/cynosure';
+import { ProductionUseNotice } from '@/app/ui/production-use';
 import type { DecodedItem } from '../lib/decode';
 import { linkStatus, signatureStatus } from '../lib/status';
 import { Asn1View } from './Asn1View';
@@ -106,10 +107,21 @@ export function PrivateKeyCard({ item }: { item: Of<'private-key'> }) {
   return (
     <Card as="section" title="Private key">
       <Stack gap="4">
-        <Notice tone="warning" title="This is a private key">
+        <ProductionUseNotice
+          title="This is a private key"
+          commandsLabel="Inspect a key on your own machine"
+          commands={[
+            {
+              label: 'Key type and size, without printing the key',
+              command: "openssl pkey -in key.pem -noout -text | sed -n '1p'",
+            },
+          ]}
+        >
           It was read only in this browser and is not stored or sent anywhere.
           Only its type and size are shown. Clear the input when you are done.
-        </Notice>
+          Do not paste production private keys into any web page; inspect those
+          locally.
+        </ProductionUseNotice>
         <Facts
           label="Private key details"
           items={[

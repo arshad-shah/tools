@@ -10,8 +10,9 @@ import {
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
-import { close, download, key, shieldCheck } from '@arshad-shah/cynosure/icons';
+import { close, download, key } from '@arshad-shah/cynosure/icons';
 import { useEffect, useMemo, useState } from 'react';
+import { ProductionUseNotice } from '@/app/ui/production-use';
 import { TransformLayout } from '@/app/ui/transform';
 import { saveZip } from '@/shared/lib/download';
 import { ToolError } from '@/shared/lib/errors';
@@ -22,6 +23,7 @@ import { ExportList } from './components/ExportList';
 import { SpecForm } from './components/SpecForm';
 import { keypairClient } from './lib/client';
 import { keyExports, zipEntries, zipName } from './lib/files';
+import { localCommands } from './lib/local-commands';
 import { supportsAlgorithm } from './lib/generate';
 import { isSigning, specLabel, type Algorithm, type KeySpec } from './lib/spec';
 import { sshKeygenLine } from './lib/ssh';
@@ -142,11 +144,13 @@ export default function KeypairGenerator() {
             </Button>
           ) : null}
         </Inline>
-        <Notice tone="info" icon={shieldCheck} title="Generated on this device">
-          Keys are made in this browser with Web Crypto and are never stored or
-          sent anywhere. They are gone when you leave the page or generate
-          again, so save what you need.
-        </Notice>
+        <ProductionUseNotice commands={localCommands(spec, comment)}>
+          Made with Web Crypto in this browser, never stored or sent; save what
+          you need. Fine for development, testing and learning. This page's code
+          is fetched on every visit, so make production keys locally with the
+          commands below, or in a KMS or HSM where the private key never leaves
+          the hardware.
+        </ProductionUseNotice>
       </Stack>
     </Card>
   );
