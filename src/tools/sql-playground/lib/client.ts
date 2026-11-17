@@ -103,7 +103,7 @@ export function createSqlClient(connect: () => RpcEndpoint) {
     async open(bytes: Uint8Array, opts?: CallOpts): Promise<void> {
       const copy = bytes.slice();
       await call('open', [copy], opts, [copy.buffer]);
-      journal = [{ kind: 'open', bytes: bytes.slice() }];
+      journal = [{ kind: 'open', bytes }];
     },
     async importText(
       source: TextSource,

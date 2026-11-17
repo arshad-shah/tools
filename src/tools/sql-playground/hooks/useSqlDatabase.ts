@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ToolError, toToolError } from '@/shared/lib/errors';
+import { readBytes, readText } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
 import type { RpcEndpoint } from '@/shared/lib/worker-rpc';
 import { useJob, type JobContext } from '@/shared/state/useJob';
@@ -30,7 +31,7 @@ export type LoadItem =
 
 async function isDatabase(file: File): Promise<boolean> {
   if (DB_EXT.test(file.name)) return true;
-  const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  const head = await readBytes(file.slice(0, 16));
   return new TextDecoder().decode(head) === 'SQLite format 3\u0000';
 }
 
@@ -101,14 +102,14 @@ export function useSqlDatabase({
             );
           if (await isDatabase(file)) {
             ctx.progress({ done: 0, total: 1, label: `Opening ${file.name}` });
-            await c.open(new Uint8Array(await file.arrayBuffer()), opts);
+            await c.open(await readBytes(file), opts);
             report.done.push(`Opened ${file.name}; it replaced the database`);
           } else if (
             TEXT_EXT.test(file.name) ||
             file.type.startsWith('text/')
           ) {
             const s = await c.importText(
-              { name: file.name, text: await file.text() },
+              { name: file.name, text: await readText(file) },
               opts,
             );
             report.done.push(summary(s.table, s.rows, s.columns));
