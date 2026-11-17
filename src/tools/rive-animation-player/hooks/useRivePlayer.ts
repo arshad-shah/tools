@@ -24,7 +24,6 @@ import {
 } from '../types';
 import { useCanvasSize } from './useCanvasSize';
 import { useDebugLog } from './useDebugLog';
-import { useDropZone } from './useDropZone';
 import { useInputValues } from './useInputValues';
 import { useRiveLoad } from './useRiveLoad';
 
@@ -37,7 +36,6 @@ export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
 
   const [status, setStatus] = useState<Status>({
     current: PlayerState.Idle,
-    hovering: false,
   });
   const [filename, setFilename] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
@@ -297,8 +295,6 @@ export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
     },
   });
 
-  const dropZone = useDropZone(status, setStatus, load);
-
   return {
     canvasRef,
     previewRef,
@@ -329,6 +325,5 @@ export function useRivePlayer(initialAlignFit = DEFAULT_ALIGN_FIT) {
     togglePlayback,
     load,
     handleInputChange,
-    ...dropZone,
   };
 }

@@ -9,7 +9,6 @@ import {
   Switch,
   TextField,
 } from '@arshad-shah/cynosure';
-import { close } from '@arshad-shah/cynosure/icons';
 import type { FieldFilter, LogFilter } from '../lib/filter';
 import { levelLabel, levelTone, orderLevels } from '../lib/level-style';
 import { rowTime } from '../lib/progress';
@@ -113,15 +112,13 @@ export function FilterBar({
 function Chip({ label, onRemove }: { label: string; onRemove(): void }) {
   return (
     <Inline role="listitem">
-      <Button
-        size="sm"
-        variant="soft"
-        iconEnd={close}
-        aria-label={`Remove filter ${label}`}
-        onClick={onRemove}
+      <Badge
+        tone="accent"
+        onRemove={onRemove}
+        labels={{ remove: `Remove filter ${label}` }}
       >
         {label}
-      </Button>
+      </Badge>
     </Inline>
   );
 }

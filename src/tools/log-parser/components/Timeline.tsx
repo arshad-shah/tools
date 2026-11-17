@@ -148,17 +148,15 @@ export function Timeline({ histogram, range, onRange }: TimelineProps) {
             onPointClick={(i) => pick(i, i)}
           />
         </Stack>
-        <Inline aria-live="polite">
-          <Text size="sm" tone="muted" numeric>
-            {hover !== null && rows[hover]
-              ? `${rows[hover].at}: ${levels
-                  .map(
-                    (l) => `${counts[l][hover]} ${levelLabel(l).toLowerCase()}`,
-                  )
-                  .join(', ')}`
-              : `${rowTime(t0)} to ${rowTime(t1)}. Point at a bar for its counts.`}
-          </Text>
-        </Inline>
+        <Text size="sm" tone="muted" numeric aria-live="polite">
+          {hover !== null && rows[hover]
+            ? `${rows[hover].at}: ${levels
+                .map(
+                  (l) => `${counts[l][hover]} ${levelLabel(l).toLowerCase()}`,
+                )
+                .join(', ')}`
+            : `${rowTime(t0)} to ${rowTime(t1)}. Point at a bar for its counts.`}
+        </Text>
         {buckets > 1 ? (
           <Slider
             label="Time range"

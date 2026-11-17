@@ -1,7 +1,6 @@
 import {
   ButtonBase,
   ContextMenu,
-  useDrag,
   VisuallyHidden,
   type MenuEntry,
   type MenuItem,
@@ -25,14 +24,12 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
-import { boxToScreen, toPage, type Viewport } from '@/pdf/doc/geometry';
+import { boxToScreen, type Viewport } from '@/pdf/doc/geometry';
 import type { Box } from '@/pdf/doc/types';
 import { PageFrame } from './PageFrame';
 
 /** One placed object the layer lets people pick and change. */
 /** On-screen size (CSS px) below which a selection shows no handles. */
-const MIN_HANDLES_PX = 48;
-
 export interface LayerObject {
   id: string;
   /** Page-space bounds (PDF points, y up). */
@@ -317,65 +314,8 @@ export function ObjectLayer({
   const restBox = one ? one.box : group;
   const restRect = restBox ? boxToScreen(viewport, restBox) : null;
   const frameRect = restRect ? around(restRect) : null;
-  // Cynosure's handles would cover a small object whole, leaving nothing to
-  // drag it by (docs/cynosure-gaps.md): below this size the frame shows no
-  // handles, and the object moves by dragging and the arrow keys.
-  const roomy =
-    !!restRect && Math.max(restRect.width, restRect.height) >= MIN_HANDLES_PX;
-
-  // Cynosure 0.6.0's SelectionFrame cannot be moved by dragging its body
-  // (docs/cynosure-gaps.md): its own drag gives up at the first move. The
-  // frame's box takes the move here instead, through Cynosure's useDrag;
-  // handles, keys and rotation stay the frame's.
-  const room = useRef<HTMLDivElement>(null);
-  const dragFrom = useRef<{ box: Box } | null>(null);
-  const latest = useRef({ frameBox, movable: movable.length, changes });
-  useEffect(() => {
-    latest.current = { frameBox, movable: movable.length, changes };
-  });
-  useDrag(room, {
-    distance: 3,
-    onStart: (session) => {
-      const onHandle = session.path.some(
-        (n) => n instanceof HTMLElement && n.hasAttribute('data-handle'),
-      );
-      const { frameBox: b, movable: n } = latest.current;
-      if (onHandle || !b || !n) return false;
-      dragFrom.current = { box: b };
-      via.current = 'pointer';
-    },
-    onMove: ({ delta }) => {
-      const from = dragFrom.current;
-      if (!from) return;
-      const [x0, y0] = toPage(viewport, 0, 0);
-      const [x1, y1] = toPage(viewport, delta.x, delta.y);
-      const box = {
-        ...from.box,
-        x: from.box.x + x1 - x0,
-        y: from.box.y + y1 - y0,
-      };
-      setLive(latest.current.changes(box, one ? (one.rotate ?? 0) : 0));
-    },
-    onEnd: ({ delta }, cancelled) => {
-      const from = dragFrom.current;
-      dragFrom.current = null;
-      if (!from) return;
-      if (cancelled) {
-        setLive(null);
-        return;
-      }
-      const [x0, y0] = toPage(viewport, 0, 0);
-      const [x1, y1] = toPage(viewport, delta.x, delta.y);
-      const box = {
-        ...from.box,
-        x: from.box.x + x1 - x0,
-        y: from.box.y + y1 - y0,
-      };
-      const next = latest.current.changes(box, one ? (one.rotate ?? 0) : 0);
-      setLive(null);
-      onCommit([...next.values()], 'pointer');
-    },
-  });
+  // The frame takes the drag of its body itself and keeps a small object's
+  // body free of handles (SelectionFrame compactBelow).
 
   // ----- keys the frame leaves to the layer -----
 
@@ -596,9 +536,11 @@ export function ObjectLayer({
             : null}
           {group && frameRect ? (
             <div
-              ref={room}
               data-testid="selection-frame"
               data-frame-id={ids[0]}
+              onPointerDown={() => {
+                via.current = 'pointer';
+              }}
               // The frame lies over its object: a double-click edits it.
               onDoubleClick={() => {
                 if (one?.editable) onEdit?.(one.id);
@@ -622,7 +564,7 @@ export function ObjectLayer({
                 viewport={shift(viewport, frameRect.left, frameRect.top)}
                 box={frameBox}
                 rotate={one ? shown(one).rotate : 0}
-                resizable={!!one && one.resizable !== false && roomy}
+                resizable={!!one && one.resizable !== false}
                 rotatable={!!one?.rotatable}
                 keepAspect={!!one?.keepAspect}
                 bounded={false}

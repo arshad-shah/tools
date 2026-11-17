@@ -293,15 +293,15 @@ describe('WorkspaceShell', () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
-    const panel = document.getElementById('mode-panel')!;
-    const rotate = () =>
-      within(panel).getByRole('button', {
-        name: 'Rotate right',
-      }) as HTMLButtonElement;
-    expect(rotate().disabled).toBe(true);
-    expect(panel.getAttribute('aria-busy')).toBe('true');
+    // The whole mode panel is blocked while the job holds the document.
+    const panel = () => document.getElementById('mode-panel')!;
+    expect(panel().inert).toBe(true);
+    expect(panel().getAttribute('aria-busy')).toBe('true');
     act(() => end());
-    expect(rotate().disabled).toBe(false);
+    expect(panel().inert).toBe(false);
+    expect(
+      within(panel()).getByRole('button', { name: 'Rotate right' }),
+    ).toBeTruthy();
   });
 
   it('F switches to Focus and remembers it', async () => {

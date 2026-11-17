@@ -208,33 +208,35 @@ export default function QrScanner() {
     <Stack gap="5">
       <Card as="section" title="Results">
         <Stack gap="4">
-          <Grid
-            columns={preview ? '6rem minmax(0, 1fr)' : 1}
-            gap="4"
-            align="center"
-          >
-            {preview ? (
-              <Image
-                src={preview}
-                alt="Scanned image"
-                ratio={scanned.width / scanned.height}
-                fit="contain"
-                radius="sm"
-              />
-            ) : null}
-            {count === 0 ? (
-              <EmptyState
-                size="sm"
-                icon={search}
-                title="No code found"
-                description="Try a sharper or larger image, with the whole code in view and a light margin around it."
-              />
-            ) : (
-              <Notice tone="success">
-                {`Found ${count} ${count === 1 ? 'code' : 'codes'}.`}
-              </Notice>
-            )}
-          </Grid>
+          {preview ? (
+            <Image
+              src={preview}
+              alt="Scanned image"
+              ratio={scanned.width / scanned.height}
+              fit="contain"
+              radius="sm"
+              regions={scanned.results.map((r, i) => ({
+                x: r.box.x,
+                y: r.box.y,
+                width: r.box.w,
+                height: r.box.h,
+                label: String(i + 1),
+                tone: 'accent',
+              }))}
+            />
+          ) : null}
+          {count === 0 ? (
+            <EmptyState
+              size="sm"
+              icon={search}
+              title="No code found"
+              description="Try a sharper or larger image, with the whole code in view and a light margin around it."
+            />
+          ) : (
+            <Notice tone="success">
+              {`Found ${count} ${count === 1 ? 'code' : 'codes'}.`}
+            </Notice>
+          )}
           {mode === 'camera' && !camera ? (
             <Button variant="solid" icon={play} onClick={() => setCamera(true)}>
               Continue scanning
@@ -281,7 +283,6 @@ export default function QrScanner() {
             cameraActive={camera}
             onCameraActiveChange={setCamera}
             onFrame={onFrame}
-            onError={setError}
           />
         </Card>
         {results}

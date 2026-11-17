@@ -1,5 +1,4 @@
 import {
-  Inline,
   Badge,
   Button,
   Dialog,
@@ -139,15 +138,13 @@ function TestResults({
   }));
   return (
     <Stack gap="2">
-      <Inline role="status">
-        <Text size="sm" tone="muted">
-          {running
-            ? 'Testing'
-            : results
-              ? `${matched} of ${lines.length} lines match`
-              : `Testing against the first ${lines.length} lines`}
-        </Text>
-      </Inline>
+      <Text size="sm" tone="muted" role="status">
+        {running
+          ? 'Testing'
+          : results
+            ? `${matched} of ${lines.length} lines match`
+            : `Testing against the first ${lines.length} lines`}
+      </Text>
       {results ? (
         <ScrollArea label="Test results">
           <Table<Result>

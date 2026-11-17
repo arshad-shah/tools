@@ -1,6 +1,5 @@
 import {
   Button,
-  Checkbox,
   Dialog,
   EmptyState,
   Grid,
@@ -36,16 +35,13 @@ const toPairs = (env: Environment): KeyValuePair[] =>
     secret: v.secret || undefined,
   }));
 
-/** Edited pairs back as variables; secrecy is set beside the editor. */
-const fromPairs = (
-  pairs: KeyValuePair[],
-  previous: Environment['vars'],
-): Environment['vars'] =>
+/** Edited pairs back as variables; each row's Type says whether it is secret. */
+const fromPairs = (pairs: KeyValuePair[]): Environment['vars'] =>
   pairs.map((p) => ({
     id: p.id,
     key: p.key,
     value: p.value,
-    secret: previous.find((v) => v.id === p.id)?.secret ?? !!p.secret,
+    secret: !!p.secret,
     enabled: p.enabled !== false,
   }));
 
@@ -76,7 +72,6 @@ export function EnvironmentMenu({
     if (!activeId) onActiveChange(env.id);
   };
 
-  const named = current?.vars.filter((v) => v.key.trim()) ?? [];
   return (
     <Inline gap="1" align="center">
       <Select
@@ -141,38 +136,14 @@ export function EnvironmentMenu({
               <KeyValueEditor
                 label={`Variables of ${current.name}`}
                 pairs={toPairs(current)}
-                onChange={(pairs) =>
-                  patch({ vars: fromPairs(pairs, current.vars) })
-                }
+                onChange={(pairs) => patch({ vars: fromPairs(pairs) })}
+                rowTypes
                 labels={{ key: 'Variable' }}
               />
-              {named.length > 0 ? (
-                <Stack gap="2" role="group" aria-label="Secret variables">
-                  <Text size="sm" weight="medium">
-                    Secret variables
-                  </Text>
-                  <Text size="sm" tone="muted">
-                    Tick tokens and passwords: their values are masked and kept
-                    for this session only.
-                  </Text>
-                  <Inline gap="4" wrap>
-                    {named.map((v) => (
-                      <Checkbox
-                        key={v.id}
-                        label={v.key}
-                        checked={!!v.secret}
-                        onChange={(secret) =>
-                          patch({
-                            vars: current.vars.map((x) =>
-                              x.id === v.id ? { ...x, secret } : x,
-                            ),
-                          })
-                        }
-                      />
-                    ))}
-                  </Inline>
-                </Stack>
-              ) : null}
+              <Text size="sm" tone="muted">
+                Mark tokens and passwords Secret: their values are masked and
+                kept for this session only.
+              </Text>
               <Switch
                 label="Remember secret values in this browser"
                 checked={current.rememberSecrets}

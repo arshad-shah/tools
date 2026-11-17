@@ -47,7 +47,7 @@ export function ViewToolbar({
       g.items.map((i) => ({
         value: i.value,
         label: String(i.label),
-        description: g.label === 'Custom' ? 'Custom format' : undefined,
+        group: g.label,
       })),
     ),
   ];

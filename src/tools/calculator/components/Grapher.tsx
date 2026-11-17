@@ -473,11 +473,9 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
               />
             </Stack>
           </ChartFrame>
-          <Stack aria-live="polite">
-            <Text size="sm" tone="muted" numeric>
-              {traceText}
-            </Text>
-          </Stack>
+          <Text size="sm" tone="muted" numeric aria-live="polite">
+            {traceText}
+          </Text>
         </Stack>
       </Card>
 

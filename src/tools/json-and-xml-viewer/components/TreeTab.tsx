@@ -165,11 +165,9 @@ export function TreeTab({
           onChange={(regex) => onSearchChange({ ...search, regex, active: 0 })}
         />
         {result.error ? null : (
-          <Inline aria-live="polite">
-            <Text size="sm" tone="muted" numeric>
-              {status}
-            </Text>
-          </Inline>
+          <Text size="sm" tone="muted" numeric aria-live="polite">
+            {status}
+          </Text>
         )}
       </Inline>
       <CodeTree

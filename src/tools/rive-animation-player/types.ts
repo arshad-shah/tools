@@ -14,7 +14,6 @@ export type AlignFitIndex = { alignment: number; fit: number };
 export type Dimensions = { width: number; height: number };
 export type Status = {
   current: PlayerState;
-  hovering?: boolean;
   error?: PlayerError | null;
 };
 export type RiveAnimations = { animations: string[]; active: string };

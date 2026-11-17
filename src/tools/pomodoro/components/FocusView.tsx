@@ -1,4 +1,4 @@
-import { Button, Dialog, Heading, Stack, Text } from '@arshad-shah/cynosure';
+import { Button, Dialog, Stack, Text } from '@arshad-shah/cynosure';
 import { pause, play } from '@arshad-shah/cynosure/icons';
 import React from 'react';
 import { MODE_INFO } from '../lib/modes';
@@ -28,9 +28,15 @@ export const FocusView: React.FC<{
         <Text size="xl" tone="muted">
           {info.label}
         </Text>
-        <Heading level={2} size="display">
+        <Text
+          size="5xl"
+          weight="bold"
+          numeric
+          role="timer"
+          aria-label="Time left"
+        >
           {formatTime(timer.timeLeft)}
-        </Heading>
+        </Text>
         <Button
           variant={timer.isActive ? 'soft' : 'solid'}
           size="lg"

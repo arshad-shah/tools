@@ -222,6 +222,7 @@ export function SignaturePhoto({
             step={0.01}
             value={t}
             disabled={disabled}
+            commitDelay={300}
             onChange={(v) => setT(Number(v))}
             onCommit={(v) => {
               setT(Number(v));

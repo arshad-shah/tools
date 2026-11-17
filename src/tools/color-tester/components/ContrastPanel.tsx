@@ -9,8 +9,8 @@ import {
   Badge,
   Button,
   ColorField,
+  ColorSample,
   Grid,
-  Heading,
   IconButton,
   Inline,
   Notice,
@@ -26,7 +26,6 @@ import {
   type ContrastTarget,
 } from '../lib/contrast-view';
 import { viewAs, type CvdMode } from '../lib/harmonies';
-import { ColourSurface } from './ColourSurface';
 
 export interface ContrastPanelProps {
   fg: string;
@@ -117,24 +116,26 @@ export function ContrastPanel({
 
       {view ? (
         <>
-          <ColourSurface
-            bg={view.bgHex}
-            fg={view.fgHex}
+          <ColorSample
+            color={view.bgHex}
+            ink={view.fgHex}
+            contrast={false}
+            size="lg"
             label="Contrast preview"
           >
-            <Stack gap="2">
-              <Text size="sm">Small text, 14 px: the quick brown fox</Text>
-              <Text size="md">
-                Body text, 16 px: the quick brown fox jumps over the lazy dog
-              </Text>
-              <Text size="lg" weight="bold">
-                Large bold text, 18.66 px
-              </Text>
-              <Heading level={4} size="lg">
-                Large text, 24 px
-              </Heading>
-            </Stack>
-          </ColourSurface>
+            <Text size="sm" align="center">
+              Small text, 14 px: the quick brown fox
+            </Text>
+            <Text size="md" align="center">
+              Body text, 16 px: the quick brown fox jumps over the lazy dog
+            </Text>
+            <Text size="lg" weight="bold" align="center">
+              Large bold text, 18.66 px
+            </Text>
+            <Text size="2xl" align="center">
+              Large text, 24 px
+            </Text>
+          </ColorSample>
           {cvd !== 'none' ? (
             <Text size="xs" tone="muted">
               {`Preview simulates ${cvd} colour vision; the numbers use the real colours.`}

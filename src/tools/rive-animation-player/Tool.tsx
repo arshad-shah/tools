@@ -263,10 +263,6 @@ export default function RiveAnimationPlayer() {
               device={device}
               previewRef={player.previewRef}
               canvasRef={player.canvasRef}
-              handleDrop={player.handleDrop}
-              handleDragOver={player.handleDragOver}
-              handleDragEnter={player.handleDragEnter}
-              handleDragLeave={player.handleDragLeave}
               load={player.load}
             />
             {active ? (

@@ -1,11 +1,11 @@
 import {
-  Button,
   Card,
   EmptyState,
   IconButton,
   Inline,
   ListRow,
   ListRows,
+  ScrollArea,
   SearchField,
   SegmentedControl,
   Stack,
@@ -35,9 +35,6 @@ interface HistoryPanelProps {
 
 type View = 'history' | 'saved' | 'memory';
 
-/** Rows shown before "Show more" (ScrollArea has no height cap: gaps doc). */
-const PAGE = 25;
-
 const same = (a: HistoryEntry, b: HistoryEntry) =>
   a.expression === b.expression && a.result === b.result;
 
@@ -59,11 +56,10 @@ function EntryRows({
   onUse(e: HistoryEntry): void;
   onStar(e: HistoryEntry): void;
 }) {
-  const [shown, setShown] = useState(PAGE);
   return (
-    <Stack gap="3">
+    <ScrollArea maxHeight="28rem">
       <ListRows label={label} divided>
-        {entries.slice(0, shown).map((h, i) => {
+        {entries.map((h, i) => {
           const starred = isSaved(h);
           return (
             <ListRow
@@ -97,18 +93,7 @@ function EntryRows({
           );
         })}
       </ListRows>
-      {entries.length > shown ? (
-        <Inline>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShown((n) => n + PAGE)}
-          >
-            {`Show ${Math.min(PAGE, entries.length - shown)} more`}
-          </Button>
-        </Inline>
-      ) : null}
-    </Stack>
+    </ScrollArea>
   );
 }
 

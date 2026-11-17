@@ -1,17 +1,13 @@
 import {
-  AspectRatio,
-  Button,
   CodeBlock,
+  HtmlPreview,
   Image,
-  Notice,
   Stack,
   Text,
   Tree,
 } from '@arshad-shah/cynosure';
 import { useEffect, useMemo, useState } from 'react';
 import { prettyXml } from '@/shared/lib/data-formats/xml';
-// The sandboxed frame is a drawing surface: the response's own HTML.
-import { SandboxedHtml } from '@/shared/surfaces/sandboxed-html/SandboxedHtml';
 import { formatBytes } from '@/shared/lib/format';
 import type { HttpResponse } from '../lib/http';
 import { HEX_LIMIT, hexDump } from '../lib/hex';
@@ -128,31 +124,10 @@ export function PreviewView({
   res: HttpResponse;
   view: BodyView;
 }) {
-  const [remote, setRemote] = useState(false);
   if (view === 'image') return <ResponseImage res={res} />;
   if (view === 'html' && res.text !== undefined)
     return (
-      <Stack gap="3">
-        {!remote ? (
-          <Notice
-            tone="info"
-            action={
-              <Button size="sm" variant="ghost" onClick={() => setRemote(true)}>
-                Load remote images
-              </Button>
-            }
-          >
-            Remote images and styles are blocked.
-          </Notice>
-        ) : null}
-        <AspectRatio ratio={4 / 3}>
-          <SandboxedHtml
-            html={res.text}
-            title="Response preview"
-            allowRemoteImages={remote}
-          />
-        </AspectRatio>
-      </Stack>
+      <HtmlPreview label="Response preview" html={res.text} ratio={4 / 3} />
     );
   return <Text tone="muted">No preview for this content type.</Text>;
 }

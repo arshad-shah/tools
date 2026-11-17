@@ -139,11 +139,16 @@ export const TimerCard: React.FC = () => {
             ) : null}
           </Inline>
 
-          <Stack role="timer" aria-label="Time left" align="center">
-            <Heading level={3} size="display">
-              {formatTime(timer.timeLeft)}
-            </Heading>
-          </Stack>
+          <Text
+            size="5xl"
+            weight="bold"
+            numeric
+            align="center"
+            role="timer"
+            aria-label="Time left"
+          >
+            {formatTime(timer.timeLeft)}
+          </Text>
           {/* Announces session changes only, never the per-second ticks. */}
           <Stack role="status" aria-live="polite">
             <VisuallyHidden>{announcement}</VisuallyHidden>

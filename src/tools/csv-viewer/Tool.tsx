@@ -16,7 +16,6 @@ import {
   send,
   table as tableIcon,
 } from '@arshad-shah/cynosure/icons';
-import { useMediaQuery } from '@/shared/lib/media-query';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toolsAccepting } from '@/app/registry';
@@ -59,7 +58,6 @@ const TOOL_ID = 'csv-viewer';
  * a profile of each column or a chart of the shown rows.
  */
 export default function CsvViewer() {
-  const narrow = useMediaQuery('(max-width: 44.99rem)');
   const navigate = useNavigate();
   const { copy } = useClipboard();
   const [settings, updateSettings] = csvSettings.useSettings();
@@ -253,8 +251,6 @@ export default function CsvViewer() {
     },
   ].filter((x) => x.items.length);
 
-  // A Card header keeps its actions beside the title (Cynosure gap 52):
-  // on phones they go in the body, where they wrap.
   const actions = (
     <Inline gap="2" wrap>
       <Button size="sm" variant="ghost" icon={refreshCw} onClick={newData}>
@@ -309,9 +305,8 @@ export default function CsvViewer() {
         title={loaded.name}
         headingLevel={2}
         padding="sm"
-        actions={narrow ? undefined : actions}
+        actions={actions}
       >
-        {narrow ? actions : null}
         <Inline align="center" gap="2" wrap>
           <Badge variant="soft" tone="accent" size="sm">
             {`${table.rows.length.toLocaleString('en-US')} rows`}

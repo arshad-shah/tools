@@ -192,11 +192,9 @@ export function GridView({
             </Badge>
           ))}
         </Inline>
-        <Inline aria-live="polite">
-          <Text size="sm" tone="muted" numeric>
-            {`${indices.length.toLocaleString('en-US')} of ${table.rows.length.toLocaleString('en-US')} rows`}
-          </Text>
-        </Inline>
+        <Text size="sm" tone="muted" numeric aria-live="polite">
+          {`${indices.length.toLocaleString('en-US')} of ${table.rows.length.toLocaleString('en-US')} rows`}
+        </Text>
       </Inline>
       {errors.length > 0 && (
         <Notice tone="warning">

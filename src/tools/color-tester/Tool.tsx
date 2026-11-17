@@ -1,5 +1,6 @@
 import {
   ColorField,
+  ColorSample,
   Card,
   Grid,
   Notice,
@@ -19,7 +20,6 @@ import { ToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
-import { ColourSurface } from './components/ColourSurface';
 import { ContrastPanel } from './components/ContrastPanel';
 import { CvdToggle } from './components/CvdToggle';
 import { ExtractPanel } from './components/ExtractPanel';
@@ -162,27 +162,25 @@ const ColorTester = () => {
           <Stack gap="5">
             <ColorField
               label="Base colour"
-              size="lg"
+              inline
               value={colors.base}
               onChange={(css) => setColors({ base: css })}
               alpha
             />
-            <ColourSurface
-              bg={shownBase}
-              fg={inkOn(parseColor(shownBase))}
+            <ColorSample
+              color={shownBase}
+              ink={inkOn(parseColor(shownBase))}
+              contrast={false}
+              size="lg"
               label="Base colour sample"
             >
-              <Stack gap="1" paddingBlock="6">
-                <Text size="2xl" weight="bold">
-                  {baseHex}
-                </Text>
-                <Text size="sm">
-                  {cvd === 'none'
-                    ? 'As picked'
-                    : `As seen with ${cvd} colour vision`}
-                </Text>
-              </Stack>
-            </ColourSurface>
+              {baseHex}
+            </ColorSample>
+            <Text size="sm" tone="muted">
+              {cvd === 'none'
+                ? 'As picked'
+                : `As seen with ${cvd} colour vision`}
+            </Text>
             <FormatList color={base} />
           </Stack>
         </Card>

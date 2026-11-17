@@ -5,7 +5,6 @@ import {
   ProgressBar,
 } from '@arshad-shah/cynosure';
 import type React from 'react';
-import type { DragEvent } from 'react';
 import { RiveStage } from '@/shared/surfaces/rive/RiveStage';
 import { PlayerState, type Status } from '../types';
 import type { DeviceChoice } from './StagePanel';
@@ -28,10 +27,6 @@ export function Stage({
   device,
   previewRef,
   canvasRef,
-  handleDrop,
-  handleDragOver,
-  handleDragEnter,
-  handleDragLeave,
   load,
 }: {
   status: Status;
@@ -41,10 +36,6 @@ export function Stage({
   device: DeviceChoice;
   previewRef: React.RefObject<HTMLDivElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  handleDrop: (e: DragEvent<HTMLDivElement>) => void;
-  handleDragOver: (e: DragEvent<HTMLDivElement>) => void;
-  handleDragEnter: (e: DragEvent<HTMLDivElement>) => void;
-  handleDragLeave: (e: DragEvent<HTMLDivElement>) => void;
   load: (file: File) => Promise<void>;
 }) {
   const shown = [PlayerState.Active, PlayerState.Loading].includes(
@@ -76,7 +67,6 @@ export function Stage({
       color={background}
       checkerboard={checkerboard}
       hidden={!shown}
-      highlighted={status.hovering}
       overlay={overlay}
       frame={
         device === 'none'
@@ -89,10 +79,7 @@ export function Stage({
       }
       previewRef={previewRef}
       canvasRef={canvasRef}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
+      onFile={(file) => void load(file)}
     />
   );
 }

@@ -35,7 +35,7 @@
     ]
   },
   "dependencies": {
-    "@arshad-shah/cynosure": "^0.7.0",
+    "@arshad-shah/cynosure": "^0.8.0",
     "@arshad-shah/detent": "^0.3.1",
     "@arshad-shah/detent-react": "^0.3.1",
     "@arshad-shah/qpdf-wasm": "^0.1.0",

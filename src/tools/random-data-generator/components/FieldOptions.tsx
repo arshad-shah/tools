@@ -86,10 +86,9 @@ function EnumEditor({
   );
 }
 
-/** Select has no empty value: "any" stands for none chosen. */
-const ANY = '__any';
-const orAny = (v: string | undefined) => v || ANY;
-const fromAny = (v: string) => (v === ANY ? undefined : v);
+/** A Select's empty option is the value `""`: none chosen. */
+const orNone = (v: string | undefined) => v ?? '';
+const fromNone = (v: string) => v || undefined;
 
 interface FieldOptionsProps {
   field: FieldSchema;
@@ -215,12 +214,12 @@ export function FieldOptions({ field, onChange, tables }: FieldOptionsProps) {
         <Select
           size="sm"
           label="Network"
-          value={orAny(field.network)}
+          value={orNone(field.network)}
           onChange={(v) =>
-            onChange({ network: fromAny(v) as FieldSchema['network'] })
+            onChange({ network: fromNone(v) as FieldSchema['network'] })
           }
+          emptyOption="Any"
           options={[
-            { value: ANY, label: 'Any' },
             ...CARD_NETWORKS.map((n) => ({
               value: n,
               label: n[0].toUpperCase() + n.slice(1),
@@ -232,26 +231,24 @@ export function FieldOptions({ field, onChange, tables }: FieldOptionsProps) {
         <Select
           size="sm"
           label="Country"
-          value={orAny(field.country)}
+          value={orNone(field.country)}
           onChange={(v) =>
-            onChange({ country: fromAny(v) as FieldSchema['country'] })
+            onChange({ country: fromNone(v) as FieldSchema['country'] })
           }
-          options={[
-            { value: ANY, label: 'Any' },
-            ...IBAN_COUNTRIES.map((c) => ({ value: c, label: c })),
-          ]}
+          emptyOption="Any"
+          options={[...IBAN_COUNTRIES.map((c) => ({ value: c, label: c }))]}
         />
       )}
       {LOCALISED.includes(t) && (
         <Select
           size="sm"
           label="Locale"
-          value={orAny(field.locale)}
+          value={orNone(field.locale)}
           onChange={(v) =>
-            onChange({ locale: fromAny(v) as FieldSchema['locale'] })
+            onChange({ locale: fromNone(v) as FieldSchema['locale'] })
           }
+          emptyOption="Schema locale"
           options={[
-            { value: ANY, label: 'Schema locale' },
             ...MOCK_LOCALES.map((l) => ({
               value: l,
               label: LOCALE_LABEL[l],

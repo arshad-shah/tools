@@ -548,7 +548,6 @@ export function WorkspaceShell({
                 palette: settings.palette,
                 onPaletteChange: (palette) =>
                   useWorkspaceSettings.setState({ palette }),
-                busy,
               }}
             >
               <Stack fill minSize="0" gap="0" overflow="hidden">
@@ -586,27 +585,31 @@ export function WorkspaceShell({
                       {modeSwitch}
                     </Inline>
                     <Divider spacing="none" />
-                    <Inline
+                    <Stack
                       id="mode-panel"
                       role="region"
                       aria-label={modeName}
                       aria-busy={busy}
-                      paddingInline="3"
-                      paddingBlock="1"
-                      gap="3"
-                      align="center"
-                      justify="between"
+                      disabled={busy}
                     >
-                      {toolbar}
-                      {/* The tools scroll; zoom keeps its one row. */}
-                      <Inline shrink={false}>
-                        <ZoomControls
-                          zoom={settings.zoom}
-                          percent={Math.round(scale * 100)}
-                          onZoomChange={setZoom}
-                        />
+                      <Inline
+                        paddingInline="3"
+                        paddingBlock="1"
+                        gap="3"
+                        align="center"
+                        justify="between"
+                      >
+                        {toolbar}
+                        {/* The tools scroll; zoom keeps its one row. */}
+                        <Inline shrink={false}>
+                          <ZoomControls
+                            zoom={settings.zoom}
+                            percent={Math.round(scale * 100)}
+                            onZoomChange={setZoom}
+                          />
+                        </Inline>
                       </Inline>
-                    </Inline>
+                    </Stack>
                     <Divider spacing="none" />
                   </Stack>
                 ) : layout === 'phone' ? (
@@ -682,6 +685,7 @@ export function WorkspaceShell({
                     role="region"
                     aria-label={modeName}
                     aria-busy={busy}
+                    disabled={busy}
                   >
                     {toolbar}
                     {layout === 'focus' ? (

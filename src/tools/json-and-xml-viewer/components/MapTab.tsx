@@ -7,6 +7,7 @@ import {
   Stack,
   Text,
   Toolbar,
+  ZoomControls,
 } from '@arshad-shah/cynosure';
 import {
   download,
@@ -14,10 +15,6 @@ import {
   layoutTopBottom,
   locate,
   minimap as minimapIcon,
-  zoomActualSize,
-  zoomFitPage,
-  zoomIn,
-  zoomOut,
 } from '@arshad-shah/cynosure/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -115,11 +112,6 @@ export function MapTab({
   const lastUserPan = useRef(-Infinity);
   // The zoom shown in the controls: the canvas allows 5 to 300%.
   const [percent, setPercent] = useState(100);
-  const zoomBy = (by: number) => {
-    const view = canvas.current?.getView();
-    if (view)
-      canvas.current?.zoomTo(Math.min(3, Math.max(0.05, view.scale * by)));
-  };
   const reveal = useCallback((cardId: string | undefined) => {
     if (!cardId || performance.now() - lastUserPan.current < PAN_HOLD_MS)
       return;
@@ -145,40 +137,20 @@ export function MapTab({
   return (
     <Stack gap="3" fill minSize="0">
       <Inline gap="3" align="center" justify="between" wrap>
+        <ZoomControls
+          labels={{ group: 'Map zoom' }}
+          percent={percent}
+          min={5}
+          max={300}
+          fits={[]}
+          buttons={['fit', 'actual-size']}
+          onZoomChange={(zoom) => {
+            if (zoom.kind === 'percent')
+              canvas.current?.zoomTo(zoom.value / 100);
+            else canvas.current?.fit();
+          }}
+        />
         <Toolbar label="Map controls">
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label="Zoom out"
-            icon={zoomOut}
-            disabled={percent <= 5}
-            onClick={() => zoomBy(1 / 1.2)}
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label="Zoom in"
-            icon={zoomIn}
-            disabled={percent >= 300}
-            onClick={() => zoomBy(1.2)}
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label="Fit to view"
-            icon={zoomFitPage}
-            onClick={() => canvas.current?.fit()}
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label="Actual size"
-            icon={zoomActualSize}
-            onClick={() => canvas.current?.zoomTo(1)}
-          />
-          <Text size="sm" tone="muted" numeric>
-            {`${percent}%`}
-          </Text>
           <IconButton
             size="sm"
             variant="ghost"
@@ -221,13 +193,11 @@ export function MapTab({
           />
         </Toolbar>
         <Inline gap="3" align="center">
-          <Inline aria-live="polite">
-            <Text size="sm" tone="muted">
-              {shown < total
-                ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
-                : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
-            </Text>
-          </Inline>
+          <Text size="sm" tone="muted" aria-live="polite">
+            {shown < total
+              ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
+              : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
+          </Text>
           <Select
             label="Node cap"
             size="sm"

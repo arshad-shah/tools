@@ -74,7 +74,9 @@ describe('Timeline', () => {
       <Timeline histogram={histogram} range={undefined} onRange={onRange} />,
     );
     const from = screen.getByRole('slider', { name: 'Time range, from' });
+    // A slider commits when the key is released (Cynosure 0.8.0).
     fireEvent.keyDown(from, { key: 'ArrowRight' });
+    fireEvent.keyUp(from, { key: 'ArrowRight' });
     expect(onRange).toHaveBeenLastCalledWith([T0 + 60_000, T0 + 4 * 60_000]);
     rerender(
       <Timeline
@@ -84,12 +86,9 @@ describe('Timeline', () => {
       />,
     );
     expect(screen.getByText(/^Showing 2026-01-02 10:01:00/)).toBeTruthy();
-    fireEvent.keyDown(
-      screen.getByRole('slider', { name: 'Time range, from' }),
-      {
-        key: 'Home',
-      },
-    );
+    const again = screen.getByRole('slider', { name: 'Time range, from' });
+    fireEvent.keyDown(again, { key: 'Home' });
+    fireEvent.keyUp(again, { key: 'Home' });
     expect(onRange).toHaveBeenLastCalledWith(undefined);
     fireEvent.click(screen.getByRole('button', { name: 'Clear time range' }));
     expect(onRange).toHaveBeenLastCalledWith(undefined);
