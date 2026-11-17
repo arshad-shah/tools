@@ -26,6 +26,7 @@ export default defineTool({
   ],
   accepts: [{ mimes: ['application/x-pem-file', 'application/pkix-cert'] }],
   version: '1.0.0',
+  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

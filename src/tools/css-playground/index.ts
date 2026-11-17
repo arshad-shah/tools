@@ -29,6 +29,5 @@ export default defineTool({
   accepts: [{ kinds: ['text'], mimes: ['text/css'] }],
   version: '1.0.0',
   enabled: true,
-  isNew: true,
   load: () => import('./Tool'),
 });

@@ -24,6 +24,7 @@ export default defineTool({
   // A curl command from the HTTP Client, the palette or any text source.
   accepts: [{ mimes: ['application/x-curl'] }],
   version: '1.0.0',
+  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

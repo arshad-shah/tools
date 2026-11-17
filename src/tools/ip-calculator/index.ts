@@ -25,6 +25,7 @@ export default defineTool({
     'reverse dns',
   ],
   version: '1.0.0',
+  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

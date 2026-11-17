@@ -19,7 +19,6 @@ export default defineTool({
   ],
   accepts: [{ kinds: ['png', 'jpeg', 'webp', 'gif'], multiple: false }],
   version: '1.0.0',
-  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

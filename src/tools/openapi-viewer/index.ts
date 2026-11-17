@@ -33,6 +33,7 @@ export default defineTool({
     },
   ],
   version: '1.0.0',
+  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });
