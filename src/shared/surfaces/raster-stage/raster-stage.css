@@ -1,0 +1,52 @@
+/* The raster editing stage (a drawing surface): a scrolling viewport, the
+   canvas at a zoom, and a layer for the selection frame. Colours are
+   Cynosure tokens. */
+.tools-raster-stage {
+  position: relative;
+  display: flex;
+  inline-size: 100%;
+  /* Grows with the content up to this; zoom to fit reads the cap (not the
+     height, which follows the content). */
+  max-block-size: clamp(240px, 70vh, 960px);
+  min-block-size: 160px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: var(--cy-border-width) solid var(--cy-color-line);
+  border-radius: var(--cy-radius-md);
+  /* A checkerboard so transparent pixels read as transparent. */
+  background-color: var(--cy-color-soft);
+  background-image: repeating-conic-gradient(
+    var(--cy-color-surface) 0% 25%,
+    transparent 0% 50%
+  );
+  background-size: 16px 16px;
+}
+.tools-raster-stage-content {
+  position: relative;
+  flex: none;
+  /* Centred while smaller than the viewport; scrolls from the corner when
+     larger (auto margins fall to zero). */
+  margin: auto;
+}
+.tools-raster-stage-canvas {
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+.tools-raster-stage-canvas[data-cursor='crosshair'] {
+  cursor: crosshair;
+}
+.tools-raster-stage-canvas[data-cursor='text'] {
+  cursor: text;
+}
+.tools-raster-stage-canvas[data-cursor='move'] {
+  cursor: move;
+}
+.tools-raster-stage-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tools-raster-stage-layer > * {
+  pointer-events: auto;
+}
