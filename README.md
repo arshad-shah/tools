@@ -1,6 +1,6 @@
 # Tools
 
-Free, private browser tools: a PDF workspace and 42 everyday tools for text, data, encoding, security, maths, time, media and the web. Everything runs on your device; files and text never leave the browser. Built with React 19, TypeScript and Vite, and deployed to Cloudflare.
+Free, private browser tools: a PDF workspace and 43 everyday tools for text, data, encoding, security, maths, time, media and the web. Everything runs on your device; files and text never leave the browser. Built with React 19, TypeScript and Vite, and deployed to Cloudflare.
 
 ![CI](https://github.com/arshad-shah/tools/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
