@@ -222,34 +222,30 @@ export default function CsvViewer() {
   const payloads: Record<string, () => HandoffPayload> = {
     json: () => jsonPayload(projected(), loaded.name),
     csv: () => csvTextPayload(viewRows, visibleColumns, loaded.name),
+    table: () =>
+      csvTextPayload(viewRows, visibleColumns, loaded.name, 'text/csv'),
     schema: schemaPayload,
   };
   const targets = (mime: string) =>
     toolsAccepting(mime).filter((t) => t.id !== TOOL_ID);
-  const sendSections: MenuSection[] = [
-    {
-      label: 'Rows as JSON',
-      items: targets('application/json').map((t) => ({
-        value: `json:${t.id}`,
+  // csvTextPayload hands CSV over as plain text (Text Diff and others) or,
+  // for tools that load tables, as text/csv.
+  const sendSections: MenuSection[] = (
+    [
+      ['json', 'Rows as JSON', 'application/json'],
+      ['csv', 'Rows as CSV', 'text/plain'],
+      ['table', 'Rows as a table', 'text/csv'],
+      ['schema', 'More like this', MOCK_SCHEMA_MIME],
+    ] as const
+  )
+    .map(([kind, label, mime]) => ({
+      label,
+      items: targets(mime).map((t) => ({
+        value: `${kind}:${t.id}`,
         label: t.name,
       })),
-    },
-    {
-      label: 'Rows as CSV',
-      // csvTextPayload hands CSV over as plain text (Text Diff and others).
-      items: targets('text/plain').map((t) => ({
-        value: `csv:${t.id}`,
-        label: t.name,
-      })),
-    },
-    {
-      label: 'More like this',
-      items: targets(MOCK_SCHEMA_MIME).map((t) => ({
-        value: `schema:${t.id}`,
-        label: t.name,
-      })),
-    },
-  ].filter((x) => x.items.length);
+    }))
+    .filter((x) => x.items.length);
 
   const actions = (
     <Inline gap="2" wrap>
