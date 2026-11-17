@@ -1,11 +1,11 @@
-import { IconFileImage } from '@/shared/ui/icons';
+import { fileImage as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'pdf-to-images',
   name: 'PDF to Images',
   description: 'Convert PDF pages to PNG or JPEG images at up to 300 DPI',
-  icon: IconFileImage,
+  icon,
   category: 'pdf',
   slug: 'to-images',
   kind: 'quick-task',

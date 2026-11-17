@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Button, EmptyState, Input, Label, Stack, Text } from '@/shared/ui';
+import {
+  Button,
+  EmptyState,
+  Stack,
+  Text,
+  TextField,
+} from '@arshad-shah/cynosure';
 import { notify } from '@/shared/lib/notify';
 import { textRuns } from '../lib/animator';
 import type { LoadedRive } from '../types';
@@ -45,30 +51,30 @@ export function TextRunsPanel({ loaded }: { loaded: LoadedRive | null }) {
     <Stack gap="4">
       {runs && runs.length > 0 ? (
         runs.map((run) => (
-          <Stack gap="1" key={run.name}>
-            <Label htmlFor={`text-run-${run.name}`}>{run.name}</Label>
-            <Input
-              id={`text-run-${run.name}`}
-              value={values[run.name] ?? run.text}
-              onChange={(v) => apply(run.name, v)}
-            />
-          </Stack>
+          <TextField
+            key={run.name}
+            label={run.name}
+            value={values[run.name] ?? run.text}
+            onChange={(v) => apply(run.name, v)}
+          />
         ))
       ) : (
-        <Text size="sm" tone="subtle">
+        <Text size="sm" tone="muted">
           {runs
             ? 'This artboard has no text runs.'
             : 'Text runs cannot be listed with this runtime. Enter a run name to edit it.'}
         </Text>
       )}
       {!runs && (
-        <Stack gap="2">
-          <Label htmlFor="text-run-name">Text run name</Label>
-          <Input id="text-run-name" value={runName} onChange={setRunName} />
-          <Label htmlFor="text-run-text">Text</Label>
-          <Input id="text-run-text" value={runText} onChange={setRunText} />
+        <Stack gap="3">
+          <TextField
+            label="Text run name"
+            value={runName}
+            onChange={setRunName}
+          />
+          <TextField label="Text" value={runText} onChange={setRunText} />
           <Button
-            variant="secondary"
+            variant="soft"
             disabled={!runName.trim()}
             onClick={applyNamed}
           >

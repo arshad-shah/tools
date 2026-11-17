@@ -1,33 +1,14 @@
 import {
   Button,
-  ControlBar,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   IconButton,
+  Inline,
   Select,
-  SwitchField,
-  ToolActions,
-  Tooltip,
-} from '@/shared/ui';
-import {
-  IconAlertTriangle,
-  IconChevronDown,
-  IconDownload,
-  IconPlus,
-  IconSplit,
-} from '@/shared/ui/icons';
-import type { ExportFormat } from '../hooks/useLogSource';
+  Switch,
+} from '@arshad-shah/cynosure';
+import { alert, compare, plus } from '@arshad-shah/cynosure/icons';
 import { formatOptions } from '../lib/format-ref';
 import type { LogColumn, SavedFormat } from '../settings';
 import { ColumnMenu } from './ColumnMenu';
-
-const EXPORT_FORMATS: { fmt: ExportFormat; label: string }[] = [
-  { fmt: 'text', label: 'Export as text' },
-  { fmt: 'json', label: 'Export as JSON' },
-  { fmt: 'csv', label: 'Export as CSV' },
-];
 
 export interface ViewToolbarProps {
   format: string;
@@ -40,12 +21,11 @@ export interface ViewToolbarProps {
   onColumns(columns: LogColumn[]): void;
   hasLog: boolean;
   onNextError(): void;
-  onExport(fmt: ExportFormat): void;
   selectedCount: number;
   onCompare(): void;
 }
 
-/** Format picker, wrap, columns, next error, compare and export. */
+/** Format picker, custom format, columns, wrap, compare and next error. */
 export function ViewToolbar({
   format,
   onFormat,
@@ -57,89 +37,62 @@ export function ViewToolbar({
   onColumns,
   hasLog,
   onNextError,
-  onExport,
   selectedCount,
   onCompare,
 }: ViewToolbarProps) {
   const { items, groups } = formatOptions(customFormats);
+  const options = [
+    ...items,
+    ...groups.flatMap((g) =>
+      g.items.map((i) => ({
+        value: i.value,
+        label: String(i.label),
+        group: g.label,
+      })),
+    ),
+  ];
   return (
-    <>
-      <ToolActions>
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={!hasLog}
-              leftIcon={<IconDownload size="sm" />}
-              rightIcon={<IconChevronDown size="sm" />}
-            >
-              Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" aria-label="Export formats">
-            {EXPORT_FORMATS.map((e) => (
-              <DropdownMenuItem key={e.fmt} onClick={() => onExport(e.fmt)}>
-                {e.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </ToolActions>
-      <ControlBar
-        start={
-          <>
-            <div className="w-48">
-              <Select
-                aria-label="Log format"
-                size="sm"
-                value={format}
-                onValueChange={onFormat}
-                items={items}
-                groups={groups}
-              />
-            </div>
-            <IconButton
-              size="sm"
-              variant="ghost"
-              label="Custom format"
-              icon={IconPlus}
-              onClick={onNewFormat}
-            />
-            <ColumnMenu columns={columns} onColumns={onColumns} />
-            <SwitchField
-              label="Wrap lines"
-              checked={wrap}
-              onCheckedChange={onWrap}
-            />
-          </>
-        }
-        end={
-          <>
-            <Button
-              size="sm"
-              variant="ghost"
-              leftIcon={<IconSplit size="sm" />}
-              disabled={selectedCount !== 2}
-              onClick={onCompare}
-            >
-              Compare selected
-              {selectedCount > 0 ? ` (${selectedCount} of 2)` : ''}
-            </Button>
-            <Tooltip content="Jump to next error" shortcut="e">
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconAlertTriangle size="sm" />}
-                disabled={!hasLog}
-                onClick={onNextError}
-              >
-                Next error
-              </Button>
-            </Tooltip>
-          </>
-        }
-      />
-    </>
+    <Inline gap="3" align="center" justify="between" wrap>
+      <Inline gap="2" align="center" wrap>
+        <Select
+          label="Log format"
+          labelHidden
+          size="sm"
+          value={format}
+          onChange={onFormat}
+          options={options}
+        />
+        <IconButton
+          size="sm"
+          variant="ghost"
+          label="Custom format"
+          icon={plus}
+          onClick={onNewFormat}
+        />
+        <ColumnMenu columns={columns} onColumns={onColumns} />
+        <Switch size="sm" label="Wrap lines" checked={wrap} onChange={onWrap} />
+      </Inline>
+      <Inline gap="2" align="center" wrap>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={compare}
+          disabled={selectedCount !== 2}
+          onClick={onCompare}
+        >
+          {`Compare selected${selectedCount > 0 ? ` (${selectedCount} of 2)` : ''}`}
+        </Button>
+        <Button
+          size="sm"
+          variant="soft"
+          icon={alert}
+          disabled={!hasLog}
+          aria-keyshortcuts="e"
+          onClick={onNextError}
+        >
+          Next error
+        </Button>
+      </Inline>
+    </Inline>
   );
 }

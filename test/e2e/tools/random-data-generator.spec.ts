@@ -1,13 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { editorValue } from '../editor';
 
 const firstRowJson = async (page: Page) => {
-  await page.getByRole('tab', { name: 'JSON' }).click();
-  const text = await page
-    .getByRole('textbox', { name: 'Generated JSON' })
-    .inputValue();
+  await page
+    .getByRole('radiogroup', { name: 'Preview as' })
+    .getByRole('radio', { name: 'JSON' })
+    .check();
+  const json = page.getByRole('textbox', { name: 'Generated JSON' });
+  await expect(json).toContainText('[');
+  const text = await editorValue(json);
   return (JSON.parse(text) as unknown[])[0];
+};
+
+/** NumberField commits on blur. */
+const rows = async (page: Page, n: string) => {
+  await page.getByLabel('Rows', { exact: true }).fill(n);
+  await page.keyboard.press('Tab');
 };
 
 const generate = async (page: Page) => {
@@ -36,7 +46,7 @@ test('seed abc generates the same first row after a reload', async ({
 });
 
 test('200k rows show progress and Cancel stops the job', async ({ page }) => {
-  await page.getByLabel('Rows').fill('200000');
+  await rows(page, '200000');
   await expect(page.getByText(/Large output: about/)).toBeVisible();
   await page.getByRole('button', { name: 'Generate', exact: true }).click();
   await expect(
@@ -53,12 +63,13 @@ test('200k rows show progress and Cancel stops the job', async ({ page }) => {
 });
 
 test('exports SQL', async ({ page }) => {
-  await page.getByLabel('Rows').fill('3');
+  await rows(page, '3');
   await generate(page);
-  await page.getByLabel('Format', { exact: true }).selectOption('sql');
+  await page.getByRole('combobox', { name: 'Format' }).click();
+  await page.getByRole('option', { name: 'SQL INSERT' }).click();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: 'Download' }).click(),
+    page.getByRole('button', { name: 'Download', exact: true }).click(),
   ]);
   expect(download.suggestedFilename()).toBe('users.sql');
   const sql = readFileSync(await download.path(), 'utf8');
@@ -70,9 +81,10 @@ test('the share link restores the schema and seed', async ({
   context,
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.getByLabel('Preset').selectOption('events');
+  await page.getByRole('combobox', { name: 'Preset' }).click();
+  await page.getByRole('option', { name: 'Events' }).click();
   await page.getByLabel('Seed', { exact: true }).fill('shared-seed');
-  await page.getByRole('button', { name: /share/i }).click();
+  await page.getByRole('button', { name: 'Share', exact: true }).click();
   const url = await page.evaluate(() => navigator.clipboard.readText());
   expect(url).toContain('#s=');
   await page.goto('about:blank');
@@ -85,9 +97,10 @@ test('the share link restores the schema and seed', async ({
 });
 
 test('Open in CSV Viewer shows the rows', async ({ page }) => {
-  await page.getByLabel('Rows').fill('4');
+  await rows(page, '4');
   await generate(page);
-  await page.getByRole('button', { name: 'Open in CSV Viewer' }).click();
+  await page.getByRole('button', { name: 'Open in', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Open in CSV Viewer' }).click();
   await expect(page).toHaveURL(/\/data\/csv/);
   await expect(page.getByText('4 of 4 rows')).toBeVisible();
 });
@@ -102,7 +115,11 @@ test('CSV Viewer hands an inferred schema over', async ({ page }) => {
       mimeType: 'text/csv',
       buffer: Buffer.from('id,email\n1,ada@example.com\n2,bob@example.org\n'),
     });
-  await page.getByRole('button', { name: 'Generate more like this' }).click();
+  await page.getByRole('button', { name: 'Send to' }).click();
+  await page
+    .getByRole('group', { name: 'More like this' })
+    .getByRole('menuitem', { name: 'Mock Data Generator' })
+    .click();
   await expect(page).toHaveURL(/\/data\/random/);
   await expect(
     page.getByText('Schema received from another tool'),

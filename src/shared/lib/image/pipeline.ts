@@ -7,7 +7,7 @@ import {
   hasScratchCanvas,
   scratchContext2D,
   type ScratchCanvas,
-} from '@/shared/ui/scratch-canvas';
+} from '@/shared/surfaces/scratch-canvas';
 import { encodePalettePng } from './png-palette';
 import { searchQuality } from './target-size';
 

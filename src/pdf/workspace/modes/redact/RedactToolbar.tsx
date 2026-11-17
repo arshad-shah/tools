@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Dialog, ErrorState, type ToolGroup } from '@/shared/ui';
+import { Button, Dialog } from '@arshad-shah/cynosure';
+import { type ToolGroup } from '../../ui/tool-groups';
 import {
-  IconRedactApply,
-  IconRedactArea,
-  IconRedactSearch,
-  IconSettings,
-} from '@/shared/ui/icons';
+  redactApply,
+  redactArea,
+  redactSearch,
+  settings,
+} from '@arshad-shah/cynosure/icons';
 import { ModeToolbar } from '../../ModeToolbar';
+import { ErrorNotice } from '../../ui/states';
 import { ToolbarPanel } from '../../ToolbarPanel';
 import type { DocumentApi, ModeProps } from '../types';
-import { applyBlocked, applyRedactions, askApply, toggleArea } from './actions';
+import {
+  applyBlocked,
+  applyRedactions,
+  askApply,
+  openSearch,
+  toggleArea,
+} from './actions';
 import { ApplyConfirm } from './ApplyConfirm';
 import { RedactOptions } from './RedactOptions';
 import { AREA_TOOL, markTotals } from './marks';
@@ -50,7 +58,7 @@ export function RedactToolbar(ctx: ModeProps) {
         {
           id: 'area',
           label: 'Mark area',
-          icon: IconRedactArea,
+          icon: redactArea,
           kind: 'toggle',
           pressed: tool.id === AREA_TOOL,
           onSelect: () => toggleArea(ctx),
@@ -58,11 +66,12 @@ export function RedactToolbar(ctx: ModeProps) {
         {
           id: 'find',
           label: 'Find and mark',
-          icon: IconRedactSearch,
+          icon: redactSearch,
           shortcut: 'Mod+F',
           kind: 'toggle',
           pressed: ui.searchOpen,
-          onSelect: () => setRedactUi({ searchOpen: !ui.searchOpen }),
+          onSelect: () =>
+            ui.searchOpen ? setRedactUi({ searchOpen: false }) : openSearch(),
         },
       ],
     },
@@ -73,7 +82,7 @@ export function RedactToolbar(ctx: ModeProps) {
         {
           id: 'apply',
           label: 'Apply redactions',
-          icon: IconRedactApply,
+          icon: redactApply,
           kind: 'button',
           disabled: applyBlocked(doc) ?? false,
           onSelect: () => askApply(doc),
@@ -91,7 +100,7 @@ export function RedactToolbar(ctx: ModeProps) {
             layout={ctx.layout}
             label="Redaction options"
             text="Options"
-            leading={<IconSettings size="sm" />}
+            icon={settings}
             title="Redaction options"
           >
             <RedactOptions />
@@ -109,21 +118,18 @@ export function RedactToolbar(ctx: ModeProps) {
       <Dialog
         open={ui.failure !== null}
         onOpenChange={(o) => !o && setRedactUi({ failure: null })}
-        label="Redaction not applied"
+        title="Redaction not applied"
+        actions={
+          <Button
+            variant="solid"
+            tone="accent"
+            onClick={() => setRedactUi({ failure: null })}
+          >
+            Close
+          </Button>
+        }
       >
-        {ui.failure ? (
-          <ErrorState
-            error={ui.failure}
-            headingLevel={2}
-            actions={[
-              {
-                label: 'Close',
-                variant: 'primary',
-                onClick: () => setRedactUi({ failure: null }),
-              },
-            ]}
-          />
-        ) : null}
+        {ui.failure ? <ErrorNotice error={ui.failure} /> : null}
       </Dialog>
     </>
   );

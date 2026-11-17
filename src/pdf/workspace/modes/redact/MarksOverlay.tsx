@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { newId } from '@/shared/lib/id';
-import {
-  DrawRectLayer,
-  OverlayLayer,
-  ShapeLayer,
-  type ObjectChange,
-  type Shape,
-} from '@/shared/ui';
+import { ShapeLayer, type Shape } from '@/shared/surfaces/page/shape-layer';
+import { PageFrame } from '@/shared/surfaces/pdf/PageFrame';
+import { Layer } from '@/shared/surfaces/pdf/layers';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import { geometryBounds } from '@/pdf/doc/object-geometry';
 import type { RedactMarkParams } from '@/pdf/doc/ops/redact';
 import type { Box } from '@/pdf/doc/types';
@@ -88,20 +85,22 @@ export function MarksOverlay(props: PageOverlayProps) {
         shapes={shapes}
       />
       {drawing ? (
-        <OverlayLayer
-          width={width}
-          height={height}
-          interactive
-          label={`Redaction marks on page ${pageNumber}`}
+        <Layer
+          clip
+          role="group"
+          aria-label={`Redaction marks on page ${pageNumber}`}
         >
-          <DrawRectLayer
-            width={width}
-            height={height}
-            transform={transform}
+          {/* Cynosure's SelectionFrame in draw mode: drag a box, or Enter
+              places one in the middle to adjust with the keys. */}
+          <PageFrame
+            key={placed.length}
             label={`Draw a redaction area on page ${pageNumber}`}
-            onDraw={(box) => void addArea(box)}
+            viewport={viewport}
+            box={null}
+            draw
+            onCommit={(box) => void addArea(box)}
           />
-        </OverlayLayer>
+        </Layer>
       ) : (
         <ModeObjectLayer
           doc={doc}

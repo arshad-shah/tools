@@ -56,9 +56,12 @@ describe('NumberConverter', () => {
   it('toggling bit 0 updates the decimal field', () => {
     setup();
     fireEvent.change(field('Decimal'), { target: { value: '4' } });
-    fireEvent.click(screen.getByLabelText('Bit 0, clear'));
+    const bit0 = screen.getByRole('button', { name: 'Bit 0' });
+    expect(bit0.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(bit0);
     expect(field('Decimal').value).toBe('5');
-    fireEvent.click(screen.getByLabelText('Bit 0, set'));
+    expect(bit0.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(bit0);
     expect(field('Decimal').value).toBe('4');
   });
 
@@ -82,13 +85,23 @@ describe('NumberConverter', () => {
     setup();
     fireEvent.change(field('Octal'), { target: { value: '750' } });
     expect(screen.getByText('rwxr-x---')).toBeTruthy();
-    const otherRead = screen.getByLabelText('Others read');
-    expect(otherRead.getAttribute('aria-checked')).toBe('false');
+    const otherRead = screen.getByLabelText('Others read') as HTMLInputElement;
+    expect(otherRead.checked).toBe(false);
     fireEvent.click(otherRead);
     expect(field('Octal').value).toBe('754');
   });
 
-  it('each base field has a kit copy button', () => {
+  it('arrow keys move between bits with one tab stop', () => {
+    setup();
+    const top = screen.getByRole('button', { name: 'Bit 31' });
+    top.focus();
+    fireEvent.keyDown(top, { key: 'End' });
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Bit 0' }),
+    );
+  });
+
+  it('each base field has a copy button', () => {
     setup();
     fireEvent.change(field('Decimal'), { target: { value: '7' } });
     const copy = screen.getByLabelText('Copy Binary') as HTMLButtonElement;

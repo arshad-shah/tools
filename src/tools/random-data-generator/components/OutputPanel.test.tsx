@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mockViewport } from '@/shared/ui/data-grid/test-utils';
+import { mockViewport } from '@/shared/lib/mock-viewport';
 
 const copyText = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock('@/shared/lib/clipboard', async (orig) => ({

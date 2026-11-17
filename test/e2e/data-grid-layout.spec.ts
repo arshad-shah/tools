@@ -1,10 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { pathOf } from './tool-routes';
 
 /**
  * Every DataGrid instance at desktop and phone width: header labels are
  * never clipped, the grid is at least as tall as its header plus the rows it
- * shows (up to 12), and a horizontal scrollbar never covers a row.
+ * shows (up to 12), and a horizontal scrollbar never covers a row. Tools whose
+ * redesign shows files in a Table or a list keep every row on screen.
  */
 
 const VIEWPORTS = [
@@ -26,64 +27,111 @@ async function png(page: Page, seed: number) {
   return Buffer.from(b64, 'base64');
 }
 
+/**
+ * A grid's column headers, in order, by text. Cynosure's DataGrid holds its
+ * header row inside the grid.
+ */
+async function headersOf(page: Page, name: string) {
+  const headers = page
+    .getByRole('grid', { name, exact: true })
+    .locator('xpath=..')
+    .getByRole('columnheader');
+  await expect(headers.first()).toBeVisible();
+  // The label alone: the kit header also holds a type badge and its
+  // visually hidden description.
+  return headers.evaluateAll((hs) =>
+    hs.map((h) =>
+      (
+        h.querySelector(
+          '[data-grid-header-label], .cy-data-grid-label, .cy-sort-button-label',
+        ) ?? h
+      ).textContent!.trim(),
+    ),
+  );
+}
+
+/**
+ * Every row is on screen: inside the viewport's width, or inside a
+ * horizontal scroller that is (a wide table scrolls in its own box). The
+ * page itself never scrolls sideways.
+ */
+async function checkFits(page: Page, rows: Locator) {
+  const width = page.viewportSize()!.width;
+  for (const row of await rows.all()) {
+    const box = await row.evaluate((el) => {
+      let box: Element = el;
+      for (let a = el.parentElement; a; a = a.parentElement)
+        if (/auto|scroll/.test(getComputedStyle(a).overflowX)) {
+          box = a;
+          break;
+        }
+      const r = box.getBoundingClientRect();
+      return { left: r.left, right: r.right };
+    });
+    expect(box.left).toBeGreaterThanOrEqual(0);
+    expect(box.right).toBeLessThanOrEqual(width);
+  }
+  expect(
+    await page.evaluate(
+      () => document.scrollingElement!.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+}
+
 async function checkGrid(page: Page, name: string, headers: string[]) {
   const grid = page.getByRole('grid', { name, exact: true });
   await expect(grid).toBeVisible();
   await grid.scrollIntoViewIfNeeded();
   // Web fonts change the measured widths: check once they are in.
   await page.evaluate(() => document.fonts.ready);
+  expect(await headersOf(page, name)).toEqual(headers);
   const m = await grid.evaluate((g: HTMLElement) => {
-    const root = g.parentElement!;
-    const header = root.querySelector<HTMLElement>(
-      '[role="row"][aria-rowindex="1"]',
-    )!;
-    const row = g.querySelector<HTMLElement>('[role="row"]');
+    const header = g
+      .closest('[role="grid"]')!
+      .parentElement!.querySelector<HTMLElement>(
+        '[role="row"][aria-rowindex="1"]',
+      )!;
+    const row = g.querySelector<HTMLElement>(
+      '[role="row"]:not([aria-rowindex="1"])',
+    );
+    const box = (el: Element) => el.getBoundingClientRect();
     return {
       rows: Number(g.getAttribute('aria-rowcount')) - 1,
-      rowH: row ? row.getBoundingClientRect().height : 32,
-      headerH: header.getBoundingClientRect().height,
-      rootH: root.getBoundingClientRect().height,
+      rowH: row ? box(row).height : 32,
+      headerH: box(header).height,
+      // The header sits inside the grid (Cynosure) or just above it (kit).
+      headerInside: g.contains(header),
       body: g.clientHeight,
       overflowX: g.scrollWidth > g.clientWidth,
       bar: g.offsetHeight - g.clientHeight,
-      labels: [
-        ...root.querySelectorAll<HTMLElement>('[data-grid-header-label]'),
-      ].map((l) => ({
-        text: l.textContent ?? '',
-        clipped: l.scrollWidth > l.clientWidth,
-      })),
+      // A header label whose text overflows its box is clipped (visually
+      // hidden descriptions are clipped on purpose and not checked).
+      clipped: [
+        ...header.querySelectorAll<HTMLElement>('[role="columnheader"]'),
+      ]
+        .map(
+          (h) =>
+            h.querySelector<HTMLElement>(
+              '[data-grid-header-label], .cy-data-grid-label, .cy-sort-button-label',
+            ) ?? h,
+        )
+        .filter((el) => el.scrollWidth > el.clientWidth)
+        .map((el) => el.textContent),
     };
   });
-  expect(m.labels.length).toBeGreaterThan(0);
-  expect(m.labels.filter((l) => l.clipped)).toEqual([]);
-  expect(m.labels[0].text).toBe(headers[0]);
-  for (const l of m.labels) expect(headers).toContain(l.text);
-  const shown = Math.max(1, Math.min(m.rows, 12));
-  expect(m.rootH).toBeGreaterThanOrEqual(m.headerH + shown * m.rowH);
+  expect(m.clipped, 'clipped header labels').toEqual([]);
+  // The kit grid grew to 12 rows; Cynosure's DataGrid is a fixed
+  // 12-control-height box (header included), which shows 10 whole rows.
+  const shown = Math.max(1, Math.min(m.rows, m.headerInside ? 10 : 12));
   // The body's client box excludes the scrollbar: every shown row fits.
-  expect(m.body).toBeGreaterThanOrEqual(shown * m.rowH - 1);
+  const needed = shown * m.rowH + (m.headerInside ? m.headerH : 0);
+  expect(m.body).toBeGreaterThanOrEqual(needed - 1);
   if (!m.overflowX) expect(m.bar).toBe(0);
 }
 
 for (const viewport of VIEWPORTS) {
   test.describe(`data grids at ${viewport.width} px`, () => {
     test.use({ viewport });
-
-    test('kit gallery', async ({ page }) => {
-      await page.goto('/__kit');
-      const headers = [
-        'Order',
-        'Customer',
-        'Country',
-        'Placed',
-        'Items',
-        'Total',
-        'Paid',
-        'Note',
-      ];
-      await checkGrid(page, 'Orders', headers);
-      await checkGrid(page, 'Orders with no match', headers);
-    });
 
     test('CSV viewer', async ({ page }) => {
       await page.goto(pathOf('csv-viewer'));
@@ -111,19 +159,19 @@ for (const viewport of VIEWPORTS) {
     test('Mock data generator', async ({ page }) => {
       await page.goto(pathOf('random-data-generator'));
       await page.getByRole('button', { name: 'Generate', exact: true }).click();
-      const grid = page.getByRole('grid', { name: 'Generated data' });
-      await expect(grid).toBeVisible();
-      const headers = await grid.evaluate((g) =>
-        [...g.parentElement!.querySelectorAll('[data-grid-header-label]')].map(
-          (l) => l.textContent ?? '',
-        ),
-      );
+      await expect(
+        page.getByRole('grid', { name: 'Generated data' }),
+      ).toBeVisible();
+      const headers = await headersOf(page, 'Generated data');
+      expect(headers.length).toBeGreaterThan(0);
       await checkGrid(page, 'Generated data', headers);
     });
 
+    // The redesign shows file hashes in a Table and image batches in a
+    // list (not a grid): the same guarantees, every row whole and on screen.
     test('Hash generator files', async ({ page }) => {
       await page.goto(pathOf('hash-generator'));
-      await page.getByRole('tab', { name: 'Files' }).click();
+      await page.getByRole('radio', { name: 'Files' }).click();
       await page
         .locator('input[type=file]')
         .first()
@@ -134,15 +182,13 @@ for (const viewport of VIEWPORTS) {
             buffer: Buffer.from('hello'),
           },
         ]);
-      const grid = page.getByRole('grid', { name: 'File hashes' });
-      await expect(grid.getByText('notes.txt', { exact: true })).toBeVisible();
-      const headers = await grid.evaluate((g) =>
-        [...g.parentElement!.querySelectorAll('[data-grid-header-label]')].map(
-          (l) => l.textContent ?? '',
-        ),
-      );
+      const table = page.getByRole('table', { name: 'File hashes' });
+      await expect(table.getByText('notes.txt', { exact: true })).toBeVisible();
+      const headers = (
+        await table.getByRole('columnheader').allInnerTexts()
+      ).map((t) => t.trim());
       expect(headers.slice(0, 2)).toEqual(['Name', 'Size']);
-      await checkGrid(page, 'File hashes', headers);
+      await checkFits(page, table.getByRole('row'));
     });
 
     test('Image compressor batch', async ({ page }) => {
@@ -155,16 +201,13 @@ for (const viewport of VIEWPORTS) {
         })),
       );
       await page.locator('input[type=file]').first().setInputFiles(files);
-      await checkGrid(page, 'Files', [
-        'Name',
-        'Dimensions before',
-        'Dimensions after',
-        'Size before',
-        'Size after',
-        'Saving',
-        'Status',
-        'Actions',
-      ]);
+      const rows = page
+        .getByRole('list', { name: 'Files' })
+        .getByRole('listitem');
+      await expect(rows).toHaveCount(2);
+      for (const name of ['shot-1.png', 'shot-2.png'])
+        await expect(rows.getByText(name, { exact: true })).toBeVisible();
+      await checkFits(page, rows);
     });
 
     test('EXIF remover', async ({ page }) => {
@@ -176,14 +219,13 @@ for (const viewport of VIEWPORTS) {
           'test/fixtures/generated/exif-gps.jpg',
           'test/fixtures/generated/exif-text.png',
         ]);
-      await checkGrid(page, 'Files to clean', [
-        'Name',
-        'Status',
-        'Risks',
-        'Size before',
-        'Size after',
-        'Download',
-      ]);
+      const rows = page
+        .getByRole('list', { name: 'Photos' })
+        .getByRole('listitem');
+      await expect(rows).toHaveCount(2);
+      for (const name of ['exif-gps.jpg', 'exif-text.png'])
+        await expect(rows.getByText(name, { exact: true })).toBeVisible();
+      await checkFits(page, rows);
     });
   });
 }

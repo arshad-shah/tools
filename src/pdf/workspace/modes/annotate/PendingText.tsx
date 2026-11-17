@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
+import { OverlayText } from '@/shared/surfaces/page/overlay-text';
 import {
-  Image,
-  OverlayText,
   PageBox,
   type OverlayTransform,
-} from '@/shared/ui';
+} from '@/shared/surfaces/page/overlay-layer';
+import { BytesImage } from '@/shared/surfaces/pdf/BytesImage';
 import {
   FREETEXT_LINE_HEIGHT,
   FREETEXT_PAD,
@@ -96,7 +96,7 @@ export function StampPreview({ item, transform, width, height }: Props) {
       metrics={metricsOf(layout.font)}
       width={width}
       height={height}
-      className="font-bold"
+      bold
     />
   );
 }
@@ -127,13 +127,7 @@ function ImageStampPreview({
   if (bytes?.id !== id) return null;
   return (
     <PageBox transform={transform} box={p.rect}>
-      <Image
-        src={bytes.bytes}
-        mime={p.image!.mime}
-        decorative
-        fit="cover"
-        className="size-full"
-      />
+      <BytesImage bytes={bytes.bytes} mime={p.image!.mime} fit="cover" />
     </PageBox>
   );
 }

@@ -1,12 +1,15 @@
 import {
+  DateField,
   Grid,
-  Input,
-  Label,
+  GridItem,
+  Inline,
   Select,
   Stack,
-  Textarea,
-  SwitchField,
-} from '@/shared/ui';
+  Switch,
+  TextArea,
+  TextField,
+  TimeField,
+} from '@arshad-shah/cynosure';
 import { FORM_SPECS, type FieldSpec } from '../lib/form-spec';
 import {
   PAYLOAD_LABELS,
@@ -22,67 +25,78 @@ interface Props {
 }
 
 const TYPE_ITEMS = (Object.keys(PAYLOAD_LABELS) as PayloadType[]).map(
-  (value) => ({
-    value,
-    label: PAYLOAD_LABELS[value],
-  }),
+  (value) => ({ value, label: PAYLOAD_LABELS[value] }),
 );
+
+/** A local date and time (`YYYY-MM-DDTHH:mm`) as a DateField and a TimeField. */
+function DateTime({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange(v: string): void;
+}) {
+  const [date = '', time = ''] = value.split('T');
+  const join = (d: string, t: string) => (d ? `${d}T${t || '00:00'}` : '');
+  return (
+    <Inline gap="3" align="end" wrap>
+      <DateField
+        label={label}
+        value={date || null}
+        onChange={(d) => onChange(join(d ?? '', time))}
+      />
+      <TimeField
+        label={`${label} at`}
+        value={time ? time.slice(0, 5) : null}
+        onChange={(t) => onChange(join(date, t ?? ''))}
+      />
+    </Inline>
+  );
+}
 
 function Field({
   spec,
-  id,
   value,
   onChange,
 }: {
   spec: FieldSpec;
-  id: string;
   value: string | boolean;
   onChange(v: string | boolean): void;
 }) {
   if (spec.kind === 'switch')
     return (
-      <SwitchField
-        label={spec.label}
-        id={id}
-        checked={value === true}
-        onCheckedChange={onChange}
-      />
+      <Switch label={spec.label} checked={value === true} onChange={onChange} />
     );
   const text = typeof value === 'string' ? value : '';
+  if (spec.kind === 'select')
+    return (
+      <Select
+        label={spec.label}
+        value={text}
+        onChange={onChange}
+        options={spec.options ?? []}
+      />
+    );
+  if (spec.kind === 'textarea')
+    return (
+      <TextArea label={spec.label} value={text} onChange={onChange} rows={3} />
+    );
+  if (spec.kind === 'datetime')
+    return <DateTime label={spec.label} value={text} onChange={onChange} />;
   return (
-    <Stack
-      gap="1"
-      className={spec.kind === 'textarea' ? 'sm:col-span-2' : undefined}
-    >
-      <Label htmlFor={id}>{spec.label}</Label>
-      {spec.kind === 'select' ? (
-        <Select
-          id={id}
-          value={text}
-          onValueChange={onChange}
-          items={spec.options ?? []}
-        />
-      ) : spec.kind === 'textarea' ? (
-        <Textarea id={id} value={text} onChange={onChange} rows={3} />
-      ) : (
-        <Input
-          id={id}
-          value={text}
-          onChange={onChange}
-          type={
-            spec.kind === 'password'
-              ? 'password'
-              : spec.kind === 'datetime'
-                ? 'datetime-local'
-                : 'text'
-          }
-          inputMode={spec.inputMode}
-          placeholder={spec.placeholder}
-          spellCheck={false}
-          autoComplete="off"
-        />
-      )}
-    </Stack>
+    <TextField
+      label={spec.label}
+      value={text}
+      onChange={onChange}
+      type={spec.kind === 'password' ? 'password' : 'text'}
+      revealable={spec.kind === 'password'}
+      inputMode={spec.inputMode}
+      placeholder={spec.placeholder}
+      spellCheck={false}
+      autoComplete="off"
+    />
   );
 }
 
@@ -95,17 +109,15 @@ export function ContentForm({
 }: Props) {
   const values = fields[type] as unknown as Record<string, string | boolean>;
   return (
-    <Stack gap="3">
-      <Stack gap="1">
-        <Label htmlFor="qr-type">Content type</Label>
-        <Select
-          id="qr-type"
-          value={type}
-          onValueChange={(v) => onTypeChange(v as PayloadType)}
-          items={TYPE_ITEMS}
-        />
-      </Stack>
-      <Grid max={2} gap="3">
+    <Stack gap="5">
+      <Select
+        label="Content type"
+        width="md"
+        value={type}
+        onChange={(v) => onTypeChange(v as PayloadType)}
+        options={TYPE_ITEMS}
+      />
+      <Grid minItemWidth="14rem" gap="4">
         {FORM_SPECS[type]
           .filter(
             (s) =>
@@ -124,13 +136,20 @@ export function ContentForm({
               ),
           )
           .map((spec) => (
-            <Field
+            <GridItem
               key={spec.key}
-              spec={spec}
-              id={`qr-${type}-${spec.key}`}
-              value={values[spec.key]}
-              onChange={(v) => onFieldChange(type, spec.key, v)}
-            />
+              span={
+                spec.kind === 'textarea' || spec.kind === 'datetime'
+                  ? 'full'
+                  : undefined
+              }
+            >
+              <Field
+                spec={spec}
+                value={values[spec.key]}
+                onChange={(v) => onFieldChange(type, spec.key, v)}
+              />
+            </GridItem>
           ))}
       </Grid>
     </Stack>

@@ -32,7 +32,8 @@ describe('FieldEditor', () => {
   it('types straight onto the page: a transparent caret at the text size', () => {
     setup({ inline: { fontPx: 18, spacingPx: 0 } });
     const input = screen.getByRole('textbox', { name: 'Text' });
-    expect(input.className).toContain('text-transparent');
+    // page.css: the input's own glyphs are transparent over the page text.
+    expect(input.className).toContain('tools-page-text-input');
     expect(input.style.fontSize).toBe('18px');
     expect(document.activeElement).toBe(input);
   });

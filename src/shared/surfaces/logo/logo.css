@@ -1,0 +1,26 @@
+/* The wordmark (a drawing surface): its height and the caret's paint. */
+.tools-logo {
+  display: block;
+  block-size: 20px;
+  inline-size: auto;
+}
+.tools-logo-caret {
+  fill: var(--cy-color-accent);
+}
+.tools-logo-caret[data-variant='mono'] {
+  fill: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tools-logo-caret[data-blink] {
+    animation: tools-logo-caret 1.1s step-end 3;
+  }
+}
+@keyframes tools-logo-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

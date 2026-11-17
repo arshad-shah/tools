@@ -1,75 +1,142 @@
+import {
+  Button,
+  IconButton,
+  Inline,
+  Kbd,
+  SideNav,
+  Stack,
+  ThemeToggle,
+  useAppShell,
+  type NavEntry,
+  type NavItem,
+} from '@arshad-shah/cynosure';
+import { home, search, shieldCheck } from '@arshad-shah/cynosure/icons';
 import { useLocation } from 'react-router-dom';
-import { IconHome } from '@/shared/ui/icons';
-import { NavList, type NavItem, type NavSection } from '@/shared/ui';
+import { THEME_KEY } from '@/theme/tools-theme';
 import { CATEGORIES } from '../categories';
 import { useFavorites } from '../favorites';
 import { useRecentToolsStore } from '../recents';
-import { getEnabledTools } from '../registry';
+import { getEnabledTools, TOOLS } from '../registry';
 import { categoryPath, toolPath } from '../routes';
 import type { ToolManifest } from '../tool';
-import { routerLink } from './router-link';
+import { HelpMenu } from './HelpMenu';
+import { renderRouterLink } from './router-link';
 
-const toolItem = (t: ToolManifest, pathname: string): NavItem => ({
-  href: toolPath(t),
+/** Recent tools listed in the navigation (spec: the last five). */
+const RECENT = 5;
+
+const toolItem = (t: ToolManifest, prefix = ''): NavItem => ({
+  id: `${prefix}${toolPath(t)}`,
   label: t.name,
+  href: toolPath(t),
   icon: t.icon,
-  current: pathname === toolPath(t),
 });
 
+export interface AppNavProps {
+  onSearch(): void;
+  onPrivacy(): void;
+}
+
 /**
- * The site navigation (6-H): Home, favourites, recent tools, then every
- * category; the current category opens to its tools with the current tool
- * highlighted. The desktop sidebar and the phone menu sheet both use it.
+ * The navigation footer (SideNav `footer`): the privacy status, the Help
+ * menu and the colour mode; stacked icons in the desktop rail.
  */
-export function AppNav({ className }: { className?: string }) {
+function NavFooter({
+  onPrivacy,
+  tool,
+}: {
+  onPrivacy(): void;
+  tool: ToolManifest | undefined;
+}) {
+  const { navCollapsed } = useAppShell();
+  const privacy = 'Files stay on this device';
+  return navCollapsed ? (
+    <Stack gap="2" align="center" paddingBlock="4">
+      <IconButton
+        icon={shieldCheck}
+        label={privacy}
+        variant="ghost"
+        tone="neutral"
+        onClick={onPrivacy}
+      />
+      <HelpMenu tool={tool} />
+      <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
+    </Stack>
+  ) : (
+    <Stack gap="2" paddingInline="4" paddingBlock="4">
+      <Button
+        variant="ghost"
+        tone="neutral"
+        icon={shieldCheck}
+        fullWidth
+        onClick={onPrivacy}
+      >
+        {privacy}
+      </Button>
+      <Inline justify="between" align="center">
+        <HelpMenu tool={tool} />
+        <ThemeToggle variant="cycle" storageKey={THEME_KEY} />
+      </Inline>
+    </Stack>
+  );
+}
+
+export function AppNav({ onSearch, onPrivacy }: AppNavProps) {
+  const { navCollapsed: collapsed } = useAppShell();
   const { pathname } = useLocation();
   const { ids: favIds } = useFavorites();
   const recentIds = useRecentToolsStore((s) => s.ids);
   const tools = getEnabledTools();
   const byId = new Map(tools.map((t) => [t.id, t]));
-  const pick = (ids: string[]) =>
+  const pick = (ids: string[], prefix: string) =>
     ids.flatMap((id) => {
       const t = byId.get(id);
-      return t ? [toolItem(t, pathname)] : [];
+      return t ? [toolItem(t, prefix)] : [];
     });
-  const currentCategory = pathname.split('/')[1] ?? '';
+  const favourites = pick(favIds, 'favourite:');
+  const recent = pick(recentIds, 'recent:').slice(0, RECENT);
+  const tool = TOOLS.find((t) => toolPath(t) === pathname);
 
-  const sections: NavSection[] = [
+  const items: NavEntry[] = [
     {
-      id: 'home',
-      items: [
-        { href: '/', label: 'Home', icon: IconHome, current: pathname === '/' },
-      ],
+      id: 'search',
+      label: 'Search tools',
+      icon: search,
+      badge: collapsed ? undefined : <Kbd keys="mod+k" size="sm" />,
     },
-    { id: 'favourites', title: 'Favourites', items: pick(favIds) },
-    { id: 'recent', title: 'Recent', items: pick(recentIds) },
+    { id: '/', label: 'Home', href: '/', icon: home },
+    ...(favourites.length ? [{ label: 'Favourites', items: favourites }] : []),
+    ...(recent.length ? [{ label: 'Recent', items: recent }] : []),
     {
-      id: 'categories',
-      title: 'Hubs',
+      label: 'Categories',
       items: [...CATEGORIES]
         .sort((a, b) => a.order - b.order)
         .map((c) => ({
-          href: categoryPath(c.id),
+          id: `category:${c.id}`,
           label: c.label,
           icon: c.icon,
-          current: pathname === categoryPath(c.id),
-          children:
-            c.id === currentCategory
-              ? tools
-                  .filter(
-                    (t) => t.category === c.id || t.alsoIn?.includes(c.id),
-                  )
-                  .map((t) => toolItem(t, pathname))
-              : undefined,
+          items: [
+            {
+              id: categoryPath(c.id),
+              label: `All ${c.label} tools`,
+              href: categoryPath(c.id),
+            },
+            ...tools.filter((t) => t.category === c.id).map((t) => toolItem(t)),
+          ],
         })),
     },
   ];
+
   return (
-    <NavList
+    <SideNav
       label="Tools navigation"
-      sections={sections}
-      renderLink={routerLink}
-      className={className}
+      items={items}
+      current={pathname}
+      renderLink={renderRouterLink}
+      onNavigate={(id) => {
+        if (id === 'search') onSearch();
+      }}
+      footer={<NavFooter onPrivacy={onPrivacy} tool={tool} />}
     />
   );
 }

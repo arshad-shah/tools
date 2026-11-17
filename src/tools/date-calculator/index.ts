@@ -1,11 +1,11 @@
-import { IconCalendar } from '@/shared/ui/icons';
+import { calendar as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'date-calculator',
   name: 'Date & Time Calculator',
   description: 'Calculate time between dates, add or subtract time periods',
-  icon: IconCalendar,
+  icon,
   category: 'time',
   slug: 'date',
   kind: 'tool',

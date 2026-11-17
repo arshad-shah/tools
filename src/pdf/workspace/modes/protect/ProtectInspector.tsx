@@ -1,5 +1,5 @@
-import { IconUnlock } from '@/shared/ui/icons';
-import { Alert, AlertDescription, Button, Stack } from '@/shared/ui';
+import { Button, Notice, Stack } from '@arshad-shah/cynosure';
+import { unlock } from '@arshad-shah/cynosure/icons';
 import { RESTRICTED_MESSAGE } from '../../document-api';
 import { useWorkspace } from '../../workspace-context';
 import type { ModeProps } from '../types';
@@ -13,25 +13,24 @@ export function ProtectInspector(ctx: ModeProps) {
   return (
     <Stack gap="4">
       {ctx.doc.state.restricted ? (
-        <Alert status="warning">
-          <AlertDescription>
-            <Stack gap="2">
-              {RESTRICTED_MESSAGE}
-              {ws.unlock ? (
-                <div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    leftIcon={<IconUnlock size="sm" />}
-                    onClick={() => ws.unlock?.()}
-                  >
-                    Unlock for editing
-                  </Button>
-                </div>
-              ) : null}
-            </Stack>
-          </AlertDescription>
-        </Alert>
+        <Notice
+          tone="warning"
+          size="sm"
+          action={
+            ws.unlock ? (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={unlock}
+                onClick={() => ws.unlock?.()}
+              >
+                Unlock for editing
+              </Button>
+            ) : undefined
+          }
+        >
+          {RESTRICTED_MESSAGE}
+        </Notice>
       ) : null}
       {panelOf(ctx.tool.id) === 'properties' ? (
         <MetadataForm {...ctx} />

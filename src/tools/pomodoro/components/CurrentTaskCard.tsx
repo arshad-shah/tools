@@ -1,18 +1,9 @@
+import { Badge, Button, Inline, Stack, Text } from '@arshad-shah/cynosure';
+import { play } from '@arshad-shah/cynosure/icons';
 import React from 'react';
-import { IconCheckCircle2, IconCircle, IconListTodo } from '@/shared/ui/icons';
-import {
-  Alert,
-  AlertDescription,
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  Inline,
-  Stack,
-  Text,
-} from '@/shared/ui';
 import { usePomodoroStore } from '../store';
 
+/** What this focus session is for: the current task, the next one, or none. */
 export const CurrentTaskCard: React.FC = () => {
   const currentTaskId = usePomodoroStore((s) => s.timer.currentTask);
   const tasks = usePomodoroStore((s) => s.tasks);
@@ -20,65 +11,45 @@ export const CurrentTaskCard: React.FC = () => {
 
   if (!currentTask) {
     const nextTask = tasks.find((t) => !t.completed);
-    if (!nextTask) {
+    if (!nextTask)
       return (
-        <Alert status="info" icon={<IconListTodo />}>
-          <AlertDescription>
-            Just focus: a task is optional. Add tasks from the menu to track
-            them.
-          </AlertDescription>
-        </Alert>
+        <Text size="sm" tone="muted" align="center">
+          Just focus: a task is optional. Add tasks to track them.
+        </Text>
       );
-    }
     return (
-      <Card>
-        <CardBody>
-          <Inline justify="between" align="center" gap="3" wrap>
-            <Inline align="center" gap="2">
-              <IconListTodo size="md" />
-              <Stack gap="0">
-                <Text size="xs" tone="subtle">
-                  Start working on:
-                </Text>
-                <Text size="sm" weight="medium">
-                  {nextTask.title}
-                </Text>
-              </Stack>
-            </Inline>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                usePomodoroStore.getState().setCurrentTask(nextTask.id)
-              }
-            >
-              Start task
-            </Button>
-          </Inline>
-        </CardBody>
-      </Card>
+      <Inline justify="center" align="center" gap="3" wrap>
+        <Text size="sm" tone="muted">
+          Start working on:
+        </Text>
+        <Text size="sm" weight="medium">
+          {nextTask.title}
+        </Text>
+        <Button
+          variant="soft"
+          size="sm"
+          icon={play}
+          onClick={() =>
+            usePomodoroStore.getState().setCurrentTask(nextTask.id)
+          }
+        >
+          Start task
+        </Button>
+      </Inline>
     );
   }
 
   return (
-    <Card>
-      <CardBody>
-        <Inline justify="between" align="center" gap="3" wrap>
-          <Inline align="center" gap="2">
-            {currentTask.completed ? (
-              <IconCheckCircle2 size="lg" />
-            ) : (
-              <IconCircle size="lg" />
-            )}
-            <Text size="sm" weight="medium">
-              {currentTask.title}
-            </Text>
-          </Inline>
-          <Badge variant="soft" tone="accent" size="sm" pill>
-            {currentTask.completedPomodoros}/{currentTask.pomodoros} pomodoros
-          </Badge>
-        </Inline>
-      </CardBody>
-    </Card>
+    <Stack gap="1" align="center">
+      <Text size="sm" tone="muted">
+        Working on
+      </Text>
+      <Inline justify="center" align="center" gap="2" wrap>
+        <Text weight="medium">{currentTask.title}</Text>
+        <Badge tone="accent">
+          {`${currentTask.completedPomodoros}/${currentTask.pomodoros} pomodoros`}
+        </Badge>
+      </Inline>
+    </Stack>
   );
 };

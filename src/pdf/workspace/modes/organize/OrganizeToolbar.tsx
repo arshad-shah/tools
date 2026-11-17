@@ -3,19 +3,20 @@ import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
 import {
-  IconCropPage,
-  IconDuplicatePage,
-  IconExtractPages,
-  IconInsertBlankPage,
-  IconMergeIn,
-  IconPageLabel,
-  IconRotatePageCcw,
-  IconRotatePageCw,
-  IconScaling,
-  IconSplitAt,
-  IconTrash,
-} from '@/shared/ui/icons';
-import { FilePicker, type ToolGroup } from '@/shared/ui';
+  crop as cropIcon,
+  filePlus,
+  pageDuplicate,
+  pageExtract,
+  pageLabel,
+  pageMerge,
+  pageRotate,
+  pageRotateCcw,
+  pageSplit,
+  scale,
+  trash,
+} from '@arshad-shah/cynosure/icons';
+import { FilePicker } from '../../ui/FilePicker';
+import { type ToolGroup } from '../../ui/tool-groups';
 import { RESTRICTED_MESSAGE } from '@/pdf/doc/restricted';
 import { ModeToolbar } from '../../ModeToolbar';
 import { useWorkspace } from '../../workspace-context';
@@ -76,7 +77,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'rotate-left',
           label: 'Rotate left',
-          icon: IconRotatePageCcw,
+          icon: pageRotateCcw,
           shortcut: 'Shift+R',
           kind: 'button',
           onSelect: () => rotate(ctx, -90),
@@ -84,7 +85,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'rotate-right',
           label: 'Rotate right',
-          icon: IconRotatePageCw,
+          icon: pageRotate,
           shortcut: 'R',
           kind: 'button',
           onSelect: () => rotate(ctx, 90),
@@ -98,7 +99,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'delete',
           label: 'Delete pages',
-          icon: IconTrash,
+          icon: trash,
           shortcut: 'Delete',
           kind: 'button',
           disabled: blocked ?? false,
@@ -107,7 +108,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'duplicate',
           label: 'Duplicate pages',
-          icon: IconDuplicatePage,
+          icon: pageDuplicate,
           shortcut: 'Mod+D',
           kind: 'button',
           onSelect: () => duplicatePages(ctx),
@@ -115,7 +116,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'insert-blank',
           label: 'Insert blank page',
-          icon: IconInsertBlankPage,
+          icon: filePlus,
           kind: 'button',
           onSelect: () => insertBlank(ctx),
         },
@@ -128,7 +129,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'crop',
           label: 'Crop',
-          icon: IconCropPage,
+          icon: cropIcon,
           kind: 'toggle',
           pressed: ctx.tool.id === 'crop',
           onSelect: () => ctx.tool.set(ctx.tool.id === 'crop' ? null : 'crop'),
@@ -136,7 +137,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'size',
           label: 'Page size',
-          icon: IconScaling,
+          icon: scale,
           kind: 'button',
           anchor: sizeAnchor,
           onSelect: () => openOrganizeDialog('size'),
@@ -150,7 +151,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'labels',
           label: 'Page labels',
-          icon: IconPageLabel,
+          icon: pageLabel,
           kind: 'button',
           onSelect: () => openOrganizeDialog('labels'),
         },
@@ -163,14 +164,14 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'merge-in',
           label: 'Merge in',
-          icon: IconMergeIn,
+          icon: pageMerge,
           kind: 'button',
           onSelect: pickFile,
         },
         {
           id: 'extract',
           label: 'Extract pages',
-          icon: IconExtractPages,
+          icon: pageExtract,
           kind: 'split',
           disabled: restricted
             ? RESTRICTED_MESSAGE
@@ -194,7 +195,7 @@ export function OrganizeToolbar(ctx: ModeProps) {
         {
           id: 'split',
           label: 'Split',
-          icon: IconSplitAt,
+          icon: pageSplit,
           kind: 'button',
           anchor: splitAnchor,
           disabled: restricted ? RESTRICTED_MESSAGE : false,

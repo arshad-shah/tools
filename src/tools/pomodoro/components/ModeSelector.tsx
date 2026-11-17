@@ -1,7 +1,8 @@
+import { SegmentedControl } from '@arshad-shah/cynosure';
 import React from 'react';
-import { SegmentedControl } from '@/shared/ui';
-import type { TimerMode } from '../types';
+import { useMediaQuery } from '@/shared/lib/media-query';
 import { MODE_INFO } from '../lib/modes';
+import type { TimerMode } from '../types';
 
 const OPTIONS = (Object.keys(MODE_INFO) as TimerMode[]).map((mode) => ({
   value: mode,
@@ -13,12 +14,18 @@ const OPTIONS = (Object.keys(MODE_INFO) as TimerMode[]).map((mode) => ({
 export const ModeSelector: React.FC<{
   currentMode: TimerMode;
   onChange: (mode: TimerMode) => void;
-}> = ({ currentMode, onChange }) => (
-  <SegmentedControl<TimerMode>
-    label="Timer mode"
-    value={currentMode}
-    onChange={onChange}
-    options={OPTIONS}
-    className="self-center"
-  />
-);
+}> = ({ currentMode, onChange }) => {
+  // Phones: the labels alone, so the three modes fit one row.
+  const narrow = useMediaQuery('(max-width: 30rem)');
+  return (
+    <SegmentedControl
+      label="Timer mode"
+      fullWidth
+      value={currentMode}
+      onChange={(v) => onChange(v as TimerMode)}
+      options={
+        narrow ? OPTIONS.map(({ value, label }) => ({ value, label })) : OPTIONS
+      }
+    />
+  );
+};

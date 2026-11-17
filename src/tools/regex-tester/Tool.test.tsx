@@ -39,6 +39,7 @@ vi.mock('./hooks/useRegexRunner', () => ({
 
 import RegexTester from './Tool';
 import { regexSettings } from './settings';
+import { editorValue, setEditorValue } from '@/shared/editor/testing';
 
 const renderTool = () =>
   render(
@@ -46,11 +47,10 @@ const renderTool = () =>
       <RegexTester />
     </MemoryRouter>,
   );
-const textbox = (name: string) =>
-  screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
-/** R41: "Test text" and "Results" are tabs. */
-const pane = (name: 'Test text' | 'Results') =>
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
+const textbox = (name: string) => screen.getByRole('textbox', { name });
+/** The result modes are a segmented control (radios). */
+const mode = (name: string) =>
+  fireEvent.click(screen.getByRole('radio', { name }));
 
 describe('RegexTester', () => {
   beforeEach(() => {
@@ -71,10 +71,8 @@ describe('RegexTester', () => {
     shareState.loaded = shared;
     renderTool();
 
-    expect(textbox('Regex pattern').value).toBe('(\\d+)');
-    pane('Test text');
-    expect(textbox('Test string').value).toBe('a1 b22');
-    pane('Results');
+    expect(editorValue(textbox('Regex pattern'))).toBe('(\\d+)');
+    expect(editorValue(textbox('Test string'))).toBe('a1 b22');
     await waitFor(() =>
       expect(
         screen
@@ -83,12 +81,11 @@ describe('RegexTester', () => {
       ).toBe('true'),
     );
     expect(
-      screen
-        .getByRole('tab', { name: 'Replace' })
-        .getAttribute('aria-selected'),
-    ).toBe('true');
+      (screen.getByRole('radio', { name: 'Replace' }) as HTMLInputElement)
+        .checked,
+    ).toBe(true);
     await waitFor(() =>
-      expect(textbox('Replace result').value).toBe('a<1> b<22>'),
+      expect(document.body.textContent).toContain('a<1> b<22>'),
     );
     expect(shareState.select?.()).toEqual(shared);
     expect(regexSettings.getSettings()).toMatchObject({
@@ -97,15 +94,11 @@ describe('RegexTester', () => {
     });
   });
 
-  it('test text and results are tabs; flags toggle without primary', async () => {
+  it('shows the test text beside the results; flags toggle without primary', async () => {
     renderTool();
-    pane('Test text');
-    fireEvent.change(textbox('Test string'), { target: { value: 'a1 b2' } });
-    fireEvent.change(textbox('Regex pattern'), { target: { value: '\\d' } });
-    expect(screen.queryByRole('tab', { name: 'Match' })).toBeNull();
-    pane('Results');
-    expect(screen.queryByRole('textbox', { name: 'Test string' })).toBeNull();
-    fireEvent.click(screen.getByRole('tab', { name: 'Match' }));
+    setEditorValue(textbox('Test string'), 'a1 b2');
+    setEditorValue(textbox('Regex pattern'), '\\d');
+    mode('Match');
     expect(await screen.findAllByText('2 matches')).not.toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Copy match 1' })).toBeTruthy();
     const flag = screen.getByRole('button', { name: 'Global (g)' });
@@ -118,17 +111,10 @@ describe('RegexTester', () => {
 
   it('shows pass and fail for each test case with a summary', async () => {
     renderTool();
-    pane('Results');
-    fireEvent.click(screen.getByRole('tab', { name: 'Tests' }));
-    fireEvent.change(textbox('Regex pattern'), {
-      target: { value: '^\\d+$' },
-    });
-    fireEvent.change(textbox('Should match'), {
-      target: { value: '123\nabc' },
-    });
-    fireEvent.change(textbox('Should not match'), {
-      target: { value: 'xyz\n456' },
-    });
+    mode('Tests');
+    setEditorValue(textbox('Regex pattern'), '^\\d+$');
+    setEditorValue(textbox('Should match'), '123\nabc');
+    setEditorValue(textbox('Should not match'), 'xyz\n456');
 
     expect(await screen.findByText('2 of 4 passing')).toBeTruthy();
     const results = screen.getByRole('list', { name: 'Test results' });

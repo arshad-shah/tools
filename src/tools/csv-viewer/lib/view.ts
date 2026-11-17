@@ -5,7 +5,7 @@ import {
   type GridColumn,
   type GridFilters,
   type SortKey,
-} from '@/shared/ui';
+} from '@/shared/lib/grid';
 import type { ColumnType } from './columns';
 import type { Row, Table } from './edit';
 

@@ -1,21 +1,13 @@
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Button,
   Checkbox,
   Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Inline,
-  Label,
   RadioGroup,
   Stack,
-  Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
 import { newId } from '@/shared/lib/id';
-import { PageRangeField } from '@/pdf/components';
+import { PageRangeField } from '../../ui/PageRangeField';
 import { trySelectPages } from '@/pdf/edit';
 import type {
   PageAnchor,
@@ -55,7 +47,6 @@ export function InitialPagesDialog({
   defaultAnchor,
   dispatch,
 }: InitialPagesDialogProps) {
-  const id = useId();
   const [which, setWhich] = useState<Which>('every');
   const [ranges, setRanges] = useState('');
   const [sameSpot, setSameSpot] = useState(true);
@@ -84,70 +75,61 @@ export function InitialPagesDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogHeader>
-        <DialogTitle>Initial pages</DialogTitle>
-        <DialogDescription>
-          Puts your initials at the same spot on each page.
-        </DialogDescription>
-      </DialogHeader>
-      <DialogBody>
-        <Stack gap="4">
-          <RadioGroup
-            label="Pages to initial"
-            heading={<Label>Pages to initial</Label>}
-            value={which}
-            onValueChange={(v) => setWhich(v as Which)}
-            options={[
-              { value: 'every', label: 'Every page' },
-              { value: 'chosen', label: 'Chosen pages' },
-            ]}
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Initial pages"
+      description="Puts your initials at the same spot on each page."
+      actions={
+        <>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            tone="accent"
+            disabled={!content || ids.length === 0}
+            onClick={apply}
+          >
+            {`Initial ${plural(ids.length)}`}
+          </Button>
+        </>
+      }
+    >
+      <Stack gap="5">
+        <RadioGroup
+          label="Pages to initial"
+          value={which}
+          onChange={(v) => setWhich(v as Which)}
+          options={[
+            { value: 'every', label: 'Every page' },
+            { value: 'chosen', label: 'Chosen pages' },
+          ]}
+        />
+        {which === 'chosen' ? (
+          <PageRangeField
+            mode="ranges"
+            text={ranges}
+            onModeChange={() => {}}
+            onTextChange={setRanges}
+            error={picked.error}
+            rangesOnly
           />
-          {which === 'chosen' ? (
-            <PageRangeField
-              id={`${id}-initial`}
-              mode="ranges"
-              text={ranges}
-              onModeChange={() => {}}
-              onTextChange={setRanges}
-              error={picked.error}
-              rangesOnly
-            />
-          ) : null}
-          <Stack gap="1">
-            <Inline gap="2">
-              <Checkbox
-                id={`${id}-spot`}
-                checked={useSelected}
-                disabled={selectedAnchor === null}
-                onCheckedChange={setSameSpot}
-              />
-              <Label htmlFor={`${id}-spot`}>
-                Same spot as the selected initials
-              </Label>
-            </Inline>
-            {useSelected ? null : (
-              <Text size="sm" tone="muted">
-                {selectedAnchor === null
-                  ? 'No initials are selected, so they go in the bottom-right corner of each page.'
-                  : 'They go in the bottom-right corner of each page.'}
-              </Text>
-            )}
-          </Stack>
-        </Stack>
-      </DialogBody>
-      <DialogFooter>
-        <Button variant="secondary" onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          disabled={!content || ids.length === 0}
-          onClick={apply}
-        >
-          {`Initial ${plural(ids.length)}`}
-        </Button>
-      </DialogFooter>
+        ) : null}
+        <Checkbox
+          label="Same spot as the selected initials"
+          description={
+            useSelected
+              ? undefined
+              : selectedAnchor === null
+                ? 'No initials are selected, so they go in the bottom-right corner of each page.'
+                : 'They go in the bottom-right corner of each page.'
+          }
+          checked={useSelected}
+          disabled={selectedAnchor === null}
+          onChange={setSameSpot}
+        />
+      </Stack>
     </Dialog>
   );
 }

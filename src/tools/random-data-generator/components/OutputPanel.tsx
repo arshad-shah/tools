@@ -1,4 +1,20 @@
-import { useId, useMemo, useState } from 'react';
+import {
+  Button,
+  DataGrid,
+  Inline,
+  Menu,
+  SegmentedControl,
+  Select,
+  Stack,
+  Text,
+  type DataGridColumn,
+} from '@arshad-shah/cynosure';
+import {
+  copy as copyIcon,
+  download as downloadIcon,
+  send,
+} from '@arshad-shah/cynosure/icons';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { copyText } from '@/shared/lib/clipboard';
 import { flattenObject, type SqlDialect } from '@/shared/lib/data-formats';
@@ -7,22 +23,7 @@ import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useSendCommands } from '@/shared/lib/send-commands';
-import {
-  Button,
-  DataGrid,
-  Inline,
-  Label,
-  Select,
-  Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Text,
-  TextInputPanel,
-  type GridColumn,
-} from '@/shared/ui';
-import { IconCopy, IconDownload, IconSendTo } from '@/shared/ui/icons';
+
 import type { Row } from '../lib/engine';
 import {
   exportRows,
@@ -30,6 +31,7 @@ import {
   MOCK_EXPORT_LABEL,
   type MockExportFormat,
 } from '../lib/export';
+import { CodeEditor } from '@/shared/editor';
 
 const PREVIEW = 1000;
 const TOOL_ID = 'random-data-generator';
@@ -41,7 +43,6 @@ interface OutputPanelProps {
 /** Preview (first 1,000 rows as a grid or JSON), exports and hand-offs. */
 export function OutputPanel({ tables }: OutputPanelProps) {
   const navigate = useNavigate();
-  const ids = { table: useId(), format: useId(), dialect: useId() };
   const names = Object.keys(tables);
   const [pick, setPick] = useState(names[names.length - 1]);
   const name = names.includes(pick) ? pick : names[names.length - 1];
@@ -54,18 +55,34 @@ export function OutputPanel({ tables }: OutputPanelProps) {
     () => rows.slice(0, PREVIEW).map((r) => flattenObject(r)),
     [rows],
   );
-  const columns = useMemo<GridColumn<Row>[]>(() => {
+  const gridRows = useMemo(
+    () => preview.map((row, i) => ({ i, row })),
+    [preview],
+  );
+  type GridRow = (typeof gridRows)[number];
+  const columns = useMemo<DataGridColumn<GridRow>[]>(() => {
     const keys = new Set<string>();
     for (const r of preview) for (const k of Object.keys(r)) keys.add(k);
-    return [...keys].map((k) => ({
-      id: k,
-      header: k,
-      accessor: (r: Row) => {
-        const v = r[k];
-        return typeof v === 'string' && v.startsWith('data:image/')
+    const show = (v: unknown) =>
+      v === null || v === undefined
+        ? ''
+        : typeof v === 'string' && v.startsWith('data:image/')
           ? `${v.slice(0, 40)}...`
-          : v;
-      },
+          : String(v);
+    return [...keys].map((k) => ({
+      key: k,
+      header: k,
+      sortable: true,
+      resizable: true,
+      value: (r) => r.row[k],
+      cell: (r) => show(r.row[k]),
+      tooltip: (r) => show(r.row[k]),
+      cellKind: (r) =>
+        r.row[k] === null || r.row[k] === undefined
+          ? 'null'
+          : typeof r.row[k] === 'number'
+            ? 'number'
+            : undefined,
     }));
   }, [preview]);
   const json = useMemo(
@@ -115,110 +132,92 @@ export function OutputPanel({ tables }: OutputPanelProps) {
 
   return (
     <Stack gap="3">
-      <Inline gap="3" align="center" wrap>
+      <Inline gap="3" align="end" wrap>
         {names.length > 1 && (
-          <Inline gap="2" align="center" wrap={false}>
-            <Label htmlFor={ids.table}>Output table</Label>
-            <Select
-              id={ids.table}
-              value={name}
-              onValueChange={setPick}
-              items={names.map((n) => ({ value: n, label: n }))}
-            />
-          </Inline>
+          <Select
+            size="sm"
+            label="Output table"
+            value={name}
+            onChange={setPick}
+            options={names.map((n) => ({ value: n, label: n }))}
+          />
         )}
-        <Text size="sm" tone="subtle">
-          {`${rows.length.toLocaleString('en-US')} rows${rows.length > PREVIEW ? ', preview shows the first 1,000' : ''}`}
-        </Text>
-      </Inline>
-      <Inline gap="2" align="center" wrap>
-        <Label htmlFor={ids.format}>Format</Label>
         <Select
-          id={ids.format}
+          size="sm"
+          label="Format"
           value={format}
-          onValueChange={(v) => setFormat(v as MockExportFormat)}
-          items={MOCK_EXPORT_FORMATS.map((f) => ({
+          onChange={(v) => setFormat(v as MockExportFormat)}
+          options={MOCK_EXPORT_FORMATS.map((f) => ({
             value: f,
             label: MOCK_EXPORT_LABEL[f],
           }))}
         />
         {format === 'sql' && (
-          <>
-            <Label htmlFor={ids.dialect}>Dialect</Label>
-            <Select
-              id={ids.dialect}
-              value={dialect}
-              onValueChange={(v) => setDialect(v as SqlDialect)}
-              items={[
-                { value: 'postgres', label: 'PostgreSQL' },
-                { value: 'mysql', label: 'MySQL' },
-                { value: 'sqlite', label: 'SQLite' },
-                { value: 'mssql', label: 'SQL Server' },
-              ]}
-            />
-          </>
+          <Select
+            size="sm"
+            label="Dialect"
+            value={dialect}
+            onChange={(v) => setDialect(v as SqlDialect)}
+            options={[
+              { value: 'postgres', label: 'PostgreSQL' },
+              { value: 'mysql', label: 'MySQL' },
+              { value: 'sqlite', label: 'SQLite' },
+              { value: 'mssql', label: 'SQL Server' },
+            ]}
+          />
         )}
-        <Button
-          size="sm"
-          variant="secondary"
-          leftIcon={<IconCopy size="sm" />}
-          onClick={copy}
-        >
+        <Button size="sm" variant="soft" icon={copyIcon} onClick={copy}>
           Copy
         </Button>
-        <Button
-          size="sm"
-          leftIcon={<IconDownload size="sm" />}
-          onClick={download}
-        >
+        <Button size="sm" variant="soft" icon={downloadIcon} onClick={download}>
           Download
         </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          leftIcon={<IconSendTo size="sm" />}
-          onClick={openCsv}
-        >
-          Open in CSV Viewer
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          leftIcon={<IconSendTo size="sm" />}
-          onClick={openJson}
-        >
-          Open in JSON Viewer
-        </Button>
+        <Menu
+          label="Open in"
+          items={[
+            { value: 'csv', label: 'Open in CSV Viewer' },
+            { value: 'json', label: 'Open in JSON Viewer' },
+          ]}
+          onSelect={(v) => (v === 'csv' ? openCsv() : openJson())}
+          trigger={(props) => (
+            <Button {...props} size="sm" variant="ghost" icon={send}>
+              Open in
+            </Button>
+          )}
+        />
       </Inline>
-      <Tabs value={view} onValueChange={setView} variant="line">
-        <TabsList aria-label="Preview">
-          <TabsTrigger value="table">Table</TabsTrigger>
-          <TabsTrigger value="json">JSON</TabsTrigger>
-        </TabsList>
-        <TabsContent value="table">
-          <div className="pt-3">
-            <DataGrid<Row>
-              rows={preview}
-              columns={columns}
-              rowKey={(_, i) => i}
-              ariaLabel="Generated data"
-            />
-          </div>
-        </TabsContent>
-        <TabsContent value="json">
-          <div className="pt-3">
-            <TextInputPanel
-              label="Generated JSON"
-              value={json}
-              onChange={() => {}}
-              language="json"
-              readOnly
-              downloadName={`${name}.json`}
-              maxHeight={520}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+      <Inline gap="3" align="center" justify="between" wrap>
+        <SegmentedControl
+          label="Preview as"
+          size="sm"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'table', label: 'Table' },
+            { value: 'json', label: 'JSON' },
+          ]}
+        />
+        <Text size="sm" tone="muted" numeric>
+          {`${rows.length.toLocaleString('en-US')} rows${rows.length > PREVIEW ? ', preview shows the first 1,000' : ''}`}
+        </Text>
+      </Inline>
+      {view === 'table' ? (
+        <DataGrid<GridRow>
+          label="Generated data"
+          rows={gridRows}
+          columns={columns}
+          getRowId={(r) => String(r.i)}
+          selectionMode="range"
+        />
+      ) : (
+        <CodeEditor
+          aria-label="Generated JSON"
+          value={json}
+          language="json"
+          readOnly
+          maxHeight={520}
+        />
+      )}
     </Stack>
   );
 }

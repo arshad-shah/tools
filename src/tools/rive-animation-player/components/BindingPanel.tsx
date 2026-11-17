@@ -1,17 +1,16 @@
 import { useReducer } from 'react';
-import { IconZap } from '@/shared/ui/icons';
 import {
   Button,
   ColorField,
-  Inline,
-  Input,
-  Label,
-  NumberInput,
+  NumberField,
   Select,
   Stack,
   Switch,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { zap } from '@arshad-shah/cynosure/icons';
+import { parseColor } from '@/shared/lib/colour';
 import {
   argbToCss,
   isEditable,
@@ -33,42 +32,32 @@ function PropertyControl({
   type: EditableType;
   onSet: () => void;
 }) {
-  const id = `vm-${name}`;
   const set = (value: unknown) => {
     writeProperty(vmi, type, name, value);
     onSet();
   };
-  const label = <Label htmlFor={id}>{name}</Label>;
   switch (type) {
     case 'number': {
       const p = vmi.number(name);
       if (!p) return null;
       return (
-        <Stack gap="1">
-          {label}
-          <NumberInput id={id} value={p.value} step={0.1} onValueChange={set} />
-        </Stack>
+        <NumberField
+          label={name}
+          value={p.value}
+          step={0.1}
+          onChange={(v) => v !== null && set(v)}
+        />
       );
     }
     case 'string': {
       const p = vmi.string(name);
       if (!p) return null;
-      return (
-        <Stack gap="1">
-          {label}
-          <Input id={id} value={p.value} onChange={set} />
-        </Stack>
-      );
+      return <TextField label={name} value={p.value} onChange={set} />;
     }
     case 'boolean': {
       const p = vmi.boolean(name);
       if (!p) return null;
-      return (
-        <Inline gap="2" align="center">
-          <Switch id={id} checked={p.value} onCheckedChange={set} />
-          {label}
-        </Inline>
-      );
+      return <Switch label={name} checked={p.value} onChange={set} />;
     }
     case 'color': {
       const p = vmi.color(name);
@@ -78,7 +67,7 @@ function PropertyControl({
           label={name}
           alpha
           value={argbToCss(p.value)}
-          onChange={(_css, c) => set(c)}
+          onChange={(css) => set(parseColor(css))}
         />
       );
     }
@@ -86,29 +75,20 @@ function PropertyControl({
       const p = vmi.enum(name);
       if (!p) return null;
       return (
-        <Stack gap="1">
-          {label}
-          <Select
-            id={id}
-            value={p.value}
-            onValueChange={set}
-            items={p.values.map((v) => ({ value: v, label: v }))}
-            aria-label={name}
-          />
-        </Stack>
+        <Select
+          label={name}
+          value={p.value}
+          onChange={set}
+          options={p.values.map((v) => ({ value: v, label: v }))}
+        />
       );
     }
     case 'trigger': {
       const p = vmi.trigger(name);
       if (!p) return null;
       return (
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={<IconZap size="sm" />}
-          onClick={() => set(null)}
-        >
-          Fire {name}
+        <Button variant="soft" size="sm" icon={zap} onClick={() => set(null)}>
+          {`Fire ${name}`}
         </Button>
       );
     }
@@ -123,15 +103,15 @@ export function BindingPanel({ vmi }: { vmi: ViewModelInstance | null }) {
   const [, rerender] = useReducer((n: number) => n + 1, 0);
   if (!vmi)
     return (
-      <Text size="sm" tone="subtle">
+      <Text size="sm" tone="muted">
         This file has no data bindings.
       </Text>
     );
   const props = vmi.properties.filter((p) => isEditable(p.type));
   const other = vmi.properties.length - props.length;
   return (
-    <Stack gap="3">
-      <Text size="sm" tone="subtle">
+    <Stack gap="4">
+      <Text size="sm" tone="muted">
         View model {vmi.viewModelName}
       </Text>
       {props.map((p) => (
@@ -144,7 +124,7 @@ export function BindingPanel({ vmi }: { vmi: ViewModelInstance | null }) {
         />
       ))}
       {other > 0 && (
-        <Text size="xs" tone="subtle">
+        <Text size="sm" tone="muted">
           {other === 1
             ? '1 property (a list, image, artboard or nested view model) is not editable here.'
             : `${other} properties (lists, images, artboards or nested view models) are not editable here.`}

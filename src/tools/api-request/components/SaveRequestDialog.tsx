@@ -1,19 +1,6 @@
+import { Button, Dialog, Form, Select, TextField } from '@arshad-shah/cynosure';
 import React from 'react';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
-  Select,
-  Stack,
-} from '@/shared/ui';
 import type { Folder } from '../lib/collections-migrate';
-
-type CollectionType = Folder;
 
 interface SaveRequestDialogProps {
   open: boolean;
@@ -22,10 +9,11 @@ interface SaveRequestDialogProps {
   setSaveName: (name: string) => void;
   selectedCollectionId: string;
   setSelectedCollectionId: (id: string) => void;
-  collections: CollectionType[];
+  collections: Folder[];
   onSave: () => void;
 }
 
+/** Name the request and pick its collection (Enter in the name saves). */
 export const SaveRequestDialog: React.FC<SaveRequestDialogProps> = ({
   open,
   onOpenChange,
@@ -36,42 +24,37 @@ export const SaveRequestDialog: React.FC<SaveRequestDialogProps> = ({
   collections,
   onSave,
 }) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogHeader>
-      <DialogTitle>Save request</DialogTitle>
-    </DialogHeader>
-    <DialogBody>
-      <Stack gap="3">
-        <Stack gap="2">
-          <Label htmlFor="save-name">Name</Label>
-          <Input
-            id="save-name"
-            value={saveName}
-            onChange={setSaveName}
-            placeholder="My request"
-          />
-        </Stack>
-        <Stack gap="2">
-          <Label>Collection</Label>
-          <Select
-            value={selectedCollectionId}
-            onValueChange={setSelectedCollectionId}
-            items={[
-              { value: '', label: 'Select a collection' },
-              ...collections.map((c) => ({ value: c.id, label: c.name })),
-            ]}
-            aria-label="Collection"
-          />
-        </Stack>
-      </Stack>
-    </DialogBody>
-    <DialogFooter>
-      <Button variant="secondary" onClick={() => onOpenChange(false)}>
-        Cancel
-      </Button>
-      <Button variant="primary" onClick={onSave}>
-        Save
-      </Button>
-    </DialogFooter>
+  <Dialog
+    open={open}
+    onOpenChange={onOpenChange}
+    title="Save request"
+    actions={
+      <>
+        <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button variant="solid" onClick={onSave}>
+          Save
+        </Button>
+      </>
+    }
+  >
+    <Form label="Save request" gap="4" onSubmit={onSave}>
+      <TextField
+        label="Name"
+        value={saveName}
+        onChange={setSaveName}
+        placeholder="My request"
+      />
+      <Select
+        label="Collection"
+        value={selectedCollectionId}
+        onChange={setSelectedCollectionId}
+        options={[
+          { value: '', label: 'Select a collection' },
+          ...collections.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+      />
+    </Form>
   </Dialog>
 );

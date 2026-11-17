@@ -1,9 +1,12 @@
+import type { LinkRenderProps } from '@arshad-shah/cynosure';
 import { Link } from 'react-router-dom';
-import type { RenderLink } from '@/shared/ui';
 
-/** Kit link renderer backed by the router (client-side navigation). */
-export const routerLink: RenderLink = ({ href, children, ...rest }) => (
-  <Link to={href} {...rest}>
-    {children}
-  </Link>
-);
+/**
+ * Cynosure's `renderLink` through React Router: every link component
+ * (Link, Button and IconButton links, Card, ListRow, Breadcrumbs, SideNav)
+ * navigates in the app. The props are the component's own: its class,
+ * data attributes and click handler stay on the element.
+ */
+export function renderRouterLink({ href, ...rest }: LinkRenderProps) {
+  return <Link to={href ?? ''} {...rest} />;
+}

@@ -1,35 +1,20 @@
-import { useId, useState } from 'react';
+import {
+  Button,
+  Dialog,
+  Menu,
+  Notice,
+  Select,
+  Stack,
+} from '@arshad-shah/cynosure';
+import { chevronDown, fileJson } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
 import {
   inferMockSchema,
   type MockSchema,
 } from '@/shared/lib/data-formats/mock-schema';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
-import {
-  Alert,
-  AlertDescription,
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  Label,
-  Select,
-  Stack,
-  TextInputPanel,
-} from '@/shared/ui';
-import {
-  IconChevronDown,
-  IconDownload,
-  IconFileJson,
-  IconFileUp,
-  IconSparkles,
-} from '@/shared/ui/icons';
+
 import {
   isPresetId,
   PRESET_IDS,
@@ -38,6 +23,7 @@ import {
   type PresetId,
 } from '../lib/presets';
 import { schemaFromJson, schemaToJson } from '../lib/schema-io';
+import { CodeEditor } from '@/shared/editor';
 
 type Mode = 'import' | 'infer' | null;
 
@@ -61,20 +47,16 @@ export function PresetPicker({
   lastPreset,
   onSchema,
 }: Omit<SchemaIOProps, 'schema'>) {
-  const presetId = useId();
   return (
-    <Stack gap="1">
-      <Label htmlFor={presetId}>Preset</Label>
-      <Select
-        id={presetId}
-        value={lastPreset ?? ''}
-        onValueChange={(v) => isPresetId(v) && onSchema(PRESETS[v], v)}
-        items={[
-          { value: '', label: 'Custom' },
-          ...PRESET_IDS.map((p) => ({ value: p, label: PRESET_LABEL[p] })),
-        ]}
-      />
-    </Stack>
+    <Select
+      label="Preset"
+      value={lastPreset ?? 'custom'}
+      onChange={(v) => isPresetId(v) && onSchema(PRESETS[v], v)}
+      options={[
+        { value: 'custom', label: 'Custom', disabled: true },
+        ...PRESET_IDS.map((p) => ({ value: p, label: PRESET_LABEL[p] })),
+      ]}
+    />
   );
 }
 
@@ -108,75 +90,66 @@ export function SchemaIO({ schema, onSchema }: SchemaIOProps) {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button
-            size="sm"
-            variant="secondary"
-            leftIcon={<IconFileJson size="sm" />}
-            rightIcon={<IconChevronDown size="sm" />}
-          >
-            Schema
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => open('infer')}>
-            <IconSparkles size="sm" aria-hidden />
-            Infer from JSON sample
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => open('import')}>
-            <IconFileUp size="sm" aria-hidden />
-            Import schema
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              saveBlob(
+      <Menu
+        label="Schema"
+        items={[
+          { value: 'infer', label: 'Infer from JSON sample' },
+          { value: 'import', label: 'Import schema' },
+          { value: 'export', label: 'Export schema' },
+        ]}
+        onSelect={(v) =>
+          v === 'export'
+            ? saveBlob(
                 new TextEncoder().encode(schemaToJson(schema)),
                 'mock-schema.json',
                 'application/json',
               )
-            }
+            : open(v as Mode)
+        }
+        trigger={(props) => (
+          <Button
+            {...props}
+            size="sm"
+            variant="soft"
+            icon={fileJson}
+            iconEnd={chevronDown}
           >
-            <IconDownload size="sm" aria-hidden />
-            Export schema
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Dialog
-        open={mode !== null}
-        onOpenChange={(o) => !o && setMode(null)}
-        size="lg"
-      >
-        <DialogHeader>
-          <DialogTitle>
-            {mode === 'infer' ? 'Infer a schema from JSON' : 'Import a schema'}
-          </DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <TextInputPanel
-            label={mode === 'infer' ? 'JSON sample' : 'Schema JSON'}
-            value={text}
-            onChange={setText}
-            language="json"
-            accept=".json,application/json"
-            minHeight={240}
-            maxHeight={420}
-          />
-          {error && (
-            <Alert status="danger" className="mt-3">
-              <AlertDescription>{error.message}</AlertDescription>
-            </Alert>
-          )}
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setMode(null)}>
-            Cancel
+            Schema
           </Button>
-          <Button onClick={apply} disabled={!text.trim()}>
-            {mode === 'infer' ? 'Use inferred schema' : 'Import'}
-          </Button>
-        </DialogFooter>
-      </Dialog>
+        )}
+      />
+      {mode ? (
+        <Dialog
+          open
+          onOpenChange={(o) => !o && setMode(null)}
+          size="lg"
+          title={
+            mode === 'infer' ? 'Infer a schema from JSON' : 'Import a schema'
+          }
+          actions={
+            <>
+              <Button variant="ghost" onClick={() => setMode(null)}>
+                Cancel
+              </Button>
+              <Button variant="solid" onClick={apply} disabled={!text.trim()}>
+                {mode === 'infer' ? 'Use inferred schema' : 'Import'}
+              </Button>
+            </>
+          }
+        >
+          <Stack gap="3">
+            <CodeEditor
+              aria-label={mode === 'infer' ? 'JSON sample' : 'Schema JSON'}
+              value={text}
+              onChange={setText}
+              language="json"
+              minHeight={240}
+              maxHeight={420}
+            />
+            {error && <Notice tone="danger">{error.message}</Notice>}
+          </Stack>
+        </Dialog>
+      ) : null}
     </>
   );
 }

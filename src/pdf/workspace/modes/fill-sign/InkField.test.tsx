@@ -13,7 +13,8 @@ describe('InkField', () => {
       screen.getByRole('radio', { name: 'Black' }).getAttribute('aria-checked'),
     ).toBe('true');
     expect(screen.getByRole('radio', { name: 'Dark blue' })).toBeTruthy();
-    expect(screen.getByRole('radio', { name: 'Custom colour' })).toBeTruthy();
+    // Any other colour through a colour field under the swatches.
+    expect(screen.getByLabelText('Ink colour: any colour')).toBeTruthy();
     fireEvent.click(screen.getByRole('radio', { name: 'Blue' }));
     expect(onChange).toHaveBeenCalledWith('#1d4ed8');
   });

@@ -1,4 +1,4 @@
-import { IconClock } from '@/shared/ui/icons';
+import { clock as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Epoch & Time Zone Converter',
   description:
     'Unix timestamps to dates and back, world clock, zone converter and meeting planner',
-  icon: IconClock,
+  icon,
   category: 'time',
   slug: 'epoch',
   kind: 'tool',

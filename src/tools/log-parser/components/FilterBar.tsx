@@ -1,19 +1,14 @@
-import { useId } from 'react';
 import {
-  Alert,
   Badge,
   Button,
   Grid,
-  IconButton,
+  GridItem,
   Inline,
-  Input,
-  SearchInput,
+  SearchField,
   Stack,
-  StatusDot,
-  SwitchField,
-} from '@/shared/ui';
-import { IconX } from '@/shared/ui/icons';
-import { cn } from '@/shared/lib/cn';
+  Switch,
+  TextField,
+} from '@arshad-shah/cynosure';
 import type { FieldFilter, LogFilter } from '../lib/filter';
 import { levelLabel, levelTone, orderLevels } from '../lib/level-style';
 import { rowTime } from '../lib/progress';
@@ -29,14 +24,13 @@ export interface FilterBarProps {
 const fieldLabel = (f: FieldFilter) =>
   `${f.mode === 'include' ? '' : 'not '}${f.key}=${f.value}`;
 
-/** Level chips, search, exclude and component filters, active chips. */
+/** Level toggles, search, exclude and component filters, active chips. */
 export function FilterBar({
   filter,
   onChange,
   levels,
   searchError,
 }: FilterBarProps) {
-  const errorId = useId();
   const set = (patch: Partial<LogFilter>) => onChange({ ...filter, ...patch });
   const toggleLevel = (l: string) => {
     const next = new Set(filter.levels);
@@ -47,7 +41,7 @@ export function FilterBar({
   const text = filter.text ?? { value: '', regex: false };
 
   return (
-    <Stack gap="3" className="rounded-lg bg-surface p-3 shadow-e1">
+    <Stack gap="3">
       <Inline gap="2" wrap role="group" aria-label="Levels">
         {orderLevels(levels).map((l) => {
           const on = filter.levels.has(l);
@@ -55,54 +49,55 @@ export function FilterBar({
             <Button
               key={l}
               size="sm"
-              variant={on ? 'secondary' : 'ghost'}
-              aria-pressed={on}
+              variant={on ? 'soft' : 'ghost'}
+              pressed={on}
               onClick={() => toggleLevel(l)}
             >
-              <StatusDot tone={levelTone(l)} decorative />
               {levelLabel(l)}
-              <span className="font-mono tabular-nums">
+              <Badge size="sm" tone={levelTone(l)} dot>
                 {(levels[l] ?? 0).toLocaleString('en-US')}
-              </span>
+              </Badge>
             </Button>
           );
         })}
       </Inline>
-      <Grid cols={{ base: 1, md: 4 }} gap="3">
-        <Stack gap="1" className="md:col-span-2">
-          <Inline gap="2" wrap={false}>
-            <SearchInput
-              className="flex-1"
-              prompt="/"
-              aria-label="Search entries"
-              aria-invalid={searchError ? true : undefined}
-              aria-describedby={searchError ? errorId : undefined}
-              placeholder={text.regex ? 'Regular expression' : 'Search text'}
-              value={text.value}
-              onChange={(value) => set({ text: { ...text, value } })}
-            />
-            <SwitchField
-              className="shrink-0"
+      <Grid columns={{ base: 1, md: 4 }} gap="3">
+        <GridItem span={{ base: 1, md: 2 }}>
+          <Inline gap="3" align="start" wrap={false}>
+            <Stack grow minSize="0">
+              <SearchField
+                size="sm"
+                label="Search entries"
+                labelHidden
+                placeholder={text.regex ? 'Regular expression' : 'Search text'}
+                value={text.value}
+                onChange={(value) => set({ text: { ...text, value } })}
+                error={
+                  searchError ? `Invalid regex: ${searchError}` : undefined
+                }
+              />
+            </Stack>
+            <Switch
+              size="sm"
               label="Regex"
               checked={text.regex}
-              onCheckedChange={(regex) => set({ text: { ...text, regex } })}
+              onChange={(regex) => set({ text: { ...text, regex } })}
             />
           </Inline>
-          {searchError ? (
-            <Alert status="danger" size="sm" id={errorId}>
-              Invalid regex: {searchError}
-            </Alert>
-          ) : null}
-        </Stack>
-        <Input
-          aria-label="Exclude terms"
+        </GridItem>
+        <TextField
+          size="sm"
+          label="Exclude terms"
+          labelHidden
           placeholder="Exclude terms, comma separated"
           clearable
           value={filter.exclude.join(',')}
           onChange={(v) => set({ exclude: v.split(',') })}
         />
-        <Input
-          aria-label="Component"
+        <TextField
+          size="sm"
+          label="Component"
+          labelHidden
           placeholder="Component"
           clearable
           value={filter.component ?? ''}
@@ -114,32 +109,17 @@ export function FilterBar({
   );
 }
 
-function Chip({
-  label,
-  onRemove,
-  className,
-}: {
-  label: string;
-  onRemove(): void;
-  className?: string;
-}) {
+function Chip({ label, onRemove }: { label: string; onRemove(): void }) {
   return (
-    <Badge
-      variant="soft"
-      tone="neutral"
-      size="sm"
-      className={cn('gap-1 pr-0.5', className)}
-    >
-      <span>{label}</span>
-      <IconButton
-        size="sm"
-        variant="ghost"
-        className="size-5"
-        label={`Remove filter ${label}`}
-        icon={IconX}
-        onClick={onRemove}
-      />
-    </Badge>
+    <Inline role="listitem">
+      <Badge
+        tone="accent"
+        onRemove={onRemove}
+        labels={{ remove: `Remove filter ${label}` }}
+      >
+        {label}
+      </Badge>
+    </Inline>
   );
 }
 
@@ -150,28 +130,25 @@ function ActiveChips({
 }: Pick<FilterBarProps, 'filter' | 'onChange'>) {
   if (filter.fields.length === 0 && !filter.range) return null;
   return (
-    <ul aria-label="Active filters" className="flex flex-wrap gap-2">
+    <Inline gap="2" wrap role="list" aria-label="Active filters">
       {filter.fields.map((f, i) => (
-        <li key={`${f.mode}:${f.key}=${f.value}`}>
-          <Chip
-            label={fieldLabel(f)}
-            onRemove={() =>
-              onChange({
-                ...filter,
-                fields: filter.fields.filter((_, j) => j !== i),
-              })
-            }
-          />
-        </li>
+        <Chip
+          key={`${f.mode}:${f.key}=${f.value}`}
+          label={fieldLabel(f)}
+          onRemove={() =>
+            onChange({
+              ...filter,
+              fields: filter.fields.filter((_, j) => j !== i),
+            })
+          }
+        />
       ))}
       {filter.range ? (
-        <li>
-          <Chip
-            label={`time ${rowTime(filter.range[0])} to ${rowTime(filter.range[1])}`}
-            onRemove={() => onChange({ ...filter, range: undefined })}
-          />
-        </li>
+        <Chip
+          label={`time ${rowTime(filter.range[0])} to ${rowTime(filter.range[1])}`}
+          onRemove={() => onChange({ ...filter, range: undefined })}
+        />
       ) : null}
-    </ul>
+    </Inline>
   );
 }

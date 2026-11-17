@@ -1,21 +1,17 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { LoadingState, Toaster } from '@/shared/ui';
 import ErrorBoundary from './ErrorBoundary';
+import { Theme } from './Theme';
 import { getEnabledTools, getWorkspaceTool } from './registry';
 import { toolPath } from './routes';
 import { ToolPage } from './pages/ToolPage';
+import { Inline, LoadingDots, Text } from '@arshad-shah/cynosure';
 
 const AppFrame = lazy(() => import('./shell/AppFrame'));
 const WorkspaceFrame = lazy(() => import('./shell/WorkspaceFrame'));
 const Home = lazy(() => import('./pages/Home'));
 const HubRoute = lazy(() => import('./pages/HubRoute'));
 const NotFound = lazy(() => import('./pages/NotFound'));
-// Dev-only kit gallery (decision G18): absent from production builds. It
-// stays outside AppFrame: its AppShell example renders its own landmarks.
-const KitGallery = import.meta.env.DEV
-  ? lazy(() => import('./gallery/KitGallery'))
-  : null;
 
 // Built once at module scope: one lazy component per tool, stable across
 // renders. Disabled tools get no route (clean break, spec §3). The
@@ -27,49 +23,53 @@ const workspace = getWorkspaceTool();
 const Workspace = workspace ? lazy(workspace.load) : null;
 
 const App: React.FC = () => (
-  <ErrorBoundary>
-    <BrowserRouter>
-      <Suspense fallback={<LoadingState label="Loading" />}>
-        <Routes>
-          {KitGallery ? (
-            <Route
-              path="/__kit"
-              element={
-                <>
-                  <Toaster />
-                  <KitGallery />
-                </>
-              }
-            />
-          ) : null}
-          {workspace && Workspace ? (
-            <Route element={<WorkspaceFrame />}>
-              <Route
-                path="/pdf/edit/:mode?"
-                element={<Workspace definition={workspace} />}
-              />
+  <Theme>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Suspense
+          fallback={
+            <Inline
+              gap="4"
+              align="center"
+              justify="center"
+              paddingBlock="10"
+              role="status"
+            >
+              <LoadingDots tone="muted" />
+              <Text tone="muted">Loading</Text>
+            </Inline>
+          }
+        >
+          <Routes>
+            {workspace && Workspace ? (
+              <Route element={<WorkspaceFrame />}>
+                <Route
+                  path="/pdf/edit/:mode?"
+                  element={<Workspace definition={workspace} />}
+                />
+              </Route>
+            ) : null}
+            <Route element={<AppFrame />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/:category" element={<HubRoute />} />
+              {toolRoutes.map(({ manifest, Component }) => (
+                <Route
+                  key={manifest.id}
+                  path={toolPath(manifest)}
+                  element={
+                    <ToolPage tool={manifest}>
+                      <Component definition={manifest} />
+                    </ToolPage>
+                  }
+                />
+              ))}
+              <Route path="*" element={<NotFound />} />
             </Route>
-          ) : null}
-          <Route element={<AppFrame />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/:category" element={<HubRoute />} />
-            {toolRoutes.map(({ manifest, Component }) => (
-              <Route
-                key={manifest.id}
-                path={toolPath(manifest)}
-                element={
-                  <ToolPage tool={manifest}>
-                    <Component definition={manifest} />
-                  </ToolPage>
-                }
-              />
-            ))}
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
-  </ErrorBoundary>
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </ErrorBoundary>
+  </Theme>
 );
 
 export default App;

@@ -1,22 +1,33 @@
-import { useId, useRef, useState } from 'react';
+import {
+  Button,
+  EmptyState,
+  Inline,
+  Select,
+  Slider,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
+import { chartLine, download } from '@arshad-shah/cynosure/icons';
+import {
+  Bar,
+  Line,
+  Scatter,
+  type ChartRef,
+} from '@arshad-shah/swift-chart/react';
+import { useRef, useState } from 'react';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
+// swift-chart draws the chart (a canvas); everything around it is Cynosure.
+import { ChartFrame, chartPng, useChartTheme } from '@/shared/charts';
 import {
-  Button,
-  Chart,
-  EmptyState,
-  EmptyStateDescription,
-  EmptyStateTitle,
-  Inline,
-  Label,
-  Select,
-  Stack,
-  Text,
-  type ChartHandle,
-} from '@/shared/ui';
-import { IconDownload } from '@/shared/ui/icons';
-import { csvChart, ROW_NUMBER, type CsvChartKind } from '../lib/chart-data';
+  csvChart,
+  fmtNumber,
+  fmtTime,
+  ROW_NUMBER,
+  type ChartRow,
+  type CsvChartKind,
+} from '../lib/chart-data';
 import type { ColumnType } from '../lib/columns';
 import type { Row } from '../lib/edit';
 
@@ -39,8 +50,8 @@ const numeric = (t: ColumnType | undefined) =>
 
 /** Bar, line, scatter or histogram over all filtered rows; PNG export. */
 export function ChartPanel({ rows, columns, types, name }: ChartPanelProps) {
-  const ids = { kind: useId(), x: useId(), y: useId() };
-  const chart = useRef<ChartHandle>(null);
+  const chart = useRef<ChartRef>(null);
+  const theme = useChartTheme();
   const numbers = columns.filter((c) => numeric(types[c]));
   const [kind, setKind] = useState<CsvChartKind>('line');
   const [xPick, setX] = useState<string | null>(null);
@@ -62,24 +73,39 @@ export function ChartPanel({ rows, columns, types, name }: ChartPanelProps) {
         : ROW_NUMBER;
 
   const data = csvChart(rows, kind, x, y, types);
+  // Zoom: the shown stretch of points along x (line and scatter), kept
+  // while the same rows and columns are charted.
+  const zoomable = kind === 'line' || kind === 'scatter';
+  const key = [rows, kind, x, y] as const;
+  const [zoom, setZoom] = useState<{
+    key: readonly unknown[];
+    at: number[];
+  } | null>(null);
+  const last = Math.max(0, data.rows.length - 1);
+  const [from, to] =
+    zoomable && zoom && zoom.key.every((k, i) => k === key[i])
+      ? zoom.at
+      : [0, last];
+  const shown = data.rows.slice(from, to + 1);
 
   if (numbers.length === 0 && kind !== 'bar')
     return (
-      <EmptyState>
-        <EmptyStateTitle>No numeric columns</EmptyStateTitle>
-        <EmptyStateDescription>
-          Line, scatter and histogram charts need a column of numbers. A bar
-          chart can count rows per value.
-        </EmptyStateDescription>
-        <Button size="sm" onClick={() => setKind('bar')}>
-          Show a bar chart
-        </Button>
-      </EmptyState>
+      <EmptyState
+        icon={chartLine}
+        title="No numeric columns"
+        description="Line, scatter and histogram charts need a column of numbers. A bar chart can count rows per value."
+        actions={
+          <Button size="sm" variant="soft" onClick={() => setKind('bar')}>
+            Show a bar chart
+          </Button>
+        }
+      />
     );
 
-  const exportPng = async () => {
+  const exportPng = () => {
     try {
-      const blob = await chart.current!.exportPng();
+      const blob = chartPng(chart.current);
+      if (!blob) return;
       saveBlob(
         blob,
         `${name.replace(/\.[^.]+$/, '') || 'chart'}-chart.png`,
@@ -90,72 +116,135 @@ export function ChartPanel({ rows, columns, types, name }: ChartPanelProps) {
     }
   };
 
+  const xName = kind === 'histogram' ? y : x || 'Row number';
+  const yName = kind === 'histogram' ? 'Rows' : y || 'Rows';
+  const label = `${KINDS.find((k) => k.value === kind)!.label} chart of ${y || 'row count'}`;
+  const common = {
+    theme: theme.name,
+    height: 360,
+    showLegend: false,
+    ariaLabel: label,
+    ariaDescription: `${yName} by ${xName}`,
+  };
+  const mapping = { x: 'label', y: 'y', seriesNames: [yName] };
+
   return (
     <Stack gap="3">
-      <Inline gap="4" align="center" wrap>
-        <Inline gap="2" align="center" wrap={false}>
-          <Label htmlFor={ids.kind}>Chart</Label>
-          <Select
-            id={ids.kind}
-            value={kind}
-            onValueChange={(v) => setKind(v as CsvChartKind)}
-            items={KINDS}
-          />
-        </Inline>
+      <Inline gap="3" align="end" wrap>
+        <Select
+          label="Chart"
+          size="sm"
+          value={kind}
+          onChange={(v) => setKind(v as CsvChartKind)}
+          options={KINDS}
+        />
         {kind !== 'histogram' && (
-          <Inline gap="2" align="center" wrap={false}>
-            <Label htmlFor={ids.x}>X</Label>
-            <Select
-              id={ids.x}
-              value={x}
-              onValueChange={setX}
-              items={[
-                ...(kind === 'bar'
-                  ? []
-                  : [{ value: ROW_NUMBER, label: 'Row number' }]),
-                ...xChoices.map((c) => ({ value: c, label: c })),
-              ]}
-            />
-          </Inline>
-        )}
-        <Inline gap="2" align="center" wrap={false}>
-          <Label htmlFor={ids.y}>Y</Label>
           <Select
-            id={ids.y}
-            value={y}
-            onValueChange={setY}
-            items={[
+            label="X"
+            size="sm"
+            value={x}
+            onChange={setX}
+            options={[
               ...(kind === 'bar'
-                ? [{ value: ROW_NUMBER, label: 'Row count' }]
-                : []),
-              ...numbers.map((c) => ({ value: c, label: c })),
+                ? []
+                : [{ value: ROW_NUMBER, label: 'Row number' }]),
+              ...xChoices.map((c) => ({ value: c, label: c })),
             ]}
           />
-        </Inline>
-        <Button
+        )}
+        <Select
+          label="Y"
           size="sm"
-          variant="secondary"
-          leftIcon={<IconDownload size="sm" />}
-          onClick={() => void exportPng()}
-        >
-          PNG
+          value={y}
+          onChange={setY}
+          options={[
+            ...(kind === 'bar'
+              ? [{ value: ROW_NUMBER, label: 'Row count' }]
+              : []),
+            ...numbers.map((c) => ({ value: c, label: c })),
+          ]}
+        />
+        <Button size="sm" variant="soft" icon={download} onClick={exportPng}>
+          Download PNG
         </Button>
       </Inline>
-      <Chart
-        ref={chart}
-        kind={kind}
-        series={data.series}
-        xType={data.xType}
-        height={360}
-        zoomable={kind === 'line' || kind === 'scatter'}
-        ariaLabel={`${KINDS.find((k) => k.value === kind)!.label} chart of ${y || 'row count'}`}
-        xLabel={kind === 'histogram' ? y : x || 'Row number'}
-        yLabel={kind === 'histogram' ? 'Rows' : y || 'Rows'}
-        legend={false}
-      />
-      <Text size="xs" tone="subtle">
+      <ChartFrame<ChartRow>
+        table={{
+          caption: label,
+          rows: shown,
+          getRowId: (r) => `${r.x}`,
+          columns: [
+            { key: 'label', header: xName },
+            {
+              key: 'y',
+              header: yName,
+              align: 'end',
+              cell: (r) => fmtNumber(r.y),
+            },
+          ],
+        }}
+      >
+        {kind === 'scatter' ? (
+          <Scatter
+            ref={chart}
+            {...common}
+            data={shown}
+            mapping={{ x: 'x', y: 'y', labelField: 'label' }}
+            formatValue={scatterFormat(shown, data.time)}
+          />
+        ) : kind === 'line' ? (
+          <Line
+            ref={chart}
+            {...common}
+            data={shown}
+            mapping={mapping}
+            dots={false}
+            smooth={false}
+            formatValue={fmtNumber}
+          />
+        ) : (
+          <Bar
+            ref={chart}
+            {...common}
+            data={shown}
+            mapping={mapping}
+            formatValue={fmtNumber}
+          />
+        )}
+        {zoomable && data.rows.length > 2 ? (
+          <Slider
+            label="Shown range"
+            size="sm"
+            min={0}
+            max={last}
+            value={[from, to]}
+            onChange={(at) => setZoom({ key, at: at as number[] })}
+            labels={{
+              minimum: 'from',
+              maximum: 'to',
+              value: (i) => data.rows[i]?.label ?? '',
+            }}
+            showValue
+          />
+        ) : null}
+      </ChartFrame>
+      <Text size="xs" tone="muted">
         {`Drawn from ${data.used.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} filtered rows${data.reduced ? (kind === 'bar' ? ', largest 50 categories' : ', downsampled for display') : ''}.`}
       </Text>
     </Stack>
   );
+}
+
+/**
+ * swift-chart's scatter formats both axes with one function: times on x
+ * read as dates, while y values (far from those times) stay numbers.
+ */
+function scatterFormat(rows: readonly ChartRow[], time: boolean) {
+  if (!time || rows.length === 0) return fmtNumber;
+  const xs = rows.map((r) => r.x as number);
+  const lo = Math.min(...xs);
+  const hi = Math.max(...xs);
+  const pad = Math.max(hi - lo, 86_400_000);
+  return (v: number) =>
+    v >= lo - pad && v <= hi + pad ? fmtTime(v) : fmtNumber(v);
 }

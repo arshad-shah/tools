@@ -1,4 +1,4 @@
-import { IconFileCode } from '@/shared/ui/icons';
+import { fileKey as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'JWT Decoder',
   description:
     'Decode, verify and build JSON Web Tokens, with live expiry and JWKS keys',
-  icon: IconFileCode,
+  icon,
   category: 'encoding',
   slug: 'jwt',
   kind: 'tool',

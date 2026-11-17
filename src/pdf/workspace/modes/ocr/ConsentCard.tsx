@@ -2,15 +2,13 @@ import { formatBytes } from '@/shared/lib/format';
 import {
   Button,
   Card,
-  CardBody,
-  Heading,
   IconButton,
-  Label,
+  Inline,
   Select,
   Stack,
   Text,
-} from '@/shared/ui';
-import { IconOcrScan, IconPlus, IconX } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import { close, ocrScan, plus } from '@arshad-shah/cynosure/icons';
 import { downloadSize, simdSupported } from '@/pdf/ocr/assets';
 import {
   MAX_OCR_LANGUAGES,
@@ -75,83 +73,73 @@ export function ConsentCard({
   };
 
   return (
-    <Card aria-labelledby="ocr-consent-title">
-      <CardBody>
-        <Stack gap="3">
-          <div className="flex items-center gap-2">
-            <IconOcrScan size="md" className="text-accent-fg" />
-            <Heading id="ocr-consent-title" level={3} size="md">
-              Make this document searchable
-            </Heading>
-          </div>
-          <Stack gap="2">
-            {langs.map((l, i) => {
-              const id = `ocr-language-${i}`;
-              return (
-                <div key={id} className="flex flex-col gap-1">
-                  <Label htmlFor={id}>
-                    {i === 0 ? 'Language' : `Language ${i + 1}`}
-                  </Label>
-                  <div className="flex items-center gap-1">
-                    <div className="min-w-0 flex-1">
-                      <Select
-                        id={id}
-                        value={l}
-                        onValueChange={(v) => setAt(i, v as OcrLanguage)}
-                        items={ITEMS}
-                        disabled={busy}
-                      />
-                    </div>
-                    {i > 0 ? (
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        label={`Remove language ${i + 1}`}
-                        icon={IconX}
-                        disabled={busy}
-                        onClick={() =>
-                          onLangsChange(langs.filter((_, k) => k !== i))
-                        }
-                      />
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-            {langs.length < MAX_OCR_LANGUAGES ? (
-              <div>
-                <Button
+    <Card
+      variant="outline"
+      padding="md"
+      title="Make this document searchable"
+      headingLevel={3}
+    >
+      <Stack gap="4">
+        <Stack gap="2">
+          {langs.map((l, i) => (
+            <Inline key={`ocr-language-${i}`} gap="1" align="end">
+              <Stack grow minSize="0">
+                <Select
+                  label={i === 0 ? 'Language' : `Language ${i + 1}`}
+                  size="sm"
+                  value={l}
+                  onChange={(v) => setAt(i, v as OcrLanguage)}
+                  options={ITEMS}
+                  disabled={busy}
+                />
+              </Stack>
+              {i > 0 ? (
+                <IconButton
                   variant="ghost"
                   size="sm"
-                  leftIcon={<IconPlus size="sm" />}
+                  label={`Remove language ${i + 1}`}
+                  icon={close}
                   disabled={busy}
-                  onClick={() => onLangsChange([...langs, nextLanguage(langs)])}
-                >
-                  Add a language
-                </Button>
-              </div>
-            ) : null}
-          </Stack>
-          <Text size="sm" tone="muted">
-            {line}
-          </Text>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="primary"
-              leftIcon={<IconOcrScan size="sm" />}
-              disabled={busy || cached === null}
-              onClick={onRun}
-            >
-              {cached ? 'Run OCR' : 'Download and run'}
-            </Button>
-            {cached ? null : (
-              <Button variant="secondary" disabled={busy} onClick={onDismiss}>
-                Not now
+                  onClick={() => onLangsChange(langs.filter((_, k) => k !== i))}
+                />
+              ) : null}
+            </Inline>
+          ))}
+          {langs.length < MAX_OCR_LANGUAGES ? (
+            <Stack align="start">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={plus}
+                disabled={busy}
+                onClick={() => onLangsChange([...langs, nextLanguage(langs)])}
+              >
+                Add a language
               </Button>
-            )}
-          </div>
+            </Stack>
+          ) : null}
         </Stack>
-      </CardBody>
+        <Text size="sm" tone="muted">
+          {line}
+        </Text>
+        <Inline gap="2" wrap>
+          <Button
+            variant="solid"
+            tone="accent"
+            icon={ocrScan}
+            disabled={busy || cached === null}
+            loading={busy}
+            onClick={onRun}
+          >
+            {cached ? 'Run OCR' : 'Download and run'}
+          </Button>
+          {cached ? null : (
+            <Button variant="ghost" disabled={busy} onClick={onDismiss}>
+              Not now
+            </Button>
+          )}
+        </Inline>
+      </Stack>
     </Card>
   );
 }

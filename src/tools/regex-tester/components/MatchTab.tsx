@@ -1,18 +1,13 @@
 import React, { useMemo } from 'react';
 import type { ToolError } from '@/shared/lib/errors';
-import {
-  Badge,
-  CodeSurface,
-  EmptyState,
-  Inline,
-  Stack,
-  type CodeRange,
-} from '@/shared/ui';
+import { Badge, EmptyState, Inline, Stack } from '@arshad-shah/cynosure';
+
 import { matchCoverage } from '../lib/coverage';
 import { plural } from '../lib/plural';
 import type { Match } from '../lib/match';
 import { JobStatus } from './JobStatus';
 import { MatchList } from './MatchList';
+import { CodeEditor, type CodeRange } from '@/shared/editor';
 
 interface MatchTabProps {
   text: string;
@@ -64,7 +59,7 @@ export const MatchTab: React.FC<MatchTabProps> = ({
           {plural(matches.length, 'match')}
         </Badge>
         {matches.length > 0 && (
-          <Badge variant="soft" tone="neutral" size="sm">
+          <Badge tone="neutral" size="sm">
             {coverage}% coverage
           </Badge>
         )}
@@ -75,23 +70,23 @@ export const MatchTab: React.FC<MatchTabProps> = ({
         )}
       </Inline>
       <JobStatus error={error} pending={pending} onRetry={onRetry} />
-      <CodeSurface
+      <CodeEditor
         value={text}
         language="plain"
-        label="Live preview"
+        aria-label="Live preview"
         readOnly
         wrap
         ranges={ranges}
         maxHeight={320}
       />
-      {hasResult && !error && matches.length === 0 && (
+      {hasResult && !error && matches.length === 0 ? (
         <EmptyState
           size="sm"
           title="No matches"
           description="Try adjusting the pattern, the flags or the test string."
         />
-      )}
-      {matches.length > 0 && <MatchList matches={matches} />}
+      ) : null}
+      {matches.length > 0 ? <MatchList matches={matches} /> : null}
     </Stack>
   );
 };

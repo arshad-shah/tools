@@ -1,29 +1,11 @@
-import React, { useState } from 'react';
-import {
-  IconChevronDown,
-  IconChevronRight,
-  IconFolder,
-  IconTrash2,
-} from '@/shared/ui/icons';
-
-import {
-  Badge,
-  Box,
-  Card,
-  CardBody,
-  IconButton,
-  Indent,
-  Inline,
-  Stack,
-  Text,
-} from '@/shared/ui';
+import { Badge, Text, Tree, type TreeItem } from '@arshad-shah/cynosure';
+import { fileCode, folder, trash } from '@arshad-shah/cynosure/icons';
+import React, { useMemo } from 'react';
 import type { Folder, SavedRequest } from '../lib/collections-migrate';
 
-type CollectionType = Folder;
-type FolderItemType = Folder;
-type RequestItemType = SavedRequest;
+type Node = Folder | SavedRequest;
 
-const methodColor = (
+const methodTone = (
   method: string,
 ): 'success' | 'warning' | 'accent' | 'danger' | 'neutral' => {
   switch (method.toUpperCase()) {
@@ -32,7 +14,6 @@ const methodColor = (
     case 'POST':
       return 'accent';
     case 'PUT':
-      return 'warning';
     case 'PATCH':
       return 'warning';
     case 'DELETE':
@@ -45,140 +26,88 @@ const methodColor = (
 const methodOf = (r: SavedRequest) =>
   r.request.mode === 'graphql' ? 'GQL' : r.request.method;
 
-interface CollectionItemProps {
-  item: RequestItemType | FolderItemType;
-  depth: number;
-  selectedRequest: string | null;
-  onSelectRequest: (req: RequestItemType) => void;
-  onDelete: (id: string, type: 'folder' | 'request') => void;
+const DELETE = 'delete';
+
+function toItem(node: Node): TreeItem<Node> {
+  if (node.type === 'folder')
+    return {
+      id: node.id,
+      label: node.name,
+      icon: folder,
+      data: node,
+      children: node.children.map(toItem),
+      actions: [{ value: DELETE, label: 'Delete folder', icon: trash }],
+    };
+  const method = methodOf(node);
+  return {
+    id: node.id,
+    label: node.name,
+    icon: fileCode,
+    data: node,
+    trailing: (
+      <Badge size="sm" tone={methodTone(method)}>
+        {method}
+      </Badge>
+    ),
+    actions: [{ value: DELETE, label: 'Delete request', icon: trash }],
+  };
 }
 
-const CollectionItem: React.FC<CollectionItemProps> = ({
-  item,
-  depth,
-  selectedRequest,
-  onSelectRequest,
-  onDelete,
-}) => {
-  const [open, setOpen] = useState(true);
-  if (item.type === 'folder') {
-    return (
-      <Stack gap="1">
-        <Indent level={depth} step={12}>
-          <Inline align="center" gap="2">
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label={open ? 'Collapse' : 'Expand'}
-              icon={
-                open ? (
-                  <IconChevronDown size="sm" />
-                ) : (
-                  <IconChevronRight size="sm" />
-                )
-              }
-              onClick={() => setOpen(!open)}
-            />
-            <IconFolder size="sm" />
-            <Text size="sm" weight="medium">
-              {item.name}
-            </Text>
-            <Box className="flex-1" />
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Delete folder"
-              icon={<IconTrash2 size="sm" />}
-              onClick={() => onDelete(item.id, 'folder')}
-            />
-          </Inline>
-        </Indent>
-        {open && (
-          <Stack gap="1">
-            {item.children.map((child) => (
-              <CollectionItem
-                key={child.id}
-                item={child}
-                depth={depth + 1}
-                selectedRequest={selectedRequest}
-                onSelectRequest={onSelectRequest}
-                onDelete={onDelete}
-              />
-            ))}
-          </Stack>
-        )}
-      </Stack>
-    );
-  }
-
-  const isSelected = selectedRequest === item.id;
-  return (
-    <Indent level={depth} step={12}>
-      <Card
-        interactive
-        onClick={() => onSelectRequest(item)}
-        className={isSelected ? 'border-accent' : undefined}
-      >
-        <CardBody>
-          <Inline justify="between" align="center" gap="2" wrap>
-            <Inline align="center" gap="2">
-              <Badge
-                variant="solid"
-                tone={methodColor(methodOf(item))}
-                size="xs"
-              >
-                {methodOf(item)}
-              </Badge>
-              <Text size="sm" weight="medium" className="truncate">
-                {item.name}
-              </Text>
-            </Inline>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              label="Delete request"
-              icon={<IconTrash2 size="sm" />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(item.id, 'request');
-              }}
-            />
-          </Inline>
-        </CardBody>
-      </Card>
-    </Indent>
+const allFolders = (nodes: Node[]): string[] =>
+  nodes.flatMap((n) =>
+    n.type === 'folder' ? [n.id, ...allFolders(n.children)] : [],
   );
-};
 
 interface CollectionTreeProps {
-  collections: CollectionType[];
+  collections: Folder[];
   selectedRequest: string | null;
-  onSelectRequest: (req: RequestItemType) => void;
+  onSelectRequest: (req: SavedRequest) => void;
   onDelete: (id: string, type: 'folder' | 'request') => void;
 }
 
+/** Saved requests in their folders: select one to open it. */
 export const CollectionTree: React.FC<CollectionTreeProps> = ({
   collections,
   selectedRequest,
   onSelectRequest,
   onDelete,
-}) => (
-  <Stack gap="2">
-    {collections.length === 0 ? (
-      <Text size="sm" tone="subtle" className="text-center">
-        No collections yet. Click + to create one.
+}) => {
+  const items = useMemo(() => collections.map(toItem), [collections]);
+  const open = useMemo(() => allFolders(collections), [collections]);
+  if (collections.length === 0)
+    return (
+      <Text size="sm" tone="muted" align="center">
+        No collections yet. Create one with New collection.
       </Text>
-    ) : (
-      collections.map((c) => (
-        <CollectionItem
-          key={c.id}
-          item={c}
-          depth={0}
-          selectedRequest={selectedRequest}
-          onSelectRequest={onSelectRequest}
-          onDelete={onDelete}
-        />
-      ))
-    )}
-  </Stack>
-);
+    );
+  return (
+    <Tree<Node>
+      label="Collections"
+      items={items}
+      defaultExpanded={open}
+      selected={selectedRequest ? [selectedRequest] : []}
+      size="sm"
+      onSelectionChange={(ids) => {
+        const find = (nodes: Node[]): SavedRequest | null => {
+          for (const n of nodes) {
+            if (n.type === 'request' && n.id === ids[0]) return n;
+            if (n.type === 'folder') {
+              const hit = find(n.children);
+              if (hit) return hit;
+            }
+          }
+          return null;
+        };
+        const hit = find(collections);
+        if (hit) onSelectRequest(hit);
+      }}
+      onCommand={(value, item) => {
+        if (value === DELETE && item.data)
+          onDelete(
+            item.data.id,
+            item.data.type === 'folder' ? 'folder' : 'request',
+          );
+      }}
+    />
+  );
+};

@@ -1,13 +1,14 @@
-import { IconFieldText, IconNextField } from '@/shared/ui/icons';
+import { type as typeIcon } from '@arshad-shah/cynosure/icons';
+import { fieldNext, fieldText } from '@arshad-shah/cynosure/icons';
 import {
   Button,
   EmptyState,
-  InspectorSection,
-  MetaList,
-  Progress,
+  Inline,
+  ProgressBar,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { InspectorSection } from '../../ui/InspectorSection';
 import type { ModeProps } from '../types';
 import { addTextAtCentre, advance } from './actions';
 import { useViewFields } from './data';
@@ -38,8 +39,9 @@ export function FillSummary(ctx: ModeProps) {
     return (
       <InspectorSection title="Form">
         <EmptyState
-          icon={IconFieldText}
+          icon={typeIcon}
           headingLevel={4}
+          size="sm"
           title="No fields found yet"
           description={
             progress
@@ -49,39 +51,45 @@ export function FillSummary(ctx: ModeProps) {
           actions={
             <Button
               size="sm"
-              leftIcon={<IconFieldText size="sm" />}
+              icon={fieldText}
               onClick={() => addTextAtCentre(ctx)}
             >
               Add text box
             </Button>
           }
-          className="m-3 py-6"
         />
       </InspectorSection>
     );
 
   return (
     <InspectorSection title="Form">
-      <Stack gap="2" className="p-3">
-        <Text size="sm">{`${filled} of ${plural(real.length, 'field', 'fields')} filled`}</Text>
-        <Progress value={filled} max={real.length} label="Fields filled" />
-        <MetaList
-          items={[
+      <Stack gap="3">
+        <ProgressBar
+          label={`${filled} of ${plural(real.length, 'field', 'fields')} filled`}
+          value={filled}
+          max={real.length}
+        />
+        <Text size="sm" tone="muted">
+          {[
             `${left} left`,
             plural(signatures, 'signature placed', 'signatures placed'),
             ...(suggested
               ? [plural(suggested, 'suggestion', 'suggestions')]
               : []),
-          ]}
-        />
+          ].join(', ')}
+        </Text>
         {left > 0 ? (
-          <Button
-            size="sm"
-            leftIcon={<IconNextField size="sm" />}
-            onClick={() => advance(ctx, fields, fillSign.get().focusKey)}
-          >
-            Next empty field
-          </Button>
+          <Inline>
+            <Button
+              size="sm"
+              variant="solid"
+              tone="accent"
+              icon={fieldNext}
+              onClick={() => advance(ctx, fields, fillSign.get().focusKey)}
+            >
+              Next empty field
+            </Button>
+          </Inline>
         ) : (
           <Text size="sm" tone="muted">
             Every field is filled

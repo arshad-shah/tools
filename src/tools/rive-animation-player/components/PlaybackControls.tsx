@@ -1,6 +1,5 @@
-import { IconPause, IconPlay, IconRotateCcw } from '@/shared/ui/icons';
-
-import { Button, Inline } from '@/shared/ui';
+import { Button, Inline } from '@arshad-shah/cynosure';
+import { pause, play, rotateCcw } from '@arshad-shah/cynosure/icons';
 import { PlayerState, type Status } from '../types';
 
 /** Play / pause and reset, shown once a file is loaded. */
@@ -17,31 +16,21 @@ export function PlaybackControls({
   togglePlayback: () => void;
   reset: () => void;
 }) {
+  if (!filename) return null;
   return (
-    <>
-      {filename && (
-        <Inline gap="2">
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={
-              isPlaying ? <IconPause size="sm" /> : <IconPlay size="sm" />
-            }
-            disabled={status.current !== PlayerState.Active}
-            onClick={togglePlayback}
-          >
-            {isPlaying ? 'Pause' : 'Play'}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<IconRotateCcw size="sm" />}
-            onClick={reset}
-          >
-            Reset
-          </Button>
-        </Inline>
-      )}
-    </>
+    <Inline gap="2">
+      <Button
+        variant="solid"
+        size="sm"
+        icon={isPlaying ? pause : play}
+        disabled={status.current !== PlayerState.Active}
+        onClick={togglePlayback}
+      >
+        {isPlaying ? 'Pause' : 'Play'}
+      </Button>
+      <Button variant="soft" size="sm" icon={rotateCcw} onClick={reset}>
+        Reset
+      </Button>
+    </Inline>
   );
 }

@@ -19,7 +19,7 @@ function setup() {
   return { dispatch };
 }
 
-const range = (n: number) => screen.getByRole('group', { name: `Range ${n}` });
+const range = (n: number) => screen.getByRole('region', { name: `Range ${n}` });
 const prefix = (n: number) =>
   within(range(n)).getByLabelText('Prefix') as HTMLInputElement;
 
@@ -51,7 +51,10 @@ describe('PageLabelsDialog', () => {
 
   it('labels every input of a row', () => {
     setup();
-    for (const name of ['From page', 'Style', 'Prefix', 'Start at'])
+    for (const name of ['From page', 'Prefix', 'Start at'])
       expect(within(range(1)).getByLabelText(name)).toBeTruthy();
+    expect(
+      within(range(1)).getByRole('combobox', { name: /Style/ }),
+    ).toBeTruthy();
   });
 });

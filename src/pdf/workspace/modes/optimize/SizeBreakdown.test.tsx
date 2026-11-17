@@ -38,11 +38,10 @@ describe('SizeBreakdownView', () => {
         onGoToPage={onGoToPage}
       />,
     );
-    const images = screen.getByRole('progressbar', {
-      name: 'Images: 8.0 KB of 10.0 KB',
-    });
+    const images = screen.getByRole('meter', { name: 'Images' });
     expect(images.getAttribute('aria-valuenow')).toBe('8192');
-    expect(screen.getAllByRole('progressbar')).toHaveLength(4);
+    expect(images.getAttribute('aria-valuetext')).toBe('8.0 KB (80%)');
+    expect(screen.getAllByRole('meter')).toHaveLength(4);
     expect(screen.getByText('8.0 KB (80%)')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Go to page 3' }));
     expect(onGoToPage).toHaveBeenCalledWith('p3');
@@ -57,26 +56,19 @@ describe('SizeBreakdownView', () => {
 });
 
 describe('SizeBreakdownView ids', () => {
-  it('gives each mounted panel its own list labels', () => {
+  it('names each mounted panel its own lists, with no clashing ids', () => {
     const { container } = render(
       <>
         <SizeBreakdownView data={data} pageIds={[]} onGoToPage={() => {}} />
         <SizeBreakdownView data={data} pageIds={[]} onGoToPage={() => {}} />
       </>,
     );
+    expect(
+      screen.getAllByRole('list', { name: 'Largest images' }),
+    ).toHaveLength(2);
+    expect(screen.getAllByRole('list', { name: 'Fonts' })).toHaveLength(2);
     const ids = [...container.querySelectorAll('[id]')].map((e) => e.id);
-    expect(ids.length).toBe(4);
     expect(new Set(ids).size).toBe(ids.length);
-    const labelled = screen
-      .getAllByRole('list')
-      .filter((l) => l.hasAttribute('aria-labelledby'));
-    expect(labelled).toHaveLength(4);
-    for (const list of labelled)
-      expect(
-        container.querySelector(
-          `[id="${list.getAttribute('aria-labelledby')}"]`,
-        ),
-      ).toBeTruthy();
   });
 });
 

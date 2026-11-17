@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { IconChevronDown, IconChevronUp } from '@/shared/ui/icons';
 import {
   Button,
-  CodeTree,
   IconButton,
   Inline,
-  Label,
-  SearchInput,
+  SearchField,
   Select,
   Stack,
+  Switch,
   Text,
+} from '@arshad-shah/cynosure';
+import { chevronDown, chevronUp } from '@arshad-shah/cynosure/icons';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  CodeTree,
   type CodeTreeHandle,
-  SwitchField,
-} from '@/shared/ui';
+} from '@/shared/surfaces/code-tree/code-tree';
 import type { DocNode } from '../lib/doc-model';
 import type { SearchResult } from '../lib/search';
 import {
@@ -23,6 +24,9 @@ import {
 } from '../lib/to-tree';
 
 const DEPTHS = [1, 2, 3, 4, 5];
+
+/** The tree's height: the Shell gives views no height of their own. */
+const VIEW_HEIGHT = 640;
 
 export interface TreeSearchState {
   term: string;
@@ -98,41 +102,36 @@ export function TreeTab({
       : '';
 
   return (
-    <Stack gap="2" className="h-full min-h-0">
-      <Inline gap="2" wrap>
+    <Stack gap="3" fill minSize="0">
+      <Inline gap="2" align="end" wrap>
         <Button
           size="sm"
-          variant="secondary"
+          variant="soft"
           onClick={() => setExpanded(allExpandable(doc))}
         >
           Expand all
         </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => setExpanded(new Set())}
-        >
+        <Button size="sm" variant="soft" onClick={() => setExpanded(new Set())}>
           Collapse all
         </Button>
-        <Inline gap="2">
-          <Label htmlFor="json-xml-depth">Expand to depth</Label>
-          <Select
-            id="json-xml-depth"
-            className="w-20"
-            value={depth}
-            onValueChange={(v) => {
-              setDepth(v);
-              setExpanded(expandToDepth(doc, Number(v)));
-            }}
-            items={DEPTHS.map((d) => ({ value: String(d), label: String(d) }))}
-          />
-        </Inline>
+        <Select
+          label="Expand to depth"
+          size="sm"
+          layout="split"
+          value={depth}
+          onChange={(v) => {
+            setDepth(v);
+            setExpanded(expandToDepth(doc, Number(v)));
+          }}
+          options={DEPTHS.map((d) => ({ value: String(d), label: String(d) }))}
+        />
       </Inline>
-      <Inline gap="2" wrap>
-        <SearchInput
+      <Inline gap="2" align="center" wrap>
+        <SearchField
           ref={searchRef}
-          className="min-w-48 flex-1"
-          aria-label="Search the tree"
+          size="sm"
+          label="Search the tree"
+          labelHidden
           placeholder="Search keys and values"
           value={search.term}
           onChange={(term) => onSearchChange({ ...search, term, active: 0 })}
@@ -141,11 +140,11 @@ export function TreeTab({
             e.preventDefault();
             step(e.shiftKey ? -1 : 1);
           }}
-          aria-invalid={result.error ? true : undefined}
+          error={result.error ? result.error : undefined}
         />
         <IconButton
           label="Previous match"
-          icon={IconChevronUp}
+          icon={chevronUp}
           size="sm"
           variant="ghost"
           disabled={!matches.length}
@@ -153,34 +152,27 @@ export function TreeTab({
         />
         <IconButton
           label="Next match"
-          icon={IconChevronDown}
+          icon={chevronDown}
           size="sm"
           variant="ghost"
           disabled={!matches.length}
           onClick={() => step(1)}
         />
-        <SwitchField
-          label="Regex"
-          id="json-xml-regex"
-          checked={search.regex}
-          onCheckedChange={(regex) =>
-            onSearchChange({ ...search, regex, active: 0 })
-          }
-        />
-        <Text
+        <Switch
           size="sm"
-          tone={result.error ? 'default' : 'muted'}
-          className={result.error ? 'text-danger' : undefined}
-          aria-live="polite"
-          role={result.error ? 'alert' : undefined}
-        >
-          {status}
-        </Text>
+          label="Regex"
+          checked={search.regex}
+          onChange={(regex) => onSearchChange({ ...search, regex, active: 0 })}
+        />
+        {result.error ? null : (
+          <Text size="sm" tone="muted" numeric aria-live="polite">
+            {status}
+          </Text>
+        )}
       </Inline>
       <CodeTree
         ref={tree}
-        className="min-h-0 flex-1"
-        height="100%"
+        height={VIEW_HEIGHT}
         roots={roots}
         expanded={expanded}
         onExpandedChange={setExpanded}

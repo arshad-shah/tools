@@ -1,5 +1,5 @@
-import { Alert, MetaList, Stack, StatusDot, Text } from '@/shared/ui';
-import { IconTextLayer } from '@/shared/ui/icons';
+import { Inline, List, Notice, Stack, Text } from '@arshad-shah/cynosure';
+import { check, minus, textLayer, warning } from '@arshad-shah/cynosure/icons';
 import { LOW_CONFIDENCE } from '@/pdf/doc/checkpoints/ocr';
 import type { DocumentApi } from '../types';
 import { latestOcr } from './actions';
@@ -14,50 +14,38 @@ export function OcrReport({ doc }: { doc: DocumentApi }) {
   const words = pages.reduce((n, p) => n + p.words, 0);
   const capped = pages.filter((p) => p.capped);
   return (
-    <Stack gap="2" aria-label="OCR report">
-      <div className="flex items-center gap-2 text-accent-fg">
-        <IconTextLayer size="sm" />
-        <Text size="sm" weight="semibold">
-          {report.title}
-        </Text>
-      </div>
-      <MetaList
-        items={[
-          `${plural(words, 'word')} in total`,
-          ...(capped.length
-            ? [`${plural(capped.length, 'large page')} read below 300 DPI`]
-            : []),
-        ]}
-      />
-      <ul className="flex flex-col gap-1 text-sm text-fg-muted">
-        {pages.map((p) => {
-          const low = p.low;
+    <Stack gap="3" aria-label="OCR report">
+      <Notice tone="success" size="sm" icon={textLayer} title={report.title}>
+        <Inline separator="dot" wrap>
+          <Text as="span">{`${plural(words, 'word')} in total`}</Text>
+          {capped.length ? (
+            <Text as="span">{`${plural(capped.length, 'large page')} read below 300 DPI`}</Text>
+          ) : null}
+        </Inline>
+      </Notice>
+      <List
+        label="Pages read"
+        size="sm"
+        gap="sm"
+        items={pages.map((p) => {
           const pct = Math.round(p.meanConfidence);
-          return (
-            <li key={p.page} className="flex items-center gap-2">
-              <StatusDot
-                tone={low ? 'warning' : p.words ? 'accent' : 'muted'}
-                label={
-                  low
-                    ? `Low confidence, below ${LOW_CONFIDENCE}%`
-                    : p.words
-                      ? 'Text added'
-                      : 'No text found'
-                }
-              />
-              <span>
-                {p.words
-                  ? `Page ${p.page}: ${plural(p.words, 'word')}, ${pct}% confidence`
-                  : `Page ${p.page}: no text found`}
-              </span>
-            </li>
-          );
+          return {
+            id: String(p.page),
+            icon: p.low ? warning : p.words ? check : minus,
+            tone: p.low ? 'warning' : p.words ? 'success' : 'neutral',
+            label: p.words
+              ? `Page ${p.page}: ${plural(p.words, 'word')}, ${pct}% confidence`
+              : `Page ${p.page}: no text found`,
+            description: p.low
+              ? `Low confidence, below ${LOW_CONFIDENCE}%`
+              : undefined,
+          };
         })}
-      </ul>
+      />
       {report.warnings.map((w) => (
-        <Alert key={w} status="warning">
+        <Notice key={w} tone="warning" size="sm">
           <Text size="sm">{w}</Text>
-        </Alert>
+        </Notice>
       ))}
     </Stack>
   );

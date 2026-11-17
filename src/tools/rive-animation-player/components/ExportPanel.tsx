@@ -1,6 +1,18 @@
 import { useState, type RefObject } from 'react';
-import { IconDownload, IconPlayCircle, IconX } from '@/shared/ui/icons';
-import { Button, Inline, Label, NumberInput, Stack, Text } from '@/shared/ui';
+import {
+  Button,
+  Grid,
+  Notice,
+  NumberField,
+  ProgressBar,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
+import {
+  download,
+  record as recordIcon,
+  stop,
+} from '@arshad-shah/cynosure/icons';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { ToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
@@ -52,65 +64,53 @@ export function ExportPanel({
   const recording = record.status === 'running';
 
   return (
-    <Stack gap="4">
-      <Stack gap="2">
-        <Label>Current frame</Label>
-        <Button
-          variant="secondary"
-          leftIcon={<IconDownload size="sm" />}
-          disabled={disabled}
-          onClick={() => void exportPng()}
-        >
-          Download PNG
-        </Button>
-      </Stack>
-      <Stack gap="2">
-        <Label htmlFor="rive-record-seconds">Record video (seconds)</Label>
-        <Inline gap="2" align="center">
-          <NumberInput
-            id="rive-record-seconds"
-            value={seconds}
-            onValueChange={(v) => setSeconds(Math.round(v) || 1)}
-            min={1}
-            max={60}
-            disabled={!recordable || recording}
-            className="w-32"
-          />
-          {recording ? (
-            <Button
-              variant="secondary"
-              leftIcon={<IconX size="sm" />}
-              onClick={record.cancel}
-            >
-              Stop
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              leftIcon={<IconPlayCircle size="sm" />}
-              disabled={disabled || !recordable}
-              onClick={() => void record.run(seconds)}
-            >
-              Record WebM
-            </Button>
-          )}
-        </Inline>
-        {!recordable && (
-          <Text size="sm" tone="subtle">
-            This browser cannot record WebM video.
-          </Text>
+    <Stack gap="5">
+      <Button
+        variant="soft"
+        icon={download}
+        disabled={disabled}
+        onClick={() => void exportPng()}
+      >
+        Download current frame (PNG)
+      </Button>
+      <Grid columns="minmax(0, 1fr) auto" gap="2" align="end">
+        <NumberField
+          label="Record video (seconds)"
+          value={seconds}
+          onChange={(v) => setSeconds(Math.round(v ?? 1) || 1)}
+          min={1}
+          max={60}
+          disabled={!recordable || recording}
+        />
+        {recording ? (
+          <Button variant="soft" icon={stop} onClick={record.cancel}>
+            Stop
+          </Button>
+        ) : (
+          <Button
+            variant="soft"
+            icon={recordIcon}
+            disabled={disabled || !recordable}
+            onClick={() => void record.run(seconds)}
+          >
+            Record WebM
+          </Button>
         )}
-        {recording && (
-          <Text size="sm" tone="subtle" role="status">
-            Recording {seconds} s of the stage.
-          </Text>
-        )}
-        {record.status === 'error' && record.error && (
-          <Text size="sm" className="text-danger" role="alert">
-            {record.error.message}
-          </Text>
-        )}
-      </Stack>
+      </Grid>
+      {!recordable ? (
+        <Text size="sm" tone="muted">
+          This browser cannot record WebM video.
+        </Text>
+      ) : null}
+      {recording ? (
+        <ProgressBar
+          label={`Recording ${seconds} s of the stage`}
+          indeterminate
+        />
+      ) : null}
+      {record.status === 'error' && record.error ? (
+        <Notice tone="danger">{record.error.message}</Notice>
+      ) : null}
     </Stack>
   );
 }

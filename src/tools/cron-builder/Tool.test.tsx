@@ -15,7 +15,7 @@ import { cronSettings } from './settings';
 // instead of page-wide role scans; one module load for the whole file.
 const expression = () =>
   screen.getByLabelText('Cron expression', {
-    selector: 'textarea',
+    selector: 'input',
   }) as HTMLTextAreaElement;
 const inGroup = (label: string) => within(screen.getByLabelText(label));
 

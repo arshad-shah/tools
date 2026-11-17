@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { PDFFont, StandardFonts } from 'pdf-lib';
 import type { TextMeasure } from '@/pdf/edit/font-stack';
-import type { OverlayTextMetrics } from '@/shared/ui';
+import type { OverlayTextMetrics } from '@/shared/surfaces/page/overlay-text';
 import type { Box } from '@/pdf/doc/types';
 
 /*

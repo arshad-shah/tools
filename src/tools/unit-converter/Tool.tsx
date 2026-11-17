@@ -1,21 +1,16 @@
-import React, { useRef, useState } from 'react';
 import {
+  Button,
   Card,
-  CardBody,
-  CardHeader,
-  Text,
-  Grid,
-  Label,
-  NumberInput,
   Inline,
+  NumberField,
+  Popover,
   SegmentedControl,
   Select,
-  ShareButton,
-  ToolActions,
-  OptionsMenu,
   Stack,
-} from '@/shared/ui';
-import { useClipboard } from '@/shared/lib/clipboard';
+} from '@arshad-shah/cynosure';
+import { settings as settingsIcon } from '@arshad-shah/cynosure/icons';
+import React, { useRef, useState } from 'react';
+import { ShareButton, ToolActions, TransformLayout } from '@/app/ui/transform';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { AllUnits } from './components/AllUnits';
@@ -29,10 +24,14 @@ import { CATEGORIES, findUnit, getCategory } from './lib/units';
 import type { UnitSettings } from './settings';
 import { parseUnitShare, UNIT_SHARE_VERSION, type UnitShare } from './share';
 
+/**
+ * Unit Converter (redesign spec, transform pattern): every unit of a
+ * category as an editable row, beside quick free-text conversion and the
+ * recent conversions.
+ */
 const UnitConverter: React.FC = () => {
   const s = useUnitConverter();
   const { settings, update, category } = s;
-  const { copiedKey, copy } = useClipboard();
   const [free, setFree] = useState('');
   const [freeResult, setFreeResult] = useState<string | null>(null);
   const freeRef = useRef<HTMLInputElement>(null);
@@ -81,106 +80,102 @@ const UnitConverter: React.FC = () => {
     );
   };
 
+  const display = (
+    <Popover
+      label="Number display"
+      trigger={(props) => (
+        <Button {...props} variant="soft" icon={settingsIcon}>
+          Display
+        </Button>
+      )}
+    >
+      <Stack gap="4">
+        <NumberField
+          label="Significant digits"
+          value={settings.precision}
+          min={3}
+          max={17}
+          onChange={(precision) => precision !== null && update({ precision })}
+        />
+        <Stack gap="2">
+          <SegmentedControl
+            label="Decimal mark"
+            size="sm"
+            value={settings.locale}
+            onChange={(locale) =>
+              update({ locale: locale as UnitSettings['locale'] })
+            }
+            options={[
+              { value: 'auto', label: 'Browser' },
+              { value: 'dot', label: 'Point' },
+              { value: 'comma', label: 'Comma' },
+            ]}
+          />
+        </Stack>
+        {category.id === 'typography' ? (
+          <NumberField
+            label="Base font size (px)"
+            value={settings.basePx}
+            min={1}
+            max={200}
+            onChange={(basePx) => basePx !== null && update({ basePx })}
+          />
+        ) : null}
+      </Stack>
+    </Popover>
+  );
+
+  const units = (
+    <Card as="section" title={`${category.label} units`}>
+      <Stack gap="5">
+        <Inline gap="3" align="end" wrap>
+          <Select
+            label="Category"
+            width="md"
+            value={category.id}
+            onChange={(id) => s.setCategory(id)}
+            options={CATEGORIES.map((c) => ({ value: c.id, label: c.label }))}
+          />
+          {display}
+        </Inline>
+        <AllUnits
+          category={category}
+          values={s.values}
+          editing={s.editing}
+          invalid={s.invalid}
+          onEdit={(unit, text) => s.setEditing({ unit, text })}
+          pinned={s.pinned}
+          onTogglePin={s.togglePin}
+        />
+      </Stack>
+    </Card>
+  );
+
+  const side = (
+    <HistoryList
+      history={settings.history}
+      precision={settings.precision}
+      locale={s.tag}
+      basePx={settings.basePx}
+      onUse={(h) => s.setCategory(h.category, s.show(h.from, h.amount))}
+      onClear={() => update({ history: [] })}
+    />
+  );
+
   return (
     <Stack gap="6">
-      <Card>
-        <CardBody>
-          <FreeText
-            value={free}
-            onChange={onFree}
-            result={freeResult}
-            inputRef={freeRef}
-          />
-        </CardBody>
-      </Card>
-
       <ToolActions>
         <ShareButton share={shareState} />
       </ToolActions>
-      <Grid cols={{ base: 1, lg: 3 }} gap="6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <Inline justify="between" align="end" gap="3">
-              <Stack gap="1" className="min-w-0 flex-1 sm:max-w-xs">
-                <Label htmlFor="unit-category">Category</Label>
-                <Select
-                  id="unit-category"
-                  value={category.id}
-                  onValueChange={(id) => s.setCategory(id)}
-                  items={CATEGORIES.map((c) => ({
-                    value: c.id,
-                    label: c.label,
-                  }))}
-                />
-              </Stack>
-              <OptionsMenu title="Number display">
-                <Stack gap="1">
-                  <Label htmlFor="unit-precision">Significant digits</Label>
-                  <NumberInput
-                    id="unit-precision"
-                    value={settings.precision}
-                    min={3}
-                    max={17}
-                    onValueChange={(precision) => update({ precision })}
-                  />
-                </Stack>
-                <Stack gap="1">
-                  <Text as="span" size="sm" weight="medium">
-                    Decimal mark
-                  </Text>
-                  <SegmentedControl<UnitSettings['locale']>
-                    label="Decimal mark"
-                    size="sm"
-                    value={settings.locale}
-                    onChange={(locale) => update({ locale })}
-                    options={[
-                      { value: 'auto', label: 'Browser' },
-                      { value: 'dot', label: 'Point' },
-                      { value: 'comma', label: 'Comma' },
-                    ]}
-                  />
-                </Stack>
-                {category.id === 'typography' && (
-                  <Stack gap="1">
-                    <Label htmlFor="unit-base-px">Base font size (px)</Label>
-                    <NumberInput
-                      id="unit-base-px"
-                      value={settings.basePx}
-                      min={1}
-                      max={200}
-                      onValueChange={(basePx) => update({ basePx })}
-                    />
-                  </Stack>
-                )}
-              </OptionsMenu>
-            </Inline>
-          </CardHeader>
-          <CardBody>
-            <AllUnits
-              category={category}
-              values={s.values}
-              editing={s.editing}
-              invalid={s.invalid}
-              onEdit={(unit, text) => s.setEditing({ unit, text })}
-              pinned={s.pinned}
-              onTogglePin={s.togglePin}
-              copiedKey={copiedKey}
-              onCopy={(unit, text) => void copy(text, unit)}
-            />
-          </CardBody>
-        </Card>
-
-        <Stack gap="6">
-          <HistoryList
-            history={settings.history}
-            precision={settings.precision}
-            locale={s.tag}
-            basePx={settings.basePx}
-            onUse={(h) => s.setCategory(h.category, s.show(h.from, h.amount))}
-            onClear={() => update({ history: [] })}
-          />
-        </Stack>
-      </Grid>
+      <Card as="section" title="Quick convert">
+        <FreeText
+          value={free}
+          onChange={onFree}
+          result={freeResult}
+          inputRef={freeRef}
+        />
+      </Card>
+      <TransformLayout start={units} end={side} defaultSize={58} />
     </Stack>
   );
 };

@@ -7,9 +7,8 @@
  * palette is read out of the live token layer and handed over as concrete
  * values. Every colour comes from a token (6-A1's syntax and match tokens
  * included; the interim fallbacks are gone), so the diagram follows
- * `data-theme` with no colour literal of its own. `watchTheme` signals a repaint on theme change.
+ * the colour mode with no colour literal of its own. Callers re-read on `useCynosureTheme().palette`.
  */
-import { readThemeTokens, watchTheme } from '@/shared/lib/theme-tokens';
 import {
   DEFAULT_FONT_SIZES,
   diagramFonts,
@@ -17,8 +16,6 @@ import {
   type FontSizes,
 } from './fonts';
 import type { RowKind } from './model';
-
-export { watchTheme };
 
 export interface DiagramTheme extends DiagramFonts {
   surface: string;
@@ -46,77 +43,82 @@ export interface DiagramTheme extends DiagramFonts {
   matchFill: string;
 }
 
-/** Each role: tokens tried in order. */
+/** Each role: Cynosure tokens tried in order. */
 const ROLES = {
-  surface: ['canvas', 'surface-2'],
-  grid: ['line-strong', 'line'],
-  card: ['surface'],
-  cardHeader: ['surface-2', 'surface'],
-  cardBorder: ['line-strong', 'line'],
-  cardBorderStrong: ['line-control', 'fg-subtle'],
-  divider: ['line'],
-  title: ['fg'],
-  eyebrow: ['fg-subtle', 'fg-muted'],
-  key: ['syntax-key'],
-  chip: ['surface-3', 'surface-2'],
-  chipText: ['fg-muted', 'fg'],
-  edge: ['fg-subtle', 'line-control'],
-  edgeMuted: ['line-strong', 'line'],
-  edgeActive: ['accent-fg', 'accent'],
-  select: ['focus', 'accent-fg'],
-  selectFill: ['accent-soft', 'surface-3'],
-  hoverFill: ['surface-3', 'surface-2'],
-  matchFill: ['match-soft'],
-  string: ['syntax-string'],
-  number: ['syntax-number'],
-  boolean: ['syntax-boolean'],
-  null: ['syntax-null'],
-  object: ['fg-muted'],
-  array: ['fg-muted'],
-  element: ['syntax-tag'],
-  attribute: ['syntax-attr'],
-  text: ['fg'],
-  more: ['fg-subtle'],
+  surface: ['--cy-color-bg'],
+  grid: ['--cy-color-line'],
+  card: ['--cy-color-surface'],
+  cardHeader: ['--cy-color-surface-raised', '--cy-color-surface'],
+  cardBorder: ['--cy-color-line'],
+  cardBorderStrong: ['--cy-color-muted'],
+  divider: ['--cy-color-line'],
+  title: ['--cy-color-ink'],
+  eyebrow: ['--cy-color-muted'],
+  key: ['--cy-color-syntax-property'],
+  chip: ['--cy-color-soft'],
+  chipText: ['--cy-color-muted'],
+  edge: ['--cy-color-muted'],
+  edgeMuted: ['--cy-color-line'],
+  edgeActive: ['--cy-color-accent-text'],
+  select: ['--cy-color-accent-text'],
+  selectFill: ['--cy-color-accent-soft'],
+  hoverFill: ['--cy-color-soft'],
+  // A soft warning, mixed below from the warning colour.
+  matchFill: ['--cy-color-warning'],
+  string: ['--cy-color-syntax-string'],
+  number: ['--cy-color-syntax-number'],
+  boolean: ['--cy-color-syntax-keyword'],
+  null: ['--cy-color-syntax-keyword'],
+  object: ['--cy-color-muted'],
+  array: ['--cy-color-muted'],
+  element: ['--cy-color-syntax-tag'],
+  attribute: ['--cy-color-syntax-attribute'],
+  text: ['--cy-color-ink'],
+  more: ['--cy-color-muted'],
 } as const;
 
 type Role = keyof typeof ROLES;
 
 const SIZE_TOKENS: Record<keyof FontSizes, string> = {
-  title: '--text-sm',
-  eyebrow: '--text-2xs',
-  row: '--text-xs',
-  chip: '--text-2xs',
+  title: '--cy-font-size-md',
+  eyebrow: '--cy-font-size-xs',
+  row: '--cy-font-size-sm',
+  chip: '--cy-font-size-xs',
 };
 
+/** Resolves a CSS colour (`var(--x)`, a bare `--x`, `color-mix()`) to a value. */
+export type ResolveColor = (value: string) => string;
+
 /**
- * Snapshot the current theme's palette and type ramp off `el` (the element
- * carrying `data-theme`, `<html>` by default). Rows and titles use the mono
- * family so the worker and the main thread measure identically.
+ * Snapshot the current theme's palette and type ramp. Colours come from
+ * `resolve` (Cynosure's `useCynosureTheme().resolveColor`); sizes and the
+ * family are read off `el` (`<html>` by default). Rows and titles use the
+ * mono family so the worker and the main thread measure identically.
  */
 export function readDiagramTheme(
+  resolve: ResolveColor,
   el: HTMLElement = document.documentElement,
 ): DiagramTheme {
-  const names = new Set<string>();
-  for (const list of Object.values(ROLES)) for (const n of list) names.add(n);
-  const sizeNames = Object.values(SIZE_TOKENS);
-  const t = readThemeTokens(
-    [...names, ...sizeNames, '--font-mono', '--font-sans'],
-    el,
-  );
+  const cs = getComputedStyle(el);
   // Last resort when no token resolves (a bare test document): the
   // element's own text colour, then the CSS system text colour.
-  const last = getComputedStyle(el).color || 'canvastext';
+  const last = cs.color || 'canvastext';
   const role = (r: Role) => {
-    for (const n of ROLES[r]) if (t[n]) return t[n];
+    for (const n of ROLES[r]) {
+      const c = resolve(n);
+      if (c) return c;
+    }
     return last;
   };
   const sizes = { ...DEFAULT_FONT_SIZES };
   for (const k of Object.keys(SIZE_TOKENS) as (keyof FontSizes)[]) {
-    const px = parseFloat(t[SIZE_TOKENS[k]]);
+    const px = parseFloat(cs.getPropertyValue(SIZE_TOKENS[k]));
     if (Number.isFinite(px) && px > 0) sizes[k] = px;
   }
   const family =
-    t['--font-mono'] || getComputedStyle(el).fontFamily || 'monospace';
+    cs.getPropertyValue('--cy-font-mono').trim() ||
+    cs.fontFamily ||
+    'monospace';
 
   const kinds: RowKind[] = [
     'string',
@@ -154,6 +156,8 @@ export function readDiagramTheme(
     select: role('select'),
     selectFill: role('selectFill'),
     hoverFill: role('hoverFill'),
-    matchFill: role('matchFill'),
+    matchFill:
+      resolve(`color-mix(in oklab, ${role('matchFill')} 30%, transparent)`) ||
+      role('matchFill'),
   };
 }

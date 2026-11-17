@@ -15,10 +15,10 @@ test('strips the three fixtures and the ZIP has no GPS or EXIF left', async ({
     .locator('input[type=file]')
     .first()
     .setInputFiles(FIXTURES.map((f) => `${GEN}/${f}`));
-  await expect(page.getByTestId('risk-level')).toContainText(/high/i);
-  await page.getByRole('button', { name: 'Remove metadata' }).click();
-  const grid = page.getByRole('grid', { name: 'Files to clean' });
-  await expect(grid.getByText('Done', { exact: true })).toHaveCount(3, {
+  await expect(page.getByText('High risk', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /^Remove metadata/ }).click();
+  const grid = page.getByRole('list', { name: 'Photos' });
+  await expect(grid.getByText(/Cleaned,/)).toHaveCount(3, {
     timeout: 20_000,
   });
 

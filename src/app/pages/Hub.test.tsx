@@ -33,10 +33,16 @@ const setup = (id: string) =>
   );
 
 const drop = (files: File[]) => {
-  const zone = screen.getByText(/Drop files/).closest('[data-dragging], div');
-  const target = zone?.parentElement?.parentElement ?? document.body;
-  fireEvent.drop(target, { dataTransfer: { files, types: ['Files'] } });
+  const input = document.querySelector('input[type="file"]');
+  if (!input) throw new Error('no file drop');
+  fireEvent.change(input, { target: { files } });
 };
+/** Tool card links (a card's star is a separate button). */
+const toolLinks = () =>
+  screen
+    .getAllByRole('link')
+    .map((a) => a.getAttribute('href'))
+    .sort();
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 beforeEach(() => localStorage.clear());
@@ -47,11 +53,7 @@ describe('Hub', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Text' }),
     ).toBeTruthy();
-    const names = screen
-      .getAllByRole('link')
-      .map((a) => a.getAttribute('href'))
-      .sort();
-    expect(names).toEqual([
+    expect(toolLinks()).toEqual([
       '/text/diff',
       '/text/logs',
       '/text/markdown',
@@ -59,19 +61,19 @@ describe('Hub', () => {
       '/text/toolkit',
     ]);
   });
-  it('cross-lists Protect and Unlock on the security hub with a pdf tag', () => {
+  it('cross-lists Protect and Unlock on the security hub with a PDF tag', () => {
     setup('security');
     for (const href of ['/pdf/protect', '/pdf/unlock']) {
       const link = screen
         .getAllByRole('link')
         .find((a) => a.getAttribute('href') === href);
       expect(link).toBeTruthy();
-      expect(within(link as HTMLElement).getByText('pdf')).toBeTruthy();
+      expect(link?.textContent).toContain('PDF');
     }
   });
   it('shows no drop zone on a hub that is not file-based', () => {
     setup('math');
-    expect(screen.queryByText(/Drop files/)).toBeNull();
+    expect(document.querySelector('input[type="file"]')).toBeNull();
   });
   it('groups the PDF hub into the workspace and quick tasks', () => {
     setup('pdf');
@@ -102,10 +104,11 @@ describe('Hub', () => {
   it('shows an inline error for a PNG on the text hub', async () => {
     setup('text');
     drop([new File([PNG], 'a.png')]);
-    const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/No tool here accepts these files/);
-    fireEvent.click(within(alert).getByRole('button', { name: 'Dismiss' }));
-    expect(screen.queryByRole('alert')).toBeNull();
+    await waitFor(() =>
+      expect(screen.getByText(/No tool here accepts these files/)).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Dismiss/ }));
+    expect(screen.queryByText(/No tool here accepts these files/)).toBeNull();
   });
   it('offers a chooser for one PDF on the PDF hub', async () => {
     setup('pdf');
@@ -114,7 +117,7 @@ describe('Hub', () => {
       name: 'Choose a tool for these files',
     });
     fireEvent.click(
-      within(chooser).getByRole('button', { name: 'PDF Splitter' }),
+      within(chooser).getByRole('button', { name: /PDF Splitter/ }),
     );
     await waitFor(() =>
       expect(screen.getByTestId('where').textContent).toMatch(

@@ -1,9 +1,17 @@
 import { ColorField } from './ColorField';
 import { useState } from 'react';
-import { Button, Input, Label, NumberInput, Stack, Text } from '@/shared/ui';
+import {
+  Button,
+  Grid,
+  Inline,
+  NumberField,
+  Stack,
+  Text,
+  TextField,
+} from '@arshad-shah/cynosure';
 import { trySelectPages } from '@/pdf/edit/geometry';
 import type { Slots } from '@/pdf/doc/ops/markup';
-import { PageRangeField } from '@/pdf/components/PageRangeField';
+import { PageRangeField } from '../../ui/PageRangeField';
 import type { ModeProps } from '../types';
 import { activeMarkup } from './markup-state';
 import {
@@ -31,20 +39,16 @@ function SlotFields({
 }) {
   return (
     <Stack gap="2">
-      {ALIGN.map(([key, word]) => {
-        const id = `hf-${name.toLowerCase()}-${key}`;
-        return (
-          <Stack key={key} gap="1">
-            <Label htmlFor={id}>{`${name} ${word}`}</Label>
-            <Input
-              id={id}
-              value={value[key]}
-              maxLength={200}
-              onChange={(v) => onChange({ ...value, [key]: v })}
-            />
-          </Stack>
-        );
-      })}
+      {ALIGN.map(([key, word]) => (
+        <TextField
+          key={key}
+          label={`${name} ${word}`}
+          size="sm"
+          value={value[key]}
+          maxLength={200}
+          onChange={(v) => onChange({ ...value, [key]: v })}
+        />
+      ))}
     </Stack>
   );
 }
@@ -73,49 +77,44 @@ export function HeaderFooterForm({ doc }: ModeProps) {
   const anything = [header, footer].some((s) => s.left || s.center || s.right);
   return (
     <Stack gap="3">
-      <Text size="xs" tone="muted">
-        Use {'{n}'}, {'{total}'}, {'{date}'} and {'{filename}'}
+      <Text as="p" size="sm" tone="muted">
+        {'Use {n}, {total}, {date} and {filename}'}
       </Text>
       <SlotFields name="Header" value={header} onChange={setHeader} />
       <SlotFields name="Footer" value={footer} onChange={setFooter} />
-      <div className="grid grid-cols-3 gap-2">
+      <Grid columns={3} gap="2">
         {(['top', 'bottom', 'side'] as const).map((k) => (
-          <Stack key={k} gap="1">
-            <Label
-              htmlFor={`hf-margin-${k}`}
-            >{`${k[0].toUpperCase()}${k.slice(1)} margin`}</Label>
-            <NumberInput
-              id={`hf-margin-${k}`}
-              value={margin[k]}
-              onValueChange={(v) => setMargin({ ...margin, [k]: v })}
-              min={0}
-              max={500}
-            />
-          </Stack>
+          <NumberField
+            key={k}
+            label={`${k[0].toUpperCase()}${k.slice(1)} margin`}
+            size="sm"
+            value={margin[k]}
+            onChange={(v) => v !== null && setMargin({ ...margin, [k]: v })}
+            min={0}
+            max={500}
+          />
         ))}
-      </div>
-      <Stack gap="1">
-        <Label htmlFor="hf-size">Font size</Label>
-        <NumberInput
-          id="hf-size"
-          value={fontSize}
-          onValueChange={setFontSize}
-          min={4}
-          max={72}
-        />
-      </Stack>
+      </Grid>
+      <NumberField
+        label="Font size"
+        size="sm"
+        value={fontSize}
+        onChange={(v) => v !== null && setFontSize(v)}
+        min={4}
+        max={72}
+      />
       <ColorField label="Colour" value={color} onChange={setColor} />
       <PageRangeField
-        id="hf"
         mode={pageMode}
         text={ranges}
         onModeChange={setPageMode}
         onTextChange={setRanges}
         error={error}
       />
-      <div className="flex flex-wrap gap-2">
+      <Inline gap="2" wrap>
         <Button
-          variant="primary"
+          variant="solid"
+          tone="accent"
           size="sm"
           disabled={!!error || !anything}
           onClick={() =>
@@ -135,14 +134,14 @@ export function HeaderFooterForm({ doc }: ModeProps) {
         </Button>
         {activeMarkupId(doc, TYPE) ? (
           <Button
-            variant="secondary"
+            variant="ghost"
             size="sm"
             onClick={() => removeMarkup(doc, TYPE)}
           >
             Remove header and footer
           </Button>
         ) : null}
-      </div>
+      </Inline>
     </Stack>
   );
 }

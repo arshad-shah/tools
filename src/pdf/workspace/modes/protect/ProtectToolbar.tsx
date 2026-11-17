@@ -1,10 +1,11 @@
+import { requestProperties } from '../../properties-request';
 import {
-  IconPermissions,
-  IconSanitize,
-  IconTags,
-  IconUnlock,
-} from '@/shared/ui/icons';
-import type { ToolGroup } from '@/shared/ui';
+  fileClean,
+  fileKey,
+  tag,
+  unlock as unlockIcon,
+} from '@arshad-shah/cynosure/icons';
+import { type ToolGroup } from '../../ui/tool-groups';
 import { ModeToolbar } from '../../ModeToolbar';
 import { useWorkspace } from '../../workspace-context';
 import type { ModeProps } from '../types';
@@ -24,18 +25,24 @@ export function ProtectToolbar(ctx: ModeProps) {
         {
           id: 'password',
           label: 'Password protection',
-          icon: IconPermissions,
+          icon: fileKey,
           kind: 'toggle',
           pressed: panel === 'password',
-          onSelect: () => ctx.tool.set('password'),
+          onSelect: () => {
+            ctx.tool.set('password');
+            requestProperties();
+          },
         },
         {
           id: 'properties',
           label: 'Document properties',
-          icon: IconTags,
+          icon: tag,
           kind: 'toggle',
           pressed: panel === 'properties',
-          onSelect: () => ctx.tool.set('properties'),
+          onSelect: () => {
+            ctx.tool.set('properties');
+            requestProperties();
+          },
         },
       ],
     },
@@ -46,7 +53,7 @@ export function ProtectToolbar(ctx: ModeProps) {
         {
           id: 'sanitize',
           label: 'Sanitise',
-          icon: IconSanitize,
+          icon: fileClean,
           kind: 'button',
           disabled: restricted ? 'Unlock editing first' : false,
           onSelect: () => openSanitize(),
@@ -62,7 +69,7 @@ export function ProtectToolbar(ctx: ModeProps) {
         {
           id: 'unlock',
           label: 'Unlock for editing',
-          icon: IconUnlock,
+          icon: unlockIcon,
           kind: 'button',
           onSelect: () => ws.unlock?.(),
         },

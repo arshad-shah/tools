@@ -1,4 +1,4 @@
-import { IconCodeXml } from '@/shared/ui/icons';
+import { braces as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'JSON & XML Viewer',
   description:
     'Explore JSON, XML and YAML as a tree or a map, query with JSONPath or XPath, and convert between formats',
-  icon: IconCodeXml,
+  icon,
   category: 'data',
   slug: 'json-xml',
   kind: 'tool',

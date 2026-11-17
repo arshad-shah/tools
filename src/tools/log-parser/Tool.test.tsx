@@ -10,6 +10,7 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { stubChartCanvas } from '@/shared/charts/testing';
 import { putHandoff } from '@/shared/lib/handoff';
 import { exposeRpc, type RpcEndpoint } from '@/shared/lib/worker-rpc';
 import { textHandlers } from '@/shared/workers/handlers';
@@ -57,6 +58,7 @@ vi.mock('@/shared/workers/text-client', async (importOriginal) => {
 });
 
 beforeEach(() => {
+  stubChartCanvas();
   logSettings.getSettings();
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
     x: 0,
@@ -89,14 +91,8 @@ const count = () =>
     .getAllByRole('status')
     .find((s) => / of \d+ entr/.test(s.textContent ?? ''))?.textContent;
 
-/** R41: Input and Output are tabs. */
-const tab = (name: string) =>
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
-
 async function loadSample() {
-  tab('Input');
   fireEvent.click(screen.getByRole('button', { name: 'Load sample' }));
-  tab('Output');
   // 15 lines, the stack trace grouped into its ERROR entry.
   await screen.findByText(/10 of 10 entries/, undefined, { timeout: 3000 });
 }
@@ -148,7 +144,9 @@ describe('Log Viewer', () => {
     const cells = (c: string) => log.querySelectorAll(`[data-column="${c}"]`);
     await waitFor(() => expect(cells('line').length).toBeGreaterThan(0));
     fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Line number' }));
+    fireEvent.click(
+      screen.getByRole('menuitemcheckbox', { name: 'Line number' }),
+    );
     expect(cells('line')).toHaveLength(0);
     expect(cells('level').length).toBeGreaterThan(0);
     expect(logSettings.getSettings().columns).toEqual([
@@ -156,7 +154,9 @@ describe('Log Viewer', () => {
       'level',
       'component',
     ]);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Line number' }));
+    fireEvent.click(
+      screen.getByRole('menuitemcheckbox', { name: 'Line number' }),
+    );
     expect(cells('line').length).toBeGreaterThan(0);
     expect(logSettings.getSettings().columns).toEqual([
       'line',

@@ -1,39 +1,45 @@
-import React, { useState } from 'react';
-import { IconMerge } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Card,
-  CardBody,
+  DescriptionList,
+  Grid,
+  GridItem,
+  IconButton,
+  Image,
   Inline,
-  Input,
-  Spinner,
+  Notice,
+  ProgressBar,
+  Skeleton,
+  SortableList,
   Stack,
   Text,
-} from '@/shared/ui';
-import type { ToolProps } from '@/app/tool';
-import { logToolError, ToolError, toToolError } from '@/shared/lib/errors';
-import { deriveFilename } from '@/shared/lib/download';
-import { useJob } from '@/shared/state/useJob';
+  TextField,
+  useToast,
+} from '@arshad-shah/cynosure';
+import {
+  arrowRight,
+  download,
+  pageMerge,
+  trash,
+} from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getPageCount,
   merge,
   parsePageRanges,
   rangesToIndices,
 } from '@/pdf/edit';
-import {
-  FileThumb,
-  JobPanel,
-  PdfDropzone,
-  ResultFiles,
-  SortableFileList,
-  type ResultFile,
-  type PdfInputFile,
-  UNENCRYPTED_NOTE,
-} from '@/pdf/components';
-import { insertByOrder } from './lib/order';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { useFirstPageImage } from '@/pdf/ui/use-first-page-image';
+import { stageDocument } from '@/pdf/workspace/workspace-store';
+import { deriveFilename, saveBlob } from '@/shared/lib/download';
+import { logToolError, ToolError, toToolError } from '@/shared/lib/errors';
+import { formatBytes } from '@/shared/lib/format';
 import { useHandoff } from '@/shared/lib/handoff';
+import { useJob } from '@/shared/state/useJob';
+import { insertByOrder } from './lib/order';
 
 interface MergeItem extends PdfInputFile {
   pageCount: number;
@@ -41,14 +47,53 @@ interface MergeItem extends PdfInputFile {
   pages: string;
 }
 
-const PdfMergerTool: React.FC<ToolProps> = () => {
+interface MergeResult {
+  name: string;
+  bytes: Uint8Array;
+  pageCount: number;
+  wasEncrypted: boolean;
+}
+
+const plural = (n: number, one: string, many = `${one}s`) =>
+  `${n} ${n === 1 ? one : many}`;
+
+/** Page 1 of a file, small, beside its name. */
+function Thumb({ item }: { item: MergeItem }) {
+  const { src, ratio } = useFirstPageImage(item.bytes, 96);
+  // A one-column grid of a fixed track: the image's width.
+  return (
+    <Grid columns="3rem">
+      {src ? (
+        <Image
+          src={src}
+          alt={`${item.name}, page 1`}
+          ratio={ratio ?? 1 / Math.SQRT2}
+          fit="contain"
+          radius="sm"
+        />
+      ) : (
+        <Skeleton shape="block" height="4rem" />
+      )}
+    </Grid>
+  );
+}
+
+/**
+ * PDF Merger (redesign spec, file tool pattern): drop the files, put them in
+ * order and pick pages beside the merge options, merge with one button that
+ * says what it does, then download the result.
+ */
+export default function PdfMergerTool() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   // Files dropped on a hub land here once (spec §5.3).
   const handed = useHandoff();
   const [items, setItems] = useState<MergeItem[]>([]);
   const [addErrors, setAddErrors] = useState<string[]>([]);
   /** Number of files being read after a drop (0 = idle). */
   const [reading, setReading] = useState(0);
-  const job = useJob(async (ctx, list: MergeItem[]): Promise<ResultFile> => {
+
+  const job = useJob(async (ctx, list: MergeItem[]): Promise<MergeResult> => {
     const inputs = list.map((item) => {
       if (!item.pages.trim()) return { bytes: item.bytes, pages: undefined };
       try {
@@ -63,26 +108,24 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
         });
       }
     });
-    // Until the first input is done JobPanel shows its indeterminate text.
     const bytes = await merge(inputs, {
       onProgress: (done, total) =>
         ctx.progress({ done, total, label: 'Merging' }),
     });
-    const total = inputs.reduce(
-      (n, inp, i) => n + (inp.pages?.length ?? list[i].pageCount),
-      0,
-    );
     return {
       name: deriveFilename(list[0].name, 'merged', 'pdf'),
       bytes,
-      detail: `${total} pages`,
+      pageCount: inputs.reduce(
+        (n, inp, i) => n + (inp.pages?.length ?? list[i].pageCount),
+        0,
+      ),
+      wasEncrypted: list.some((i) => i.wasEncrypted),
     };
   });
 
   const add = async (files: PdfInputFile[]) => {
     job.reset();
-    // pdf-lib reads each file on the main thread to count pages (encrypted
-    // files arrive already decrypted by PdfDropzone); show that it's working.
+    // pdf-lib reads each file on the main thread to count its pages.
     setReading(files.length);
     const results = await Promise.allSettled(
       files.map(async (f) => ({
@@ -106,120 +149,197 @@ const PdfMergerTool: React.FC<ToolProps> = () => {
     // A file unlocked after its siblings goes back to its drop position.
     setItems((prev) => insertByOrder(prev, ok));
   };
-  const busy = job.status === 'running';
 
+  const busy = job.status === 'running';
   const update = (next: MergeItem[]) => {
     job.reset();
     setItems(next);
   };
+  const setPages = (id: string, pages: string) =>
+    update(items.map((i) => (i.id === id ? { ...i, pages } : i)));
+  const run = async () => {
+    const result = await job.run(items);
+    if (result)
+      toast({
+        title: `Merged into ${result.name}`,
+        tone: 'success',
+      });
+  };
+
+  const totalPages = items.reduce((n, i) => n + i.pageCount, 0);
+  const result = job.status === 'done' ? job.result : null;
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="5">
-          <PdfDropzone
-            initialFiles={handed}
-            multiple
-            onFiles={add}
-            disabled={busy || reading > 0}
-          />
-          {reading > 0 && (
-            <Inline gap="2" align="center" aria-live="polite">
-              <Spinner size="sm" />
-              <Text size="sm" tone="muted">
-                Reading {reading} {reading === 1 ? 'file' : 'files'}…
-              </Text>
-            </Inline>
-          )}
-          {addErrors.length > 0 && (
-            <Alert status="danger">
-              {addErrors.map((m, i) => (
-                <AlertDescription key={i}>{m}</AlertDescription>
-              ))}
-            </Alert>
-          )}
-          {items.length > 0 && (
-            <>
-              <Text size="sm" tone="muted">
-                Drag files, or focus one and press Alt + Up/Down, to set the
-                order. Leave pages blank to include the whole file, or enter
-                ranges like 1-3, 5.
-              </Text>
-              <SortableFileList
-                items={items}
+    <Stack gap="6">
+      <PdfIntake
+        multiple
+        initialFiles={handed}
+        onFiles={(files) => void add(files)}
+        size={items.length ? 'sm' : 'lg'}
+        disabled={busy || reading > 0}
+        hint="Add two or more PDFs. They stay on this device."
+        status={reading > 0 ? `Reading ${plural(reading, 'file')}` : null}
+        skipped={addErrors}
+        onDismissSkipped={() => setAddErrors([])}
+      />
+
+      {items.length ? (
+        <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
+          <GridItem span={{ base: 1, lg: 2 }}>
+            <Card
+              as="section"
+              title={`Files (${items.length})`}
+              description="Drag a file by its handle to set the order, or focus the handle, press Space and use the arrow keys. Leave pages blank for the whole file."
+            >
+              <SortableList
+                label="Files to merge"
                 disabled={busy}
-                onReorder={update}
-                onRemove={(id) => update(items.filter((i) => i.id !== id))}
-                renderPreview={(item) => (
-                  <FileThumb bytes={item.bytes} name={item.name} />
-                )}
-                renderExtra={(item) => (
-                  <Inline gap="3" align="center">
-                    <Text size="xs" tone="muted" className="shrink-0">
-                      {item.pageCount} {item.pageCount === 1 ? 'page' : 'pages'}
-                    </Text>
-                    <div className="w-40">
-                      <Input
-                        disabled={busy}
+                items={items.map((item) => ({
+                  id: item.id,
+                  label: item.name,
+                  content: (
+                    <Inline gap="5" align="center" wrap>
+                      <Thumb item={item} />
+                      <Stack gap="1" grow minSize="0">
+                        <Text weight="medium" truncate>
+                          {item.name}
+                        </Text>
+                        <Text size="sm" tone="muted">
+                          {plural(item.pageCount, 'page')},{' '}
+                          {formatBytes(item.size)}
+                        </Text>
+                      </Stack>
+                      <TextField
+                        size="sm"
+                        label={`Pages from ${item.name}`}
+                        labelHidden
+                        placeholder={`All ${item.pageCount}`}
                         value={item.pages}
-                        onChange={(pages) =>
-                          update(
-                            items.map((i) =>
-                              i.id === item.id ? { ...i, pages } : i,
-                            ),
-                          )
-                        }
-                        placeholder={`All ${item.pageCount} pages`}
-                        aria-label={`Pages from ${item.name}`}
+                        disabled={busy}
+                        onChange={(pages) => setPages(item.id, pages)}
                       />
-                    </div>
-                  </Inline>
-                )}
-              />
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  variant="primary"
-                  leftIcon={<IconMerge size="sm" />}
-                  disabled={items.length < 2 || busy || reading > 0}
-                  onClick={() => job.run(items)}
-                >
-                  Merge PDFs
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={() => {
-                    setAddErrors([]);
-                    update([]);
-                  }}
-                >
-                  Clear
-                </Button>
-              </div>
-              {items.length < 2 && (
-                <Text size="sm" tone="muted">
-                  Add at least two PDFs to merge.
-                </Text>
-              )}
-            </>
-          )}
-          <JobPanel job={job} onCancel={job.cancel} runningLabel="Merging">
-            {job.result && (
-              <ResultFiles
-                openInWorkspace
-                files={[job.result]}
-                note={
-                  items.some((i) => i.wasEncrypted)
-                    ? UNENCRYPTED_NOTE
-                    : undefined
+                      <IconButton
+                        icon={trash}
+                        label={`Remove ${item.name}`}
+                        variant="ghost"
+                        tone="neutral"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() =>
+                          update(items.filter((i) => i.id !== item.id))
+                        }
+                      />
+                    </Inline>
+                  ),
+                }))}
+                onReorder={(next) =>
+                  update(
+                    next.flatMap((n) => items.filter((i) => i.id === n.id)),
+                  )
                 }
               />
-            )}
-          </JobPanel>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+            </Card>
+          </GridItem>
+          <Card as="section" title="Merge">
+            <Stack gap="5">
+              <DescriptionList
+                layout="inline"
+                size="sm"
+                items={[
+                  { term: 'Files', detail: String(items.length) },
+                  { term: 'Pages in the files', detail: String(totalPages) },
+                  {
+                    term: 'Result',
+                    detail: deriveFilename(items[0].name, 'merged', 'pdf'),
+                  },
+                ]}
+              />
+              {job.status === 'error' && job.error ? (
+                <Notice tone="danger">{job.error.message}</Notice>
+              ) : null}
+              {busy ? (
+                <Stack gap="3">
+                  <ProgressBar
+                    label="Merging"
+                    value={job.progress?.done}
+                    max={job.progress?.total ?? 1}
+                    indeterminate={!job.progress}
+                  />
+                  <Button variant="ghost" onClick={job.cancel}>
+                    Cancel
+                  </Button>
+                </Stack>
+              ) : (
+                <Stack gap="3">
+                  <Button
+                    variant="solid"
+                    tone="accent"
+                    size="lg"
+                    icon={pageMerge}
+                    fullWidth
+                    disabled={items.length < 2 || reading > 0}
+                    onClick={() => void run()}
+                  >
+                    {items.length < 2
+                      ? 'Add another PDF to merge'
+                      : `Merge ${items.length} files`}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    fullWidth
+                    onClick={() => {
+                      setAddErrors([]);
+                      update([]);
+                    }}
+                  >
+                    Clear all
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+          </Card>
+        </Grid>
+      ) : null}
 
-export default PdfMergerTool;
+      {result ? (
+        <Card as="section" title="Your merged PDF" padding="lg">
+          <Stack gap="5">
+            <Notice tone="success" title={`${result.name} is ready`}>
+              {plural(result.pageCount, 'page')},{' '}
+              {formatBytes(result.bytes.byteLength)}.
+              {result.wasEncrypted
+                ? ' The original was password-protected. This file is not.'
+                : ''}
+            </Notice>
+            <Inline gap="3" wrap>
+              <Button
+                variant="solid"
+                tone="accent"
+                icon={download}
+                onClick={() =>
+                  saveBlob(result.bytes, result.name, 'application/pdf')
+                }
+              >
+                Download {result.name}
+              </Button>
+              <Button
+                variant="soft"
+                iconEnd={arrowRight}
+                onClick={() => {
+                  const id = stageDocument({
+                    name: result.name,
+                    bytes: result.bytes,
+                    wasEncrypted: false,
+                  });
+                  navigate(`/pdf/edit?open=${id}`);
+                }}
+              >
+                Open in the workspace
+              </Button>
+            </Inline>
+          </Stack>
+        </Card>
+      ) : null}
+    </Stack>
+  );
+}

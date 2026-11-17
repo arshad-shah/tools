@@ -14,14 +14,14 @@ let viewport: {
   pages: Slot[];
   renderPage(a: { index: number; scale: number; visible: boolean }): ReactNode;
 } | null = null;
-vi.mock('@/shared/ui', async (orig) => ({
-  ...(await orig<typeof import('@/shared/ui')>()),
+vi.mock('@arshad-shah/cynosure', async (orig) => ({
+  ...(await orig<typeof import('@arshad-shah/cynosure')>()),
   DocumentViewport: (p: NonNullable<typeof viewport>) => {
     viewport = p;
     return null;
   },
 }));
-vi.mock('./PageImage', () => ({ PageImage: () => null }));
+vi.mock('@/shared/surfaces/pdf/PageImage', () => ({ PageImage: () => null }));
 
 beforeAll(() => registerCoreOperations());
 

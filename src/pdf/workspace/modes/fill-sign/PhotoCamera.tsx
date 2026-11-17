@@ -1,16 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { IconCamera } from '@/shared/ui/icons';
+import { useRef, useState } from 'react';
+import { camera as cameraIcon } from '@arshad-shah/cynosure/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
-  CameraCapture,
-  CameraFrameGuide,
-  LoadingState,
+  CameraView,
+  type CameraViewHandle,
+  Notice,
   Stack,
-} from '@/shared/ui';
-import { CAMERA_BLOCKED } from '@/shared/ui/camera-errors';
-import type { ToolError } from '@/shared/lib/errors';
+  Text,
+} from '@arshad-shah/cynosure';
 
 export const CAMERA_DENIED =
   'Camera access was blocked. Allow it in your browser settings, or upload a photo instead.';
@@ -18,20 +15,13 @@ export const FRAME_HINT = 'Fit your signature in the frame';
 export const CAMERA_UNAVAILABLE =
   "This browser can't use a camera here. Upload a photo instead.";
 
-/** Why the camera is not running, as the message shown. */
-function problemText(e: ToolError): string {
-  if (e.message === CAMERA_BLOCKED) return CAMERA_DENIED;
-  if (e.code === 'UNSUPPORTED_FEATURE') return CAMERA_UNAVAILABLE;
-  return e.message;
-}
-
 const insecure = () =>
   typeof window !== 'undefined' && window.isSecureContext === false;
 
 /**
- * The kit camera plus a Capture button: the latest frame is kept and handed
- * over (the receiver owns it) when Capture is pressed, which also stops
- * the camera. Frames never leave the device.
+ * The live camera (Cynosure's CameraView, with its Start, Stop and camera
+ * choice) and Capture: the picture at that moment is handed over (the
+ * receiver owns it) and the camera stops. Frames never leave the device.
  */
 export function PhotoCamera({
   onCapture,
@@ -42,75 +32,63 @@ export function PhotoCamera({
 }) {
   const [active, setActive] = useState(false);
   const [hasFrame, setHasFrame] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
-  const frame = useRef<ImageBitmap | null>(null);
-
-  const drop = () => {
-    frame.current?.close();
-    frame.current = null;
-    setHasFrame(false);
-  };
-  useEffect(
-    () => () => {
-      frame.current?.close();
-      frame.current = null;
-    },
-    [],
-  );
+  const camera = useRef<CameraViewHandle>(null);
 
   // getUserMedia exists only in secure contexts (https, localhost).
-  if (insecure())
-    return (
-      <Alert status="warning">
-        <AlertDescription>{CAMERA_UNAVAILABLE}</AlertDescription>
-      </Alert>
-    );
+  if (insecure()) return <Notice tone="warning">{CAMERA_UNAVAILABLE}</Notice>;
+
+  const capture = async () => {
+    const video = camera.current?.video();
+    if (!video) return;
+    const frame = await createImageBitmap(video).catch(() => null);
+    if (!frame) return;
+    setActive(false);
+    setHasFrame(false);
+    onCapture(frame);
+  };
 
   return (
     <Stack gap="3">
-      <CameraCapture
+      <CameraView
         label="Camera preview"
+        handle={camera}
         active={active}
-        fps={4}
-        overlay={<CameraFrameGuide hint={FRAME_HINT} />}
         onActiveChange={(on) => {
           setActive(on);
-          if (on) setProblem(null);
-          else drop();
+          if (!on) setHasFrame(false);
         }}
-        onFrame={(b) => {
-          frame.current?.close();
-          frame.current = b;
-          setHasFrame(true);
+        onFrame={() => {
+          if (!hasFrame) setHasFrame(true);
         }}
-        onError={(e) => setProblem(problemText(e))}
+        labels={{
+          start: 'Start',
+          stop: 'Stop',
+          off: 'Camera is off',
+          denied: CAMERA_DENIED,
+          unsupported: CAMERA_UNAVAILABLE,
+        }}
       />
-      {active && !hasFrame ? (
-        <LoadingState label="Waiting for camera permission" className="py-4" />
-      ) : null}
-      {problem ? (
-        <Alert status={problem === CAMERA_DENIED ? 'warning' : 'danger'}>
-          <AlertDescription>{problem}</AlertDescription>
-        </Alert>
-      ) : null}
       {active ? (
-        <Button
-          variant="primary"
-          leftIcon={<IconCamera size="sm" />}
-          disabled={disabled || !hasFrame}
-          onClick={() => {
-            const b = frame.current;
-            if (!b) return;
-            frame.current = null;
-            setHasFrame(false);
-            setActive(false);
-            onCapture(b);
-          }}
-          className="self-start"
-        >
-          Capture
-        </Button>
-      ) : null}
+        <>
+          <Text size="sm" tone="muted" align="center">
+            {FRAME_HINT}
+          </Text>
+          <Button
+            variant="solid"
+            tone="accent"
+            icon={cameraIcon}
+            disabled={disabled || !hasFrame}
+            onClick={() => void capture()}
+          >
+            Capture
+          </Button>
+        </>
+      ) : (
+        <Text size="sm" tone="muted">
+          Start the camera, then hold the paper with your signature flat in good
+          light.
+        </Text>
+      )}
     </Stack>
   );
 }

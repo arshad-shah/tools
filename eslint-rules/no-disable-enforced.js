@@ -1,6 +1,6 @@
 // @ts-check
 const ENFORCED =
-  /local\/(no-pictographic-text|no-raw-ui-outside-kit|no-lucide-outside-icons|no-disable-enforced)\b/;
+  /local\/(no-pictographic-text|no-raw-ui|no-icon-libraries|no-disable-enforced)\b/;
 const DIRECTIVE =
   /^\s*(eslint-disable(?:-next-line|-line)?|eslint-enable|eslint)(?:\s+([^]*?))?\s*(?:--[^]*)?$/;
 

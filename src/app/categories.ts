@@ -1,21 +1,22 @@
+import type { IconData } from '@arshad-shah/cynosure/icons';
 import {
-  IconBinary,
-  IconCalculator,
-  IconClock,
-  IconFileText,
-  IconGlobe,
-  IconImage,
-  IconShield,
-  IconTable,
-  IconType,
-  type IconComponent,
-} from '@/shared/ui/icons';
+  binary,
+  calculator,
+  clock,
+  fileText,
+  globe,
+  image,
+  shield,
+  table,
+  type,
+} from '@arshad-shah/cynosure/icons';
 import type { ToolCategory } from './tool';
 
 export interface CategoryDef {
   id: ToolCategory;
   label: string;
-  icon: IconComponent;
+  /** A Facet icon (redesign spec, rule 2). */
+  icon: IconData;
   blurb: string;
   order: number;
   /** Hub shows a drop zone that routes files to a tool. */
@@ -29,7 +30,7 @@ export const CATEGORIES = [
   {
     id: 'pdf',
     label: 'PDF',
-    icon: IconFileText,
+    icon: fileText,
     blurb: 'Edit, sign, organise and convert PDFs in your browser.',
     order: 1,
     fileBased: true,
@@ -54,7 +55,7 @@ export const CATEGORIES = [
   {
     id: 'text',
     label: 'Text',
-    icon: IconType,
+    icon: type,
     blurb: 'Patterns, differences and logs.',
     order: 2,
     fileBased: true,
@@ -62,7 +63,7 @@ export const CATEGORIES = [
   {
     id: 'data',
     label: 'Data',
-    icon: IconTable,
+    icon: table,
     blurb: 'View and generate structured data.',
     order: 3,
     fileBased: true,
@@ -70,7 +71,7 @@ export const CATEGORIES = [
   {
     id: 'encoding',
     label: 'Encoding',
-    icon: IconBinary,
+    icon: binary,
     blurb: 'Encode, decode and inspect tokens.',
     order: 4,
     fileBased: false,
@@ -78,7 +79,7 @@ export const CATEGORIES = [
   {
     id: 'web',
     label: 'Web & dev',
-    icon: IconGlobe,
+    icon: globe,
     blurb: 'Requests, URLs and QR codes.',
     order: 5,
     fileBased: false,
@@ -86,7 +87,7 @@ export const CATEGORIES = [
   {
     id: 'media',
     label: 'Media',
-    icon: IconImage,
+    icon: image,
     blurb: 'Images, colours and animations.',
     order: 6,
     fileBased: true,
@@ -94,7 +95,7 @@ export const CATEGORIES = [
   {
     id: 'security',
     label: 'Security',
-    icon: IconShield,
+    icon: shield,
     blurb: 'Hashes, passwords and PDF protection.',
     order: 7,
     fileBased: false,
@@ -102,7 +103,7 @@ export const CATEGORIES = [
   {
     id: 'math',
     label: 'Math',
-    icon: IconCalculator,
+    icon: calculator,
     blurb: 'Calculate and convert numbers and units.',
     order: 8,
     fileBased: false,
@@ -110,7 +111,7 @@ export const CATEGORIES = [
   {
     id: 'time',
     label: 'Time',
-    icon: IconClock,
+    icon: clock,
     blurb: 'Dates and focus timers.',
     order: 9,
     fileBased: false,

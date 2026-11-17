@@ -99,7 +99,7 @@ test('Page size and Split open by their tools, as sheets on phones', async ({
   await page.setViewportSize({ width: 390, height: 800 });
   await bar.getByRole('button', { name: 'Split' }).click();
   const sheet = page.getByRole('dialog', { name: 'Split into files' });
-  await expect(sheet).toHaveAttribute('data-presentation', 'sheet');
+  await expect(sheet).toHaveAttribute('data-side', 'bottom');
   const s = (await sheet.boundingBox())!;
   expect(Math.round(s.y + s.height)).toBe(800);
   expect(Math.round(s.width)).toBe(390);

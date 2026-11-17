@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToolError, toToolError } from '@/shared/lib/errors';
 import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
@@ -7,31 +7,23 @@ import { decodeBarcodes, type DecodedBarcode } from '@/shared/lib/qr-decode';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import {
-  Alert,
-  AlertDescription,
-  Box,
   Button,
   Card,
-  CardBody,
   EmptyState,
-  ErrorState,
+  Grid,
   Image,
-  LoadingState,
-  PaneTabs,
-  PrivacyNote,
-  ShapeLayer,
-  Sized,
+  Notice,
+  ProgressBar,
   Stack,
-  usePaneTab,
-  type Shape,
-} from '@/shared/ui';
-import { IconPlay, IconQrCode } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import {
+  play,
+  qrCode as qrCodeIcon,
+  search,
+} from '@arshad-shah/cynosure/icons';
 import { ResultCard } from './components/ResultCard';
 import { ScanSources, type SourceMode } from './components/ScanSources';
 import { resultHandoffs, type ResultTarget } from './lib/handoffs';
-
-const MAX_PREVIEW = 640;
-const IDENTITY = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
 
 interface Scanned {
   image: Blob | null;
@@ -80,11 +72,9 @@ export default function QrScanner() {
   const [busy, setBusy] = useState(false);
   const decoding = useRef(false);
   const job = useRef(0);
-  const tab = usePaneTab('qr-scanner', 'scan');
 
   const scanImage = async (blob: Blob) => {
     const id = ++job.current;
-    tab.show('results');
     setBusy(true);
     setError(null);
     try {
@@ -124,7 +114,6 @@ export default function QrScanner() {
         if (results.length) {
           setCamera(false);
           setScanned({ image: null, width, height, results });
-          tab.show('results');
         }
       })
       .catch((e: unknown) =>
@@ -198,128 +187,106 @@ export default function QrScanner() {
     send('url-encoder-decoder'),
   ]);
 
-  const scale = scanned ? Math.min(1, MAX_PREVIEW / scanned.width) : 1;
-  const shapes: Shape[] =
-    scanned?.results.map((r) => ({
-      kind: 'rect',
-      box: { x: r.box.x, y: r.box.y, width: r.box.w, height: r.box.h },
-      stroke: { token: 'accent' },
-      width: 3,
-    })) ?? [];
+  // The scanned picture as an object URL for Image, revoked when replaced.
+  const preview = useMemo(
+    () => (scanned?.image ? URL.createObjectURL(scanned.image) : null),
+    [scanned],
+  );
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview);
+    },
+    [preview],
+  );
 
-  const resultsPane = busy ? (
-    <LoadingState label="Reading codes" />
+  const count = scanned?.results.length ?? 0;
+  const results = busy ? (
+    <Card as="section" title="Results">
+      <ProgressBar label="Reading codes" indeterminate />
+    </Card>
   ) : scanned ? (
-    <Stack gap="3">
-      {scanned.image && (
-        <Card>
-          <CardBody>
-            <Box className="overflow-auto">
-              <Sized
-                width={Math.round(scanned.width * scale)}
-                height={Math.round(scanned.height * scale)}
-                className="relative"
-                data-testid="scan-preview"
-              >
-                <Image
-                  src={scanned.image}
-                  alt="Scanned image"
-                  fit="contain"
-                  className="absolute inset-0 h-full w-full"
-                />
-                <ShapeLayer
-                  width={Math.round(scanned.width * scale)}
-                  height={Math.round(scanned.height * scale)}
-                  transform={{ ...IDENTITY, a: scale, d: scale }}
-                  shapes={shapes}
-                />
-              </Sized>
-            </Box>
-          </CardBody>
-        </Card>
-      )}
-      {scanned.results.length === 0 ? (
-        <EmptyState
-          title="No code found"
-          description="Try a sharper or larger image, with the whole code in view and a light margin around it."
-        />
-      ) : (
-        <>
-          <Alert status="success" size="sm">
-            <AlertDescription>
-              Found {scanned.results.length}{' '}
-              {scanned.results.length === 1 ? 'code' : 'codes'}.
-            </AlertDescription>
-          </Alert>
-          {scanned.results.map((r, i) => (
-            <ResultCard key={`${i}-${r.text}`} result={r} index={i} />
-          ))}
-        </>
-      )}
-      {mode === 'camera' && !camera && (
-        <Button
-          variant="primary"
-          leftIcon={<IconPlay size="sm" />}
-          onClick={() => {
-            setCamera(true);
-            tab.show('scan');
-          }}
-        >
-          Continue scanning
-        </Button>
-      )}
+    <Stack gap="5">
+      <Card as="section" title="Results">
+        <Stack gap="4">
+          {preview ? (
+            <Image
+              src={preview}
+              alt="Scanned image"
+              ratio={scanned.width / scanned.height}
+              fit="contain"
+              radius="sm"
+              regions={scanned.results.map((r, i) => ({
+                x: r.box.x,
+                y: r.box.y,
+                width: r.box.w,
+                height: r.box.h,
+                label: String(i + 1),
+                tone: 'accent',
+              }))}
+            />
+          ) : null}
+          {count === 0 ? (
+            <EmptyState
+              size="sm"
+              icon={search}
+              title="No code found"
+              description="Try a sharper or larger image, with the whole code in view and a light margin around it."
+            />
+          ) : (
+            <Notice tone="success">
+              {`Found ${count} ${count === 1 ? 'code' : 'codes'}.`}
+            </Notice>
+          )}
+          {mode === 'camera' && !camera ? (
+            <Button variant="solid" icon={play} onClick={() => setCamera(true)}>
+              Continue scanning
+            </Button>
+          ) : null}
+        </Stack>
+      </Card>
+      {scanned.results.map((r, i) => (
+        <ResultCard key={`${i}-${r.text}`} result={r} index={i} />
+      ))}
     </Stack>
   ) : (
-    <EmptyState
-      icon={IconQrCode}
-      title="Nothing scanned yet"
-      description="Choose, drop or paste an image (Mod+V works anywhere on the page), or use the camera."
-    />
+    <Card as="section" title="Results">
+      <EmptyState
+        icon={qrCodeIcon}
+        title="Nothing scanned yet"
+        description="Choose, drop or paste an image, or use the camera. Images and camera frames are read in this browser and never stored."
+      />
+    </Card>
   );
 
   return (
-    <Stack gap="4">
-      <PrivacyNote variant="local">
-        Images and camera frames are read in this browser and never stored.
-      </PrivacyNote>
-      {error && <ErrorState error={error} title="Could not scan" />}
-      <PaneTabs
-        id="qr-scanner"
-        label="Scanner panes"
-        value={tab.value}
-        onValueChange={tab.show}
-        panes={[
-          {
-            id: 'scan',
-            label: 'Scan',
-            content: (
-              <Card>
-                <CardBody>
-                  <ScanSources
-                    mode={mode}
-                    onModeChange={(m) => {
-                      setMode(m);
-                      if (m === 'image') setCamera(false);
-                    }}
-                    onImage={(b) => void scanImage(b)}
-                    onPaste={() => void paste()}
-                    cameraActive={camera}
-                    onCameraActiveChange={setCamera}
-                    onFrame={onFrame}
-                    onError={setError}
-                  />
-                </CardBody>
-              </Card>
-            ),
-          },
-          {
-            id: 'results',
-            label: 'Results',
-            changeKey: scanned,
-            content: resultsPane,
-          },
-        ]}
-      />
+    <Stack gap="6">
+      {error ? (
+        <Notice
+          tone="danger"
+          title="Could not scan"
+          dismissible
+          onDismiss={() => setError(null)}
+        >
+          {error.message}
+        </Notice>
+      ) : null}
+      <Grid columns={{ base: 1, lg: 2 }} gap="6" align="start">
+        <Card as="section" title="Scan">
+          <ScanSources
+            mode={mode}
+            onModeChange={(m) => {
+              setMode(m);
+              if (m === 'image') setCamera(false);
+            }}
+            onImage={(b) => void scanImage(b)}
+            onPaste={() => void paste()}
+            cameraActive={camera}
+            onCameraActiveChange={setCamera}
+            onFrame={onFrame}
+          />
+        </Card>
+        {results}
+      </Grid>
     </Stack>
   );
 }

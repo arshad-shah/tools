@@ -1,15 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  Alert,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Inline,
-  Select,
-  Stack,
-  TextInputPanel,
-} from '@/shared/ui';
+import { Card, CodeBlock, Notice, Select, Stack } from '@arshad-shah/cynosure';
 import {
   SNIPPET_LANGUAGES,
   toSnippet,
@@ -42,37 +32,34 @@ export const CodeExport: React.FC<CodeExportProps> = ({
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <Inline justify="between" align="center" gap="2" wrap>
-          <CardTitle as="h2">Code</CardTitle>
-          <Select
-            value={language}
-            onValueChange={(v) => onLanguageChange(v as SnippetLanguage)}
-            items={ITEMS}
-            aria-label="Code language"
-            size="sm"
-          />
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          {snippet?.warnings.map((w) => (
-            <Alert status="warning" size="sm" key={w}>
-              {w}
-            </Alert>
-          ))}
-          <TextInputPanel
-            value={snippet?.code ?? ''}
-            onChange={() => {}}
-            language={language === 'js' ? 'js' : 'plain'}
-            label="Code snippet"
-            readOnly
-            placeholder="Enter a valid pattern to get code"
-            maxHeight={280}
-          />
-        </Stack>
-      </CardBody>
+    <Card
+      as="section"
+      title="Code"
+      headingLevel={2}
+      actions={
+        <Select
+          label="Code language"
+          labelHidden
+          size="sm"
+          value={language}
+          onChange={(v) => onLanguageChange(v as SnippetLanguage)}
+          options={ITEMS}
+        />
+      }
+    >
+      <Stack gap="4">
+        {snippet?.warnings.map((w) => (
+          <Notice tone="warning" size="sm" key={w}>
+            {w}
+          </Notice>
+        ))}
+        <CodeBlock
+          title="Code snippet"
+          code={snippet?.code ?? 'Enter a valid pattern to get code'}
+          language={language === 'js' ? 'javascript' : undefined}
+          copyable={!!snippet}
+        />
+      </Stack>
     </Card>
   );
 };

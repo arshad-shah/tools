@@ -1,0 +1,22 @@
+/* The Rive stage (a drawing surface): the slot sizes and the canvas. Colours are Cynosure tokens. */
+.tools-rive-fill {
+  inline-size: 100%;
+  block-size: 100%;
+}
+.tools-rive-slot {
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  min-block-size: 400px;
+}
+.tools-rive-canvas {
+  display: block;
+}
+.tools-rive-canvas[hidden] {
+  display: none;
+}
+.tools-rive-canvas[data-background='white'] {
+  background-color: #fff;
+}
+.tools-rive-canvas[data-background='black'] {
+  background-color: #000;
+}

@@ -1,4 +1,4 @@
-import { IconDice1 } from '@/shared/ui/icons';
+import { dice as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Mock Data Generator',
   description:
     'Generate realistic test data from a schema: seeded, related tables, locales, and exports to CSV, JSON, SQL, TypeScript and XML',
-  icon: IconDice1,
+  icon,
   category: 'data',
   slug: 'random',
   kind: 'tool',

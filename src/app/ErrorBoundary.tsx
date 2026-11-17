@@ -1,147 +1,61 @@
-import React, { Component, ErrorInfo } from 'react';
 import {
-  IconAlertTriangle,
-  IconHome,
-  IconRefreshCw,
-  IconX,
-} from '@/shared/ui/icons';
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
   Button,
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Center,
-  Code,
+  CodeBlock,
   Container,
+  ErrorBoundary as CyErrorBoundary,
   Inline,
+  Notice,
   Stack,
-  Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { home, retry as retryIcon } from '@arshad-shah/cynosure/icons';
+import type { ReactNode } from 'react';
 
-interface Props {
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
-}
-
-interface State {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: ErrorInfo | null;
-  isDismissed: boolean;
-}
-
-class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-      isDismissed: false,
-    };
-  }
-
-  static getDerivedStateFromError(error: Error): Partial<State> {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    this.setState({ errorInfo });
-    console.error('Error caught by ErrorBoundary:', error, errorInfo);
-  }
-
-  handleReload = (): void => {
-    window.location.reload();
-  };
-
-  handleDismiss = (): void => {
-    this.setState({ isDismissed: true });
-  };
-
-  handleGoHome = (): void => {
-    window.location.href = '/';
-  };
-
-  render() {
-    if (this.state.hasError && !this.state.isDismissed) {
-      const { error, errorInfo } = this.state;
-
-      if (this.props.fallback) {
-        return this.props.fallback;
+/**
+ * The app's last line of defence: when the shell itself fails, a danger
+ * Notice with the error, a reload and a way home (tool pages have their own
+ * boundary in ToolPage). The component stack shows in development only.
+ */
+export default function ErrorBoundary({ children }: { children: ReactNode }) {
+  return (
+    <CyErrorBoundary
+      label="tools"
+      onError={(error, info) =>
+        console.error('Error caught by ErrorBoundary:', error, info)
       }
-
-      return (
-        <Center minScreen className="p-6">
-          <Container size="md">
-            <Card>
-              <CardHeader>
-                <Alert status="danger" icon={<IconAlertTriangle size="md" />}>
-                  <AlertTitle>Application error detected</AlertTitle>
-                  <AlertDescription>
-                    Something went wrong in the application. Our engineers have
-                    been notified.
-                  </AlertDescription>
-                </Alert>
-              </CardHeader>
-              <CardBody>
-                <Stack gap="4">
-                  <Stack gap="2">
-                    <Text size="sm" weight="semibold">
-                      Error details
-                    </Text>
-                    <Code block>
-                      {error?.name}: {error?.message}
-                    </Code>
-                  </Stack>
-                  {import.meta.env.DEV && errorInfo && (
-                    <Stack gap="2">
-                      <Text size="sm" weight="semibold">
-                        Stack trace (development only)
-                      </Text>
-                      <Code block>
-                        {errorInfo.componentStack || 'No stack trace available'}
-                      </Code>
-                    </Stack>
-                  )}
-                </Stack>
-              </CardBody>
-              <CardFooter>
-                <Inline gap="2" wrap justify="end">
+      fallback={(error) => (
+        <Container size="md" paddingBlock="10">
+          <Stack gap="6">
+            <Notice
+              tone="danger"
+              title="Something went wrong"
+              action={
+                <Inline gap="2" wrap>
                   <Button
-                    variant="ghost"
-                    leftIcon={<IconX size="sm" />}
-                    onClick={this.handleDismiss}
+                    size="sm"
+                    variant="soft"
+                    tone="danger"
+                    icon={retryIcon}
+                    onClick={() => window.location.reload()}
                   >
-                    Dismiss
+                    Reload
                   </Button>
-                  <Button
-                    variant="secondary"
-                    leftIcon={<IconHome size="sm" />}
-                    onClick={this.handleGoHome}
-                  >
-                    Go to dashboard
-                  </Button>
-                  <Button
-                    variant="primary"
-                    leftIcon={<IconRefreshCw size="sm" />}
-                    onClick={this.handleReload}
-                  >
-                    Reload application
+                  <Button size="sm" variant="ghost" href="/" icon={home}>
+                    Go to Home
                   </Button>
                 </Inline>
-              </CardFooter>
-            </Card>
-          </Container>
-        </Center>
-      );
-    }
-
-    return this.props.children;
-  }
+              }
+            >
+              {error.message || 'The page could not be shown.'} Your files have
+              not left this device.
+            </Notice>
+            {import.meta.env.DEV && error.stack ? (
+              <CodeBlock code={error.stack} title="Stack trace" wrap />
+            ) : null}
+          </Stack>
+        </Container>
+      )}
+    >
+      {children}
+    </CyErrorBoundary>
+  );
 }
-
-export default ErrorBoundary;

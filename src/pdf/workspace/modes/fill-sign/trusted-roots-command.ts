@@ -1,7 +1,7 @@
 import type { Command } from '@/shared/lib/commands';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
-import { IconCertificate } from '@/shared/ui/icons';
+import { certificate } from '@arshad-shah/cynosure/icons';
 import { clearTrustedRoots } from '@/pdf/sign/pades/trust';
 import { trustedRootsChanged } from '../../signatures';
 import { getWorkspaceDb } from '../../workspace-db';
@@ -20,7 +20,7 @@ export function clearTrustedRootsCommand(): Command {
     label: CLEAR_TRUSTED_ROOTS,
     group: 'Settings',
     keywords: ['certificate', 'signature', 'trust'],
-    icon: IconCertificate,
+    icon: certificate,
     async run() {
       try {
         const db = await getWorkspaceDb();

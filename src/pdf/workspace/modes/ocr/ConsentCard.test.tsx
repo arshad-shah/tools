@@ -91,9 +91,8 @@ describe('ConsentCard', () => {
         onDismiss={onDismiss}
       />,
     );
-    fireEvent.change(screen.getByLabelText('Language'), {
-      target: { value: 'deu' },
-    });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Language' }));
+    fireEvent.click(screen.getByRole('option', { name: 'German' }));
     expect(onLangsChange).toHaveBeenLastCalledWith(['deu']);
     fireEvent.click(screen.getByRole('button', { name: 'Add a language' }));
     expect(onLangsChange).toHaveBeenLastCalledWith(['eng', 'fra']);

@@ -21,6 +21,8 @@ import { encodePng } from '../../../../../test/fixtures/images';
 import { registerCoreOperations } from '@/pdf/doc/ops';
 import { shellHarness, stubLayoutApis } from '../../test-shell';
 import { requestConvert } from './ui-store';
+import { Toaster } from '@arshad-shah/cynosure';
+import { NotifyBridge } from '@/shared/lib/notify-bridge';
 
 beforeAll(() => registerCoreOperations());
 beforeEach(() => stubLayoutApis());
@@ -32,7 +34,15 @@ async function open() {
     Uint8Array.of(1, 2, 3),
   );
   (h.session.services.edit as { call: unknown }).call = edit;
-  render(cloneElement(h.ui, { mode: 'convert' }));
+  // The app's WorkspaceFrame hosts the toasts (errors show there).
+  render(
+    <>
+      {cloneElement(h.ui, { mode: 'convert' })}
+      <Toaster position="bottom-end">
+        <NotifyBridge />
+      </Toaster>
+    </>,
+  );
   const toolbar = await screen.findByRole('toolbar', { name: 'Convert tools' });
   return { ...h, toolbar, edit };
 }

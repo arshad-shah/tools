@@ -1,4 +1,4 @@
-import { IconSplit } from '@/shared/ui/icons';
+import { route as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'URL Inspector & Builder',
   description:
     'Inspect, edit and rebuild URLs: parts, query params, IDN, domain and tracking cleanup',
-  icon: IconSplit,
+  icon,
   category: 'web',
   slug: 'url-parser',
   kind: 'tool',

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setEditorValue } from '@/shared/editor/testing';
 import { QueryTab } from './QueryTab';
 
 beforeEach(() => {
@@ -23,17 +24,17 @@ describe('QueryTab', () => {
     const onSelect = vi.fn();
     render(<QueryTab value={value} xml={null} onSelect={onSelect} />);
     const input = screen.getByRole('textbox', { name: 'JSONPath query' });
-    fireEvent.change(input, { target: { value: '$.book[*].a' } });
+    setEditorValue(input, '$.book[*].a');
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(await screen.findByText('4 results')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /\$\.book\[2\]\.a/ }));
+    fireEvent.click(screen.getByRole('option', { name: /\$\.book\[2\]\.a/ }));
     expect(onSelect).toHaveBeenCalledWith('$.book[2].a');
   });
 
   it('shows a positioned error inline', async () => {
     render(<QueryTab value={value} xml={null} onSelect={vi.fn()} />);
     const input = screen.getByRole('textbox', { name: 'JSONPath query' });
-    fireEvent.change(input, { target: { value: '$.book[' } });
+    setEditorValue(input, '$.book[');
     fireEvent.keyDown(input, { key: 'Enter' });
     expect((await screen.findByRole('alert')).textContent).toContain(
       "Expected ']' at column 8",

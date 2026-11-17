@@ -11,7 +11,7 @@ const rule = {
     },
     messages: {
       banned:
-        'Banned glyph {{cp}}. Use an icon from @/shared/ui/icons, Kbd, MetaList, StatusDot or plain words; recognise third-party glyphs with numeric code points.',
+        'Banned glyph {{cp}}. Use a Facet icon (Icon), Kbd, Badge or plain words; recognise third-party glyphs with numeric code points.',
     },
     schema: [],
   },

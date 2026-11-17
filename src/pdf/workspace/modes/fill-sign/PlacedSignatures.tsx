@@ -1,13 +1,10 @@
-import {
-  FontPreview,
-  FontSample,
-  Image,
-  PageBox,
-  Text,
-  VectorSample,
-  type ObjectChange,
-  type OverlayTransform,
-} from '@/shared/ui';
+import { Text } from '@arshad-shah/cynosure';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { BytesImage } from '@/shared/surfaces/pdf/BytesImage';
+import { InkSample, TypedSample } from '@/shared/surfaces/pdf/InkSample';
+import { boxRect } from '@/shared/surfaces/pdf/geometry';
+import { Place, Placeholder } from '@/shared/surfaces/pdf/layers';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import type { SignPlaceParams } from '@/pdf/doc/ops/fill-sign';
 import type { PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
@@ -25,55 +22,35 @@ export function SignatureLook({
 }) {
   if (preview?.kind === 'image')
     return (
-      <Image
-        src={preview.bytes}
-        mime={preview.mime}
-        decorative
-        fit="contain"
-        className="size-full"
-      />
+      <BytesImage bytes={preview.bytes} mime={preview.mime} fit="contain" />
     );
   if (preview?.kind === 'ink')
     return (
-      <VectorSample
-        decorative
+      <InkSample
         d={preview.vector.d}
         width={preview.vector.width}
         height={preview.vector.height}
         color={preview.color}
         evenOdd={preview.evenOdd}
-        className="size-full"
-      />
-    );
-  if (preview?.kind === 'text' && preview.slant)
-    return (
-      <FontPreview
-        family={preview.family}
-        text={preview.text}
-        slant={preview.slant}
-        color={preview.color}
-        label={preview.text}
-        className="size-full text-2xl"
       />
     );
   if (preview?.kind === 'text')
     return (
-      <FontSample
+      <TypedSample
         family={preview.family}
+        text={preview.text}
+        slant={preview.slant ?? 0}
         color={preview.color}
-        className="flex size-full items-center justify-center overflow-hidden text-2xl whitespace-nowrap"
-      >
-        {preview.text}
-      </FontSample>
+        size={24}
+        label={preview.text}
+      />
     );
   return (
-    <Text
-      size="xs"
-      tone="muted"
-      className="flex size-full items-center justify-center border border-dashed border-accent-fg"
-    >
-      {role === 'initials' ? 'Initials' : 'Signature'}
-    </Text>
+    <Placeholder>
+      <Text size="xs" tone="muted">
+        {role === 'initials' ? 'Initials' : 'Signature'}
+      </Text>
+    </Placeholder>
   );
 }
 
@@ -100,17 +77,17 @@ export function PlacedSignatures({
         const live = preview?.get(o.opId);
         const rotate = live ? live.rotate : frameRotation(p.rotate);
         return (
-          <PageBox
+          <Place
             key={o.opId}
-            transform={transform}
-            box={live?.box ?? p.rect}
+            {...boxRect(transform, live?.box ?? p.rect)}
             rotate={rotate || undefined}
+            passive
           >
             <SignatureLook
               preview={previewOf(p.content, previews)}
               role={p.role}
             />
-          </PageBox>
+          </Place>
         );
       })}
     </>

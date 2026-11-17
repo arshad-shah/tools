@@ -1,31 +1,30 @@
-import React from 'react';
-import { Fit } from '@/shared/ui/adapters/rive-runtime';
+import { Grid, IconButton, Select, Stack, Text } from '@arshad-shah/cynosure';
 import {
-  IconArrowDown,
-  IconArrowDownLeft,
-  IconArrowDownRight,
-  IconArrowLeft,
-  IconArrowRight,
-  IconArrowUp,
-  IconArrowUpLeft,
-  IconArrowUpRight,
-  IconCircle,
-} from '@/shared/ui/icons';
-
-import { Grid, IconButton, Label, Select, Stack } from '@/shared/ui';
+  arrowDown,
+  arrowDownLeft,
+  arrowDownRight,
+  arrowLeft,
+  arrowRight,
+  arrowUp,
+  arrowUpLeft,
+  arrowUpRight,
+  circleDot,
+  type IconData,
+} from '@arshad-shah/cynosure/icons';
+import { Fit } from '@/shared/lib/rive-runtime';
 import { alignValues, fitValues } from '../lib/layout';
 import type { AlignFitIndex } from '../types';
 
-const alignmentIcon: Record<string, React.ReactNode> = {
-  TopLeft: <IconArrowUpLeft size="sm" />,
-  TopCenter: <IconArrowUp size="sm" />,
-  TopRight: <IconArrowUpRight size="sm" />,
-  CenterLeft: <IconArrowLeft size="sm" />,
-  Center: <IconCircle size="sm" />,
-  CenterRight: <IconArrowRight size="sm" />,
-  BottomLeft: <IconArrowDownLeft size="sm" />,
-  BottomCenter: <IconArrowDown size="sm" />,
-  BottomRight: <IconArrowDownRight size="sm" />,
+const alignmentIcon: Record<string, IconData> = {
+  TopLeft: arrowUpLeft,
+  TopCenter: arrowUp,
+  TopRight: arrowUpRight,
+  CenterLeft: arrowLeft,
+  Center: circleDot,
+  CenterRight: arrowRight,
+  BottomLeft: arrowDownLeft,
+  BottomCenter: arrowDown,
+  BottomRight: arrowDownRight,
 };
 
 /** Fit picker and the 3x3 alignment grid. */
@@ -38,37 +37,44 @@ export function LayoutControls({
 }) {
   return (
     <Stack gap="4">
+      <Select
+        label="Fit"
+        value={fitValues[alignFitIndex.fit]}
+        onChange={(v) =>
+          setAlignFitIndex({
+            ...alignFitIndex,
+            fit: fitValues.indexOf(v as keyof typeof Fit),
+          })
+        }
+        options={fitValues.map((f) => ({ value: f, label: f }))}
+      />
       <Stack gap="2">
-        <Label>Fit</Label>
-        <Select
-          value={fitValues[alignFitIndex.fit]}
-          onValueChange={(v) =>
-            setAlignFitIndex({
-              ...alignFitIndex,
-              fit: fitValues.indexOf(v as keyof typeof Fit),
-            })
-          }
-          items={fitValues.map((f) => ({ value: f, label: f }))}
-          aria-label="Fit"
-        />
-      </Stack>
-      <Stack gap="2">
-        <Label>Alignment</Label>
-        <Grid cols={3} gap="2">
-          {alignValues.map((value, idx) => (
-            <IconButton
-              key={value}
-              // A selection, never primary: pressed state on a quiet button.
-              variant={alignFitIndex.alignment === idx ? 'secondary' : 'ghost'}
-              aria-pressed={alignFitIndex.alignment === idx}
-              size="md"
-              label={value}
-              icon={alignmentIcon[value]}
-              onClick={() =>
-                setAlignFitIndex({ ...alignFitIndex, alignment: idx })
-              }
-            />
-          ))}
+        <Text size="sm" weight="medium">
+          Alignment
+        </Text>
+        <Grid
+          columns="repeat(3, max-content)"
+          gap="1"
+          role="group"
+          aria-label="Alignment"
+        >
+          {alignValues.map((value, idx) => {
+            const on = alignFitIndex.alignment === idx;
+            return (
+              <IconButton
+                key={value}
+                // A selection, never primary: pressed state on a quiet button.
+                variant={on ? 'soft' : 'ghost'}
+                tone={on ? 'accent' : 'neutral'}
+                aria-pressed={on}
+                label={value}
+                icon={alignmentIcon[value]}
+                onClick={() =>
+                  setAlignFitIndex({ ...alignFitIndex, alignment: idx })
+                }
+              />
+            );
+          })}
         </Grid>
       </Stack>
     </Stack>

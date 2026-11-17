@@ -1,23 +1,21 @@
-import { formatColor } from '@/shared/lib/colour';
-import { notify } from '@/shared/lib/notify';
-import { toToolError } from '@/shared/lib/errors';
-import { toDataUri } from '@/shared/lib/encoding';
-import { readBytes } from '@/shared/lib/files';
 import {
   Button,
-  ColorPicker,
-  FilePicker,
+  ColorField,
+  FileDrop,
   Grid,
   Image,
   Inline,
-  Label,
   Select,
   Slider,
   Stack,
+  Switch,
   Text,
-  SwitchField,
-} from '@/shared/ui';
-import { IconImage, IconTrash2 } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import { trash } from '@arshad-shah/cynosure/icons';
+import { toDataUri } from '@/shared/lib/encoding';
+import { toToolError } from '@/shared/lib/errors';
+import { readBytes } from '@/shared/lib/files';
+import { notify } from '@/shared/lib/notify';
 import type { EccLevel } from '../lib/render';
 import type { QrSettings } from '../settings';
 
@@ -58,102 +56,79 @@ export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
       notify.error(toToolError(e, 'Could not read the logo'));
     }
   };
+  const hex = (v: string) => (/^#[0-9a-f]{6}$/i.test(v) ? v : null);
   return (
-    <Stack gap="4">
-      <Grid max={2} gap="4">
-        <ColorPicker
+    <Stack gap="5">
+      <Grid minItemWidth="12rem" gap="4">
+        <ColorField
           label="Code colour"
+          format="hex"
           value={s.fg}
-          onChange={(_, c) => update({ fg: formatColor(c, 'hex') })}
+          onChange={(v) => hex(v) && update({ fg: v })}
         />
-        <ColorPicker
+        <ColorField
           label="Background colour"
+          format="hex"
           value={s.bg}
-          onChange={(_, c) => update({ bg: formatColor(c, 'hex') })}
+          onChange={(v) => hex(v) && update({ bg: v })}
+        />
+        <Select
+          label="Error correction"
+          value={s.ecc}
+          onChange={(v) => update({ ecc: v as EccLevel })}
+          options={ECC_ITEMS}
         />
       </Grid>
-      <Grid max={2} gap="3">
-        <Stack gap="1">
-          <Label htmlFor="qr-ecc">Error correction</Label>
-          <Select
-            id="qr-ecc"
-            value={s.ecc}
-            onValueChange={(v) => update({ ecc: v as EccLevel })}
-            items={ECC_ITEMS}
-          />
-        </Stack>
-        <Stack gap="1">
-          <Label htmlFor="qr-size">Preview size ({s.size} px)</Label>
-          <Slider
-            id="qr-size"
-            value={s.size}
-            min={128}
-            max={512}
-            step={16}
-            onValueChange={(size) => update({ size })}
-          />
-        </Stack>
-        <SwitchField
-          label="Quiet zone (4 modules)"
-          id="qr-margin"
-          checked={s.margin}
-          onCheckedChange={(margin) => update({ margin })}
-        />
-      </Grid>
-      <Stack gap="2">
+      <Slider
+        label="Preview size (px)"
+        showValue
+        value={s.size}
+        min={128}
+        max={512}
+        step={16}
+        onChange={(size) => update({ size: size as number })}
+      />
+      <Switch
+        label="Quiet zone (4 modules)"
+        checked={s.margin}
+        onChange={(margin) => update({ margin })}
+      />
+      <Stack gap="3">
         <Text weight="medium">Logo (stays on this device)</Text>
-        <Inline gap="2" align="center">
-          {logo && (
-            <Image src={logo} alt="Logo" fit="contain" className="h-10 w-10" />
-          )}
-          <FilePicker
-            accept={LOGO_TYPES.join(',')}
-            onFiles={(f) => f[0] && void pickLogo(f[0])}
-          >
-            {(open) => (
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconImage size="sm" />}
-                onClick={open}
-              >
-                {logo ? 'Change logo' : 'Add logo'}
-              </Button>
-            )}
-          </FilePicker>
-          {logo && (
+        {logo ? (
+          <Inline gap="3" align="center" wrap>
+            <Image src={logo} alt="Logo" width={40} height={40} />
             <Button
               size="sm"
               variant="ghost"
-              leftIcon={<IconTrash2 size="sm" />}
+              tone="neutral"
+              icon={trash}
               onClick={() => onLogoChange('')}
             >
               Remove logo
             </Button>
-          )}
-        </Inline>
-        {logo && (
-          <Grid max={2} gap="3">
-            <Stack gap="1">
-              <Label htmlFor="qr-logo-size">
-                Logo area ({Math.round(s.logoFraction * 100)}% of the code)
-              </Label>
-              <Slider
-                id="qr-logo-size"
-                value={Math.round(s.logoFraction * 100)}
-                min={2}
-                max={30}
-                onValueChange={(v) => update({ logoFraction: v / 100 })}
-              />
-            </Stack>
-            <SwitchField
-              label="Clear the modules behind the logo"
-              id="qr-excavate"
-              checked={s.excavate}
-              onCheckedChange={(excavate) => update({ excavate })}
-            />
-          </Grid>
+          </Inline>
+        ) : (
+          <FileDrop
+            size="sm"
+            accept={LOGO_TYPES.join(',')}
+            hint="PNG, JPEG, WebP, GIF or SVG, up to 2 MB."
+            labels={{ chooseOne: 'Add logo' }}
+            onFiles={(f) => f[0] && void pickLogo(f[0])}
+          />
         )}
+        {logo ? (
+          <Stack gap="4">
+            <Slider
+              label="Logo width (% of the code)"
+              showValue
+              value={Math.round(Math.min(0.3, s.logoFraction) * 100)}
+              min={10}
+              max={30}
+              onChange={(v) => update({ logoFraction: (v as number) / 100 })}
+            />
+          </Stack>
+        ) : null}
       </Stack>
     </Stack>
   );

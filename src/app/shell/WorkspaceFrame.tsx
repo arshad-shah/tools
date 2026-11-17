@@ -1,6 +1,8 @@
+import { Toaster } from '@arshad-shah/cynosure';
 import { useCallback, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { CommandPalette, Toaster, useCommandPaletteHotkey } from '@/shared/ui';
+import { AppPalette } from './AppPalette';
+import { NotifyBridge } from '@/shared/lib/notify-bridge';
 import { HelpContext } from './help-context';
 import { useHelpDialogs } from './HelpDialogs';
 import { PaletteContext } from './palette';
@@ -14,16 +16,17 @@ import { useAppCommands } from './use-app-commands';
 export default function WorkspaceFrame() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
-  useCommandPaletteHotkey(setPaletteOpen);
   useAppCommands();
   const { dialogs: helpDialogs, ...help } = useHelpDialogs();
   return (
     <PaletteContext.Provider value={openPalette}>
       <HelpContext.Provider value={help}>
-        <Outlet />
-        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-        {helpDialogs}
-        <Toaster />
+        <Toaster position={'bottom-end'}>
+          <NotifyBridge />
+          <Outlet />
+          <AppPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+          {helpDialogs}
+        </Toaster>
       </HelpContext.Provider>
     </PaletteContext.Provider>
   );

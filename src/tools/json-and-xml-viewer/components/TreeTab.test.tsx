@@ -89,9 +89,15 @@ describe('TreeTab', () => {
 
   it('Expand to depth 2 expands exactly the first two levels', () => {
     render(<Harness />);
-    fireEvent.change(screen.getByLabelText('Expand to depth'), {
-      target: { value: '2' },
-    });
+    const depth = (n: string) => {
+      fireEvent.click(
+        screen.getByRole('combobox', { name: 'Expand to depth' }),
+      );
+      fireEvent.click(screen.getByRole('option', { name: n }));
+    };
+    depth('1');
+    expect([...seen.expanded]).toEqual(['$']);
+    depth('2');
     expect([...seen.expanded].sort()).toEqual(
       [...expandToDepth(doc, 2)].sort(),
     );

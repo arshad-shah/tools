@@ -1,19 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, AlertDescription, Card, CardBody, Stack } from '@/shared/ui';
-import type { ToolProps } from '@/app/tool';
+import { Notice, Stack } from '@arshad-shah/cynosure';
+import { useEffect, useState } from 'react';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
+import { qpdf, type PdfInspection } from '@/pdf/qpdf';
+import { ChosenFile } from '@/pdf/ui/ChosenFile';
+import { PasswordForm } from '@/pdf/ui/PasswordForm';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { JobProgress, ResultCard, type ResultFile } from '@/pdf/ui/ResultCard';
 import { deriveFilename } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
-import { useJob } from '@/shared/state/useJob';
-import { qpdf, type PdfInspection } from '@/pdf/qpdf';
-import {
-  JobPanel,
-  PasswordPrompt,
-  PdfFileHeader,
-  ResultFiles,
-  type PdfInputFile,
-  type ResultFile,
-} from '@/pdf/components';
 import { useHandoff } from '@/shared/lib/handoff';
+import { useJob } from '@/shared/state/useJob';
 
 interface Inspected {
   file: PdfInputFile;
@@ -21,7 +17,11 @@ interface Inspected {
   error: ToolError | null;
 }
 
-const UnlockTool: React.FC<ToolProps> = () => {
+/**
+ * Unlock PDF (redesign spec, file tool pattern): drop the encrypted PDF,
+ * enter its password next to it, download the unlocked copy.
+ */
+export default function UnlockTool() {
   // Files dropped on a hub land here once (spec §5.3).
   const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
@@ -72,58 +72,61 @@ const UnlockTool: React.FC<ToolProps> = () => {
   };
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="5">
-          {/* The encrypted file itself is what this tool works on. */}
-          <PdfFileHeader
-            initialFiles={handed}
-            file={file}
-            onFile={pick}
-            onClear={clearFile}
-            loading={!!file && !current}
-            error={current?.error ?? null}
-            unlock={false}
-          />
-          {file && info && !info.encrypted && (
-            <Alert status="info">
-              <AlertDescription>
-                This PDF isn&apos;t password-protected. There is nothing to
-                unlock.
-              </AlertDescription>
-            </Alert>
-          )}
-          {file && info?.encrypted && !job.result && (
-            // Keyed by file so a new file starts with an empty field.
-            <PasswordPrompt
-              key={file.id}
-              fileName={file.name}
-              submitLabel="Unlock PDF"
-              busy={job.status === 'running'}
-              description={
-                info.needsPassword
-                  ? 'Enter the password to open this file.'
-                  : 'This file opens without a password but has permission restrictions. Enter its permissions password to remove them.'
-              }
-              error={
-                wrongPassword
-                  ? 'That password is not correct. Try again.'
-                  : null
-              }
-              onSubmit={(pw) => void job.run(file, pw)}
-            />
-          )}
-          {!wrongPassword && (
-            <JobPanel job={job} onCancel={job.cancel} runningLabel="Unlocking">
-              {job.result && (
-                <ResultFiles openInWorkspace files={[job.result]} />
-              )}
-            </JobPanel>
-          )}
-        </Stack>
-      </CardBody>
-    </Card>
+    <Stack gap="6">
+      {file ? (
+        <ChosenFile
+          name={file.name}
+          size={file.size}
+          detail={
+            !current
+              ? 'Checking'
+              : info?.encrypted
+                ? 'Password-protected'
+                : undefined
+          }
+          disabled={job.status === 'running'}
+          onClear={clearFile}
+        />
+      ) : (
+        // The encrypted file itself is what this tool works on.
+        <PdfIntake
+          initialFiles={handed}
+          unlock={false}
+          onFiles={(files) => pick(files[0])}
+        />
+      )}
+      {current?.error ? (
+        <Notice tone="danger">{current.error.message}</Notice>
+      ) : null}
+      {file && info && !info.encrypted ? (
+        <Notice tone="info" title="Nothing to unlock">
+          This PDF is not password-protected.
+        </Notice>
+      ) : null}
+      {file && info?.encrypted && job.status !== 'done' ? (
+        // Keyed by file so a new file starts with an empty field.
+        <PasswordForm
+          key={file.id}
+          fileName={file.name}
+          submitLabel="Unlock PDF"
+          busy={job.status === 'running'}
+          description={
+            info.needsPassword
+              ? 'Enter the password to open this file.'
+              : 'This file opens without a password but has permission restrictions. Enter its permissions password to remove them.'
+          }
+          error={
+            wrongPassword ? 'That password is not correct. Try again.' : null
+          }
+          onSubmit={(pw) => void job.run(file, pw)}
+        />
+      ) : null}
+      {wrongPassword ? null : (
+        <JobProgress job={job} label="Unlocking" onCancel={job.cancel} />
+      )}
+      {job.status === 'done' && job.result ? (
+        <ResultCard openInWorkspace files={[job.result]} />
+      ) : null}
+    </Stack>
   );
-};
-
-export default UnlockTool;
+}

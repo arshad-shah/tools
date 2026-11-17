@@ -59,7 +59,7 @@ test('existing Redux Persist data survives the migration', async ({ page }) => {
   await page.goto(pathOf('pomodoro'));
   await expect(timerHeading(page)).toHaveText('30:00');
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-  await expect(page.getByText('Write report')).toBeVisible();
+  await expect(page.getByText('Write report').first()).toBeVisible();
   await expect(page.getByText('1/2 pomodoros')).toBeVisible();
   const keys = await page.evaluate(
     ([kitKey, legacyKey]) => ({
@@ -71,10 +71,14 @@ test('existing Redux Persist data survives the migration', async ({ page }) => {
   expect(keys.legacy).toBeNull();
   expect(keys.kit).toContain('Write report');
 
-  await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('tab', { name: 'Settings' }).click();
-  await expect(page.getByText('30 min', { exact: true })).toBeVisible();
-  await expect(page.getByRole('switch', { name: /Sound/ })).not.toBeChecked();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Timer settings' });
+  await expect(
+    settings.getByRole('slider', { name: 'Work duration' }),
+  ).toHaveAttribute('aria-valuenow', '30');
+  await expect(
+    settings.getByRole('switch', { name: /Sound/ }),
+  ).not.toBeChecked();
 });
 
 test('start counts down and pause stops; state persists across reload', async ({
@@ -222,7 +226,9 @@ test('a long break follows the 4th completed work session', async ({
     await finishSession(25, 'Short Break');
     await finishSession(5, 'Focus Time');
   }
-  await expect(page.getByText('Long break after this session')).toBeVisible();
+  await expect(
+    page.getByRole('progressbar', { name: 'Long break after this session' }),
+  ).toBeVisible();
   await finishSession(25, 'Long Break');
   await expect(timerHeading(page)).toHaveText('15:00');
   const saved = await page.evaluate(
@@ -273,8 +279,8 @@ test('the history tab charts finished sessions and exports CSV', async ({
     );
   }, KIT_KEY);
   await page.goto(pathOf('pomodoro'));
-  await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('tab', { name: 'History' }).click();
+  await page.getByRole('button', { name: 'Progress' }).click();
+  await page.getByRole('radio', { name: 'History' }).click();
   await expect(
     page.getByRole('img', { name: 'Work sessions, last 7 days' }),
   ).toBeVisible();
@@ -284,4 +290,17 @@ test('the history tab charts finished sessions and exports CSV', async ({
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export CSV' }).click();
   expect((await download).suggestedFilename()).toBe('pomodoro-history.csv');
+});
+
+test('tasks sit beside the timer: add one and focus on it', async ({
+  page,
+}) => {
+  await page.goto(pathOf('pomodoro'));
+  const tasks = page.getByRole('region', { name: 'Tasks for today' });
+  await tasks.getByRole('textbox', { name: 'New task' }).fill('Draft the plan');
+  await tasks.getByRole('textbox', { name: 'New task' }).press('Enter');
+  await expect(page.getByText('Start working on:')).toBeVisible();
+  await tasks.getByRole('button', { name: /^Draft the plan/ }).click();
+  await expect(page.getByText('Working on')).toBeVisible();
+  await expect(page.getByText('0/1 pomodoros')).toBeVisible();
 });

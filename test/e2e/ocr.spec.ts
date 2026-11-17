@@ -27,7 +27,7 @@ function recordRequests(page: Page): string[] {
   return urls;
 }
 
-const ocrTab = (page: Page) => page.getByRole('tab', { name: /OCR/ });
+const ocrTab = (page: Page) => page.getByRole('radio', { name: /OCR/ });
 
 async function openForOcr(page: Page) {
   await openInWorkspace(page, SCAN, /OCR/);
@@ -101,7 +101,7 @@ test('Annotate offers Run OCR on a page without text', async ({ page }) => {
     page.getByText('No text here. Run OCR to make it selectable.'),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Run OCR' }).click();
-  await expect(ocrTab(page)).toHaveAttribute('aria-selected', 'true');
+  await expect(ocrTab(page)).toBeChecked();
 });
 
 test('the Redact report offers Run OCR for a page turned into an image', async ({
@@ -128,5 +128,5 @@ test('the Redact report offers Run OCR for a page turned into an image', async (
     timeout: 90_000,
   });
   await report.getByRole('button', { name: 'Run OCR' }).click();
-  await expect(ocrTab(page)).toHaveAttribute('aria-selected', 'true');
+  await expect(ocrTab(page)).toBeChecked();
 });

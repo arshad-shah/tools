@@ -1,12 +1,11 @@
+import { BitmapSurface } from '@/shared/surfaces/pdf/BitmapSurface';
+import { HitArea } from '@/shared/surfaces/pdf/HitArea';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import {
-  BitmapCanvas,
-  HitArea,
   PageBox,
-  ShapeLayer,
-  type ObjectChange,
   type OverlayTransform,
-  type Shape,
-} from '@/shared/ui';
+} from '@/shared/surfaces/page/overlay-layer';
+import { ShapeLayer, type Shape } from '@/shared/surfaces/page/shape-layer';
 import type { ExistingAnnotation } from '@/pdf/render/annotations';
 import type { Box, PageRef } from '@/pdf/doc/types';
 import { boxToScreen, type Viewport } from '@/pdf/doc/geometry';
@@ -45,11 +44,11 @@ function Patch({
   if (!bitmap) return null;
   return (
     <PageBox transform={transform} box={box}>
-      <BitmapCanvas
+      <BitmapSurface
         bitmap={bitmap}
         width={r.width}
         height={r.height}
-        label=""
+        label="Cleaned page under the annotation"
       />
     </PageBox>
   );

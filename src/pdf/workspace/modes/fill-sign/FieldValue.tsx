@@ -1,5 +1,9 @@
-import { IconCheck, IconX } from '@/shared/ui/icons';
-import { PageBox, PageText, type OverlayTransform } from '@/shared/ui';
+import { check, close } from '@arshad-shah/cynosure/icons';
+import { Icon } from '@arshad-shah/cynosure';
+import { PageText } from '@/shared/surfaces/page/page-text';
+import { type OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { boxRect } from '@/shared/surfaces/pdf/geometry';
+import { Paper, Place } from '@/shared/surfaces/pdf/layers';
 import type { ViewField } from './fields';
 import { effectiveStyle, overlayLayout, type FieldStyle } from './text-style';
 
@@ -29,25 +33,22 @@ export function FieldValue({
   if (field.drawnByPage && value === field.value) return null;
   const cover =
     field.coversPage || (field.drawnByPage && value !== field.value) ? (
-      <PageBox
-        transform={transform}
-        box={field.rect}
-        className="pointer-events-none border border-fg/30 bg-white"
-      />
+      <Paper transform={transform} box={field.rect} />
     ) : null;
   if (!value) return cover;
   if (field.type === 'tick' || field.type === 'radio') {
-    const Mark = field.mark === 'cross' ? IconX : IconCheck;
+    const r = boxRect(transform, field.rect);
     return (
       <>
         {cover}
-        <PageBox
-          transform={transform}
-          box={field.rect}
-          className="pointer-events-none flex items-center justify-center text-fg"
-        >
-          <Mark size="sm" strokeWidth={2} />
-        </PageBox>
+        <Place {...r} passive centre>
+          {/* Ink on paper: dark in both themes, as the export draws it. */}
+          <Icon
+            icon={field.mark === 'cross' ? close : check}
+            size="sm"
+            color="#111"
+          />
+        </Place>
       </>
     );
   }

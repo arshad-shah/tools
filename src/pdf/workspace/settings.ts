@@ -1,5 +1,5 @@
 import { createToolStore } from '@/shared/state/createToolStore';
-import type { ZoomSetting } from '@/shared/ui';
+import type { ZoomSetting } from '@arshad-shah/cynosure';
 import type { ModeId } from '@/pdf/doc/types';
 import { DEFAULT_ZOOM, migrateZoom } from './zoom';
 

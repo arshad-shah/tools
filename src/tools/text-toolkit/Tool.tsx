@@ -1,16 +1,18 @@
+import { Card, IconButton, Stack, TextArea } from '@arshad-shah/cynosure';
+import {
+  download,
+  redo as redoIcon,
+  undo as undoIcon,
+} from '@arshad-shah/cynosure/icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ToolProps } from '@/app/tool';
+import { TextSourceActions } from '@/app/ui/text-source';
+import { useTextFile } from '@/app/ui/use-text-file';
+import { SendToMenu, ToolActions, TransformLayout } from '@/app/ui/transform';
+import { saveBlob } from '@/shared/lib/download';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
-import {
-  Grid,
-  SendToMenu,
-  ToolActions,
-  Stack,
-  TextInputPanel,
-} from '@/shared/ui';
-import { IconRedo, IconUndo } from '@/shared/ui/icons';
 import { createRegexRunner } from '@/tools/regex-tester/lib/runner';
 import { OpsPanel } from './components/OpsPanel';
 import { ReplacePanel } from './components/ReplacePanel';
@@ -20,13 +22,8 @@ import type { FindOptions } from './lib/find';
 import { buildOps, type TextOp } from './lib/ops';
 import { toolkitSettings } from './settings';
 
-const SAMPLES = [
-  {
-    label: 'Short article',
-    value:
-      'The quick brown fox jumps over the lazy dog. The dog sleeps.\n\nBananas\napples\ncherries\napples\n  Dates  \n',
-  },
-];
+const SAMPLE =
+  'The quick brown fox jumps over the lazy dog. The dog sleeps.\n\nBananas\napples\ncherries\napples\n  Dates  \n';
 
 const acceptsText = (p: HandoffPayload) =>
   p.kind === 'text' && p.mime === 'text/plain';
@@ -34,7 +31,10 @@ const acceptsText = (p: HandoffPayload) =>
 const UNDO_SHORTCUT = 'Mod+Z';
 const REDO_SHORTCUT = 'Mod+Shift+Z';
 
-/** Text Toolkit (spec §9.1): statistics, case, lines, clean-up and replace. */
+/**
+ * Text Toolkit (redesign spec, transform pattern): the text beside its
+ * operations (case, lines, clean-up), find and replace, and statistics.
+ */
 export default function TextToolkit({ definition }: ToolProps) {
   const doc = useUndoableText('');
   const { text, apply, undo, redo, canUndo, canRedo } = doc;
@@ -107,6 +107,92 @@ export default function TextToolkit({ definition }: ToolProps) {
     );
   };
 
+  // A file dropped on the field opens like Open file (TextArea onFiles).
+  const textFile = useTextFile({ onChange: doc.set });
+  const textCard = (
+    <Card as="section" title="Text">
+      <Stack gap="5">
+        <TextArea
+          onFiles={textFile.onFiles}
+          label="Text"
+          labelHidden
+          rows={10}
+          maxRows={40}
+          placeholder="Type or paste text."
+          value={text}
+          onChange={doc.set}
+        />
+        <TextSourceActions
+          value={text}
+          onChange={doc.set}
+          label="Text"
+          handoff={acceptsText}
+          onExample={() => doc.set(SAMPLE)}
+        >
+          <IconButton
+            size="sm"
+            variant="ghost"
+            tone="neutral"
+            icon={undoIcon}
+            label="Undo"
+            aria-keyshortcuts="Control+Z"
+            disabled={!canUndo}
+            onClick={onUndo}
+          />
+          <IconButton
+            size="sm"
+            variant="ghost"
+            tone="neutral"
+            icon={redoIcon}
+            label="Redo"
+            aria-keyshortcuts="Control+Shift+Z"
+            disabled={!canRedo}
+            onClick={redo}
+          />
+          {text ? (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={download}
+              label="Download text.txt"
+              onClick={() =>
+                saveBlob(new Blob([text], { type: 'text/plain' }), 'text.txt')
+              }
+            />
+          ) : null}
+        </TextSourceActions>
+      </Stack>
+    </Card>
+  );
+
+  const panels = (
+    <Stack gap="6">
+      <OpsPanel
+        ops={ops}
+        onRun={runOp}
+        settings={settings}
+        update={update}
+        filter={filter}
+        onFilter={setFilter}
+      />
+      <ReplacePanel
+        text={text}
+        runner={runner}
+        options={findOptions}
+        onOptions={onFindOptions}
+        onReplace={onReplace}
+      />
+      <StatsPanel
+        text={text}
+        locale={settings.locale}
+        stopWords={settings.stopWords}
+        onLocale={(locale) => update({ locale })}
+        onStopWords={(stopWords) => update({ stopWords })}
+      />
+    </Stack>
+  );
+
   return (
     <Stack gap="6">
       <ToolActions>
@@ -124,72 +210,7 @@ export default function TextToolkit({ definition }: ToolProps) {
           }
         />
       </ToolActions>
-      <TextInputPanel
-        value={text}
-        onChange={doc.set}
-        language="plain"
-        label="Text"
-        samples={SAMPLES}
-        downloadName="text.txt"
-        toolGroups={[
-          {
-            id: 'history',
-            label: 'History',
-            items: [
-              {
-                id: 'undo',
-                label: 'Undo',
-                icon: IconUndo,
-                kind: 'button',
-                shortcut: UNDO_SHORTCUT,
-                disabled: !canUndo,
-                onSelect: onUndo,
-              },
-              {
-                id: 'redo',
-                label: 'Redo',
-                icon: IconRedo,
-                kind: 'button',
-                shortcut: REDO_SHORTCUT,
-                disabled: !canRedo,
-                onSelect: redo,
-              },
-            ],
-          },
-        ]}
-        handoff={acceptsText}
-        placeholder="Type or paste text"
-        wrap
-        minHeight={200}
-      />
-      <Grid cols={{ base: 1, lg: 2 }} gap="8">
-        <Stack gap="8">
-          <OpsPanel
-            ops={ops}
-            onRun={runOp}
-            settings={settings}
-            update={update}
-            filter={filter}
-            onFilter={setFilter}
-          />
-        </Stack>
-        <Stack gap="8">
-          <ReplacePanel
-            text={text}
-            runner={runner}
-            options={findOptions}
-            onOptions={onFindOptions}
-            onReplace={onReplace}
-          />
-          <StatsPanel
-            text={text}
-            locale={settings.locale}
-            stopWords={settings.stopWords}
-            onLocale={(locale) => update({ locale })}
-            onStopWords={(stopWords) => update({ stopWords })}
-          />
-        </Stack>
-      </Grid>
+      <TransformLayout start={textCard} end={panels} defaultSize={55} />
     </Stack>
   );
 }

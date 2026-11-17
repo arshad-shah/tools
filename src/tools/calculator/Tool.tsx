@@ -1,16 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
 import {
+  Button,
   Card,
-  CardBody,
-  Container,
+  CopyButton,
+  Divider,
+  Grid,
+  GridItem,
   IconButton,
   Inline,
   SegmentedControl,
-  ShareButton,
-  ToolActions,
   Stack,
-} from '@/shared/ui';
-import { IconInfo } from '@/shared/ui/icons';
+} from '@arshad-shah/cynosure';
+import { eraser, keyboard } from '@arshad-shah/cynosure/icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { ShareButton, ToolActions } from '@/app/ui/tool-actions';
 import { copyText } from '@/shared/lib/clipboard';
 import { notify } from '@/shared/lib/notify';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
@@ -144,43 +146,76 @@ const Calculator: React.FC = () => {
   };
 
   return (
-    <Container size="full" className="px-0 sm:px-0">
-      <Stack gap="4">
-        <Inline justify="between" align="center" gap="2" wrap>
+    <Stack gap="6">
+      <ToolActions>
+        <Button
+          variant="ghost"
+          icon={keyboard}
+          aria-keyshortcuts="?"
+          onClick={() => setHelpOpen(true)}
+        >
+          Calculator keys
+        </Button>
+        <ShareButton share={shareState} />
+      </ToolActions>
+      <Inline justify="between" align="center" gap="3" wrap>
+        <SegmentedControl
+          label="Calculator mode"
+          value={mode}
+          onChange={(m) => update({ mode: m as CalculatorMode })}
+          options={MODES}
+        />
+        {sheetMode ? (
+          <SheetSettings settings={settings} onChange={update} />
+        ) : null}
+        {mode === 'grapher' ? (
           <SegmentedControl
-            label="Calculator mode"
-            value={mode}
-            onChange={(m) => update({ mode: m })}
-            options={MODES}
-          />
-          {sheetMode ? (
-            <SheetSettings settings={settings} onChange={update} />
-          ) : null}
-        </Inline>
-        <ToolActions>
-          <IconButton
-            variant="ghost"
+            label="Angle unit"
             size="sm"
-            label="Calculator keys"
-            showLabel="desktop"
-            icon={IconInfo}
-            onClick={() => setHelpOpen(true)}
+            value={settings.angle}
+            onChange={(angle) => update({ angle: angle as 'deg' | 'rad' })}
+            options={[
+              { value: 'deg', label: 'Degrees' },
+              { value: 'rad', label: 'Radians' },
+            ]}
           />
-          <ShareButton share={shareState} />
-        </ToolActions>
+        ) : null}
+      </Inline>
 
-        {sheetMode && (
-          <>
-            <Card>
-              <CardBody>
+      {sheetMode ? (
+        <Grid columns={{ base: 1, lg: 5 }} gap="6" align="start">
+          <GridItem span={{ base: 'full', lg: 3 }}>
+            <Card
+              as="section"
+              title="Sheet"
+              actions={
+                <Inline gap="1">
+                  <CopyButton
+                    size="sm"
+                    variant="ghost"
+                    value={activeText}
+                    disabled={!activeText}
+                    labels={{ copy: 'Copy result', copied: 'Result copied' }}
+                  />
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    tone="neutral"
+                    icon={eraser}
+                    label="Clear the sheet"
+                    onClick={() => sheet.clearAll()}
+                  />
+                </Inline>
+              }
+            >
+              <Stack gap="5">
                 <Sheet sheet={sheet} />
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
+                <Divider />
                 <Keypad scientific={mode === 'scientific'} onKey={onKey} />
-              </CardBody>
+              </Stack>
             </Card>
+          </GridItem>
+          <GridItem span={{ base: 'full', lg: 2 }}>
             <HistoryPanel
               history={settings.history}
               saved={settings.saved}
@@ -196,43 +231,21 @@ const Calculator: React.FC = () => {
                 />
               }
             />
-          </>
-        )}
+          </GridItem>
+        </Grid>
+      ) : null}
 
-        {mode === 'programmer' && (
-          <Card>
-            <CardBody>
-              <Programmer
-                wordBits={settings.wordBits}
-                signed={settings.signed}
-                onWordChange={update}
-              />
-            </CardBody>
-          </Card>
-        )}
+      {mode === 'programmer' ? (
+        <Programmer
+          wordBits={settings.wordBits}
+          signed={settings.signed}
+          onWordChange={update}
+        />
+      ) : null}
 
-        {mode === 'grapher' && (
-          <Card>
-            <CardBody>
-              <Stack gap="4">
-                <SegmentedControl
-                  label="Angle unit"
-                  size="sm"
-                  value={settings.angle}
-                  onChange={(angle) => update({ angle })}
-                  options={[
-                    { value: 'deg', label: 'Degrees' },
-                    { value: 'rad', label: 'Radians' },
-                  ]}
-                />
-                <Grapher angle={settings.angle} />
-              </Stack>
-            </CardBody>
-          </Card>
-        )}
-      </Stack>
+      {mode === 'grapher' ? <Grapher angle={settings.angle} /> : null}
       <HelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
-    </Container>
+    </Stack>
   );
 };
 

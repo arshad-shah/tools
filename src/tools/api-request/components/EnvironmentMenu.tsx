@@ -1,27 +1,22 @@
-import { useState } from 'react';
-import { newId } from '@/shared/lib/id';
 import {
-  Alert,
-  AlertDescription,
   Button,
   Dialog,
-  IconButton,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   EmptyState,
+  Grid,
+  IconButton,
   Inline,
-  Input,
   KeyValueEditor,
-  Label,
+  Notice,
   Select,
   Stack,
+  Switch,
   Text,
-  type KeyValueRow,
-  SwitchField,
-} from '@/shared/ui';
-import { IconPlus, IconSettings, IconTrash2 } from '@/shared/ui/icons';
+  TextField,
+  type KeyValuePair,
+} from '@arshad-shah/cynosure';
+import { plus, settings, trash, variable } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
+import { newId } from '@/shared/lib/id';
 import { clearSessionSecrets, type Environment } from '../lib/env';
 
 interface Props {
@@ -31,22 +26,23 @@ interface Props {
   onSave(envs: Environment[]): void;
 }
 
-const toRows = (env: Environment): KeyValueRow[] =>
+const toPairs = (env: Environment): KeyValuePair[] =>
   env.vars.map((v) => ({
     id: v.id,
     enabled: v.enabled !== false,
     key: v.key,
     value: v.value,
-    type: v.secret ? 'secret' : 'text',
+    secret: v.secret || undefined,
   }));
 
-const fromRows = (rows: KeyValueRow[]): Environment['vars'] =>
-  rows.map((r) => ({
-    id: r.id,
-    key: r.key,
-    value: r.value,
-    secret: r.type === 'secret',
-    enabled: r.enabled,
+/** Edited pairs back as variables; each row's Type says whether it is secret. */
+const fromPairs = (pairs: KeyValuePair[]): Environment['vars'] =>
+  pairs.map((p) => ({
+    id: p.id,
+    key: p.key,
+    value: p.value,
+    secret: !!p.secret,
+    enabled: p.enabled !== false,
   }));
 
 /** Pick the active environment and manage variables and secrets. */
@@ -77,144 +73,136 @@ export function EnvironmentMenu({
   };
 
   return (
-    <Inline gap="2" align="center">
+    <Inline gap="1" align="center">
       <Select
-        aria-label="Environment"
+        label="Environment"
+        labelHidden
         size="sm"
         value={activeId}
-        onValueChange={onActiveChange}
-        items={[
+        onChange={onActiveChange}
+        options={[
           { value: '', label: 'No environment' },
           ...environments.map((e) => ({ value: e.id, label: e.name })),
         ]}
-        className="sm:min-w-40"
       />
       <IconButton
         size="sm"
         variant="ghost"
+        tone="neutral"
         label="Environments"
-        icon={IconSettings}
+        icon={settings}
         onClick={() => setOpen(true)}
       />
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogHeader>
-          <DialogTitle>Environments</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <Stack gap="3">
-            <Inline gap="2" align="end" wrap>
-              {environments.length > 0 && (
-                <Stack gap="1">
-                  <Label htmlFor="env-pick">Edit</Label>
-                  <Select
-                    id="env-pick"
-                    value={current?.id ?? ''}
-                    onValueChange={setEditing}
-                    items={environments.map((e) => ({
-                      value: e.id,
-                      label: e.name,
-                    }))}
-                  />
-                </Stack>
-              )}
-              <Button
-                size="sm"
-                variant="secondary"
-                leftIcon={<IconPlus size="sm" />}
-                onClick={create}
-              >
-                New environment
-              </Button>
-            </Inline>
-            {current ? (
-              <Stack gap="3">
-                <Stack gap="1">
-                  <Label htmlFor="env-name">Name</Label>
-                  <Input
-                    id="env-name"
-                    value={current.name}
-                    onChange={(name) => patch({ name })}
-                  />
-                </Stack>
-                <KeyValueEditor
-                  rows={toRows(current)}
-                  onChange={(rows) => patch({ vars: fromRows(rows) })}
-                  allowSecret
-                  ariaLabel={`Variables of ${current.name}`}
-                  keyLabel="Variable"
-                />
-                <Text size="xs" tone="muted">
-                  Use a variable as {'{{name}}'} in the URL, params, headers,
-                  auth or body. Mark tokens and passwords as secret.
-                </Text>
-                <SwitchField
-                  label="Remember secret values in this browser"
-                  id="env-remember"
-                  checked={current.rememberSecrets}
-                  onCheckedChange={(rememberSecrets) =>
-                    patch({ rememberSecrets })
-                  }
-                />
-                {current.rememberSecrets ? (
-                  <Alert status="warning">
-                    <AlertDescription>
-                      Secret values of this environment are saved in this
-                      browser&apos;s storage, readable by anyone using this
-                      profile. Turn this off to keep them for this session only.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Text size="xs" tone="muted">
-                    Secret values stay in memory and are gone when you close or
-                    reload the page.
-                  </Text>
-                )}
-                <Inline gap="2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      clearSessionSecrets();
-                      onSave(
-                        environments.map((e) => ({
-                          ...e,
-                          vars: e.vars.map((v) =>
-                            v.secret ? { ...v, value: '' } : v,
-                          ),
-                        })),
-                      );
-                    }}
-                  >
-                    Clear secret values
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    leftIcon={<IconTrash2 size="sm" />}
-                    onClick={() => {
-                      onSave(environments.filter((e) => e.id !== current.id));
-                      if (activeId === current.id) onActiveChange('');
-                      setEditing(null);
-                    }}
-                  >
-                    Delete environment
-                  </Button>
-                </Inline>
-              </Stack>
-            ) : (
-              <EmptyState
-                size="sm"
-                title="No environments yet"
-                description="Add one to keep variables such as {{baseUrl}}."
-              />
-            )}
-          </Stack>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="primary" onClick={() => setOpen(false)}>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Environments"
+        description="Use a variable as {{name}} in the URL, params, headers, auth or body."
+        size="lg"
+        actions={
+          <Button variant="solid" onClick={() => setOpen(false)}>
             Done
           </Button>
-        </DialogFooter>
+        }
+      >
+        <Stack gap="5">
+          <Grid columns="minmax(0, 1fr) auto" gap="2" align="end">
+            {environments.length > 0 ? (
+              <Select
+                label="Edit"
+                value={current?.id ?? ''}
+                onChange={setEditing}
+                options={environments.map((e) => ({
+                  value: e.id,
+                  label: e.name,
+                }))}
+              />
+            ) : (
+              <Text size="sm" tone="muted">
+                No environments yet.
+              </Text>
+            )}
+            <Button variant="soft" icon={plus} onClick={create}>
+              New environment
+            </Button>
+          </Grid>
+          {current ? (
+            <Stack gap="5">
+              <TextField
+                label="Name"
+                value={current.name}
+                onChange={(name) => patch({ name })}
+              />
+              <KeyValueEditor
+                label={`Variables of ${current.name}`}
+                pairs={toPairs(current)}
+                onChange={(pairs) => patch({ vars: fromPairs(pairs) })}
+                rowTypes
+                labels={{ key: 'Variable' }}
+              />
+              <Text size="sm" tone="muted">
+                Mark tokens and passwords Secret: their values are masked and
+                kept for this session only.
+              </Text>
+              <Switch
+                label="Remember secret values in this browser"
+                checked={current.rememberSecrets}
+                onChange={(rememberSecrets) => patch({ rememberSecrets })}
+              />
+              {current.rememberSecrets ? (
+                <Notice tone="warning">
+                  Secret values of this environment are saved in this
+                  browser&apos;s storage, readable by anyone using this profile.
+                  Turn this off to keep them for this session only.
+                </Notice>
+              ) : (
+                <Text size="sm" tone="muted">
+                  Secret values stay in memory and are gone when you close or
+                  reload the page.
+                </Text>
+              )}
+              <Inline gap="2" wrap>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    clearSessionSecrets();
+                    onSave(
+                      environments.map((e) => ({
+                        ...e,
+                        vars: e.vars.map((v) =>
+                          v.secret ? { ...v, value: '' } : v,
+                        ),
+                      })),
+                    );
+                  }}
+                >
+                  Clear secret values
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  tone="danger"
+                  icon={trash}
+                  onClick={() => {
+                    onSave(environments.filter((e) => e.id !== current.id));
+                    if (activeId === current.id) onActiveChange('');
+                    setEditing(null);
+                  }}
+                >
+                  Delete environment
+                </Button>
+              </Inline>
+            </Stack>
+          ) : (
+            <EmptyState
+              size="sm"
+              icon={variable}
+              title="No environments yet"
+              description="Add one to keep variables such as {{baseUrl}}."
+            />
+          )}
+        </Stack>
       </Dialog>
     </Inline>
   );

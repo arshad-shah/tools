@@ -52,18 +52,31 @@ function sameOriginOnly(page: Page): string[] {
 
 const doneRows = (page: Page) =>
   page
-    .getByRole('grid', { name: 'Files' })
+    .getByRole('list', { name: 'Files' })
     .getByText(/^(Done|Not smaller|Kept original)/);
+
+const LABEL: Record<string, string> = {
+  webp: 'WebP',
+  jpeg: 'JPEG',
+  avif: 'AVIF',
+};
+/** Picks the output format (a Cynosure Select). */
+async function format(page: Page, value: string) {
+  await page.getByRole('combobox', { name: 'Format' }).click();
+  await page.getByRole('option', { name: LABEL[value], exact: true }).click();
+}
 
 test('a batch of three resized to 800 px as WebP downloads as a ZIP of three 800 px WebPs', async ({
   page,
 }) => {
   await page.goto(pathOf('image-optimizer'));
   const foreign = sameOriginOnly(page);
-  await page.getByLabel('Format').selectOption('webp');
-  await page.getByRole('radio', { name: 'Max size' }).click();
+  await format(page, 'webp');
+  await page.getByRole('radio', { name: 'Max size' }).focus();
+  await page.keyboard.press('Space');
   await page.getByLabel('Max width (px)').fill('800');
   await page.getByLabel('Max height (px)').fill('0');
+  await page.keyboard.press('Tab');
   const files = await Promise.all(
     [1, 2, 3].map(async (i) => ({
       name: `shot-${i}.png`,
@@ -94,8 +107,9 @@ test('a batch of three resized to 800 px as WebP downloads as a ZIP of three 800
 
 test('a target size reports whether it was met', async ({ page }) => {
   await page.goto(pathOf('image-optimizer'));
-  await page.getByLabel('Format').selectOption('jpeg');
+  await format(page, 'jpeg');
   await page.getByLabel('Target size (KB)').fill('50');
+  await page.keyboard.press('Tab');
   await page
     .locator('input[type=file]')
     .first()
@@ -114,7 +128,7 @@ test('AVIF output decodes in the browser and its encoder loads from this site', 
 }) => {
   await page.goto(pathOf('image-optimizer'));
   const foreign = sameOriginOnly(page);
-  await page.getByLabel('Format').selectOption('avif');
+  await format(page, 'avif');
   await page
     .locator('input[type=file]')
     .first()
@@ -140,7 +154,7 @@ test('AVIF output decodes in the browser and its encoder loads from this site', 
 
 test('Images to PDF receives the compressed files', async ({ page }) => {
   await page.goto(pathOf('image-optimizer'));
-  await page.getByLabel('Format').selectOption('jpeg');
+  await format(page, 'jpeg');
   await page
     .locator('input[type=file]')
     .first()
@@ -153,12 +167,12 @@ test('Images to PDF receives the compressed files', async ({ page }) => {
   await page.getByRole('button', { name: 'Open in' }).click();
   await page.getByRole('menuitem', { name: 'Images to PDF' }).click();
   await expect(page).toHaveURL(/\/pdf\/images-to-pdf$/);
-  await expect(page.getByText('scan.jpg')).toBeVisible();
+  await expect(page.getByText('scan.jpg', { exact: true })).toBeVisible();
 });
 
 test('JPEG paints transparency on the chosen background', async ({ page }) => {
   await page.goto(pathOf('image-optimizer'));
-  await page.getByLabel('Format').selectOption('jpeg');
+  await format(page, 'jpeg');
   const clear = await page.evaluate(() => {
     const c = document.createElement('canvas');
     c.width = 16;

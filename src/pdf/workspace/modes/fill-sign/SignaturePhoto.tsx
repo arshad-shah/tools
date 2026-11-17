@@ -1,18 +1,16 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { IconRotateCcw, IconUpload } from '@/shared/ui/icons';
+import { useEffect, useRef, useState } from 'react';
+import { rotateCcw, upload as uploadIcon } from '@arshad-shah/cynosure/icons';
 import {
   Button,
-  ErrorState,
-  FilePicker,
   Inline,
-  Label,
-  LoadingState,
   SegmentedControl,
   Slider,
   Stack,
   Text,
-  VectorSample,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { InkSample, SamplePaper } from '@/shared/surfaces/pdf/InkSample';
+import { FilePicker } from '../../ui/FilePicker';
+import { ErrorNotice, LoadingLine } from '../../ui/states';
 import { useJob } from '@/shared/state/useJob';
 import { ToolError } from '@/shared/lib/errors';
 import { INK_COLORS, type SignatureSourceProps } from '@/pdf/sign';
@@ -80,7 +78,6 @@ export function SignaturePhoto({
   disabled,
   client,
 }: SignaturePhotoProps) {
-  const contrastId = useId();
   const [method, setMethod] = useState<Method>('camera');
   const [shot, setShot] = useState<Shot | null>(null);
   const [problem, setProblem] = useState<ToolError | null>(null);
@@ -154,7 +151,7 @@ export function SignaturePhoto({
         value={method}
         options={METHODS.map((o) => ({ ...o, disabled: !!shot || disabled }))}
         onChange={(m) => {
-          setMethod(m);
+          setMethod(m as Method);
           setProblem(null);
         }}
       />
@@ -173,42 +170,42 @@ export function SignaturePhoto({
           }}
         >
           {(open) => (
-            <Button
-              variant="secondary"
-              leftIcon={<IconUpload size="sm" />}
-              disabled={disabled}
-              onClick={open}
-              className="self-start"
-            >
-              Choose a photo
-            </Button>
+            <Inline>
+              <Button
+                variant="outline"
+                icon={uploadIcon}
+                disabled={disabled}
+                onClick={open}
+              >
+                Choose a photo
+              </Button>
+            </Inline>
           )}
         </FilePicker>
       ) : null}
-      <Text size="sm" tone="muted">
+      <Text as="p" size="sm" tone="muted">
         Sign on plain white paper with dark ink. The photo is cleaned up on this
         device and never uploaded.
       </Text>
-      {problem ? <ErrorState error={problem} headingLevel={4} /> : null}
+      {problem ? <ErrorNotice error={problem} /> : null}
       {job.status === 'running' ? (
-        <LoadingState label="Cleaning up the photo" className="py-4" />
+        <LoadingLine label="Cleaning up the photo" />
       ) : null}
       {job.status === 'error' && job.error ? (
-        <ErrorState error={job.error} headingLevel={4} />
+        <ErrorNotice error={job.error} />
       ) : null}
       {result ? (
         <Stack gap="2">
-          <div className="flex h-32 items-center justify-center rounded-md border border-line bg-white p-2">
-            <VectorSample
+          <SamplePaper height={128}>
+            <InkSample
               label="Signature preview"
               d={result.vector.d}
               width={result.vector.width}
               height={result.vector.height}
               color={ink}
               evenOdd
-              className="size-full"
             />
-          </div>
+          </SamplePaper>
           <Text size="sm" tone="muted">
             {straightened(result.angle)}
           </Text>
@@ -216,28 +213,24 @@ export function SignaturePhoto({
       ) : null}
       {shot ? (
         <Inline gap="3" align="end" wrap>
-          <Stack gap="1" className="min-w-48 flex-1">
-            <Label htmlFor={contrastId}>Contrast</Label>
-            <Inline gap="2" align="center">
-              <Slider
-                id={contrastId}
-                min={0.05}
-                max={0.3}
-                step={0.01}
-                value={t}
-                disabled={disabled}
-                onValueChange={(v) => {
-                  setT(v);
-                  setUsed(false);
-                  onChange(null);
-                  void job.run(shot, v);
-                }}
-              />
-              <Text as="span" size="sm" tone="muted" className="w-10">
-                {t.toFixed(2)}
-              </Text>
-            </Inline>
-          </Stack>
+          <Slider
+            label="Contrast"
+            showValue
+            labels={{ value: (v) => v.toFixed(2) }}
+            min={0.05}
+            max={0.3}
+            step={0.01}
+            value={t}
+            disabled={disabled}
+            commitDelay={300}
+            onChange={(v) => setT(Number(v))}
+            onCommit={(v) => {
+              setT(Number(v));
+              setUsed(false);
+              onChange(null);
+              void job.run(shot, Number(v));
+            }}
+          />
           <InkField
             value={ink}
             disabled={disabled}
@@ -252,7 +245,8 @@ export function SignaturePhoto({
       {shot ? (
         <Inline gap="2" wrap>
           <Button
-            variant="primary"
+            variant="solid"
+            tone="accent"
             disabled={busy || !result}
             onClick={() => {
               if (!result) return;
@@ -263,8 +257,8 @@ export function SignaturePhoto({
             Use this signature
           </Button>
           <Button
-            variant="secondary"
-            leftIcon={<IconRotateCcw size="sm" />}
+            variant="outline"
+            icon={rotateCcw}
             disabled={disabled}
             onClick={retake}
           >
@@ -273,7 +267,7 @@ export function SignaturePhoto({
         </Inline>
       ) : null}
       {used ? (
-        <Text size="sm" role="status">
+        <Text size="sm" tone="success">
           Ready to place.
         </Text>
       ) : null}

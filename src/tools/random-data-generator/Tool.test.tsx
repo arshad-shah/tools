@@ -100,16 +100,14 @@ describe('RandomDataGenerator schema editor', () => {
     ]);
   });
 
-  it('shows the schema and preview as tabs, the preview empty before a run', () => {
+  it('narrow, shows the schema or the preview, the preview empty before a run', () => {
     render(<RandomDataGenerator />);
-    const tabs = screen.getByRole('tablist', { name: 'Mock data panes' });
-    expect(tabs).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Schema' })).toBeTruthy();
-    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Preview' }));
-    fireEvent.click(screen.getByRole('tab', { name: 'Preview' }));
+    const panes = screen.getByRole('radiogroup', { name: 'Pane' });
+    expect(panes).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: 'Preview' }));
     expect(screen.getByText('No data yet')).toBeTruthy();
-    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Schema' }));
-    fireEvent.click(screen.getByRole('tab', { name: 'Schema' }));
+    expect(screen.queryAllByLabelText('Field name')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('radio', { name: 'Schema' }));
     expect(screen.getAllByLabelText('Field name').length).toBeGreaterThan(0);
   });
 });

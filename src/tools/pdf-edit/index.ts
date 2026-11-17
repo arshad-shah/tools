@@ -1,4 +1,4 @@
-import { IconModeEdit } from '@/shared/ui/icons';
+import { filePen as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -10,7 +10,7 @@ export default defineTool({
   description:
     'Open a PDF and edit, organise, fill, sign, redact and convert it in one place',
   keywords: ['editor', 'workspace', 'organize', 'sign', 'annotate'],
-  icon: IconModeEdit,
+  icon,
   accepts: [{ kinds: ['pdf'] }],
   enabled: true,
   load: () => import('./Tool'),

@@ -9,7 +9,7 @@ const walk = (d: string): string[] =>
   });
 
 const ENFORCED =
-  /local\/(no-pictographic-text|no-raw-ui-outside-kit|no-lucide-outside-icons|no-disable-enforced)/;
+  /local\/(no-pictographic-text|no-raw-ui|no-icon-libraries|no-disable-enforced)/;
 const COMMENT = /\/\*([\s\S]*?)\*\/|\/\/([^\n]*)/g;
 
 /**

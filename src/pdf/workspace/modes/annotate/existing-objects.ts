@@ -1,4 +1,4 @@
-import type { LayerObject } from '@/shared/ui';
+import type { LayerObject } from '@/shared/surfaces/pdf/ObjectLayer';
 import type { Box, NewOperation, PageId } from '@/pdf/doc/types';
 import type { ExistingAnnotation } from '@/pdf/render/annotations';
 

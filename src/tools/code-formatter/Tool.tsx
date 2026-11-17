@@ -1,27 +1,37 @@
+import {
+  Badge,
+  Button,
+  Card,
+  CodeBlock,
+  CopyButton,
+  EmptyState,
+  IconButton,
+  Inline,
+  Menu,
+  Notice,
+  Select,
+  Stack,
+} from '@arshad-shah/cynosure';
+import {
+  braces,
+  compare,
+  download,
+  minimize,
+  sparkles,
+  wand,
+} from '@arshad-shah/cynosure/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { LanguageId } from '@/shared/lib/syntax/tokenize';
+import { TextSourceActions } from '@/app/ui/text-source';
+import { TransformLayout } from '@/app/ui/transform';
+import { CodeEditor, type LanguageId } from '@/shared/editor';
 import { useClipboard } from '@/shared/lib/clipboard';
+import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { formatBytes, formatSizeChange } from '@/shared/lib/format';
 import { sendTo } from '@/shared/lib/handoff';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import {
-  Badge,
-  Button,
-  ErrorState,
-  Inline,
-  Label,
-  PaneTabs,
-  Select,
-  Stack,
-  ControlBar,
-  TextInputPanel,
-  usePaneTab,
-  type CodeMarker,
-} from '@/shared/ui';
-import { IconMinimize2, IconSendTo, IconWand2 } from '@/shared/ui/icons';
 import { OptionsPanel } from './components/OptionsPanel';
 import { createFormatter } from './lib/client';
 import { detectLanguage } from './lib/detect';
@@ -41,9 +51,8 @@ import {
 } from './settings';
 
 const TOOL_ID = 'code-formatter';
-const MAX_BYTES = 10 * 1024 * 1024;
-
-const SURFACE: Record<FormatLanguage, LanguageId | 'plain'> = {
+/** The editor's highlighting for each formatter language. */
+const EDITOR_LANGUAGE: Record<FormatLanguage, LanguageId> = {
   json: 'json',
   javascript: 'js',
   jsx: 'js',
@@ -59,6 +68,8 @@ const SURFACE: Record<FormatLanguage, LanguageId | 'plain'> = {
   sql: 'sql',
   xml: 'xml',
 };
+
+const MAX_BYTES = 10 * 1024 * 1024;
 
 const SAMPLES = [
   {
@@ -86,6 +97,10 @@ interface Result {
 
 const bytes = (s: string) => new TextEncoder().encode(s).length;
 
+/**
+ * Code Formatter & Minifier (redesign spec, transform pattern): code in,
+ * formatted or minified code out, with its size before and after.
+ */
 export default function CodeFormatter() {
   const navigate = useNavigate();
   const [settings, update] = formatterSettings.useSettings();
@@ -94,7 +109,6 @@ export default function CodeFormatter() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<ToolError | null>(null);
   const [busy, setBusy] = useState(false);
-  const tab = usePaneTab(TOOL_ID, 'input');
   const { copy } = useClipboard();
   const formatter = useRef<ReturnType<typeof createFormatter> | null>(null);
   useEffect(
@@ -136,36 +150,20 @@ export default function CodeFormatter() {
           before: bytes(input),
           after: bytes(code),
         });
-        tab.show('output');
       } else if (isMinifyLanguage(language)) {
         const r = await formatter.current.minify(input, language, {
           mangle: settings.mangle,
         });
         setResult({ ...r, action, language });
-        tab.show('output');
       }
     } catch (e) {
       setResult(null);
       const err = toToolError(e);
       setError(err);
-      // A syntax error is marked in the input: show it.
-      if (err instanceof CodeError) tab.show('input');
     } finally {
       setBusy(false);
     }
   };
-
-  const markers: CodeMarker[] =
-    error instanceof CodeError && error.line !== undefined
-      ? [
-          {
-            line: error.line,
-            column: error.column,
-            message: error.message,
-            severity: 'error',
-          },
-        ]
-      : [];
 
   const showChanges = () => {
     if (!result) return;
@@ -219,150 +217,202 @@ export default function CodeFormatter() {
 
   const outputName = `${result?.action === 'minify' ? 'minified' : 'formatted'}.${LANGUAGE_EXTENSION[language]}`;
 
-  const inputPane = (
-    <TextInputPanel
-      label="Input"
-      value={input}
-      onChange={changeInput}
-      language={SURFACE[language]}
-      samples={SAMPLES}
-      maxBytes={MAX_BYTES}
-      markers={markers}
-      onFile={(file) => {
-        setFileName(file.name);
-      }}
-      handoff={(p) => p.kind === 'text'}
-      minHeight={320}
-      extraMeta={
-        error instanceof CodeError
-          ? [
-              <span key="err" role="alert">
-                {error.line !== undefined
-                  ? `Line ${error.line}${error.column !== undefined ? `:${error.column}` : ''}: `
-                  : ''}
-                {error.message}
-              </span>,
-            ]
-          : undefined
+  const codeError =
+    error instanceof CodeError
+      ? `${
+          error.line !== undefined
+            ? `Line ${error.line}${error.column !== undefined ? `:${error.column}` : ''}: `
+            : ''
+        }${error.message}`
+      : undefined;
+
+  const examples = (
+    <Menu
+      label="Try an example"
+      items={SAMPLES.map((s) => ({ value: s.label, label: s.label }))}
+      onSelect={(v) =>
+        changeInput(SAMPLES.find((s) => s.label === v)?.value ?? '')
       }
+      trigger={(props) => (
+        <Button {...props} size="sm" variant="ghost" icon={sparkles}>
+          Try an example
+        </Button>
+      )}
     />
   );
-  const outputPane = (
-    <TextInputPanel
-      label="Output"
-      value={result?.code ?? ''}
-      onChange={() => {}}
-      language={SURFACE[result?.language ?? language]}
-      readOnly
-      downloadName={outputName}
-      minHeight={320}
-      extraMeta={
-        result
-          ? [
-              <Badge key="sizes" variant="soft" tone="accent" size="sm">
-                {`Before ${formatBytes(result.before)}, after ${formatBytes(result.after)} (${formatSizeChange(result.before, result.after)})`}
-              </Badge>,
-            ]
-          : undefined
+
+  const diagnostics =
+    error instanceof CodeError && error.line !== undefined
+      ? [
+          {
+            line: error.line,
+            column: error.column,
+            message: error.message,
+            severity: 'error' as const,
+          },
+        ]
+      : undefined;
+
+  const inputCard = (
+    <Card as="section" title="Input">
+      <Stack gap="5">
+        <CodeEditor
+          aria-label="Input"
+          language={EDITOR_LANGUAGE[language]}
+          placeholder="Paste code, or open a file. The language is detected."
+          value={input}
+          onChange={changeInput}
+          diagnostics={diagnostics}
+          minHeight={200}
+          maxHeight={560}
+        />
+        {codeError ? (
+          <Notice tone="danger" title="Cannot format">
+            {codeError}
+          </Notice>
+        ) : null}
+        <TextSourceActions
+          value={input}
+          onChange={changeInput}
+          label="Input"
+          maxBytes={MAX_BYTES}
+          onFile={(file) => {
+            setFileName(file.name);
+          }}
+          handoff={(p) => p.kind === 'text'}
+        >
+          {examples}
+        </TextSourceActions>
+      </Stack>
+    </Card>
+  );
+
+  const outputCard = (
+    <Card
+      as="section"
+      title="Output"
+      actions={
+        result ? (
+          <Badge tone="accent" size="sm">
+            {`Before ${formatBytes(result.before)}, after ${formatBytes(result.after)} (${formatSizeChange(result.before, result.after)})`}
+          </Badge>
+        ) : undefined
       }
-    />
+    >
+      {result ? (
+        <Stack gap="4">
+          <CodeBlock
+            title={outputName}
+            code={result.code}
+            language={result.language}
+            lineNumbers
+            copyable={false}
+            actions={
+              <Inline gap="1">
+                <CopyButton
+                  size="sm"
+                  value={result.code}
+                  labels={{ copy: 'Copy the output' }}
+                />
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  tone="neutral"
+                  icon={download}
+                  label={`Download ${outputName}`}
+                  onClick={() =>
+                    saveBlob(
+                      new Blob([result.code], { type: 'text/plain' }),
+                      outputName,
+                    )
+                  }
+                />
+              </Inline>
+            }
+          />
+          <Inline>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={compare}
+              onClick={showChanges}
+            >
+              Show changes
+            </Button>
+          </Inline>
+        </Stack>
+      ) : (
+        <EmptyState
+          icon={braces}
+          title={input.trim() ? 'Ready to format' : 'No code yet'}
+          description={
+            input.trim()
+              ? `Press Format or Minify to tidy the ${LANGUAGE_LABEL[language]}.`
+              : 'Paste code or open a file, then Format or Minify it. JSON, JavaScript, TypeScript, CSS, HTML, Markdown, YAML, GraphQL, SQL and XML.'
+          }
+          actions={input.trim() ? undefined : examples}
+        />
+      )}
+    </Card>
   );
 
   return (
-    <Stack gap="4">
-      <ControlBar
-        start={
-          <>
-            <Inline gap="2" align="center" wrap={false}>
-              <Label htmlFor="code-formatter-language">Language</Label>
-              <Select
-                id="code-formatter-language"
-                value={choice}
-                onValueChange={(v) => {
-                  update({ language: v });
-                  setResult(null);
-                  setError(null);
-                }}
-                items={[
-                  {
-                    value: 'auto',
-                    label: `Auto (${LANGUAGE_LABEL[detected]})`,
-                  },
-                  ...FORMAT_LANGUAGES.map((l) => ({
-                    value: l,
-                    label: LANGUAGE_LABEL[l],
-                  })),
-                ]}
-              />
-            </Inline>
-          </>
-        }
-        end={
-          <>
-            {result && (
-              <Button
-                size="sm"
-                variant="ghost"
-                leftIcon={<IconSendTo size="sm" />}
-                onClick={showChanges}
-              >
-                Show changes
-              </Button>
-            )}
-            <OptionsPanel
-              language={language}
-              options={options}
-              onChange={(patch) => {
-                update(withOptions(settings, language, patch));
-                setResult(null);
-              }}
-              mangle={settings.mangle}
-              onMangleChange={(mangle) => update({ mangle })}
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconMinimize2 size="sm" />}
-              onClick={() => void run('minify')}
-              disabled={!input.trim() || !canMinify}
-              aria-keyshortcuts="Control+Shift+M"
-            >
-              Minify
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              leftIcon={<IconWand2 size="sm" />}
-              onClick={() => void run('format')}
-              disabled={!input.trim()}
-              loading={busy && result === null}
-              aria-keyshortcuts="Control+Shift+F"
-            >
-              Format
-            </Button>
-          </>
-        }
-      />
-
-      {error && !(error instanceof CodeError) && (
-        <ErrorState title="Could not format the code" error={error} />
-      )}
-
-      <PaneTabs
-        id={TOOL_ID}
-        label="Code panes"
-        value={tab.value}
-        onValueChange={tab.show}
-        panes={[
-          { id: 'input', label: 'Input', content: inputPane },
-          {
-            id: 'output',
-            label: 'Output',
-            changeKey: result?.code,
-            content: outputPane,
-          },
-        ]}
-      />
+    <Stack gap="6">
+      <Inline gap="3" align="end" wrap>
+        <Select
+          label="Language"
+          width="md"
+          value={choice}
+          onChange={(v) => {
+            update({ language: v });
+            setResult(null);
+            setError(null);
+          }}
+          options={[
+            { value: 'auto', label: `Auto (${LANGUAGE_LABEL[detected]})` },
+            ...FORMAT_LANGUAGES.map((l) => ({
+              value: l,
+              label: LANGUAGE_LABEL[l],
+            })),
+          ]}
+        />
+        <OptionsPanel
+          language={language}
+          options={options}
+          onChange={(patch) => {
+            update(withOptions(settings, language, patch));
+            setResult(null);
+          }}
+          mangle={settings.mangle}
+          onMangleChange={(mangle) => update({ mangle })}
+        />
+        <Button
+          variant="soft"
+          icon={minimize}
+          onClick={() => void run('minify')}
+          disabled={!input.trim() || !canMinify}
+          aria-keyshortcuts="Control+Shift+M"
+        >
+          Minify
+        </Button>
+        <Button
+          variant="solid"
+          tone="accent"
+          icon={wand}
+          onClick={() => void run('format')}
+          disabled={!input.trim()}
+          loading={busy && result === null}
+          aria-keyshortcuts="Control+Shift+F"
+        >
+          Format
+        </Button>
+      </Inline>
+      {error && !(error instanceof CodeError) ? (
+        <Notice tone="danger" title="Could not format the code">
+          {error.message}
+        </Notice>
+      ) : null}
+      <TransformLayout start={inputCard} end={outputCard} />
     </Stack>
   );
 }

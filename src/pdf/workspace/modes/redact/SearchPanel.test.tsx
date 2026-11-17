@@ -61,9 +61,13 @@ describe('SearchPanel', () => {
     ).toBeTruthy();
     const boxes = screen.getAllByRole('checkbox');
     expect(boxes).toHaveLength(3);
-    expect(boxes[0].getAttribute('aria-label')).toBe(
-      'Match 1 on page 1: Secret',
-    );
+    // Each match is named by its context and says where it is.
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'My Secret plan secretary',
+        description: 'Match 1, page 1',
+      }),
+    ).toBe(boxes[0]);
     fireEvent.click(screen.getByRole('button', { name: 'Mark all' }));
     expect(dispatch).toHaveBeenCalledTimes(1);
     const [ops, label] = dispatch.mock.calls[0] as unknown as [

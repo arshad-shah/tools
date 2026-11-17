@@ -13,33 +13,44 @@ const renderTool = () =>
     </MemoryRouter>,
   );
 
-const revealed = () => {
-  fireEvent.click(screen.getAllByRole('button', { name: /^Reveal / })[0]);
-  return screen.getByText((_, el) => el?.tagName === 'CODE').textContent ?? '';
+/** The generated value (a masked, read-only field). */
+const generated = (label = 'password') =>
+  (screen.getByLabelText(`Generated ${label}`) as HTMLInputElement).value;
+/** Starts in Password mode (the mode is a remembered setting). */
+const renderInPasswordMode = () => {
+  renderTool();
+  fireEvent.click(screen.getByRole('radio', { name: 'Password' }));
 };
 
 describe('PasswordGenerator', () => {
   it('generates a masked password that regenerates on option change', () => {
-    renderTool();
-    const first = revealed();
-    expect(first).toHaveLength(20);
+    renderInPasswordMode();
+    const field = screen.getByLabelText('Generated password');
+    expect(field.getAttribute('type')).toBe('password');
+    fireEvent.click(screen.getByRole('button', { name: 'Show the password' }));
+    expect(field.getAttribute('type')).toBe('text');
+    expect(generated()).toHaveLength(20);
     fireEvent.click(screen.getByRole('switch', { name: 'Symbols' }));
-    const second = screen.getByText(
-      (_, el) => el?.tagName === 'CODE',
-    ).textContent!;
-    expect(second).toMatch(/^[A-Za-z0-9]{20}$/);
+    expect(generated()).toMatch(/^[A-Za-z0-9]{20}$/);
     fireEvent.click(screen.getByRole('switch', { name: 'Symbols' }));
   });
 
   it('PIN mode makes digits only', () => {
-    renderTool();
-    fireEvent.click(screen.getByRole('tab', { name: 'PIN' }));
-    expect(revealed()).toMatch(/^[0-9]{6}$/);
-    fireEvent.click(screen.getByRole('tab', { name: 'Password' }));
+    renderInPasswordMode();
+    fireEvent.click(screen.getByRole('radio', { name: 'PIN' }));
+    expect(generated('PIN')).toMatch(/^[0-9]{6}$/);
+    fireEvent.click(screen.getByRole('radio', { name: 'Password' }));
+  });
+
+  it('Regenerate makes a new one', () => {
+    renderInPasswordMode();
+    const first = generated();
+    fireEvent.click(screen.getByRole('button', { name: 'Regenerate' }));
+    expect(generated()).not.toBe(first);
   });
 
   it('names an impossible setting', () => {
-    renderTool();
+    renderInPasswordMode();
     for (const name of ['Lowercase', 'Uppercase', 'Digits', 'Symbols'])
       fireEvent.click(screen.getByRole('switch', { name }));
     expect(

@@ -1,22 +1,16 @@
-import { useId, useState } from 'react';
+import {
+  Button,
+  Dialog,
+  Select,
+  Stack,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { download as downloadIcon } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
 import type { SqlDialect } from '@/shared/lib/data-formats';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
-  Select,
-  Stack,
-} from '@/shared/ui';
-import { IconDownload } from '@/shared/ui/icons';
 import {
   EXPORT_FORMATS,
   EXPORT_LABEL,
@@ -53,7 +47,6 @@ export function ExportMenu({
   onSettings,
 }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
-  const ids = { format: useId(), table: useId(), dialect: useId() };
   const format = settings.exportFormat;
 
   const download = () => {
@@ -77,70 +70,61 @@ export function ExportMenu({
     <>
       <Button
         size="sm"
-        leftIcon={<IconDownload size="sm" />}
+        variant="soft"
+        icon={downloadIcon}
         onClick={() => setOpen(true)}
       >
         Export
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogHeader>
-          <DialogTitle>Export</DialogTitle>
-          <DialogDescription>
-            {filteredRows === null
+      {open ? (
+        <Dialog
+          open
+          onOpenChange={setOpen}
+          title="Export"
+          description={
+            filteredRows === null
               ? 'All rows and the visible columns.'
-              : `The ${filteredRows.toLocaleString('en-US')} filtered rows and the visible columns.`}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody>
+              : `The ${filteredRows.toLocaleString('en-US')} filtered rows and the visible columns.`
+          }
+          actions={
+            <>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="solid" icon={downloadIcon} onClick={download}>
+                Download
+              </Button>
+            </>
+          }
+        >
           <Stack gap="3">
-            <Stack gap="1">
-              <Label htmlFor={ids.format}>Format</Label>
-              <Select
-                id={ids.format}
-                value={format}
-                onValueChange={(v) =>
-                  onSettings({ exportFormat: v as ExportFormat })
-                }
-                items={EXPORT_FORMATS.map((f) => ({
-                  value: f,
-                  label: EXPORT_LABEL[f],
-                }))}
-              />
-            </Stack>
+            <Select
+              label="Format"
+              value={format}
+              onChange={(v) => onSettings({ exportFormat: v as ExportFormat })}
+              options={EXPORT_FORMATS.map((f) => ({
+                value: f,
+                label: EXPORT_LABEL[f],
+              }))}
+            />
             {format === 'sql' && (
               <>
-                <Stack gap="1">
-                  <Label htmlFor={ids.table}>Table name</Label>
-                  <Input
-                    id={ids.table}
-                    value={settings.sqlTable}
-                    onChange={(v) => onSettings({ sqlTable: v })}
-                  />
-                </Stack>
-                <Stack gap="1">
-                  <Label htmlFor={ids.dialect}>Dialect</Label>
-                  <Select
-                    id={ids.dialect}
-                    value={settings.sqlDialect}
-                    onValueChange={(v) =>
-                      onSettings({ sqlDialect: v as SqlDialect })
-                    }
-                    items={DIALECTS}
-                  />
-                </Stack>
+                <TextField
+                  label="Table name"
+                  value={settings.sqlTable}
+                  onChange={(v) => onSettings({ sqlTable: v })}
+                />
+                <Select
+                  label="Dialect"
+                  value={settings.sqlDialect}
+                  onChange={(v) => onSettings({ sqlDialect: v as SqlDialect })}
+                  options={DIALECTS}
+                />
               </>
             )}
           </Stack>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button leftIcon={<IconDownload size="sm" />} onClick={download}>
-            Download
-          </Button>
-        </DialogFooter>
-      </Dialog>
+        </Dialog>
+      ) : null}
     </>
   );
 }

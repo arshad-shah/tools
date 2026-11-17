@@ -1,18 +1,24 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Badge,
   Button,
+  Card,
   EmptyState,
-  ErrorState,
+  FileDrop,
   Inline,
-  PaneTabs,
+  Menu,
+  Notice,
   Stack,
   Text,
-  TextInputPanel,
-  usePaneTab,
-  type VirtualListHandle,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  close,
+  download,
+  scrollText,
+  sparkles,
+} from '@arshad-shah/cynosure/icons';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { VirtualListHandle } from '@/shared/surfaces/virtual-list/virtual-list';
 import { formatBytes } from '@/shared/lib/format';
 import {
   useHandoff,
@@ -28,7 +34,7 @@ import { Timeline } from './components/Timeline';
 import { ViewToolbar } from './components/ViewToolbar';
 import { useDebounced } from './hooks/useDebounced';
 import { useLogActions } from './hooks/useLogActions';
-import { useLogInput, type LogInput } from './hooks/useLogInput';
+import { useLogInput } from './hooks/useLogInput';
 import { useLogSource } from './hooks/useLogSource';
 import { effectiveFilter, useLogView } from './hooks/useLogView';
 import { useSampleLines } from './hooks/useSampleLines';
@@ -41,8 +47,8 @@ import type { LogEntry } from './lib/model';
 import { entryCount } from './lib/progress';
 import { LOG_SAMPLE } from './lib/sample';
 import { logSettings, type SavedFormat } from './settings';
+import { CodeEditor } from '@/shared/editor';
 
-const SAMPLES = [{ label: 'Java service log', value: LOG_SAMPLE }];
 const FILTER_DEBOUNCE_MS = 150;
 const isRegexHandoff = (p: HandoffPayload) => readRegexHandoff(p) !== null;
 const isLogText = (p: HandoffPayload) =>
@@ -74,13 +80,7 @@ const LogViewer = () => {
     () => toFormatRef(settings.format, settings.customFormats),
     [settings.format, settings.customFormats],
   );
-  const { input, setInput, openFile: open } = useLogInput(source, formatRef);
-  // R41: the log source and the viewer are tabs; opening a file shows it.
-  const tab = usePaneTab('log-parser', 'input');
-  const openFile = (file: File) => {
-    open(file);
-    tab.show('output');
-  };
+  const { input, setInput, openFile } = useLogInput(source, formatRef);
 
   const [filter, setFilter] = useState<LogFilter>(EMPTY_FILTER);
   const checked = useMemo(() => effectiveFilter(filter), [filter]);
@@ -172,145 +172,213 @@ const LogViewer = () => {
   });
 
   useHandoffFiles((files) => openFile(files[0]));
+  // Log text handed over (Send to) fills the editor once.
+  const handedText = useHandoff(isLogText);
+  const [takenText, setTakenText] = useState<HandoffPayload | null>(null);
+  if (handedText !== takenText) {
+    setTakenText(handedText);
+    if (handedText?.kind === 'text')
+      setInput({ kind: 'text', text: handedText.text });
+  }
 
   const hasLog = source.status === 'ready';
   const total = source.info?.total ?? 0;
   const shown = view.filteredTotal;
 
-  const inputPane = (
-    <Stack gap="3">
-      <TextInputPanel
-        label="Log"
-        language="log"
-        value={input?.kind === 'text' ? input.text : ''}
-        onChange={(text) => setInput(text ? { kind: 'text', text } : null)}
-        accept={LOG_FILE_ACCEPT}
-        samples={SAMPLES}
-        handoff={isLogText}
-        onFile={(file) => {
-          openFile(file);
-          return true;
-        }}
-        placeholder="Paste a log, or open or drop a log file"
-        wrap={settings.wrap}
-        minHeight={120}
-        maxHeight={480}
-      />
-      <FileLine input={input} onClose={clearAll} />
-    </Stack>
+  const pasted = input?.kind === 'text' ? input.text : '';
+  const sourceCard = (
+    <Card
+      as="section"
+      title="Log"
+      description={
+        input?.kind === 'file'
+          ? `${input.file.name}, ${formatBytes(input.file.size)}`
+          : undefined
+      }
+      headingLevel={2}
+      padding="sm"
+      actions={
+        <Inline gap="1">
+          {input ? (
+            <Button size="sm" variant="ghost" icon={close} onClick={clearAll}>
+              {input.kind === 'file' ? 'Close file' : 'Clear'}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={sparkles}
+              onClick={() => setInput({ kind: 'text', text: LOG_SAMPLE })}
+            >
+              Load sample
+            </Button>
+          )}
+        </Inline>
+      }
+    >
+      {input?.kind === 'file' ? null : (
+        <Stack gap="3">
+          <CodeEditor
+            aria-label="Log"
+            language="log"
+            value={pasted}
+            onChange={(text) => setInput(text ? { kind: 'text', text } : null)}
+            placeholder="Paste a log, or open or drop a log file"
+            wrap={settings.wrap}
+            minHeight={hasLog ? 96 : 160}
+            maxHeight={hasLog ? 160 : 360}
+          />
+          {input ? null : (
+            <FileDrop
+              size="sm"
+              accept={LOG_FILE_ACCEPT}
+              labels={{
+                prompt: 'Drop a log file here (streamed, any size), or',
+                chooseOne: 'Open a file',
+              }}
+              onFiles={(files) => files[0] && openFile(files[0])}
+            />
+          )}
+        </Stack>
+      )}
+    </Card>
   );
 
-  const outputPane = (
-    <Stack gap="4">
-      <OpenStatus source={source} />
-      {source.status === 'error' && source.error ? (
-        <ErrorState title="Could not open this log" error={source.error} />
-      ) : null}
-      {source.status === 'empty' ? (
-        <EmptyState
+  const exportMenu = (
+    <Menu
+      label="Export"
+      items={[
+        { value: 'text', label: 'Export as text' },
+        { value: 'json', label: 'Export as JSON' },
+        { value: 'csv', label: 'Export as CSV' },
+      ]}
+      onSelect={(v) => void actions.exportAs(v as 'text' | 'json' | 'csv')}
+      trigger={(props) => (
+        <Button
+          {...props}
           size="sm"
-          title="No log yet"
-          description="Paste a log or open a log file in the Input tab."
-        />
-      ) : null}
-      {hasLog ? (
-        <>
-          <Inline gap="2" wrap role="status">
-            <Text as="span" size="sm" tone="muted">
-              {shown === null
-                ? `Filtering ${entryCount(total)}`
-                : `${shown.toLocaleString('en-US')} of ${entryCount(total)}`}
-            </Text>
-            {source.info ? (
-              <Badge variant="soft" tone="neutral" size="sm">
-                {settings.format === 'auto' ? 'Detected: ' : 'Format: '}
-                {formatName(source.info.format)}
-              </Badge>
-            ) : null}
-          </Inline>
-          <ViewToolbar
-            format={settings.format}
-            onFormat={(format) => update({ format })}
-            customFormats={settings.customFormats}
-            onNewFormat={() => setDialog({ open: true })}
-            wrap={settings.wrap}
-            onWrap={(wrap) => update({ wrap })}
-            columns={settings.columns}
-            onColumns={(columns) => update({ columns })}
-            hasLog={hasLog}
-            onNextError={actions.nextError}
-            onExport={actions.exportAs}
-            selectedCount={selected.size}
-            onCompare={actions.compare}
-          />
-          <FilterBar
-            filter={filter}
-            onChange={setFilter}
-            levels={source.info?.levels ?? {}}
-            searchError={checked.searchError}
-          />
-          {view.histogram ? (
-            <Timeline
-              histogram={view.histogram}
-              range={filter.range}
-              onRange={(range) => setFilter((f) => ({ ...f, range }))}
-            />
-          ) : null}
-          {shown === 0 ? (
-            <EmptyState
-              title="No entries match"
-              description={
-                isEmptyFilter(applied)
-                  ? 'This log has no entries.'
-                  : 'Loosen or clear the filters to see more.'
-              }
-              actions={
-                isEmptyFilter(applied) ? null : (
-                  <Button size="sm" onClick={() => setFilter(EMPTY_FILTER)}>
-                    Clear filters
-                  </Button>
-                )
-              }
-            />
-          ) : shown !== null ? (
-            <LogList
-              listRef={listRef}
-              total={shown}
-              entryAt={view.entryAt}
-              onRangeChange={view.onRangeChange}
-              expanded={expanded}
-              onToggle={toggle}
-              selected={selected}
-              onSelect={select}
-              onFieldFilter={addField}
-              onActiveChange={actions.setCursor}
-              wrap={settings.wrap}
-              search={applied.text}
-              columns={settings.columns}
-            />
-          ) : null}
-        </>
-      ) : null}
-    </Stack>
+          variant="soft"
+          icon={download}
+          disabled={!hasLog}
+        >
+          Export
+        </Button>
+      )}
+    />
   );
+
+  const entries =
+    source.status === 'opening' || source.status === 'error' || hasLog ? (
+      <Card
+        as="section"
+        title="Entries"
+        headingLevel={2}
+        padding="sm"
+        actions={hasLog ? exportMenu : undefined}
+      >
+        <Stack gap="4">
+          <OpenStatus source={source} />
+          {source.status === 'error' && source.error ? (
+            <Notice tone="danger" title="Could not open this log">
+              {source.error.message}
+            </Notice>
+          ) : null}
+          {hasLog ? (
+            <>
+              <Inline gap="2" align="center" wrap role="status">
+                <Text size="sm" tone="muted" numeric>
+                  {shown === null
+                    ? `Filtering ${entryCount(total)}`
+                    : `${shown.toLocaleString('en-US')} of ${entryCount(total)}`}
+                </Text>
+                {source.info ? (
+                  <Badge variant="soft" tone="neutral" size="sm">
+                    {`${settings.format === 'auto' ? 'Detected: ' : 'Format: '}${formatName(source.info.format)}`}
+                  </Badge>
+                ) : null}
+              </Inline>
+              <ViewToolbar
+                format={settings.format}
+                onFormat={(format) => update({ format })}
+                customFormats={settings.customFormats}
+                onNewFormat={() => setDialog({ open: true })}
+                wrap={settings.wrap}
+                onWrap={(wrap) => update({ wrap })}
+                columns={settings.columns}
+                onColumns={(columns) => update({ columns })}
+                hasLog={hasLog}
+                onNextError={actions.nextError}
+                selectedCount={selected.size}
+                onCompare={actions.compare}
+              />
+              <FilterBar
+                filter={filter}
+                onChange={setFilter}
+                levels={source.info?.levels ?? {}}
+                searchError={checked.searchError}
+              />
+              {view.histogram ? (
+                <Timeline
+                  histogram={view.histogram}
+                  range={filter.range}
+                  onRange={(range) => setFilter((f) => ({ ...f, range }))}
+                />
+              ) : null}
+              {shown === 0 ? (
+                <EmptyState
+                  title="No entries match"
+                  description={
+                    isEmptyFilter(applied)
+                      ? 'This log has no entries.'
+                      : 'Loosen or clear the filters to see more.'
+                  }
+                  actions={
+                    isEmptyFilter(applied) ? null : (
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        onClick={() => setFilter(EMPTY_FILTER)}
+                      >
+                        Clear filters
+                      </Button>
+                    )
+                  }
+                />
+              ) : shown !== null ? (
+                <LogList
+                  listRef={listRef}
+                  total={shown}
+                  entryAt={view.entryAt}
+                  onRangeChange={view.onRangeChange}
+                  expanded={expanded}
+                  onToggle={toggle}
+                  selected={selected}
+                  onSelect={select}
+                  onFieldFilter={addField}
+                  onActiveChange={actions.setCursor}
+                  wrap={settings.wrap}
+                  search={applied.text}
+                  columns={settings.columns}
+                />
+              ) : null}
+            </>
+          ) : null}
+        </Stack>
+      </Card>
+    ) : (
+      <Card as="section" padding="sm">
+        <EmptyState
+          icon={scrollText}
+          title="No log yet"
+          description="Paste a log above, or open a log file: entries, levels, a timeline and filters show here."
+        />
+      </Card>
+    );
 
   return (
-    <Stack gap="4">
-      <PaneTabs
-        id="log-parser"
-        label="Log panes"
-        value={tab.value}
-        onValueChange={tab.show}
-        panes={[
-          { id: 'input', label: 'Input', content: inputPane },
-          {
-            id: 'output',
-            label: 'Output',
-            content: outputPane,
-            changeKey: `${source.version}:${source.status}`,
-          },
-        ]}
-      />
+    <Stack gap="5">
+      {sourceCard}
+      {entries}
       <CustomFormatDialog
         open={dialogOpen}
         onOpenChange={(open) => {
@@ -329,26 +397,5 @@ const LogViewer = () => {
     </Stack>
   );
 };
-
-function FileLine({
-  input,
-  onClose,
-}: {
-  input: LogInput | null;
-  onClose(): void;
-}) {
-  if (input?.kind !== 'file') return null;
-  return (
-    <Inline gap="2" wrap>
-      <Text as="span" size="sm" tone="muted">
-        File: <span className="font-mono text-fg">{input.file.name}</span> (
-        {formatBytes(input.file.size)})
-      </Text>
-      <Button size="sm" variant="ghost" onClick={onClose}>
-        Close file
-      </Button>
-    </Inline>
-  );
-}
 
 export default LogViewer;

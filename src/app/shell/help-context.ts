@@ -4,11 +4,17 @@ import { createContext, useContext } from 'react';
 export interface HelpApi {
   openShortcuts(): void;
   openPrivacy(): void;
+  openLicences(): void;
+  openAbout(): void;
 }
 
+const none = () => {};
+
 export const HelpContext = createContext<HelpApi>({
-  openShortcuts: () => {},
-  openPrivacy: () => {},
+  openShortcuts: none,
+  openPrivacy: none,
+  openLicences: none,
+  openAbout: none,
 });
 
 export function useHelp(): HelpApi {

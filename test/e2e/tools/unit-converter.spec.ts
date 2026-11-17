@@ -30,9 +30,8 @@ test.describe('Unit Converter', () => {
 
   test('an electronvolt in joules is not rounded to 0', async ({ page }) => {
     await page.goto(pathOf('unit-converter'));
-    await page
-      .getByRole('combobox', { name: 'Category' })
-      .selectOption('energy');
+    await page.getByRole('combobox', { name: 'Category' }).click();
+    await page.getByRole('option', { name: 'Energy' }).click();
     await page
       .getByRole('textbox', { name: 'Electronvolts', exact: true })
       .fill('1');
@@ -58,7 +57,8 @@ test('a share link restores the category, value and unit', async ({
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(pathOf('unit-converter'));
-  await page.getByRole('combobox', { name: 'Category' }).selectOption('mass');
+  await page.getByRole('combobox', { name: 'Category' }).click();
+  await page.getByRole('option', { name: 'Mass' }).click();
   await page.getByRole('textbox', { name: 'Pounds', exact: true }).fill('3');
   await page.getByRole('button', { name: 'Share' }).click();
   const url = await page.evaluate(() => navigator.clipboard.readText());

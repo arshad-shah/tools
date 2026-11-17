@@ -2,11 +2,9 @@ import { expect, test } from '@playwright/test';
 import { pathOf } from '../tool-routes';
 
 type Page = import('@playwright/test').Page;
-/** Shows the Output pane (R41 tabs), then returns its editor. */
-const out = async (page: Page) => {
-  await page.getByRole('tab', { name: /^Output/ }).click();
-  return page.getByRole('textbox', { name: 'Output', exact: true });
-};
+/** The result CodeBlock, beside or under the input. */
+const out = async (page: Page, name = 'Encoded') =>
+  page.getByRole('figure', { name, exact: true });
 
 test('loads at /encoding/text', async ({ page }) => {
   expect(pathOf('url-encoder-decoder')).toBe('/encoding/text');
@@ -20,18 +18,20 @@ test('the old /encoding/url finds Text Encoder in NotFound search', async ({
   page,
 }) => {
   await page.goto('/encoding/url');
-  await expect(page.getByText(/Text Encoder/).first()).toBeVisible();
+  await page.getByRole('searchbox', { name: 'Search tools' }).fill('url');
+  await expect(
+    page
+      .getByRole('region', { name: 'Search results' })
+      .getByRole('link', { name: /Text Encoder \/ Decoder/ }),
+  ).toBeVisible();
 });
 
 test('copies the encoded output', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(pathOf('url-encoder-decoder'));
   await page.getByRole('textbox', { name: 'Text to encode' }).fill('a b&c');
-  await expect(await out(page)).toHaveValue('a%20b%26c');
-  await page
-    .getByRole('group', { name: 'Output panel' })
-    .getByRole('button', { name: 'Copy' })
-    .click();
+  await expect(await out(page)).toHaveText(/a%20b%26c/);
+  await page.getByRole('button', { name: 'Copy the output' }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     'a%20b%26c',
   );
@@ -39,11 +39,12 @@ test('copies the encoded output', async ({ page, context }) => {
 
 test('Punycode encodes host names', async ({ page }) => {
   await page.goto(pathOf('url-encoder-decoder'));
-  await page.getByLabel('Codec').selectOption('punycode');
+  await page.getByRole('combobox', { name: 'Codec' }).click();
+  await page.getByRole('option', { name: /Punycode/ }).click();
   await page
     .getByRole('textbox', { name: 'Text to encode' })
     .fill(`b${String.fromCodePoint(0xfc)}cher.example`);
-  await expect(await out(page)).toHaveValue('xn--bcher-kva.example');
+  await expect(await out(page)).toHaveText(/xn--bcher-kva\.example/);
 });
 
 test('decodes until stable and shows the rounds', async ({ page }) => {
@@ -52,8 +53,16 @@ test('decodes until stable and shows the rounds', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Text to decode' }).fill('%252541');
   await page.getByRole('button', { name: 'Decode until stable' }).click();
   await expect(page.getByText('Decoded in 3 rounds')).toBeVisible();
-  // The explicit run switches to the Output pane by itself.
-  await expect(
-    page.getByRole('textbox', { name: 'Output', exact: true }),
-  ).toHaveValue('A');
+  await expect(await out(page, 'Decoded')).toHaveText(/^Decoded.*A$/s);
+});
+
+test('a URL in the output opens in another tool', async ({ page }) => {
+  await page.goto(pathOf('url-encoder-decoder'));
+  await page.getByRole('radio', { name: 'Decode' }).click();
+  await page
+    .getByRole('textbox', { name: 'Text to decode' })
+    .fill('https%3A%2F%2Fexample.com%2F%3Fq%3D1');
+  await page.getByRole('button', { name: 'Open URL in' }).click();
+  await page.getByRole('menuitem', { name: /URL/ }).first().click();
+  await expect(page).toHaveURL(new RegExp(pathOf('url-parser')));
 });

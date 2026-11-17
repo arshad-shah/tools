@@ -2,10 +2,10 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { queryCommands } from '@/shared/lib/commands';
-import Footer from '../Footer';
+import { MemoryRouter } from 'react-router-dom';
+import { AppNav } from './AppNav';
 import { HelpContext } from './help-context';
 import { useHelpDialogs } from './HelpDialogs';
-import { HelpMenu } from './HelpMenu';
 import { PRIVACY_TEXT } from './privacy';
 
 const EXACT =
@@ -15,12 +15,17 @@ function Harness() {
   const { dialogs, ...help } = useHelpDialogs();
   return (
     <HelpContext.Provider value={help}>
-      <HelpMenu />
-      <Footer />
+      <AppNav onSearch={() => {}} onPrivacy={help.openPrivacy} />
       {dialogs}
     </HelpContext.Provider>
   );
 }
+const renderHarness = () =>
+  render(
+    <MemoryRouter>
+      <Harness />
+    </MemoryRouter>,
+  );
 
 const dialog = () => screen.getByRole('dialog', { name: 'Privacy' });
 
@@ -29,22 +34,24 @@ describe('Privacy note', () => {
     expect(PRIVACY_TEXT).toBe(EXACT);
   });
 
-  it('opens from the footer', () => {
-    render(<Harness />);
-    const footer = screen.getByRole('contentinfo');
-    fireEvent.click(within(footer).getByRole('button', { name: 'Privacy' }));
+  it('opens from the privacy status in the navigation', () => {
+    renderHarness();
+    const nav = screen.getByRole('navigation', { name: 'Tools navigation' });
+    fireEvent.click(
+      within(nav).getByRole('button', { name: 'Files stay on this device' }),
+    );
     expect(within(dialog()).getByText(EXACT)).toBeTruthy();
   });
 
   it('opens from the help menu', () => {
-    render(<Harness />);
+    renderHarness();
     fireEvent.click(screen.getByRole('button', { name: 'Help' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Privacy' }));
     expect(within(dialog()).getByText(EXACT)).toBeTruthy();
   });
 
   it('opens from Mod+K', () => {
-    render(<Harness />);
+    renderHarness();
     const cmd = queryCommands('privacy')
       .flatMap((g) => g.commands)
       .find((c) => c.label === 'Privacy');

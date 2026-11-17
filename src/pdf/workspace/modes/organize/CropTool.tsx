@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { IconRotateCcw } from '@/shared/ui/icons';
-import { Button, OverlayLayer, SelectionFrame } from '@/shared/ui';
+import { Button } from '@arshad-shah/cynosure';
+import { rotateCcw } from '@arshad-shah/cynosure/icons';
+import { Layer, Place } from '@/shared/surfaces/pdf/layers';
+import { PageFrame } from '@/shared/surfaces/pdf/PageFrame';
 import type { Box } from '@/pdf/doc/types';
 import type { PageOverlayProps } from '../types';
 
@@ -41,7 +43,7 @@ function fitCrop(next: Box, prev: Box, page: Box): Box {
  * The area never leaves the page.
  */
 export function CropTool(props: PageOverlayProps) {
-  const { page, doc, tool, viewport, width, height, pageNumber } = props;
+  const { page, doc, tool, viewport, pageNumber } = props;
   const geom = doc.pageGeom(page);
   const full: Box = {
     x: geom.view[0],
@@ -56,16 +58,10 @@ export function CropTool(props: PageOverlayProps) {
   const key = JSON.stringify(start);
   if (tool.id !== 'crop' || page.id !== doc.currentPage) return null;
   const box = preview?.key === key ? preview.box : start;
-  const [a, b, c, d, e, f] = viewport.transform;
   return (
-    <OverlayLayer
-      width={width}
-      height={height}
-      interactive
-      label={`Crop page ${pageNumber}`}
-    >
-      <SelectionFrame
-        transform={{ a, b, c, d, e, f }}
+    <Layer aria-label={`Crop page ${pageNumber}`} role="group">
+      <PageFrame
+        viewport={viewport}
         box={box}
         resizable
         snap={(next) => fitCrop(next, box, full)}
@@ -80,11 +76,12 @@ export function CropTool(props: PageOverlayProps) {
         }}
       />
       {page.crop ? (
-        <div className="absolute top-2 right-2">
+        <Place x={8} y={8}>
           <Button
             size="sm"
-            variant="secondary"
-            leftIcon={<IconRotateCcw size="sm" />}
+            variant="solid"
+            tone="neutral"
+            icon={rotateCcw}
             onClick={() =>
               doc.dispatch({
                 type: 'page.crop',
@@ -94,8 +91,8 @@ export function CropTool(props: PageOverlayProps) {
           >
             Reset crop
           </Button>
-        </div>
+        </Place>
       ) : null}
-    </OverlayLayer>
+    </Layer>
   );
 }

@@ -329,7 +329,7 @@ for (const c of CASES)
     // Keep the pointer off the page so no hit area shows its hover tint,
     // and let the export toast leave.
     await page.mouse.move(1, 1);
-    await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
+    await expect(page.locator('.cy-toast')).toHaveCount(0, {
       timeout: 15_000,
     });
     const ratio = await compareOverlayWithExport(page, {

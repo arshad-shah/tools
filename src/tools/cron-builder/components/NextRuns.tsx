@@ -1,16 +1,15 @@
-import React, { useMemo, useState } from 'react';
 import {
   CopyButton,
   EmptyState,
   Inline,
-  Label,
   List,
-  ListItem,
   SegmentedControl,
   Select,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { history } from '@arshad-shah/cynosure/icons';
+import React, { useMemo, useState } from 'react';
 import { formatIso, listZones, localZone } from '@/shared/lib/time';
 import { useNow } from '@/shared/lib/use-now';
 import { nextRuns } from '../lib/next';
@@ -55,43 +54,53 @@ export const NextRuns: React.FC<NextRunsProps> = ({
   }, [ast, from, count, effective]);
 
   return (
-    <Stack gap="3">
+    <Stack gap="5">
       <Inline gap="4" align="end" wrap>
-        <Stack gap="1" className="w-full sm:w-auto sm:min-w-64">
-          <Label htmlFor="cron-zone">Time zone</Label>
-          <Select
-            id="cron-zone"
-            value={zone}
-            onValueChange={onZone}
-            items={[
-              { value: '', label: `Browser zone (${localZone()})` },
-              ...zones.map((z) => ({ value: z.id, label: z.label })),
-            ]}
-          />
-        </Stack>
+        <Select
+          label="Time zone"
+          width="md"
+          value={zone}
+          onChange={onZone}
+          options={[
+            { value: '', label: `Browser zone (${localZone()})` },
+            ...zones.map((z) => ({ value: z.id, label: z.label })),
+          ]}
+        />
         <SegmentedControl
           label="How many runs"
           value={String(count)}
           onChange={(v) => onCount(Number(v))}
           options={COUNTS.map((c) => ({ value: c, label: c }))}
         />
-        <CopyButton variant="text" label="runs" value={runs.join('\n')} />
+        <CopyButton
+          value={runs.join('\n')}
+          disabled={!runs.length}
+          labels={{ copy: 'Copy runs' }}
+        />
       </Inline>
       {ast?.reboot ? (
         <Text size="sm" tone="muted">
           @reboot runs once at startup, so it has no scheduled times.
         </Text>
       ) : runs.length ? (
-        <List aria-label="Next runs" data-dynamic="">
-          {runs.map((r, i) => (
-            <ListItem key={`${i}-${r}`} className="font-mono text-sm">
-              {r}
-            </ListItem>
-          ))}
-        </List>
+        <List
+          label="Next runs"
+          marker="number"
+          divided
+          size="sm"
+          items={runs.map((r, i) => ({
+            id: `${i}-${r}`,
+            label: (
+              <Text as="span" variant="code">
+                {r}
+              </Text>
+            ),
+          }))}
+        />
       ) : (
         <EmptyState
           size="sm"
+          icon={history}
           title="No runs"
           description="Fix the expression to see when it runs next."
         />

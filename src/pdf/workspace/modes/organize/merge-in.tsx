@@ -3,9 +3,9 @@ import { loadFile, type LoadedFile } from '@/shared/lib/files';
 import { newId } from '@/shared/lib/id';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
-import { Dialog, DialogBody, DialogHeader, DialogTitle } from '@/shared/ui';
+import { Dialog } from '@arshad-shah/cynosure';
 import type { DocumentModel } from '@/pdf/doc/model';
-import { PasswordPrompt } from '@/pdf/components/PasswordPrompt';
+import { PasswordForm } from '@/pdf/ui/PasswordForm';
 import { preparePdf, unlockWithPassword } from '@/pdf/qpdf/unlock';
 import type { ModeProps } from '../types';
 import { useWorkspace } from '../../workspace-context';
@@ -84,22 +84,21 @@ export function useMergeIn(ctx: ModeProps) {
   };
 
   const dialog = (
-    <Dialog open={locked !== null} onOpenChange={(o) => !o && setLocked(null)}>
-      <DialogHeader>
-        <DialogTitle>Merge in a protected PDF</DialogTitle>
-      </DialogHeader>
-      <DialogBody>
-        {locked ? (
-          <PasswordPrompt
-            fileName={locked.file.name}
-            error={locked.error}
-            busy={locked.busy}
-            onSubmit={(pw) => void unlock(pw)}
-            onCancel={() => setLocked(null)}
-            submitLabel="Merge in"
-          />
-        ) : null}
-      </DialogBody>
+    <Dialog
+      open={locked !== null}
+      onOpenChange={(o) => !o && setLocked(null)}
+      title="Merge in a protected PDF"
+    >
+      {locked ? (
+        <PasswordForm
+          fileName={locked.file.name}
+          error={locked.error}
+          busy={locked.busy}
+          onSubmit={(pw) => void unlock(pw)}
+          onCancel={() => setLocked(null)}
+          submitLabel="Merge in"
+        />
+      ) : null}
     </Dialog>
   );
   return { onFiles, dialog };

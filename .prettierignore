@@ -6,3 +6,5 @@ pnpm-lock.yaml
 *.min.js
 *.min.css
 src/tools/password-generator/data/eff-large.json
+src/theme/cynosure-theme.css
+public/theme-init.js

@@ -34,10 +34,17 @@ const renderTool = () =>
 // tree and is slow in a loaded full run.
 const press = (name: string) =>
   fireEvent.click(screen.getByLabelText(name, { selector: 'button' }));
-const pressFace = (face: string) =>
-  fireEvent.click(screen.getByText(face, { selector: 'button' }));
+/** The keypad button showing `face` (its label may sit in nested spans). */
+const byFace = (face: string) => {
+  const b = screen
+    .getAllByRole('button')
+    .find((el) => el.textContent?.trim() === face);
+  if (!b) throw new Error(`No button shows ${face}`);
+  return b;
+};
+const pressFace = (face: string) => fireEvent.click(byFace(face));
 const line = (n: number) =>
-  screen.getByLabelText(`Line ${n}`, { selector: 'textarea' });
+  screen.getByLabelText(`Line ${n}`, { selector: 'input' });
 const result = (n: number) => screen.getByTestId(`result-${n}`).textContent;
 
 describe('Calculator', () => {
@@ -52,7 +59,7 @@ describe('Calculator', () => {
   it('clicking keypad 7, multiply, 6, = shows 42', () => {
     renderTool();
     pressFace('7');
-    expect(screen.getByText(TIMES, { selector: 'button' })).toBeTruthy();
+    expect(byFace(TIMES)).toBeTruthy();
     press('Multiply');
     pressFace('6');
     expect(line(1)).toHaveProperty('value', '7*6');
@@ -78,9 +85,8 @@ describe('Calculator', () => {
     expect(result(1)).toBe('5');
     expect(result(2)).toBe('10');
     expect(result(3)).not.toBe('');
-    expect(
-      screen.getByTestId('result-3').querySelector('.text-danger'),
-    ).not.toBeNull();
+    // The line's error shows where its result would be.
+    expect(result(3)).toMatch(/end of expression/i);
   });
 
   it('the page keys type into the active line when focus is outside it', () => {
@@ -99,12 +105,12 @@ describe('Calculator', () => {
     renderTool();
     fireEvent.change(line(1), { target: { value: '0.1 + 0.2' } });
     expect(result(1)).toBe('0.3');
-    fireEvent.click(screen.getByRole('button', { name: /Options/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Options/ }));
     fireEvent.click(screen.getByLabelText('Exact decimals'));
     expect(result(1)).toBe('0.3');
     fireEvent.change(line(1), { target: { value: 'sin(30)' } });
     expect(result(1)).toBe('0.5');
-    fireEvent.click(screen.getByText('Radians', { selector: 'button' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Radians' }));
     expect(result(1)).toMatch(/^-0\.988/);
   });
 
@@ -141,7 +147,8 @@ describe('Calculator', () => {
     expect(calculatorSettings.getSettings().saved).toHaveLength(1);
     const star = screen.getByRole('button', { name: 'Remove from favourites' });
     expect(star.getAttribute('aria-pressed')).toBe('true');
-    expect(star.className).not.toMatch(/bg-accent\b/);
+    press('Remove from favourites');
+    expect(calculatorSettings.getSettings().saved).toHaveLength(0);
   });
 
   it('hydrates the sheet, angle and precision from a share link', () => {
@@ -162,9 +169,9 @@ describe('Calculator', () => {
 
   it('programmer mode wraps 0xFF + 1 at 8 bits', () => {
     renderTool();
-    fireEvent.click(screen.getByText('Programmer', { selector: 'button' }));
-    fireEvent.click(screen.getByText('8-bit', { selector: 'button' }));
-    fireEvent.click(screen.getByText('Unsigned', { selector: 'button' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Programmer' }));
+    fireEvent.click(screen.getByRole('radio', { name: '8-bit' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Unsigned' }));
     const expr = screen.getByLabelText('Expression');
     fireEvent.change(expr, { target: { value: '0xFF' } });
     fireEvent.keyDown(expr, { key: 'Enter' });

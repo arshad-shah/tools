@@ -66,9 +66,8 @@ describe('UnitConverter', { timeout: 20_000 }, () => {
 
   it('shows tiny values with an exponent', async () => {
     await setup();
-    fireEvent.change(screen.getByRole('combobox', { name: 'Category' }), {
-      target: { value: 'energy' },
-    });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Category' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Energy' }));
     fireEvent.change(row('Electronvolts'), { target: { value: '1' } });
     expect(row('Joules').value).toBe('1.602176634e-19');
   });

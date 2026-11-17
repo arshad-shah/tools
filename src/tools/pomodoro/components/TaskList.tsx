@@ -1,85 +1,86 @@
-import React, { useState } from 'react';
-import { IconListTodo, IconPlus } from '@/shared/ui/icons';
 import {
   Badge,
-  Box,
   Button,
+  Card,
   EmptyState,
-  Heading,
-  Inline,
-  Input,
+  Form,
+  Grid,
+  ListRows,
   Stack,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { listChecks, plus } from '@arshad-shah/cynosure/icons';
+import React, { useState } from 'react';
 import { usePomodoroStore } from '../store';
 import { TaskRow } from './TaskRow';
 
+/** Today's tasks beside the timer: add, pick the current one, tick, delete. */
 export const TaskList: React.FC = () => {
   const tasks = usePomodoroStore((s) => s.tasks);
+  const currentTask = usePomodoroStore((s) => s.timer.currentTask);
   const [newTitle, setNewTitle] = useState('');
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
+  const add = () => {
     if (!newTitle.trim()) return;
     usePomodoroStore.getState().addTask(newTitle.trim());
     setNewTitle('');
   };
+  const done = tasks.filter((t) => t.completed).length;
 
   return (
-    <Stack gap="4">
-      <Inline justify="between" align="center" wrap>
-        <Inline align="center" gap="2">
-          <IconListTodo size="lg" />
-          <Heading level={3} size="md">
-            Tasks for today
-          </Heading>
-        </Inline>
-        {tasks.length > 0 && (
-          <Badge variant="soft" tone="neutral" size="sm">
-            {tasks.filter((t) => t.completed).length}/{tasks.length} completed
-          </Badge>
-        )}
-      </Inline>
-
-      <form onSubmit={handleAdd}>
-        <Inline gap="2">
-          <Box className="flex-1 min-w-0">
-            <Input
+    <Card
+      as="section"
+      title="Tasks for today"
+      actions={
+        tasks.length > 0 ? (
+          <Badge tone="neutral">{`${done}/${tasks.length} completed`}</Badge>
+        ) : undefined
+      }
+    >
+      <Stack gap="4">
+        <Form label="Add a task" onSubmit={add}>
+          <Grid columns="minmax(0, 1fr) auto" gap="2" align="end">
+            <TextField
+              label="New task"
+              labelHidden
+              placeholder="Add a new task"
               value={newTitle}
               onChange={setNewTitle}
-              placeholder="Add a new task…"
-              aria-label="New task"
             />
-          </Box>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={!newTitle.trim()}
-            leftIcon={<IconPlus size="sm" />}
-          >
-            Add
-          </Button>
-        </Inline>
-      </form>
-
-      <Stack gap="2">
+            <Button
+              variant="soft"
+              icon={plus}
+              disabled={!newTitle.trim()}
+              type="submit"
+            >
+              Add
+            </Button>
+          </Grid>
+        </Form>
         {tasks.length === 0 ? (
           <EmptyState
             size="sm"
-            icon={IconListTodo}
+            icon={listChecks}
             title="No tasks yet"
-            description="Add one using the form above."
+            description="Add one above, then press it to focus on it."
           />
         ) : (
-          tasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              onToggle={() => usePomodoroStore.getState().toggleTask(task.id)}
-              onDelete={() => usePomodoroStore.getState().deleteTask(task.id)}
-            />
-          ))
+          <ListRows label="Tasks" divided>
+            {tasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                current={task.id === currentTask}
+                onSelect={() =>
+                  usePomodoroStore.getState().setCurrentTask(task.id)
+                }
+                onToggle={() => usePomodoroStore.getState().toggleTask(task.id)}
+                onDelete={() => usePomodoroStore.getState().deleteTask(task.id)}
+              />
+            ))}
+          </ListRows>
         )}
       </Stack>
-    </Stack>
+    </Card>
   );
 };

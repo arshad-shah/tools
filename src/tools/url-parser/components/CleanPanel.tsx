@@ -1,16 +1,13 @@
-import { useMemo } from 'react';
-import { IconEraser } from '@/shared/ui/icons';
 import {
   Button,
-  Code,
-  CopyButton,
-  EmptyState,
+  CodeBlock,
   Inline,
-  Label,
+  Notice,
   Stack,
-  Text,
-  Textarea,
-} from '@/shared/ui';
+  TextArea,
+} from '@arshad-shah/cynosure';
+import { eraser } from '@arshad-shah/cynosure/icons';
+import { useMemo } from 'react';
 import { cleanUrl, DEFAULT_TRACKING } from '../lib/clean';
 
 interface Props {
@@ -20,7 +17,7 @@ interface Props {
   onApply(url: string): void;
 }
 
-/** Strips tracking params; the pattern list is editable and persisted. */
+/** Strips tracking params; the pattern list is editable and remembered. */
 export function CleanPanel({
   url,
   patterns,
@@ -28,61 +25,51 @@ export function CleanPanel({
   onApply,
 }: Props) {
   const result = useMemo(() => cleanUrl(url, patterns), [url, patterns]);
+  const n = result.removed.length;
   return (
-    <Stack gap="3">
-      {result.removed.length ? (
-        <Text size="sm">
-          Removes {result.removed.length} tracking{' '}
-          {result.removed.length === 1 ? 'parameter' : 'parameters'}:{' '}
-          {result.removed.join(', ')}
-        </Text>
-      ) : (
-        <EmptyState size="sm" title="No tracking parameters found" />
-      )}
-      <Code block className="break-all">
-        {result.url}
-      </Code>
-      <Inline gap="2">
-        <CopyButton variant="text" label="clean link" value={result.url} />
-        <Button
-          size="sm"
-          variant="primary"
-          leftIcon={<IconEraser size="sm" />}
-          disabled={!result.removed.length}
-          onClick={() => onApply(result.url)}
+    <Stack gap="5">
+      {n ? (
+        <Notice
+          tone="info"
+          title={`${n} tracking parameter${n === 1 ? '' : 's'} found`}
         >
+          {result.removed.join(', ')}
+        </Notice>
+      ) : (
+        <Notice tone="success" title="No tracking parameters found">
+          This link has nothing to clean.
+        </Notice>
+      )}
+      <CodeBlock title="Clean link" code={result.url} wrap />
+      <Inline>
+        <Button icon={eraser} disabled={!n} onClick={() => onApply(result.url)}>
           Clean URL
         </Button>
       </Inline>
-      <Stack gap="1">
-        <Label htmlFor="tracking-list">
-          Tracking parameters (one per line, * matches any ending)
-        </Label>
-        <Textarea
-          id="tracking-list"
-          rows={5}
-          value={patterns.join('\n')}
-          onChange={(v) =>
-            onPatternsChange(
-              v
-                .split('\n')
-                .map((s) => s.trim())
-                .filter(Boolean),
-            )
-          }
-          spellCheck={false}
-          className="font-mono"
-        />
-        <Inline>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onPatternsChange(DEFAULT_TRACKING)}
-          >
-            Reset list
-          </Button>
-        </Inline>
-      </Stack>
+      <TextArea
+        label="Tracking parameters"
+        description="One per line; * at the end matches any ending."
+        rows={5}
+        spellCheck={false}
+        value={patterns.join('\n')}
+        onChange={(v) =>
+          onPatternsChange(
+            v
+              .split('\n')
+              .map((s) => s.trim())
+              .filter(Boolean),
+          )
+        }
+      />
+      <Inline>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onPatternsChange(DEFAULT_TRACKING)}
+        >
+          Reset list
+        </Button>
+      </Inline>
     </Stack>
   );
 }

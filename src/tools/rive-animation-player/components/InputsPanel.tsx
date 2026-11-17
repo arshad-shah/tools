@@ -2,19 +2,17 @@ import React from 'react';
 import {
   StateMachineInput,
   StateMachineInputType,
-} from '@/shared/ui/adapters/rive-runtime';
+} from '@/shared/lib/rive-runtime';
 import {
-  Badge,
   Button,
   EmptyState,
   Grid,
   Heading,
-  Inline,
-  Label,
   Slider,
   Stack,
-  SwitchField,
-} from '@/shared/ui';
+  Switch,
+} from '@arshad-shah/cynosure';
+import { zap } from '@arshad-shah/cynosure/icons';
 import type { RiveStateMachines } from '../types';
 
 /** Trigger, boolean and number inputs of the active state machine. */
@@ -47,13 +45,14 @@ export function InputsPanel({
           <Heading level={3} size="sm">
             Triggers
           </Heading>
-          <Grid max={2} gap="2">
+          <Grid columns={{ base: 1, sm: 2 }} gap="2">
             {stateMachineInputs
               .filter((i) => i.type === StateMachineInputType.Trigger)
               .map((input) => (
                 <Button
                   key={input.name}
-                  variant="secondary"
+                  variant="soft"
+                  icon={zap}
                   size="sm"
                   onClick={() => handleInputChange(input, true)}
                   fullWidth
@@ -76,11 +75,11 @@ export function InputsPanel({
             {stateMachineInputs
               .filter((i) => i.type === StateMachineInputType.Boolean)
               .map((input) => (
-                <SwitchField
+                <Switch
                   key={input.name}
                   label={input.name}
                   checked={booleanValues[input.name] ?? false}
-                  onCheckedChange={(v) => {
+                  onChange={(v) => {
                     setBooleanValues((prev) => ({
                       ...prev,
                       [input.name]: v,
@@ -104,21 +103,15 @@ export function InputsPanel({
             {stateMachineInputs
               .filter((i) => i.type === StateMachineInputType.Number)
               .map((input) => (
-                <Stack key={input.name} gap="2">
-                  <Inline justify="between" align="center">
-                    <Label>{input.name}</Label>
-                    <Badge variant="soft" tone="neutral" size="sm">
-                      {numberValues[input.name] ?? 0}
-                    </Badge>
-                  </Inline>
-                  <Slider
-                    value={numberValues[input.name] ?? 0}
-                    onValueChange={(v) => handleInputChange(input, v)}
-                    min={0}
-                    max={100}
-                    aria-label={input.name}
-                  />
-                </Stack>
+                <Slider
+                  key={input.name}
+                  label={input.name}
+                  showValue
+                  value={numberValues[input.name] ?? 0}
+                  onChange={(v) => handleInputChange(input, v as number)}
+                  min={0}
+                  max={100}
+                />
               ))}
           </Stack>
         </Stack>

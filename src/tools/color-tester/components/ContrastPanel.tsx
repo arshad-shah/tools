@@ -5,17 +5,21 @@ import {
   parseColor,
   type Color,
 } from '@/shared/lib/colour';
-import { IconArrowRightLeft, IconWand2 } from '@/shared/ui/icons';
 import {
   Badge,
   Button,
-  ColorBlock,
   ColorField,
+  ColorSample,
+  Grid,
+  IconButton,
   Inline,
+  Notice,
   SegmentedControl,
   Stack,
+  Stat,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { swap, wand } from '@arshad-shah/cynosure/icons';
 import {
   contrastSummary,
   suggestFor,
@@ -42,7 +46,7 @@ const WHITE: Color = { r: 1, g: 1, b: 1, alpha: 1 };
 
 function Level({ name, pass }: { name: string; pass: boolean }) {
   return (
-    <Badge tone={pass ? 'success' : 'danger'} variant="soft" size="sm">
+    <Badge tone={pass ? 'success' : 'danger'} variant="soft">
       {`${name}: ${pass ? 'pass' : 'fail'}`}
     </Badge>
   );
@@ -87,42 +91,71 @@ export function ContrastPanel({
   }, [fg, bg, cvd, t]);
 
   return (
-    <Stack gap="4">
-      {/* Both fields share the row and shrink with the column. */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-3">
+    <Stack gap="5">
+      <Grid columns="minmax(0, 1fr) auto minmax(0, 1fr)" gap="3" align="end">
         <ColorField
           label="Foreground"
           value={fg}
           onChange={(css) => onFg(css)}
           alpha
         />
-        <Button
+        <IconButton
           variant="ghost"
-          size="sm"
-          leftIcon={<IconArrowRightLeft size="sm" />}
+          tone="neutral"
+          icon={swap}
+          label="Swap"
           onClick={onSwap}
-        >
-          Swap
-        </Button>
+        />
         <ColorField
           label="Background"
           value={bg}
           onChange={(css) => onBg(css)}
           alpha
         />
-      </div>
+      </Grid>
 
       {view ? (
         <>
-          <Inline gap="4" align="baseline" wrap>
-            <Text size="lg" weight="semibold" mono>
-              {`Ratio ${view.summary.ratio.toFixed(2)}:1`}
+          <ColorSample
+            color={view.bgHex}
+            ink={view.fgHex}
+            contrast={false}
+            size="lg"
+            label="Contrast preview"
+          >
+            <Text size="sm" align="center">
+              Small text, 14 px: the quick brown fox
             </Text>
-            <Text size="md" mono>{`APCA Lc ${view.summary.apca}`}</Text>
-          </Inline>
-          <Text size="sm" tone="muted">
-            {view.summary.apcaHint}
-          </Text>
+            <Text size="md" align="center">
+              Body text, 16 px: the quick brown fox jumps over the lazy dog
+            </Text>
+            <Text size="lg" weight="bold" align="center">
+              Large bold text, 18.66 px
+            </Text>
+            <Text size="2xl" align="center">
+              Large text, 24 px
+            </Text>
+          </ColorSample>
+          {cvd !== 'none' ? (
+            <Text size="xs" tone="muted">
+              {`Preview simulates ${cvd} colour vision; the numbers use the real colours.`}
+            </Text>
+          ) : null}
+          <Grid columns={2} gap="3">
+            <Stat
+              label="WCAG ratio"
+              value={`${view.summary.ratio.toFixed(2)}:1`}
+              variant="soft"
+              size="sm"
+            />
+            <Stat
+              label="APCA"
+              value={`Lc ${view.summary.apca}`}
+              description={view.summary.apcaHint}
+              variant="soft"
+              size="sm"
+            />
+          </Grid>
           <Inline gap="2" aria-label="WCAG 2.2 results" role="group" wrap>
             <Level name="AA normal" pass={view.summary.levels.normalAA} />
             <Level name="AAA normal" pass={view.summary.levels.normalAAA} />
@@ -131,69 +164,47 @@ export function ContrastPanel({
             <Level name="UI" pass={view.summary.levels.uiAA} />
           </Inline>
 
-          <Inline gap="2" align="center" wrap>
-            <SegmentedControl<`${ContrastTarget}`>
+          <Stack gap="3">
+            <SegmentedControl
               label="Target ratio"
               size="sm"
               value={target}
-              onChange={setTarget}
+              onChange={(v) => setTarget(v as `${ContrastTarget}`)}
               options={TARGETS}
             />
-            <Button
-              size="sm"
-              leftIcon={<IconWand2 size="sm" />}
-              disabled={!view.fgFix}
-              onClick={() => view.fgFix && onFg(view.fgFix)}
-            >
-              Suggest passing foreground
-            </Button>
-            <Button
-              size="sm"
-              leftIcon={<IconWand2 size="sm" />}
-              disabled={!view.bgFix}
-              onClick={() => view.bgFix && onBg(view.bgFix)}
-            >
-              Suggest passing background
-            </Button>
-          </Inline>
-          {view.passes ? (
-            <Text size="xs" tone="muted">
-              {`Already meets ${target}:1; nothing to suggest.`}
-            </Text>
-          ) : (
-            (!view.fgFix || !view.bgFix) && (
-              <Text size="xs" tone="muted">
+            <Inline gap="2" wrap>
+              <Button
+                size="sm"
+                variant="soft"
+                icon={wand}
+                disabled={!view.fgFix}
+                onClick={() => view.fgFix && onFg(view.fgFix)}
+              >
+                Suggest passing foreground
+              </Button>
+              <Button
+                size="sm"
+                variant="soft"
+                icon={wand}
+                disabled={!view.bgFix}
+                onClick={() => view.bgFix && onBg(view.bgFix)}
+              >
+                Suggest passing background
+              </Button>
+            </Inline>
+            {view.passes ? (
+              <Text size="sm" tone="muted">
+                {`Already meets ${target}:1; nothing to suggest.`}
+              </Text>
+            ) : !view.fgFix || !view.bgFix ? (
+              <Text size="sm" tone="muted">
                 {`No lightness of the ${!view.fgFix ? 'foreground' : 'background'} hue reaches ${target}:1.`}
               </Text>
-            )
-          )}
-
-          <ColorBlock
-            color={view.bgHex}
-            textColor={view.fgHex}
-            className="grid gap-2 rounded-lg border border-line p-4"
-            aria-label="Contrast preview"
-            role="group"
-            data-fg={view.fgHex}
-            data-bg={view.bgHex}
-          >
-            <p className="text-sm">Small text, 14 px: the quick brown fox</p>
-            <p className="text-base">
-              Body text, 16 px: the quick brown fox jumps over the lazy dog
-            </p>
-            <p className="text-lg font-bold">Large bold text, 18.66 px</p>
-            <p className="text-2xl">Large text, 24 px</p>
-          </ColorBlock>
-          {cvd !== 'none' && (
-            <Text size="xs" tone="muted">
-              {`Preview simulates ${cvd} colour vision; the numbers use the real colours.`}
-            </Text>
-          )}
+            ) : null}
+          </Stack>
         </>
       ) : (
-        <Text size="sm" className="text-danger">
-          Enter two valid colours
-        </Text>
+        <Notice tone="danger">Enter two valid colours</Notice>
       )}
     </Stack>
   );

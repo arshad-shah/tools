@@ -16,7 +16,17 @@ const TOOLS = [
 /** Proof that the tool really worked on the decrypted bytes. */
 const PROCESSED: Record<string, (page: Page) => Promise<void>> = {};
 const rendered = (page: Page) =>
-  expect(page.locator('canvas[data-rendered="true"]').first()).toBeAttached();
+  expect(
+    page
+      .locator(
+        'canvas[data-rendered="true"], img[alt="Page 1"], img[alt$=", page 1"]',
+      )
+      .first(),
+  ).toBeAttached();
+// Protect and Compress show no pages: the opened document's page count is
+// the proof.
+PROCESSED['pdf-protect'] = PROCESSED['pdf-compressor'] = (page) =>
+  expect(page.getByText(/^\d+ pages?,/)).toBeVisible();
 
 for (const id of TOOLS) {
   test(`${id} asks for the password of an AES-256 PDF and opens it`, async ({
@@ -30,9 +40,7 @@ for (const id of TOOLS) {
     await password.fill('wrong');
     await page.getByRole('button', { name: 'Unlock', exact: true }).click();
     await expect(
-      page
-        .getByRole('alert')
-        .getByText('That password is not correct. Try again.'),
+      page.getByText('That password is not correct. Try again.'),
     ).toBeVisible();
     await password.fill('user-pw');
     await page.getByRole('button', { name: 'Unlock', exact: true }).click();
@@ -84,7 +92,9 @@ test('a locked file can be skipped', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles([FILE, 'test/fixtures/generated/text-3.pdf']);
-  await expect(page.locator('li[data-sortable-item]')).toHaveCount(1);
+  await expect(
+    page.getByRole('list', { name: 'Files to merge' }).getByRole('listitem'),
+  ).toHaveCount(1);
   await page.getByRole('button', { name: 'Skip this file' }).click();
   await expect(
     page.getByLabel('Password for encrypted-aes.pdf', { exact: true }),
@@ -105,16 +115,15 @@ test('Merger keeps drop order when locked files are unlocked later', async ({
     },
     { name: 'c.pdf', mimeType: 'application/pdf', buffer: locked },
   ]);
-  const items = page.locator('li[data-sortable-item]');
+  const items = page
+    .getByRole('list', { name: 'Files to merge' })
+    .getByRole('listitem');
   await expect(items).toHaveCount(1);
   for (const name of ['c.pdf', 'a.pdf']) {
-    await page
-      .getByLabel(`Password for ${name}`, { exact: true })
-      .fill('user-pw');
-    await page
-      .getByRole('form', { name: `Unlock ${name}` })
-      .getByRole('button', { name: 'Unlock', exact: true })
-      .click();
+    const field = page.getByLabel(`Password for ${name}`, { exact: true });
+    await field.fill('user-pw');
+    // Enter submits the password of the file it is next to.
+    await field.press('Enter');
   }
   await expect(items).toHaveCount(3);
   await expect(items.nth(0)).toContainText('a.pdf');

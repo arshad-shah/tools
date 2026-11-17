@@ -1,22 +1,26 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useCommands } from '@/shared/lib/commands';
 import { useShortcuts } from '@/shared/lib/hotkeys';
-import { IconKeyboard, IconShieldCheck } from '@/shared/ui/icons';
+import { LicencesDialog } from '../LicencesDialog';
+import { AboutDialog } from './AboutDialog';
 import type { HelpApi } from './help-context';
 import { PrivacyDialog } from './PrivacyDialog';
 import { ShortcutSheet } from './ShortcutSheet';
 
+type Open = 'shortcuts' | 'privacy' | 'licences' | 'about' | null;
+
 /**
  * The shell's help dialogs. The keyboard shortcut sheet opens with `?`
- * (never while typing in a field), from the Mod+K palette and from the
- * top-bar help menu; the privacy note from the footer, the help menu and
- * Mod+K.
+ * (never while typing in a field), from Mod+K and from the Help menu; the
+ * privacy note from the navigation footer, the Help menu and Mod+K; the
+ * licences and the about box from the Help menu.
  */
 export function useHelpDialogs(): HelpApi & { dialogs: React.ReactNode } {
-  const [sheet, setSheet] = useState(false);
-  const openShortcuts = useCallback(() => setSheet(true), []);
-  const [privacy, setPrivacy] = useState(false);
-  const openPrivacy = useCallback(() => setPrivacy(true), []);
+  const [open, setOpen] = useState<Open>(null);
+  const openShortcuts = useCallback(() => setOpen('shortcuts'), []);
+  const openPrivacy = useCallback(() => setOpen('privacy'), []);
+  const openLicences = useCallback(() => setOpen('licences'), []);
+  const openAbout = useCallback(() => setOpen('about'), []);
   useShortcuts(
     [
       {
@@ -39,7 +43,6 @@ export function useHelpDialogs(): HelpApi & { dialogs: React.ReactNode } {
           group: 'Help',
           keywords: ['keys', 'hotkeys', 'help'],
           shortcut: '?',
-          icon: IconKeyboard,
           run: openShortcuts,
         },
         {
@@ -47,21 +50,32 @@ export function useHelpDialogs(): HelpApi & { dialogs: React.ReactNode } {
           label: 'Privacy',
           group: 'Help',
           keywords: ['privacy', 'data', 'network', 'storage'],
-          icon: IconShieldCheck,
           run: openPrivacy,
         },
       ],
     },
     [openShortcuts, openPrivacy],
   );
-  const dialogs = useMemo(
-    () => (
+  const dialogs = useMemo(() => {
+    const set = (which: Exclude<Open, null>) => (o: boolean) =>
+      setOpen(o ? which : null);
+    return (
       <>
-        <ShortcutSheet open={sheet} onOpenChange={setSheet} />
-        <PrivacyDialog open={privacy} onOpenChange={setPrivacy} />
+        <ShortcutSheet
+          open={open === 'shortcuts'}
+          onOpenChange={set('shortcuts')}
+        />
+        <PrivacyDialog
+          open={open === 'privacy'}
+          onOpenChange={set('privacy')}
+        />
+        <LicencesDialog
+          open={open === 'licences'}
+          onOpenChange={set('licences')}
+        />
+        <AboutDialog open={open === 'about'} onOpenChange={set('about')} />
       </>
-    ),
-    [sheet, privacy],
-  );
-  return { openShortcuts, openPrivacy, dialogs };
+    );
+  }, [open]);
+  return { openShortcuts, openPrivacy, openLicences, openAbout, dialogs };
 }

@@ -1,22 +1,24 @@
-import { useEffect, useState } from 'react';
 import {
-  IconArrowRight,
-  IconFileText,
-  IconModeFillSign,
-  IconOcrScan,
-  IconX,
-} from '@/shared/ui/icons';
-import {
+  Badge,
   Button,
   Card,
-  CardBody,
   IconButton,
-  MetaList,
-  Spinner,
+  IconTile,
+  Inline,
+  LoadingDots,
+  Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  arrowRight,
+  close,
+  fileText,
+  ocrScan,
+  signatureDraw,
+} from '@arshad-shah/cynosure/icons';
+import { useEffect, useState } from 'react';
 import { toToolError } from '@/shared/lib/errors';
-import { PasswordPrompt } from '@/pdf/components';
+import { PasswordForm } from '@/pdf/ui/PasswordForm';
 import {
   preparePdf,
   unlockWithPassword,
@@ -138,25 +140,26 @@ export function DetectedDocumentCard({
   const suggestOcr = !!s && !s.hasTextLayer;
 
   return (
-    <Card aria-label={`Dropped file ${file.name}`}>
-      <CardBody className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <IconFileText size="lg" className="text-fg-muted" />
-            <Text weight="medium" className="truncate">
+    <Card aria-label={`Dropped file ${file.name}`} padding="lg">
+      <Stack gap="5">
+        <Inline gap="4" align="center" justify="between">
+          <Inline gap="4" align="center" minSize="0">
+            <IconTile icon={fileText} tone="neutral" />
+            <Text weight="medium" truncate>
               {file.name}
             </Text>
-          </div>
+          </Inline>
           <IconButton
             label="Dismiss"
-            icon={IconX}
+            icon={close}
             size="sm"
             variant="ghost"
+            tone="neutral"
             onClick={onDismiss}
           />
-        </div>
+        </Inline>
         {probe.kind === 'locked' ? (
-          <PasswordPrompt
+          <PasswordForm
             fileName={file.name}
             error={probe.error}
             busy={probe.busy}
@@ -165,45 +168,53 @@ export function DetectedDocumentCard({
           />
         ) : null}
         {probe.kind === 'checking' || probe.kind === 'probing' ? (
-          <Text size="sm" tone="muted" className="flex items-center gap-2">
-            <Spinner size="sm" />
-            Looking at the document
-          </Text>
+          <Inline gap="3" align="center" role="status">
+            <LoadingDots size="sm" tone="muted" />
+            <Text size="sm" tone="muted">
+              Looking at the document
+            </Text>
+          </Inline>
         ) : null}
         {probe.kind === 'failed' ? (
           <Text size="sm" tone="muted">
             Could not inspect this file
           </Text>
         ) : null}
-        {meta.length ? <MetaList items={meta} /> : null}
-        <div className="flex flex-wrap gap-2">
+        {meta.length ? (
+          <Inline gap="2" wrap>
+            {meta.map((m) => (
+              <Badge key={m} size="sm" tone="neutral">
+                {m}
+              </Badge>
+            ))}
+          </Inline>
+        ) : null}
+        <Inline gap="2" wrap>
           {suggestFill ? (
             <Button
-              variant="primary"
-              leftIcon={<IconModeFillSign size="sm" />}
-              rightIcon={<IconArrowRight size="sm" />}
+              variant="solid"
+              tone="accent"
+              icon={signatureDraw}
+              iconEnd={arrowRight}
               onClick={() => open('fill-sign')}
             >
               Fill & Sign
             </Button>
           ) : null}
           {suggestOcr ? (
-            <Button
-              variant="secondary"
-              leftIcon={<IconOcrScan size="sm" />}
-              onClick={() => open('ocr')}
-            >
+            <Button variant="soft" icon={ocrScan} onClick={() => open('ocr')}>
               Run OCR
             </Button>
           ) : null}
           <Button
-            variant={suggestFill ? 'secondary' : 'primary'}
+            variant={suggestFill ? 'soft' : 'solid'}
+            tone={suggestFill ? 'neutral' : 'accent'}
             onClick={() => open()}
           >
             Open in editor
           </Button>
-        </div>
-      </CardBody>
+        </Inline>
+      </Stack>
     </Card>
   );
 }

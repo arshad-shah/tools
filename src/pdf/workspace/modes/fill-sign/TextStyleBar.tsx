@@ -1,36 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
-import type React from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
-  IconArrowRightLeft,
-  IconCheck,
-  IconColumns,
-  IconHash,
-  IconPen,
-  IconSettings2,
-  IconTrash,
-  IconType,
-} from '@/shared/ui/icons';
+  check,
+  columns,
+  edit as editIcon,
+  palette,
+  sliders,
+  trash,
+} from '@arshad-shah/cynosure/icons';
 import {
-  AnchoredToolbar,
-  ColorPicker,
-  ColorSwatchPicker,
+  ColorField,
+  ColorSwatches,
+  Divider,
   DockedToolbar,
-  Drawer,
+  FloatingToolbar,
   IconButton,
-  Label,
+  Inline,
+  NumberField,
   Popover,
   Select,
+  Sheet,
   Slider,
-  Stepper,
-  Swatch,
+  Stack,
   Switch,
   Text,
-  ToolbarDivider,
-  Tooltip,
-  type VirtualAnchor,
-} from '@/shared/ui';
-import { formatColor } from '@/shared/lib/colour';
-import { cn } from '@/shared/lib/cn';
+} from '@arshad-shah/cynosure';
 import {
   MAX_SIZE,
   MAX_SPACING,
@@ -47,7 +40,7 @@ const DEFAULT_COMB = 8;
 
 export interface TextStyleBarProps {
   /** The active box on screen. */
-  anchor: VirtualAnchor;
+  anchor: { getBoundingClientRect(): DOMRect };
   settings: FieldStyle;
   /** Multiline text: no letter spacing or character boxes. */
   multiline: boolean;
@@ -73,6 +66,43 @@ export interface TextStyleBarProps {
   scrollRoot?: () => Element | null;
   /** The active box's key (phone: reveal it again when it changes). */
   boxKey?: string;
+}
+
+/** Cynosure's NumberField as the bar's stepper: a value, smaller and larger. */
+function Stepper({
+  label,
+  less,
+  more,
+  value,
+  min,
+  max,
+  step,
+  large,
+  onSet,
+}: {
+  label: string;
+  less: string;
+  more: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  large: boolean;
+  onSet(v: number): void;
+}) {
+  return (
+    <NumberField
+      label={label}
+      labelHidden
+      size={large ? 'lg' : 'sm'}
+      value={value}
+      min={min}
+      max={max}
+      step={step}
+      labels={{ decrement: less, increment: more }}
+      onChange={(v) => v !== null && onSet(v)}
+    />
+  );
 }
 
 /**
@@ -109,9 +139,7 @@ export function TextStyleBar({
   useEffect(() => {
     latest.current = style;
   }, [style]);
-  const row = useRef<HTMLDivElement>(null);
-  const moreButton = useRef<HTMLButtonElement>(null);
-  const colourButton = useRef<HTMLButtonElement>(null);
+  const row = useRef<HTMLElement>(null);
   // A different field or an undo: start from its settings.
   if (JSON.stringify(style) !== JSON.stringify(synced)) {
     setSynced(style);
@@ -150,164 +178,161 @@ export function TextStyleBar({
   const phone = layout === 'phone';
   const touch = layout !== 'standard';
   const size = touch ? 'lg' : 'sm';
-  const tips = !phone;
-  const tip = (content: string, node: React.ReactElement) =>
-    tips ? <Tooltip content={content}>{node}</Tooltip> : node;
-  const cue = (Icon: typeof IconType) => (
-    <span aria-hidden className="flex shrink-0 pl-1 text-fg-subtle">
-      <Icon size="sm" />
-    </span>
-  );
   const combOn = draft.comb > 0;
-
   const controls = (
-    <div ref={row} className="contents">
-      {cue(IconType)}
+    <Inline gap="1" align="center" ref={row}>
       <Stepper
+        label="Text size in points"
+        less="Smaller text"
+        more="Larger text"
         value={draft.size}
         min={MIN_SIZE}
         max={MAX_SIZE}
         step={0.5}
-        label="Text size in points"
-        decrementLabel="Smaller text"
-        incrementLabel="Larger text"
-        size={touch ? 'lg' : 'md'}
-        tooltips={tips}
-        onValueChange={(v) => set({ size: v })}
-        className="border-transparent bg-transparent"
+        large={touch}
+        onSet={(v) => set({ size: v })}
       />
-      {tip(
-        'Text colour',
-        <IconButton
-          ref={colourButton}
+      <Popover
+        label="Text colour"
+        open={colours}
+        onOpenChange={setColours}
+        placement={phone ? 'top' : 'bottom'}
+        trigger={(t) => (
+          <IconButton
+            {...t}
+            label="Text colour"
+            icon={palette}
+            iconColor={draft.color}
+            variant="ghost"
+            size={size}
+          />
+        )}
+      >
+        <ColorSwatches
           label="Text colour"
-          aria-haspopup="dialog"
-          aria-expanded={colours}
-          icon={<Swatch color={draft.color} label={draft.color} size="sm" />}
-          variant="ghost"
-          size={size}
-          onClick={() => setColours((o) => !o)}
-          className="shrink-0"
-        />,
-      )}
+          swatches={[...TEXT_COLORS]}
+          value={draft.color}
+          onChange={(color) => set({ color })}
+        />
+      </Popover>
       {multiline ? null : (
         <>
-          <ToolbarDivider />
-          {cue(IconArrowRightLeft)}
+          <Divider orientation="vertical" spacing="sm" />
           <Stepper
+            label="Letter spacing in points"
+            less="Tighter letter spacing"
+            more="Wider letter spacing"
             value={draft.spacing}
             min={0}
             max={MAX_SPACING}
             step={0.5}
-            label="Letter spacing in points"
-            decrementLabel="Tighter letter spacing"
-            incrementLabel="Wider letter spacing"
-            size={touch ? 'lg' : 'md'}
-            tooltips={tips}
-            onValueChange={(v) => set({ spacing: v })}
-            className="border-transparent bg-transparent"
+            large={touch}
+            onSet={(v) => set({ spacing: v })}
           />
-          <ToolbarDivider />
-          {tip(
-            'Character boxes',
-            <IconButton
-              label="Character boxes"
-              aria-pressed={combOn}
-              icon={IconColumns}
-              variant="ghost"
-              size={size}
-              onClick={() => set({ comb: combOn ? 0 : DEFAULT_COMB })}
-              className={cn(
-                'shrink-0',
-                combOn && 'bg-accent-soft text-accent-fg hover:text-accent-fg',
-              )}
-            />,
-          )}
+          <IconButton
+            label="Character boxes"
+            pressed={combOn}
+            icon={columns}
+            variant={combOn ? 'soft' : 'ghost'}
+            tone={combOn ? 'accent' : 'neutral'}
+            size={size}
+            onClick={() => set({ comb: combOn ? 0 : DEFAULT_COMB })}
+          />
           {combOn ? (
-            <>
-              {cue(IconHash)}
-              <Stepper
-                value={draft.comb}
-                min={1}
-                max={MAX_COMB}
-                label="Number of character boxes"
-                decrementLabel="Fewer boxes"
-                incrementLabel="More boxes"
-                size={touch ? 'lg' : 'md'}
-                tooltips={tips}
-                onValueChange={(v) => set({ comb: Math.round(v) })}
-                className="border-transparent bg-transparent"
-              />
-            </>
+            <Stepper
+              label="Number of character boxes"
+              less="Fewer boxes"
+              more="More boxes"
+              value={draft.comb}
+              min={1}
+              max={MAX_COMB}
+              step={1}
+              large={touch}
+              onSet={(v) => set({ comb: Math.round(v) })}
+            />
           ) : null}
         </>
       )}
-      {onEditText || onDelete ? <ToolbarDivider /> : null}
-      {onEditText
-        ? tip(
-            'Edit text',
-            <IconButton
-              label="Edit text"
-              icon={IconPen}
-              variant="ghost"
-              size={size}
-              onClick={onEditText}
-              className="shrink-0"
-            />,
-          )
-        : null}
-      {onDelete
-        ? tip(
-            'Delete',
-            <IconButton
-              label="Delete"
-              icon={IconTrash}
-              tone="danger"
-              variant="ghost"
-              size={size}
-              onClick={onDelete}
-              className="shrink-0"
-            />,
-          )
-        : null}
-      <ToolbarDivider />
-      {tip(
-        'More text settings',
+      {onEditText || onDelete ? (
+        <Divider orientation="vertical" spacing="sm" />
+      ) : null}
+      {onEditText ? (
         <IconButton
-          ref={moreButton}
+          label="Edit text"
+          icon={editIcon}
+          variant="ghost"
+          size={size}
+          onClick={onEditText}
+        />
+      ) : null}
+      {onDelete ? (
+        <IconButton
+          label="Delete"
+          icon={trash}
+          tone="danger"
+          variant="ghost"
+          size={size}
+          onClick={onDelete}
+        />
+      ) : null}
+      <Divider orientation="vertical" spacing="sm" />
+      {phone ? (
+        <IconButton
           label="More text settings"
           aria-haspopup="dialog"
           aria-expanded={more}
-          icon={IconSettings2}
+          icon={sliders}
           variant="ghost"
           size={size}
-          onClick={() => setMore((o) => !o)}
-          className="shrink-0"
-        />,
+          onClick={() => setMore(true)}
+        />
+      ) : (
+        <Popover
+          label="More text settings"
+          open={more}
+          onOpenChange={setMore}
+          placement="bottom"
+          size="md"
+          trigger={(t) => (
+            <IconButton
+              {...t}
+              label="More text settings"
+              icon={sliders}
+              variant="ghost"
+              size={size}
+            />
+          )}
+        >
+          <TextSettingsPanel
+            value={draft}
+            multiline={multiline}
+            onChange={set}
+          />
+        </Popover>
       )}
-    </div>
+    </Inline>
   );
-  const done = tip(
-    'Done',
+  const done = (
     <IconButton
       label="Done"
-      icon={IconCheck}
-      variant="ghost"
+      icon={check}
+      variant="soft"
       tone="accent"
       size={size}
       onClick={onDone}
-      className="shrink-0"
-    />,
-  );
-
-  const settings = (
-    <TextSettingsPanel
-      value={draft}
-      multiline={multiline}
-      large={touch}
-      onChange={set}
     />
   );
+
+  // The box being typed in, kept in view above the phone bar.
+  const keep: RefObject<Element | null> = {
+    get current() {
+      return boxKey
+        ? (scrollRoot?.()?.ownerDocument.querySelector(
+            `[data-testid="field-${CSS.escape(boxKey)}"]`,
+          ) ?? null)
+        : null;
+    },
+  };
 
   return (
     <>
@@ -315,62 +340,35 @@ export function TextStyleBar({
         <DockedToolbar
           label="Text settings"
           onEscape={onClose}
-          keepVisible={{
-            rect: () => anchor.getBoundingClientRect(),
-            element: () => scrollRoot?.() ?? null,
-          }}
-          revealKey={boxKey}
+          keepVisible={keep}
           trailing={done}
-          data-testid="text-settings-bar"
         >
           {controls}
         </DockedToolbar>
       ) : (
-        <AnchoredToolbar
+        <FloatingToolbar
           anchor={anchor}
           label="Text settings"
           onEscape={onClose}
-          data-testid="text-settings-bar"
         >
           {controls}
           {done}
-        </AnchoredToolbar>
+        </FloatingToolbar>
       )}
-      <Popover
-        open={colours}
-        onOpenChange={setColours}
-        anchor={colourButton}
-        side={phone ? 'top' : 'bottom'}
-        label="Text colour"
-      >
-        <ColorSwatchPicker
-          label="Text colour"
-          value={draft.color}
-          options={[...TEXT_COLORS]}
-          onChange={(color) => set({ color })}
-        />
-      </Popover>
       {phone ? (
-        <Drawer
+        <Sheet
           open={more}
           onOpenChange={setMore}
           side="bottom"
           title="Text settings"
         >
-          {settings}
-        </Drawer>
-      ) : (
-        <Popover
-          open={more}
-          onOpenChange={setMore}
-          anchor={moreButton}
-          side="bottom"
-          align="end"
-          label="More text settings"
-        >
-          {settings}
-        </Popover>
-      )}
+          <TextSettingsPanel
+            value={draft}
+            multiline={multiline}
+            onChange={set}
+          />
+        </Sheet>
+      ) : null}
     </>
   );
 }
@@ -383,120 +381,79 @@ export function TextStyleBar({
 function TextSettingsPanel({
   value: style,
   multiline,
-  large,
   onChange,
 }: {
   value: FieldStyle;
   multiline: boolean;
-  large: boolean;
   onChange(patch: Partial<FieldStyle>): void;
 }) {
-  const stepper = large ? 'lg' : 'md';
-  const row = 'flex flex-wrap items-center gap-x-3 gap-y-2';
-  const label = 'w-32 shrink-0';
+  const CUSTOM = 'custom';
   return (
-    <div className="flex w-full flex-col gap-4 p-1 sm:w-[22rem]">
-      <div className={row}>
-        <Label htmlFor="text-size-exact" className={label}>
-          Size
-        </Label>
-        <Stepper
-          id="text-size-exact"
+    <Stack gap="5">
+      <Inline gap="3" align="end" wrap>
+        <NumberField
+          label="Size in points"
           value={style.size}
           min={MIN_SIZE}
           max={MAX_SIZE}
           step={0.5}
-          label="Text size in points"
-          decrementLabel="Smaller text"
-          incrementLabel="Larger text"
-          unit="pt"
-          size={stepper}
-          onValueChange={(v) => onChange({ size: v })}
+          labels={{ decrement: 'Smaller text', increment: 'Larger text' }}
+          onChange={(v) => v !== null && onChange({ size: v })}
         />
         <Select
-          aria-label="Text size presets"
-          value={TEXT_SIZES.includes(style.size) ? String(style.size) : ''}
-          items={[
-            { value: '', label: 'Custom' },
+          label="Text size presets"
+          labelHidden
+          value={TEXT_SIZES.includes(style.size) ? String(style.size) : CUSTOM}
+          options={[
+            { value: CUSTOM, label: 'Custom' },
             ...TEXT_SIZES.map((s) => ({ value: String(s), label: `${s} pt` })),
           ]}
-          onValueChange={(v) => v && onChange({ size: Number(v) })}
-          className={cn('w-28 shrink-0', large && 'h-11')}
+          onChange={(v) => v !== CUSTOM && onChange({ size: Number(v) })}
         />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Text size="sm" className="font-medium">
-          Text colour
-        </Text>
-        <ColorPicker
-          label="Text colour"
-          value={style.color}
-          palette={TEXT_COLORS.map((c) => c.value)}
-          defaultFormat="hex"
-          onChange={(_, color) =>
-            onChange({ color: formatColor({ ...color, alpha: 1 }, 'hex') })
-          }
-        />
-      </div>
+      </Inline>
+      <ColorField
+        label="Text colour"
+        value={style.color}
+        swatches={[...TEXT_COLORS]}
+        onChange={(color) => onChange({ color })}
+      />
       {multiline ? (
-        <Text size="xs" tone="muted">
+        <Text as="p" size="sm" tone="muted">
           Letter spacing and character boxes apply to single-line text.
         </Text>
       ) : (
         <>
-          <div className={row}>
-            <Label htmlFor="text-spacing-exact" className={label}>
-              Letter spacing
-            </Label>
-            <Stepper
-              id="text-spacing-exact"
-              value={style.spacing}
-              min={0}
-              max={MAX_SPACING}
-              step={0.5}
-              label="Letter spacing in points"
-              decrementLabel="Tighter letter spacing"
-              incrementLabel="Wider letter spacing"
-              unit="pt"
-              size={stepper}
-              onValueChange={(v) => onChange({ spacing: v })}
-            />
-            <Slider
-              aria-label="Letter spacing"
-              value={style.spacing}
-              min={0}
-              max={MAX_SPACING}
-              step={0.5}
-              onValueChange={(v) => onChange({ spacing: v })}
-              className="w-full"
-            />
-          </div>
-          <div className={row}>
-            <Label htmlFor="text-comb" className={label}>
-              Character boxes
-            </Label>
+          <Slider
+            label="Letter spacing"
+            showValue
+            labels={{ value: (v) => `${v} pt` }}
+            value={style.spacing}
+            min={0}
+            max={MAX_SPACING}
+            step={0.5}
+            onChange={(v) => onChange({ spacing: Number(v) })}
+          />
+          <Stack gap="3">
             <Switch
-              id="text-comb"
-              aria-label="Character boxes"
+              label="Character boxes"
               checked={style.comb > 0}
-              onCheckedChange={(on) =>
-                onChange({ comb: on ? DEFAULT_COMB : 0 })
-              }
+              onChange={(on) => onChange({ comb: on ? DEFAULT_COMB : 0 })}
             />
-            <Stepper
-              value={style.comb || DEFAULT_COMB}
-              min={1}
-              max={MAX_COMB}
-              label="Number of character boxes"
-              decrementLabel="Fewer boxes"
-              incrementLabel="More boxes"
-              size={stepper}
-              disabled={style.comb === 0}
-              onValueChange={(v) => onChange({ comb: Math.round(v) })}
-            />
-          </div>
+            {style.comb > 0 ? (
+              <NumberField
+                label="Number of character boxes"
+                value={style.comb}
+                min={1}
+                max={MAX_COMB}
+                labels={{ decrement: 'Fewer boxes', increment: 'More boxes' }}
+                onChange={(v) =>
+                  v !== null && onChange({ comb: Math.round(v) })
+                }
+              />
+            ) : null}
+          </Stack>
         </>
       )}
-    </div>
+    </Stack>
   );
 }

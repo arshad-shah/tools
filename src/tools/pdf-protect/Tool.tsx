@@ -1,32 +1,25 @@
-import React, { useState } from 'react';
-import { IconLock } from '@/shared/ui/icons';
 import {
   Button,
   Card,
-  CardBody,
   Checkbox,
-  Inline,
-  Heading,
-  Input,
-  Label,
+  Grid,
+  GridItem,
+  Notice,
   Select,
   Stack,
   Text,
-  type SelectItem,
-} from '@/shared/ui';
-import type { ToolProps } from '@/app/tool';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { fileLock } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
+import type { PdfInputFile } from '@/pdf/intake/use-pdf-intake';
+import { qpdf } from '@/pdf/qpdf';
+import { usePdfDocument } from '@/pdf/render';
+import { ChosenFile } from '@/pdf/ui/ChosenFile';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { JobProgress, ResultCard, type ResultFile } from '@/pdf/ui/ResultCard';
 import { deriveFilename } from '@/shared/lib/download';
 import { useJob } from '@/shared/state/useJob';
-import { usePdfDocument } from '@/pdf/render';
-import { qpdf } from '@/pdf/qpdf';
-import {
-  JobPanel,
-  PageThumb,
-  PdfFileHeader,
-  ResultFiles,
-  type PdfInputFile,
-  type ResultFile,
-} from '@/pdf/components';
 import {
   buildEncryptOptions,
   validatePasswords,
@@ -36,7 +29,7 @@ import {
 import { usePermissionSettings } from './store';
 import { useHandoff } from '@/shared/lib/handoff';
 
-const PRINT_ITEMS: SelectItem[] = [
+const PRINT_ITEMS = [
   { value: 'none', label: 'Not allowed' },
   { value: 'low', label: 'Low resolution' },
   { value: 'full', label: 'High resolution' },
@@ -44,12 +37,12 @@ const PRINT_ITEMS: SelectItem[] = [
 
 type Flag = Exclude<keyof PermissionChoices, 'printing'>;
 
-const FLAGS: { key: Flag; id: string; label: string }[] = [
-  { key: 'modify', id: 'pp-modify', label: 'Allow editing' },
-  { key: 'copy', id: 'pp-copy', label: 'Allow copying text and images' },
-  { key: 'annotate', id: 'pp-annotate', label: 'Allow comments' },
-  { key: 'fillForms', id: 'pp-forms', label: 'Allow filling forms' },
-  { key: 'assemble', id: 'pp-assemble', label: 'Allow page assembly' },
+const FLAGS: { key: Flag; label: string }[] = [
+  { key: 'modify', label: 'Allow editing' },
+  { key: 'copy', label: 'Allow copying text and images' },
+  { key: 'annotate', label: 'Allow comments' },
+  { key: 'fillForms', label: 'Allow filling forms' },
+  { key: 'assemble', label: 'Allow page assembly' },
 ];
 
 const EMPTY: PasswordInput = {
@@ -58,7 +51,11 @@ const EMPTY: PasswordInput = {
   ownerPassword: '',
 };
 
-const ProtectTool: React.FC<ToolProps> = () => {
+/**
+ * Protect PDF (redesign spec, file tool pattern): drop a PDF, set its
+ * passwords and permissions, protect it, download the protected copy.
+ */
+export default function ProtectTool() {
   // Files dropped on a hub land here once (spec §5.3).
   const handed = useHandoff();
   const [file, setFile] = useState<PdfInputFile | null>(null);
@@ -116,7 +113,7 @@ const ProtectTool: React.FC<ToolProps> = () => {
       return {
         name: deriveFilename(source.name, 'protected', 'pdf'),
         bytes,
-        detail: ['AES-256', ...warnings].join(' · '),
+        detail: ['AES-256', ...warnings].join('. '),
       };
     },
   );
@@ -157,146 +154,129 @@ const ProtectTool: React.FC<ToolProps> = () => {
       passwords.confirmPassword ||
       passwords.ownerPassword);
 
+  const busy = job.status === 'running';
+  const pages = doc
+    ? `${doc.pageCount} ${doc.pageCount === 1 ? 'page' : 'pages'}`
+    : loading
+      ? 'Opening'
+      : undefined;
+
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="5">
-          <PdfFileHeader
-            initialFiles={handed}
-            file={file}
-            onFile={pick}
-            onClear={clearFile}
-            loading={loading}
-            error={error}
-          />
-          {file && doc && (
-            <>
-              <div className="flex items-center gap-3">
-                <PageThumb
-                  docId={doc.docId}
-                  pageIndex={0}
-                  page={doc.pages[0]}
-                  width={56}
-                  label="Page 1"
-                />
-                <Text size="sm" tone="muted">
-                  {doc.pageCount} {doc.pageCount === 1 ? 'page' : 'pages'}
-                  {file.wasEncrypted &&
-                    ' · its current protection is replaced by the new password'}
-                </Text>
-              </div>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Stack gap="4" role="group" aria-labelledby="pp-pw-heading">
-                  <Heading level={2} size="sm" id="pp-pw-heading">
-                    Passwords
-                  </Heading>
-                  <Stack gap="2">
-                    <Label htmlFor="pp-user">Password to open</Label>
-                    <Input
-                      id="pp-user"
-                      type="password"
-                      autoComplete="new-password"
-                      value={passwords.userPassword}
-                      onChange={(v) => setPassword('userPassword', v)}
-                    />
-                  </Stack>
-                  <Stack gap="2">
-                    <Label htmlFor="pp-confirm">Confirm password</Label>
-                    <Input
-                      id="pp-confirm"
-                      type="password"
-                      autoComplete="new-password"
-                      value={passwords.confirmPassword}
-                      onChange={(v) => setPassword('confirmPassword', v)}
-                    />
-                  </Stack>
-                  <Stack gap="2">
-                    <Label htmlFor="pp-owner">
-                      Permissions password (optional)
-                    </Label>
-                    <Input
-                      id="pp-owner"
-                      type="password"
-                      autoComplete="new-password"
-                      value={passwords.ownerPassword}
-                      onChange={(v) => setPassword('ownerPassword', v)}
-                    />
-                    <Text size="sm" tone="muted">
-                      Leave blank to lock the permissions with a random password
-                      nobody knows.
-                    </Text>
-                  </Stack>
-                  {showProblem && (
-                    <Text size="sm" className="text-danger" role="status">
-                      {problem.message}
-                    </Text>
-                  )}
+    <Stack gap="6">
+      {file ? (
+        <ChosenFile
+          name={file.name}
+          size={file.size}
+          detail={pages}
+          disabled={busy}
+          onClear={clearFile}
+        />
+      ) : (
+        <PdfIntake initialFiles={handed} onFiles={(files) => pick(files[0])} />
+      )}
+      {error ? <Notice tone="danger">{error.message}</Notice> : null}
+      {file?.wasEncrypted ? (
+        <Notice tone="info">
+          Its current protection is replaced by the new password.
+        </Notice>
+      ) : null}
+
+      {file && doc ? (
+        <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
+          <GridItem span={{ base: 1, lg: 2 }}>
+            <Stack gap="6">
+              <Card as="section" title="Passwords">
+                <Stack gap="5">
+                  <TextField
+                    label="Password to open"
+                    type="password"
+                    revealable
+                    autoComplete="new-password"
+                    value={passwords.userPassword}
+                    onChange={(v) => setPassword('userPassword', v)}
+                  />
+                  <TextField
+                    label="Confirm password"
+                    type="password"
+                    revealable
+                    autoComplete="new-password"
+                    value={passwords.confirmPassword}
+                    onChange={(v) => setPassword('confirmPassword', v)}
+                    error={showProblem ? problem.message : undefined}
+                  />
+                  <TextField
+                    label="Permissions password (optional)"
+                    description="Leave blank to lock the permissions with a random password nobody knows."
+                    type="password"
+                    revealable
+                    autoComplete="new-password"
+                    value={passwords.ownerPassword}
+                    onChange={(v) => setPassword('ownerPassword', v)}
+                  />
                 </Stack>
-                <Stack gap="4" role="group" aria-labelledby="pp-perm-heading">
-                  <Heading level={2} size="sm" id="pp-perm-heading">
-                    Permissions
-                  </Heading>
-                  <Stack gap="3">
-                    <Stack gap="2">
-                      <Label htmlFor="pp-print">Printing</Label>
-                      <Select
-                        id="pp-print"
-                        value={choices.printing}
-                        items={PRINT_ITEMS}
-                        onValueChange={(v) =>
-                          setPermission({
-                            printing: v as PermissionChoices['printing'],
-                          })
+              </Card>
+              <Card as="section" title="Permissions">
+                <Stack gap="4">
+                  <Select
+                    label="Printing"
+                    value={choices.printing}
+                    options={PRINT_ITEMS}
+                    onChange={(v) =>
+                      setPermission({
+                        printing: v as PermissionChoices['printing'],
+                      })
+                    }
+                  />
+                  {FLAGS.map(({ key, label }) => {
+                    // Comments imply form filling in PDF readers.
+                    const implied = key === 'fillForms' && choices.annotate;
+                    return (
+                      <Checkbox
+                        key={key}
+                        label={label}
+                        description={
+                          implied
+                            ? 'Included when comments are allowed.'
+                            : undefined
                         }
-                        className="sm:max-w-64"
+                        checked={choices[key] || implied}
+                        disabled={implied}
+                        onChange={(v) => setPermission({ [key]: v })}
                       />
-                    </Stack>
-                    {FLAGS.map(({ key, id, label }) => {
-                      // Comments imply form filling in PDF readers.
-                      const implied = key === 'fillForms' && choices.annotate;
-                      return (
-                        <Inline key={key} gap="2" align="center" wrap>
-                          <Checkbox
-                            id={id}
-                            checked={choices[key] || implied}
-                            disabled={implied}
-                            onCheckedChange={(v) => setPermission({ [key]: v })}
-                          />
-                          <Label htmlFor={id}>{label}</Label>
-                          {implied && (
-                            <Text size="sm" tone="muted">
-                              Included when comments are allowed.
-                            </Text>
-                          )}
-                        </Inline>
-                      );
-                    })}
-                  </Stack>
+                    );
+                  })}
                 </Stack>
-              </div>
+              </Card>
+            </Stack>
+          </GridItem>
+          <Card as="section" title="Protect">
+            <Stack gap="5">
               <Text size="sm" tone="muted">
                 Uses AES-256. PDF readers enforce the permissions; the file
                 itself cannot stop a determined user from ignoring them.
               </Text>
-              <div>
+              <JobProgress job={job} label="Encrypting" onCancel={job.cancel} />
+              {busy ? null : (
                 <Button
-                  variant="primary"
-                  leftIcon={<IconLock size="sm" />}
-                  disabled={!!problem || job.status === 'running'}
+                  variant="solid"
+                  tone="accent"
+                  size="lg"
+                  fullWidth
+                  icon={fileLock}
+                  disabled={!!problem}
                   onClick={() => void protect(file)}
                 >
                   Protect PDF
                 </Button>
-              </div>
-            </>
-          )}
-          <JobPanel job={job} onCancel={job.cancel} runningLabel="Encrypting">
-            {job.result && <ResultFiles files={[job.result]} />}
-          </JobPanel>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-};
+              )}
+            </Stack>
+          </Card>
+        </Grid>
+      ) : null}
 
-export default ProtectTool;
+      {job.status === 'done' && job.result ? (
+        <ResultCard files={[job.result]} />
+      ) : null}
+    </Stack>
+  );
+}

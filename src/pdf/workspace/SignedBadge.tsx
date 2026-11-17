@@ -1,23 +1,36 @@
-import { useState } from 'react';
+import { Button, Dialog } from '@arshad-shah/cynosure';
 import {
-  Badge,
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  StatusDot,
-} from '@/shared/ui';
+  signatureBroken,
+  signatureUnknown,
+  signatureVerified,
+} from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
 import { SignaturesPanel } from './modes/fill-sign/SignaturesPanel';
 import { useDocumentSignatures } from './signatures';
 import { signedBadgeTone } from './signed-badge-state';
 import type { WorkspaceSession } from './session';
 
+const LOOK = {
+  accent: {
+    icon: signatureVerified,
+    tone: 'success',
+    name: 'Signed: show the signatures in this document',
+  },
+  warning: {
+    icon: signatureUnknown,
+    tone: 'warning',
+    name: 'Signed: the signer of this document is not verified or it changed after signing. Show the signatures',
+  },
+  danger: {
+    icon: signatureBroken,
+    tone: 'danger',
+    name: 'Signed: a signature in this document does not check out. Show the signatures',
+  },
+} as const;
+
 /**
- * Top-bar "Signed" badge (plan H-14): shown when the original document
- * carries signatures; the dot says whether they all check out. Opens the
- * Signatures panel.
+ * The header's "Signed" button: shown when the original document carries
+ * signatures, coloured by whether they all check out. Opens the list.
  */
 export function SignedBadge({
   session,
@@ -30,42 +43,31 @@ export function SignedBadge({
   const [open, setOpen] = useState(false);
   const { reports } = signatures;
   if (!reports?.length) return null;
-  const tone = signedBadgeTone(reports);
+  const look = LOOK[signedBadgeTone(reports)];
   return (
     <>
       <Button
-        variant="ghost"
+        variant="soft"
+        tone={look.tone}
         size={compact ? 'lg' : 'sm'}
+        icon={look.icon}
+        aria-label={look.name}
         onClick={() => setOpen(true)}
       >
-        <StatusDot tone={tone} decorative />
-        <Badge tone={tone === 'accent' ? 'neutral' : tone} variant="soft">
-          Signed
-        </Badge>
-        <span className="sr-only">
-          {
-            {
-              accent: 'Show the signatures in this document',
-              warning:
-                'The signer of this document is not verified or it changed after signing. Show the signatures',
-              danger:
-                'A signature in this document does not check out. Show the signatures',
-            }[tone]
-          }
-        </span>
+        Signed
       </Button>
-      <Dialog open={open} onOpenChange={setOpen} size="lg">
-        <DialogHeader>
-          <DialogTitle>Signatures in this document</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <SignaturesPanel signatures={signatures} />
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="primary" onClick={() => setOpen(false)}>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        size="lg"
+        title="Signatures in this document"
+        actions={
+          <Button variant="solid" tone="accent" onClick={() => setOpen(false)}>
             Done
           </Button>
-        </DialogFooter>
+        }
+      >
+        <SignaturesPanel signatures={signatures} />
       </Dialog>
     </>
   );

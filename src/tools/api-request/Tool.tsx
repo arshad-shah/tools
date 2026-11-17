@@ -1,39 +1,33 @@
+import {
+  Button,
+  Card,
+  EmptyState,
+  IconButton,
+  KeyValueEditor,
+  Notice,
+  NumberField,
+  ProgressBar,
+  SegmentedControl,
+  Select,
+  Sheet,
+  SplitPane,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
+import {
+  code,
+  folder,
+  save as saveIcon,
+  send as sendIcon,
+} from '@arshad-shah/cynosure/icons';
 import { useMemo, useState } from 'react';
+import { ToolActions } from '@/app/ui/tool-actions';
+import { useMediaQuery } from '@/shared/lib/media-query';
 import { readClipboardText } from '@/shared/lib/clipboard';
 import { toToolError } from '@/shared/lib/errors';
 import { useHandoff } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import {
-  Alert,
-  AlertDescription,
-  Box,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  ToolActions,
-  EmptyState,
-  ErrorState,
-  Inline,
-  KeyValueEditor,
-  Label,
-  LoadingState,
-  NumberInput,
-  PaneTabs,
-  PrivacyNote,
-  SegmentedControl,
-  Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Text,
-  usePaneTab,
-  IconButton,
-} from '@/shared/ui';
-import { IconCode, IconSave, IconSend } from '@/shared/ui/icons';
 import { AuthTab } from './components/AuthTab';
 import { BodyTab } from './components/BodyTab';
 import { CorsHelp } from './components/CorsHelp';
@@ -47,13 +41,19 @@ import { SnippetDialog } from './components/SnippetDialog';
 import { useHttpClient } from './hooks/useHttpClient';
 import { buildRequest } from './lib/http';
 import { requestFromHandoff } from './lib/io';
+import { fromPairs, toPairs } from './lib/kv';
 import { emptyRequest } from './lib/model';
+import { PANES_STACK_BELOW } from '@/app/ui/transform';
+
+type RequestPart = 'params' | 'headers' | 'auth' | 'body' | 'settings';
 
 export default function HttpClient() {
   const c = useHttpClient();
   const { request, setRequest, job } = c;
-  const [reqTab, setReqTab] = useState('params');
-  const tab = usePaneTab('api-request', 'request');
+  const [reqTab, setReqTab] = useState<RequestPart>('params');
+  const [sideOpen, setSideOpen] = useState(false);
+  // Phones: the five request parts do not fit one segmented row.
+  const phone = useMediaQuery('(max-width: 40rem)');
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [saveFolder, setSaveFolder] = useState('');
@@ -93,13 +93,9 @@ export default function HttpClient() {
   const newRequest = () => {
     setRequest(emptyRequest());
     c.setSavedId(null);
-    tab.show('request');
+    setSideOpen(false);
   };
-  // An explicit send shows the Response pane (R41).
-  const send = () => {
-    tab.show('response');
-    void c.send();
-  };
+  const send = () => void c.send();
   const save = () => {
     if (!c.saveCurrent()) {
       setSaveName(
@@ -134,133 +130,145 @@ export default function HttpClient() {
 
   const error = job.status === 'error' ? job.error : null;
 
+  const parts = [
+    { value: 'params', label: `Params (${request.params.length})` },
+    { value: 'headers', label: `Headers (${request.headers.length})` },
+    { value: 'auth', label: 'Auth' },
+    { value: 'body', label: request.mode === 'graphql' ? 'Query' : 'Body' },
+    { value: 'settings', label: 'Settings' },
+  ];
   const requestPane = (
-    <Card>
-      <CardHeader>
-        <Inline gap="2" align="center" justify="between" wrap>
-          <CardTitle as="h2">Request</CardTitle>
+    <Card
+      as="section"
+      title="Request"
+      actions={
+        <SegmentedControl
+          label="Request type"
+          size="sm"
+          value={request.mode}
+          onChange={(mode) =>
+            setRequest({ ...request, mode: mode as 'rest' | 'graphql' })
+          }
+          options={[
+            { value: 'rest', label: 'REST' },
+            { value: 'graphql', label: 'GraphQL' },
+          ]}
+        />
+      }
+    >
+      <Stack gap="5">
+        <RequestBar
+          request={request}
+          onChange={setRequest}
+          onCurl={c.importCurl}
+          onSend={send}
+          onCancel={job.cancel}
+          running={job.status === 'running'}
+          unresolved={unresolved}
+        />
+        {unresolved.length > 0 ? (
+          <Notice tone="warning">
+            {`Unresolved variables: ${unresolved.join(', ')}. Add them to the active environment.`}
+          </Notice>
+        ) : null}
+        {/* A SegmentedControl, not Tabs: Tabs throw when a kept-alive page
+            is shown again (docs/cynosure-gaps.md, 11). */}
+        {phone ? (
+          <Select
+            label="Request parts"
+            labelHidden
+            value={reqTab}
+            onChange={(v) => setReqTab(v as RequestPart)}
+            options={parts}
+          />
+        ) : (
           <SegmentedControl
-            label="Request type"
+            label="Request parts"
             size="sm"
-            value={request.mode}
-            onChange={(mode) =>
-              setRequest({ ...request, mode: mode as 'rest' | 'graphql' })
+            fullWidth
+            value={reqTab}
+            onChange={(v) => setReqTab(v as RequestPart)}
+            options={parts}
+          />
+        )}
+        {reqTab === 'params' ? (
+          <KeyValueEditor
+            label="Query parameters"
+            pairs={toPairs(request.params)}
+            onChange={(pairs) =>
+              setRequest({
+                ...request,
+                params: fromPairs(pairs, request.params),
+              })
             }
-            options={[
-              { value: 'rest', label: 'REST' },
-              { value: 'graphql', label: 'GraphQL' },
-            ]}
           />
-        </Inline>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <RequestBar
-            request={request}
-            onChange={setRequest}
-            onCurl={c.importCurl}
-            onSend={send}
-            onCancel={job.cancel}
-            running={job.status === 'running'}
-            unresolved={unresolved}
+        ) : null}
+        {reqTab === 'headers' ? (
+          <KeyValueEditor
+            label="Headers"
+            pairs={toPairs(request.headers)}
+            onChange={(pairs) =>
+              setRequest({
+                ...request,
+                headers: fromPairs(pairs, request.headers),
+              })
+            }
+            labels={{ key: 'Header' }}
           />
-          {unresolved.length > 0 && (
-            <Alert status="warning">
-              <AlertDescription>
-                Unresolved variables: {unresolved.join(', ')}. Add them to the
-                active environment.
-              </AlertDescription>
-            </Alert>
-          )}
-          <Tabs value={reqTab} onValueChange={setReqTab} variant="soft">
-            <TabsList aria-label="Request parts">
-              <TabsTrigger value="params">
-                Params ({request.params.length})
-              </TabsTrigger>
-              <TabsTrigger value="headers">
-                Headers ({request.headers.length})
-              </TabsTrigger>
-              <TabsTrigger value="auth">Auth</TabsTrigger>
-              <TabsTrigger value="body">
-                {request.mode === 'graphql' ? 'Query' : 'Body'}
-              </TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            </TabsList>
-            <TabsContent value="params">
-              <KeyValueEditor
-                rows={request.params}
-                onChange={(params) => setRequest({ ...request, params })}
-                ariaLabel="Query parameters"
-              />
-            </TabsContent>
-            <TabsContent value="headers">
-              <KeyValueEditor
-                rows={request.headers}
-                onChange={(headers) => setRequest({ ...request, headers })}
-                ariaLabel="Headers"
-                keyLabel="Header"
-              />
-            </TabsContent>
-            <TabsContent value="auth">
-              <AuthTab
-                auth={request.auth}
-                onChange={(auth) => setRequest({ ...request, auth })}
-              />
-            </TabsContent>
-            <TabsContent value="body">
-              <BodyTab request={request} onChange={setRequest} />
-            </TabsContent>
-            <TabsContent value="settings">
-              <Stack gap="2">
-                <Label htmlFor="http-timeout">Timeout (seconds)</Label>
-                <NumberInput
-                  id="http-timeout"
-                  value={Math.round(c.settings.timeoutMs / 1000)}
-                  min={1}
-                  max={600}
-                  onValueChange={(s) =>
-                    c.update({ timeoutMs: Math.max(1, s || 30) * 1000 })
-                  }
-                />
-                <Text size="xs" tone="muted">
-                  Redirects are followed by the browser and cannot be turned off
-                  from a page.
-                </Text>
-              </Stack>
-            </TabsContent>
-          </Tabs>
-        </Stack>
-      </CardBody>
+        ) : null}
+        {reqTab === 'auth' ? (
+          <AuthTab
+            auth={request.auth}
+            onChange={(auth) => setRequest({ ...request, auth })}
+          />
+        ) : null}
+        {reqTab === 'body' ? (
+          <BodyTab request={request} onChange={setRequest} />
+        ) : null}
+        {reqTab === 'settings' ? (
+          <NumberField
+            label="Timeout (seconds)"
+            description="Redirects are followed by the browser and cannot be turned off from a page."
+            value={Math.round(c.settings.timeoutMs / 1000)}
+            min={1}
+            max={600}
+            onChange={(s) =>
+              c.update({ timeoutMs: Math.max(1, s || 30) * 1000 })
+            }
+          />
+        ) : null}
+      </Stack>
     </Card>
   );
   const responsePane =
     job.status === 'running' ? (
-      <LoadingState label="Waiting for the response" />
+      <Card as="section" title="Response">
+        <ProgressBar label="Waiting for the response" indeterminate />
+      </Card>
     ) : error ? (
       error.code === 'NETWORK' ? (
         <CorsHelp error={error} />
       ) : (
-        <ErrorState error={error} title="Request failed" headingLevel={3} />
+        <Card as="section" title="Response">
+          <Notice tone="danger" title="Request failed">
+            {error.message}
+          </Notice>
+        </Card>
       )
     ) : c.sent ? (
       <ResponsePanel sent={c.sent} />
     ) : (
-      <EmptyState
-        icon={IconSend}
-        title="No response yet"
-        description="Send the request to see the status, headers and body here."
-      />
+      <Card as="section" title="Response">
+        <EmptyState
+          icon={sendIcon}
+          title="No response yet"
+          description="Send the request to see the status, headers and body here."
+        />
+      </Card>
     );
 
   return (
-    <Box className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-      <Sidebar
-        client={c}
-        onNewRequest={newRequest}
-        onNewCollection={() => setNewOpen(true)}
-        onOpened={() => tab.show('request')}
-      />
-
+    <Stack gap="5">
       <ToolActions>
         <EnvironmentMenu
           environments={c.environments}
@@ -268,41 +276,46 @@ export default function HttpClient() {
           onActiveChange={(activeEnv) => c.update({ activeEnv })}
           onSave={c.saveEnvironments}
         />
+        <Button variant="ghost" icon={folder} onClick={() => setSideOpen(true)}>
+          Collections
+        </Button>
         <IconButton
-          size="sm"
           variant="ghost"
-          label="Code"
-          showLabel="desktop"
-          icon={IconCode}
+          tone="neutral"
+          icon={code}
+          label="Copy as code"
           onClick={() => setSnippetOpen(true)}
         />
-        <Button
-          size="sm"
-          variant="secondary"
-          leftIcon={<IconSave size="sm" />}
-          onClick={save}
-        >
+        <Button variant="soft" icon={saveIcon} onClick={save}>
           Save
         </Button>
       </ToolActions>
-      <Stack gap="4" className="min-w-0">
-        <PrivacyNote variant="network" />
-        <PaneTabs
-          id="api-request"
-          label="Request and response"
-          value={tab.value}
-          onValueChange={tab.show}
-          panes={[
-            { id: 'request', label: 'Request', content: requestPane },
-            {
-              id: 'response',
-              label: 'Response',
-              changeKey: c.sent ?? job.status,
-              content: responsePane,
-            },
-          ]}
+      <Text size="sm" tone="muted">
+        Requests go directly from your browser to the URL you enter.
+      </Text>
+      <SplitPane
+        label="Resize the request and response"
+        defaultSize={50}
+        min={35}
+        max={65}
+        stackBelow={PANES_STACK_BELOW}
+        start={<Stack paddingInline="3">{requestPane}</Stack>}
+        end={<Stack paddingInline="3">{responsePane}</Stack>}
+      />
+
+      <Sheet
+        open={sideOpen}
+        onOpenChange={setSideOpen}
+        title="Collections and history"
+        side="start"
+      >
+        <Sidebar
+          client={c}
+          onNewRequest={newRequest}
+          onNewCollection={() => setNewOpen(true)}
+          onOpened={() => setSideOpen(false)}
         />
-      </Stack>
+      </Sheet>
 
       <SaveRequestDialog
         open={saveOpen}
@@ -339,6 +352,6 @@ export default function HttpClient() {
         request={request}
         vars={c.vars}
       />
-    </Box>
+    </Stack>
   );
 }

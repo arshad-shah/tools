@@ -1,19 +1,15 @@
-import React, { useState } from 'react';
-import { IconDownload } from '@/shared/ui/icons';
+import { useState } from 'react';
 import {
   Button,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   CompareSlider,
-  Inline,
-  Label,
-  SegmentedControl,
   Select,
   Stack,
-  type SegmentedOption,
-} from '@/shared/ui';
+  ZoomControls,
+  type ZoomSetting,
+} from '@arshad-shah/cynosure';
+import { download } from '@arshad-shah/cynosure/icons';
+import { useBlobUrl, useObjectUrl } from '@/shared/lib/object-url';
 import type { BatchEntry } from '../useBatch';
 
 export interface ComparePanelProps {
@@ -24,71 +20,63 @@ export interface ComparePanelProps {
   onDownload(entry: BatchEntry): void;
 }
 
-type Zoom = 'fit' | '1:1';
-
-const ZOOM_OPTIONS: SegmentedOption<Zoom>[] = [
-  { value: 'fit', label: 'Fit' },
-  { value: '1:1', label: 'Actual size' },
-];
-
 /** Before and after for one file, with its own download. */
-export const ComparePanel: React.FC<ComparePanelProps> = ({
+export function ComparePanel({
   entries,
   selected,
   onSelect,
   onDownload,
-}) => {
-  const [zoom, setZoom] = useState<Zoom>('fit');
-  const { row, result } = selected;
+}: ComparePanelProps) {
+  const { row, result, file } = selected;
+  // Fit the frame by default; 100% is the picture's actual size (gap 16).
+  const [zoom, setZoom] = useState<ZoomSetting>({ kind: 'fit-page' });
+  const [scale, setScale] = useState(1);
+  const before = useBlobUrl(file);
+  const after = useObjectUrl(
+    result?.bytes ?? null,
+    result?.mime ?? 'image/png',
+  );
   if (!result) return null;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">Compare</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <Inline gap="3" align="end" wrap justify="between">
-            <Stack gap="1">
-              <Label htmlFor="image-compare-file">File</Label>
-              <Select
-                id="image-compare-file"
-                value={row.id}
-                onValueChange={onSelect}
-                items={entries.map((e) => ({
-                  value: e.row.id,
-                  label: e.row.name,
-                }))}
-              />
-            </Stack>
-            <SegmentedControl<Zoom>
-              label="Zoom"
+    <Card as="section" title="Compare" headingLevel={2}>
+      <Stack gap="5">
+        <Select
+          label="File"
+          value={row.id}
+          onChange={onSelect}
+          options={entries.map((e) => ({ value: e.row.id, label: e.row.name }))}
+        />
+        {before && after ? (
+          <Stack gap="3">
+            <ZoomControls
               size="sm"
-              value={zoom}
-              onChange={(v) => setZoom(v)}
-              options={ZOOM_OPTIONS}
+              zoom={zoom}
+              percent={Math.round(scale * 100)}
+              onZoomChange={setZoom}
+              labels={{ group: 'Compare zoom' }}
             />
-          </Inline>
-          <CompareSlider
-            key={row.id}
-            before={{ src: selected.file }}
-            after={{ src: result.bytes, mime: result.mime }}
-            labels={['Original', 'Compressed']}
-            zoom={zoom}
-            label={`Compare ${row.name}`}
-          />
-          <Inline gap="2">
-            <Button
-              size="sm"
-              variant="secondary"
-              leftIcon={<IconDownload size="sm" />}
-              onClick={() => onDownload(selected)}
-            >
-              Download this file
-            </Button>
-          </Inline>
-        </Stack>
-      </CardBody>
+            <CompareSlider
+              key={row.id}
+              beforeSrc={before}
+              beforeAlt={`${row.name}, original`}
+              afterSrc={after}
+              afterAlt={`${row.name}, compressed`}
+              zoom={zoom}
+              onZoomChange={setZoom}
+              onScaleChange={setScale}
+              zoomable
+              labels={{ before: 'Original', after: 'Compressed' }}
+            />
+          </Stack>
+        ) : null}
+        <Button
+          variant="soft"
+          icon={download}
+          onClick={() => onDownload(selected)}
+        >
+          Download this file
+        </Button>
+      </Stack>
     </Card>
   );
-};
+}

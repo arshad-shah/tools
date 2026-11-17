@@ -9,7 +9,7 @@ import {
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { queryCommands, resetCommandsForTests } from '@/shared/lib/commands';
-import { IconModeEdit, IconModeOrganize } from '@/shared/ui/icons';
+import { fileStack, filePen } from '@arshad-shah/cynosure/icons';
 import type { ModeId } from '@/pdf/doc/types';
 import { ModeHost } from './ModeHost';
 import type { ModeContext, ModeManifest, ModeModule } from './modes/types';
@@ -33,7 +33,7 @@ function fakeMode(id: ModeId, label: string, extra: Partial<ModeModule> = {}) {
   const manifest: ModeManifest = {
     id,
     label,
-    icon: id === 'organize' ? IconModeOrganize : IconModeEdit,
+    icon: id === 'organize' ? fileStack : filePen,
     shortcut: '1',
     order: 1,
     load: async () => ({ default: module }),

@@ -1,14 +1,14 @@
 import type { CommandSource } from '@/shared/lib/commands';
 import { ToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
-import type { ThemePreference } from '@/shared/lib/theme';
+import type { ColorMode } from '@arshad-shah/cynosure';
 import {
-  IconClipboard,
-  IconHome,
-  IconMonitor,
-  IconMoon,
-  IconSun,
-} from '@/shared/ui/icons';
+  clipboardPaste,
+  home,
+  monitor,
+  moon,
+  sun,
+} from '@arshad-shah/cynosure/icons';
 import { CATEGORIES } from '../categories';
 import { categoryPath, toolPath } from '../routes';
 import type { ToolManifest } from '../tool';
@@ -29,7 +29,7 @@ export function routeCommands(navigate: Navigate): CommandSource {
       label: 'Go to Home',
       group: 'Pages',
       keywords: ['home', 'start', 'categories'],
-      icon: IconHome,
+      icon: home,
       run: () => navigate('/'),
     },
     ...CATEGORIES.map((c) => ({
@@ -86,25 +86,25 @@ export function favouriteCommands(
 }
 
 export function themeCommands(
-  setPreference: (p: ThemePreference) => void,
+  setPreference: (p: ColorMode) => void,
 ): CommandSource {
   const commands = [
     {
       id: 'theme:light',
       label: 'Use light theme',
-      icon: IconSun,
+      icon: sun,
       run: () => setPreference('light'),
     },
     {
       id: 'theme:dark',
       label: 'Use dark theme',
-      icon: IconMoon,
+      icon: moon,
       run: () => setPreference('dark'),
     },
     {
       id: 'theme:system',
       label: 'Use system theme',
-      icon: IconMonitor,
+      icon: monitor,
       run: () => setPreference('system'),
     },
   ].map((c) => ({
@@ -130,7 +130,7 @@ export function curlCommand(
       label: 'Import cURL into HTTP Client',
       group: 'Actions',
       keywords: ['curl', 'http', 'request', 'clipboard', 'paste', 'import'],
-      icon: IconClipboard,
+      icon: clipboardPaste,
       run: () =>
         readClipboard()
           .then((text) => {

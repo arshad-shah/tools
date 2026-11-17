@@ -41,11 +41,8 @@ describe('no-disable-enforced', () => {
       `// eslint-disable-next-line local/no-pictographic-text\nconst a = 1;`,
       'named',
     ],
-    [`/* eslint-disable local/no-lucide-outside-icons */`, 'named'],
-    [
-      `const a = 1; // eslint-disable-line local/no-raw-ui-outside-kit`,
-      'named',
-    ],
+    [`/* eslint-disable local/no-icon-libraries */`, 'named'],
+    [`const a = 1; // eslint-disable-line local/no-raw-ui`, 'named'],
     [
       `/* eslint-disable no-console, local/no-disable-enforced -- reason */`,
       'named',

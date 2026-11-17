@@ -1,24 +1,18 @@
-import React, { useMemo, useState } from 'react';
 import {
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  DateInput,
+  DateField,
   EmptyState,
   Grid,
-  Label,
-  NumberInput,
+  Notice,
+  NumberField,
   Stack,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Text,
-} from '@/shared/ui';
-import { cn } from '@/shared/lib/cn';
+  VisuallyHidden,
+  type TableColumn,
+} from '@arshad-shah/cynosure';
+import { globe } from '@arshad-shah/cynosure/icons';
+import React, { useMemo, useState } from 'react';
 import { bestOverlap, planDay } from '../lib/planner';
 
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -30,8 +24,8 @@ export interface MeetingPlannerProps {
 }
 
 /**
- * The meeting planner (spec §9.6): 24 UTC hours across, one row per zone,
- * working hours shaded and the best overlap outlined.
+ * The meeting planner: 24 UTC hours across, one row per zone, working
+ * hours tinted (Table column tone) and the best overlap in green.
  */
 export const MeetingPlanner: React.FC<MeetingPlannerProps> = ({
   zones,
@@ -53,112 +47,94 @@ export const MeetingPlanner: React.FC<MeetingPlannerProps> = ({
       ? 'No working hours overlap on this day.'
       : `Best overlap (UTC): ${[...best].map((h) => `${p2(h)}:00`).join(', ')}`;
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">Meeting planner</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="4">
-          <Grid cols={{ base: 1, md: 3 }} gap="3">
-            <Stack gap="1">
-              <Label htmlFor="mp-date">Day (UTC)</Label>
-              <DateInput
-                id="mp-date"
-                label="Day (UTC)"
-                value={date}
-                onChange={setDate}
-              />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor="mp-start">Working from</Label>
-              <NumberInput
-                id="mp-start"
-                value={start}
-                min={0}
-                max={end - 1}
-                onValueChange={(v) => onWorkHours([v, end])}
-              />
-            </Stack>
-            <Stack gap="1">
-              <Label htmlFor="mp-end">Working until</Label>
-              <NumberInput
-                id="mp-end"
-                value={end}
-                min={start + 1}
-                max={24}
-                onValueChange={(v) => onWorkHours([start, v])}
-              />
-            </Stack>
-          </Grid>
-          <Text size="sm" aria-live="polite">
-            {bestText}
-          </Text>
-          {zones.length === 0 ? (
-            <EmptyState
-              size="sm"
-              title="No zones yet"
-              description="Add zones in the world clock to plan across them."
-            />
+  const columns: TableColumn<{ zone: string; zi: number }>[] = [
+    {
+      key: 'zone',
+      header: 'Zone',
+      rowHeader: true,
+      cell: (r) => r.zone.replace(/_/g, ' '),
+    },
+    ...rows.map(
+      (h): TableColumn<{ zone: string; zi: number }> => ({
+        key: String(h.hourUTC),
+        header: p2(h.hourUTC),
+        // A heat grid: working hours tinted, the best overlap in green
+        // (the tint is not read out, so the cell says "working").
+        tone: (r) =>
+          h.cells[r.zi].working
+            ? best.has(h.hourUTC)
+              ? 'success'
+              : 'accent'
+            : undefined,
+        cell: (r) => {
+          const cell = h.cells[r.zi];
+          const text = `${p2(cell.localHour)}${cell.localMinute ? `:${p2(cell.localMinute)}` : ''}`;
+          return cell.working ? (
+            <Text as="span" size="sm" weight="medium" numeric>
+              {text}
+              <VisuallyHidden> working</VisuallyHidden>
+            </Text>
           ) : (
-            <Table aria-label="Meeting planner" data-testid="meeting-planner">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Zone</TableHead>
-                  {rows.map((r) => (
-                    <TableHead
-                      key={r.hourUTC}
-                      className={cn(
-                        'px-1 text-center font-mono-meta',
-                        best.has(r.hourUTC) && 'text-accent-ink',
-                      )}
-                    >
-                      {p2(r.hourUTC)}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {zones.map((zone, zi) => (
-                  <TableRow key={zone}>
-                    <TableCell className="whitespace-nowrap">
-                      {zone.replace(/_/g, ' ')}
-                    </TableCell>
-                    {rows.map((r) => {
-                      const cell = r.cells[zi];
-                      return (
-                        <TableCell
-                          key={r.hourUTC}
-                          data-working={cell.working || undefined}
-                          data-best={best.has(r.hourUTC) || undefined}
-                          className={cn(
-                            'px-1 text-center font-mono-meta',
-                            cell.working
-                              ? 'bg-accent-soft text-fg'
-                              : 'text-fg-subtle',
-                            best.has(r.hourUTC) &&
-                              'ring-1 ring-inset ring-accent',
-                          )}
-                        >
-                          {p2(cell.localHour)}
-                          {cell.localMinute ? `:${p2(cell.localMinute)}` : ''}
-                          {cell.working && (
-                            <span className="sr-only"> working</span>
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          <Text size="xs" tone="subtle">
-            Columns are UTC hours; each cell is the local hour in that zone.
-            Shaded cells are working hours; outlined columns suit everyone best.
-          </Text>
-        </Stack>
-      </CardBody>
+            <Text as="span" size="sm" tone="muted" numeric>
+              {text}
+            </Text>
+          );
+        },
+      }),
+    ),
+  ];
+
+  return (
+    <Card as="section" title="Meeting planner">
+      <Stack gap="5">
+        <Grid minItemWidth="11rem" gap="4">
+          <DateField
+            label="Day (UTC)"
+            value={date}
+            onChange={(v) => setDate(v ?? '')}
+          />
+          <NumberField
+            label="Working from"
+            value={start}
+            min={0}
+            max={end - 1}
+            onChange={(v) => v !== null && onWorkHours([v, end])}
+          />
+          <NumberField
+            label="Working until"
+            value={end}
+            min={start + 1}
+            max={24}
+            onChange={(v) => v !== null && onWorkHours([start, v])}
+          />
+        </Grid>
+        {zones.length === 0 ? (
+          <EmptyState
+            size="sm"
+            icon={globe}
+            title="No zones yet"
+            description="Add zones in the world clock to plan across them."
+          />
+        ) : (
+          <>
+            <Notice tone={best.size ? 'success' : 'warning'} size="sm">
+              {bestText}
+            </Notice>
+            <Table
+              caption="Meeting planner"
+              captionHidden
+              size="sm"
+              rows={zones.map((zone, zi) => ({ zone, zi }))}
+              getRowId={(r) => r.zone}
+              columns={columns}
+            />
+          </>
+        )}
+        <Text size="sm" tone="muted">
+          Columns are UTC hours; each cell is the local hour in that zone.
+          Tinted cells are working hours; green columns suit everyone best.
+        </Text>
+      </Stack>
     </Card>
   );
 };

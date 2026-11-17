@@ -1,17 +1,19 @@
-import { useId, useState } from 'react';
-import { notify } from '@/shared/lib/notify';
-import { IconSave, IconTrash } from '@/shared/ui/icons';
 import {
+  Badge,
   Button,
+  Grid,
   Heading,
   IconButton,
   Inline,
-  Input,
-  Label,
+  ListRow,
+  ListRows,
   Stack,
-  Swatch,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { save as saveIcon, trash, upload } from '@arshad-shah/cynosure/icons';
+import { useState } from 'react';
+import { notify } from '@/shared/lib/notify';
 import type { SavedPalette } from '../settings';
 
 export const MAX_SAVED = 50;
@@ -31,7 +33,6 @@ export function SavedPalettes({
   current,
   onLoad,
 }: SavedPalettesProps) {
-  const id = useId();
   const [name, setName] = useState('');
   const trimmed = name.trim();
 
@@ -46,70 +47,74 @@ export function SavedPalettes({
   };
 
   return (
-    <Stack gap="3">
-      <Heading level={3} size="md">
+    <Stack gap="4">
+      <Heading level={3} size="sm">
         Saved palettes
       </Heading>
-      <Inline gap="2" align="end" wrap>
-        <Stack gap="1">
-          <Label htmlFor={`${id}-name`}>Palette name</Label>
-          <Input
-            id={`${id}-name`}
-            value={name}
-            onChange={setName}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') save();
-            }}
-            autoComplete="off"
-          />
-        </Stack>
+      <Grid columns="minmax(0, 1fr) auto" gap="2" align="end">
+        <TextField
+          label="Palette name"
+          size="sm"
+          value={name}
+          onChange={setName}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') save();
+          }}
+          autoComplete="off"
+        />
         <Button
           size="sm"
-          leftIcon={<IconSave size="sm" />}
+          variant="soft"
+          icon={saveIcon}
           disabled={!trimmed}
           onClick={save}
         >
           Save palette
         </Button>
-      </Inline>
+      </Grid>
       {saved.length === 0 ? (
         <Text size="sm" tone="muted">
           No saved palettes yet. Saving keeps the working palette, or the scale
           when the working palette is empty.
         </Text>
       ) : (
-        <Stack gap="2" role="list" aria-label="Saved palettes">
+        <ListRows label="Saved palettes" divided>
           {saved.map((p) => (
-            <Inline key={p.name} gap="2" align="center" role="listitem" wrap>
-              <Text as="span" size="sm" weight="medium" className="min-w-24">
-                {p.name}
-              </Text>
-              <Inline gap="1">
-                {p.colors.slice(0, 12).map((c, i) => (
-                  <Swatch key={`${c}-${i}`} color={c} label={c} size="sm" />
-                ))}
-              </Inline>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onLoad([...p.colors])}
-                aria-label={`Load ${p.name}`}
-              >
-                Load
-              </Button>
-              <IconButton
-                label={`Delete ${p.name}`}
-                icon={IconTrash}
-                size="sm"
-                variant="ghost"
-                tone="danger"
-                onClick={() =>
-                  onSavedChange(saved.filter((q) => q.name !== p.name))
-                }
-              />
-            </Inline>
+            <ListRow
+              key={p.name}
+              label={p.name}
+              description={
+                <Inline gap="1" wrap>
+                  {p.colors.slice(0, 12).map((c, i) => (
+                    <Badge key={`${c}-${i}`} dot color={c} />
+                  ))}
+                </Inline>
+              }
+              trailing={`${p.colors.length} colours`}
+              actions={
+                <>
+                  <IconButton
+                    label={`Load ${p.name}`}
+                    icon={upload}
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onLoad([...p.colors])}
+                  />
+                  <IconButton
+                    label={`Delete ${p.name}`}
+                    icon={trash}
+                    size="sm"
+                    variant="ghost"
+                    tone="danger"
+                    onClick={() =>
+                      onSavedChange(saved.filter((q) => q.name !== p.name))
+                    }
+                  />
+                </>
+              }
+            />
           ))}
-        </Stack>
+        </ListRows>
       )}
     </Stack>
   );

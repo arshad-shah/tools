@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { EventType, type Rive } from '@/shared/ui/adapters/rive-runtime';
+import { EventType, type Rive } from '@/shared/lib/rive-runtime';
 
 export interface LoggedEvent {
   id: number;

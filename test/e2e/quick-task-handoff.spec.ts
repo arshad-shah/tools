@@ -13,9 +13,11 @@ test('a merged result opens in the workspace', async ({ page }) => {
       'test/fixtures/generated/text-3.pdf',
       'test/fixtures/generated/text-12.pdf',
     ]);
-  await expect(page.getByText('text-12.pdf')).toBeVisible();
-  await page.getByRole('button', { name: 'Merge PDFs' }).click();
-  await page.getByRole('button', { name: 'Open result in workspace' }).click();
+  await expect(
+    page.getByText('text-12.pdf', { exact: true }).first(),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Merge 2 files' }).click();
+  await page.getByRole('button', { name: 'Open in the workspace' }).click();
 
   await expect(page).toHaveURL(/\/pdf\/edit/);
   // The rail is virtualised: the first option already names the count.

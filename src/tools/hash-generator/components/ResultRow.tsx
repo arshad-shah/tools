@@ -1,63 +1,73 @@
+import {
+  Badge,
+  CopyButton,
+  DescriptionList,
+  Inline,
+  Text,
+} from '@arshad-shah/cynosure';
 import React from 'react';
-import { Badge, Code, CopyButton, Heading, Inline, Stack } from '@/shared/ui';
 import type { DigestInfo } from '@/shared/lib/crypto/digest';
 
 /** "Broken for security" and "Not cryptographic", honestly labelled. */
 export const DigestBadges: React.FC<{ info: DigestInfo }> = ({ info }) => (
   <>
-    {info.broken && (
-      <Badge variant="soft" tone="warning" size="xs">
+    {info.broken ? (
+      <Badge tone="warning" size="sm">
         Broken for security
       </Badge>
-    )}
-    {info.nonCrypto && (
-      <Badge variant="soft" tone="neutral" size="xs">
+    ) : null}
+    {info.nonCrypto ? (
+      <Badge tone="neutral" size="sm">
         Not cryptographic
       </Badge>
-    )}
+    ) : null}
   </>
 );
 
-interface ResultRowProps {
-  /** Test id suffix, e.g. `sha256` or `hmac-sha256`. */
+export interface DigestResult {
+  /** Element id suffix, e.g. `sha256` or `hmac-sha256` (`hash-<id>`). */
   id: string;
   name: string;
   info?: DigestInfo;
   value: string;
-  /** Verify state for this row, when an expected hash is entered. */
+  /** Verify state, when an expected hash is entered. */
   match?: boolean;
 }
 
-export const ResultRow: React.FC<ResultRowProps> = ({
-  id,
-  name,
-  info,
-  value,
-  match,
-}) => {
-  return (
-    <Stack gap="1" className="border-b border-line py-2 last:border-b-0">
-      <Inline justify="between" align="center" gap="2" wrap>
-        <Inline gap="2" align="center" wrap>
-          <Heading level={3} size="sm">
-            {name}
-          </Heading>
-          {info && <DigestBadges info={info} />}
-          {match !== undefined && (
-            <Badge
-              variant="soft"
-              tone={match ? 'success' : 'neutral'}
-              size="xs"
-            >
-              {match ? 'Match' : 'No match'}
+/** Digests as a list: the name and its labels, then the value with Copy. */
+export const ResultList: React.FC<{ results: DigestResult[] }> = ({
+  results,
+}) => (
+  <DescriptionList
+    layout="stacked"
+    divided
+    items={results.map((r) => ({
+      id: r.id,
+      term: (
+        <Inline gap="2" align="center" wrap as="span">
+          <Text as="span" weight="medium">
+            {r.name}
+          </Text>
+          {r.info ? <DigestBadges info={r.info} /> : null}
+          {r.match !== undefined ? (
+            <Badge tone={r.match ? 'success' : 'neutral'} size="sm">
+              {r.match ? 'Match' : 'No match'}
             </Badge>
-          )}
+          ) : null}
         </Inline>
-        <CopyButton label={name} value={value} variant="text" />
-      </Inline>
-      <Code block data-testid={`hash-${id}`} className="break-all">
-        {value}
-      </Code>
-    </Stack>
-  );
-};
+      ),
+      detail: (
+        <Inline gap="2" align="start" justify="between" as="span">
+          <Text as="span" variant="code" wrap="break" id={`hash-${r.id}`}>
+            {r.value}
+          </Text>
+          <CopyButton
+            size="sm"
+            value={r.value}
+            labels={{ copy: `Copy ${r.name}` }}
+          />
+        </Inline>
+      ),
+    }))}
+  />
+);

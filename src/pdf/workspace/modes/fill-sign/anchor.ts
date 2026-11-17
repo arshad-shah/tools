@@ -1,4 +1,4 @@
-import type { OverlayTransform } from '@/shared/ui';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
 import type { Box } from '@/pdf/doc/types';
 
 /** A Popover anchor at a page-space box, measured from the overlay's element. */

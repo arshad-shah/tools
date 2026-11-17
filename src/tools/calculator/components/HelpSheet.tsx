@@ -1,20 +1,17 @@
-import React from 'react';
 import {
-  Drawer,
+  Dialog,
   Inline,
   Kbd,
+  shortcutKeys,
   Stack,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import React from 'react';
 
 /** Keys and what they do; each `keys` entry is one Kbd combo. */
-const HELP_KEYS: { keys: string[]; action: string }[] = [
+type KeyRow = { keys: string[]; action: string };
+const HELP_KEYS: KeyRow[] = [
   { keys: ['0', '9'], action: 'Type digits (0 to 9) into the active line' },
   { keys: ['.'], action: 'Decimal point' },
   { keys: ['+', '-', '*', '/'], action: 'Add, subtract, multiply, divide' },
@@ -30,7 +27,8 @@ const HELP_KEYS: { keys: string[]; action: string }[] = [
   { keys: ['?'], action: 'Show this help' },
 ];
 
-const SYNTAX: { example: string; meaning: string }[] = [
+type SyntaxRow = { example: string; meaning: string };
+const SYNTAX: SyntaxRow[] = [
   { example: 'a = 5', meaning: 'Assign a variable for later lines' },
   { example: 'ans * 2', meaning: 'The previous line result' },
   { example: 'line2 / 3', meaning: 'The result of line 2' },
@@ -43,66 +41,60 @@ interface HelpSheetProps {
   onOpenChange(open: boolean): void;
 }
 
+/** `Mod+Shift+C` as this platform's key caps; one key as itself. */
+const combo = (k: string) =>
+  k.length > 1 && k.includes('+') ? shortcutKeys(k.toLowerCase()) : [k];
+
 /**
- * The `?` help sheet: the page keys (they act when focus is not in a text
- * field; the lines themselves edit like any text box) and the sheet syntax.
+ * The `?` help: the page keys (they act when focus is not in a text field;
+ * the lines themselves edit like any text box) and the sheet syntax.
  */
 export const HelpSheet: React.FC<HelpSheetProps> = ({ open, onOpenChange }) => (
-  <Drawer
+  <Dialog
     open={open}
     onOpenChange={onOpenChange}
-    side="bottom"
     title="Calculator keys"
+    description="Keys act on the active line when focus is outside the lines."
+    size="lg"
   >
-    <Stack gap="4">
-      <Text size="sm" tone="muted">
-        Keys act on the active line when focus is outside the lines.
-      </Text>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Key</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {HELP_KEYS.map((row) => (
-            <TableRow key={row.action + row.keys.join()}>
-              <TableCell>
-                <Inline gap="1">
-                  {row.keys.map((k) => (
-                    <Kbd key={k} keys={k} />
-                  ))}
-                  <Text as="span" className="sr-only">
-                    {row.keys.join(' or ')}
-                  </Text>
-                </Inline>
-              </TableCell>
-              <TableCell>{row.action}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Example</TableHead>
-            <TableHead>Meaning</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {SYNTAX.map((row) => (
-            <TableRow key={row.example}>
-              <TableCell>
-                <Text as="span" mono>
-                  {row.example}
-                </Text>
-              </TableCell>
-              <TableCell>{row.meaning}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <Stack gap="6">
+      <Table<KeyRow>
+        caption="Keys"
+        captionHidden
+        size="sm"
+        rows={HELP_KEYS}
+        getRowId={(r) => r.action + r.keys.join()}
+        columns={[
+          {
+            key: 'keys',
+            header: 'Key',
+            width: '12rem',
+            cell: (r) => (
+              <Inline gap="1" wrap aria-label={r.keys.join(' or ')}>
+                {r.keys.map((k) => (
+                  <Kbd key={k} keys={combo(k)} />
+                ))}
+              </Inline>
+            ),
+          },
+          { key: 'action', header: 'Action', cell: (r) => r.action },
+        ]}
+      />
+      <Table<SyntaxRow>
+        caption="Sheet syntax"
+        size="sm"
+        rows={SYNTAX}
+        getRowId={(r) => r.example}
+        columns={[
+          {
+            key: 'example',
+            header: 'Example',
+            width: '12rem',
+            cell: (r) => <Text variant="code">{r.example}</Text>,
+          },
+          { key: 'meaning', header: 'Meaning', cell: (r) => r.meaning },
+        ]}
+      />
     </Stack>
-  </Drawer>
+  </Dialog>
 );

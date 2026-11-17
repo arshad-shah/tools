@@ -1,6 +1,7 @@
 import { useContext } from 'react';
-import { IconTrash, IconType } from '@/shared/ui/icons';
-import { Button, InspectorSection } from '@/shared/ui';
+import { trash, type as typeIcon } from '@arshad-shah/cynosure/icons';
+import { Button, Stack } from '@arshad-shah/cynosure';
+import { InspectorSection } from '../../ui/InspectorSection';
 import { useDocumentSignatures } from '../../signatures';
 import { WorkspaceContext } from '../../workspace-context';
 import type { ModeProps } from '../types';
@@ -36,12 +37,12 @@ function FreeBoxSection({
     <InspectorSection
       title={one ? freeTitle(one) : `${boxes.length} boxes selected`}
     >
-      <div className="flex flex-col gap-2 p-3">
+      <Stack gap="2">
         {typed ? (
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
-            leftIcon={<IconType size="sm" />}
+            icon={typeIcon}
             onClick={() =>
               fillSign.set({
                 barClosed: null,
@@ -53,9 +54,10 @@ function FreeBoxSection({
           </Button>
         ) : null}
         <Button
-          variant="danger"
+          variant="soft"
+          tone="danger"
           size="sm"
-          leftIcon={<IconTrash size="sm" />}
+          icon={trash}
           onClick={() => {
             const ops = doc.dispatch(
               boxes.map((x) => ({
@@ -68,7 +70,7 @@ function FreeBoxSection({
         >
           Delete
         </Button>
-      </div>
+      </Stack>
     </InspectorSection>
   );
 }
@@ -93,11 +95,12 @@ function PlacedSection(ctx: ModeProps) {
   if (!signatures.length) return <FillSummary {...ctx} />;
   return (
     <InspectorSection title="Placed signature">
-      <div className="flex flex-col gap-2 p-3">
+      <Stack gap="2">
         <Button
-          variant="danger"
+          variant="soft"
+          tone="danger"
           size="sm"
-          leftIcon={<IconTrash size="sm" />}
+          icon={trash}
           onClick={() => {
             const ops = doc.dispatch(
               signatures.map((targetId) => ({
@@ -110,7 +113,7 @@ function PlacedSection(ctx: ModeProps) {
         >
           Remove
         </Button>
-      </div>
+      </Stack>
     </InspectorSection>
   );
 }
@@ -129,9 +132,9 @@ function SignaturesSection() {
 
 export function FillSignInspector(ctx: ModeProps) {
   return (
-    <>
+    <Stack gap="2">
       <SignaturesSection />
       <PlacedSection {...ctx} />
-    </>
+    </Stack>
   );
 }

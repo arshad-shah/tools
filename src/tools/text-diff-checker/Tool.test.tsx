@@ -7,11 +7,12 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { installChartStubs } from '@/shared/ui/chart/test-utils';
+import { installChartStubs } from '@/shared/charts/testing';
 import { textHandlers } from '@/shared/workers/handlers';
 import { putHandoff } from '@/shared/lib/handoff';
 import { diffPairPayload } from './lib/handoff';
 import TextDiff from './Tool';
+import { editorValue } from '@/shared/editor/testing';
 
 vi.mock('@/shared/workers/text-client', () => ({
   createTextWorker: () => ({
@@ -58,12 +59,9 @@ describe('Text Diff', () => {
     await waitFor(() =>
       expect(screen.getByText('0 added, 0 removed, 1 changed')).toBeTruthy(),
     );
-    tab('Original');
-    expect(box('Original text').value).toBe('alpha');
-    // The inputs are tabs (R41): Changed is hidden until shown.
-    expect(screen.queryByRole('textbox', { name: 'Changed text' })).toBeNull();
-    tab('Changed');
-    expect(box('Changed text').value).toBe('beta');
+    expect(box('Original text')).toBe('alpha');
+    // Both sides are shown side by side.
+    expect(box('Changed text')).toBe('beta');
     // The diff result is not tabbed: it stays on screen.
     expect(screen.getByText('0 added, 0 removed, 1 changed')).toBeTruthy();
   });
@@ -81,19 +79,13 @@ describe('Text Diff', () => {
     );
     render(<TextDiff />);
     await screen.findByText('0 added, 0 removed, 1 changed');
-    tab('Original');
-    expect(box('Original text').value).toBe('{"v":1}');
-    tab('Changed');
-    expect(box('Changed text').value).toBe('{"v":2}');
+    expect(box('Original text')).toBe('{"v":1}');
+    expect(box('Changed text')).toBe('{"v":2}');
   });
 });
 
-function tab(name: string) {
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
-}
-
 function box(name: string) {
-  return screen.getByRole('textbox', { name }) as HTMLTextAreaElement;
+  return editorValue(screen.getByRole('textbox', { name }));
 }
 
 function putHandoffAndOpen(left: string, right: string) {

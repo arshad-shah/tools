@@ -1,22 +1,21 @@
 import { useCallback, useState } from 'react';
 import {
-  IconCamera,
-  IconFieldSignature,
-  IconInitials,
-  IconNextSignTarget,
-  IconSignatureDraw,
-  IconSignatureType,
-  IconSignatureUpload,
-} from '@/shared/ui/icons';
+  camera,
+  fieldSignature,
+  signatureDraw,
+  signatureInitials,
+  signatureNext,
+  signatureType,
+  signatureUpload,
+} from '@arshad-shah/cynosure/icons';
 import {
   Button,
+  Inline,
+  ScrollArea,
+  SegmentedControl,
   Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
 import { newId } from '@/shared/lib/id';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
@@ -172,77 +171,62 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
   };
 
   return (
-    <Stack gap="3" className="min-w-0">
-      <Tabs value={tab} onValueChange={(t) => void switchTab(t as Tab)}>
-        <TabsList aria-label="Signature method" className="flex-wrap">
-          <TabsTrigger value="draw">
-            <IconSignatureDraw size="sm" />
-            Draw
-          </TabsTrigger>
-          <TabsTrigger value="type">
-            <IconSignatureType size="sm" />
-            Type
-          </TabsTrigger>
-          <TabsTrigger value="photo">
-            <IconCamera size="sm" />
-            Photo
-          </TabsTrigger>
-          <TabsTrigger value="initials">
-            <IconInitials size="sm" />
-            Initials
-          </TabsTrigger>
-          <TabsTrigger value="block">
-            <IconFieldSignature size="sm" />
-            Block
-          </TabsTrigger>
-          <TabsTrigger value="upload">
-            <IconSignatureUpload size="sm" />
-            Upload
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="draw">
-          <SignatureInk onChange={setSource} disabled={busy} />
-        </TabsContent>
-        <TabsContent value="type">
-          <SignatureTypeGallery
-            name={name}
-            onNameChange={setName}
-            onChange={setSource}
-            disabled={busy}
-          />
-        </TabsContent>
-        <TabsContent value="photo">
-          <SignaturePhoto onChange={setSource} disabled={busy} />
-        </TabsContent>
-        <TabsContent value="initials">
-          <SignatureInitials
-            name={name}
-            onChange={setSource}
-            disabled={busy}
-            ready={source !== null}
-            onInitialPages={() => void openInitialPages()}
-          />
-        </TabsContent>
-        <TabsContent value="block">
-          <SignatureBlockForm
-            signature={madeSignature}
-            name={name}
-            disabled={busy}
-            onPlace={placeBlock}
-          />
-        </TabsContent>
-        <TabsContent value="upload">
-          <SignatureUpload onChange={setSource} disabled={busy} />
-        </TabsContent>
-      </Tabs>
-      <Text size="sm" tone="muted">
+    <Stack gap="4" minSize="0">
+      {/* Tabs throw under StrictMode in Cynosure 0.6.0 (gap 11): the
+          methods are a SegmentedControl with the method shown below it. */}
+      <ScrollArea direction="horizontal">
+        <SegmentedControl
+          label="Signature method"
+          value={tab}
+          onChange={(t) => void switchTab(t as Tab)}
+          options={[
+            { value: 'draw', label: 'Draw', icon: signatureDraw },
+            { value: 'type', label: 'Type', icon: signatureType },
+            { value: 'photo', label: 'Photo', icon: camera },
+            { value: 'initials', label: 'Initials', icon: signatureInitials },
+            { value: 'block', label: 'Block', icon: fieldSignature },
+            { value: 'upload', label: 'Upload', icon: signatureUpload },
+          ]}
+        />
+      </ScrollArea>
+      {tab === 'draw' ? (
+        <SignatureInk onChange={setSource} disabled={busy} />
+      ) : tab === 'type' ? (
+        <SignatureTypeGallery
+          name={name}
+          onNameChange={setName}
+          onChange={setSource}
+          disabled={busy}
+        />
+      ) : tab === 'photo' ? (
+        <SignaturePhoto onChange={setSource} disabled={busy} />
+      ) : tab === 'initials' ? (
+        <SignatureInitials
+          name={name}
+          onChange={setSource}
+          disabled={busy}
+          ready={source !== null}
+          onInitialPages={() => void openInitialPages()}
+        />
+      ) : tab === 'block' ? (
+        <SignatureBlockForm
+          signature={madeSignature}
+          name={name}
+          disabled={busy}
+          onPlace={placeBlock}
+        />
+      ) : (
+        <SignatureUpload onChange={setSource} disabled={busy} />
+      )}
+      <Text as="p" size="sm" tone="muted">
         This is a picture of your signature. For a certificate-backed signature,
         turn on Digital signature when you export.
       </Text>
-      <div className="flex flex-wrap gap-2">
+      <Inline gap="2" wrap>
         {tab !== 'block' && target ? (
           <Button
-            variant="primary"
+            variant="solid"
+            tone="accent"
             disabled={!source || busy}
             onClick={async () => {
               const sig = await ready();
@@ -265,7 +249,8 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
         {tab !== 'block' ? (
           <>
             <Button
-              variant={target ? 'secondary' : 'primary'}
+              variant={target ? 'outline' : 'solid'}
+              tone={target ? 'neutral' : 'accent'}
               disabled={!source || busy}
               onClick={async () => {
                 if (!(await ready())) return;
@@ -276,7 +261,7 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
               Place
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               disabled={!source || busy}
               onClick={() => void placeAtCentre()}
             >
@@ -286,13 +271,13 @@ export function SignaturePanel({ ctx }: { ctx: ModeProps }) {
         ) : null}
         <Button
           variant="ghost"
-          leftIcon={<IconNextSignTarget size="sm" />}
+          icon={signatureNext}
           disabled={busy}
           onClick={() => void goNext()}
         >
           Next place to sign
         </Button>
-      </div>
+      </Inline>
       {initialPages ? (
         <InitialPagesDialog
           open

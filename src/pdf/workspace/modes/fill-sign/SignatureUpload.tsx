@@ -1,19 +1,18 @@
 import React, { useRef, useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
   Button,
-  Image,
   Inline,
-  Label,
+  Notice,
   Stack,
   Switch,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
 import type { LoadedFile } from '@/shared/lib/files';
 import { ToolError, toToolError } from '@/shared/lib/errors';
-import { useObjectUrl } from '@/shared/lib/object-url';
-import { PdfDropzone, uprightJpeg } from '@/pdf/components';
+import { uprightJpeg } from '@/pdf/components/upright-jpeg';
+import { PdfIntake } from '@/pdf/ui/PdfIntake';
+import { SamplePaper } from '@/shared/surfaces/pdf/InkSample';
+import { BytesImage } from '@/shared/surfaces/pdf/BytesImage';
 import { opaqueBounds, removeWhiteBackground } from '@/pdf/sign';
 import {
   canvasToPng,
@@ -89,10 +88,6 @@ export const SignatureUpload: React.FC<SignatureSourceProps> = ({
   const [result, setResult] = useState<ImageSource | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const run = useRef(0);
-  const previewUrl = useObjectUrl(
-    result?.bytes ?? null,
-    result?.format === 'jpeg' ? 'image/jpeg' : 'image/png',
-  );
 
   const update = async (next: LoadedFile | null, remove: boolean) => {
     const id = ++run.current;
@@ -122,7 +117,7 @@ export const SignatureUpload: React.FC<SignatureSourceProps> = ({
     <Stack gap="3">
       {file ? (
         <Inline justify="between" align="center" gap="3" wrap>
-          <Text weight="semibold">{file.name}</Text>
+          <Text weight="bold">{file.name}</Text>
           <Button
             size="sm"
             variant="ghost"
@@ -133,35 +128,30 @@ export const SignatureUpload: React.FC<SignatureSourceProps> = ({
           </Button>
         </Inline>
       ) : (
-        <PdfDropzone
+        <PdfIntake
           accept={['png', 'jpeg']}
-          label="Drop a PNG or JPEG of your signature"
+          size="md"
+          prompt="Drop a PNG or JPEG of your signature, or"
           disabled={disabled}
           onFiles={(files) => void update(files[0], removeBg)}
         />
       )}
-      <Inline gap="3" align="center">
-        <Switch
-          id="sig-remove-bg"
-          aria-label="Remove white background"
-          checked={removeBg}
-          disabled={disabled}
-          onCheckedChange={(on) => void update(file, on)}
-        />
-        <Label htmlFor="sig-remove-bg">Remove white background</Label>
-      </Inline>
-      {problem && (
-        <Alert status="danger">
-          <AlertDescription>{problem}</AlertDescription>
-        </Alert>
-      )}
-      {previewUrl && (
-        <Image
-          src={previewUrl}
-          alt="Signature preview"
-          fit="contain"
-          className="max-h-32 self-start rounded-md border border-line bg-white p-2"
-        />
+      <Switch
+        label="Remove white background"
+        checked={removeBg}
+        disabled={disabled}
+        onChange={(on) => void update(file, on)}
+      />
+      {problem && <Notice tone="danger">{problem}</Notice>}
+      {result && (
+        <SamplePaper height={128}>
+          <BytesImage
+            bytes={result.bytes}
+            mime={result.format === 'jpeg' ? 'image/jpeg' : 'image/png'}
+            fit="contain"
+            label="Signature preview"
+          />
+        </SamplePaper>
       )}
     </Stack>
   );

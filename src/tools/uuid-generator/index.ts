@@ -1,4 +1,4 @@
-import { IconTags } from '@/shared/ui/icons';
+import { tag as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'UUID / ULID / NanoID Generator',
   description:
     'Generate UUID v4, v7 and v5, ULIDs and NanoIDs in bulk, and decode an ID',
-  icon: IconTags,
+  icon,
   category: 'security',
   alsoIn: ['data'],
   slug: 'uuid',

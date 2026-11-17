@@ -1,11 +1,11 @@
-import { IconLock } from '@/shared/ui/icons';
+import { fileLock as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
   id: 'pdf-protect',
   name: 'Protect PDF',
   description: 'Add a password and permission restrictions to a PDF (AES-256)',
-  icon: IconLock,
+  icon,
   category: 'pdf',
   slug: 'protect',
   kind: 'quick-task',

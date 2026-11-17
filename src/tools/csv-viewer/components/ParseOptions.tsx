@@ -1,14 +1,17 @@
-import { useId } from 'react';
 import {
+  Badge,
+  Button,
   Checkbox,
-  Inline,
-  Label,
-  OptionsMenu,
+  Grid,
+  GridItem,
+  Popover,
+  ScrollArea,
   Select,
   Stack,
+  Switch,
   Text,
-  SwitchField,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { sliders } from '@arshad-shah/cynosure/icons';
 import { ENCODING_LABEL, TEXT_ENCODINGS } from '../lib/decode';
 import { DELIMITER_LABEL, DELIMITERS, type Delimiter } from '../lib/parse';
 import type { ParseChoices } from '../hooks/useCsvTable';
@@ -37,10 +40,6 @@ export function ParseOptions({
   columns,
   disabled,
 }: ParseOptionsProps) {
-  const delimiterId = useId();
-  const encodingId = useId();
-  const headerId = useId();
-  const quoteId = useId();
   const keep = new Set(choices.keepText);
   const changed =
     Number(choices.delimiter !== 'auto') +
@@ -50,111 +49,117 @@ export function ParseOptions({
     Number(keep.size > 0);
 
   return (
-    <OptionsMenu
+    <Popover
       label="Parse options"
-      title="Parse options"
-      changed={changed}
-      disabled={disabled}
-      width="w-[28rem]"
+      trigger={(props) => (
+        <Button
+          {...props}
+          size="sm"
+          variant="soft"
+          icon={sliders}
+          disabled={disabled}
+        >
+          Parse options
+          {changed ? (
+            <Badge size="sm" tone="accent">
+              {String(changed)}
+            </Badge>
+          ) : null}
+        </Button>
+      )}
     >
-      <div className="grid grid-cols-2 gap-3">
-        <Stack gap="1">
-          <Label htmlFor={delimiterId}>Delimiter</Label>
+      <Stack gap="4">
+        <Grid columns={2} gap="3">
           <Select
-            id={delimiterId}
+            label="Delimiter"
+            size="sm"
             value={choices.delimiter}
             disabled={disabled}
-            onValueChange={(v) =>
+            onChange={(v) =>
               onChange({ delimiter: v as ParseChoices['delimiter'] })
             }
-            items={[
-              {
-                value: 'auto',
-                label: 'Auto-detect',
-              },
+            options={[
+              { value: 'auto', label: 'Auto-detect' },
               ...DELIMITERS.map((d) => ({
                 value: d,
                 label: DELIMITER_LABEL[d],
               })),
             ]}
           />
-        </Stack>
-        <Stack gap="1">
-          <Label htmlFor={quoteId}>Quote</Label>
           <Select
-            id={quoteId}
+            label="Quote"
+            size="sm"
             value={choices.quoteChar}
             disabled={disabled}
-            onValueChange={(v) =>
+            onChange={(v) =>
               onChange({ quoteChar: v as ParseChoices['quoteChar'] })
             }
-            items={[
+            options={[
               { value: '"', label: 'Double quote' },
               { value: "'", label: 'Single quote' },
             ]}
           />
-        </Stack>
-        {fromFile && (
-          <Stack gap="1" className="col-span-2">
-            <Label htmlFor={encodingId}>Encoding</Label>
-            <Select
-              id={encodingId}
-              value={choices.encoding}
-              disabled={disabled}
-              onValueChange={(v) =>
-                onChange({ encoding: v as ParseChoices['encoding'] })
-              }
-              items={TEXT_ENCODINGS.map((e) => ({
-                value: e,
-                label:
-                  e === 'auto' && detected
-                    ? `Auto (${ENCODING_LABEL[detected.encoding as keyof typeof ENCODING_LABEL] ?? detected.encoding})`
-                    : ENCODING_LABEL[e],
-              }))}
-            />
+          {fromFile && (
+            <GridItem span={2}>
+              <Select
+                label="Encoding"
+                size="sm"
+                value={choices.encoding}
+                disabled={disabled}
+                onChange={(v) =>
+                  onChange({ encoding: v as ParseChoices['encoding'] })
+                }
+                options={TEXT_ENCODINGS.map((e) => ({
+                  value: e,
+                  label:
+                    e === 'auto' && detected
+                      ? `Auto (${ENCODING_LABEL[detected.encoding as keyof typeof ENCODING_LABEL] ?? detected.encoding})`
+                      : ENCODING_LABEL[e],
+                }))}
+              />
+            </GridItem>
+          )}
+        </Grid>
+        <Switch
+          size="sm"
+          label="Header row"
+          description="The first row names the columns"
+          checked={choices.header}
+          disabled={disabled}
+          onChange={(header) => onChange({ header, keepText: [] })}
+        />
+        {columns.length > 0 ? (
+          <Stack gap="2" role="group" aria-label="Columns kept as text">
+            <Stack gap="0">
+              <Text size="sm" weight="medium">
+                {keep.size ? `Keep as text (${keep.size})` : 'Keep as text'}
+              </Text>
+              <Text size="xs" tone="muted">
+                These columns are not typed (leading zeros and IDs stay exact).
+              </Text>
+            </Stack>
+            <ScrollArea label="Columns">
+              <Stack gap="1">
+                {columns.map((c) => (
+                  <Checkbox
+                    key={c}
+                    size="sm"
+                    label={c}
+                    checked={keep.has(c)}
+                    disabled={disabled}
+                    onChange={(on) => {
+                      const next = new Set(keep);
+                      if (on) next.add(c);
+                      else next.delete(c);
+                      onChange({ keepText: [...next] });
+                    }}
+                  />
+                ))}
+              </Stack>
+            </ScrollArea>
           </Stack>
-        )}
-      </div>
-      <SwitchField
-        label="Header row"
-        description="The first row names the columns"
-        id={headerId}
-        checked={choices.header}
-        disabled={disabled}
-        onCheckedChange={(header) => onChange({ header, keepText: [] })}
-      />
-      {columns.length > 0 ? (
-        <Stack gap="2" role="group" aria-label="Columns kept as text">
-          <Stack gap="0">
-            <Text as="span" size="sm" weight="medium">
-              {keep.size ? `Keep as text (${keep.size})` : 'Keep as text'}
-            </Text>
-            <Text as="span" size="xs" tone="subtle">
-              These columns are not typed (leading zeros and IDs stay exact).
-            </Text>
-          </Stack>
-          <Stack gap="1" className="max-h-48 overflow-auto">
-            {columns.map((c) => (
-              <Inline key={c} gap="2" align="center" wrap={false}>
-                <Checkbox
-                  checked={keep.has(c)}
-                  disabled={disabled}
-                  onCheckedChange={(on) => {
-                    const next = new Set(keep);
-                    if (on) next.add(c);
-                    else next.delete(c);
-                    onChange({ keepText: [...next] });
-                  }}
-                  aria-label={c}
-                />
-                <Text size="sm" className="truncate">
-                  {c}
-                </Text>
-              </Inline>
-            ))}
-          </Stack>
-        </Stack>
-      ) : null}
-    </OptionsMenu>
+        ) : null}
+      </Stack>
+    </Popover>
   );
 }

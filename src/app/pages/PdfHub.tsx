@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ToolCard } from '@/shared/ui';
 import { pdfRender } from '@/pdf/render';
 import { qpdf } from '@/pdf/qpdf/client';
 import { MODES } from '@/pdf/workspace/modes/registry';
 import { getCategory } from '../categories';
 import { routePdfHubDrop } from '../drop-routing';
 import { TOOLS } from '../registry';
-import { routerLink } from '../shell/router-link';
+import { modeGlyph } from '../ui/glyphs';
+import { LinkCard } from '../ui/ToolCard';
 import { Hub } from './Hub';
 import { DetectedDocumentCard } from './pdf-hub/DetectedDocumentCard';
 
@@ -60,11 +60,10 @@ export function PdfHub() {
                 id: 'workspace-modes',
                 label: 'Workspace modes',
                 children: MODES.map((m) => (
-                  <ToolCard
+                  <LinkCard
                     key={m.id}
                     href={`/pdf/edit/${m.id}`}
-                    renderLink={routerLink}
-                    icon={m.icon}
+                    icon={modeGlyph(m.id)}
                     title={m.label}
                     description={`Open a PDF in the workspace in ${m.label} mode`}
                   />

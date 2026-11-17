@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { OverlayLayer, ShapeLayer, type Shape } from '@/shared/ui';
+import { ShapeLayer, type Shape } from '@/shared/surfaces/page/shape-layer';
+import { Layer } from '@/shared/surfaces/pdf/layers';
 import { toPage, type Viewport } from '@/pdf/doc/geometry';
 import type { Box, PageRef } from '@/pdf/doc/types';
 import type { DocumentApi } from '../types';
@@ -158,17 +159,14 @@ export function DrawLayer({
   }
 
   return (
-    <OverlayLayer
-      width={width}
-      height={height}
-      interactive
-      label={`Draw on page ${pageNumber}`}
-      className="cursor-crosshair touch-none"
+    <Layer
+      role="group"
+      aria-label={`Draw on page ${pageNumber}`}
       data-testid={`annotate-draw-${pageNumber}`}
+      crosshair
     >
-      <div
+      <Layer
         ref={ref}
-        className="absolute inset-0"
         onPointerDown={(ev) => {
           if (ev.button !== 0) return;
           ev.currentTarget.setPointerCapture(ev.pointerId);
@@ -196,6 +194,6 @@ export function DrawLayer({
           shapes={preview}
         />
       ) : null}
-    </OverlayLayer>
+    </Layer>
   );
 }

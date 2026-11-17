@@ -1,21 +1,28 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { IconDownload, IconRefreshCw } from '@/shared/ui/icons';
 import {
   Button,
   Card,
-  CardBody,
-  ErrorState,
+  CodeBlock,
+  CopyButton,
+  EmptyState,
+  Grid,
   Inline,
-  Input,
-  Label,
-  NumberInput,
+  Kbd,
+  Menu,
+  Notice,
+  NumberField,
   SegmentedControl,
   Select,
   Stack,
-  Text,
+  TextField,
   Tooltip,
-  TextInputPanel,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import {
+  download as downloadIcon,
+  refreshCw,
+  tag,
+} from '@arshad-shah/cynosure/icons';
+import React, { useEffect, useMemo, useState } from 'react';
+import { TransformLayout } from '@/app/ui/transform';
 import { deriveFilename, saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -66,6 +73,10 @@ const NAMESPACE_ITEMS = [
   { value: 'custom', label: 'Custom UUID' },
 ];
 
+/**
+ * UUID / ULID / NanoID Generator (redesign spec, transform pattern): the
+ * kind and its options beside the generated ids and a decoder.
+ */
 const UuidGenerator: React.FC = () => {
   const [s, update] = uuidSettings.useSettings();
   const family = familyOf(s.kind);
@@ -145,209 +156,200 @@ const UuidGenerator: React.FC = () => {
     },
   ]);
 
-  return (
-    <Stack gap="4">
-      <Card>
-        <CardBody>
-          <Stack gap="4">
-            <Inline justify="between" align="center" gap="3">
-              <SegmentedControl<Family>
-                label="Kind"
-                size="sm"
-                value={family}
-                onChange={(f) => update({ kind: f === 'uuid' ? 'v4' : f })}
+  const generate = () => setNonce((n) => n + 1);
+  const showCount = s.kind === 'v4' || s.kind === 'v7' || family !== 'uuid';
+
+  const options = (
+    <Card as="section" title="Options">
+      <Stack gap="5">
+        <SegmentedControl
+          label="Kind"
+          fullWidth
+          value={family}
+          onChange={(f) =>
+            update({ kind: f === 'uuid' ? 'v4' : (f as IdKind) })
+          }
+          options={[
+            { value: 'uuid', label: 'UUID' },
+            { value: 'ulid', label: 'ULID' },
+            { value: 'nanoid', label: 'NanoID' },
+          ]}
+        />
+        <Grid minItemWidth="13rem" gap="4">
+          {family === 'uuid' ? (
+            <Select
+              label="Version"
+              value={s.kind}
+              onChange={(v) => update({ kind: v as IdKind })}
+              options={UUID_VERSIONS}
+            />
+          ) : null}
+          {family === 'nanoid' ? (
+            <>
+              <Select
+                label="Alphabet"
+                value={
+                  NANOID_PRESETS.find((p) => p.alphabet === s.nanoAlphabet)
+                    ?.alphabet ?? 'custom'
+                }
+                onChange={(v) =>
+                  update({ nanoAlphabet: v === 'custom' ? 'abc' : v })
+                }
                 options={[
-                  { value: 'uuid', label: 'UUID' },
-                  { value: 'ulid', label: 'ULID' },
-                  { value: 'nanoid', label: 'NanoID' },
+                  ...NANOID_PRESETS.map((p) => ({
+                    value: p.alphabet,
+                    label: p.label,
+                  })),
+                  { value: 'custom', label: 'Custom' },
                 ]}
               />
-              <Tooltip content="Generate new IDs" shortcut="Mod+Enter">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<IconRefreshCw size="sm" />}
-                  aria-keyshortcuts="Control+Enter"
-                  onClick={() => setNonce((n) => n + 1)}
-                >
-                  Generate
-                </Button>
-              </Tooltip>
-            </Inline>
-            <Inline gap="4" align="end" wrap>
-              {family === 'uuid' && (
-                <Stack gap="1">
-                  <Label htmlFor="uuid-version">Version</Label>
-                  <div className="w-60">
-                    <Select
-                      id="uuid-version"
-                      value={s.kind}
-                      onValueChange={(v) => update({ kind: v as IdKind })}
-                      items={UUID_VERSIONS}
-                    />
-                  </div>
-                </Stack>
-              )}
-              {family === 'nanoid' && (
-                <>
-                  <Stack gap="1">
-                    <Label htmlFor="nano-alphabet">Alphabet</Label>
-                    <div className="w-64">
-                      <Select
-                        id="nano-alphabet"
-                        value={
-                          NANOID_PRESETS.find(
-                            (p) => p.alphabet === s.nanoAlphabet,
-                          )?.alphabet ?? 'custom'
-                        }
-                        onValueChange={(v) =>
-                          update({ nanoAlphabet: v === 'custom' ? 'abc' : v })
-                        }
-                        items={[
-                          ...NANOID_PRESETS.map((p) => ({
-                            value: p.alphabet,
-                            label: p.label,
-                          })),
-                          { value: 'custom', label: 'Custom' },
-                        ]}
-                      />
-                    </div>
-                  </Stack>
-                  <Stack gap="1">
-                    <Label htmlFor="nano-custom">Characters</Label>
-                    <Input
-                      id="nano-custom"
-                      value={s.nanoAlphabet}
-                      onChange={(v) => update({ nanoAlphabet: v })}
-                      spellCheck={false}
-                    />
-                  </Stack>
-                  <Stack gap="1">
-                    <Label htmlFor="nano-size">Length</Label>
-                    <NumberInput
-                      id="nano-size"
-                      value={s.nanoSize}
-                      onValueChange={(v) => update({ nanoSize: v })}
-                      min={NANO_MIN}
-                      max={NANO_MAX}
-                    />
-                  </Stack>
-                </>
-              )}
-              {count > 1 ||
-              s.kind === 'v4' ||
-              s.kind === 'v7' ||
-              family !== 'uuid' ? (
-                <Stack gap="1">
-                  <Label htmlFor="uuid-count">How many</Label>
-                  <NumberInput
-                    id="uuid-count"
-                    value={s.count}
-                    onValueChange={(v) => update({ count: clampCount(v) })}
-                    min={1}
-                    max={MAX_COUNT}
-                  />
-                </Stack>
-              ) : null}
-            </Inline>
-            {s.kind === 'v5' && (
-              <Inline gap="4" align="end" wrap>
-                <Stack gap="1">
-                  <Label htmlFor="v5-namespace">Namespace</Label>
-                  <div className="w-44">
-                    <Select
-                      id="v5-namespace"
-                      value={customNs ? 'custom' : s.v5Namespace}
-                      onValueChange={(v) =>
-                        update({ v5Namespace: v === 'custom' ? NIL : v })
-                      }
-                      items={NAMESPACE_ITEMS}
-                    />
-                  </div>
-                </Stack>
-                {customNs && (
-                  <Stack gap="1">
-                    <Label htmlFor="v5-custom">Namespace UUID</Label>
-                    <Input
-                      id="v5-custom"
-                      value={s.v5Namespace}
-                      onChange={(v) => update({ v5Namespace: v })}
-                      spellCheck={false}
-                    />
-                  </Stack>
-                )}
-                <Stack gap="1" className="min-w-60 flex-1">
-                  <Label htmlFor="v5-name">Name</Label>
-                  <Input
-                    id="v5-name"
-                    value={name}
-                    onChange={setName}
-                    placeholder="www.example.com"
-                    spellCheck={false}
-                  />
-                </Stack>
-              </Inline>
-            )}
-            {family === 'uuid' && (
-              <FormatSwitches
-                format={s.format}
-                onChange={(f) => update({ format: f })}
+              <NumberField
+                label="Length"
+                value={s.nanoSize}
+                min={NANO_MIN}
+                max={NANO_MAX}
+                onChange={(v) => v !== null && update({ nanoSize: v })}
               />
+            </>
+          ) : null}
+          {showCount ? (
+            <NumberField
+              label="How many"
+              value={s.count}
+              min={1}
+              max={MAX_COUNT}
+              onChange={(v) => v !== null && update({ count: clampCount(v) })}
+            />
+          ) : null}
+        </Grid>
+        {family === 'nanoid' ? (
+          <TextField
+            label="Characters"
+            value={s.nanoAlphabet}
+            onChange={(v) => update({ nanoAlphabet: v })}
+            spellCheck={false}
+            description={nanoidCollision(
+              new Set(s.nanoAlphabet).size,
+              s.nanoSize,
+              1000,
             )}
-            {family === 'nanoid' && (
-              <Text size="sm" tone="subtle">
-                {nanoidCollision(
-                  new Set(s.nanoAlphabet).size,
-                  s.nanoSize,
-                  1000,
-                )}
-              </Text>
-            )}
-          </Stack>
-        </CardBody>
-      </Card>
+          />
+        ) : null}
+        {s.kind === 'v5' ? (
+          <Grid minItemWidth="13rem" gap="4">
+            <Select
+              label="Namespace"
+              value={customNs ? 'custom' : s.v5Namespace}
+              onChange={(v) =>
+                update({ v5Namespace: v === 'custom' ? NIL : v })
+              }
+              options={NAMESPACE_ITEMS}
+            />
+            {customNs ? (
+              <TextField
+                label="Namespace UUID"
+                monospace
+                value={s.v5Namespace}
+                onChange={(v) => update({ v5Namespace: v })}
+                spellCheck={false}
+              />
+            ) : null}
+            <TextField
+              label="Name"
+              value={name}
+              onChange={setName}
+              placeholder="www.example.com"
+              spellCheck={false}
+            />
+          </Grid>
+        ) : null}
+        {family === 'uuid' ? (
+          <FormatSwitches
+            format={s.format}
+            onChange={(f) => update({ format: f })}
+          />
+        ) : null}
+        <Inline>
+          <Tooltip
+            content={
+              <Inline gap="2" align="center" as="span">
+                Generate new IDs
+                <Kbd keys="mod+enter" size="sm" />
+              </Inline>
+            }
+          >
+            <Button
+              variant="solid"
+              tone="accent"
+              icon={refreshCw}
+              aria-keyshortcuts="Control+Enter"
+              onClick={generate}
+            >
+              Generate
+            </Button>
+          </Tooltip>
+        </Inline>
+      </Stack>
+    </Card>
+  );
 
-      {error && <ErrorState title="Could not generate IDs" error={error} />}
-      <div data-dynamic="">
-        <TextInputPanel
-          label="Generated IDs"
-          value={text}
-          onChange={() => {}}
-          language="plain"
-          readOnly
-          toolGroups={[
-            {
-              id: 'download',
-              label: 'Download',
-              items: [
-                {
-                  id: 'download',
-                  label: 'Download',
-                  icon: IconDownload,
-                  kind: 'menu',
-                  disabled:
-                    ids.length === 0 ? 'Nothing to download yet' : undefined,
-                  menu: (['txt', 'csv', 'json'] as const).map((f) => ({
-                    id: f,
-                    label: `Download .${f}`,
-                    onSelect: () => download(f),
-                  })),
-                },
-              ],
-            },
-          ]}
-          minHeight={120}
-          maxHeight={420}
-          placeholder={s.kind === 'v5' ? 'Enter a name' : ''}
-        />
-      </div>
-      <Card>
-        <CardBody>
-          <DecodePanel />
-        </CardBody>
+  const results = (
+    <Stack gap="6">
+      <Card as="section" title="Generated IDs">
+        <Stack gap="4">
+          {error ? (
+            <Notice tone="danger" title="Could not generate IDs">
+              {error.message}
+            </Notice>
+          ) : null}
+          {ids.length ? (
+            <CodeBlock
+              title={`${ids.length} ${ids.length === 1 ? 'ID' : 'IDs'}`}
+              code={text}
+              lineNumbers={ids.length > 1}
+              copyable={false}
+              actions={
+                <Inline gap="1">
+                  <CopyButton
+                    size="sm"
+                    value={text}
+                    labels={{ copy: 'Copy all' }}
+                  />
+                  <Menu
+                    label="Download"
+                    items={(['txt', 'csv', 'json'] as const).map((f) => ({
+                      value: f,
+                      label: `Download .${f}`,
+                    }))}
+                    onSelect={(f) => download(f as ExportFormat)}
+                    trigger={(props) => (
+                      <Button
+                        {...props}
+                        size="sm"
+                        variant="ghost"
+                        icon={downloadIcon}
+                      >
+                        Download
+                      </Button>
+                    )}
+                  />
+                </Inline>
+              }
+            />
+          ) : !error ? (
+            <EmptyState
+              icon={tag}
+              title="Enter a name"
+              description="Version 5 ids are the same for the same namespace and name."
+            />
+          ) : null}
+        </Stack>
       </Card>
+      <DecodePanel />
     </Stack>
   );
+
+  return <TransformLayout start={options} end={results} defaultSize={42} />;
 };
 
 export default UuidGenerator;

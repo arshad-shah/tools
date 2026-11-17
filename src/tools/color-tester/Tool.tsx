@@ -1,33 +1,31 @@
+import {
+  ColorField,
+  ColorSample,
+  Card,
+  Grid,
+  Notice,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
 import { useMemo, useState } from 'react';
-import { formatColor, parseColor, type Color } from '@/shared/lib/colour';
+import { ShareButton, ToolActions } from '@/app/ui/tool-actions';
+import {
+  contrastRatio,
+  formatColor,
+  parseColor,
+  type Color,
+} from '@/shared/lib/colour';
 import { copyText } from '@/shared/lib/clipboard';
 import { ToolError } from '@/shared/lib/errors';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
-import {
-  Alert,
-  AlertDescription,
-  Box,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  ColorPicker,
-  Grid,
-  IconButton,
-  Inline,
-  ShareButton,
-  ToolActions,
-  Stack,
-} from '@/shared/ui';
-import { IconX } from '@/shared/ui/icons';
 import { ContrastPanel } from './components/ContrastPanel';
 import { CvdToggle } from './components/CvdToggle';
 import { ExtractPanel } from './components/ExtractPanel';
 import { FormatList } from './components/FormatList';
 import { PalettePanel } from './components/PalettePanel';
-import type { CvdMode } from './lib/harmonies';
+import { viewAs, type CvdMode } from './lib/harmonies';
 import { COLOR_DEFAULTS, colorSettings, type ColorSettings } from './settings';
 import {
   COLOR_SHARE_VERSION,
@@ -49,6 +47,13 @@ const parseOr = (css: string, fallback: string): Color => {
     return parseColor(fallback);
   }
 };
+
+const BLACK = parseColor('#000000');
+const WHITE = parseColor('#ffffff');
+
+/** Black or white, whichever reads better on `c`. */
+const inkOn = (c: Color) =>
+  contrastRatio(BLACK, c) >= contrastRatio(WHITE, c) ? '#000000' : '#ffffff';
 
 const ColorTester = () => {
   const [settings, update] = colorSettings.useSettings();
@@ -132,107 +137,83 @@ const ColorTester = () => {
       ),
     );
 
+  const baseHex = formatColor(base, 'hex');
+  const shownBase = viewAs(base, cvd);
+
   return (
-    <Box data-cvd={cvd} className="min-w-0">
-      <Stack gap="4">
-        <ToolActions>
-          <CvdToggle value={cvd} onChange={setCvd} />
-          <ShareButton share={share} />
-        </ToolActions>
-        {showLoaded && (
-          <Alert status="info">
-            <Inline gap="2" justify="between" align="center" wrap={false}>
-              <AlertDescription className="mt-0">
-                Loaded from a shared link
-              </AlertDescription>
-              <IconButton
-                label="Dismiss"
-                icon={IconX}
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowLoaded(false)}
-              />
-            </Inline>
-          </Alert>
-        )}
-
-        {/* Desktop: the picker beside formats and contrast; phones stack. */}
-        <Grid
-          cols={{ base: 1, lg: 2 }}
-          gap="4"
-          className="items-start [&>*]:min-w-0"
-          data-testid="color-tester-columns"
+    <Stack gap="6">
+      <ToolActions>
+        <CvdToggle value={cvd} onChange={setCvd} />
+        <ShareButton share={share} />
+      </ToolActions>
+      {showLoaded ? (
+        <Notice
+          tone="info"
+          dismissible
+          onDismiss={() => setShowLoaded(false)}
+          labels={{ dismiss: 'Dismiss' }}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>Colour</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <ColorPicker
-                label="Base colour"
-                value={colors.base}
-                onChange={(css) => setColors({ base: css })}
-                alpha
-                showEyeDropper
-              />
-            </CardBody>
-          </Card>
-          <Stack gap="4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Formats</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <FormatList color={base} />
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Contrast</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <ContrastPanel
-                  fg={colors.fg}
-                  bg={colors.bg}
-                  onFg={(css) => setColors({ fg: css })}
-                  onBg={(css) => setColors({ bg: css })}
-                  onSwap={swap}
-                  cvd={cvd}
-                />
-              </CardBody>
-            </Card>
-          </Stack>
-        </Grid>
+          Loaded from a shared link
+        </Notice>
+      ) : null}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Palette</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <PalettePanel
-              base={base}
-              palette={palette}
-              onPaletteChange={setPalette}
-              scale={scale}
-              onScaleChange={setScale}
-              onPickBase={(css) => setColors({ base: css })}
-              cvd={cvd}
-              saved={settings.palettes}
-              onSavedChange={(palettes) => update({ palettes })}
+      <Grid columns={{ base: 1, lg: 2 }} gap="6" align="start">
+        <Card as="section" title="Colour">
+          <Stack gap="5">
+            <ColorField
+              label="Base colour"
+              inline
+              value={colors.base}
+              onChange={(css) => setColors({ base: css })}
+              alpha
             />
-          </CardBody>
+            <ColorSample
+              color={shownBase}
+              ink={inkOn(parseColor(shownBase))}
+              contrast={false}
+              size="lg"
+              label="Base colour sample"
+            >
+              {baseHex}
+            </ColorSample>
+            <Text size="sm" tone="muted">
+              {cvd === 'none'
+                ? 'As picked'
+                : `As seen with ${cvd} colour vision`}
+            </Text>
+            <FormatList color={base} />
+          </Stack>
         </Card>
+        <Card as="section" title="Contrast">
+          <ContrastPanel
+            fg={colors.fg}
+            bg={colors.bg}
+            onFg={(css) => setColors({ fg: css })}
+            onBg={(css) => setColors({ bg: css })}
+            onSwap={swap}
+            cvd={cvd}
+          />
+        </Card>
+      </Grid>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Palette from an image</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <ExtractPanel onAdd={addToPalette} cvd={cvd} />
-          </CardBody>
-        </Card>
-      </Stack>
-    </Box>
+      <PalettePanel
+        base={base}
+        palette={palette}
+        onPaletteChange={setPalette}
+        scale={scale}
+        onScaleChange={setScale}
+        onPickBase={(css) => setColors({ base: css })}
+        cvd={cvd}
+        saved={settings.palettes}
+        onSavedChange={(palettes) => update({ palettes })}
+      />
+
+      <ExtractPanel
+        onAdd={addToPalette}
+        onUse={(css) => setColors({ base: css })}
+        cvd={cvd}
+      />
+    </Stack>
   );
 };
 

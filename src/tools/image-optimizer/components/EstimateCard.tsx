@@ -1,4 +1,14 @@
-import React, { useEffect } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  Inline,
+  ListRow,
+  ListRows,
+  LoadingDots,
+  Text,
+} from '@arshad-shah/cynosure';
+import { useEffect } from 'react';
 import { ToolError } from '@/shared/lib/errors';
 import { formatBytes } from '@/shared/lib/format';
 import {
@@ -8,18 +18,6 @@ import {
 } from '@/shared/lib/image/pipeline';
 import { useJob } from '@/shared/state/useJob';
 import { imageClient } from '@/shared/workers/image-client';
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Inline,
-  Spinner,
-  Text,
-} from '@/shared/ui';
 import { readImageSize } from '../lib/dimensions';
 import {
   SAMPLE_MAX,
@@ -50,14 +48,14 @@ export interface EstimateCardProps {
  * Encodes a small sample of the first file in every format and scales each
  * size up by pixel count: a rough, labelled estimate to pick a format by.
  */
-export const EstimateCard: React.FC<EstimateCardProps> = ({
+export function EstimateCard({
   file,
   quality,
   background,
   resize,
   current,
   onUse,
-}) => {
+}: EstimateCardProps) {
   const job = useJob(
     async (ctx, f: File, q: number, bg: string, r?: ResizeSpec) => {
       const size = await readImageSize(f);
@@ -115,74 +113,59 @@ export const EstimateCard: React.FC<EstimateCardProps> = ({
   const best = smallestEstimate(rows);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">Size by format</CardTitle>
-        <CardDescription>
-          An estimate for {file.name}, from a small sample at the current
-          quality.
-        </CardDescription>
-      </CardHeader>
-      <CardBody>
-        {rows.length === 0 && !job.error ? (
-          <Inline gap="2" align="center">
-            <Spinner size="sm" decorative />
-            <Text size="sm" tone="subtle">
-              Estimating
-            </Text>
-          </Inline>
-        ) : job.error ? (
-          <Text size="sm" tone="subtle">
-            {job.error.message}
+    <Card
+      as="section"
+      title="Size by format"
+      description={`An estimate for ${file.name}, from a small sample at the current quality.`}
+      headingLevel={2}
+    >
+      {rows.length === 0 && !job.error ? (
+        <Inline gap="3" align="center">
+          <LoadingDots size="sm" tone="muted" />
+          <Text size="sm" tone="muted">
+            Estimating
           </Text>
-        ) : (
-          <ul
-            aria-label="Size estimate by format"
-            className="-my-2 flex flex-col divide-y divide-line"
-          >
-            {rows.map((r) => (
-              <li
-                key={r.encoding}
-                className="flex min-h-10 items-center justify-between gap-2 py-1.5"
-              >
-                <Inline gap="2" align="center" wrap={false}>
-                  <Text size="sm" weight="medium">
-                    {ENCODING_LABELS[r.encoding]}
-                  </Text>
-                  {r.encoding === best && (
-                    <Badge tone="success" variant="soft" size="sm">
-                      Smallest
-                    </Badge>
-                  )}
-                </Inline>
-                <Inline gap="1" align="center" wrap={false}>
-                  <Text
+        </Inline>
+      ) : job.error ? (
+        <Text size="sm" tone="muted">
+          {job.error.message}
+        </Text>
+      ) : (
+        <ListRows label="Size estimate by format" size="sm" divided>
+          {rows.map((r) => (
+            <ListRow
+              key={r.encoding}
+              label={ENCODING_LABELS[r.encoding]}
+              description={
+                r.bytes !== null
+                  ? `${formatBytes(r.bytes)} estimate`
+                  : r.failed
+                    ? 'Could not estimate'
+                    : 'Not supported in this browser'
+              }
+              dimmed={r.bytes === null}
+              trailing={
+                r.encoding === best ? (
+                  <Badge tone="success" size="sm">
+                    Smallest
+                  </Badge>
+                ) : undefined
+              }
+              actions={
+                r.bytes !== null && r.encoding !== current ? (
+                  <Button
                     size="sm"
-                    tone={r.bytes === null ? 'subtle' : 'muted'}
-                    className="tabular-nums"
+                    variant="ghost"
+                    onClick={() => onUse(r.encoding)}
                   >
-                    {r.bytes !== null
-                      ? `${formatBytes(r.bytes)} estimate`
-                      : r.failed
-                        ? 'Could not estimate'
-                        : 'Not supported in this browser'}
-                  </Text>
-                  {r.bytes !== null && r.encoding !== current && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label={`Use ${ENCODING_LABELS[r.encoding]}`}
-                      onClick={() => onUse(r.encoding)}
-                    >
-                      Use
-                    </Button>
-                  )}
-                </Inline>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardBody>
+                    {`Use ${ENCODING_LABELS[r.encoding]}`}
+                  </Button>
+                ) : undefined
+              }
+            />
+          ))}
+        </ListRows>
+      )}
     </Card>
   );
-};
+}

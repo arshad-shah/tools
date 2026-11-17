@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  BitGrid,
+  BitField,
   Button,
+  Card,
   Grid,
   Inline,
-  Input,
-  Label,
   SegmentedControl,
   Stack,
-  Text,
-} from '@/shared/ui';
-import { IconExternalLink } from '@/shared/ui/icons';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { binary } from '@arshad-shah/cynosure/icons';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toToolError } from '@/shared/lib/errors';
 import { sendTo } from '@/shared/lib/handoff';
 import { useSendCommands } from '@/shared/lib/send-commands';
@@ -128,33 +127,34 @@ export const Programmer: React.FC<ProgrammerProps> = ({
   };
 
   return (
-    <Stack gap="4">
-      <Inline gap="3" wrap>
-        <SegmentedControl
-          label="Word size"
-          size="sm"
-          value={String(bits)}
-          onChange={(v) => changeWord({ wordBits: Number(v) })}
-          options={WORDS.map((w) => ({ value: String(w), label: `${w}-bit` }))}
-        />
-        <SegmentedControl
-          label="Signedness"
-          size="sm"
-          value={signed ? 'signed' : 'unsigned'}
-          onChange={(v) => changeWord({ signed: v === 'signed' })}
-          options={[
-            { value: 'signed', label: 'Signed' },
-            { value: 'unsigned', label: 'Unsigned' },
-          ]}
-        />
-      </Inline>
-
-      <Stack gap="2">
-        <Label htmlFor="programmer-expression">Expression</Label>
-        <Inline gap="2" align="start">
-          <Stack gap="1" className="min-w-0 flex-1">
-            <Input
-              id="programmer-expression"
+    <Grid columns={{ base: 1, lg: 2 }} gap="6" align="start">
+      <Card as="section" title="Calculate">
+        <Stack gap="5">
+          <Inline gap="3" wrap>
+            <SegmentedControl
+              label="Word size"
+              size="sm"
+              value={String(bits)}
+              onChange={(v) => changeWord({ wordBits: Number(v) })}
+              options={WORDS.map((w) => ({
+                value: String(w),
+                label: `${w}-bit`,
+              }))}
+            />
+            <SegmentedControl
+              label="Signedness"
+              size="sm"
+              value={signed ? 'signed' : 'unsigned'}
+              onChange={(v) => changeWord({ signed: v === 'signed' })}
+              options={[
+                { value: 'signed', label: 'Signed' },
+                { value: 'unsigned', label: 'Unsigned' },
+              ]}
+            />
+          </Inline>
+          <Grid columns="minmax(0, 1fr) auto" gap="2" align="end">
+            <TextField
+              label="Expression"
               value={expr}
               onChange={(t) => {
                 setExpr(t);
@@ -166,87 +166,74 @@ export const Programmer: React.FC<ProgrammerProps> = ({
                   evaluate();
                 }
               }}
-              invalid={exprError !== null}
+              error={exprError ?? undefined}
               placeholder="0xFF & 0b1010 << 2"
-              className="font-mono"
               spellCheck={false}
+              autoComplete="off"
             />
-            {exprError && (
-              <Text size="xs" className="text-danger" role="alert">
-                {exprError}
-              </Text>
-            )}
-          </Stack>
-          <Button type="button" variant="primary" onClick={evaluate}>
-            Evaluate
-          </Button>
-        </Inline>
-        <Grid
-          cols={{ base: 4, md: 6 }}
-          gap="2"
-          role="group"
-          aria-label="Operators"
-        >
-          {OPERATORS.map((o) => (
-            <Button
-              key={o.face}
-              type="button"
-              size="sm"
-              variant="secondary"
-              aria-label={o.name === o.face ? undefined : o.name}
-              onClick={() => setExpr((t) => t + o.insert)}
-            >
-              {o.face}
+            <Button variant="solid" onClick={evaluate}>
+              Evaluate
             </Button>
-          ))}
-        </Grid>
-      </Stack>
+          </Grid>
+          <Grid
+            columns={{ base: 4, md: 6 }}
+            gap="2"
+            role="group"
+            aria-label="Operators"
+          >
+            {OPERATORS.map((o) => (
+              <Button
+                key={o.face}
+                size="sm"
+                variant="soft"
+                fullWidth
+                aria-label={o.name === o.face ? undefined : o.name}
+                onClick={() => setExpr((t) => t + o.insert)}
+              >
+                {o.face}
+              </Button>
+            ))}
+          </Grid>
+        </Stack>
+      </Card>
 
-      <Grid cols={{ base: 1, md: 2 }} gap="3">
-        {FIELDS.map((f) => (
-          <Stack gap="1" key={f.base}>
-            <Label htmlFor={`programmer-base-${f.base}`}>{f.label}</Label>
-            <Input
-              id={`programmer-base-${f.base}`}
-              value={
-                draft?.base === f.base ? draft.text : show(f.base, f.group)
-              }
-              onChange={(t) => editField(f.base, t)}
-              onBlur={() => {
-                setDraft(null);
-                setFieldError(null);
-              }}
-              invalid={draft?.base === f.base && fieldError !== null}
-              className="font-mono"
-              spellCheck={false}
-              inputMode={f.base === 2 || f.base === 8 ? 'numeric' : 'text'}
-            />
-            {draft?.base === f.base && fieldError && (
-              <Text size="xs" className="text-danger" role="alert">
-                {fieldError}
-              </Text>
-            )}
-          </Stack>
-        ))}
-      </Grid>
-
-      <BitGrid
-        bits={bits}
-        value={pattern}
-        label={`Bits of the ${bits}-bit word`}
-        onToggle={(i) => setValue(fit(pattern ^ (1n << BigInt(i))))}
-      />
-
-      <Inline>
-        <Button
-          type="button"
-          variant="secondary"
-          leftIcon={<IconExternalLink size="sm" />}
-          onClick={openInConverter}
-        >
-          Open in Number Base Converter
-        </Button>
-      </Inline>
-    </Stack>
+      <Card as="section" title="Value">
+        <Stack gap="5">
+          <Grid columns={{ base: 1, sm: 2 }} gap="4">
+            {FIELDS.map((f) => (
+              <TextField
+                key={f.base}
+                label={f.label}
+                value={
+                  draft?.base === f.base ? draft.text : show(f.base, f.group)
+                }
+                onChange={(t) => editField(f.base, t)}
+                onBlur={() => {
+                  setDraft(null);
+                  setFieldError(null);
+                }}
+                error={
+                  draft?.base === f.base && fieldError ? fieldError : undefined
+                }
+                spellCheck={false}
+                autoComplete="off"
+                inputMode={f.base === 2 || f.base === 8 ? 'numeric' : 'text'}
+              />
+            ))}
+          </Grid>
+          <BitField
+            bits={bits}
+            value={pattern}
+            label={`Bits of the ${bits}-bit word`}
+            onChange={(next) => setValue(fit(next))}
+          />
+          <Inline>
+            <Button variant="soft" icon={binary} onClick={openInConverter}>
+              Open in Number Base Converter
+            </Button>
+          </Inline>
+        </Stack>
+      </Card>
+    </Grid>
   );
 };

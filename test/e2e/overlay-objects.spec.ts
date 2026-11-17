@@ -17,6 +17,12 @@ const objectOn = (page: Page, name: string | RegExp) =>
     .getByTestId('objects-page-1')
     .getByRole('button', { name, exact: typeof name === 'string' });
 
+/** The selection frame of the selected object named `name`, on page 1. */
+const frameOf = (page: Page, name: string) =>
+  page
+    .getByTestId('objects-page-1')
+    .getByRole('group', { name: `Resize ${name}`, exact: true });
+
 const centre = (b: {
   x: number;
   y: number;
@@ -29,7 +35,7 @@ const centre = (b: {
 
 async function boxOf(l: Locator) {
   const b = await l.boundingBox();
-  if (!b) throw new Error('object is not on screen');
+  if (!b) throw new Error(`not on screen: ${l}`);
   return b;
 }
 
@@ -42,7 +48,9 @@ async function at(page: Page, x: number, y: number) {
 async function settled(page: Page) {
   let last = '';
   for (let i = 0; i < 40; i++) {
-    const b = await boxOf(page.getByTestId('page-slot-1'));
+    const b = await page.getByTestId('page-slot-1').boundingBox();
+    // Scrolled away (zoomed in on another page): nothing to wait for.
+    if (!b) return;
     const now = `${b.x},${b.y},${b.width}`;
     if (now === last) return;
     last = now;
@@ -76,12 +84,29 @@ async function moveResizeDeleteUndo(
   { resize = true }: { resize?: boolean } = {},
 ) {
   await expect(obj).toHaveCount(1);
-  await obj.click();
+  // A placed object comes selected; its frame then lies over it.
+  if ((await obj.getAttribute('aria-pressed')) !== 'true') await obj.click();
   await expect(obj).toHaveAttribute('aria-pressed', 'true');
   await settled(page);
   await obj.scrollIntoViewIfNeeded();
   const p0 = await pageBox(page, obj);
-  const from = centre(await boxOf(obj));
+  // Grab the body: on a small or thin object Cynosure's handles cover the
+  // ends and the middle, so take the first point along it that is no handle.
+  const ob = await boxOf(obj);
+  const y = ob.y + ob.height / 2;
+  let from = { x: ob.x + ob.width / 4, y };
+  for (const f of [0.25, 0.3, 0.35, 0.65, 0.7, 0.75, 0.5]) {
+    const x = ob.x + ob.width * f;
+    const onHandle = await page.evaluate(
+      ([px, py]) =>
+        !!document.elementFromPoint(px, py)?.closest('[data-handle]'),
+      [x, y],
+    );
+    if (!onHandle) {
+      from = { x, y };
+      break;
+    }
+  }
   await drag(page, from, { x: from.x + 40, y: from.y + 30 });
   await settled(page);
   const p1 = await pageBox(page, obj);
@@ -98,7 +123,10 @@ async function moveResizeDeleteUndo(
     const p2 = await pageBox(page, obj);
     expect(p2.width - p1.width).toBeGreaterThan(5);
   } else {
-    await expect(frame.locator('[data-handle]')).toHaveCount(0);
+    // No resize handles (a rotatable object keeps its rotate handle).
+    await expect(
+      frame.locator('[data-handle]:not([data-handle="rotate"])'),
+    ).toHaveCount(0);
   }
   const p2 = await pageBox(page, obj);
   await obj.focus();
@@ -108,8 +136,9 @@ async function moveResizeDeleteUndo(
   await expect(obj).toHaveCount(1);
   await settled(page);
   const p3 = await pageBox(page, obj);
-  expect(p3.x).toBeCloseTo(p2.x, 0);
-  expect(p3.width).toBeCloseTo(p2.width, 0);
+  // Centres: a small object's hit area is larger while it is not selected.
+  expect(p3.x + p3.width / 2).toBeCloseTo(p2.x + p2.width / 2, 0);
+  expect(p3.y + p3.height / 2).toBeCloseTo(p2.y + p2.height / 2, 0);
 }
 
 test.describe('Edit objects', () => {
@@ -176,22 +205,26 @@ test.describe('Edit objects', () => {
     await expect(shapes).toHaveCount(2);
     // Marquee from empty page space around both.
     await drag(page, await at(page, 80, 420), await at(page, 400, 340));
-    await expect(page.getByTestId('selection-frame')).toHaveCount(2);
+    // One frame moves the group; each object is marked.
+    await expect(page.getByTestId('selection-mark')).toHaveCount(2);
+    await expect(page.getByTestId('selection-frame')).toHaveCount(1);
     // Esc deselects.
-    await shapes.first().focus();
+    await page.getByRole('group', { name: '2 objects' }).focus();
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('selection-frame')).toHaveCount(0);
     // Shift-click builds a selection; arrows move both.
     await shapes.nth(0).click();
     await shapes.nth(1).click({ modifiers: ['Shift'] });
-    await expect(page.getByTestId('selection-frame')).toHaveCount(2);
+    await expect(page.getByTestId('selection-mark')).toHaveCount(2);
     const before = await boxOf(shapes.nth(1));
     await page.keyboard.press('Shift+ArrowRight');
     await expect
       .poll(async () => (await boxOf(shapes.nth(1))).x - before.x)
       .toBeGreaterThan(5);
-    // Right-click: Duplicate makes copies.
-    await shapes.nth(1).click({ button: 'right' });
+    // Right-click the selection: Duplicate makes copies.
+    await page
+      .getByRole('group', { name: '2 objects' })
+      .click({ button: 'right' });
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
     await expect(shapes).toHaveCount(4);
     await page.keyboard.press('ControlOrMeta+z');
@@ -314,14 +347,15 @@ test.describe('Fill & Sign objects', () => {
     await input.fill('Hello');
     await input.press('Enter');
     const box = objectOn(page, 'Text field: Text, filled');
-    await expect(box).toBeFocused();
+    // The selection frame around it takes the keyboard.
+    await expect(frameOf(page, 'Text field: Text, filled')).toBeFocused();
     await moveResizeDeleteUndo(page, box);
   });
 
   test('a date', async ({ page }) => {
     await fillTool(page, 'Date').click();
     await page.mouse.click(...xy(await at(page, 200, 560)));
-    const input = page.locator('[data-state="focused"] input');
+    const input = page.getByRole('textbox', { name: 'Date', exact: true });
     await expect(input).toBeFocused();
     await input.fill('2026-10-02');
     await input.press('Enter');
@@ -333,9 +367,11 @@ test.describe('Fill & Sign objects', () => {
       await fillTool(page, name).click();
       await page.mouse.click(...xy(await at(page, 300, 560)));
       await fillTool(page, name).click();
+      // Too small for handles: it moves, and is deleted and restored.
       await moveResizeDeleteUndo(
         page,
         objectOn(page, `Tick field: ${name}, filled`),
+        { resize: false },
       );
     });
   }
@@ -347,11 +383,12 @@ test.describe('Fill & Sign objects', () => {
       await fillTool(page, role).click();
       const dialog = page.getByRole('dialog', { name: role });
       if (role === 'Initials') {
-        await dialog.getByRole('tab', { name: 'Initials' }).click();
-        await dialog.getByLabel('Initials', { exact: true }).fill('JD');
-        await dialog.getByRole('radio', { name: 'Great Vibes' }).click();
+        await dialog.getByRole('radio', { name: 'Initials' }).click();
+        await dialog.getByRole('textbox', { name: 'Initials' }).fill('JD');
+        // A style card: its name picks it.
+        await dialog.getByText('Great Vibes', { exact: true }).click();
       } else {
-        await dialog.getByRole('tab', { name: 'Type' }).click();
+        await dialog.getByRole('radio', { name: 'Type' }).click();
         await dialog.getByLabel('Your name').fill('Jane Doe');
       }
       await dialog
@@ -359,13 +396,15 @@ test.describe('Fill & Sign objects', () => {
         .click();
       await expect(dialog).toHaveCount(0);
       const sig = objectOn(page, `${role} on page 1`);
-      await expect(sig).toBeFocused();
+      await expect(frameOf(page, `${role} on page 1`)).toBeFocused();
       // ] turns it 15 degrees (one undo step).
       await page.keyboard.press(']');
       await expect(sig).toHaveAttribute('style', /rotate\(15deg\)/);
       await page.keyboard.press('ControlOrMeta+z');
       await expect(sig).not.toHaveAttribute('style', /rotate/);
-      await moveResizeDeleteUndo(page, sig);
+      // Initials are smaller than the frame's handles: they move, and are
+      // resized from the keyboard or by placing them again.
+      await moveResizeDeleteUndo(page, sig, { resize: role === 'Signature' });
     });
   }
 
@@ -373,7 +412,7 @@ test.describe('Fill & Sign objects', () => {
   async function typedSignature(page: Page) {
     await fillTool(page, 'Signature').click();
     const dialog = page.getByRole('dialog', { name: 'Signature' });
-    await dialog.getByRole('tab', { name: 'Type' }).click();
+    await dialog.getByRole('radio', { name: 'Type' }).click();
     await dialog.getByLabel('Your name').fill('Jane Doe');
     // The typed signature is ready once its font has loaded and been checked.
     await expect(
@@ -384,7 +423,7 @@ test.describe('Fill & Sign objects', () => {
 
   test('a signature block', async ({ page }) => {
     const dialog = await typedSignature(page);
-    await dialog.getByRole('tab', { name: 'Block' }).click();
+    await dialog.getByRole('radio', { name: 'Block' }).click();
     await dialog.getByRole('button', { name: 'Place block' }).click();
     await expect(dialog).toHaveCount(0);
     await moveResizeDeleteUndo(
@@ -398,8 +437,9 @@ test.describe('Fill & Sign objects', () => {
   }) => {
     await fillTool(page, 'Initials').click();
     const dialog = page.getByRole('dialog', { name: 'Initials' });
-    await dialog.getByLabel('Initials', { exact: true }).fill('JD');
-    await dialog.getByRole('radio', { name: 'Great Vibes' }).click();
+    await dialog.getByRole('textbox', { name: 'Initials' }).fill('JD');
+    // A style card: its name picks it.
+    await dialog.getByText('Great Vibes', { exact: true }).click();
     await dialog.getByRole('button', { name: 'Initial pages' }).click();
     const pages = page.getByRole('dialog', { name: 'Initial pages' });
     await pages.getByRole('radio', { name: 'Every page' }).check();
@@ -428,7 +468,7 @@ test.describe('Fill & Sign objects', () => {
     await expect(
       menu.getByRole('menuitem', { name: 'Duplicate' }),
     ).toBeVisible();
-    await menu.getByRole('menuitem', { name: 'Delete' }).click();
+    await menu.getByRole('menuitem', { name: 'Delete' }).dispatchEvent('click');
     await expect(tick).toHaveCount(0);
   });
 });
@@ -443,14 +483,18 @@ test('hit-testing follows the pointer on a rotated page, zoomed in', async ({
   await expect(
     page.getByRole('button', { name: 'Undo Rotate page 1 clockwise' }),
   ).toBeAttached();
-  await page.getByRole('tab', { name: /Edit/ }).click();
+  await page.getByRole('radio', { name: /Edit/ }).click();
   await page.keyboard.press('ControlOrMeta+1');
   await page.keyboard.press('ControlOrMeta+=');
   await page.keyboard.press('ControlOrMeta+=');
   await settled(page);
   await toolbarButton(page, 'Text').click();
-  const slot = await boxOf(page.getByTestId('page-slot-1'));
-  await page.mouse.click(slot.x + 200, slot.y + 200);
+  // Zoomed in, the page is wider than the view: place the box in the part
+  // of the page that is on screen.
+  const view = await boxOf(
+    page.getByRole('region', { name: 'Document', exact: true }),
+  );
+  await page.mouse.click(view.x + 200, view.y + 200);
   await page.getByRole('textbox', { name: 'Text', exact: true }).fill('Turned');
   await page.getByRole('button', { name: 'Add text' }).click();
   const obj = objectOn(page, 'Text box: Turned');
@@ -491,7 +535,8 @@ test.describe('touch', () => {
     const obj = objectOn(page, 'Text box: Touch');
     await settled(page);
     const b0 = await boxOf(obj);
-    const from = centre(b0);
+    // A quarter across: the frame's middle handles cover a thin box's centre.
+    const from = { x: b0.x + b0.width / 4, y: b0.y + b0.height / 2 };
     const cdp = await page.context().newCDPSession(page);
     const touch = (
       type: 'touchStart' | 'touchMove' | 'touchEnd',
@@ -518,6 +563,16 @@ test.describe('touch', () => {
     const handle = page
       .getByTestId('selection-frame')
       .locator('[data-handle="se"]');
-    await expect.poll(async () => (await boxOf(handle)).width).toBe(44);
+    // Cynosure keeps the handle small and grows its hit area (--_hit).
+    await expect
+      .poll(() =>
+        handle.evaluate((h) =>
+          Math.max(
+            h.getBoundingClientRect().width,
+            parseFloat(getComputedStyle(h).getPropertyValue('--_hit')) || 0,
+          ),
+        ),
+      )
+      .toBe(44);
   });
 });

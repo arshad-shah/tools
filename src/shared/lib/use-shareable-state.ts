@@ -157,3 +157,11 @@ function shallowEqual(a: unknown, b: unknown): boolean {
     )
   );
 }
+
+/** What a share control needs: whether sharing works, and the action. */
+export type ShareControl = Pick<
+  ShareableState<unknown>,
+  'canShare' | 'reason'
+> & {
+  share(): Promise<string> | void;
+};

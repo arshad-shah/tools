@@ -1,7 +1,16 @@
-import type { SelectGroup, SelectItem } from '@/shared/ui';
 import type { SavedFormat } from '../settings';
 import { BUILTIN_FORMATS, getFormat } from './formats/index';
 import type { FormatRef } from './model';
+
+/** One format option, and a labelled group of them. */
+export interface FormatItem {
+  value: string;
+  label: string;
+}
+export interface FormatGroup {
+  label: string;
+  items: FormatItem[];
+}
 
 export const AUTO_FORMAT = 'auto';
 const CUSTOM = 'custom:';
@@ -34,8 +43,8 @@ export function formatName(id: string): string {
 
 /** The format picker's options. */
 export function formatOptions(saved: readonly SavedFormat[]): {
-  items: SelectItem[];
-  groups: SelectGroup[];
+  items: FormatItem[];
+  groups: FormatGroup[];
 } {
   return {
     items: [{ value: AUTO_FORMAT, label: 'Auto-detect' }],

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { EventType } from '@/shared/ui/adapters/rive-runtime';
+import { EventType } from '@/shared/lib/rive-runtime';
 import {
   animationTime,
   isAnimationPlaying,

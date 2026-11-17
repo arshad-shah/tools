@@ -1,4 +1,4 @@
-import type { TreeNodeData } from '@/shared/ui/code-tree-model';
+import type { TreeNodeData } from '@/shared/surfaces/code-tree/code-tree-model';
 import { ancestors, isContainer, summaryOf, type DocNode } from './doc-model';
 
 /**

@@ -1,21 +1,26 @@
-import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
   Badge,
+  Button,
   DataGrid,
+  Dialog,
+  Grid,
   Inline,
-  MetaList,
-  SearchInput,
+  Menu,
+  Notice,
+  Popover,
+  ScrollArea,
+  SearchField,
   Stack,
+  Switch,
   Text,
-  type GridColumn,
-  type GridFilters,
-  type SortKey,
-} from '@/shared/ui';
+  TextField,
+  type DataGridColumn,
+} from '@arshad-shah/cynosure';
+import { columns as columnsIcon, filter } from '@arshad-shah/cynosure/icons';
+import { useMemo, useState } from 'react';
+import type { GridFilters, SortKey } from '@/shared/lib/grid';
 import { COLUMN_TYPE_LABEL, type ColumnType } from '../lib/columns';
-import type { Row, Table } from '../lib/edit';
-import { gridColumns } from '../lib/view';
+import type { CellChange, Row, Table } from '../lib/edit';
 
 export interface GridViewProps {
   table: Table;
@@ -32,16 +37,36 @@ export interface GridViewProps {
   hidden: readonly string[];
   onHiddenChange(hidden: string[]): void;
   compact: boolean;
-  onCellEdit(row: number, column: string, value: unknown): void;
+  onCompactChange(compact: boolean): void;
+  /** Saves the changed cells of one row (one undo step). */
+  onRowEdit(cells: CellChange[]): void;
   /** Indices into `table.rows` under the grid selection. */
+  selectedRows: readonly number[];
   onSelectedRowsChange(rows: number[]): void;
   /** Edit actions, first in the row above the grid. */
   toolbar?: React.ReactNode;
-  /** View settings after the search box. */
-  trailing?: React.ReactNode;
 }
 
-/** The table: typed columns, multi-sort, filters, search and editing. */
+const numeric = (t: ColumnType | undefined) =>
+  t === 'integer' || t === 'decimal';
+const text = (v: unknown) => (v === null || v === undefined ? '' : String(v));
+
+/** A typed value from what was typed, or null when it does not parse. */
+function parseInput(draft: string, type: ColumnType | undefined): unknown {
+  if (draft.trim() === '') return null;
+  if (numeric(type)) {
+    const n = Number(draft);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  if (type === 'boolean' && /^(true|false)$/i.test(draft.trim()))
+    return draft.trim().toLowerCase() === 'true';
+  return draft;
+}
+
+/**
+ * The table (redesign: Cynosure DataGrid): search, column filters, column
+ * visibility and density above it; a row opens in a dialog to edit.
+ */
 export function GridView({
   table,
   types,
@@ -56,106 +81,323 @@ export function GridView({
   hidden,
   onHiddenChange,
   compact,
-  onCellEdit,
+  onCompactChange,
+  onRowEdit,
+  selectedRows,
   onSelectedRowsChange,
   toolbar,
-  trailing,
 }: GridViewProps) {
-  // Identity follows the column names, types and hiding only, so edits
-  // never reset column order or widths.
-  const hiddenKey = hidden.join('\u0000');
-  const columns = useMemo(() => {
-    const hide = new Set(hiddenKey ? hiddenKey.split('\u0000') : []);
-    return gridColumns(table.columns, types).map((c) => ({
-      ...c,
-      hidden: hide.has(c.id),
-    }));
-  }, [table.columns, types, hiddenKey]);
   const rows = useMemo(
-    () => indices.map((i) => table.rows[i]),
+    () => indices.map((i) => ({ i, row: table.rows[i] })),
     [indices, table.rows],
   );
-  const errors = Object.entries(filterErrors);
-  // The grid reports view positions; map them again whenever the rows
-  // behind them change (an edit, a filter), so the table indices stay true.
-  const [viewSelection, setViewSelection] = useState<number[]>([]);
-  const report = useEffectEvent(onSelectedRowsChange);
-  useEffect(
+  type GridRow = (typeof rows)[number];
+  const visible = table.columns.filter((c) => !hidden.includes(c));
+  // Identity follows the shown column names and types only, so edits never
+  // reset the column widths.
+  const visibleKey = visible.join('\u0000');
+  const columns = useMemo<DataGridColumn<GridRow>[]>(
     () =>
-      report(
-        viewSelection.filter((i) => i < indices.length).map((i) => indices[i]),
-      ),
-    [viewSelection, indices],
+      (visibleKey ? visibleKey.split('\u0000') : []).map((c) => ({
+        key: c,
+        header: c,
+        sortable: true,
+        resizable: true,
+        align: numeric(types[c]) ? 'end' : 'start',
+        value: (r) => r.row[c],
+        cell: (r) => text(r.row[c]),
+        tooltip: (r) => text(r.row[c]),
+        cellKind: (r) =>
+          r.row[c] === null || r.row[c] === undefined
+            ? 'null'
+            : numeric(types[c])
+              ? 'number'
+              : undefined,
+      })),
+    [visibleKey, types],
   );
+  const errors = Object.entries(filterErrors);
+  const active = Object.keys(filters).length;
+  const [editing, setEditing] = useState<number | null>(null);
 
   return (
     <Stack gap="3">
       <Inline gap="3" align="center" justify="between" wrap>
         {toolbar}
-        <Inline gap="3" align="center" wrap className="ms-auto">
-          <div className="w-64 max-w-full">
-            <SearchInput
-              value={search}
-              onChange={onSearchChange}
-              placeholder="Search all columns"
-              aria-label="Search all columns"
+        <Inline gap="2" align="center" wrap>
+          <SearchField
+            size="sm"
+            label="Search all columns"
+            labelHidden
+            placeholder="Search all columns"
+            value={search}
+            onChange={onSearchChange}
+          />
+          <Popover
+            label="Column filters"
+            trigger={(props) => (
+              <Button {...props} size="sm" variant="soft" icon={filter}>
+                Filters
+                {active ? (
+                  <Badge size="sm" tone="accent">
+                    {String(active)}
+                  </Badge>
+                ) : null}
+              </Button>
+            )}
+          >
+            <FilterForm
+              columns={table.columns}
+              types={types}
+              filters={filters}
+              onChange={onFiltersChange}
             />
-          </div>
-          {trailing}
+          </Popover>
+          <Menu
+            label="Columns"
+            items={table.columns.map((c) => ({
+              value: c,
+              label: c,
+              kind: 'checkbox' as const,
+              checked: !hidden.includes(c),
+              keepOpen: true,
+              disabled: !hidden.includes(c) && visible.length === 1,
+            }))}
+            onSelect={(c) =>
+              onHiddenChange(
+                hidden.includes(c)
+                  ? hidden.filter((h) => h !== c)
+                  : [...hidden, c],
+              )
+            }
+            trigger={(props) => (
+              <Button {...props} size="sm" variant="ghost" icon={columnsIcon}>
+                Columns
+              </Button>
+            )}
+          />
+          <Switch
+            size="sm"
+            label="Compact rows"
+            checked={compact}
+            onChange={onCompactChange}
+          />
         </Inline>
       </Inline>
       <Inline gap="3" align="center" justify="between" wrap>
-        <MetaList
-          items={table.columns.map((c) => (
-            <Badge key={c} variant="soft" size="sm">
+        <Inline gap="1" wrap>
+          {table.columns.map((c) => (
+            <Badge key={c} variant="outline" size="sm">
               {`${c}: ${COLUMN_TYPE_LABEL[types[c] ?? 'text']}`}
             </Badge>
           ))}
-        />
-        <Text size="sm" tone="subtle" aria-live="polite">
+        </Inline>
+        <Text size="sm" tone="muted" numeric aria-live="polite">
           {`${indices.length.toLocaleString('en-US')} of ${table.rows.length.toLocaleString('en-US')} rows`}
         </Text>
       </Inline>
       {errors.length > 0 && (
-        <Alert status="warning">
-          <AlertDescription>
-            {errors.map(([c, m]) => `${c}: ${m}`).join('. ')}
-          </AlertDescription>
-        </Alert>
+        <Notice tone="warning">
+          {errors.map(([c, m]) => `${c}: ${m}`).join('. ')}
+        </Notice>
       )}
-      <DataGrid<Row>
-        rows={rows}
+      <DataGrid<GridRow>
+        label="Table data"
         columns={columns}
-        rowKey={(_, i) => indices[i]}
-        ariaLabel="Table data"
-        sort={sort}
-        onSortChange={onSortChange}
+        rows={rows}
+        getRowId={(r) => String(r.i)}
+        size={compact ? 'sm' : 'md'}
         manualSort
-        filters={filters}
-        onFiltersChange={onFiltersChange}
-        onColumnsChange={(cols: GridColumn<Row>[]) =>
-          onHiddenChange(cols.filter((c) => c.hidden).map((c) => c.id))
+        sort={
+          sort[0]
+            ? {
+                key: sort[0].id,
+                direction: sort[0].dir === 'asc' ? 'ascending' : 'descending',
+              }
+            : null
         }
-        search={search}
-        selection="cell-range"
-        onSelectedRowsChange={setViewSelection}
-        rowHeight={compact ? 26 : 32}
-        editable={() => true}
-        onCellEdit={(i, col, value) => onCellEdit(indices[i], col, value)}
-        renderDetails={(r) => (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            {table.columns.map((c) => (
-              <div key={c} className="contents">
-                <dt className="font-medium text-fg-subtle">{c}</dt>
-                <dd className="break-all">
-                  {r[c] == null ? '' : String(r[c])}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        emptyLabel="No rows match"
+        onSortChange={(s) =>
+          onSortChange(
+            s
+              ? [
+                  {
+                    id: s.key,
+                    dir: s.direction === 'ascending' ? 'asc' : 'desc',
+                  },
+                ]
+              : [],
+          )
+        }
+        selectionMode="row"
+        selected={selectedRows.map(String)}
+        onSelectionChange={(ids) => onSelectedRowsChange(ids.map(Number))}
+        onAction={(r) => setEditing(r.i)}
+        labels={{ empty: 'No rows match' }}
       />
+      <Text size="xs" tone="muted">
+        Enter or double-click a row to edit it. Ctrl or Cmd+C copies the
+        selected rows.
+      </Text>
+      {editing !== null && table.rows[editing] ? (
+        <RowEditor
+          index={editing}
+          row={table.rows[editing]}
+          columns={table.columns}
+          types={types}
+          onClose={() => setEditing(null)}
+          onSave={(cells) => {
+            if (cells.length) onRowEdit(cells);
+            setEditing(null);
+          }}
+        />
+      ) : null}
     </Stack>
+  );
+}
+
+/** One filter per column: a range for numbers and dates, else contains. */
+function FilterForm({
+  columns,
+  types,
+  filters,
+  onChange,
+}: {
+  columns: readonly string[];
+  types: Record<string, ColumnType>;
+  filters: GridFilters;
+  onChange(f: GridFilters): void;
+}) {
+  const set = (c: string, f: GridFilters[string] | null) => {
+    const next = { ...filters };
+    if (f) next[c] = f;
+    else delete next[c];
+    onChange(next);
+  };
+  const range = (c: string, edge: 'min' | 'max', v: string) => {
+    const cur = filters[c]?.kind === 'range' ? filters[c] : { kind: 'range' };
+    const n = v.trim() === '' ? undefined : Number(v);
+    const next = {
+      ...(cur as { kind: 'range'; min?: number; max?: number }),
+      [edge]: Number.isFinite(n) ? n : undefined,
+    };
+    set(c, next.min === undefined && next.max === undefined ? null : next);
+  };
+  return (
+    <Stack gap="3">
+      <Inline justify="between" align="center">
+        <Text weight="medium">Filter rows</Text>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!Object.keys(filters).length}
+          onClick={() => onChange({})}
+        >
+          Clear filters
+        </Button>
+      </Inline>
+      <ScrollArea label="Column filters">
+        <Stack gap="3">
+          {columns.map((c) => {
+            const f = filters[c];
+            return numeric(types[c]) ? (
+              <Grid key={c} columns={2} gap="2">
+                <TextField
+                  size="sm"
+                  type="number"
+                  label={`${c} minimum`}
+                  value={f?.kind === 'range' ? text(f.min) : ''}
+                  onChange={(v) => range(c, 'min', v)}
+                />
+                <TextField
+                  size="sm"
+                  type="number"
+                  label={`${c} maximum`}
+                  value={f?.kind === 'range' ? text(f.max) : ''}
+                  onChange={(v) => range(c, 'max', v)}
+                />
+              </Grid>
+            ) : (
+              <TextField
+                key={c}
+                size="sm"
+                label={`${c} contains`}
+                value={f?.kind === 'text' ? f.value : ''}
+                onChange={(v) => set(c, v ? { kind: 'text', value: v } : null)}
+              />
+            );
+          })}
+        </Stack>
+      </ScrollArea>
+    </Stack>
+  );
+}
+
+/** Edits one row; only changed cells are saved, as one undo step. */
+function RowEditor({
+  index,
+  row,
+  columns,
+  types,
+  onClose,
+  onSave,
+}: {
+  index: number;
+  row: Row;
+  columns: readonly string[];
+  types: Record<string, ColumnType>;
+  onClose(): void;
+  onSave(cells: CellChange[]): void;
+}) {
+  const [draft, setDraft] = useState<Record<string, string>>(() =>
+    Object.fromEntries(columns.map((c) => [c, text(row[c])])),
+  );
+  const bad = columns.filter(
+    (c) => parseInput(draft[c], types[c]) === undefined,
+  );
+  const save = () =>
+    onSave(
+      columns
+        .filter((c) => draft[c] !== text(row[c]))
+        .map((c) => ({
+          row: index,
+          col: c,
+          value: parseInput(draft[c], types[c]),
+        })),
+    );
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={`Edit row ${(index + 1).toLocaleString('en-US')}`}
+      actions={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="solid" disabled={bad.length > 0} onClick={save}>
+            Save row
+          </Button>
+        </>
+      }
+    >
+      <Stack gap="3">
+        {columns.map((c) => (
+          <TextField
+            key={c}
+            label={c}
+            description={COLUMN_TYPE_LABEL[types[c] ?? 'text']}
+            value={draft[c]}
+            error={bad.includes(c) ? 'Enter a number' : undefined}
+            onChange={(v) => setDraft((d) => ({ ...d, [c]: v }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !bad.length) {
+                e.preventDefault();
+                save();
+              }
+            }}
+          />
+        ))}
+      </Stack>
+    </Dialog>
   );
 }

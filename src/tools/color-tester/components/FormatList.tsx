@@ -1,13 +1,16 @@
+import {
+  CopyButton,
+  DescriptionList,
+  Inline,
+  Stack,
+  Text,
+} from '@arshad-shah/cynosure';
 import { useMemo } from 'react';
 import { formatColor, type Color } from '@/shared/lib/colour';
-import { useClipboard } from '@/shared/lib/clipboard';
-import { IconCheck, IconCopy } from '@/shared/ui/icons';
-import { Code, IconButton, Stack, Text } from '@/shared/ui';
 import { FORMATS, namedText } from '../lib/formats';
 
 /** Every output format of the colour, each with a copy button. */
 export function FormatList({ color }: { color: Color }) {
-  const { copiedKey, copy } = useClipboard();
   const rows = useMemo(
     () => FORMATS.map((f) => ({ ...f, text: formatColor(color, f.fmt) })),
     [color],
@@ -15,32 +18,32 @@ export function FormatList({ color }: { color: Color }) {
   const named = useMemo(() => namedText(color), [color]);
 
   return (
-    <Stack gap="2">
+    <Stack gap="4">
       <Text size="sm" tone="muted">
         {`Named colour: ${named}`}
       </Text>
-      <dl className="grid gap-1">
-        {rows.map((r) => (
-          <div
-            key={r.fmt}
-            className="grid grid-cols-[4rem_1fr] items-center gap-2"
-          >
-            <dt className="text-sm text-fg-muted">{r.label}</dt>
-            <dd className="flex min-w-0 items-center gap-2">
-              <Code data-format={r.fmt} className="min-w-0 truncate">
+      <DescriptionList
+        layout="inline"
+        divided
+        size="sm"
+        items={rows.map((r) => ({
+          id: r.fmt,
+          term: r.label,
+          detail: (
+            <Inline gap="2" align="center" justify="between">
+              <Text variant="code" truncate>
                 {r.text}
-              </Code>
-              <IconButton
-                label={`Copy ${r.label}`}
-                icon={copiedKey === r.fmt ? IconCheck : IconCopy}
+              </Text>
+              <CopyButton
                 size="sm"
                 variant="ghost"
-                onClick={() => void copy(r.text, r.fmt)}
+                value={r.text}
+                labels={{ copy: `Copy ${r.label}` }}
               />
-            </dd>
-          </div>
-        ))}
-      </dl>
+            </Inline>
+          ),
+        }))}
+      />
     </Stack>
   );
 }

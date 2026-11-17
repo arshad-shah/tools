@@ -1,9 +1,15 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { queryCommands } from '@/shared/lib/commands';
-import { IconType } from '@/shared/ui/icons';
+import { type as typeIcon } from '@arshad-shah/cynosure/icons';
 import type { ToolDefinition } from '@/app/tool';
 import TextToolkit from './Tool';
 import { TOOLKIT_SETTINGS_DEFAULTS, toolkitSettings } from './settings';
@@ -44,7 +50,7 @@ const definition: ToolDefinition = {
   kind: 'tool',
   name: 'Text Toolkit',
   description: 'd',
-  icon: IconType,
+  icon: typeIcon,
   keywords: [],
   enabled: true,
 };
@@ -65,13 +71,11 @@ describe('Text Toolkit', () => {
     fake.timeout = false;
   });
 
-  it('panels use kit headings, switches and an empty state', () => {
+  it('shows the operations, find and replace, and statistics', () => {
     setup();
     for (const name of ['Operations', 'Find and replace', 'Statistics'])
-      expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy();
-    expect(
-      screen.getByRole('heading', { level: 3, name: 'No words yet' }),
-    ).toBeTruthy();
+      expect(screen.getByRole('region', { name })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'No words yet' })).toBeTruthy();
     expect(
       screen.getByRole('switch', { name: 'Hide common words' }),
     ).toBeTruthy();
@@ -83,7 +87,7 @@ describe('Text Toolkit', () => {
     type('Hello brave world.');
     expect(screen.getByText('3 words')).toBeTruthy();
     expect(
-      screen.getByRole('list', { name: 'Top words' }).textContent,
+      screen.getByRole('table', { name: 'Top words' }).textContent,
     ).toContain('brave');
   });
 
@@ -163,8 +167,13 @@ describe('Text Toolkit', () => {
       target: { value: '(a+)+$' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Replace all' }));
-    expect((await screen.findByRole('alert')).textContent).toMatch(
-      /^Pattern took too long/,
+    // Open file's FileDrop keeps its own (empty) alert region for rejections.
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('alert')
+          .some((a) => /^Pattern took too long/.test(a.textContent ?? '')),
+      ).toBe(true),
     );
   });
 

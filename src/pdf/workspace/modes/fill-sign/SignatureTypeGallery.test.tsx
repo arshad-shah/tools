@@ -29,7 +29,7 @@ describe('SignatureTypeGallery', () => {
         onChange={onChange}
       />,
     );
-    const group = screen.getByRole('radiogroup', { name: 'Style' });
+    const group = screen.getByRole('group', { name: 'Style' });
     const cards = within(group).getAllByRole('radio');
     expect(cards).toHaveLength(10);
     expect(group.contains(cards[0])).toBe(true);
@@ -49,20 +49,17 @@ describe('SignatureTypeGallery', () => {
     );
   });
 
-  it('arrow keys move the selection through the cards', async () => {
+  it('choosing a card makes it the style (native radios: arrows move too)', async () => {
     const onChange = vi.fn();
     render(<SignatureTypeGallery name="Ada" onChange={onChange} />);
     const cards = within(
-      screen.getByRole('radiogroup', { name: 'Style' }),
-    ).getAllByRole('radio');
-    expect(cards[0].getAttribute('aria-checked')).toBe('true');
-    fireEvent.keyDown(cards[0], { key: 'ArrowRight' });
+      screen.getByRole('group', { name: 'Style' }),
+    ).getAllByRole('radio') as HTMLInputElement[];
+    expect(cards[0].checked).toBe(true);
+    fireEvent.click(cards[3]);
     await act(async () => {});
-    expect(cards[1].getAttribute('aria-checked')).toBe('true');
-    expect(document.activeElement).toBe(cards[1]);
-    fireEvent.keyDown(cards[1], { key: 'ArrowDown' });
-    await act(async () => {});
-    expect(cards[3].getAttribute('aria-checked')).toBe('true');
+    expect(cards[3].checked).toBe(true);
+    expect(cards[0].checked).toBe(false);
     expect(onChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ fontId: 'sacramento' }),
     );
@@ -72,7 +69,7 @@ describe('SignatureTypeGallery', () => {
     const onChange = vi.fn();
     render(<SignatureTypeGallery name="Ada" onChange={onChange} />);
     const slant = screen.getByRole('slider', { name: 'Slant' });
-    fireEvent.change(slant, { target: { value: '5' } });
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(slant, { key: 'ArrowRight' });
     await act(async () => {});
     expect(slant.getAttribute('aria-valuetext')).toBe('5 degrees');
     expect(screen.getByText('5 degrees')).toBeTruthy();

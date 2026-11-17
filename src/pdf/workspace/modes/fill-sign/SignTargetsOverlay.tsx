@@ -1,4 +1,6 @@
-import { HitArea, ShapeLayer, type OverlayTransform } from '@/shared/ui';
+import { ShapeLayer } from '@/shared/surfaces/page/shape-layer';
+import { type OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { HitArea } from '@/shared/surfaces/pdf/HitArea';
 import type { PageRef } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { placeAtTarget, useSignTargets } from './sign-places';
@@ -31,7 +33,6 @@ export function SignTargetsOverlay({
         width={width}
         height={height}
         transform={transform}
-        className="pointer-events-none"
         shapes={targets.map((t) => ({
           kind: 'rect' as const,
           box: t.rect,

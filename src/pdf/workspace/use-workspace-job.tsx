@@ -1,15 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { toToolError } from '@/shared/lib/errors';
 import type { JobContext, JobProgress } from '@/shared/state/useJob';
-import {
-  Button,
-  Dialog,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  ProgressOverlay,
-} from '@/shared/ui';
+import { Button, Dialog } from '@arshad-shah/cynosure';
+import { JobOverlay } from './ui/JobOverlay';
 
 /**
  * One document job at a time behind a ProgressOverlay with Cancel (spec
@@ -49,7 +42,7 @@ export function useWorkspaceJob() {
   );
 
   const overlay = (
-    <ProgressOverlay
+    <JobOverlay
       open={job !== null}
       title={job?.title ?? ''}
       progress={job?.progress ?? null}
@@ -75,20 +68,23 @@ export function useConfirm() {
     setAsk(null);
   };
   const dialog = (
-    <Dialog open={ask !== null} onOpenChange={(o) => !o && answer(false)}>
-      <DialogHeader>
-        <DialogTitle>Are you sure?</DialogTitle>
-        <DialogDescription>{ask?.message}</DialogDescription>
-      </DialogHeader>
-      <DialogFooter>
-        <Button variant="secondary" onClick={() => answer(false)}>
-          Cancel
-        </Button>
-        <Button variant="primary" onClick={() => answer(true)}>
-          Continue
-        </Button>
-      </DialogFooter>
-    </Dialog>
+    <Dialog
+      open={ask !== null}
+      onOpenChange={(o) => !o && answer(false)}
+      title="Are you sure?"
+      description={ask?.message}
+      size="sm"
+      actions={
+        <>
+          <Button variant="ghost" onClick={() => answer(false)}>
+            Cancel
+          </Button>
+          <Button variant="solid" tone="accent" onClick={() => answer(true)}>
+            Continue
+          </Button>
+        </>
+      }
+    />
   );
   return { confirm, dialog };
 }

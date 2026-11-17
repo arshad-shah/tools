@@ -1,4 +1,5 @@
 /** @vitest-environment jsdom */
+import { Toaster } from '@arshad-shah/cynosure';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,39 +22,47 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 
-const tab = (name: string) =>
-  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
-/** Puts a token in the Input pane, then shows the Output pane (R41). */
-const enter = (value: string) => {
-  tab('Input');
+const enter = (value: string) =>
   fireEvent.change(screen.getByRole('textbox', { name: 'JWT token' }), {
     target: { value },
   });
-  tab('Output');
-};
 
 const renderTool = () =>
   render(
     <MemoryRouter>
-      <JWTDecoder />
+      <Toaster>
+        <JWTDecoder />
+      </Toaster>
     </MemoryRouter>,
   );
 
 describe('JWTDecoder', () => {
-  it('token and decoded view are tabs; the decoded view is shown first', () => {
+  it('starts empty and decodes the example on request', () => {
     renderTool();
-    tab('Input');
-    expect(screen.getByRole('textbox', { name: 'JWT token' })).toBeTruthy();
-    expect(screen.queryByRole('tablist', { name: 'JWT sections' })).toBeNull();
-    enter(token({ sub: 'x', exp: 1700000000 }));
+    expect(screen.getByRole('heading', { name: 'No token yet' })).toBeTruthy();
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Try an example' })[0]!,
+    );
     expect(screen.getByRole('tablist', { name: 'JWT sections' })).toBeTruthy();
-    expect(screen.queryByRole('textbox', { name: 'JWT token' })).toBeNull();
+    expect(screen.getByText('user-12345')).toBeTruthy();
   });
 
-  it('compares payloads in Text Diff and opens exp in the Epoch Converter', () => {
+  it('says what is wrong under the input', () => {
+    renderTool();
+    enter('not a token');
+    expect(
+      screen.getByRole('heading', { name: 'Nothing to decode' }),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole('textbox', { name: 'JWT token' })
+        .getAttribute('aria-invalid'),
+    ).toBe('true');
+  });
+
+  it('enables Compare payloads once the second token decodes', () => {
     renderTool();
     enter(token({ sub: 'a', exp: 1700000000 }));
-    // Both targets accept these hand-offs now, so the actions are enabled.
     expect(
       screen.getByRole('button', { name: 'Open exp in Epoch Converter' }),
     ).toBeTruthy();
@@ -71,7 +80,6 @@ describe('JWTDecoder', () => {
       },
     );
     expect(compare.disabled).toBe(false);
-    expect(screen.queryByText(/cannot take a pair/)).toBeNull();
   });
 
   it('counts down live and honours the clock skew', () => {
@@ -85,17 +93,14 @@ describe('JWTDecoder', () => {
     enter(token({ exp: T0 / 1000 - 1 }));
     act(() => void vi.advanceTimersByTime(1000));
     expect(screen.getAllByText('Expired').length).toBeGreaterThan(0);
-    fireEvent.change(screen.getByLabelText('Clock skew'), {
-      target: { value: '30' },
-    });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Clock skew' }));
+    fireEvent.click(screen.getByRole('option', { name: '30 s' }));
     expect(screen.getByText('Within validity window')).toBeTruthy();
+    // Saved for next time (a setting, never the token).
+    expect(localStorage.getItem('kit:store:tool:jwt-decode')).toContain('30');
   });
 
   it('fills and decodes a token handed over as application/jwt', async () => {
-    // The Input pane was the last one shown.
-    const first = renderTool();
-    tab('Input');
-    first.unmount();
     const id = putHandoff({
       kind: 'text',
       mime: 'application/jwt',
@@ -107,22 +112,15 @@ describe('JWTDecoder', () => {
     expect((await screen.findAllByText(/from-handoff/)).length).toBeGreaterThan(
       0,
     );
-    // The hand-off fills the input and shows the decoded token.
-    expect(
-      screen
-        .getByRole('tab', { name: /^Output/ })
-        .getAttribute('aria-selected'),
-    ).toBe('true');
   });
 
-  it('masks a shared secret; public keys stay a plain multi-line field', () => {
+  it('masks a shared secret; public keys are a multi-line field', () => {
     renderTool();
     enter(token({ sub: 'x' }));
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Signature' }));
     fireEvent.click(screen.getByRole('tab', { name: 'Signature' }));
     const secret = screen.getByLabelText('Secret or public key');
     expect((secret as HTMLInputElement).type).toBe('password');
-    fireEvent.click(screen.getByRole('button', { name: 'Reveal secret' }));
-    expect((secret as HTMLInputElement).type).toBe('text');
     fireEvent.click(screen.getByRole('radio', { name: 'PEM public key' }));
     expect(screen.getByLabelText('Secret or public key').tagName).toBe(
       'TEXTAREA',

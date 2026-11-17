@@ -1,40 +1,38 @@
+import {
+  Badge,
+  Button,
+  Card,
+  Inline,
+  Menu,
+  Notice,
+  SegmentedControl,
+  Stack,
+  type MenuSection,
+} from '@arshad-shah/cynosure';
+import {
+  chartBar,
+  chartLine,
+  refreshCw,
+  send,
+  table as tableIcon,
+} from '@arshad-shah/cynosure/icons';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toolsAccepting } from '@/app/registry';
 import { useClipboard } from '@/shared/lib/clipboard';
 import {
   inferMockSchema,
   MOCK_SCHEMA_MIME,
   toCsv,
 } from '@/shared/lib/data-formats';
-import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
+import {
+  sendTo,
+  useHandoffFiles,
+  type HandoffPayload,
+} from '@/shared/lib/handoff';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
-import {
-  Alert,
-  AlertDescription,
-  Badge,
-  ErrorState,
-  Heading,
-  Inline,
-  SendToMenu,
-  IconButton,
-  ToolActions,
-  Stack,
-  SwitchField,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  type GridFilters,
-  type SortKey,
-} from '@/shared/ui';
-import {
-  IconBarChart3,
-  IconRefreshCw,
-  IconSparkles,
-  IconTable,
-  IconTrendingUp,
-} from '@/shared/ui/icons';
+import type { GridFilters, SortKey } from '@/shared/lib/grid';
 import { ChartPanel } from './components/ChartPanel';
 import { EditToolbar } from './components/EditToolbar';
 import { ExportMenu } from './components/ExportMenu';
@@ -54,6 +52,11 @@ import { tableView } from './lib/view';
 import { csvSettings } from './settings';
 
 const TOOL_ID = 'csv-viewer';
+
+/**
+ * CSV Viewer (redesign spec, workspace): paste or open data, then the table,
+ * a profile of each column or a chart of the shown rows.
+ */
 export default function CsvViewer() {
   const navigate = useNavigate();
   const { copy } = useClipboard();
@@ -101,6 +104,12 @@ export default function CsvViewer() {
   };
 
   const { table, loaded } = csv;
+  // Selection is by table row index: an edit renumbers rows, so drop it.
+  const [seenTable, setSeenTable] = useState(table);
+  if (seenTable !== table) {
+    setSeenTable(table);
+    setSelectedRows([]);
+  }
   // Re-inferred after edits (cheap: 1,000 values per column), but kept
   // stable while unchanged so the grid keeps its column widths and order.
   const typesKey = JSON.stringify(
@@ -135,13 +144,14 @@ export default function CsvViewer() {
       for (const c of visibleColumns) o[c] = r[c] ?? null;
       return o;
     });
+  const schemaPayload = (): HandoffPayload => ({
+    kind: 'text',
+    mime: MOCK_SCHEMA_MIME,
+    text: JSON.stringify(inferMockSchema(projected().slice(0, 1000))),
+    sourceTool: TOOL_ID,
+  });
   const generateMore = () =>
-    sendTo(navigate, 'random-data-generator', {
-      kind: 'text',
-      mime: MOCK_SCHEMA_MIME,
-      text: JSON.stringify(inferMockSchema(projected().slice(0, 1000))),
-      sourceTool: TOOL_ID,
-    });
+    sendTo(navigate, 'random-data-generator', schemaPayload());
 
   useSendCommands(TOOL_ID, [
     {
@@ -202,41 +212,102 @@ export default function CsvViewer() {
     );
   }
 
-  return (
-    <Stack gap="4">
-      <ToolActions>
-        <IconButton
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            csv.clear();
-            setPaste('');
-            lastPaste.current = '';
+  const newData = () => {
+    csv.clear();
+    setPaste('');
+    lastPaste.current = '';
+  };
+
+  // Send to: the shown rows as JSON or CSV, or a schema for more like it.
+  const payloads: Record<string, () => HandoffPayload> = {
+    json: () => jsonPayload(projected(), loaded.name),
+    csv: () => csvTextPayload(viewRows, visibleColumns, loaded.name),
+    schema: schemaPayload,
+  };
+  const targets = (mime: string) =>
+    toolsAccepting(mime).filter((t) => t.id !== TOOL_ID);
+  const sendSections: MenuSection[] = [
+    {
+      label: 'Rows as JSON',
+      items: targets('application/json').map((t) => ({
+        value: `json:${t.id}`,
+        label: t.name,
+      })),
+    },
+    {
+      label: 'Rows as CSV',
+      // csvTextPayload hands CSV over as plain text (Text Diff and others).
+      items: targets('text/plain').map((t) => ({
+        value: `csv:${t.id}`,
+        label: t.name,
+      })),
+    },
+    {
+      label: 'More like this',
+      items: targets(MOCK_SCHEMA_MIME).map((t) => ({
+        value: `schema:${t.id}`,
+        label: t.name,
+      })),
+    },
+  ].filter((x) => x.items.length);
+
+  const actions = (
+    <Inline gap="2" wrap>
+      <Button size="sm" variant="ghost" icon={refreshCw} onClick={newData}>
+        New data
+      </Button>
+      <ParseOptions
+        choices={csv.choices}
+        onChange={(patch) => {
+          if (patch.delimiter)
+            updateSettings({ delimiterChoice: patch.delimiter });
+          if (patch.encoding) updateSettings({ encoding: patch.encoding });
+          resetView();
+          csv.changeChoices(patch);
+        }}
+        detected={{
+          delimiter: loaded.delimiter,
+          encoding: loaded.encoding,
+        }}
+        fromFile={csv.source?.kind === 'file'}
+        columns={loaded.columns}
+        disabled={csv.job.status === 'running'}
+      />
+      {sendSections.length ? (
+        <Menu
+          label="Send to"
+          items={sendSections}
+          onSelect={(v) => {
+            const [kind, id] = v.split(':');
+            if (kind && id) sendTo(navigate, id, payloads[kind]());
           }}
-          label="New data"
-          showLabel="desktop"
-          icon={IconRefreshCw}
+          trigger={(props) => (
+            <Button {...props} size="sm" variant="soft" icon={send}>
+              Send to
+            </Button>
+          )}
         />
-        <IconButton
-          size="sm"
-          variant="ghost"
-          label="Generate more like this"
-          icon={IconSparkles}
-          onClick={generateMore}
-        />
-        <ExportMenu
-          table={() => ({ columns: visibleColumns, rows: viewRows })}
-          filteredRows={filtered}
-          sourceName={loaded.name}
-          settings={settings}
-          onSettings={updateSettings}
-        />
-      </ToolActions>
-      <Inline justify="between" align="center" wrap gap="3">
+      ) : null}
+      <ExportMenu
+        table={() => ({ columns: visibleColumns, rows: viewRows })}
+        filteredRows={filtered}
+        sourceName={loaded.name}
+        settings={settings}
+        onSettings={updateSettings}
+      />
+    </Inline>
+  );
+
+  return (
+    <Stack gap="5">
+      <Card
+        as="section"
+        title={loaded.name}
+        headingLevel={2}
+        padding="sm"
+        actions={actions}
+      >
         <Inline align="center" gap="2" wrap>
-          <Heading level={2} size="lg">
-            {loaded.name}
-          </Heading>
           <Badge variant="soft" tone="accent" size="sm">
             {`${table.rows.length.toLocaleString('en-US')} rows`}
           </Badge>
@@ -249,152 +320,80 @@ export default function CsvViewer() {
             </Badge>
           )}
           {csv.modified && (
-            <Badge variant="soft" tone="warning" size="sm">
+            <Badge variant="soft" tone="warning" size="sm" dot>
               Modified
             </Badge>
           )}
         </Inline>
-        <Inline align="center" gap="2" wrap>
-          <SendToMenu
-            sourceTool={TOOL_ID}
-            label="Send JSON to"
-            size="sm"
-            payload={() => jsonPayload(projected(), loaded.name)}
-          />
-          <SendToMenu
-            sourceTool={TOOL_ID}
-            label="Send CSV to"
-            size="sm"
-            payload={() =>
-              csvTextPayload(viewRows, visibleColumns, loaded.name)
-            }
-          />
-          <ParseOptions
-            choices={csv.choices}
-            onChange={(patch) => {
-              if (patch.delimiter)
-                updateSettings({ delimiterChoice: patch.delimiter });
-              if (patch.encoding) updateSettings({ encoding: patch.encoding });
-              resetView();
-              csv.changeChoices(patch);
-            }}
-            detected={{
-              delimiter: loaded.delimiter,
-              encoding: loaded.encoding,
-            }}
-            fromFile={csv.source?.kind === 'file'}
-            columns={loaded.columns}
-            disabled={csv.job.status === 'running'}
-          />
-        </Inline>
-      </Inline>
+      </Card>
 
       {loaded.warnings.length > 0 && (
         <WarningsAlert warnings={loaded.warnings} />
       )}
       {csv.job.error && (
-        <ErrorState title="Could not read the data" error={csv.job.error} />
+        <Notice tone="danger" title="Could not read the data">
+          {csv.job.error.message}
+        </Notice>
       )}
-      {csv.editError && (
-        <Alert status="danger" size="sm">
-          <AlertDescription>{csv.editError.message}</AlertDescription>
-        </Alert>
-      )}
+      {csv.editError && <Notice tone="danger">{csv.editError.message}</Notice>}
 
-      <Tabs
-        value={tab}
-        onValueChange={(v) => setTab(v as typeof tab)}
-        variant="line"
-      >
-        <TabsList aria-label="Views">
-          <TabsTrigger value="table">
-            <Inline gap="2" align="center" wrap={false}>
-              <IconTable size="sm" />
-              <span>Table</span>
-            </Inline>
-          </TabsTrigger>
-          <TabsTrigger value="profile">
-            <Inline gap="2" align="center" wrap={false}>
-              <IconBarChart3 size="sm" />
-              <span>Profile</span>
-            </Inline>
-          </TabsTrigger>
-          <TabsTrigger value="chart">
-            <Inline gap="2" align="center" wrap={false}>
-              <IconTrendingUp size="sm" />
-              <span>Chart</span>
-            </Inline>
-          </TabsTrigger>
-        </TabsList>
+      <Inline>
+        <SegmentedControl
+          label="View"
+          value={tab}
+          onChange={(v) => setTab(v as typeof tab)}
+          options={[
+            { value: 'table', label: 'Table', icon: tableIcon },
+            { value: 'profile', label: 'Profile', icon: chartBar },
+            { value: 'chart', label: 'Chart', icon: chartLine },
+          ]}
+        />
+      </Inline>
 
-        <TabsContent value="table">
-          <Stack gap="3" className="pt-4">
-            <GridView
-              toolbar={
-                <EditToolbar
-                  columns={table.columns}
-                  canUndo={csv.canUndo}
-                  canRedo={csv.canRedo}
-                  onUndo={csv.undo}
-                  onRedo={csv.redo}
-                  onEdit={csv.apply}
-                  rowCount={table.rows.length}
-                  selectedRows={selectedRows}
-                />
-              }
-              trailing={
-                <SwitchField
-                  label="Compact rows"
-                  checked={settings.density === 'compact'}
-                  onCheckedChange={(c) =>
-                    updateSettings({ density: c ? 'compact' : 'comfortable' })
-                  }
-                />
-              }
-              table={table}
-              types={types}
-              indices={view.indices}
-              filters={filters}
-              onFiltersChange={setFilters}
-              filterErrors={view.errors}
-              sort={sort}
-              onSortChange={setSort}
-              search={search}
-              onSearchChange={setSearch}
-              hidden={hidden}
-              onHiddenChange={setHidden}
-              compact={settings.density === 'compact'}
-              onCellEdit={(row, col, value) =>
-                csv.apply({ kind: 'set-cell', row, col, value })
-              }
-              onSelectedRowsChange={setSelectedRows}
+      {tab === 'table' ? (
+        <GridView
+          toolbar={
+            <EditToolbar
+              columns={table.columns}
+              canUndo={csv.canUndo}
+              canRedo={csv.canRedo}
+              onUndo={csv.undo}
+              onRedo={csv.redo}
+              onEdit={csv.apply}
+              rowCount={table.rows.length}
+              selectedRows={selectedRows}
             />
-          </Stack>
-        </TabsContent>
-        <TabsContent value="profile">
-          <div className="pt-4">
-            {tab === 'profile' && (
-              <ProfilePanel
-                rows={viewRows}
-                columns={visibleColumns}
-                types={types}
-              />
-            )}
-          </div>
-        </TabsContent>
-        <TabsContent value="chart">
-          <div className="pt-4">
-            {tab === 'chart' && (
-              <ChartPanel
-                rows={viewRows}
-                columns={visibleColumns}
-                types={types}
-                name={loaded.name}
-              />
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+          }
+          table={table}
+          types={types}
+          indices={view.indices}
+          filters={filters}
+          onFiltersChange={setFilters}
+          filterErrors={view.errors}
+          sort={sort}
+          onSortChange={setSort}
+          search={search}
+          onSearchChange={setSearch}
+          hidden={hidden}
+          onHiddenChange={setHidden}
+          compact={settings.density === 'compact'}
+          onCompactChange={(c) =>
+            updateSettings({ density: c ? 'compact' : 'comfortable' })
+          }
+          onRowEdit={(cells) => csv.apply({ kind: 'set-cells', cells })}
+          selectedRows={selectedRows}
+          onSelectedRowsChange={setSelectedRows}
+        />
+      ) : tab === 'profile' ? (
+        <ProfilePanel rows={viewRows} columns={visibleColumns} types={types} />
+      ) : (
+        <ChartPanel
+          rows={viewRows}
+          columns={visibleColumns}
+          types={types}
+          name={loaded.name}
+        />
+      )}
     </Stack>
   );
 }

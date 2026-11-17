@@ -69,12 +69,9 @@ describe.skipIf(!built && !process.env.CI)('built assets (spec 1A.2)', () => {
     expect(report.appHits).toEqual([]);
   });
 
-  it('lucide-react is reached only from src/shared/ui/icons', () => {
+  it('lucide-react is reached from nowhere (icons are Facet, tools#104)', () => {
     const { lucideImporters } = readReport();
-    expect(
-      lucideImporters.filter((m) => !m.startsWith('src/shared/ui/icons/')),
-    ).toEqual([]);
-    expect(lucideImporters.length).toBeGreaterThan(0);
+    expect(lucideImporters).toEqual([]);
   });
 
   it('the dev-only kit gallery is absent from the build', () => {

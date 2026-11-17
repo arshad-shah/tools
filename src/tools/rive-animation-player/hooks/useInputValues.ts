@@ -3,7 +3,7 @@ import {
   Rive,
   StateMachineInput,
   StateMachineInputType,
-} from '@/shared/ui/adapters/rive-runtime';
+} from '@/shared/lib/rive-runtime';
 import { notify } from '@/shared/lib/notify';
 import type { DebugLog } from '../types';
 

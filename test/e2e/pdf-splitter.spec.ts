@@ -15,8 +15,8 @@ test('splits by ranges into a zip of documents', async ({ page }) => {
   ).toBeVisible();
 
   await page.getByRole('radio', { name: 'Page ranges' }).click();
-  await page.getByLabel('Ranges').fill('1-3, 10-');
-  await page.getByRole('button', { name: 'Split PDF' }).click();
+  await page.getByRole('textbox', { name: 'Ranges' }).fill('1-3, 10-');
+  await page.getByRole('button', { name: 'Split into 2 files' }).click();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download all (ZIP)' }).click();
@@ -37,20 +37,17 @@ test('extracts selected pages into one document', async ({ page }) => {
     page.getByRole('img', { name: 'Page 1', exact: true }),
   ).toBeVisible();
 
-  const tiles = page
-    .getByRole('list', { name: /^Pages/ })
-    .getByRole('listitem');
-  await tiles.nth(1).click();
-  await tiles.nth(2).focus();
+  await page.getByRole('checkbox', { name: 'Page 2', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Page 3', exact: true }).focus();
   await page.keyboard.press('Space');
   await expect(
-    page.getByRole('checkbox', { name: 'Select page 2' }),
+    page.getByRole('checkbox', { name: 'Page 2', exact: true }),
   ).toBeChecked();
   await expect(
-    page.getByRole('checkbox', { name: 'Select page 3' }),
+    page.getByRole('checkbox', { name: 'Page 3', exact: true }),
   ).toBeChecked();
 
-  await page.getByRole('button', { name: 'Split PDF' }).click();
+  await page.getByRole('button', { name: 'Extract 2 pages' }).click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: /^Download text-12\.pages-.+\.pdf$/ })
@@ -69,11 +66,10 @@ test('shows a precise error for a bad range', async ({ page }) => {
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
   await page.getByRole('radio', { name: 'Page ranges' }).click();
-  await page.getByLabel('Ranges').fill('2-9');
-  await page.getByRole('button', { name: 'Split PDF' }).click();
-  await expect(
-    page.getByRole('alert').filter({ hasText: 'Page 9 is out of range (1–3)' }),
-  ).toBeVisible();
+  await page.getByRole('textbox', { name: 'Ranges' }).fill('2-9');
+  // Said under the field as you type; nothing to split until it is fixed.
+  await expect(page.getByText('Page 9 is out of range (1–3)')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Split PDF' })).toBeDisabled();
 });
 
 test('stale results disappear when settings change', async ({ page }) => {
@@ -82,8 +78,8 @@ test('stale results disappear when settings change', async ({ page }) => {
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-12.pdf');
   await page.getByRole('radio', { name: 'Page ranges' }).click();
-  await page.getByLabel('Ranges').fill('1-3, 10-');
-  await page.getByRole('button', { name: 'Split PDF' }).click();
+  await page.getByRole('textbox', { name: 'Ranges' }).fill('1-3, 10-');
+  await page.getByRole('button', { name: 'Split into 2 files' }).click();
   const zipButton = page.getByRole('button', { name: 'Download all (ZIP)' });
   await expect(zipButton).toBeVisible();
   await page.getByRole('radio', { name: 'Every page' }).click();
@@ -111,12 +107,14 @@ test('shift-click selects a range of pages', async ({ page }) => {
     .getByRole('list', { name: /^Pages/ })
     .getByRole('listitem');
   await expect(tiles).toHaveCount(12);
-  await tiles.nth(2).click();
-  await tiles.nth(6).click({ modifiers: ['Shift'] });
+  await page.getByRole('checkbox', { name: 'Page 3', exact: true }).click();
+  await page
+    .getByRole('checkbox', { name: 'Page 7', exact: true })
+    .click({ modifiers: ['Shift'] });
   await expect(page.getByRole('checkbox', { checked: true })).toHaveCount(5);
   await expect(page.getByText('(5 selected)')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Split PDF' }).click();
+  await page.getByRole('button', { name: 'Extract 5 pages' }).click();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: /^Download text-12\.pages-.+\.pdf$/ })

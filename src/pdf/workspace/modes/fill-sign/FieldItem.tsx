@@ -1,18 +1,16 @@
 import { useState } from 'react';
 import type React from 'react';
-import {
-  FieldBox,
-  SelectionFrame,
-  type FieldBoxState,
-  type OverlayTransform,
-} from '@/shared/ui';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { FieldBox, type FieldBoxState } from '@/shared/surfaces/pdf/FieldBox';
+import { matrixViewport } from '@/shared/surfaces/pdf/geometry';
+import { PageFrame } from '@/shared/surfaces/pdf/PageFrame';
 import type { Box } from '@/pdf/doc/types';
 import type { ModeProps } from '../types';
 import { advance, resizeField, writeValue } from './actions';
 import { FieldEditor } from './FieldEditor';
 import { FieldValue } from './FieldValue';
 import { fieldName, type ViewField } from './fields';
-import { FocusOnMount } from './FocusOnMount';
+import { FocusOnMount } from '@/shared/surfaces/pdf/FocusOnMount';
 import { fillSign, useFillSign } from './store';
 import { caretMetrics, effectiveStyle } from './text-style';
 
@@ -85,8 +83,8 @@ export function FieldItem({
       <>
         {value}
         <FocusOnMount active onLeave={() => fillSign.set({ resizing: null })}>
-          <SelectionFrame
-            transform={transform}
+          <PageFrame
+            viewport={matrixViewport(transform)}
             box={preview ?? x.rect}
             resizable
             snap={snap}

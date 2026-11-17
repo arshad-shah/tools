@@ -1,9 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
-/** R41: "Test text" and "Results" are tabs. */
+/** The test text and the results are side by side: scroll to one. */
 const show = (page: Page, name: 'Test text' | 'Results') =>
-  page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
+  page.getByRole('heading', { name, exact: true }).scrollIntoViewIfNeeded();
+/** A result mode (a segmented control). */
+const mode = (page: Page, name: string) =>
+  page.getByRole('radio', { name, exact: true }).check();
 
 test('regex-tester survives catastrophic backtracking', async ({ page }) => {
   test.setTimeout(30_000);
@@ -38,7 +42,7 @@ test('regex-tester copies working JavaScript for a pattern with a slash', async 
   await expect(page.getByText('2 matches').first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Actions' }).click();
-  await page.getByText('Copy as JavaScript').click();
+  await page.getByRole('menuitem', { name: 'Copy as JavaScript' }).click();
   const count = await page.evaluate(async () => {
     const code = await navigator.clipboard.readText();
     return (new Function(`${code}\nreturn matches.length;`) as () => number)();
@@ -66,11 +70,9 @@ test('regex-tester replaces with group references', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Test string' }).fill('a1 b22');
   await page.getByLabel('Regex pattern').fill('(\\d+)');
   await show(page, 'Results');
-  await page.getByRole('tab', { name: 'Replace' }).click();
+  await mode(page, 'Replace');
   await page.getByRole('textbox', { name: 'Replacement' }).fill('<$1>$$');
-  await expect(
-    page.getByRole('textbox', { name: 'Replace result' }),
-  ).toHaveValue('a<1>$ b<22>$');
+  await expect(page.getByText('a<1>$ b<22>$')).toBeVisible();
   await expect(page.getByText('2 replacements')).toBeVisible();
 });
 
@@ -80,7 +82,7 @@ test('regex-tester Tests tab shows pass and fail per case', async ({
   await page.goto(pathOf('regex-tester'));
   await page.getByLabel('Regex pattern').fill('^\\d+$');
   await show(page, 'Results');
-  await page.getByRole('tab', { name: 'Tests' }).click();
+  await mode(page, 'Tests');
   await page.getByRole('textbox', { name: 'Should match' }).fill('123\nabc');
   await page.getByRole('textbox', { name: 'Should not match' }).fill('xyz');
   await expect(page.getByText('2 of 3 passing')).toBeVisible();
@@ -92,15 +94,12 @@ test('regex-tester Tests tab shows pass and fail per case', async ({
 test('regex-tester warns that Go cannot run a lookbehind', async ({ page }) => {
   await page.goto(pathOf('regex-tester'));
   await page.getByLabel('Regex pattern').fill('(?<=\\$)\\d+');
-  await page
-    .getByRole('combobox', { name: 'Code language' })
-    .selectOption('go');
+  await page.getByRole('combobox', { name: 'Code language' }).click();
+  await page.getByRole('option', { name: 'Go', exact: true }).click();
   await expect(
     page.getByText(/RE2 does not support lookarounds or backreferences/),
   ).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Code snippet' })).toHaveValue(
-    /regexp\.MustCompile/,
-  );
+  await expect(page.getByText(/regexp\.MustCompile/)).toBeVisible();
 });
 
 test('regex-tester share link restores pattern and text', async ({
@@ -120,11 +119,13 @@ test('regex-tester share link restores pattern and text', async ({
 
   const other = await context.newPage();
   await other.goto(url);
-  await expect(
+  await expectEditorValue(
     other.getByRole('textbox', { name: 'Regex pattern' }),
-  ).toHaveValue('id=(?<n>\\d+)');
+    'id=(?<n>\\d+)',
+  );
   await show(other, 'Test text');
-  await expect(other.getByRole('textbox', { name: 'Test string' })).toHaveValue(
+  await expectEditorValue(
+    other.getByRole('textbox', { name: 'Test string' }),
     'id=42, id=7',
   );
   await show(other, 'Results');

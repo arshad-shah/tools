@@ -1,9 +1,7 @@
-import {
-  PageBox,
-  Text,
-  type ObjectChange,
-  type OverlayTransform,
-} from '@/shared/ui';
+import type { OverlayTransform } from '@/shared/surfaces/page/overlay-layer';
+import { boxRect } from '@/shared/surfaces/pdf/geometry';
+import { PaperLine, Place } from '@/shared/surfaces/pdf/layers';
+import type { ObjectChange } from '@/shared/surfaces/pdf/ObjectLayer';
 import type {
   SignBlockParams,
   SignInitialPagesParams,
@@ -35,19 +33,17 @@ function BlockLook({
   ];
   return (
     <>
-      <PageBox transform={transform} box={layout.signature}>
+      <Place {...boxRect(transform, layout.signature)} passive>
         <SignatureLook
           preview={previewOf(c.signature, previews)}
           role="signature"
         />
-      </PageBox>
+      </Place>
       {lines.map(([text, at], i) =>
         text.trim() && at ? (
-          <PageBox key={i} transform={transform} box={at}>
-            <Text size="xs" className="flex size-full items-center truncate">
-              {text}
-            </Text>
-          </PageBox>
+          <Place key={i} {...boxRect(transform, at)} passive>
+            <PaperLine>{text}</PaperLine>
+          </Place>
         ) : null,
       )}
     </>
@@ -90,12 +86,12 @@ export function PlacedBlocks({
         const p = o.params as SignInitialPagesParams;
         const box = initialsBox(ctx, page, p);
         return box ? (
-          <PageBox key={o.opId} transform={transform} box={box}>
+          <Place key={o.opId} {...boxRect(transform, box)} passive>
             <SignatureLook
               preview={previewOf(p.content, previews)}
               role="initials"
             />
-          </PageBox>
+          </Place>
         ) : null;
       })}
     </>

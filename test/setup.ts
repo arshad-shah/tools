@@ -1,4 +1,8 @@
 import { afterEach, beforeEach } from 'vitest';
+import { installOverlayPolyfills } from './jsdom-overlays';
+
+// Cynosure's overlays need the Popover API and <dialog>.showModal().
+installOverlayPolyfills();
 
 // jsdom lays nothing out, so the root's client size is 0. Give it the
 // window's size: the kit positioner clips floating surfaces to it.
@@ -18,3 +22,56 @@ afterEach(async () => {
   const { cleanup } = await import('@testing-library/react');
   cleanup();
 });
+
+// jsdom has no ResizeObserver; Cynosure's Tooltip (IconButton, CopyButton)
+// observes its anchor. Tests that need sizes stub it themselves.
+if (typeof globalThis.ResizeObserver === 'undefined')
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+
+// jsdom has no matchMedia; Cynosure 0.7.0 reads media queries (reduced
+// motion, pointer, CompareSlider zoom). Width queries are answered against
+// the window's width (jsdom: 1024px), as a desktop would; every other query
+// does not match unless a test stubs it.
+const widthMatches = (query: string): boolean => {
+  const conditions = [...query.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)];
+  if (conditions.length === 0) return false;
+  return conditions.every(([, kind, px]) =>
+    kind === 'min'
+      ? window.innerWidth >= Number(px)
+      : window.innerWidth <= Number(px),
+  );
+};
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function')
+  window.matchMedia = (query: string) =>
+    ({
+      matches: widthMatches(query),
+      media: query,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+
+// jsdom lays nothing out: CodeMirror measures text ranges.
+if (typeof Range !== 'undefined' && !Range.prototype.getClientRects) {
+  const empty = () =>
+    ({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: 0,
+      width: 0,
+      height: 0,
+    }) as DOMRect;
+  Range.prototype.getClientRects = () =>
+    Object.assign([], { item: () => null }) as unknown as DOMRectList;
+  Range.prototype.getBoundingClientRect = empty;
+}

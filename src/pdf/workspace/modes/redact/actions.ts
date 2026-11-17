@@ -1,3 +1,4 @@
+import { requestProperties } from '../../properties-request';
 import { notify } from '@/shared/lib/notify';
 import { toToolError } from '@/shared/lib/errors';
 import type { DocumentApi, ModeProps } from '../types';
@@ -13,7 +14,11 @@ export const applyBlocked = (doc: DocumentApi): string | null =>
 export const toggleArea = (ctx: Pick<ModeProps, 'tool'>) =>
   ctx.tool.set(ctx.tool.id === AREA_TOOL ? null : AREA_TOOL);
 
-export const openSearch = () => setRedactUi({ searchOpen: true });
+export const openSearch = () => {
+  setRedactUi({ searchOpen: true });
+  // Find and mark lives in Properties: show it (a sheet on phones).
+  requestProperties();
+};
 
 export const askApply = (doc: DocumentApi) => {
   if (applyBlocked(doc)) {

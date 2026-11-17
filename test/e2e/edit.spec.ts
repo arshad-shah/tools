@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { imagePlacements, textPositions } from '../fixtures/builders';
 import { exportPdf, openInWorkspace, slotOf, xy } from './workspace-helpers';
+import { expectNotFound } from './not-found';
 
 /*
  * Plan D-10 step 3: Edit content and page markup through export (spec §9.2).
@@ -59,8 +60,6 @@ test('text, image, header and footer and a watermark export where placed', async
 test('the old watermark and page-number tools are gone', async ({ page }) => {
   for (const path of ['/pdf/watermark', '/pdf/page-numbers']) {
     await page.goto(path);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      `No page at ${path}`,
-    );
+    await expectNotFound(page, path);
   }
 });

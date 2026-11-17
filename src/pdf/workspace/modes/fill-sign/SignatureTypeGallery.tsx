@@ -1,18 +1,15 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  AlertDescription,
-  ChoiceGrid,
-  FontPreview,
-  Inline,
-  Input,
-  Label,
+  Grid,
+  LoadingDots,
+  Notice,
+  RadioGroup,
   Slider,
-  Spinner,
   Stack,
   Text,
-  type ChoiceOption,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import { SamplePaper, TypedSample } from '@/shared/surfaces/pdf/InkSample';
 import {
   ensureFontFace,
   fontById,
@@ -50,7 +47,6 @@ export const SignatureTypeGallery: React.FC<SignatureTypeGalleryProps> = ({
   onChange,
   disabled,
 }) => {
-  const ids = useId();
   const [fontId, setFontId] = useState<SignatureFontId>(SIGNATURE_FONTS[0].id);
   const [color, setColor] = useState(INK_COLORS[0].value);
   const [slant, setSlant] = useState(0);
@@ -112,103 +108,80 @@ export const SignatureTypeGallery: React.FC<SignatureTypeGalleryProps> = ({
     };
   }, [text, fontId, color, slant, size, onChange]);
 
-  const options: ChoiceOption<SignatureFontId>[] = SIGNATURE_FONTS.map((f) => ({
+  const options = SIGNATURE_FONTS.map((f) => ({
     value: f.id,
     label: f.label,
-    render: () =>
-      fonts[f.id] === 'ready' ? (
-        <FontPreview
-          family={f.family}
-          text={text}
-          slant={slant}
-          color={color}
-          label={`${f.label} sample`}
-          className="h-12 px-2 text-2xl"
-        />
-      ) : fonts[f.id] === 'failed' ? (
-        <Text
-          size="xs"
-          tone="muted"
-          className="flex h-12 items-center justify-center"
-        >
-          Font not loaded
-        </Text>
-      ) : (
-        <span className="flex h-12 items-center justify-center">
-          <Spinner size="sm" label={`Loading ${f.label}`} />
-        </span>
-      ),
+    media: (
+      <SamplePaper height={56}>
+        {fonts[f.id] === 'ready' ? (
+          <TypedSample
+            family={f.family}
+            text={text}
+            slant={slant}
+            color={color}
+            label={`${f.label} sample`}
+          />
+        ) : fonts[f.id] === 'failed' ? (
+          <Text size="xs" tone="muted">
+            Font not loaded
+          </Text>
+        ) : (
+          <LoadingDots size="sm" tone="muted" label={`Loading ${f.label}`} />
+        )}
+      </SamplePaper>
+    ),
   }));
 
   return (
-    <Stack gap="3">
+    <Stack gap="4">
       {onNameChange ? (
-        <Stack gap="2">
-          <Label htmlFor={`${ids}-name`}>Your name</Label>
-          <Input
-            id={`${ids}-name`}
-            value={name}
-            disabled={disabled}
-            autoComplete="name"
-            maxLength={MAX_TEXT}
-            onChange={onNameChange}
-          />
-        </Stack>
+        <TextField
+          label="Your name"
+          value={name}
+          disabled={disabled}
+          autoComplete="name"
+          maxLength={MAX_TEXT}
+          onChange={onNameChange}
+        />
       ) : null}
-      <ChoiceGrid
+      <RadioGroup
         label="Style"
-        value={fontId}
-        onChange={(v: SignatureFontId) => setFontId(v)}
-        options={options}
+        variant="card"
         columns={2}
+        value={fontId}
+        onChange={(v) => setFontId(v as SignatureFontId)}
+        options={options}
         disabled={disabled}
       />
       {missing.length > 0 && (
-        <Alert status="danger">
-          <AlertDescription>
-            {fontById(fontId).label} can't draw: {missing.join(' ')}. Try
-            another style, or draw your signature instead.
-          </AlertDescription>
-        </Alert>
+        <Notice tone="danger" size="sm">
+          {`${fontById(fontId).label} can't draw: ${missing.join(' ')}. Try another style, or draw your signature instead.`}
+        </Notice>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Stack gap="1">
-          <Inline justify="between" gap="2">
-            <Label id={`${ids}-slant`}>Slant</Label>
-            <Text as="span" size="sm" tone="muted">
-              {`${slant} degrees`}
-            </Text>
-          </Inline>
-          <Slider
-            value={slant}
-            min={-SLANT_LIMIT}
-            max={SLANT_LIMIT}
-            step={1}
-            disabled={disabled}
-            onValueChange={setSlant}
-            aria-labelledby={`${ids}-slant`}
-            aria-valuetext={`${slant} degrees`}
-          />
-        </Stack>
-        <Stack gap="1">
-          <Inline justify="between" gap="2">
-            <Label id={`${ids}-size`}>Size</Label>
-            <Text as="span" size="sm" tone="muted">
-              {size ? `${size} pt` : 'Auto'}
-            </Text>
-          </Inline>
-          <Slider
-            value={size}
-            min={0}
-            max={SIZE_MAX}
-            step={1}
-            disabled={disabled}
-            onValueChange={(v) => setSize((prev) => nextSize(prev, v))}
-            aria-labelledby={`${ids}-size`}
-            aria-valuetext={size ? `${size} points` : 'Auto, fits the box'}
-          />
-        </Stack>
-      </div>
+      <Grid columns={2} minItemWidth="12rem" gap="4">
+        <Slider
+          label="Slant"
+          showValue
+          labels={{ value: (v) => `${v} degrees` }}
+          value={slant}
+          min={-SLANT_LIMIT}
+          max={SLANT_LIMIT}
+          step={1}
+          disabled={disabled}
+          onChange={(v) => setSlant(Number(v))}
+        />
+        <Slider
+          label="Size"
+          showValue
+          labels={{ value: (v) => (v ? `${v} pt` : 'Auto, fits the box') }}
+          value={size}
+          min={0}
+          max={SIZE_MAX}
+          step={1}
+          disabled={disabled}
+          onChange={(v) => setSize((prev) => nextSize(prev, Number(v)))}
+        />
+      </Grid>
       <InkField value={color} disabled={disabled} onChange={setColor} />
     </Stack>
   );

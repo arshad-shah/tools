@@ -9,13 +9,13 @@ test('protects a PDF and unlocks it again (round trip)', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  await page.getByLabel('Password to open', { exact: true }).fill('s3cret');
-  await page.getByLabel('Confirm password', { exact: true }).fill('s3cre');
+  await page.getByRole('textbox', { name: 'Password to open' }).fill('s3cret');
+  await page.getByRole('textbox', { name: 'Confirm password' }).fill('s3cre');
   await expect(page.getByText('The passwords do not match')).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Protect PDF', exact: true }),
   ).toBeDisabled();
-  await page.getByLabel('Confirm password', { exact: true }).fill('s3cret');
+  await page.getByRole('textbox', { name: 'Confirm password' }).fill('s3cret');
   await page
     .getByRole('checkbox', { name: 'Allow copying text and images' })
     .click();
@@ -74,19 +74,19 @@ test('comments force form filling on, and a new file starts with empty passwords
     .setInputFiles('test/fixtures/generated/text-3.pdf');
   const forms = page.getByRole('checkbox', { name: 'Allow filling forms' });
   const comments = page.getByRole('checkbox', { name: 'Allow comments' });
-  await expect(comments).toHaveAttribute('aria-checked', 'true');
-  await expect(forms).toHaveAttribute('aria-checked', 'true');
+  await expect(comments).toBeChecked();
+  await expect(forms).toBeChecked();
   await expect(forms).toBeDisabled();
   await comments.click();
   await expect(forms).toBeEnabled();
   await comments.click();
-  await page.getByLabel('Password to open', { exact: true }).fill('x');
+  await page.getByRole('textbox', { name: 'Password to open' }).fill('x');
   await page.getByRole('button', { name: 'Choose another file' }).click();
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
   await expect(
-    page.getByLabel('Password to open', { exact: true }),
+    page.getByRole('textbox', { name: 'Password to open' }),
   ).toHaveValue('');
 });
 
@@ -96,9 +96,7 @@ test('unlock explains when there is nothing to unlock', async ({ page }) => {
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
   await expect(
-    page.getByText(
-      "This PDF isn't password-protected. There is nothing to unlock.",
-    ),
+    page.getByText('This PDF is not password-protected.'),
   ).toBeVisible();
 });
 

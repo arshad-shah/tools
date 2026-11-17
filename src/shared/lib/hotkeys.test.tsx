@@ -371,4 +371,37 @@ describe('modal scope (review I7)', () => {
     document.body.dispatchEvent(key({ key: 'r', bubbles: true }));
     expect(rotate).toHaveBeenCalledTimes(1);
   });
+
+  it('a closed modal popover (kept hidden in the page) does not count', () => {
+    const rotate = vi.fn();
+    dispose.push(
+      registerShortcuts([
+        { id: 'r', combo: 'r', description: 'Rotate', group: 'G', run: rotate },
+      ]),
+    );
+    const { dialog } = modal();
+    dialog.setAttribute('popover', 'manual');
+    document.body.dispatchEvent(key({ key: 'r', bubbles: true }));
+    expect(rotate).toHaveBeenCalledTimes(1);
+    dialog.showPopover();
+    document.body.dispatchEvent(key({ key: 'r', bubbles: true }));
+    expect(rotate).toHaveBeenCalledTimes(1);
+  });
+
+  it('an open modal <dialog> counts without aria-modal', () => {
+    const rotate = vi.fn();
+    dispose.push(
+      registerShortcuts([
+        { id: 'r', combo: 'r', description: 'Rotate', group: 'G', run: rotate },
+      ]),
+    );
+    const dialog = document.createElement('dialog');
+    document.body.append(dialog);
+    dialog.showModal();
+    document.body.dispatchEvent(key({ key: 'r', bubbles: true }));
+    expect(rotate).not.toHaveBeenCalled();
+    dialog.close();
+    document.body.dispatchEvent(key({ key: 'r', bubbles: true }));
+    expect(rotate).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1,5 +1,5 @@
+import { Button, Divider, Inline, Stack, Text } from '@arshad-shah/cynosure';
 import React from 'react';
-import { Button, ButtonGroup, Inline, Stack, Text } from '@/shared/ui';
 import { adjustRegister, clearRegister, clearRegisters } from '../lib/memory';
 import type { MemoryRegister } from '../settings';
 
@@ -19,23 +19,19 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
   current,
   onRecall,
 }) => (
-  <Stack gap="2">
+  <Stack gap="3">
     {memories.map((m, i) => (
-      <Inline
-        key={m.label}
-        justify="between"
-        align="center"
-        gap="2"
-        wrap
-        className="rounded-md border border-line px-3 py-2"
-      >
-        <Text size="sm" mono>
-          {m.label}: {m.value === null ? 'Empty' : String(m.value)}
-        </Text>
-        <ButtonGroup>
+      <Inline key={m.label} justify="between" align="center" gap="3" wrap>
+        <Inline gap="2" align="baseline">
+          <Text weight="bold">{m.label}</Text>
+          <Text numeric tone={m.value === null ? 'muted' : 'inherit'}>
+            {m.value === null ? 'Empty' : String(m.value)}
+          </Text>
+        </Inline>
+        <Inline gap="1">
           <Button
             size="sm"
-            variant="secondary"
+            variant="soft"
             aria-label={`Recall ${m.label}`}
             disabled={m.value === null}
             onClick={() => m.value !== null && onRecall(String(m.value))}
@@ -44,7 +40,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
           </Button>
           <Button
             size="sm"
-            variant="secondary"
+            variant="soft"
             aria-label={`Add the result to ${m.label}`}
             disabled={current === null}
             onClick={() =>
@@ -55,7 +51,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
           </Button>
           <Button
             size="sm"
-            variant="secondary"
+            variant="soft"
             aria-label={`Subtract the result from ${m.label}`}
             disabled={current === null}
             onClick={() =>
@@ -67,15 +63,17 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
           </Button>
           <Button
             size="sm"
-            variant="danger"
+            variant="soft"
+            tone="danger"
             aria-label={`Clear ${m.label}`}
             onClick={() => onChange(clearRegister(memories, i))}
           >
             MC
           </Button>
-        </ButtonGroup>
+        </Inline>
       </Inline>
     ))}
+    <Divider />
     <Inline>
       <Button
         size="sm"

@@ -2,17 +2,14 @@ import { readFile } from 'node:fs/promises';
 import { applyPatch } from 'diff';
 import { expect, test, type Page } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
 const lines = (n: number, f: (i: number) => string = (i) => `line ${i}`) =>
   Array.from({ length: n }, (_, i) => f(i + 1)).join('\n');
 
-/** R41: the two inputs are tabs; shows the side's tab first. */
+/** Both sides are side by side (stacked on phones): scroll to the side. */
 async function show(page: Page, side: 'Original text' | 'Changed text') {
-  await page
-    .getByRole('tab', {
-      name: side === 'Original text' ? /^Original/ : /^Changed/,
-    })
-    .click();
+  await page.getByRole('textbox', { name: side }).scrollIntoViewIfNeeded();
 }
 
 async function fill(
@@ -34,9 +31,10 @@ test('text-diff-checker loads a file into the left pane', async ({ page }) => {
       mimeType: 'text/plain',
       buffer: Buffer.from('hello left'),
     });
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue('hello left');
+    'hello left',
+  );
 });
 
 test('text-diff-checker accepts a text/plain file of any extension', async ({
@@ -52,7 +50,8 @@ test('text-diff-checker accepts a text/plain file of any extension', async ({
       buffer: Buffer.from('print("right")'),
     });
   await show(page, 'Changed text');
-  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Changed text' }),
     'print("right")',
   );
 });
@@ -86,8 +85,8 @@ test('text-diff-checker shows a JSON semantic table', async ({ page }) => {
   await fill(page, 'Changed text', '{"a":1,"b":{"c":3},"d":4}');
   await page.getByRole('radio', { name: 'JSON' }).click();
   const table = page.getByRole('table', { name: 'JSON differences' });
-  await expect(table.getByRole('cell', { name: '$.b.c' })).toBeVisible();
-  await expect(table.getByRole('cell', { name: '$.d' })).toBeVisible();
+  await expect(table.getByText('$.b.c', { exact: true })).toBeVisible();
+  await expect(table.getByText('$.d', { exact: true })).toBeVisible();
 });
 
 test('text-diff-checker merges a change from the right and downloads it', async ({
@@ -101,15 +100,12 @@ test('text-diff-checker merges a change from the right and downloads it', async 
   await page
     .getByRole('radiogroup', { name: 'Change 1 source' })
     .getByRole('radio', { name: 'Take right' })
-    .click();
-  await expect(
-    page.getByRole('textbox', { name: 'Merged result' }),
-  ).toHaveValue('a\nB\nc\nd');
+    .check();
+  await expect(page.locator('pre', { hasText: 'B' })).toHaveText(
+    /a\s*B\s*c\s*d/,
+  );
   const download = page.waitForEvent('download');
-  await page
-    .getByRole('group', { name: 'Merged result panel' })
-    .getByRole('button', { name: /Download/ })
-    .click();
+  await page.getByRole('button', { name: 'Download merged.txt' }).click();
   const file = await (await download).path();
   expect(await readFile(file!, 'utf8')).toBe('a\nB\nc\nd');
 });
@@ -159,11 +155,13 @@ test('text-diff-checker takes a pair hand-off from the HTTP Client', async ({
   }, pathOf('text-diff-checker'));
   await expect(page.getByText('0 added, 0 removed, 1 changed')).toBeVisible();
   await show(page, 'Original text');
-  await expect(
+  await expectEditorValue(
     page.getByRole('textbox', { name: 'Original text' }),
-  ).toHaveValue('{"v":1}');
+    '{"v":1}',
+  );
   await show(page, 'Changed text');
-  await expect(page.getByRole('textbox', { name: 'Changed text' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Changed text' }),
     '{"v":2}',
   );
 });

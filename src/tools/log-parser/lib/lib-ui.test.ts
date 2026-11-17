@@ -38,7 +38,7 @@ describe('level style', () => {
     expect(levelLabel('warn')).toBe('Warn');
     expect(levelLabel(undefined)).toBe('No level');
     expect(levelTone('fatal')).toBe('danger');
-    expect(levelTone('debug')).toBe('muted');
+    expect(levelTone('debug')).toBe('neutral');
   });
 });
 

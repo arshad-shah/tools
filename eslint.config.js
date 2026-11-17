@@ -59,8 +59,8 @@ export default tseslint.config(
     plugins: { local },
     rules: {
       'local/no-pictographic-text': 'error',
-      'local/no-raw-ui-outside-kit': 'error',
-      'local/no-lucide-outside-icons': 'error',
+      'local/no-raw-ui': 'error',
+      'local/no-icon-libraries': 'error',
       'local/no-disable-enforced': 'error',
     },
   },

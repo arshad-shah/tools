@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
 import {
-  Input,
-  Label,
-  NumberInput,
+  Inline,
+  NumberField,
   SegmentedControl,
   Stack,
-  Inline,
   Text,
-} from '@/shared/ui';
+  TextField,
+} from '@arshad-shah/cynosure';
+import React, { useState } from 'react';
 import {
   buildField,
   fieldToSpec,
@@ -49,24 +48,20 @@ function specOf(
 }
 
 const Num: React.FC<{
-  id: string;
   label: string;
   value: number;
   min: number;
   max: number;
   onValue(v: number): void;
-}> = ({ id, label, value, min, max, onValue }) => (
-  <Stack gap="1">
-    <Label htmlFor={id}>{label}</Label>
-    <NumberInput
-      id={id}
-      value={value}
-      min={min}
-      max={max}
-      onValueChange={(v) => onValue(Math.round(v))}
-      className="w-32"
-    />
-  </Stack>
+}> = ({ label, value, min, max, onValue }) => (
+  <NumberField
+    label={label}
+    width="sm"
+    value={value}
+    min={min}
+    max={max}
+    onChange={(v) => v !== null && onValue(Math.round(v))}
+  />
 );
 
 const readValues = (text: string, min: number, max: number) =>
@@ -85,13 +80,12 @@ const readValues = (text: string, min: number, max: number) =>
  * values (so "1," can become "1,15").
  */
 const SpecificValues: React.FC<{
-  id: string;
   label: string;
   values: number[];
   min: number;
   max: number;
   onValues(values: number[]): void;
-}> = ({ id, label, values, min, max, onValues }) => {
+}> = ({ label, values, min, max, onValues }) => {
   const joined = values.join(',');
   const [draft, setDraft] = useState(joined);
   const [seen, setSeen] = useState(joined);
@@ -100,19 +94,15 @@ const SpecificValues: React.FC<{
     if (readValues(draft, min, max).join(',') !== joined) setDraft(joined);
   }
   return (
-    <Stack gap="1">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        value={draft}
-        placeholder={`For example ${min},${Math.min(max, min + 15)}`}
-        onChange={(v) => {
-          setDraft(v);
-          onValues(readValues(v, min, max));
-        }}
-        className="font-mono"
-      />
-    </Stack>
+    <TextField
+      label={label}
+      value={draft}
+      placeholder={`For example ${min},${Math.min(max, min + 15)}`}
+      onChange={(v) => {
+        setDraft(v);
+        onValues(readValues(v, min, max));
+      }}
+    />
   );
 };
 
@@ -130,7 +120,6 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
   const label = FIELD_LABELS[field];
   const { min, max } = fieldBounds(field, flavour);
   const spec = specOf(text, field, flavour);
-  const id = `cron-${field}`;
   // Quartz's "no specific value" survives choosing Every.
   const build = (next: FieldSpec) =>
     onText(
@@ -148,41 +137,36 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
   };
 
   return (
-    <Stack gap="2">
-      <Inline gap="3" align="end">
-        <Stack gap="1" className="w-40">
-          <Label htmlFor={`${id}-text`}>{label}</Label>
-          <Input
-            id={`${id}-text`}
-            value={text}
-            onChange={onText}
-            className="font-mono"
-            spellCheck={false}
-            autoComplete="off"
-          />
-        </Stack>
+    <Stack gap="3">
+      <Inline gap="3" align="end" wrap>
+        <TextField
+          label={label}
+          width="sm"
+          value={text}
+          onChange={onText}
+          spellCheck={false}
+          autoComplete="off"
+        />
         <SegmentedControl
           label={`${label} mode`}
           size="sm"
-          value={spec?.mode ?? ('' as FieldMode)}
-          onChange={pickMode}
+          value={spec?.mode ?? ''}
+          onChange={(v) => pickMode(v as FieldMode)}
           options={MODES}
         />
       </Inline>
-      {spec?.mode === 'specific' && (
+      {spec?.mode === 'specific' ? (
         <SpecificValues
-          id={`${id}-values`}
           label={`${label} values`}
           values={spec.values ?? []}
           min={min}
           max={max}
           onValues={(values) => build({ mode: 'specific', values })}
         />
-      )}
-      {spec?.mode === 'range' && (
-        <Inline gap="3">
+      ) : null}
+      {spec?.mode === 'range' ? (
+        <Inline gap="3" wrap>
           <Num
-            id={`${id}-from`}
             label="From"
             value={spec.from ?? min}
             min={min}
@@ -190,7 +174,6 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             onValue={(from) => build({ ...spec, from })}
           />
           <Num
-            id={`${id}-to`}
             label="To"
             value={spec.to ?? max}
             min={min}
@@ -198,11 +181,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             onValue={(to) => build({ ...spec, to })}
           />
         </Inline>
-      )}
-      {spec?.mode === 'step' && (
-        <Inline gap="3">
+      ) : null}
+      {spec?.mode === 'step' ? (
+        <Inline gap="3" wrap>
           <Num
-            id={`${id}-start`}
             label="Starting at"
             value={spec.from ?? min}
             min={min}
@@ -210,7 +192,6 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             onValue={(from) => build({ ...spec, from })}
           />
           <Num
-            id={`${id}-step`}
             label="Every"
             value={spec.step ?? 1}
             min={1}
@@ -218,12 +199,12 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             onValue={(step) => build({ ...spec, step })}
           />
         </Inline>
-      )}
-      {!spec && (
-        <Text size="xs" tone="subtle">
+      ) : null}
+      {!spec ? (
+        <Text size="sm" tone="muted">
           This field uses a form the editor cannot show; edit its text.
         </Text>
-      )}
+      ) : null}
     </Stack>
   );
 };

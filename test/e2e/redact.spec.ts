@@ -33,14 +33,11 @@ test('find, mark all, apply, verify and export a redaction', async ({
   await page.goto('/pdf/edit/redact');
   await page.locator('input[type=file]').first().setInputFiles(FILE);
   await expect(rendered(page)).toBeAttached();
-  await expect(page.getByRole('tab', { name: /Redact/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  await expect(page.getByRole('radio', { name: /Redact/ })).toBeChecked();
 
   await page.getByRole('button', { name: 'Find and mark' }).click();
   await page.getByRole('textbox', { name: 'Find' }).fill(REDACT_TERM);
-  const matches = page.getByRole('list', { name: 'Matches' });
+  const matches = page.getByRole('region', { name: 'Matches' });
   await expect(matches.getByRole('checkbox').first()).toBeVisible({
     timeout: 20_000,
   });

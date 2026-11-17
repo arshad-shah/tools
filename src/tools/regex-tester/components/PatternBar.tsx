@@ -1,20 +1,21 @@
 import React, { useId } from 'react';
 import {
-  Alert,
   Badge,
-  Box,
   Card,
-  CardBody,
-  CodeSurface,
   CopyButton,
   Inline,
+  Notice,
   Stack,
   Text,
-  type CodeMarker,
-  type CodeRange,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+
 import type { SyntaxCheck } from '../lib/syntax';
 import { FlagToggles } from './FlagToggles';
+import {
+  CodeEditor,
+  type CodeRange,
+  type EditorDiagnostic,
+} from '@/shared/editor';
 
 interface PatternBarProps {
   pattern: string;
@@ -39,7 +40,7 @@ export const PatternBar: React.FC<PatternBarProps> = ({
   literal,
 }) => {
   const errorId = useId();
-  const markers: CodeMarker[] =
+  const markers: EditorDiagnostic[] =
     !syntax.ok && syntax.column !== null
       ? [
           {
@@ -57,60 +58,60 @@ export const PatternBar: React.FC<PatternBarProps> = ({
       : [];
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="3">
-          <Inline gap="2" align="center" className="w-full">
-            <Text as="span" mono weight="semibold" aria-hidden>
-              /
-            </Text>
-            <Box className="min-w-0 flex-1">
-              <CodeSurface
-                value={pattern}
-                onChange={onPatternChange}
-                language="regex"
-                label="Regex pattern"
-                singleLine
-                placeholder="Enter a regular expression"
-                markers={markers}
-                ranges={ranges}
-                aria-describedby={syntax.ok ? undefined : errorId}
-              />
-            </Box>
-            <Text as="span" mono weight="semibold" aria-hidden>
-              /{flags}
-            </Text>
-            <CopyButton
-              label="regex with flags"
-              value={literal}
-              size="md"
-              disabled={!pattern || !syntax.ok}
-            />
+    <Card as="section" title="Pattern" headingLevel={2}>
+      <Stack gap="4">
+        <Inline gap="3" align="center">
+          <Inline aria-hidden>
+            <Text variant="code">/</Text>
           </Inline>
-          <Inline gap="3" align="center" justify="between" wrap>
-            <Inline gap="2" align="center" wrap={false}>
-              <Text as="span" size="sm" tone="muted" aria-hidden>
+          <Stack grow minSize="0">
+            <CodeEditor
+              value={pattern}
+              onChange={onPatternChange}
+              language="regex"
+              aria-label="Regex pattern"
+              singleLine
+              placeholder="Enter a regular expression"
+              diagnostics={markers}
+              ranges={ranges}
+              aria-describedby={syntax.ok ? undefined : errorId}
+            />
+          </Stack>
+          <Inline aria-hidden>
+            <Text variant="code">/{flags}</Text>
+          </Inline>
+          <CopyButton
+            value={literal}
+            disabled={!pattern || !syntax.ok}
+            labels={{
+              copy: 'Copy regex with flags',
+              copied: 'Copied the regex',
+            }}
+          />
+        </Inline>
+        <Inline gap="3" align="center" justify="between" wrap>
+          <Inline gap="3" align="center">
+            <Inline aria-hidden>
+              <Text size="sm" tone="muted">
                 Flags
               </Text>
-              <FlagToggles flags={flags} onToggle={onToggleFlag} />
             </Inline>
-            {pattern ? (
-              <Badge
-                variant="soft"
-                tone={syntax.ok ? 'success' : 'danger'}
-                size="sm"
-              >
-                {syntax.ok ? 'Valid' : 'Invalid'}
-              </Badge>
-            ) : null}
+            <FlagToggles flags={flags} onToggle={onToggleFlag} />
           </Inline>
-          {!syntax.ok && (
-            <Alert status="danger" size="sm" id={errorId}>
+          {pattern ? (
+            <Badge tone={syntax.ok ? 'success' : 'danger'} size="sm">
+              {syntax.ok ? 'Valid' : 'Invalid'}
+            </Badge>
+          ) : null}
+        </Inline>
+        {!syntax.ok ? (
+          <Notice tone="danger" size="sm">
+            <Text as="span" id={errorId}>
               {syntax.message}
-            </Alert>
-          )}
-        </Stack>
-      </CardBody>
+            </Text>
+          </Notice>
+        ) : null}
+      </Stack>
     </Card>
   );
 };

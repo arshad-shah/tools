@@ -1,16 +1,17 @@
-import { useId, type ReactNode } from 'react';
 import {
   Button,
-  Heading,
+  Card,
+  Grid,
   Inline,
-  Input,
-  Label,
-  NumberInput,
-  OptionsMenu,
+  NumberField,
+  Popover,
   Select,
   Stack,
-  SwitchField,
-} from '@/shared/ui';
+  Switch,
+  Text,
+  TextField,
+} from '@arshad-shah/cynosure';
+import { settings as settingsIcon } from '@arshad-shah/cynosure/icons';
 import type { OpGroup, TextOp } from '../lib/ops';
 import type { ToolkitSettings } from '../settings';
 
@@ -25,22 +26,6 @@ export interface OpsPanelProps {
 
 const GROUPS: OpGroup[] = ['Case', 'Lines', 'Clean'];
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: (id: string) => ReactNode;
-}) {
-  const id = useId();
-  return (
-    <Stack gap="1" className="min-w-0">
-      <Label htmlFor={id}>{label}</Label>
-      {children(id)}
-    </Stack>
-  );
-}
-
 function LineOptions({
   settings: s,
   update,
@@ -48,93 +33,73 @@ function LineOptions({
   onFilter,
 }: Omit<OpsPanelProps, 'ops' | 'onRun'>) {
   return (
-    <Stack gap="3">
-      <Stack gap="2">
-        <SwitchField
+    <Stack gap="4">
+      <Stack gap="3">
+        <Switch
           label="Duplicates ignore case"
           checked={s.dedupeCaseInsensitive}
-          onCheckedChange={(v) => update({ dedupeCaseInsensitive: v })}
+          onChange={(v) => update({ dedupeCaseInsensitive: v })}
         />
-        <SwitchField
+        <Switch
           label="Filter removes matches"
           checked={s.filterInvert}
-          onCheckedChange={(v) => update({ filterInvert: v })}
+          onChange={(v) => update({ filterInvert: v })}
         />
       </Stack>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Keep duplicate">
-          {(id) => (
-            <Select
-              id={id}
-              value={s.dedupeKeep}
-              onValueChange={(v) =>
-                update({ dedupeKeep: v as 'first' | 'last' })
-              }
-              items={[
-                { value: 'first', label: 'First' },
-                { value: 'last', label: 'Last' },
-              ]}
-            />
-          )}
-        </Field>
-        <Field label="Number from">
-          {(id) => (
-            <NumberInput
-              id={id}
-              value={s.numberStart}
-              onValueChange={(v) => update({ numberStart: v })}
-            />
-          )}
-        </Field>
-        <Field label="Number separator">
-          {(id) => (
-            <Input
-              id={id}
-              value={s.numberSep}
-              onChange={(v) => update({ numberSep: v })}
-            />
-          )}
-        </Field>
-        <Field label="Prefix">
-          {(id) => (
-            <Input
-              id={id}
-              value={s.prefix}
-              onChange={(v) => update({ prefix: v })}
-            />
-          )}
-        </Field>
-        <Field label="Suffix">
-          {(id) => (
-            <Input
-              id={id}
-              value={s.suffix}
-              onChange={(v) => update({ suffix: v })}
-            />
-          )}
-        </Field>
-        <Field label="Join with">
-          {(id) => (
-            <Input
-              id={id}
-              value={s.joinSep}
-              onChange={(v) => update({ joinSep: v })}
-            />
-          )}
-        </Field>
-        <Field label="Split on">
-          {(id) => (
-            <Input
-              id={id}
-              value={s.splitSep}
-              onChange={(v) => update({ splitSep: v })}
-            />
-          )}
-        </Field>
-        <Field label="Filter text">
-          {(id) => <Input id={id} value={filter} onChange={onFilter} />}
-        </Field>
-      </div>
+      <Grid columns={2} gap="3">
+        <Select
+          label="Keep duplicate"
+          size="sm"
+          value={s.dedupeKeep}
+          onChange={(v) => update({ dedupeKeep: v as 'first' | 'last' })}
+          options={[
+            { value: 'first', label: 'First' },
+            { value: 'last', label: 'Last' },
+          ]}
+        />
+        <NumberField
+          label="Number from"
+          size="sm"
+          value={s.numberStart}
+          onChange={(v) => v !== null && update({ numberStart: v })}
+        />
+        <TextField
+          label="Number separator"
+          size="sm"
+          value={s.numberSep}
+          onChange={(v) => update({ numberSep: v })}
+        />
+        <TextField
+          label="Prefix"
+          size="sm"
+          value={s.prefix}
+          onChange={(v) => update({ prefix: v })}
+        />
+        <TextField
+          label="Suffix"
+          size="sm"
+          value={s.suffix}
+          onChange={(v) => update({ suffix: v })}
+        />
+        <TextField
+          label="Join with"
+          size="sm"
+          value={s.joinSep}
+          onChange={(v) => update({ joinSep: v })}
+        />
+        <TextField
+          label="Split on"
+          size="sm"
+          value={s.splitSep}
+          onChange={(v) => update({ splitSep: v })}
+        />
+        <TextField
+          label="Filter text"
+          size="sm"
+          value={filter}
+          onChange={onFilter}
+        />
+      </Grid>
     </Stack>
   );
 }
@@ -148,86 +113,74 @@ function OtherOptions({
   settings: ToolkitSettings;
   update(patch: Partial<ToolkitSettings>): void;
 }) {
-  if (group === 'Case')
-    return (
-      <Inline gap="3" wrap align="start">
-        <Field label="Slug separator">
-          {(id) => (
-            <Input
-              id={id}
-              value={s.slugSep}
-              onChange={(v) => update({ slugSep: v })}
-            />
-          )}
-        </Field>
-      </Inline>
-    );
-  return (
-    <Inline gap="3" wrap align="start">
-      <Field label="Tab width">
-        {(id) => (
-          <NumberInput
-            id={id}
-            value={s.tabSize}
-            min={1}
-            max={16}
-            onValueChange={(v) => update({ tabSize: v })}
-          />
-        )}
-      </Field>
-    </Inline>
+  return group === 'Case' ? (
+    <TextField
+      label="Slug separator"
+      size="sm"
+      value={s.slugSep}
+      onChange={(v) => update({ slugSep: v })}
+    />
+  ) : (
+    <NumberField
+      label="Tab width"
+      size="sm"
+      value={s.tabSize}
+      min={1}
+      max={16}
+      onChange={(v) => v !== null && update({ tabSize: v })}
+    />
   );
 }
 
-/** The operations, grouped (spec §9.1); each is one undo step. */
+/** The operations, grouped; each is one undo step. */
 export function OpsPanel(props: OpsPanelProps) {
   const { ops, onRun } = props;
-  const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-5">
-      <Heading level={2} size="md" id={headingId}>
-        Operations
-      </Heading>
-      {GROUPS.map((group) => (
-        <Stack key={group} gap="2" role="group" aria-label={group}>
-          <Inline justify="between" align="center" gap="2">
-            <Heading level={3} size="sm" className="text-fg-muted">
-              {group}
-            </Heading>
-            <OptionsMenu
-              variant="ghost"
-              label={`${group} options`}
-              title={`${group} options`}
-              width={group === 'Lines' ? 'w-96' : 'w-64'}
-            >
-              {group === 'Lines' ? (
-                <LineOptions {...props} />
-              ) : (
-                <OtherOptions
-                  group={group}
-                  settings={props.settings}
-                  update={props.update}
-                />
-              )}
-            </OptionsMenu>
-          </Inline>
-          <Inline gap="2" wrap>
-            {ops
-              .filter((o) => o.group === group)
-              .map((o) => (
-                <Button
-                  key={o.id}
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => onRun(o)}
-                >
-                  {o.label}
-                </Button>
-              ))}
-          </Inline>
-        </Stack>
-      ))}
-    </section>
+    <Card as="section" title="Operations">
+      <Stack gap="5">
+        {GROUPS.map((group) => (
+          <Stack key={group} gap="3" role="group" aria-label={group}>
+            <Inline justify="between" align="center" gap="2">
+              <Text variant="eyebrow" tone="muted">
+                {group}
+              </Text>
+              <Popover
+                label={`${group} options`}
+                size={group === 'Lines' ? 'lg' : 'sm'}
+                trigger={(p) => (
+                  <Button {...p} size="sm" variant="ghost" icon={settingsIcon}>
+                    {`${group} options`}
+                  </Button>
+                )}
+              >
+                {group === 'Lines' ? (
+                  <LineOptions {...props} />
+                ) : (
+                  <OtherOptions
+                    group={group}
+                    settings={props.settings}
+                    update={props.update}
+                  />
+                )}
+              </Popover>
+            </Inline>
+            <Inline gap="2" wrap>
+              {ops
+                .filter((o) => o.group === group)
+                .map((o) => (
+                  <Button
+                    key={o.id}
+                    size="sm"
+                    variant="soft"
+                    onClick={() => onRun(o)}
+                  >
+                    {o.label}
+                  </Button>
+                ))}
+            </Inline>
+          </Stack>
+        ))}
+      </Stack>
+    </Card>
   );
 }

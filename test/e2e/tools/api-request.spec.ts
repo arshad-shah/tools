@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { pathOf } from '../tool-routes';
+import { expectEditorValue } from '../editor';
 
 const API = 'https://api.tools.test';
 const CORS = {
@@ -37,23 +38,19 @@ test('GET with params shows a 200 JSON tree', async ({ page }) => {
   });
   await page.goto(pathOf('api-request'));
   await urlBox(page).fill(`${API}/items`);
-  const params = page
-    .getByRole('table', { name: 'Query parameters' })
-    .locator('..');
-  await page.getByRole('button', { name: 'Add row' }).first().click();
-  await page.getByRole('textbox', { name: 'Key, row 1' }).fill('q');
-  await page.getByRole('textbox', { name: 'Value, row 1' }).fill('a b');
-  await expect(params).toBeVisible();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Key (Row 1)' }).fill('q');
+  // A row is named by its key once it has one.
+  await page.getByRole('textbox', { name: 'Value (q)' }).fill('a b');
   await send(page);
-  // Sending shows the Response pane (one pane at a time, R41).
-  await expect(page.getByRole('tab', { name: 'Response' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
-  await expect(page.getByText('200 OK')).toBeVisible();
+  // Request and response sit side by side.
+  await expect(page.getByText('200 OK').first()).toBeVisible();
   expect(seen).toBe(`${API}/items?q=a+b`);
-  await expect(page.getByRole('tree', { name: 'Response JSON' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Request', exact: true }).click();
+  const tree = page.getByRole('tree', { name: 'Response JSON' });
+  await expect(tree).toBeVisible();
+  await tree.getByRole('treeitem', { name: /items/ }).click();
+  await page.keyboard.press('ArrowRight');
+  await expect(tree.getByRole('treeitem', { name: /^0/ })).toBeVisible();
   await expect(urlBox(page)).toBeVisible();
 });
 
@@ -66,21 +63,19 @@ test('POST form-data reaches the server with both parts', async ({ page }) => {
     await route.fulfill({ status: 201, headers: CORS, body: 'ok' });
   });
   await page.goto(pathOf('api-request'));
-  await page.getByRole('combobox', { name: 'Method' }).selectOption('POST');
+  await page.getByRole('combobox', { name: 'Method' }).click();
+  await page.getByRole('option', { name: 'POST' }).click();
   await urlBox(page).fill(`${API}/upload`);
-  await page.getByRole('tab', { name: 'Body' }).click();
-  await page.getByRole('radio', { name: 'Form data' }).click();
-  await page.getByRole('button', { name: 'Add row' }).click();
-  await page.getByRole('textbox', { name: 'Field, row 1' }).fill('name');
-  await page.getByRole('textbox', { name: 'Value, row 1' }).fill('Ada');
-  await page.getByRole('button', { name: 'Add row' }).click();
-  await page.getByRole('textbox', { name: 'Field, row 2' }).fill('doc');
-  await page
-    .getByRole('combobox', { name: /Type of/ })
-    .nth(1)
-    .selectOption('file');
+  await page.getByRole('radio', { name: 'Body' }).click();
+  await page.getByRole('combobox', { name: 'Body type' }).click();
+  await page.getByRole('option', { name: 'Form data' }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Field (Row 1)' }).fill('name');
+  await page.getByRole('textbox', { name: 'Value (name)' }).fill('Ada');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Field (Row 2)' }).fill('doc');
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Choose file for doc' }).click();
+  await page.getByRole('button', { name: 'Attach a file to doc' }).click();
   await (
     await chooser
   ).setFiles({
@@ -89,7 +84,7 @@ test('POST form-data reaches the server with both parts', async ({ page }) => {
     buffer: Buffer.from('file body'),
   });
   await send(page);
-  await expect(page.getByText('201 Created')).toBeVisible();
+  await expect(page.getByText('201 Created').first()).toBeVisible();
   expect(type).toMatch(/^multipart\/form-data; boundary=/);
   expect(body).toContain('name="name"');
   expect(body).toContain('Ada');
@@ -107,7 +102,7 @@ test('a 204 empty body shows 204, not 0', async ({ page }) => {
   await page.goto(pathOf('api-request'));
   await urlBox(page).fill(`${API}/empty`);
   await send(page);
-  await expect(page.getByText('204 No Content')).toBeVisible();
+  await expect(page.getByText('204 No Content').first()).toBeVisible();
 });
 
 test('a blocked request shows the CORS explainer', async ({ page }) => {
@@ -130,12 +125,12 @@ test('pasting a cURL command fills the request', async ({ page }) => {
   );
   await expect(page.getByText('Imported from cURL')).toBeVisible();
   await expect(urlBox(page)).toHaveValue(`${API}/things/1`);
-  await expect(page.getByRole('combobox', { name: 'Method' })).toHaveValue(
-    'PUT',
+  await expect(page.getByRole('combobox', { name: 'Method' })).toHaveText(
+    /PUT/,
   );
-  await page.getByRole('tab', { name: /Headers/ }).click();
+  await page.getByRole('radio', { name: /Headers/ }).click();
   await expect(
-    page.getByRole('textbox', { name: 'Header, row 1' }),
+    page.getByRole('textbox', { name: 'Header (X-Trace)' }),
   ).toHaveValue('X-Trace');
 });
 
@@ -148,7 +143,8 @@ test('opens the response in the JSON Viewer', async ({ page }) => {
   await send(page);
   await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
   await expect(page).toHaveURL(new RegExp(`${pathOf('json-and-xml-viewer')}`));
-  await expect(page.getByRole('textbox', { name: 'Document' })).toHaveValue(
+  await expectEditorValue(
+    page.getByRole('textbox', { name: 'Document' }),
     /"world"/,
   );
 });
@@ -177,10 +173,13 @@ test('keeps collections saved under the legacy key', async ({ page }) => {
     );
   });
   await page.goto(pathOf('api-request'));
+  // Collections and history open in a side sheet.
+  await page.getByRole('button', { name: 'Collections' }).click();
   await expect(page.getByText('Legacy Collection')).toBeVisible();
-  await page.getByText('Legacy Request').click();
+  await page.getByRole('treeitem', { name: /Legacy Request/ }).click();
   await expect(urlBox(page)).toHaveValue('https://example.com');
   await page.reload();
+  await page.getByRole('button', { name: 'Collections' }).click();
   await expect(page.getByText('Legacy Collection')).toBeVisible();
 });
 
@@ -195,6 +194,6 @@ test('the old /web/api-request route is gone and search finds HTTP Client', asyn
   await expect(
     page
       .getByRole('region', { name: 'Search results' })
-      .getByText('HTTP Client'),
+      .getByRole('link', { name: /HTTP Client/ }),
   ).toBeVisible();
 });

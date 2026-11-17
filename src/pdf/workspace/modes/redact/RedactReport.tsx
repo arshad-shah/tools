@@ -1,9 +1,5 @@
-import { Alert, AlertTitle, Button, Stack, Text } from '@/shared/ui';
-import {
-  IconOcrScan,
-  IconRasterised,
-  IconRedactVerified,
-} from '@/shared/ui/icons';
+import { Button, List, Notice, Stack, Text } from '@arshad-shah/cynosure';
+import { filePixels, ocrScan, shieldCheck } from '@arshad-shah/cynosure/icons';
 import { useGoToMode } from '../../workspace-context';
 import type { DocumentApi } from '../types';
 import { latestRedaction } from './marks';
@@ -15,38 +11,39 @@ export function RedactReport({ doc }: { doc: DocumentApi }) {
   if (!latest) return null;
   const { report } = latest;
   return (
-    <Stack gap="2" aria-label="Redaction report">
-      <div className="flex items-center gap-2 text-accent-fg">
-        <IconRedactVerified size="sm" />
-        <Text size="sm" weight="semibold">
-          {report.title}
-        </Text>
-      </div>
-      <ul className="flex flex-col gap-1 text-sm text-fg-muted">
-        {report.lines.map((l) => (
-          <li key={l}>{l}</li>
-        ))}
-      </ul>
+    <Stack gap="3" aria-label="Redaction report">
+      <Notice tone="success" size="sm" icon={shieldCheck} title={report.title}>
+        <List
+          size="sm"
+          gap="sm"
+          items={report.lines.map((l) => ({ id: l, label: l }))}
+        />
+      </Notice>
       {report.warnings.map((w) => (
-        <Alert key={w} status="warning" icon={<IconRasterised size="sm" />}>
-          <AlertTitle>Turned into an image</AlertTitle>
-          <Text size="sm">{w}</Text>
-        </Alert>
+        <Notice
+          key={w}
+          tone="warning"
+          size="sm"
+          icon={filePixels}
+          title="Turned into an image"
+        >
+          {w}
+        </Notice>
       ))}
       {report.rasterisedPages?.length && goToMode ? (
-        <div>
+        <Stack gap="1" align="start">
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
-            leftIcon={<IconOcrScan size="sm" />}
+            icon={ocrScan}
             onClick={() => goToMode('ocr')}
           >
             Run OCR
           </Button>
-          <Text size="sm" tone="muted" className="mt-1">
+          <Text size="sm" tone="muted">
             Pages turned into images have no text to search or select.
           </Text>
-        </div>
+        </Stack>
       ) : null}
     </Stack>
   );

@@ -2,29 +2,32 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useImperativeHandle } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DiagramCanvasProps } from '@/shared/ui/diagram-canvas';
+import type { DiagramCanvasProps } from '@/shared/surfaces/diagram-canvas/DiagramCanvas';
 import { fromValue } from '../lib/doc-model';
 import { MapTab } from './MapTab';
 
 const reveal = vi.fn();
 let last: DiagramCanvasProps;
 
-vi.mock('@/shared/ui', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  DiagramCanvas: (props: DiagramCanvasProps) => {
-    last = props;
-    useImperativeHandle(props.ref, () => ({
-      reveal,
-      fit: vi.fn(),
-      zoomTo: vi.fn(),
-      centreOn: vi.fn(),
-      exportPng: vi.fn(),
-      exportSvg: vi.fn(),
-      getView: () => ({ x: 0, y: 0, scale: 1 }),
-    }));
-    return null;
-  },
-}));
+vi.mock(
+  '@/shared/surfaces/diagram-canvas/DiagramCanvas',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    DiagramCanvas: (props: DiagramCanvasProps) => {
+      last = props;
+      useImperativeHandle(props.ref, () => ({
+        reveal,
+        fit: vi.fn(),
+        zoomTo: vi.fn(),
+        centreOn: vi.fn(),
+        exportPng: vi.fn(),
+        exportSvg: vi.fn(),
+        getView: () => ({ x: 0, y: 0, scale: 1 }),
+      }));
+      return null;
+    },
+  }),
+);
 
 beforeEach(() => {
   reveal.mockClear();
@@ -80,9 +83,8 @@ describe('MapTab', () => {
     render(
       <MapTab doc={big} selectedId={null} onSelect={vi.fn()} fileBase="data" />,
     );
-    fireEvent.change(screen.getByLabelText('Node cap'), {
-      target: { value: '500' },
-    });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Node cap' }));
+    fireEvent.click(screen.getByRole('option', { name: '500' }));
     expect(screen.getByText('Showing 501 of 801 objects')).toBeTruthy();
     expect(last.diagram.nodes[0].rows.at(-1)).toMatchObject({
       kind: 'more',

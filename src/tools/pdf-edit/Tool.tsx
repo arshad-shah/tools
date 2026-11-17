@@ -7,7 +7,8 @@ import {
 } from 'react-router-dom';
 import { useHandoff } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
-import { Breadcrumb, FilePicker } from '@/shared/ui';
+import { Breadcrumbs } from '@arshad-shah/cynosure';
+import { FilePicker } from '@/pdf/workspace/ui/FilePicker';
 import type { ModeId } from '@/pdf/doc/types';
 import { getMode, MODES } from '@/pdf/workspace/modes/registry';
 import { OpenDocument } from '@/pdf/workspace/OpenDocument';
@@ -16,8 +17,8 @@ import { useWorkspaceDocument } from '@/pdf/workspace/use-workspace-document';
 import { WorkspaceShell } from '@/pdf/workspace/WorkspaceShell';
 import { takeStagedDocument } from '@/pdf/workspace/workspace-store';
 import { useOpenPalette } from '@/app/shell/palette';
-import { routerLink } from '@/app/shell/router-link';
 import { HelpMenu } from '@/app/shell/HelpMenu';
+import { renderRouterLink } from '@/app/shell/router-link';
 import { UnlockEditingDialog } from './UnlockEditingDialog';
 
 const FALLBACK: ModeId = 'organize';
@@ -101,9 +102,14 @@ export default function PdfEditTool() {
   }, [restoredUi]);
 
   const breadcrumb = (
-    <Breadcrumb
-      segments={[{ label: 'pdf', href: '/pdf' }, { label: 'edit' }]}
-      renderLink={routerLink}
+    <Breadcrumbs
+      size="sm"
+      renderLink={renderRouterLink}
+      items={[
+        { label: 'Home', href: '/' },
+        { label: 'PDF', href: '/pdf' },
+        { label: 'Workspace' },
+      ]}
     />
   );
 
@@ -112,7 +118,6 @@ export default function PdfEditTool() {
       <OpenDocument
         phase={ws.phase}
         breadcrumb={breadcrumb}
-        renderLink={routerLink}
         onFiles={(files) => void ws.openFiles(files)}
         onRestore={(id) => {
           setSearch({ doc: id }, { replace: true });

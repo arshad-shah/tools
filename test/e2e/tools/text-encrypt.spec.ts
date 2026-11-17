@@ -45,7 +45,7 @@ test('encrypts a file that Node can decrypt, and refuses a wrong passphrase', as
 }) => {
   const original = await readFile('test/fixtures/generated/tiny.gif');
   await page.goto(pathOf('text-encrypt'));
-  await page.getByRole('tab', { name: 'File' }).click();
+  await page.getByRole('radio', { name: 'File' }).click();
   await page
     .locator('input[type=file]')
     .first()
@@ -101,15 +101,14 @@ test('encrypts and decrypts text', async ({ page }) => {
   await page.getByLabel('Passphrase', { exact: true }).fill(PASS);
   await page.getByLabel('Confirm passphrase').fill(PASS);
   await page.getByRole('button', { name: 'Encrypt', exact: true }).click();
-  const out = page.getByRole('textbox', { name: 'Encrypted message' });
-  await expect(out).toHaveValue(/BEGIN TOOLS ENCRYPTED MESSAGE/);
-  const armoured = await out.inputValue();
+  const out = page.getByRole('figure', { name: 'Encrypted message' });
+  await expect(out).toContainText(/BEGIN TOOLS ENCRYPTED MESSAGE/);
+  const armoured = (await out.locator('pre').innerText()).trim();
   await page.getByRole('radio', { name: 'Decrypt' }).click();
-  // Encrypt showed the Output pane; the armoured text goes in Input.
-  await page.getByRole('tab', { name: 'Input' }).click();
   await page.getByRole('textbox', { name: 'Encrypted message' }).fill(armoured);
+  await page.getByLabel('Passphrase', { exact: true }).fill(PASS);
   await page.getByRole('button', { name: 'Decrypt', exact: true }).click();
   await expect(
-    page.getByRole('textbox', { name: 'Decrypted message' }),
-  ).toHaveValue('hello there');
+    page.getByRole('figure', { name: 'Decrypted message' }),
+  ).toContainText('hello there');
 });

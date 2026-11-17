@@ -1,13 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  DiagramCanvas,
+  Button,
+  IconButton,
   Inline,
-  Label,
+  Menu,
   Select,
   Stack,
   Text,
+  Toolbar,
+  ZoomControls,
+} from '@arshad-shah/cynosure';
+import {
+  download,
+  layoutLeftRight,
+  layoutTopBottom,
+  locate,
+  minimap as minimapIcon,
+} from '@arshad-shah/cynosure/icons';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  DiagramCanvas,
   type DiagramCanvasHandle,
-} from '@/shared/ui';
+} from '@/shared/surfaces/diagram-canvas/DiagramCanvas';
 import {
   ancestors,
   findById,
@@ -97,6 +110,8 @@ export function MapTab({
 
   const canvas = useRef<DiagramCanvasHandle>(null);
   const lastUserPan = useRef(-Infinity);
+  // The zoom shown in the controls: the canvas allows 5 to 300%.
+  const [percent, setPercent] = useState(100);
   const reveal = useCallback((cardId: string | undefined) => {
     if (!cardId || performance.now() - lastUserPan.current < PAN_HOLD_MS)
       return;
@@ -118,22 +133,78 @@ export function MapTab({
     depth === 1 ? 'level' : 'levels'
   } deep. Use the Tree view for full keyboard and screen-reader navigation.`;
 
+  const lr = settings.direction === 'LR';
   return (
-    <Stack gap="2" className="h-full min-h-0">
-      <Inline justify="between" wrap>
-        <Text size="sm" tone="muted" aria-live="polite">
-          {shown < total
-            ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
-            : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
-        </Text>
-        <Inline gap="2">
-          <Label htmlFor="json-xml-node-cap">Node cap</Label>
+    <Stack gap="3" fill minSize="0">
+      <Inline gap="3" align="center" justify="between" wrap>
+        <ZoomControls
+          labels={{ group: 'Map zoom' }}
+          percent={percent}
+          min={5}
+          max={300}
+          fits={[]}
+          buttons={['fit', 'actual-size']}
+          onZoomChange={(zoom) => {
+            if (zoom.kind === 'percent')
+              canvas.current?.zoomTo(zoom.value / 100);
+            else canvas.current?.fit();
+          }}
+        />
+        <Toolbar label="Map controls">
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label={lr ? 'Lay out top to bottom' : 'Lay out left to right'}
+            icon={lr ? layoutTopBottom : layoutLeftRight}
+            onClick={() => update({ direction: lr ? 'TB' : 'LR' })}
+          />
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label="Minimap"
+            icon={minimapIcon}
+            aria-pressed={settings.minimap}
+            onClick={() => update({ minimap: !settings.minimap })}
+          />
+          <IconButton
+            size="sm"
+            variant="ghost"
+            label="Centre on selection"
+            icon={locate}
+            disabled={!target}
+            onClick={() => target && canvas.current?.centreOn(target.cardId)}
+          />
+          <Menu
+            label="Export the map"
+            items={[
+              { value: 'png', label: 'Download PNG' },
+              { value: 'svg', label: 'Download SVG' },
+            ]}
+            onSelect={(v) =>
+              v === 'png'
+                ? void canvas.current?.exportPng()
+                : canvas.current?.exportSvg()
+            }
+            trigger={(props) => (
+              <Button {...props} size="sm" variant="ghost" icon={download}>
+                Export
+              </Button>
+            )}
+          />
+        </Toolbar>
+        <Inline gap="3" align="center">
+          <Text size="sm" tone="muted" aria-live="polite">
+            {shown < total
+              ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
+              : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
+          </Text>
           <Select
-            id="json-xml-node-cap"
-            className="w-28"
+            label="Node cap"
+            size="sm"
+            layout="split"
             value={String(settings.cap)}
-            onValueChange={(v) => update({ cap: Number(v) })}
-            items={CAPS.map((c) => ({
+            onChange={(v) => update({ cap: Number(v) })}
+            options={CAPS.map((c) => ({
               value: String(c),
               label: fmt.format(c),
             }))}
@@ -142,7 +213,6 @@ export function MapTab({
       </Inline>
       <DiagramCanvas
         ref={canvas}
-        className="min-h-80 flex-1"
         diagram={diagram}
         direction={settings.direction}
         minimap={settings.minimap}
@@ -151,8 +221,10 @@ export function MapTab({
         onSelect={handleSelect}
         matches={cardMatches}
         onExpandMore={(id) => setExpanded((s) => new Set(s).add(id))}
-        onViewportChange={(_v, user) => {
+        onViewportChange={(v, user) => {
           if (user) lastUserPan.current = performance.now();
+          const p = Math.round(v.scale * 100);
+          setPercent((old) => (old === p ? old : p));
         }}
         onLayout={() => reveal(target?.cardId)}
         exportName={`${fileBase}-map`}

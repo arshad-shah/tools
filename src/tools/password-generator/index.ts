@@ -1,4 +1,4 @@
-import { IconKey } from '@/shared/ui/icons';
+import { key as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Password Generator',
   description:
     'Generate passwords, passphrases and PINs, and check the strength of a password',
-  icon: IconKey,
+  icon,
   category: 'security',
   slug: 'password',
   kind: 'tool',

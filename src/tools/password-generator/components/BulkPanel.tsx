@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { IconRefreshCw } from '@/shared/ui/icons';
 import {
-  Alert,
-  AlertDescription,
   Button,
+  CodeBlock,
+  CopyButton,
+  IconButton,
   Inline,
-  Label,
-  NumberInput,
+  Notice,
+  NumberField,
   Stack,
-  TextInputPanel,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { download, refreshCw } from '@arshad-shah/cynosure/icons';
+import React, { useState } from 'react';
+import { saveBlob } from '@/shared/lib/download';
 import { toToolError } from '@/shared/lib/errors';
 import { generateBulk, MAX_BULK } from '../lib/passphrase';
 
@@ -37,42 +38,51 @@ export const BulkPanel: React.FC<BulkPanelProps> = ({
     }
   };
   return (
-    <Stack gap="3">
-      <Inline gap="2" align="center" wrap>
-        <Label htmlFor="bulk-count">How many</Label>
-        <NumberInput
-          id="bulk-count"
+    <Stack gap="4">
+      <Inline gap="3" align="end" wrap>
+        <NumberField
+          label="How many"
+          width="sm"
           value={count}
-          onValueChange={onCount}
           min={1}
           max={MAX_BULK}
+          onChange={(n) => n !== null && onCount(n)}
         />
-        <Button
-          variant="secondary"
-          leftIcon={<IconRefreshCw size="sm" />}
-          onClick={run}
-        >
+        <Button variant="soft" icon={refreshCw} onClick={run}>
           Generate list
         </Button>
       </Inline>
-      {error && (
-        <Alert status="danger">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {values && (
-        <div data-dynamic="">
-          <TextInputPanel
-            label="Generated list"
-            value={values}
-            onChange={() => {}}
-            language="plain"
-            readOnly
-            downloadName="passwords.txt"
-            maxHeight={320}
-          />
-        </div>
-      )}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+      {values ? (
+        <CodeBlock
+          title="Generated list"
+          code={values}
+          lineNumbers
+          copyable={false}
+          actions={
+            <Inline gap="1">
+              <CopyButton
+                size="sm"
+                value={values}
+                labels={{ copy: 'Copy the list' }}
+              />
+              <IconButton
+                size="sm"
+                variant="ghost"
+                tone="neutral"
+                icon={download}
+                label="Download passwords.txt"
+                onClick={() =>
+                  saveBlob(
+                    new Blob([values], { type: 'text/plain' }),
+                    'passwords.txt',
+                  )
+                }
+              />
+            </Inline>
+          }
+        />
+      ) : null}
     </Stack>
   );
 };

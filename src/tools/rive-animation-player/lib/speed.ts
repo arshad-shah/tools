@@ -1,4 +1,4 @@
-import type { Rive } from '@/shared/ui/adapters/rive-runtime';
+import type { Rive } from '@/shared/lib/rive-runtime';
 
 type DrawFn = (time: number, onSecond?: () => void) => void;
 

@@ -1,0 +1,139 @@
+/* The code tree surface: indent guides, fold chevrons, syntax colours and
+   row states, from Cynosure's tokens. */
+.tools-tree {
+  background-color: var(--cy-color-surface);
+}
+.tools-tree-item {
+  cursor: default;
+  user-select: none;
+}
+.tools-tree-item:hover {
+  background-color: color-mix(
+    in oklab,
+    var(--cy-color-surface),
+    var(--cy-color-soft)
+  );
+}
+.tools-tree-item[data-match='match'] {
+  background-color: color-mix(
+    in oklab,
+    var(--cy-color-warning) 25%,
+    transparent
+  );
+}
+.tools-tree-item[data-match='active'] {
+  background-color: color-mix(
+    in oklab,
+    var(--cy-color-warning) 45%,
+    transparent
+  );
+}
+.tools-tree-item[aria-selected='true'] {
+  background-color: var(--cy-color-accent-soft);
+}
+.tools-tree-row {
+  display: flex;
+  align-items: center;
+  block-size: 100%;
+  min-inline-size: max-content;
+  padding-inline-end: var(--cy-space-5);
+  font-family: var(--cy-font-mono);
+  font-size: var(--cy-font-size-md);
+  line-height: 1;
+  white-space: pre;
+  color: var(--cy-color-ink);
+}
+.tools-tree-guide {
+  position: relative;
+  flex-shrink: 0;
+  inline-size: 16px;
+  block-size: 100%;
+}
+.tools-tree-guide-line {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 7px;
+  block-size: 50%;
+  border-inline-start: var(--cy-border-width) solid
+    color-mix(in oklab, var(--cy-color-line) 70%, var(--cy-color-muted));
+}
+.tools-tree-guide[data-guide='through'] .tools-tree-guide-line {
+  block-size: 100%;
+}
+.tools-tree-guide[data-guide-accent] .tools-tree-guide-line {
+  border-inline-start-color: var(--cy-color-accent-text);
+}
+.tools-tree-toggle {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  inline-size: 16px;
+  block-size: 100%;
+  color: var(--cy-color-muted);
+}
+.tools-tree-toggle[data-toggle] {
+  cursor: pointer;
+}
+.tools-tree-toggle[data-toggle]:hover {
+  color: var(--cy-color-ink);
+}
+.tools-tree-chevron {
+  display: inline-flex;
+}
+.tools-tree-chevron[data-open] {
+  transform: rotate(90deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tools-tree-chevron {
+    transition: transform var(--cy-motion-fast) var(--cy-motion-ease);
+  }
+}
+.tools-tree-summary {
+  padding: 2px var(--cy-space-2);
+  border: var(--cy-border-width) solid var(--cy-color-line);
+  border-radius: var(--cy-radius-sm);
+  background-color: color-mix(
+    in oklab,
+    var(--cy-color-surface),
+    var(--cy-color-soft)
+  );
+  font-size: var(--cy-font-size-xs);
+  color: var(--cy-color-muted);
+}
+.tools-tree-summary[data-after-value] {
+  margin-inline-start: var(--cy-space-2);
+}
+.tools-tree-row [data-token='plain'] {
+  color: var(--cy-color-ink);
+}
+.tools-tree-row [data-token='key'],
+.tools-tree-row [data-token='attr'] {
+  color: var(--cy-color-syntax-property);
+}
+.tools-tree-row [data-token='string'] {
+  color: var(--cy-color-syntax-string);
+}
+.tools-tree-row [data-token='number'],
+.tools-tree-row [data-token='boolean'],
+.tools-tree-row [data-token='null'] {
+  color: var(--cy-color-syntax-number);
+}
+.tools-tree-row [data-token='punct'] {
+  color: var(--cy-color-syntax-operator);
+}
+.tools-tree-row [data-token='comment'] {
+  color: var(--cy-color-syntax-comment);
+}
+.tools-tree-row [data-token='keyword'] {
+  color: var(--cy-color-syntax-keyword);
+}
+.tools-tree-row [data-token='tag'] {
+  color: var(--cy-color-syntax-tag);
+}
+.tools-tree-row [data-token='fn'] {
+  color: var(--cy-color-syntax-function);
+}
+.tools-tree-row [data-token='regex'] {
+  color: var(--cy-color-syntax-regexp);
+}

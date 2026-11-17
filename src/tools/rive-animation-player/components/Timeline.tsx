@@ -1,5 +1,5 @@
-import { IconChevronLeft, IconChevronRight } from '@/shared/ui/icons';
 import {
+  Grid,
   IconButton,
   Inline,
   Kbd,
@@ -7,7 +7,8 @@ import {
   Slider,
   Stack,
   Text,
-} from '@/shared/ui';
+} from '@arshad-shah/cynosure';
+import { chevronLeft, chevronRight } from '@arshad-shah/cynosure/icons';
 import type { TimelineState } from '../hooks/useTimeline';
 import { FRAME, formatTime, SPEEDS, type LoopMode } from '../lib/timeline';
 
@@ -34,83 +35,93 @@ export function Timeline({
 }) {
   const { duration, time } = timeline;
   return (
-    <Stack gap="3">
+    <Stack gap="4">
       <Inline gap="3" wrap align="center" justify="between">
-        <Inline gap="2" align="center">
-          <Text size="sm" tone="subtle">
-            Speed
-          </Text>
-          <SegmentedControl
-            label="Playback speed"
-            size="sm"
-            value={String(speed)}
-            onChange={(v) => onSpeedChange(Number(v))}
-            options={SPEED_OPTIONS.map((o) => ({
-              ...o,
-              disabled: disabled || !speedSupported,
-            }))}
-          />
-        </Inline>
-        {duration !== null && (
+        <SegmentedControl
+          label="Playback speed"
+          size="sm"
+          value={String(speed)}
+          onChange={(v) => onSpeedChange(Number(v))}
+          options={SPEED_OPTIONS.map((o) => ({
+            ...o,
+            disabled: disabled || !speedSupported,
+          }))}
+        />
+        {duration !== null ? (
           <SegmentedControl
             label="Loop mode"
             size="sm"
             value={timeline.mode}
-            onChange={timeline.setMode}
+            onChange={(v) => timeline.setMode(v as LoopMode)}
             options={MODE_OPTIONS.map((o) => ({
               ...o,
               label:
                 o.value === timeline.fileMode ? `${o.label} (file)` : o.label,
             }))}
           />
-        )}
+        ) : null}
       </Inline>
-      {!speedSupported && (
-        <Text size="xs" tone="subtle">
+      {!speedSupported ? (
+        <Text size="sm" tone="muted">
           This version of the Rive runtime does not allow changing the speed.
         </Text>
-      )}
+      ) : null}
       {duration !== null ? (
-        <Inline gap="2" align="center">
+        <Grid columns="auto minmax(0, 1fr) auto auto" gap="2" align="center">
           <IconButton
-            variant="secondary"
+            variant="soft"
+            tone="neutral"
             size="sm"
             label="Previous frame"
-            icon={<IconChevronLeft size="sm" />}
+            icon={chevronLeft}
+            aria-keyshortcuts=","
             onClick={() => timeline.step(-1)}
           />
           <Slider
-            aria-label="Scrub"
+            label="Scrub"
+            labelHidden
             min={0}
             max={duration}
             step={FRAME}
             value={Math.min(time, duration)}
-            onValueChange={timeline.scrub}
-            className="flex-1"
+            onChange={(v) => timeline.scrub(v as number)}
           />
           <IconButton
-            variant="secondary"
+            variant="soft"
+            tone="neutral"
             size="sm"
             label="Next frame"
-            icon={<IconChevronRight size="sm" />}
+            icon={chevronRight}
+            aria-keyshortcuts="."
             onClick={() => timeline.step(1)}
           />
-          <Text size="sm" mono className="shrink-0 tabular-nums">
-            {formatTime(time)} of {formatTime(duration)}
+          <Text size="sm" numeric>
+            {`${formatTime(time)} of ${formatTime(duration)}`}
           </Text>
-        </Inline>
+        </Grid>
       ) : (
-        <Text size="sm" tone="subtle">
-          Scrubbing and frame stepping work on linear animations. Pick one on
-          the Animations tab.
+        <Text size="sm" tone="muted">
+          Scrubbing and frame stepping work on linear animations. Pick one under
+          Animations.
         </Text>
       )}
-      {duration !== null && (
-        <Text size="xs" tone="subtle">
-          Step a frame with <Kbd keys="," /> and <Kbd keys="." />
-          {timeline.fps ? ` (the animation runs at ${timeline.fps} fps)` : ''}
-        </Text>
-      )}
+      {duration !== null ? (
+        <Inline gap="2" align="center" wrap>
+          <Text size="sm" tone="muted">
+            Step a frame with
+          </Text>
+          <Kbd keys="," size="sm" />
+          <Text size="sm" tone="muted">
+            and
+          </Text>
+          <Kbd keys="." size="sm" />
+          {timeline.fps ? (
+            <Text size="sm" tone="muted">
+              {`(the animation runs at ${timeline.fps} fps)`}
+            </Text>
+          ) : null}
+        </Inline>
+      ) : null}
     </Stack>
   );
 }

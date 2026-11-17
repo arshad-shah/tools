@@ -1,17 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Inline,
-  Input,
-  Label,
-  EmptyState,
+  Grid,
   Select,
   Stack,
-} from '@/shared/ui';
+  Text,
+  TextField,
+} from '@arshad-shah/cynosure';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   bytesFrom,
   digestInfo,
@@ -22,7 +17,7 @@ import {
 } from '@/shared/lib/crypto/digest';
 import { toToolError } from '@/shared/lib/errors';
 import { formatDigest, type DigestFormat } from '../lib/format';
-import { ResultRow } from './ResultRow';
+import { ResultList } from './ResultRow';
 
 const KEY_FORMATS = [
   { value: 'text', label: 'Text (UTF-8)' },
@@ -37,7 +32,7 @@ interface HmacCardProps {
   output: DigestFormat;
 }
 
-/** HMAC, separate from plain hashes so the key is visible and required. */
+/** HMAC, apart from plain hashes so the key is visible and required. */
 export const HmacCard: React.FC<HmacCardProps> = ({
   message,
   alg,
@@ -61,9 +56,9 @@ export const HmacCard: React.FC<HmacCardProps> = ({
   useEffect(() => {
     let live = true;
     if (!parsed.bytes || !message) return;
-    const key = [alg, parsed.bytes, message];
+    const inputs = [alg, parsed.bytes, message];
     void hmac(alg, parsed.bytes, message).then(
-      (value) => live && setComputed({ key, value }),
+      (value) => live && setComputed({ key: inputs, value }),
     );
     return () => {
       live = false;
@@ -77,66 +72,55 @@ export const HmacCard: React.FC<HmacCardProps> = ({
       ? computed!.value
       : null;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">HMAC</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <Stack gap="3">
-          <Label htmlFor="hmac-key">HMAC secret key</Label>
-          <Inline gap="2" align="center" wrap>
-            <div className="min-w-48 flex-1">
-              <Input
-                id="hmac-key"
-                value={key}
-                onChange={setKey}
-                placeholder="Secret key used for HMAC only"
-                autoComplete="off"
-                spellCheck={false}
-                invalid={!!parsed.error}
-              />
-            </div>
-            <div className="w-40">
-              <Select
-                value={keyFormat}
-                onValueChange={(v) => setKeyFormat(v as KeyFormat)}
-                items={KEY_FORMATS}
-                aria-label="HMAC key format"
-              />
-            </div>
-            <div className="w-48">
-              <Select
-                value={alg}
-                onValueChange={(v) => onAlg(v as DigestId)}
-                items={HMAC_DIGEST_IDS.map((id) => ({
-                  value: id,
-                  label: `HMAC-${digestInfo(id).name}`,
-                }))}
-                aria-label="HMAC algorithm"
-              />
-            </div>
-          </Inline>
-          {parsed.error && (
-            <Alert status="danger" size="sm">
-              {parsed.error}
-            </Alert>
-          )}
-          {!key ? (
-            <EmptyState
-              size="sm"
-              description="Enter an HMAC secret key to compute HMAC values. The key is never stored."
-            />
-          ) : (
-            value !== null && (
-              <ResultRow
-                id={`hmac-${alg}`}
-                name={name}
-                value={formatDigest(value, output)}
-              />
-            )
-          )}
-        </Stack>
-      </CardBody>
+    <Card as="section" title="HMAC">
+      <Stack gap="5">
+        <TextField
+          label="HMAC secret key"
+          placeholder="Used for HMAC only, never stored"
+          autoComplete="off"
+          spellCheck={false}
+          value={key}
+          onChange={setKey}
+          error={parsed.error}
+        />
+        <Grid minItemWidth="12rem" gap="4">
+          <Select
+            label="HMAC key format"
+            value={keyFormat}
+            onChange={(v) => setKeyFormat(v as KeyFormat)}
+            options={KEY_FORMATS}
+          />
+          <Select
+            label="HMAC algorithm"
+            value={alg}
+            onChange={(v) => onAlg(v as DigestId)}
+            options={HMAC_DIGEST_IDS.map((id) => ({
+              value: id,
+              label: `HMAC-${digestInfo(id).name}`,
+            }))}
+          />
+        </Grid>
+        {!key ? (
+          <Text size="sm" tone="muted">
+            Enter an HMAC secret key to compute HMAC values. The key is never
+            stored.
+          </Text>
+        ) : !message ? (
+          <Text size="sm" tone="muted">
+            Type a message to sign it.
+          </Text>
+        ) : value !== null && !parsed.error ? (
+          <ResultList
+            results={[
+              {
+                id: `hmac-${alg}`,
+                name,
+                value: formatDigest(value, output),
+              },
+            ]}
+          />
+        ) : null}
+      </Stack>
     </Card>
   );
 };

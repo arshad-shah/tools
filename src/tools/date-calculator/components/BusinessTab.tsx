@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import { toCalendarDate } from '@internationalized/date';
 import {
-  Alert,
-  AlertDescription,
   Card,
-  CardBody,
-  FileUpload,
+  Checkbox,
+  EmptyState,
+  FileDrop,
   Grid,
   Heading,
   Inline,
-  Label,
-  NumberInput,
-  SegmentedControl,
+  Notice,
+  NumberField,
   Stack,
   Text,
-  Textarea,
-} from '@/shared/ui';
+  TextArea,
+} from '@arshad-shah/cynosure';
+import { calendarDays } from '@arshad-shah/cynosure/icons';
+import { toCalendarDate } from '@internationalized/date';
+import React, { useState } from 'react';
+import { TransformLayout } from '@/app/ui/transform';
 import { toToolError } from '@/shared/lib/errors';
 import { readText } from '@/shared/lib/files';
 import { addBusinessDays, businessDaysBetween } from '../lib/business';
@@ -103,110 +103,99 @@ export const BusinessTab: React.FC<BusinessTabProps> = ({
     }
   };
 
-  return (
+  const inputCard = (
     <Stack gap="6">
-      <Grid cols={{ base: 1, md: 2 }} gap="6">
-        <DateInput
-          id="biz-start"
-          label="From"
-          input={start}
-          onInput={onStart}
-          now={now}
-        />
-        <DateInput
-          id="biz-end"
-          label="Until (not counted)"
-          input={end}
-          onInput={onEnd}
-          now={now}
-        />
-      </Grid>
-
-      <div data-dynamic="">
-        <Card>
-          <CardBody>
-            <Stack gap="3">
-              <Heading level={3} size="lg" aria-live="polite">
-                {between === null
-                  ? 'Enter both dates'
-                  : `${between} business ${Math.abs(between) === 1 ? 'day' : 'days'}`}
-              </Heading>
-              <Inline gap="2" align="center" wrap>
-                <Label htmlFor="biz-add">Add business days to From</Label>
-                <NumberInput
-                  id="biz-add"
-                  value={addN}
-                  min={-10000}
-                  max={10000}
-                  onValueChange={setAddN}
-                />
-                <Text size="sm">{added ? `gives ${added}` : ''}</Text>
-              </Inline>
-              {!anyWorkday && (
-                <Alert status="warning">
-                  <AlertDescription>
-                    Choose at least one working day.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Stack>
-          </CardBody>
-        </Card>
-      </div>
-
-      <Grid cols={{ base: 1, md: 2 }} gap="6">
-        <Stack gap="2">
-          <Heading level={3} size="sm">
-            Workweek
-          </Heading>
-          {DAYS.map((day, i) => {
-            const idx = INDEX[i];
-            return (
-              <Inline key={day} gap="3" align="center" justify="between">
-                <Text size="sm">{day}</Text>
-                <SegmentedControl<'work' | 'off'>
-                  label={day}
-                  size="sm"
-                  value={workweek[idx] ? 'work' : 'off'}
-                  onChange={(v) =>
-                    onWorkweek(
-                      workweek.map((w, j) => (j === idx ? v === 'work' : w)),
-                    )
-                  }
-                  options={[
-                    { value: 'work', label: 'Work' },
-                    { value: 'off', label: 'Off' },
-                  ]}
-                />
-              </Inline>
-            );
-          })}
+      <Card as="section" title="Dates">
+        <Stack gap="6">
+          <DateInput label="From" input={start} onInput={onStart} now={now} />
+          <DateInput
+            label="Until (not counted)"
+            input={end}
+            onInput={onEnd}
+            now={now}
+          />
         </Stack>
-        <Stack gap="2">
-          <Label htmlFor="biz-holidays">Holidays (one date per line)</Label>
-          <Textarea
-            id="biz-holidays"
-            value={holidayText}
-            onChange={setText}
-            rows={8}
+      </Card>
+      <Card as="section" title="Calendar">
+        <Stack gap="6">
+          <Stack gap="3" role="group" aria-label="Workweek">
+            <Text weight="medium">Working days</Text>
+            <Inline gap="4" wrap>
+              {DAYS.map((day, i) => {
+                const idx = INDEX[i];
+                return (
+                  <Checkbox
+                    key={day}
+                    label={day}
+                    checked={workweek[idx]}
+                    onChange={(on) =>
+                      onWorkweek(workweek.map((w, j) => (j === idx ? on : w)))
+                    }
+                  />
+                );
+              })}
+            </Inline>
+          </Stack>
+          <TextArea
+            label="Holidays (one date per line)"
+            description={`${holidays.length} ${holidays.length === 1 ? 'holiday' : 'holidays'}. Holidays are not saved; share a link to keep them.`}
+            rows={5}
             placeholder="2024-12-25"
             spellCheck={false}
+            value={holidayText}
+            onChange={setText}
           />
-          <Text size="xs" tone="subtle">
-            {`${holidays.length} ${holidays.length === 1 ? 'holiday' : 'holidays'}. Holidays are not saved; share a link to keep them.`}
-          </Text>
-          <FileUpload
+          <FileDrop
+            size="sm"
             accept=".ics,text/calendar"
+            multiple
+            hint="Import holidays from a calendar (.ics)."
+            labels={{
+              choose: 'Import a calendar',
+              chooseOne: 'Import a calendar',
+            }}
             onFiles={(files) => void importIcs(files)}
-            label="Import holidays from a calendar (.ics)"
           />
-          {importError && (
-            <Alert status="danger">
-              <AlertDescription>{importError}</AlertDescription>
-            </Alert>
-          )}
+          {importError ? <Notice tone="danger">{importError}</Notice> : null}
         </Stack>
-      </Grid>
+      </Card>
     </Stack>
   );
+
+  const resultCard = (
+    <Card as="section" title="Business days">
+      {between === null && anyWorkday ? (
+        <EmptyState
+          icon={calendarDays}
+          title="Enter both dates"
+          description="Counts the working days from the first date up to the second, skipping holidays."
+        />
+      ) : (
+        <Stack gap="5">
+          <Heading level={3} size="xl" aria-live="polite">
+            {between === null
+              ? 'Enter both dates'
+              : `${between} business ${Math.abs(between) === 1 ? 'day' : 'days'}`}
+          </Heading>
+          {!anyWorkday ? (
+            <Notice tone="warning">Choose at least one working day.</Notice>
+          ) : null}
+          <Grid minItemWidth="12rem" gap="4" align="end">
+            <NumberField
+              label="Add business days to From"
+              value={addN}
+              min={-10000}
+              max={10000}
+              onChange={(v) => v !== null && setAddN(v)}
+            />
+            <Text size="lg" weight="medium" aria-live="polite">
+              {added ? `gives ${added}` : ''}
+            </Text>
+          </Grid>
+        </Stack>
+      )}
+    </Card>
+  );
+
+  return <TransformLayout start={inputCard} end={resultCard} />;
 };

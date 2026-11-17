@@ -41,7 +41,7 @@ test('the Pages drawer scrolls by touch and a tap shows that page', async ({
   expect(style.overscroll).toBe('contain');
   expect(style.scrollable).toBe(true);
   // Touch-scroll down to page 30 (virtualised: it renders on the way).
-  const target = drawer.locator('[data-rail-item]').filter({ hasText: /^30$/ });
+  const target = drawer.getByRole('option', { name: /^Page 30 of / });
   for (let i = 0; i < 40 && !(await target.count()); i++)
     await scroller.evaluate((el) => el.scrollBy(0, 400));
   await target.scrollIntoViewIfNeeded();
@@ -63,18 +63,25 @@ test('the bottom tool rows never wrap: one row each that scrolls', async ({
   page,
 }) => {
   await open(page, 'test/fixtures/generated/text-3.pdf', '/pdf/edit/fill-sign');
-  const rows = [
-    page.getByRole('toolbar', { name: /Fill & Sign/ }),
-    page.getByRole('tablist', { name: 'Modes' }),
-  ];
+  // On a phone the mode is a picker at the top; the tools are one row.
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Modes' })
+      .getByRole('combobox', { name: 'Mode' }),
+  ).toBeVisible();
+  const rows = [page.getByRole('toolbar', { name: /Fill & Sign/ })];
   for (const row of rows) {
     await expect(row).toBeVisible();
-    const items = row.locator('button, [role="tab"]');
+    const items = row.locator('button');
+    // Centre lines: buttons of different heights share one row.
     const tops = await items.evaluateAll((els) => [
       ...new Set(
         els
           .filter((e) => (e as HTMLElement).offsetParent !== null)
-          .map((e) => Math.round(e.getBoundingClientRect().top)),
+          .map((e) => {
+            const r = e.getBoundingClientRect();
+            return Math.round(r.top + r.height / 2);
+          }),
       ),
     ]);
     expect(tops).toHaveLength(1);

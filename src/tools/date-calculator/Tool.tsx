@@ -1,13 +1,6 @@
+import { Inline, SegmentedControl, Stack } from '@arshad-shah/cynosure';
 import React, { useMemo, useState } from 'react';
-import {
-  ShareButton,
-  ToolActions,
-  Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui';
+import { ShareButton, ToolActions } from '@/app/ui/transform';
 import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { localZone } from '@/shared/lib/time';
 import { ArithmeticTab } from './components/ArithmeticTab';
@@ -25,6 +18,10 @@ import {
 } from './share';
 import { parseOps, serializeOps } from './lib/ops';
 
+/**
+ * Date & Time Calculator (redesign spec, transform pattern): the dates
+ * beside the difference, the result of a chain of steps, or business days.
+ */
 const DateCalculator: React.FC = () => {
   const [settings, update] = dateSettings.useSettings();
   const now = useNow(30_000);
@@ -85,56 +82,57 @@ const DateCalculator: React.FC = () => {
   }
 
   return (
-    <Stack gap="4">
+    <Stack gap="6">
       <ToolActions>
         <ShareButton share={shareState} />
       </ToolActions>
-      <Tabs
-        value={tab}
-        onValueChange={(v) => setTab(v as DateTab)}
-        variant="soft"
-      >
-        <TabsList aria-label="Calculations">
-          <TabsTrigger value="difference">Difference</TabsTrigger>
-          <TabsTrigger value="arithmetic">Add or subtract</TabsTrigger>
-          <TabsTrigger value="business">Business days</TabsTrigger>
-        </TabsList>
-        <TabsContent value="difference">
-          <DifferenceTab
-            start={diffStart}
-            end={diffEnd}
-            onStart={setDiffStart}
-            onEnd={setDiffEnd}
-            now={now}
-          />
-        </TabsContent>
-        <TabsContent value="arithmetic">
-          <ArithmeticTab
-            base={base}
-            onBase={setBase}
-            ops={ops}
-            onOps={setOps}
-            overflow={settings.overflow}
-            onOverflow={(overflow) => update({ overflow })}
-            workweek={settings.workweek}
-            holidays={holidays}
-            now={now}
-          />
-        </TabsContent>
-        <TabsContent value="business">
-          <BusinessTab
-            start={bizStart}
-            end={bizEnd}
-            onStart={setBizStart}
-            onEnd={setBizEnd}
-            workweek={settings.workweek}
-            onWorkweek={(workweek) => update({ workweek })}
-            holidays={holidays}
-            onHolidays={setHolidays}
-            now={now}
-          />
-        </TabsContent>
-      </Tabs>
+      <Inline>
+        <SegmentedControl
+          label="Calculations"
+          value={tab}
+          onChange={(v) => setTab(v as DateTab)}
+          options={[
+            { value: 'difference', label: 'Difference' },
+            { value: 'arithmetic', label: 'Add or subtract' },
+            { value: 'business', label: 'Business days' },
+          ]}
+        />
+      </Inline>
+      {tab === 'difference' ? (
+        <DifferenceTab
+          start={diffStart}
+          end={diffEnd}
+          onStart={setDiffStart}
+          onEnd={setDiffEnd}
+          now={now}
+        />
+      ) : null}
+      {tab === 'arithmetic' ? (
+        <ArithmeticTab
+          base={base}
+          onBase={setBase}
+          ops={ops}
+          onOps={setOps}
+          overflow={settings.overflow}
+          onOverflow={(overflow) => update({ overflow })}
+          workweek={settings.workweek}
+          holidays={holidays}
+          now={now}
+        />
+      ) : null}
+      {tab === 'business' ? (
+        <BusinessTab
+          start={bizStart}
+          end={bizEnd}
+          onStart={setBizStart}
+          onEnd={setBizEnd}
+          workweek={settings.workweek}
+          onWorkweek={(workweek) => update({ workweek })}
+          holidays={holidays}
+          onHolidays={setHolidays}
+          now={now}
+        />
+      ) : null}
     </Stack>
   );
 };

@@ -34,18 +34,6 @@ export const LICENCES: LicenceEntry[] = [
     note: 'DEFLATE and ZIP: share links, XLSX export',
   },
   {
-    name: 'Inter',
-    licence: 'OFL-1.1',
-    url: 'https://github.com/rsms/inter',
-    note: 'Interface font',
-  },
-  {
-    name: 'JetBrains Mono',
-    licence: 'OFL-1.1',
-    url: 'https://github.com/JetBrains/JetBrainsMono',
-    note: 'Monospace font',
-  },
-  {
     name: 'zxing-wasm',
     licence: 'MIT',
     url: 'https://github.com/Sec-ant/zxing-wasm',
@@ -157,48 +145,39 @@ export const LICENCES: LicenceEntry[] = [
     note: 'Persisted tool stores',
   },
   {
+    name: '@arshad-shah/cynosure',
+    licence: 'MIT',
+    url: 'https://github.com/arshad-shah/cynosure',
+    note: 'UI components, theme and icons',
+  },
+  {
     name: '@arshad-shah/detent, detent-react',
     licence: 'MIT',
     url: 'https://github.com/arshad-shah/detent',
+  },
+  {
+    name: '@arshad-shah/swift-chart',
+    licence: 'MIT',
+    url: 'https://github.com/arshad-shah/swiftchart',
+    note: 'Charts: calculator graphs, CSV charts, log timeline, Pomodoro history',
+  },
+  {
+    name: '@codemirror/view, state, language, commands, search, autocomplete, lint, lang-json, lang-xml, lang-yaml, lang-markdown, lang-javascript, lang-css, lang-html, lang-sql',
+    licence: 'MIT',
+    url: 'https://github.com/codemirror/dev',
+    note: 'CodeMirror 6, the code editor (with style-mod, w3c-keyname and crelt, MIT)',
+  },
+  {
+    name: '@lezer/highlight',
+    licence: 'MIT',
+    url: 'https://github.com/lezer-parser/highlight',
+    note: 'Lezer highlighting and the language parsers CodeMirror loads (MIT)',
   },
   {
     name: '@arshad-shah/qpdf-wasm',
     licence: 'MIT',
     url: 'https://github.com/arshad-shah/qpdf-wasm',
     note: 'PDF tools; bundles qpdf (Apache-2.0) as wasm',
-  },
-  {
-    name: '@floating-ui/react-dom',
-    licence: 'MIT',
-    url: 'https://github.com/floating-ui/floating-ui',
-    note: 'Tooltip, popover and menu placement',
-  },
-  {
-    name: 'sonner',
-    licence: 'MIT',
-    url: 'https://github.com/emilkowalski/sonner',
-    note: 'Toasts',
-  },
-  {
-    name: 'lucide-react',
-    licence: 'ISC',
-    url: 'https://github.com/lucide-icons/lucide',
-    note: 'Icons',
-  },
-  {
-    name: 'clsx',
-    licence: 'MIT',
-    url: 'https://github.com/lukeed/clsx',
-  },
-  {
-    name: 'tailwind-merge',
-    licence: 'MIT',
-    url: 'https://github.com/dcastil/tailwind-merge',
-  },
-  {
-    name: 'class-variance-authority',
-    licence: 'Apache-2.0',
-    url: 'https://github.com/joe-bell/cva',
   },
   {
     name: '@internationalized/date',
@@ -222,12 +201,6 @@ export const LICENCES: LicenceEntry[] = [
     licence: 'MIT',
     url: 'https://github.com/mholt/PapaParse',
     note: 'CSV parsing',
-  },
-  {
-    name: 'qrcode.react',
-    licence: 'ISC',
-    url: 'https://github.com/zpao/qrcode.react',
-    note: 'QR code rendering',
   },
   {
     name: '@rive-app/canvas, react-canvas',

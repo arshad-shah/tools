@@ -11,7 +11,7 @@ import type { PendingOpen } from './workspace-store';
 
 export type OpenResult =
   | { status: 'ready'; model: DocumentModel; blobs: BlobStore; info: DocInfo }
-  /** Needs a password: the empty state shows the PasswordPrompt. */
+  /** Needs a password: the open screen shows the PasswordForm. */
   | { status: 'locked'; file: LoadedFile | PendingOpen }
   /** Owner-password-only: opens read-only with a "Restricted" badge. */
   | {

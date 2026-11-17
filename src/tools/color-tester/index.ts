@@ -1,4 +1,4 @@
-import { IconPalette } from '@/shared/ui/icons';
+import { palette as icon } from '@arshad-shah/cynosure/icons';
 import { defineTool } from '@/app/tool';
 
 export default defineTool({
@@ -6,7 +6,7 @@ export default defineTool({
   name: 'Color & Contrast',
   description:
     'Convert colours between every CSS format, check WCAG and APCA contrast, build OKLCH palettes and extract colours from images',
-  icon: IconPalette,
+  icon,
   category: 'media',
   slug: 'color',
   kind: 'tool',

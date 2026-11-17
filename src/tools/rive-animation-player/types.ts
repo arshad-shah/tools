@@ -1,4 +1,4 @@
-import type { Rive } from '@/shared/ui/adapters/rive-runtime';
+import type { Rive } from '@/shared/lib/rive-runtime';
 
 export enum PlayerState {
   Idle,
@@ -14,7 +14,6 @@ export type AlignFitIndex = { alignment: number; fit: number };
 export type Dimensions = { width: number; height: number };
 export type Status = {
   current: PlayerState;
-  hovering?: boolean;
   error?: PlayerError | null;
 };
 export type RiveAnimations = { animations: string[]; active: string };

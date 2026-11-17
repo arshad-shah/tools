@@ -11,14 +11,16 @@ test('exports selected pages as PNGs in a ZIP at the requested DPI', async ({
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  await expect(page.getByText('3 pages', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^3 pages,/)).toBeVisible();
   await expect(
     page.getByRole('img', { name: 'Page 1', exact: true }),
   ).toBeVisible();
   await page.getByLabel('Resolution (DPI)', { exact: true }).fill('150');
-  await page.getByLabel('Pages', { exact: true }).fill('1, 3');
-  await page.getByRole('button', { name: 'Convert to images' }).click();
-  await expect(page.getByText('2 files ready', { exact: false })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Pages to convert' }).fill('1, 3');
+  await page.getByRole('button', { name: /^Convert \d+ pages? to/ }).click();
+  await expect(
+    page.getByText('2 files are ready', { exact: false }),
+  ).toBeVisible();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download all (ZIP)' }).click();
@@ -39,12 +41,13 @@ test('exports a single page as JPEG', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  await page.getByRole('tab', { name: 'JPEG' }).click();
+  await page.getByRole('radio', { name: 'JPEG' }).focus();
+  await page.keyboard.press('Space');
   await expect(page.getByLabel('JPEG quality', { exact: true })).toBeVisible();
   await page.getByLabel('Resolution (DPI)', { exact: true }).fill('72');
-  await page.getByLabel('Pages', { exact: true }).fill('2');
-  await page.getByRole('button', { name: 'Convert to images' }).click();
-  await expect(page.getByText('612×792 px · 72 DPI')).toBeVisible();
+  await page.getByRole('textbox', { name: 'Pages to convert' }).fill('2');
+  await page.getByRole('button', { name: /^Convert \d+ pages? to/ }).click();
+  await expect(page.getByText('612 by 792 px at 72 DPI')).toBeVisible();
   const downloadPromise = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download text-3.page-2.jpg', exact: true })
@@ -60,8 +63,11 @@ test('reports an out-of-range page instead of exporting', async ({ page }) => {
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-3.pdf');
-  await page.getByLabel('Pages', { exact: true }).fill('5');
-  await page.getByRole('button', { name: 'Convert to images' }).click();
+  await page.getByRole('textbox', { name: 'Pages to convert' }).fill('5');
+  // Said under the field as you type; nothing to convert until it is fixed.
+  await expect(
+    page.getByRole('button', { name: 'Convert to images' }),
+  ).toBeDisabled();
   await expect(page.getByText('Page 5 is out of range (1–3)')).toBeVisible();
 });
 
@@ -73,7 +79,7 @@ test('renders a large page at 300 DPI within the canvas limit and says so', asyn
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/a2-1.pdf');
   await page.getByLabel('Resolution (DPI)', { exact: true }).fill('300');
-  await page.getByRole('button', { name: 'Convert to images' }).click();
+  await page.getByRole('button', { name: /^Convert \d+ pages? to/ }).click();
   // A2 (1191×1684 pt) at 300 DPI would be 34 MP; the cap is 16.7 MP.
   await expect(
     page.getByText('DPI (reduced to fit the size limit)', { exact: false }),
@@ -97,10 +103,12 @@ test('warns before a very large export, and not for a small one', async ({
   await page
     .locator('input[type=file]')
     .setInputFiles('test/fixtures/generated/text-300.pdf');
-  await expect(page.getByText('300 pages', { exact: true })).toBeVisible();
-  const warning = page.getByText('This export needs roughly', { exact: false });
+  await expect(page.getByText(/^300 pages,/)).toBeVisible();
+  const warning = page.getByText('This needs roughly', { exact: false });
   await page.getByLabel('Resolution (DPI)', { exact: true }).fill('300');
+  // A number field commits its value when you leave it.
+  await page.keyboard.press('Tab');
   await expect(warning).toBeVisible();
-  await page.getByLabel('Pages', { exact: true }).fill('1-3');
+  await page.getByRole('textbox', { name: 'Pages to convert' }).fill('1-3');
   await expect(warning).toBeHidden();
 });

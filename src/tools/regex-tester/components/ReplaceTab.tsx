@@ -1,17 +1,11 @@
 import React from 'react';
-import {
-  Badge,
-  Code,
-  CodeSurface,
-  Inline,
-  Stack,
-  Text,
-  TextInputPanel,
-} from '@/shared/ui';
+import { Badge, CodeBlock, Inline, Stack, Text } from '@arshad-shah/cynosure';
+
 import { useRegexJob } from '../hooks/useRegexJob';
 import { plural } from '../lib/plural';
 import type { RegexRunner } from '../lib/runner';
 import { JobStatus } from './JobStatus';
+import { CodeEditor } from '@/shared/editor';
 
 interface ReplaceTabProps {
   runner: Pick<RegexRunner, 'replace'>;
@@ -29,8 +23,6 @@ const TOKENS: [string, string][] = [
   ['$&', 'whole match'],
   ['$$', 'a literal dollar sign'],
 ];
-
-const NOOP = () => {};
 
 /** Replacement template and the live output, run in the worker. */
 export const ReplaceTab: React.FC<ReplaceTabProps> = ({
@@ -53,41 +45,40 @@ export const ReplaceTab: React.FC<ReplaceTabProps> = ({
 
   return (
     <Stack gap="3">
-      <CodeSurface
+      <CodeEditor
         value={replacement}
         onChange={onReplacementChange}
         language="plain"
-        label="Replacement"
+        aria-label="Replacement"
         singleLine
         placeholder="Replacement text, for example $1"
       />
       <Inline gap="3" wrap>
         {TOKENS.map(([token, meaning]) => (
-          <Text as="span" size="xs" tone="subtle" key={token}>
-            <Code>{token}</Code> {meaning}
+          <Text as="span" size="xs" tone="muted" key={token}>
+            <Text as="span" variant="code">
+              {token}
+            </Text>{' '}
+            {meaning}
           </Text>
         ))}
       </Inline>
       <JobStatus error={job.error} pending={job.pending} onRetry={job.retry} />
-      {job.value && (
+      {job.value ? (
         <Inline>
-          <Badge variant="soft" tone="accent" size="sm">
+          <Badge tone="accent" size="sm">
             {plural(job.value.count, 'replacement', 'replacements')}
           </Badge>
         </Inline>
-      )}
-      {!job.error && (
-        <TextInputPanel
-          value={shown?.output ?? ''}
-          onChange={NOOP}
-          language="plain"
-          label="Replace result"
-          readOnly
+      ) : null}
+      {!job.error ? (
+        <CodeBlock
+          title="Replace result"
+          code={shown?.output || 'The replaced text appears here'}
           wrap
-          minHeight={120}
-          placeholder="The replaced text appears here"
+          copyable={!!shown?.output}
         />
-      )}
+      ) : null}
     </Stack>
   );
 };

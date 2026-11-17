@@ -16,10 +16,3 @@ export const useRecentToolsStore = createToolStore({
 });
 
 /** Whether the desktop navigation is collapsed (a setting). */
-export const useNavStore = createToolStore({
-  toolId: 'app-nav',
-  initial: { collapsed: false },
-  actions: (set, get) => ({
-    toggle: () => set({ collapsed: !get().collapsed }),
-  }),
-});

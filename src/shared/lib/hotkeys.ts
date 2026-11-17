@@ -118,6 +118,41 @@ export function hotkeyParts(combo: string, mac: boolean = isMac()): KeyName[] {
   return parts;
 }
 
+/** Key cap names on macOS (modifiers in Apple's order, from hotkeyParts). */
+const CAP_MAC: Record<string, string> = {
+  Mod: 'Cmd',
+  Alt: 'Option',
+  Ctrl: 'Ctrl',
+  Shift: 'Shift',
+};
+const CAP: Record<string, string> = {
+  Mod: 'Ctrl',
+  Alt: 'Alt',
+  Ctrl: 'Ctrl',
+  Shift: 'Shift',
+  Space: 'Space',
+  Escape: 'Esc',
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
+  PageUp: 'PgUp',
+  PageDown: 'PgDn',
+  Delete: 'Del',
+  Home: 'Home',
+  End: 'End',
+};
+
+/** Key cap text for a combo (`Mod+Shift+Z`), named for the platform. */
+export function hotkeyCaps(combo: string, mac: boolean = isMac()): string[] {
+  return hotkeyParts(combo, mac).map(
+    (k) =>
+      (mac ? CAP_MAC[k] : undefined) ??
+      CAP[k] ??
+      (k.length === 1 ? k.toUpperCase() : k),
+  );
+}
+
 const WORDS_MAC: Record<string, string> = {
   Mod: 'Command',
   Alt: 'Option',
@@ -193,17 +228,20 @@ export interface ShortcutDef {
   run: (e: KeyboardEvent) => void;
 }
 
+/**
+ * A shown modal: a modal `<dialog>` (Cynosure's Dialog and Sheet), or an
+ * `aria-modal` surface that is not a hidden popover (Cynosure keeps a closed
+ * Popover in the page, hidden).
+ */
+const MODAL =
+  'dialog:modal, [aria-modal="true"]:not([popover]), [aria-modal="true"][popover]:popover-open';
+
 /** A modal is open: the event came from inside one, or one is in the page. */
 function modalOpen(target: EventTarget | null): boolean {
   if (typeof document === 'undefined') return false;
   const el = target as Element | null;
-  if (
-    el &&
-    typeof el.closest === 'function' &&
-    el.closest('[aria-modal="true"]')
-  )
-    return true;
-  return document.querySelector('[aria-modal="true"]') !== null;
+  if (el && typeof el.closest === 'function' && el.closest(MODAL)) return true;
+  return document.querySelector(MODAL) !== null;
 }
 
 /** One registration; its defs can be replaced in place (stable priority). */
@@ -214,10 +252,10 @@ interface Registration {
 const stack: Registration[] = [];
 let listening = false;
 
-function onKeyDown(e: KeyboardEvent): void {
-  if (e.defaultPrevented) return;
+/** The registered shortcut `e` would run, if any (the latest wins). */
+function shortcutFor(e: KeyboardEvent): ShortcutDef | undefined {
   // An IME is composing: the key belongs to the composition.
-  if (e.isComposing || e.key === 'Process') return;
+  if (e.isComposing || e.key === 'Process') return undefined;
   const typing = isTypingTarget(e.target);
   // AltGr types characters ("@" on German layouts) and Windows reports it as
   // Ctrl+Alt: in a field it is text, never a Ctrl+Alt shortcut.
@@ -232,11 +270,31 @@ function onKeyDown(e: KeyboardEvent): void {
       if (typing && (!def.allowInFields || altGraph) && !escape) continue;
       if (modal && !def.allowInModal && !escape) continue;
       if (def.when && !def.when()) continue;
-      e.preventDefault();
-      def.run(e);
-      return;
+      return def;
     }
   }
+  return undefined;
+}
+
+/**
+ * Runs the registered shortcut (other than Escape) this key would run and
+ * says whether it did. A code editor calls it first, so a tool's shortcut
+ * wins over the editor's own binding for the same key; the caller then
+ * prevents the key's default, so the window listener skips it.
+ */
+export function runAppShortcut(e: KeyboardEvent): boolean {
+  const def = shortcutFor(e);
+  if (!def || parseHotkey(def.combo).key === 'Escape') return false;
+  def.run(e);
+  return true;
+}
+
+function onKeyDown(e: KeyboardEvent): void {
+  if (e.defaultPrevented) return;
+  const def = shortcutFor(e);
+  if (!def) return;
+  e.preventDefault();
+  def.run(e);
 }
 
 function addRegistration(reg: Registration): () => void {
