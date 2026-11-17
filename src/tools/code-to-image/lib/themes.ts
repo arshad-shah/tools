@@ -1,0 +1,208 @@
+import type { CodeImagePalette } from '@/shared/surfaces/code-image/style';
+
+/**
+ * Image themes: the colours of the exported picture (image content, not
+ * interface colours). Original palettes, three light and three dark.
+ */
+export interface ImageTheme {
+  id: string;
+  label: string;
+  dark: boolean;
+  palette: CodeImagePalette;
+}
+
+export const THEMES: readonly ImageTheme[] = [
+  {
+    id: 'paper',
+    label: 'Paper',
+    dark: false,
+    palette: {
+      background: '#fbfaf7',
+      foreground: '#2b2a27',
+      border: '#e2ddd2',
+      gutter: '#aaa59b',
+      gutterActive: '#55514a',
+      highlight: '#f2ecdd',
+      chrome: '#f3f0e8',
+      title: '#6f6a61',
+      dots: ['#e0796c', '#e2b45c', '#7dbb78'],
+      shadow: 'rgba(48, 36, 12, 0.28)',
+      tokens: {
+        keyword: '#a2366e',
+        string: '#3b7a2c',
+        number: '#b1561a',
+        boolean: '#b1561a',
+        null: '#b1561a',
+        comment: '#9c978c',
+        key: '#2c5d9b',
+        punct: '#6b665e',
+        tag: '#a2366e',
+        attr: '#8a6110',
+        fn: '#2c5d9b',
+        regex: '#9a3a8a',
+      },
+    },
+  },
+  {
+    id: 'glacier',
+    label: 'Glacier',
+    dark: false,
+    palette: {
+      background: '#f6f9fc',
+      foreground: '#1e2a36',
+      border: '#d8e2ec',
+      gutter: '#98a7b6',
+      gutterActive: '#3f5163',
+      highlight: '#e3eefa',
+      chrome: '#edf2f7',
+      title: '#5d6e7f',
+      dots: ['#ef8a80', '#efc46a', '#6fc49a'],
+      shadow: 'rgba(16, 42, 72, 0.25)',
+      tokens: {
+        keyword: '#6b3fc4',
+        string: '#0f7a5c',
+        number: '#c2410c',
+        boolean: '#c2410c',
+        null: '#c2410c',
+        comment: '#8a99a8',
+        key: '#1f63b8',
+        punct: '#5d6e7f',
+        tag: '#b0306a',
+        attr: '#8a5a00',
+        fn: '#1f63b8',
+        regex: '#a32fa0',
+      },
+    },
+  },
+  {
+    id: 'meadow',
+    label: 'Meadow',
+    dark: false,
+    palette: {
+      background: '#f7fbf4',
+      foreground: '#24301f',
+      border: '#d6e3cc',
+      gutter: '#9fae95',
+      gutterActive: '#46553d',
+      highlight: '#e6f2da',
+      chrome: '#eef5e8',
+      title: '#5f6e56',
+      dots: ['#e58a6e', '#dcb653', '#86b96a'],
+      shadow: 'rgba(30, 52, 18, 0.25)',
+      tokens: {
+        keyword: '#8b3a9c',
+        string: '#2f7a3a',
+        number: '#b0541f',
+        boolean: '#b0541f',
+        null: '#b0541f',
+        comment: '#98a58f',
+        key: '#22698a',
+        punct: '#5f6e56',
+        tag: '#8b3a9c',
+        attr: '#7c6512',
+        fn: '#22698a',
+        regex: '#a3367c',
+      },
+    },
+  },
+  {
+    id: 'midnight',
+    label: 'Midnight',
+    dark: true,
+    palette: {
+      background: '#11161f',
+      foreground: '#d9e1ec',
+      border: '#262e3b',
+      gutter: '#4f5b6c',
+      gutterActive: '#a9b5c6',
+      highlight: '#1c2431',
+      chrome: '#0d1219',
+      title: '#7d899a',
+      dots: ['#f0726a', '#f2c25a', '#5fcf8a'],
+      shadow: 'rgba(0, 0, 0, 0.55)',
+      tokens: {
+        keyword: '#c792ea',
+        string: '#a6d68a',
+        number: '#f6a96b',
+        boolean: '#f6a96b',
+        null: '#f6a96b',
+        comment: '#5f6b7c',
+        key: '#82b8f5',
+        punct: '#8c97a8',
+        tag: '#f07faa',
+        attr: '#f2cb6b',
+        fn: '#82b8f5',
+        regex: '#e48ae0',
+      },
+    },
+  },
+  {
+    id: 'ember',
+    label: 'Ember',
+    dark: true,
+    palette: {
+      background: '#1c1612',
+      foreground: '#efe4d6',
+      border: '#352b23',
+      gutter: '#6b5d50',
+      gutterActive: '#c4b29f',
+      highlight: '#2a211a',
+      chrome: '#17120e',
+      title: '#9a8a79',
+      dots: ['#ef7b5f', '#efb956', '#9fc46a'],
+      shadow: 'rgba(0, 0, 0, 0.55)',
+      tokens: {
+        keyword: '#ff8f6b',
+        string: '#d7c96c',
+        number: '#f0a8d0',
+        boolean: '#f0a8d0',
+        null: '#f0a8d0',
+        comment: '#7a6c5e',
+        key: '#ffc27a',
+        punct: '#a8998a',
+        tag: '#ff8f6b',
+        attr: '#ffc27a',
+        fn: '#8fd1c4',
+        regex: '#e7a0f0',
+      },
+    },
+  },
+  {
+    id: 'grove',
+    label: 'Grove',
+    dark: true,
+    palette: {
+      background: '#0f1a17',
+      foreground: '#d6e8df',
+      border: '#20332c',
+      gutter: '#4a6358',
+      gutterActive: '#a5c2b4',
+      highlight: '#172720',
+      chrome: '#0b1411',
+      title: '#759083',
+      dots: ['#ec7f6b', '#e8c062', '#5fd39a'],
+      shadow: 'rgba(0, 0, 0, 0.55)',
+      tokens: {
+        keyword: '#5fd3a0',
+        string: '#e6d27a',
+        number: '#f2a38a',
+        boolean: '#f2a38a',
+        null: '#f2a38a',
+        comment: '#557064',
+        key: '#8cc8f0',
+        punct: '#8aa699',
+        tag: '#5fd3a0',
+        attr: '#e6d27a',
+        fn: '#8cc8f0',
+        regex: '#d8a0f0',
+      },
+    },
+  },
+];
+
+export const DEFAULT_THEME = 'midnight';
+
+/** The theme with `id`, or the default. */
+export const themeById = (id: string): ImageTheme =>
+  THEMES.find((t) => t.id === id) ??
+  (THEMES.find((t) => t.id === DEFAULT_THEME) as ImageTheme);
