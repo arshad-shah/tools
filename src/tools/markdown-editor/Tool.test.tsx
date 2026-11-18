@@ -90,6 +90,23 @@ describe('Markdown Editor', () => {
     expect(editorSelection(editor())).toEqual([2, 7]);
   });
 
+  it('folds headings and lists into menus; Outline and Export wait for text', () => {
+    render(<MarkdownEditor definition={definition} />);
+    expect(screen.queryByRole('button', { name: 'Outline' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Export' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Heading 2' })).toBeNull();
+    type('title');
+    selectInEditor(editor(), 0, 0);
+    fireEvent.click(screen.getByRole('button', { name: 'Heading' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Heading 2' }));
+    expect(editorValue(editor())).toBe('## title');
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    for (const name of ['Bulleted list', 'Numbered list', 'Task list'])
+      expect(screen.getByRole('menuitem', { name })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Outline' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
+  });
+
   it('binds Mod+B and Mod+Shift+L, and Shift+7 by physical key', () => {
     render(<MarkdownEditor definition={definition} />);
     type('word');

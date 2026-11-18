@@ -1,10 +1,4 @@
-import {
-  Button,
-  IconButton,
-  Inline,
-  Select,
-  Switch,
-} from '@arshad-shah/cynosure';
+import { Button, Inline, Select } from '@arshad-shah/cynosure';
 import { alert, compare, plus } from '@arshad-shah/cynosure/icons';
 import { formatOptions } from '../lib/format-ref';
 import type { LogColumn, SavedFormat } from '../settings';
@@ -25,7 +19,11 @@ export interface ViewToolbarProps {
   onCompare(): void;
 }
 
-/** Format picker, custom format, columns, wrap, compare and next error. */
+/**
+ * The format (with New custom format at the foot of its list), the View
+ * menu (columns, wrap), then Compare selected once a line is ticked and
+ * Next error.
+ */
 export function ViewToolbar({
   format,
   onFormat,
@@ -61,27 +59,31 @@ export function ViewToolbar({
           value={format}
           onChange={onFormat}
           options={options}
+          footer={{
+            label: 'New custom format',
+            icon: plus,
+            onSelect: onNewFormat,
+          }}
         />
-        <IconButton
-          size="sm"
-          variant="ghost"
-          label="Custom format"
-          icon={plus}
-          onClick={onNewFormat}
+        <ColumnMenu
+          columns={columns}
+          onColumns={onColumns}
+          wrap={wrap}
+          onWrap={onWrap}
         />
-        <ColumnMenu columns={columns} onColumns={onColumns} />
-        <Switch size="sm" label="Wrap lines" checked={wrap} onChange={onWrap} />
       </Inline>
       <Inline gap="2" align="center" wrap>
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={compare}
-          disabled={selectedCount !== 2}
-          onClick={onCompare}
-        >
-          {`Compare selected${selectedCount > 0 ? ` (${selectedCount} of 2)` : ''}`}
-        </Button>
+        {selectedCount > 0 ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={compare}
+            disabled={selectedCount !== 2}
+            onClick={onCompare}
+          >
+            {`Compare selected (${selectedCount} of 2)`}
+          </Button>
+        ) : null}
         <Button
           size="sm"
           variant="soft"

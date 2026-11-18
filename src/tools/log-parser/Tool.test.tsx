@@ -143,7 +143,7 @@ describe('Log Viewer', () => {
     const log = screen.getByRole('log', { name: 'Log entries' });
     const cells = (c: string) => log.querySelectorAll(`[data-column="${c}"]`);
     await waitFor(() => expect(cells('line').length).toBeGreaterThan(0));
-    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
     fireEvent.click(
       screen.getByRole('menuitemcheckbox', { name: 'Line number' }),
     );
@@ -164,6 +164,31 @@ describe('Log Viewer', () => {
       'level',
       'component',
     ]);
+  });
+
+  it('keeps wrap in the View menu and the rarer filters behind Filters', async () => {
+    renderTool();
+    await loadSample();
+    expect(screen.queryByRole('switch', { name: 'Wrap lines' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+    const wrap = screen.getByRole('menuitemcheckbox', { name: 'Wrap lines' });
+    const before = logSettings.getSettings().wrap;
+    fireEvent.click(wrap);
+    expect(logSettings.getSettings().wrap).toBe(!before);
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: 'Escape',
+    });
+
+    expect(screen.queryByRole('textbox', { name: 'Component' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Component' }), {
+      target: { value: 'nothing-has-this' },
+    });
+    await waitFor(() => expect(count()).toMatch(/^0 of 10/));
+    // Compare selected shows only once a line is ticked.
+    expect(screen.queryByRole('button', { name: /^Compare selected/ })).toBe(
+      null,
+    );
   });
 
   it('shows an invalid regex inline', async () => {

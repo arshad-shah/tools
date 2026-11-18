@@ -305,7 +305,7 @@ test('Regex Use as log format opens the Log Viewer format dialog', async ({
   await page
     .getByRole('textbox', { name: 'Regex pattern' })
     .fill('(?<level>[A-Z]+) (?<message>.*)');
-  await page.getByRole('button', { name: 'Actions' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Use as log format' }).click();
   await atTool(page, 'log-parser');
   await expect(page.getByRole('dialog')).toBeVisible();

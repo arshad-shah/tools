@@ -65,6 +65,12 @@ const editor = () =>
   screen.getByRole('textbox', { name: 'Text' }) as HTMLTextAreaElement;
 const type = (value: string) =>
   fireEvent.change(editor(), { target: { value } });
+/** Picks an operation and applies it. */
+const runOp = (name: string) => {
+  fireEvent.click(screen.getByRole('combobox', { name: 'Operation' }));
+  fireEvent.click(screen.getByRole('option', { name }));
+  fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+};
 
 describe('Text Toolkit', () => {
   beforeEach(() => {
@@ -94,7 +100,7 @@ describe('Text Toolkit', () => {
   it('applies an operation as one undo step, and undoes from the button', () => {
     setup();
     type('b\nc\na');
-    fireEvent.click(screen.getByRole('button', { name: 'Sort A to Z' }));
+    runOp('Sort A to Z');
     expect(editor().value).toBe('a\nb\nc');
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(editor().value).toBe('b\nc\na');
@@ -105,7 +111,7 @@ describe('Text Toolkit', () => {
   it('takes Ctrl+Z in the editor for its own undo, not the native one', () => {
     setup();
     type('b\na');
-    fireEvent.click(screen.getByRole('button', { name: 'Upper case' }));
+    runOp('Upper case');
     expect(editor().value).toBe('B\nA');
     const ev = new KeyboardEvent('keydown', {
       key: 'z',
@@ -130,6 +136,30 @@ describe('Text Toolkit', () => {
       );
     });
     expect(editor().value).toBe('B\nA');
+  });
+
+  it('shows only the options the chosen operation reads', () => {
+    setup();
+    expect(screen.queryByLabelText('Join with')).toBeNull();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Operation' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Join lines' }));
+    fireEvent.change(screen.getByLabelText('Join with'), {
+      target: { value: '+' },
+    });
+    expect(screen.queryByLabelText('Tab width')).toBeNull();
+    type('a\nb');
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(editor().value).toBe('a+b');
+    // The chosen operation is remembered.
+    expect(toolkitSettings.getSettings().operation).toBe('lines-join');
+  });
+
+  it('shows Undo and Redo once there is something to undo', () => {
+    setup();
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    type('b\na');
+    runOp('Sort A to Z');
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy();
   });
 
   it('registers every operation with the command palette', () => {

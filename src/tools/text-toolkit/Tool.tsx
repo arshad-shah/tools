@@ -127,28 +127,32 @@ export default function TextToolkit({ definition }: ToolProps) {
           onChange={doc.set}
           label="Text"
           handoff={acceptsText}
-          onExample={() => doc.set(SAMPLE)}
+          onExample={text ? undefined : () => doc.set(SAMPLE)}
         >
-          <IconButton
-            size="sm"
-            variant="ghost"
-            tone="neutral"
-            icon={undoIcon}
-            label="Undo"
-            aria-keyshortcuts="Control+Z"
-            disabled={!canUndo}
-            onClick={onUndo}
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            tone="neutral"
-            icon={redoIcon}
-            label="Redo"
-            aria-keyshortcuts="Control+Shift+Z"
-            disabled={!canRedo}
-            onClick={redo}
-          />
+          {canUndo || canRedo ? (
+            <>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                tone="neutral"
+                icon={undoIcon}
+                label="Undo"
+                aria-keyshortcuts="Control+Z"
+                disabled={!canUndo}
+                onClick={onUndo}
+              />
+              <IconButton
+                size="sm"
+                variant="ghost"
+                tone="neutral"
+                icon={redoIcon}
+                label="Redo"
+                aria-keyshortcuts="Control+Shift+Z"
+                disabled={!canRedo}
+                onClick={redo}
+              />
+            </>
+          ) : null}
           {text ? (
             <IconButton
               size="sm"
@@ -170,6 +174,8 @@ export default function TextToolkit({ definition }: ToolProps) {
     <Stack gap="6">
       <OpsPanel
         ops={ops}
+        selected={settings.operation}
+        onSelect={(operation) => update({ operation })}
         onRun={runOp}
         settings={settings}
         update={update}

@@ -1,14 +1,7 @@
 import { Button, IconButton, Inline, Menu } from '@arshad-shah/cynosure';
-import {
-  bookOpen,
-  layers,
-  share as shareIcon,
-  sliders,
-} from '@arshad-shah/cynosure/icons';
-import type { ShareControl } from '@/shared/lib/use-shareable-state';
+import { bookOpen, layers, moreHorizontal } from '@arshad-shah/cynosure/icons';
 
 interface RegexToolbarProps {
-  share: ShareControl;
   onOpenTemplates(): void;
   cheatSheetOpen: boolean;
   onToggleCheatSheet(): void;
@@ -22,9 +15,11 @@ interface RegexToolbarProps {
   onClearAll(): void;
 }
 
-/** Templates, the cheat sheet, the Actions menu and Share. */
+/**
+ * The Pattern card's header actions: Templates, the cheat sheet and a More
+ * menu for the rarer actions. Share is in the page header.
+ */
 export function RegexToolbar({
-  share,
   onOpenTemplates,
   cheatSheetOpen,
   onToggleCheatSheet,
@@ -36,8 +31,8 @@ export function RegexToolbar({
   onClearAll,
 }: RegexToolbarProps) {
   return (
-    <Inline gap="2" wrap>
-      <Button size="sm" variant="soft" icon={layers} onClick={onOpenTemplates}>
+    <Inline gap="1" align="center">
+      <Button size="sm" variant="ghost" icon={layers} onClick={onOpenTemplates}>
         Templates
       </Button>
       <IconButton
@@ -49,7 +44,7 @@ export function RegexToolbar({
         onClick={onToggleCheatSheet}
       />
       <Menu
-        label="Actions"
+        label="More actions"
         items={[
           {
             items: [
@@ -75,20 +70,11 @@ export function RegexToolbar({
           else if (v === 'clear') onClearAll();
         }}
         trigger={(props) => (
-          <Button {...props} size="sm" variant="soft" icon={sliders}>
-            Actions
+          <Button {...props} size="sm" variant="ghost" icon={moreHorizontal}>
+            More
           </Button>
         )}
       />
-      <Button
-        size="sm"
-        variant="ghost"
-        icon={shareIcon}
-        disabled={!share.canShare}
-        onClick={() => void Promise.resolve(share.share()).catch(() => {})}
-      >
-        Share
-      </Button>
     </Inline>
   );
 }

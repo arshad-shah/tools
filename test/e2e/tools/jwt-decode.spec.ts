@@ -26,7 +26,14 @@ const section = (page: Page, name: string) =>
 
 /** Chooses an option in a Cynosure Select by its label. */
 async function choose(page: Page, label: string, option: string) {
-  await page.getByRole('combobox', { name: label }).click();
+  const field = page.getByRole('combobox', { name: label });
+  // Clock skew sits behind a button on the Decoded token card.
+  if (label === 'Clock skew' && !(await field.isVisible()))
+    await page
+      .getByRole('region', { name: 'Decoded token' })
+      .getByRole('button', { name: /^(Clock skew|Skew \d+ s)$/ })
+      .click();
+  await field.click();
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 

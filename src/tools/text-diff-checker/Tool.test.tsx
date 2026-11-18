@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { installChartStubs } from '@/shared/charts/testing';
@@ -64,6 +65,23 @@ describe('Text Diff', () => {
     expect(box('Changed text')).toBe('beta');
     // The diff result is not tabbed: it stays on screen.
     expect(screen.getByText('0 added, 0 removed, 1 changed')).toBeTruthy();
+  });
+
+  it('one example fills both sides; view and export sit on the result', async () => {
+    render(<TextDiff />);
+    expect(
+      screen.getAllByRole('button', { name: 'Try an example' }),
+    ).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Swap' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
+    expect(box('Original text')).toContain('quick brown fox');
+    expect(box('Changed text')).toContain('quick red fox');
+    expect(screen.queryByRole('button', { name: 'Try an example' })).toBeNull();
+    const result = await screen.findByRole('region', { name: 'Differences' });
+    expect(within(result).getByRole('button', { name: 'Export' })).toBeTruthy();
+    expect(within(result).getByRole('radio', { name: 'Unified' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Swap' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
   });
 
   it('a pair from the HTTP Client fills both sides', async () => {

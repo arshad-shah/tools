@@ -26,10 +26,12 @@ describe('Text Encoder', () => {
     expect(
       screen.getByRole('heading', { name: 'Nothing to encode yet' }),
     ).toBeTruthy();
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Try an example' })[0]!,
-    );
+    // One example button (by the input), and no Swap until there is output.
+    expect(screen.queryByRole('button', { name: 'Swap' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
     expect(block('Encoded')).toContain('Caf%C3%A9');
+    expect(screen.queryByRole('button', { name: 'Try an example' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Swap' })).toBeTruthy();
   });
 
   it('encodes live beside the input', () => {

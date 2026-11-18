@@ -1,10 +1,6 @@
 import { useHandoff } from '@/shared/lib/handoff';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { ToolProps } from '@/app/tool';
-import { copyText } from '@/shared/lib/clipboard';
-import { saveBlob } from '@/shared/lib/download';
-import { toToolError } from '@/shared/lib/errors';
-import { notify } from '@/shared/lib/notify';
 import { useCynosureTheme } from '@arshad-shah/cynosure';
 import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
 import {
@@ -20,29 +16,51 @@ import {
   StatusBar,
   StatusBarSegment,
   Switch,
-  Toolbar,
 } from '@arshad-shah/cynosure';
-import { download, listTree, sparkles } from '@arshad-shah/cynosure/icons';
+import {
+  close,
+  download,
+  listTree,
+  sparkles,
+} from '@arshad-shah/cynosure/icons';
+import { ToolActions } from '@/app/ui/transform';
 import { readText } from '@/shared/lib/files';
 import type { SandboxedHtmlHandle } from '@/shared/surfaces/sandboxed-html/SandboxedHtml';
 import { textStats } from '@/tools/text-toolkit/lib/stats';
 import { FORMAT_ITEMS } from './components/format-items';
+import { FormatToolbar } from './components/FormatToolbar';
 import { Outline } from './components/Outline';
 import { Preview } from './components/Preview';
+import { fail, useExportActions } from './hooks/useExportActions';
 import { useRendered } from './hooks/useRendered';
-import { fileBase, offsetOfLine } from './lib/caret';
+import { offsetOfLine } from './lib/caret';
 import { readDocTokens } from './lib/doc-tokens';
-import { markdownCss, toRichClipboard, toStandaloneHtml } from './lib/export';
+import { markdownCss } from './lib/export';
 import {
   applyFormat,
   type FormatAction,
   type Selection,
 } from './lib/format-actions';
-import { renderMarkdown } from './lib/render';
 import { SAMPLE_MARKDOWN } from './lib/sample';
 import { markdownSettings } from './settings';
 import { CodeEditor, type CodeEditorHandle } from '@/shared/editor';
 import { PANES_STACK_BELOW } from '@/app/ui/transform';
+
+const EXPORT_ITEMS = [
+  {
+    items: [
+      { value: 'html', label: 'Download HTML' },
+      { value: 'md', label: 'Download Markdown' },
+    ],
+  },
+  {
+    items: [
+      { value: 'rich', label: 'Copy rich text' },
+      { value: 'copy-html', label: 'Copy HTML' },
+    ],
+  },
+  { items: [{ value: 'print', label: 'Print' }] },
+];
 
 const plural = (n: number, word: string) =>
   `${n.toLocaleString('en-US')} ${word}${n === 1 ? '' : 's'}`;
@@ -137,69 +155,7 @@ export default function MarkdownEditor({ definition }: ToolProps) {
     return () => window.removeEventListener('beforeunload', guard);
   }, [dirty]);
 
-  const fresh = async () => {
-    const r = await renderMarkdown(text);
-    const title = r.outline.find((h) => h.depth === 1)?.text ?? 'Document';
-    return { ...r, title, base: fileBase(title) };
-  };
-
-  const fail = (e: unknown, fallback: string) =>
-    notify.error(toToolError(e, fallback));
-
-  const actions = {
-    downloadHtml: () =>
-      void fresh().then(
-        ({ html, title, base }) => {
-          const doc = toStandaloneHtml(html, title, readDocTokens('light'));
-          saveBlob(
-            new Blob([doc], { type: 'text/html;charset=utf-8' }),
-            `${base}.html`,
-          );
-          setExported(text);
-        },
-        (e) => fail(e, 'Could not export HTML'),
-      ),
-    downloadMarkdown: () =>
-      void fresh().then(
-        ({ base }) => {
-          saveBlob(
-            new Blob([text], { type: 'text/markdown;charset=utf-8' }),
-            `${base}.md`,
-          );
-          setExported(text);
-        },
-        (e) => fail(e, 'Could not export Markdown'),
-      ),
-    copyRich: () =>
-      void fresh()
-        .then(async ({ html }) => {
-          try {
-            if (
-              typeof ClipboardItem === 'undefined' ||
-              !navigator.clipboard?.write
-            )
-              throw new Error('Rich clipboard unavailable');
-            await navigator.clipboard.write([toRichClipboard(html, text)]);
-            notify.success('Copied as rich text');
-          } catch {
-            await copyText(html);
-            notify.info(
-              'Rich text copy is not available here, so the HTML was copied as text',
-            );
-          }
-          setExported(text);
-        })
-        .catch((e: unknown) => fail(e, 'Could not copy')),
-    copyHtml: () =>
-      void fresh()
-        .then(async ({ html }) => {
-          await copyText(html);
-          notify.success('Copied HTML');
-          setExported(text);
-        })
-        .catch((e: unknown) => fail(e, 'Could not copy')),
-    print: () => preview.current?.print(),
-  };
+  const actions = useExportActions(text, preview, setExported);
 
   const commands: ToolCommand[] = [
     ...FORMAT_ITEMS.map((item) => ({
@@ -243,30 +199,29 @@ export default function MarkdownEditor({ definition }: ToolProps) {
   useToolCommands(definition.id, commands);
 
   const remote = rendered.remoteImages;
+  const onExport = (v: string) => {
+    if (v === 'html') actions.downloadHtml();
+    else if (v === 'md') actions.downloadMarkdown();
+    else if (v === 'rich') actions.copyRich();
+    else if (v === 'copy-html') actions.copyHtml();
+    else if (v === 'print') actions.print();
+  };
 
   const editor_ = (
     <Card as="section" title="Markdown" headingLevel={2} padding="sm">
       <Stack gap="3">
         <Inline gap="3" align="center" justify="between" wrap>
-          <Toolbar label="Formatting">
-            {FORMAT_ITEMS.map((item) => (
+          <FormatToolbar onFormat={format} />
+          <Inline gap="3" align="center">
+            {text ? (
               <IconButton
-                key={item.action}
-                label={item.label}
-                icon={item.icon}
                 size="sm"
                 variant="ghost"
                 tone="neutral"
-                keepFocus
-                onClick={() => format(item.action)}
+                icon={close}
+                label="Clear"
+                onClick={() => setText('')}
               />
-            ))}
-          </Toolbar>
-          <Inline gap="4" align="center">
-            {text ? (
-              <Button size="sm" variant="ghost" onClick={() => setText('')}>
-                Clear
-              </Button>
             ) : null}
             <Switch
               size="sm"
@@ -308,7 +263,7 @@ export default function MarkdownEditor({ definition }: ToolProps) {
             />
             <Inline>
               <Button
-                variant="soft"
+                variant="ghost"
                 size="sm"
                 icon={sparkles}
                 onClick={() => setText(SAMPLE_MARKDOWN)}
@@ -334,11 +289,9 @@ export default function MarkdownEditor({ definition }: ToolProps) {
 
   return (
     <Stack gap="5">
-      <Inline gap="2" align="center" justify="between" wrap>
-        <Inline />
-        <Inline gap="2" wrap>
+      {text ? (
+        <ToolActions>
           <Button
-            size="sm"
             variant="soft"
             icon={listTree}
             onClick={() => setOutlineOpen(true)}
@@ -347,42 +300,16 @@ export default function MarkdownEditor({ definition }: ToolProps) {
           </Button>
           <Menu
             label="Export"
-            items={[
-              {
-                items: [
-                  { value: 'html', label: 'Download HTML' },
-                  { value: 'md', label: 'Download Markdown' },
-                ],
-              },
-              {
-                items: [
-                  { value: 'rich', label: 'Copy rich text' },
-                  { value: 'copy-html', label: 'Copy HTML' },
-                ],
-              },
-              { items: [{ value: 'print', label: 'Print' }] },
-            ]}
-            onSelect={(v) => {
-              if (v === 'html') actions.downloadHtml();
-              else if (v === 'md') actions.downloadMarkdown();
-              else if (v === 'rich') actions.copyRich();
-              else if (v === 'copy-html') actions.copyHtml();
-              else if (v === 'print') actions.print();
-            }}
+            items={EXPORT_ITEMS}
+            onSelect={onExport}
             trigger={(props) => (
-              <Button
-                {...props}
-                size="sm"
-                variant="soft"
-                icon={download}
-                disabled={text === ''}
-              >
+              <Button {...props} variant="soft" icon={download}>
                 Export
               </Button>
             )}
           />
-        </Inline>
-      </Inline>
+        </ToolActions>
+      ) : null}
       {remote > 0 && !allowRemote ? (
         <Notice
           tone="warning"
