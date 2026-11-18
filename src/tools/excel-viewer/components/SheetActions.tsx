@@ -14,14 +14,13 @@ interface SheetActionsProps {
 
 const HEADER_CHOICES = 10;
 
-/** Header row choice, export and send-to for the active sheet. */
-export function SheetActions({
+/** The header row used by exports and Send to, beside the workbook badges. */
+export function HeaderRowSelect({
   rowCount,
   header,
   onHeader,
-  onAction,
   disabled,
-}: SheetActionsProps) {
+}: Pick<SheetActionsProps, 'rowCount' | 'header' | 'onHeader' | 'disabled'>) {
   const options = [
     { value: 'none', label: 'No header row' },
     ...Array.from(
@@ -30,16 +29,25 @@ export function SheetActions({
     ),
   ];
   return (
+    <Select
+      size="sm"
+      label="Header row for exports"
+      labelHidden
+      value={header === null ? 'none' : String(header)}
+      onChange={(v) => onHeader(v === 'none' ? null : Number(v))}
+      options={options}
+      disabled={disabled}
+    />
+  );
+}
+
+/** Export and send-to for the active sheet. */
+export function SheetActions({
+  onAction,
+  disabled,
+}: Pick<SheetActionsProps, 'onAction' | 'disabled'>) {
+  return (
     <>
-      <Select
-        size="sm"
-        label="Header row for exports"
-        labelHidden
-        value={header === null ? 'none' : String(header)}
-        onChange={(v) => onHeader(v === 'none' ? null : Number(v))}
-        options={options}
-        disabled={disabled}
-      />
       <Menu
         label="Export sheet"
         items={[

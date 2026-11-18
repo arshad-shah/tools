@@ -21,8 +21,10 @@ function Harness({
   initial = {},
   onSelectedRowsChange,
   onRowEdit,
+  onCompactChange,
 }: {
   initial?: GridFilters;
+  onCompactChange?(compact: boolean): void;
   onSelectedRowsChange?(rows: number[]): void;
   onRowEdit?(cells: CellChange[]): void;
 }) {
@@ -46,7 +48,7 @@ function Harness({
       hidden={[]}
       onHiddenChange={() => {}}
       compact={false}
-      onCompactChange={() => {}}
+      onCompactChange={onCompactChange ?? (() => {})}
       onRowEdit={onRowEdit ?? (() => {})}
       selectedRows={selected}
       onSelectedRowsChange={(rows) => {
@@ -102,10 +104,27 @@ describe('GridView', () => {
     expect(screen.getByText('3 of 10 rows')).toBeTruthy();
   });
 
-  it('shows column type badges', () => {
+  it('groups the Columns menu by column type', () => {
     render(<Harness />);
-    expect(screen.getByText('n: Integer')).toBeTruthy();
-    expect(screen.getByText('name: Text')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+    const integer = screen.getByRole('group', { name: 'Integer' });
+    expect(
+      within(integer).getByRole('menuitemcheckbox', { name: 'n' }),
+    ).toBeTruthy();
+    const text = screen.getByRole('group', { name: 'Text' });
+    expect(
+      within(text).getByRole('menuitemcheckbox', { name: 'name' }),
+    ).toBeTruthy();
+  });
+
+  it('toggles compact rows from the Columns menu', () => {
+    const onCompactChange = vi.fn();
+    render(<Harness onCompactChange={onCompactChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+    fireEvent.click(
+      screen.getByRole('menuitemcheckbox', { name: 'Compact rows' }),
+    );
+    expect(onCompactChange).toHaveBeenCalledWith(true);
   });
 
   it('reports the selected rows as table row indices', () => {

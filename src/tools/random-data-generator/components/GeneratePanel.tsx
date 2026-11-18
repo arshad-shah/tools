@@ -87,11 +87,6 @@ export function GeneratePanel(p: GeneratePanelProps) {
           }))}
         />
       </Grid>
-      <Text size="xs" tone="muted">
-        {p.seed
-          ? 'Seeded: the same schema, seed and row count give the same data. Deterministic, not for security.'
-          : 'No seed: values come from the browser secure random source.'}
-      </Text>
       {over ? (
         <Notice tone="danger">
           {`At most ${MAX_COUNT.toLocaleString('en-US')} rows per table.`}
@@ -128,10 +123,17 @@ export function GeneratePanel(p: GeneratePanelProps) {
                 ? `${p.progress.done.toLocaleString('en-US')} of ${p.progress.total.toLocaleString('en-US')} rows`
                 : 'Starting'}
             </Text>
-            <Button size="sm" variant="ghost" onClick={p.onCancel}>
+            <Button variant="ghost" onClick={p.onCancel}>
               Cancel
             </Button>
           </>
+        )}
+        {!p.running && (
+          <Text size="xs" tone="muted">
+            {p.seed
+              ? 'Seeded: the same schema, seed and row count give the same data. Deterministic, not for security.'
+              : 'No seed: values come from the browser secure random source.'}
+          </Text>
         )}
       </Inline>
     </Stack>

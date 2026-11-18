@@ -184,7 +184,8 @@ export default function JsonToTypes() {
           }}
           handoff={isJsonHandoff}
         >
-          {examples}
+          {/* While the input is empty the output's empty state offers them. */}
+          {text ? examples : null}
         </TextSourceActions>
       </Stack>
     </Card>

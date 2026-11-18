@@ -353,15 +353,16 @@ export function Shell() {
       actions={
         <Inline gap="1">
           {sampleMenu}
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={downloadIcon}
-            disabled={!text}
-            onClick={download}
-          >
-            Download
-          </Button>
+          {text ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={downloadIcon}
+              onClick={download}
+            >
+              Download
+            </Button>
+          ) : null}
         </Inline>
       }
     >

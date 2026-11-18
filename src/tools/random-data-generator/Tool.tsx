@@ -223,6 +223,7 @@ function Generator({
             />
           ))}
           <Button
+            size="sm"
             variant="soft"
             icon={plusCircle}
             onClick={() => setFields(addField(table.fields))}

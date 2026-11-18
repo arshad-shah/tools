@@ -55,7 +55,7 @@ export function ParseOptions({
         <Button
           {...props}
           size="sm"
-          variant="soft"
+          variant="ghost"
           icon={sliders}
           disabled={disabled}
         >

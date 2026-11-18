@@ -3,19 +3,12 @@ import {
   IconButton,
   Inline,
   Menu,
-  Select,
   Stack,
   Text,
   Toolbar,
   ZoomControls,
 } from '@arshad-shah/cynosure';
-import {
-  download,
-  layoutLeftRight,
-  layoutTopBottom,
-  locate,
-  minimap as minimapIcon,
-} from '@arshad-shah/cynosure/icons';
+import { download, locate, sliders } from '@arshad-shah/cynosure/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DiagramCanvas,
@@ -151,28 +144,66 @@ export function MapTab({
           }}
         />
         <Toolbar label="Map controls">
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label={lr ? 'Lay out top to bottom' : 'Lay out left to right'}
-            icon={lr ? layoutTopBottom : layoutLeftRight}
-            onClick={() => update({ direction: lr ? 'TB' : 'LR' })}
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label="Minimap"
-            icon={minimapIcon}
-            aria-pressed={settings.minimap}
-            onClick={() => update({ minimap: !settings.minimap })}
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            label="Centre on selection"
-            icon={locate}
-            disabled={!target}
-            onClick={() => target && canvas.current?.centreOn(target.cardId)}
+          {target ? (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              label="Centre on selection"
+              icon={locate}
+              onClick={() => canvas.current?.centreOn(target.cardId)}
+            />
+          ) : null}
+          <Menu
+            label="Map options"
+            items={[
+              {
+                label: 'Layout',
+                items: [
+                  {
+                    value: 'dir:LR',
+                    label: 'Left to right',
+                    kind: 'radio' as const,
+                    checked: lr,
+                  },
+                  {
+                    value: 'dir:TB',
+                    label: 'Top to bottom',
+                    kind: 'radio' as const,
+                    checked: !lr,
+                  },
+                ],
+              },
+              {
+                items: [
+                  {
+                    value: 'minimap',
+                    label: 'Minimap',
+                    kind: 'checkbox' as const,
+                    checked: settings.minimap,
+                  },
+                ],
+              },
+              {
+                label: 'Node cap',
+                items: CAPS.map((c) => ({
+                  value: `cap:${c}`,
+                  label: fmt.format(c),
+                  kind: 'radio' as const,
+                  checked: settings.cap === c,
+                })),
+              },
+            ]}
+            onSelect={(v) => {
+              if (v === 'minimap') update({ minimap: !settings.minimap });
+              else if (v.startsWith('dir:'))
+                update({ direction: v.slice(4) as 'LR' | 'TB' });
+              else update({ cap: Number(v.slice(4)) });
+            }}
+            trigger={(props) => (
+              <Button {...props} size="sm" variant="ghost" icon={sliders}>
+                Options
+              </Button>
+            )}
           />
           <Menu
             label="Export the map"
@@ -192,24 +223,11 @@ export function MapTab({
             )}
           />
         </Toolbar>
-        <Inline gap="3" align="center">
-          <Text size="sm" tone="muted" aria-live="polite">
-            {shown < total
-              ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
-              : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
-          </Text>
-          <Select
-            label="Node cap"
-            size="sm"
-            layout="split"
-            value={String(settings.cap)}
-            onChange={(v) => update({ cap: Number(v) })}
-            options={CAPS.map((c) => ({
-              value: String(c),
-              label: fmt.format(c),
-            }))}
-          />
-        </Inline>
+        <Text size="sm" tone="muted" aria-live="polite">
+          {shown < total
+            ? `Showing ${fmt.format(shown)} of ${fmt.format(total)} objects`
+            : `${fmt.format(total)} ${total === 1 ? 'object' : 'objects'}`}
+        </Text>
       </Inline>
       <DiagramCanvas
         ref={canvas}

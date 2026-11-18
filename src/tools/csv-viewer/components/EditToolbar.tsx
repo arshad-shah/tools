@@ -34,7 +34,11 @@ interface EditToolbarProps {
   selectedRows: readonly number[];
 }
 
-/** Undo, redo, row and column operations, dedupe, trim, find and replace. */
+/**
+ * Undo and redo, then one Edit menu: add a row, delete the selected rows
+ * (only while some are selected), column operations, dedupe, trim, find and
+ * replace.
+ */
 export function EditToolbar({
   columns,
   canUndo,
@@ -62,6 +66,11 @@ export function EditToolbar({
   const submit = (op: EditOp) => {
     if (onEdit(op)) setOpen(null);
   };
+
+  const deleteLabel =
+    selectedRows.length > 1
+      ? `Delete ${selectedRows.length.toLocaleString('en-US')} rows`
+      : 'Delete row';
 
   const columnSelect = (
     <Select
@@ -109,28 +118,25 @@ export function EditToolbar({
         disabled={!canRedo}
         onClick={onRedo}
       />
-      <Button
-        size="sm"
-        variant="soft"
-        icon={plus}
-        onClick={() => onEdit({ kind: 'add-row', at: rowCount })}
-      >
-        Add row
-      </Button>
-      <Button
-        size="sm"
-        variant="soft"
-        icon={trash}
-        disabled={selectedRows.length === 0}
-        onClick={() => onEdit({ kind: 'delete-rows', rows: [...selectedRows] })}
-      >
-        {selectedRows.length > 1
-          ? `Delete ${selectedRows.length.toLocaleString('en-US')} rows`
-          : 'Delete row'}
-      </Button>
       <Menu
         label="Edit"
         items={[
+          {
+            items: [
+              { value: 'add-row', label: 'Add row', icon: plus },
+              // Only offered while rows are selected in the grid.
+              ...(selectedRows.length
+                ? [
+                    {
+                      value: 'delete-rows',
+                      label: deleteLabel,
+                      icon: trash,
+                      tone: 'danger' as const,
+                    },
+                  ]
+                : []),
+            ],
+          },
           {
             items: [
               { value: 'add-column', label: 'Add column' },
@@ -151,7 +157,10 @@ export function EditToolbar({
           },
         ]}
         onSelect={(v) => {
-          if (v === 'dedupe') onEdit({ kind: 'dedupe', by: [] });
+          if (v === 'add-row') onEdit({ kind: 'add-row', at: rowCount });
+          else if (v === 'delete-rows')
+            onEdit({ kind: 'delete-rows', rows: [...selectedRows] });
+          else if (v === 'dedupe') onEdit({ kind: 'dedupe', by: [] });
           else if (v === 'trim') onEdit({ kind: 'trim' });
           else start(v as DialogKind);
         }}

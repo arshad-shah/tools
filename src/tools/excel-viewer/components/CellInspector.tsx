@@ -26,13 +26,12 @@ interface CellInspectorProps {
 
 /** The selected cell: address, type, value, stored value and formula. */
 export function CellInspector({ sheet, pos, formatOf }: CellInspectorProps) {
+  // Until a cell is selected there is nothing to inspect: a hint only.
   if (!pos)
     return (
-      <Card as="section" title="Cell" headingLevel={3} padding="sm">
-        <Text size="sm" tone="muted">
-          Select a cell to see its value, type and formula.
-        </Text>
-      </Card>
+      <Text size="sm" tone="muted">
+        Select a cell to see its value, type and formula.
+      </Text>
     );
   const cell = sheet.rows[pos.row]?.[pos.col];
   const merge = sheet.merges.find((m) => inRange(m, pos));

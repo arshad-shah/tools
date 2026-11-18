@@ -3,22 +3,18 @@ import {
   Button,
   Card,
   Inline,
-  Menu,
   Notice,
   SegmentedControl,
   Stack,
-  type MenuSection,
 } from '@arshad-shah/cynosure';
 import {
   chartBar,
   chartLine,
   refreshCw,
-  send,
   table as tableIcon,
 } from '@arshad-shah/cynosure/icons';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toolsAccepting } from '@/app/registry';
 import { useClipboard } from '@/shared/lib/clipboard';
 import {
   inferMockSchema,
@@ -41,6 +37,7 @@ import { InputScreen } from './components/InputScreen';
 import { ParseOptions } from './components/ParseOptions';
 import { DELIMITER_LABEL } from './lib/parse';
 import { ProfilePanel } from './components/ProfilePanel';
+import { SendMenu, type SendKind } from './components/SendMenu';
 import { WarningsAlert } from './components/WarningsAlert';
 import { useCsvTable } from './hooks/useCsvTable';
 import { inferColumnTypes } from './lib/columns';
@@ -177,6 +174,20 @@ export default function CsvViewer() {
       enabled: csv.canRedo,
     },
     {
+      id: 'add-row',
+      label: 'Add row',
+      run: () =>
+        void csv.apply({ kind: 'add-row', at: table?.rows.length ?? 0 }),
+      enabled: table !== null,
+    },
+    {
+      id: 'delete-rows',
+      label: 'Delete selected rows',
+      run: () =>
+        void csv.apply({ kind: 'delete-rows', rows: [...selectedRows] }),
+      enabled: selectedRows.length > 0,
+    },
+    {
       id: 'copy',
       label: 'Copy shown rows as CSV',
       shortcut: 'Mod+Shift+C',
@@ -218,72 +229,21 @@ export default function CsvViewer() {
     lastPaste.current = '';
   };
 
-  // Send to: the shown rows as JSON or CSV, or a schema for more like it.
-  const payloads: Record<string, () => HandoffPayload> = {
+  const payloads: Record<SendKind, () => HandoffPayload> = {
     json: () => jsonPayload(projected(), loaded.name),
     csv: () => csvTextPayload(viewRows, visibleColumns, loaded.name),
     table: () =>
       csvTextPayload(viewRows, visibleColumns, loaded.name, 'text/csv'),
     schema: schemaPayload,
   };
-  const targets = (mime: string) =>
-    toolsAccepting(mime).filter((t) => t.id !== TOOL_ID);
-  // csvTextPayload hands CSV over as plain text (Text Diff and others) or,
-  // for tools that load tables, as text/csv.
-  const sendSections: MenuSection[] = (
-    [
-      ['json', 'Rows as JSON', 'application/json'],
-      ['csv', 'Rows as CSV', 'text/plain'],
-      ['table', 'Rows as a table', 'text/csv'],
-      ['schema', 'More like this', MOCK_SCHEMA_MIME],
-    ] as const
-  )
-    .map(([kind, label, mime]) => ({
-      label,
-      items: targets(mime).map((t) => ({
-        value: `${kind}:${t.id}`,
-        label: t.name,
-      })),
-    }))
-    .filter((x) => x.items.length);
 
+  // Three header actions; how the data was parsed sits with the badges.
   const actions = (
     <Inline gap="2" wrap>
       <Button size="sm" variant="ghost" icon={refreshCw} onClick={newData}>
         New data
       </Button>
-      <ParseOptions
-        choices={csv.choices}
-        onChange={(patch) => {
-          if (patch.delimiter)
-            updateSettings({ delimiterChoice: patch.delimiter });
-          if (patch.encoding) updateSettings({ encoding: patch.encoding });
-          resetView();
-          csv.changeChoices(patch);
-        }}
-        detected={{
-          delimiter: loaded.delimiter,
-          encoding: loaded.encoding,
-        }}
-        fromFile={csv.source?.kind === 'file'}
-        columns={loaded.columns}
-        disabled={csv.job.status === 'running'}
-      />
-      {sendSections.length ? (
-        <Menu
-          label="Send to"
-          items={sendSections}
-          onSelect={(v) => {
-            const [kind, id] = v.split(':');
-            if (kind && id) sendTo(navigate, id, payloads[kind]());
-          }}
-          trigger={(props) => (
-            <Button {...props} size="sm" variant="soft" icon={send}>
-              Send to
-            </Button>
-          )}
-        />
-      ) : null}
+      <SendMenu toolId={TOOL_ID} payloads={payloads} />
       <ExportMenu
         table={() => ({ columns: visibleColumns, rows: viewRows })}
         filteredRows={filtered}
@@ -320,6 +280,23 @@ export default function CsvViewer() {
               Modified
             </Badge>
           )}
+          <ParseOptions
+            choices={csv.choices}
+            onChange={(patch) => {
+              if (patch.delimiter)
+                updateSettings({ delimiterChoice: patch.delimiter });
+              if (patch.encoding) updateSettings({ encoding: patch.encoding });
+              resetView();
+              csv.changeChoices(patch);
+            }}
+            detected={{
+              delimiter: loaded.delimiter,
+              encoding: loaded.encoding,
+            }}
+            fromFile={csv.source?.kind === 'file'}
+            columns={loaded.columns}
+            disabled={csv.job.status === 'running'}
+          />
         </Inline>
       </Card>
 

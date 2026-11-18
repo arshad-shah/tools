@@ -46,6 +46,18 @@ const renderTool = (path = '/') =>
   );
 
 describe('JsonToTypes', () => {
+  it('offers the examples once: in the empty state, then under the input', async () => {
+    renderTool();
+    expect(
+      screen.getAllByRole('button', { name: 'Try an example' }),
+    ).toHaveLength(1);
+    setEditorValue(input(), '{"id": 1}');
+    await waitFor(() => expect(screen.queryByText('No JSON yet')).toBeNull());
+    expect(
+      screen.getAllByRole('button', { name: 'Try an example' }),
+    ).toHaveLength(1);
+  });
+
   it('shows TypeScript for pasted JSON and follows the language choice', async () => {
     renderTool();
     expect(screen.getByText('No JSON yet')).toBeTruthy();

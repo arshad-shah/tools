@@ -18,6 +18,25 @@ export function nullPct(f: MockField): number {
   return f.required === false ? LEGACY_OPTIONAL_NULL_PCT : 0;
 }
 
+/** How many of a field's options differ from the defaults (the badge). */
+export function changedOptions(f: MockField): number {
+  return [
+    f.unique,
+    nullPct(f) > 0,
+    f.min !== undefined,
+    f.max !== undefined,
+    f.precision !== undefined,
+    f.arraySize !== undefined,
+    f.pattern,
+    f.dateFrom,
+    f.dateTo,
+    f.network,
+    f.country,
+    f.locale,
+    f.enum?.length,
+  ].filter(Boolean).length;
+}
+
 /**
  * Wraps a field generator with its null rate and uniqueness. Unique values
  * are retried up to UNIQUE_ATTEMPTS times the row count in total, then the
