@@ -51,39 +51,41 @@ export const AllUnits: React.FC<AllUnitsProps> = ({
         const text = isEditing ? editing.text : (values[u.id] ?? '');
         const isPinned = pinned.has(u.id);
         return (
-          <Inline key={u.id} gap="2" align="end">
-            <Stack grow minSize="0">
-              <TextField
-                label={u.label}
-                description={u.note ? `${u.symbol}, ${u.note}` : u.symbol}
-                layout="split"
-                width="full"
-                value={text}
-                inputMode="decimal"
-                spellCheck={false}
-                autoComplete="off"
-                error={isEditing && invalid ? 'Not a number' : undefined}
-                onChange={(v) => onEdit(u.id, v)}
-                addonEnd={
+          <TextField
+            key={u.id}
+            label={u.label}
+            description={u.note ? `${u.symbol}, ${u.note}` : u.symbol}
+            // Label and symbol at the start, the value at the end of one
+            // row; on a narrow card the value moves under the label.
+            layout="split"
+            width="md"
+            value={text}
+            inputMode="decimal"
+            spellCheck={false}
+            autoComplete="off"
+            error={isEditing && invalid ? 'Not a number' : undefined}
+            onChange={(v) => onEdit(u.id, v)}
+            addonEnd={
+              <Inline gap="1" align="center">
+                {text ? (
                   <CopyButton
                     size="sm"
-                    disabled={!text}
                     value={() => `${text} ${u.symbol}`}
                     labels={{ copy: `Copy ${u.label}` }}
                   />
-                }
-              />
-            </Stack>
-            <IconButton
-              size="sm"
-              variant={isPinned ? 'soft' : 'ghost'}
-              tone={isPinned ? 'accent' : 'neutral'}
-              icon={star}
-              label={isPinned ? `Unpin ${u.label}` : `Pin ${u.label}`}
-              aria-pressed={isPinned}
-              onClick={() => onTogglePin(u.id)}
-            />
-          </Inline>
+                ) : null}
+                <IconButton
+                  size="sm"
+                  variant={isPinned ? 'soft' : 'ghost'}
+                  tone={isPinned ? 'accent' : 'neutral'}
+                  icon={star}
+                  label={isPinned ? `Unpin ${u.label}` : `Pin ${u.label}`}
+                  aria-pressed={isPinned}
+                  onClick={() => onTogglePin(u.id)}
+                />
+              </Inline>
+            }
+          />
         );
       })}
     </Stack>
