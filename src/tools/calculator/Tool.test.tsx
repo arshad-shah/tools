@@ -105,6 +105,8 @@ describe('Calculator', () => {
     renderTool();
     fireEvent.change(line(1), { target: { value: '0.1 + 0.2' } });
     expect(result(1)).toBe('0.3');
+    // Standard mode keeps the angle unit inside Options.
+    expect(screen.queryByRole('radio', { name: 'Radians' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Options/ }));
     fireEvent.click(screen.getByLabelText('Exact decimals'));
     expect(result(1)).toBe('0.3');
@@ -112,6 +114,26 @@ describe('Calculator', () => {
     expect(result(1)).toBe('0.5');
     fireEvent.click(screen.getByRole('radio', { name: 'Radians' }));
     expect(result(1)).toMatch(/^-0\.988/);
+  });
+
+  it('shows the angle unit up front in Scientific mode', () => {
+    renderTool();
+    fireEvent.click(screen.getByRole('radio', { name: 'Scientific' }));
+    fireEvent.change(line(1), { target: { value: 'sin(30)' } });
+    expect(result(1)).toBe('0.5');
+    fireEvent.click(screen.getByRole('radio', { name: 'Radians' }));
+    expect(result(1)).toMatch(/^-0\.988/);
+  });
+
+  it('shows the sheet actions only when they can act', () => {
+    renderTool();
+    expect(screen.queryByLabelText('Copy result')).toBeNull();
+    expect(screen.queryByLabelText('Clear the sheet')).toBeNull();
+    fireEvent.change(line(1), { target: { value: '2 + 2' } });
+    expect(screen.getByLabelText('Copy result')).toBeTruthy();
+    press('Clear the sheet');
+    expect(line(1)).toHaveProperty('value', '');
+    expect(screen.queryByLabelText('Clear the sheet')).toBeNull();
   });
 
   it('opens the key help with ? and lists the keys', () => {

@@ -136,30 +136,31 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
       as="section"
       title="History"
       actions={
-        <Inline gap="1">
-          <IconButton
-            size="sm"
-            variant="ghost"
-            icon={download}
-            label="Export tape"
-            disabled={history.length === 0}
-            onClick={() =>
-              saveBlob(
-                new Blob([tapeText(history)], { type: 'text/plain' }),
-                'calculator-tape.txt',
-              )
-            }
-          />
-          <IconButton
-            size="sm"
-            variant="ghost"
-            tone="danger"
-            icon={trash}
-            label="Clear history"
-            disabled={history.length === 0}
-            onClick={() => onHistoryChange([])}
-          />
-        </Inline>
+        // The tape actions act on the history, so they show with it.
+        view === 'history' && history.length > 0 ? (
+          <Inline gap="1">
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={download}
+              label="Export tape"
+              onClick={() =>
+                saveBlob(
+                  new Blob([tapeText(history)], { type: 'text/plain' }),
+                  'calculator-tape.txt',
+                )
+              }
+            />
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="danger"
+              icon={trash}
+              label="Clear history"
+              onClick={() => onHistoryChange([])}
+            />
+          </Inline>
+        ) : undefined
       }
     >
       <Stack gap="4">
@@ -177,14 +178,16 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
         />
         {view === 'history' ? (
           <Stack gap="3">
-            <SearchField
-              label="Search history"
-              labelHidden
-              placeholder="Search history"
-              size="sm"
-              value={query}
-              onChange={setQuery}
-            />
+            {history.length > 0 ? (
+              <SearchField
+                label="Search history"
+                labelHidden
+                placeholder="Search history"
+                size="sm"
+                value={query}
+                onChange={setQuery}
+              />
+            ) : null}
             {filtered.length === 0 ? (
               <EmptyState
                 size="sm"

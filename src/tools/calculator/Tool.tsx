@@ -24,7 +24,7 @@ import { Keypad, type KeyEffect } from './components/Keypad';
 import { MemoryPanel } from './components/MemoryPanel';
 import { Programmer } from './components/Programmer';
 import { Sheet } from './components/Sheet';
-import { SheetSettings } from './components/SheetSettings';
+import { AngleControl, SheetSettings } from './components/SheetSettings';
 import { useSheet } from './hooks/useSheet';
 import { useSheetKeys } from './hooks/useSheetKeys';
 import type { LineResult } from './lib/engine';
@@ -103,6 +103,7 @@ const Calculator: React.FC = () => {
 
   useSheetKeys(sheet, sheetMode && !helpOpen);
 
+  const sheetEmpty = sheet.lines.every((l) => l.trim() === '');
   const active = sheet.results[sheet.activeLine];
   const activeText = active?.ok ? active.text : '';
   const copyResult = async () => {
@@ -126,7 +127,7 @@ const Calculator: React.FC = () => {
     {
       id: 'clear',
       label: 'Clear the sheet',
-      enabled: sheetMode,
+      enabled: sheetMode && !sheetEmpty,
       run: () => sheet.clearAll(),
     },
     {
@@ -166,18 +167,16 @@ const Calculator: React.FC = () => {
           options={MODES}
         />
         {sheetMode ? (
-          <SheetSettings settings={settings} onChange={update} />
+          <SheetSettings
+            settings={settings}
+            onChange={update}
+            angleUpFront={mode === 'scientific'}
+          />
         ) : null}
         {mode === 'grapher' ? (
-          <SegmentedControl
-            label="Angle unit"
-            size="sm"
+          <AngleControl
             value={settings.angle}
-            onChange={(angle) => update({ angle: angle as 'deg' | 'rad' })}
-            options={[
-              { value: 'deg', label: 'Degrees' },
-              { value: 'rad', label: 'Radians' },
-            ]}
+            onChange={(angle) => update({ angle })}
           />
         ) : null}
       </Inline>
@@ -189,23 +188,31 @@ const Calculator: React.FC = () => {
               as="section"
               title="Sheet"
               actions={
-                <Inline gap="1">
-                  <CopyButton
-                    size="sm"
-                    variant="ghost"
-                    value={activeText}
-                    disabled={!activeText}
-                    labels={{ copy: 'Copy result', copied: 'Result copied' }}
-                  />
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    tone="neutral"
-                    icon={eraser}
-                    label="Clear the sheet"
-                    onClick={() => sheet.clearAll()}
-                  />
-                </Inline>
+                activeText || !sheetEmpty ? (
+                  <Inline gap="1">
+                    {activeText ? (
+                      <CopyButton
+                        size="sm"
+                        variant="ghost"
+                        value={activeText}
+                        labels={{
+                          copy: 'Copy result',
+                          copied: 'Result copied',
+                        }}
+                      />
+                    ) : null}
+                    {sheetEmpty ? null : (
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        tone="neutral"
+                        icon={eraser}
+                        label="Clear the sheet"
+                        onClick={() => sheet.clearAll()}
+                      />
+                    )}
+                  </Inline>
+                ) : undefined
               }
             >
               <Stack gap="5">

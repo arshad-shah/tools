@@ -12,7 +12,11 @@ interface MemoryPanelProps {
   onRecall(text: string): void;
 }
 
-/** The M1 to M3 registers: recall, add or subtract the active result, clear. */
+/**
+ * The M1 to M3 registers: recall, add or subtract the active result, clear.
+ * Keys show only when they can act: MR and MC on a register with a value,
+ * M+ and M- while the active line has a numeric result.
+ */
 export const MemoryPanel: React.FC<MemoryPanelProps> = ({
   memories,
   onChange,
@@ -20,6 +24,11 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
   onRecall,
 }) => (
   <Stack gap="3">
+    {current === null ? (
+      <Text size="sm" tone="muted">
+        Calculate a line to add its result to a register.
+      </Text>
+    ) : null}
     {memories.map((m, i) => (
       <Inline key={m.label} justify="between" align="center" gap="3" wrap>
         <Inline gap="2" align="baseline">
@@ -29,59 +38,63 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
           </Text>
         </Inline>
         <Inline gap="1">
-          <Button
-            size="sm"
-            variant="soft"
-            aria-label={`Recall ${m.label}`}
-            disabled={m.value === null}
-            onClick={() => m.value !== null && onRecall(String(m.value))}
-          >
-            MR
-          </Button>
-          <Button
-            size="sm"
-            variant="soft"
-            aria-label={`Add the result to ${m.label}`}
-            disabled={current === null}
-            onClick={() =>
-              current !== null && onChange(adjustRegister(memories, i, current))
-            }
-          >
-            M+
-          </Button>
-          <Button
-            size="sm"
-            variant="soft"
-            aria-label={`Subtract the result from ${m.label}`}
-            disabled={current === null}
-            onClick={() =>
-              current !== null &&
-              onChange(adjustRegister(memories, i, -current))
-            }
-          >
-            M-
-          </Button>
-          <Button
-            size="sm"
-            variant="soft"
-            tone="danger"
-            aria-label={`Clear ${m.label}`}
-            onClick={() => onChange(clearRegister(memories, i))}
-          >
-            MC
-          </Button>
+          {m.value !== null ? (
+            <Button
+              size="sm"
+              variant="soft"
+              aria-label={`Recall ${m.label}`}
+              onClick={() => m.value !== null && onRecall(String(m.value))}
+            >
+              MR
+            </Button>
+          ) : null}
+          {current !== null ? (
+            <>
+              <Button
+                size="sm"
+                variant="soft"
+                aria-label={`Add the result to ${m.label}`}
+                onClick={() => onChange(adjustRegister(memories, i, current))}
+              >
+                M+
+              </Button>
+              <Button
+                size="sm"
+                variant="soft"
+                aria-label={`Subtract the result from ${m.label}`}
+                onClick={() => onChange(adjustRegister(memories, i, -current))}
+              >
+                M-
+              </Button>
+            </>
+          ) : null}
+          {m.value !== null ? (
+            <Button
+              size="sm"
+              variant="soft"
+              tone="danger"
+              aria-label={`Clear ${m.label}`}
+              onClick={() => onChange(clearRegister(memories, i))}
+            >
+              MC
+            </Button>
+          ) : null}
         </Inline>
       </Inline>
     ))}
-    <Divider />
-    <Inline>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => onChange(clearRegisters(memories))}
-      >
-        Clear all registers
-      </Button>
-    </Inline>
+    {memories.some((m) => m.value !== null) ? (
+      <>
+        <Divider />
+        <Inline>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onChange(clearRegisters(memories))}
+          >
+            Clear all registers
+          </Button>
+        </Inline>
+      </>
+    ) : null}
   </Stack>
 );
