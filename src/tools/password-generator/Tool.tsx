@@ -76,40 +76,25 @@ const PasswordGenerator: React.FC = () => {
     <TransformLayout
       defaultSize={55}
       start={
-        <Stack gap="6">
-          <Card
-            as="section"
-            title={`Your ${settings.mode === 'pin' ? 'PIN' : settings.mode}`}
-          >
-            {result}
-          </Card>
-          <ProductionUseNotice
-            title="For real accounts and services"
-            commandsLabel="Make a service secret on your own machine"
-            commands={SERVICE_SECRET_COMMANDS}
-          >
-            Made with your browser's secure random generator and never stored.
-            For a real account, let your password manager generate and save it,
-            so it is never pasted around. For production service secrets
-            (database passwords, API keys) use your secret manager, or make them
-            locally with the commands below.
-          </ProductionUseNotice>
-        </Stack>
+        <Card
+          as="section"
+          title={`Your ${settings.mode === 'pin' ? 'PIN' : settings.mode}`}
+        >
+          {result}
+        </Card>
       }
       end={
         <Stack gap="6">
           <Card as="section" title="Options">
             {options}
           </Card>
-          <Card as="section">
-            <Disclosure summary="Generate many" variant="plain">
-              <BulkPanel
-                count={settings.bulkCount}
-                onCount={(n) => update({ bulkCount: n })}
-                make={make}
-              />
-            </Disclosure>
-          </Card>
+          <Disclosure summary="Generate many" variant="card">
+            <BulkPanel
+              count={settings.bulkCount}
+              onCount={(n) => update({ bulkCount: n })}
+              make={make}
+            />
+          </Disclosure>
         </Stack>
       }
     />
@@ -159,6 +144,19 @@ const PasswordGenerator: React.FC = () => {
         />
       </Inline>
       {tab === 'check' ? <CheckerTab /> : generator}
+      {tab === 'check' ? null : (
+        <ProductionUseNotice
+          title="For real accounts and services"
+          commandsLabel="Make a service secret on your own machine"
+          commands={SERVICE_SECRET_COMMANDS}
+        >
+          Made with your browser's secure random generator and never stored. For
+          a real account, let your password manager generate and save it, so it
+          is never pasted around. For production service secrets (database
+          passwords, API keys) use your secret manager, or make them locally
+          with the commands below.
+        </ProductionUseNotice>
+      )}
     </Stack>
   );
 };

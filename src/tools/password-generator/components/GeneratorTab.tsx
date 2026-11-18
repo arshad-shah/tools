@@ -144,7 +144,7 @@ export const GeneratorTab: React.FC<GeneratorTabProps> = ({
       <Popover
         label="Custom characters"
         trigger={(props) => (
-          <Button {...props} variant="soft" size="sm" icon={settingsIcon}>
+          <Button {...props} variant="soft" icon={settingsIcon}>
             {`Custom characters${changed ? ` (${changed})` : ''}`}
           </Button>
         )}
