@@ -45,15 +45,11 @@ export function DebugLog({
         <Text size="sm" tone="muted">
           {debugLogs.length === 1 ? '1 entry' : `${debugLogs.length} entries`}
         </Text>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={close}
-          onClick={onClear}
-          disabled={debugLogs.length === 0}
-        >
-          Clear log
-        </Button>
+        {debugLogs.length > 0 ? (
+          <Button variant="ghost" size="sm" icon={close} onClick={onClear}>
+            Clear log
+          </Button>
+        ) : null}
       </Inline>
       {debugLogs.length === 0 ? (
         <EmptyState

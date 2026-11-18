@@ -161,7 +161,6 @@ export default function CodeToImage() {
           onChange={setCode}
           label="Code"
           maxBytes={MAX_BYTES}
-          onExample={loadSample}
           onFile={(file) => {
             setTitle(file.name);
             const lang = languageForHandoff('', file.name);

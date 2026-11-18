@@ -37,8 +37,10 @@ import {
   reorderObject,
   replaceObject,
   rotateDoc,
+  type Doc,
 } from './lib/doc';
 import { placedObject, type ToolId } from './lib/draft';
+import { placeLabel } from './lib/tool-labels';
 import { exportImage, type ExportFormat } from './lib/export';
 import {
   boundsOfObject,
@@ -195,6 +197,26 @@ export default function ImageAnnotate() {
       label: 'Zoom to fit',
       enabled: !!doc,
       run: () => setZoom('fit'),
+    },
+    // The orientation menu and the Add button, reachable from Mod+K too.
+    ...(
+      [
+        ['rotate-left', 'Rotate left', (d: Doc) => rotateDoc(d, 'ccw')],
+        ['rotate-right', 'Rotate right', (d: Doc) => rotateDoc(d, 'cw')],
+        ['flip-h', 'Flip horizontally', (d: Doc) => flipDoc(d, 'h')],
+        ['flip-v', 'Flip vertically', (d: Doc) => flipDoc(d, 'v')],
+      ] as const
+    ).map(([id, label, fn]) => ({
+      id,
+      label,
+      enabled: !!doc && !cropping,
+      run: () => doc && a.commit(fn(doc)),
+    })),
+    {
+      id: 'place',
+      label: placeLabel(tool),
+      enabled: !!doc && !cropping && tool !== 'select',
+      run: place,
     },
   ]);
 

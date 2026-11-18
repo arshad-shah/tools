@@ -1,6 +1,7 @@
 import {
   IconButton,
   Inline,
+  Menu,
   Toolbar,
   ZoomControls,
   type ZoomSetting,
@@ -29,7 +30,7 @@ export interface EditBarProps {
   onZoom(z: ZoomSetting): void;
 }
 
-/** History, orientation, crop and zoom above the image. */
+/** History, crop, orientation (one menu) and zoom above the image. */
 export function EditBar(p: EditBarProps) {
   const busy = p.cropping;
   return (
@@ -49,33 +50,26 @@ export function EditBar(p: EditBarProps) {
           disabled={!p.canRedo}
           onClick={p.onRedo}
         />
-        <IconButton
-          icon={pageRotateCcw}
-          label="Rotate left"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => p.onRotate('ccw')}
-        />
-        <IconButton
-          icon={pageRotate}
-          label="Rotate right"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => p.onRotate('cw')}
-        />
-        <IconButton
-          icon={swap}
-          label="Flip horizontally"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => p.onFlip('h')}
-        />
-        <IconButton
-          icon={swap}
-          label="Flip vertically"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => p.onFlip('v')}
+        <Menu
+          label="Rotate and flip"
+          items={[
+            { value: 'ccw', label: 'Rotate left', icon: pageRotateCcw },
+            { value: 'cw', label: 'Rotate right', icon: pageRotate },
+            { value: 'h', label: 'Flip horizontally', icon: swap },
+            { value: 'v', label: 'Flip vertically', icon: swap },
+          ]}
+          onSelect={(v) =>
+            v === 'cw' || v === 'ccw' ? p.onRotate(v) : p.onFlip(v as 'h' | 'v')
+          }
+          trigger={(props) => (
+            <IconButton
+              {...props}
+              icon={pageRotate}
+              label="Rotate and flip"
+              variant="ghost"
+              disabled={busy}
+            />
+          )}
         />
         <IconButton
           icon={crop}
@@ -97,6 +91,7 @@ export function EditBar(p: EditBarProps) {
         max={800}
         fits={['fit-page']}
         buttons={['fit', 'actual-size']}
+        size="md"
         onZoomChange={p.onZoom}
         labels={{ fit: 'Zoom to fit' }}
       />

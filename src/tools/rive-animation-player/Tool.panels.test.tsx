@@ -40,14 +40,17 @@ async function loadFile() {
   return { ...view, rive };
 }
 
-// The settings card's sections are a SegmentedControl (radios).
+// The settings card's sections are tabs.
 const openTab = (name: string) =>
   fireEvent.click(
-    within(screen.getByRole('radiogroup', { name: 'Settings' })).getByRole(
-      'radio',
-      { name },
-    ),
+    within(screen.getByRole('tablist', { name: 'Settings' })).getByRole('tab', {
+      name,
+    }),
   );
+
+// Speed and loop mode sit behind the Playback options button.
+const openPlaybackOptions = () =>
+  fireEvent.click(screen.getByRole('button', { name: 'Playback options' }));
 
 beforeEach(() => {
   FakeRive.instances.length = 0;
@@ -63,6 +66,7 @@ describe('RiveAnimationPlayer timeline', () => {
   it('sets the runtime speed when a speed is picked', async () => {
     await loadFile();
     expect(speedSetter).toHaveBeenLastCalledWith(1);
+    openPlaybackOptions();
     const speeds = screen.getByRole('radiogroup', { name: 'Playback speed' });
     fireEvent.click(within(speeds).getByRole('radio', { name: '0.5x' }));
     expect(speedSetter).toHaveBeenLastCalledWith(0.5);
@@ -101,6 +105,20 @@ describe('RiveAnimationPlayer timeline', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'State machines' }));
     expect(screen.queryByRole('slider', { name: 'Scrub' })).toBeNull();
     expect(screen.getByText(/Scrubbing and frame stepping work/)).toBeTruthy();
+    // Loop mode only applies to linear animations, so it is not offered.
+    openPlaybackOptions();
+    expect(screen.queryByRole('radiogroup', { name: 'Loop mode' })).toBeNull();
+    expect(
+      screen.getByRole('radiogroup', { name: 'Playback speed' }),
+    ).toBeTruthy();
+  });
+
+  it('offers the loop mode, marking the one the file stores', async () => {
+    await loadFile();
+    openPlaybackOptions();
+    const modes = screen.getByRole('radiogroup', { name: 'Loop mode' });
+    expect(within(modes).getAllByRole('radio')).toHaveLength(3);
+    expect(within(modes).getByText(/\(file\)/)).toBeTruthy();
   });
 });
 
@@ -109,6 +127,8 @@ describe('RiveAnimationPlayer panels', () => {
     const { rive } = await loadFile();
     openTab('Info');
     expect(screen.getByText(/No events yet/)).toBeTruthy();
+    // Nothing to clear yet, so no Clear button.
+    expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
 
     act(() =>
       rive.emit(EventType.RiveEvent, {
@@ -176,6 +196,14 @@ describe('RiveAnimationPlayer panels', () => {
   it('picks a background preset and an alignment, shown as chosen', async () => {
     await loadFile();
     openTab('Stage');
+    // The checkerboard hides the colour controls it would cover.
+    const checker = () =>
+      screen.getByRole('switch', { name: 'Checkerboard (shows transparency)' });
+    fireEvent.click(checker());
+    expect(
+      screen.queryByRole('radiogroup', { name: 'Background presets' }),
+    ).toBeNull();
+    fireEvent.click(checker());
     const presets = screen.getByRole('radiogroup', {
       name: 'Background presets',
     });
@@ -204,6 +232,7 @@ describe('RiveAnimationPlayer panels', () => {
 
   it('remembers the speed in the tool settings', async () => {
     await loadFile();
+    openPlaybackOptions();
     fireEvent.click(screen.getByRole('radio', { name: '1.5x' }));
     expect(
       localStorage.getItem('kit:store:tool:rive-animation-player'),

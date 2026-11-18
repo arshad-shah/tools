@@ -19,6 +19,7 @@ import {
 } from '@arshad-shah/cynosure';
 import { download, eraser, image, send } from '@arshad-shah/cynosure/icons';
 import { useMemo } from 'react';
+import { ToolActions } from '@/app/ui/tool-actions';
 import { useNavigate } from 'react-router-dom';
 import { formatBytes } from '@/shared/lib/format';
 import { sendTo, useHandoffFiles } from '@/shared/lib/handoff';
@@ -115,6 +116,13 @@ export default function ExifTool() {
 
   return (
     <Stack gap="6">
+      {entries.length ? (
+        <ToolActions>
+          <Button variant="soft" icon={send} onClick={toCompressor}>
+            Send to Image Compressor
+          </Button>
+        </ToolActions>
+      ) : null}
       <FileDrop
         multiple
         accept={ACCEPT}
@@ -128,7 +136,15 @@ export default function ExifTool() {
         <Grid columns={{ base: 1, lg: 3 }} gap="6" align="start">
           <GridItem span={{ base: 1, lg: 2 }}>
             <Stack gap="6">
-              <Card as="section" title={`Photos (${entries.length})`}>
+              <Card
+                as="section"
+                title={`Photos (${entries.length})`}
+                actions={
+                  <Button size="sm" variant="ghost" onClick={files.clear}>
+                    Clear all
+                  </Button>
+                }
+              >
                 <ListRows label="Photos">
                   {entries.map((e) => (
                     <ListRow
@@ -235,7 +251,6 @@ export default function ExifTool() {
                 <Button
                   variant="solid"
                   tone="accent"
-                  size="lg"
                   fullWidth
                   icon={eraser}
                   loading={running}
@@ -245,26 +260,18 @@ export default function ExifTool() {
                     ? 'Remove metadata'
                     : `Remove metadata from ${entries.length} photos`}
                 </Button>
-                <Button
-                  variant="soft"
-                  fullWidth
-                  icon={download}
-                  disabled={doneEntries.length === 0 || running}
-                  onClick={() => void files.downloadZip()}
-                >
-                  Download ZIP
-                </Button>
-                <Button
-                  variant="ghost"
-                  fullWidth
-                  icon={send}
-                  onClick={toCompressor}
-                >
-                  Send to Image Compressor
-                </Button>
-                <Button variant="ghost" fullWidth onClick={files.clear}>
-                  Clear all
-                </Button>
+                {/* The next step appears once there is a clean copy to save. */}
+                {doneEntries.length > 0 ? (
+                  <Button
+                    variant="soft"
+                    fullWidth
+                    icon={download}
+                    disabled={running}
+                    onClick={() => void files.downloadZip()}
+                  >
+                    Download ZIP
+                  </Button>
+                ) : null}
               </Stack>
             </Card>
           </Stack>

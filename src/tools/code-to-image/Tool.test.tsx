@@ -59,10 +59,12 @@ describe('CodeToImage', () => {
   it('previews pasted code and downloads PNG and SVG named from the title', async () => {
     renderTool();
     expect(screen.getByText('No code yet')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Download PNG' })).toHaveProperty(
-      'disabled',
-      true,
-    );
+    // One call to action while empty: the example sits in the empty state
+    // only, and the exports wait for an image.
+    expect(
+      screen.getAllByRole('button', { name: 'Try an example' }),
+    ).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Download PNG' })).toBeNull();
     setEditorValue(screen.getByRole('textbox', { name: 'Code' }), 'let a = 1;');
     fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), {
       target: { value: 'demo.js' },
@@ -98,7 +100,7 @@ describe('CodeToImage', () => {
     renderTool();
     setEditorValue(screen.getByRole('textbox', { name: 'Code' }), 'x');
     expect(
-      screen.getByText(
+      await screen.findByText(
         'This browser cannot copy images; download the PNG instead.',
       ),
     ).toBeTruthy();

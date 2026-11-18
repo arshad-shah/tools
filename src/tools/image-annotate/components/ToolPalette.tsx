@@ -1,9 +1,16 @@
-import { Button, Inline, SegmentedControl } from '@arshad-shah/cynosure';
+import {
+  IconButton,
+  Inline,
+  Menu,
+  SegmentedControl,
+} from '@arshad-shah/cynosure';
 import {
   brush,
   cursor,
+  grid,
   highlighter,
   listOrdered,
+  moreHorizontal,
   plus,
   redactArea,
   shapeArrow,
@@ -11,10 +18,10 @@ import {
   shapeLine,
   square,
   type as typeIcon,
-  grid,
 } from '@arshad-shah/cynosure/icons';
 import type { IconData } from '@arshad-shah/cynosure/icons';
 import type { ToolId } from '../lib/draft';
+import { placeLabel, TOOL_LABELS } from '../lib/tool-labels';
 
 interface ToolOption {
   value: ToolId;
@@ -22,26 +29,24 @@ interface ToolOption {
   icon: IconData;
 }
 
-const SHAPES: ToolOption[] = [
-  { value: 'select', label: 'Select and move', icon: cursor },
-  { value: 'arrow', label: 'Arrow', icon: shapeArrow },
-  { value: 'line', label: 'Line', icon: shapeLine },
-  { value: 'rect', label: 'Rectangle', icon: square },
-  { value: 'ellipse', label: 'Ellipse', icon: shapeEllipse },
-  { value: 'pen', label: 'Pen', icon: brush },
+/** The tools most mark-ups need, always in view. */
+const MAIN: ToolOption[] = [
+  { value: 'select', label: TOOL_LABELS.select, icon: cursor },
+  { value: 'arrow', label: TOOL_LABELS.arrow, icon: shapeArrow },
+  { value: 'rect', label: TOOL_LABELS.rect, icon: square },
+  { value: 'text', label: TOOL_LABELS.text, icon: typeIcon },
+  { value: 'step', label: TOOL_LABELS.step, icon: listOrdered },
+  { value: 'highlight', label: TOOL_LABELS.highlight, icon: highlighter },
+  { value: 'blur', label: TOOL_LABELS.blur, icon: redactArea },
 ];
 
-const MARKS: ToolOption[] = [
-  { value: 'text', label: 'Text', icon: typeIcon },
-  { value: 'step', label: 'Numbered step', icon: listOrdered },
-  { value: 'highlight', label: 'Highlighter', icon: highlighter },
-  { value: 'blur', label: 'Blur (redact)', icon: redactArea },
-  { value: 'pixelate', label: 'Pixelate (redact)', icon: grid },
+/** The rest, one menu away. */
+const MORE: ToolOption[] = [
+  { value: 'line', label: TOOL_LABELS.line, icon: shapeLine },
+  { value: 'ellipse', label: TOOL_LABELS.ellipse, icon: shapeEllipse },
+  { value: 'pen', label: TOOL_LABELS.pen, icon: brush },
+  { value: 'pixelate', label: TOOL_LABELS.pixelate, icon: grid },
 ];
-
-const TOOL_LABELS = Object.fromEntries(
-  [...SHAPES, ...MARKS].map((t) => [t.value, t.label]),
-) as Record<ToolId, string>;
 
 export interface ToolPaletteProps {
   tool: ToolId;
@@ -51,50 +56,63 @@ export interface ToolPaletteProps {
   disabled?: boolean;
 }
 
-/** The drawing tools, in two groups that wrap on a phone. */
+/**
+ * The drawing tools: the common ones as one segmented row, the rest in a
+ * "More tools" menu whose button takes the icon of the one in use.
+ */
 export function ToolPalette({
   tool,
   onTool,
   onPlace,
   disabled,
 }: ToolPaletteProps) {
-  const shape = SHAPES.some((t) => t.value === tool);
+  const extra = MORE.find((t) => t.value === tool);
   return (
-    <Inline gap="3" align="center" wrap>
+    <Inline gap="2" align="center" wrap>
       <SegmentedControl
-        label="Shape tools"
+        label="Drawing tools"
         iconOnly
         disabled={disabled}
-        value={shape ? tool : ''}
+        value={extra ? '' : tool}
         onChange={(v) => onTool(v as ToolId)}
-        options={SHAPES.map(({ value, label, icon }) => ({
+        options={MAIN.map(({ value, label, icon }) => ({
           value,
           label,
           icon,
         }))}
       />
-      <SegmentedControl
-        label="Marking tools"
-        iconOnly
-        disabled={disabled}
-        value={shape ? '' : tool}
-        onChange={(v) => onTool(v as ToolId)}
-        options={MARKS.map(({ value, label, icon }) => ({
+      <Menu
+        label="More tools"
+        items={MORE.map(({ value, label, icon }) => ({
           value,
           label,
           icon,
+          kind: 'radio' as const,
+          checked: value === tool,
+          keepOpen: false,
         }))}
+        onSelect={(v) => onTool(v as ToolId)}
+        trigger={(props) => (
+          <IconButton
+            {...props}
+            // The trigger shows the menu's tool while one is in use.
+            icon={extra?.icon ?? moreHorizontal}
+            label={extra ? `More tools, ${extra.label} in use` : 'More tools'}
+            variant={extra ? 'soft' : 'ghost'}
+            tone={extra ? 'accent' : 'neutral'}
+            disabled={disabled}
+          />
+        )}
       />
       {tool !== 'select' ? (
-        <Button
+        <IconButton
           variant="soft"
-          size="sm"
+          tone="neutral"
           icon={plus}
+          label={placeLabel(tool)}
           disabled={disabled}
           onClick={onPlace}
-        >
-          {`Add ${TOOL_LABELS[tool].replace(/ \(redact\)$/, '').toLowerCase()} in the middle`}
-        </Button>
+        />
       ) : null}
     </Inline>
   );

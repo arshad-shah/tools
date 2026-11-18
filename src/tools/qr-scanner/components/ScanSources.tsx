@@ -3,7 +3,6 @@ import {
   CameraView,
   FileDrop,
   Inline,
-  Kbd,
   SegmentedControl,
   shortcutKeys,
   Stack,
@@ -74,22 +73,16 @@ export function ScanSources(p: Props) {
             accept={IMAGE_ACCEPT}
             multiple={false}
             onFiles={(files) => files[0] && p.onImage(files[0])}
-            hint="PNG, JPEG, WebP or GIF"
+            hint={`PNG, JPEG, WebP or GIF. ${shortcutKeys('mod+v').join('+')} anywhere on the page pastes a screenshot.`}
             labels={{
               prompt: 'Drop an image with a QR code or barcode',
               chooseOne: 'Choose image',
             }}
           />
-          <Inline gap="3" align="center" wrap>
+          <Inline>
             <Button variant="soft" icon={clipboardPaste} onClick={p.onPaste}>
               Paste image
             </Button>
-            <Inline gap="2" align="center">
-              <Kbd keys={shortcutKeys('mod+v')} size="sm" />
-              <Text size="sm" tone="muted">
-                anywhere on the page pastes a screenshot too.
-              </Text>
-            </Inline>
           </Inline>
         </Stack>
       ) : (

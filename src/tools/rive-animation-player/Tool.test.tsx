@@ -52,15 +52,15 @@ describe('RiveAnimationPlayer', () => {
   it('hides the artboard picker for a single-artboard file', async () => {
     const { rive } = await renderAndLoad();
     act(() => rive.finishLoad());
-    expect(screen.queryByText('Artboard')).toBeNull();
-    expect(screen.getByText('Artboards: 1')).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Artboard' })).toBeNull();
+    expect(screen.getByRole('combobox', { name: 'Animation' })).toBeTruthy();
   });
 
-  it('offers and counts every artboard of a multi-artboard file', async () => {
+  it('offers every artboard of a multi-artboard file', async () => {
     FakeRive.artboards = ['Main', 'Alt'];
     const { rive } = await renderAndLoad();
     act(() => rive.finishLoad());
-    expect(screen.getByText('Artboard')).toBeTruthy();
-    expect(screen.getByText('Artboards: 2')).toBeTruthy();
+    const picker = screen.getByRole('combobox', { name: 'Artboard' });
+    expect(picker.textContent).toContain('Main');
   });
 });

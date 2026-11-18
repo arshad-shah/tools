@@ -34,15 +34,11 @@ export function EventsLog({
         <Text size="sm" tone="muted">
           {events.length === 1 ? '1 event' : `${events.length} events`}
         </Text>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={trash}
-          onClick={onClear}
-          disabled={events.length === 0}
-        >
-          Clear
-        </Button>
+        {events.length > 0 ? (
+          <Button variant="ghost" size="sm" icon={trash} onClick={onClear}>
+            Clear
+          </Button>
+        ) : null}
       </Inline>
       {events.length === 0 ? (
         <EmptyState

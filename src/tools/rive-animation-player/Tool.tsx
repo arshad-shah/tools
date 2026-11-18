@@ -6,8 +6,11 @@ import {
   GridItem,
   Heading,
   Notice,
-  SegmentedControl,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
 } from '@arshad-shah/cynosure';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useHandoffFiles } from '@/shared/lib/handoff';
@@ -19,7 +22,6 @@ import { DebugLog } from './components/DebugLog';
 import { EmbedSnippet, type SnippetRuntime } from './components/EmbedSnippet';
 import { EventsLog } from './components/EventsLog';
 import { ExportPanel } from './components/ExportPanel';
-import { FileInfo } from './components/FileInfo';
 import { InfoPanel } from './components/InfoPanel';
 import { LayoutControls } from './components/LayoutControls';
 import { PlaybackControls } from './components/PlaybackControls';
@@ -71,7 +73,7 @@ export default function RiveAnimationPlayer() {
   const player = useRivePlayer(toAlignFit(settings));
   // A .riv dropped on a hub loads like a picked one (spec §5.3).
   useHandoffFiles((files) => void player.load(files[0]));
-  const { status, filename, fileSize, riveInfo, isPlaying, loaded } = player;
+  const { status, filename, fileSize, isPlaying, loaded } = player;
   const rive = loaded?.rive ?? null;
   const active = status.current === PlayerState.Active && !!loaded;
 
@@ -169,7 +171,7 @@ export default function RiveAnimationPlayer() {
     ],
     stage: [
       [
-        'Stage',
+        'Background',
         <StagePanel
           key="stage"
           background={settings.background}
@@ -209,7 +211,7 @@ export default function RiveAnimationPlayer() {
     ],
     export: [
       [
-        'Export',
+        'Frame and video',
         <ExportPanel
           key="export"
           canvasRef={player.canvasRef}
@@ -247,15 +249,14 @@ export default function RiveAnimationPlayer() {
               status={status}
               togglePlayback={player.togglePlayback}
               reset={player.reset}
+              timeline={timeline}
+              speed={settings.speed}
+              onSpeedChange={(speed) => updateSettings({ speed })}
+              speedSupported={speedSupported}
             />
           }
         >
           <Stack gap="5">
-            <FileInfo
-              filename={filename}
-              fileSize={fileSize}
-              riveInfo={riveInfo}
-            />
             <Stage
               status={status}
               background={settings.background}
@@ -265,15 +266,7 @@ export default function RiveAnimationPlayer() {
               canvasRef={player.canvasRef}
               load={player.load}
             />
-            {active ? (
-              <Timeline
-                timeline={timeline}
-                speed={settings.speed}
-                onSpeedChange={(speed) => updateSettings({ speed })}
-                speedSupported={speedSupported}
-                disabled={!active}
-              />
-            ) : null}
+            {active ? <Timeline timeline={timeline} /> : null}
             {status.error != null ? (
               <Notice tone="danger" title="Error loading animation">
                 {status.error === PlayerError.NoAnimation
@@ -292,17 +285,20 @@ export default function RiveAnimationPlayer() {
       </GridItem>
       <GridItem span={{ base: 'full', lg: 2 }}>
         <Card as="section" aria-label="Settings" data-testid="side-panel">
-          <Stack gap="5">
-            <SegmentedControl
-              label="Settings"
-              size="sm"
-              fullWidth
-              value={panel}
-              onChange={(v) => setPanel(v as Panel)}
-              options={[...PANELS]}
-            />
-            <Sections items={panels[panel]} />
-          </Stack>
+          <Tabs value={panel} onChange={(v) => setPanel(v as Panel)}>
+            <TabList label="Settings">
+              {PANELS.map((p) => (
+                <Tab key={p.value} value={p.value}>
+                  {p.label}
+                </Tab>
+              ))}
+            </TabList>
+            {PANELS.map((p) => (
+              <TabPanel key={p.value} value={p.value}>
+                <Sections items={panels[p.value]} />
+              </TabPanel>
+            ))}
+          </Tabs>
         </Card>
       </GridItem>
     </Grid>

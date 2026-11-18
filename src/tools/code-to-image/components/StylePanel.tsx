@@ -1,6 +1,7 @@
 import {
   Card,
   ColorField,
+  Disclosure,
   Grid,
   NumberField,
   SegmentedControl,
@@ -26,28 +27,16 @@ export function StylePanel({ settings: s, onChange }: StylePanelProps) {
   return (
     <Card as="section" title="Style">
       <Stack gap="5">
-        <Grid columns={{ base: 1, sm: 2 }} gap="4">
-          <Select
-            label="Image theme"
-            value={s.theme}
-            onChange={(theme) => onChange({ theme })}
-            options={THEMES.map((t) => ({
-              value: t.id,
-              label: t.label,
-              group: t.dark ? 'Dark' : 'Light',
-            }))}
-          />
-          <Select
-            label="Tab width"
-            value={String(s.tabSize)}
-            onChange={(v) => onChange({ tabSize: Number(v) })}
-            options={[
-              { value: '2', label: '2 spaces' },
-              { value: '4', label: '4 spaces' },
-              { value: '8', label: '8 spaces' },
-            ]}
-          />
-        </Grid>
+        <Select
+          label="Image theme"
+          value={s.theme}
+          onChange={(theme) => onChange({ theme })}
+          options={THEMES.map((t) => ({
+            value: t.id,
+            label: t.label,
+            group: t.dark ? 'Dark' : 'Light',
+          }))}
+        />
         <SegmentedControl
           label="Background"
           fullWidth
@@ -110,50 +99,65 @@ export function StylePanel({ settings: s, onChange }: StylePanelProps) {
             onChange={(lineNumbers) => onChange({ lineNumbers })}
           />
         </Grid>
-        <Grid columns={{ base: 1, sm: 2 }} gap="4">
-          <SegmentedControl
-            label="Width"
-            fullWidth
-            value={s.widthMode}
-            onChange={(widthMode) => onChange({ widthMode })}
-            options={[
-              { value: 'auto', label: 'Fit code' },
-              { value: 'fixed', label: 'Fixed' },
-            ]}
-          />
-          <SegmentedControl
-            label="Long lines"
-            fullWidth
-            value={s.overflow}
-            onChange={(overflow) => onChange({ overflow })}
-            options={[
-              { value: 'wrap', label: 'Wrap' },
-              { value: 'clip', label: 'Clip' },
-            ]}
-          />
-        </Grid>
-        {s.widthMode === 'fixed' ? (
-          <NumberField
-            label="Image width"
-            unit="px"
-            width="sm"
-            min={WIDTHS.min}
-            max={WIDTHS.max}
-            step={10}
-            value={s.width}
-            onChange={(v) => v !== null && onChange({ width: v })}
-          />
-        ) : null}
-        <SegmentedControl
-          label="PNG scale"
-          value={String(s.scale)}
-          onChange={(v) => onChange({ scale: Number(v) })}
-          options={[
-            { value: '1', label: '1x' },
-            { value: '2', label: '2x' },
-            { value: '3', label: '3x' },
-          ]}
-        />
+        {/* Set once and forgotten: the layout options start closed. */}
+        <Disclosure summary="Size and layout" variant="line">
+          <Stack gap="5">
+            <Select
+              label="Tab width"
+              value={String(s.tabSize)}
+              onChange={(v) => onChange({ tabSize: Number(v) })}
+              options={[
+                { value: '2', label: '2 spaces' },
+                { value: '4', label: '4 spaces' },
+                { value: '8', label: '8 spaces' },
+              ]}
+            />
+            <Grid columns={{ base: 1, sm: 2 }} gap="4">
+              <SegmentedControl
+                label="Width"
+                fullWidth
+                value={s.widthMode}
+                onChange={(widthMode) => onChange({ widthMode })}
+                options={[
+                  { value: 'auto', label: 'Fit code' },
+                  { value: 'fixed', label: 'Fixed' },
+                ]}
+              />
+              <SegmentedControl
+                label="Long lines"
+                fullWidth
+                value={s.overflow}
+                onChange={(overflow) => onChange({ overflow })}
+                options={[
+                  { value: 'wrap', label: 'Wrap' },
+                  { value: 'clip', label: 'Clip' },
+                ]}
+              />
+            </Grid>
+            {s.widthMode === 'fixed' ? (
+              <NumberField
+                label="Image width"
+                unit="px"
+                width="sm"
+                min={WIDTHS.min}
+                max={WIDTHS.max}
+                step={10}
+                value={s.width}
+                onChange={(v) => v !== null && onChange({ width: v })}
+              />
+            ) : null}
+            <SegmentedControl
+              label="PNG scale"
+              value={String(s.scale)}
+              onChange={(v) => onChange({ scale: Number(v) })}
+              options={[
+                { value: '1', label: '1x' },
+                { value: '2', label: '2x' },
+                { value: '3', label: '3x' },
+              ]}
+            />
+          </Stack>
+        </Disclosure>
       </Stack>
     </Card>
   );

@@ -113,21 +113,23 @@ export function ExportPanel({
         >
           Download SVG
         </Button>
-        <Button
-          variant="soft"
-          icon={copy}
-          disabled={disabled || busy || typeof ClipboardItem === 'undefined'}
-          onClick={() =>
-            void run('copy the image', async () => {
-              await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': png() }),
-              ]);
-              notify.success('QR code copied as an image');
-            })
-          }
-        >
-          Copy image
-        </Button>
+        {typeof ClipboardItem === 'undefined' ? null : (
+          <Button
+            variant="soft"
+            icon={copy}
+            disabled={disabled || busy}
+            onClick={() =>
+              void run('copy the image', async () => {
+                await navigator.clipboard.write([
+                  new ClipboardItem({ 'image/png': png() }),
+                ]);
+                notify.success('QR code copied as an image');
+              })
+            }
+          >
+            Copy image
+          </Button>
+        )}
       </Inline>
     </Stack>
   );

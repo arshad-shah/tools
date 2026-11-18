@@ -12,20 +12,29 @@ import {
   DescriptionList,
   Dialog,
   Inline,
+  Menu,
   Stack,
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
 import {
   calendar,
+  chevronDown,
   external,
   link as linkIcon,
   qrCode,
   type as typeIcon,
   user,
+  type IconData,
 } from '@arshad-shah/cynosure/icons';
 import { resultHandoffs, type ResultTarget } from '../lib/handoffs';
 import { icsFor, interpret, KIND_LABELS, vcfFor } from '../lib/interpret';
+
+const TARGET_LABELS: Record<ResultTarget, { label: string; icon: IconData }> = {
+  'url-parser': { label: 'URL Inspector', icon: linkIcon },
+  'qr-code-generator': { label: 'QR Code Generator', icon: qrCode },
+  'url-encoder-decoder': { label: 'Text Encoder', icon: typeIcon },
+};
 
 /** One decoded code: what it is, its fields and the actions that fit. */
 export function ResultCard({
@@ -41,6 +50,9 @@ export function ResultCard({
   const link =
     info.fields.find(([l]) => l === 'URL')?.[1] ?? result.text.trim();
   const handoffs = resultHandoffs(result);
+  const targets = (Object.keys(TARGET_LABELS) as ResultTarget[]).filter(
+    (t) => handoffs[t],
+  );
   const send = (target: ResultTarget) => {
     const payload = handoffs[target];
     if (payload) sendTo(navigate, target, payload);
@@ -111,35 +123,28 @@ export function ResultCard({
               Open link
             </Button>
           ) : null}
-          {handoffs['url-parser'] ? (
-            <Button
-              size="sm"
-              variant="soft"
-              icon={linkIcon}
-              onClick={() => send('url-parser')}
-            >
-              Open in URL Inspector
-            </Button>
-          ) : null}
-          {handoffs['qr-code-generator'] ? (
-            <Button
-              size="sm"
-              variant="soft"
-              icon={qrCode}
-              onClick={() => send('qr-code-generator')}
-            >
-              Make QR
-            </Button>
-          ) : null}
-          {handoffs['url-encoder-decoder'] ? (
-            <Button
-              size="sm"
-              variant="soft"
-              icon={typeIcon}
-              onClick={() => send('url-encoder-decoder')}
-            >
-              Send to Text Encoder
-            </Button>
+          {/* The hand-offs share one menu: up to three tools fit a code. */}
+          {targets.length ? (
+            <Menu
+              label="Open in"
+              items={targets.map((t) => ({
+                value: t,
+                label: TARGET_LABELS[t].label,
+                icon: TARGET_LABELS[t].icon,
+              }))}
+              onSelect={(t) => send(t as ResultTarget)}
+              trigger={(props) => (
+                <Button
+                  {...props}
+                  size="sm"
+                  variant="soft"
+                  icon={external}
+                  iconEnd={chevronDown}
+                >
+                  Open in
+                </Button>
+              )}
+            />
           ) : null}
           {info.actions.includes('vcf') ? (
             <Button
