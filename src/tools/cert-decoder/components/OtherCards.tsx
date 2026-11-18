@@ -53,7 +53,10 @@ export function CsrCard({ item }: { item: Of<'csr'> }) {
               : []),
           ]}
         />
-        <Accordion type="multiple" defaultValue={['sans']}>
+        <Accordion
+          type="multiple"
+          defaultValue={v.ext.sans.length ? ['sans'] : []}
+        >
           <AccordionItem
             value="sans"
             summary={`Requested names (${v.ext.sans.length})`}
@@ -107,21 +110,6 @@ export function PrivateKeyCard({ item }: { item: Of<'private-key'> }) {
   return (
     <Card as="section" title="Private key">
       <Stack gap="4">
-        <ProductionUseNotice
-          title="This is a private key"
-          commandsLabel="Inspect a key on your own machine"
-          commands={[
-            {
-              label: 'Key type and size, without printing the key',
-              command: "openssl pkey -in key.pem -noout -text | sed -n '1p'",
-            },
-          ]}
-        >
-          It was read only in this browser and is not stored or sent anywhere.
-          Only its type and size are shown. Clear the input when you are done.
-          Do not paste production private keys into any web page; inspect those
-          locally.
-        </ProductionUseNotice>
         <Facts
           label="Private key details"
           items={[
@@ -137,6 +125,21 @@ export function PrivateKeyCard({ item }: { item: Of<'private-key'> }) {
               : []),
           ]}
         />
+        <ProductionUseNotice
+          title="This is a private key"
+          commandsLabel="Inspect a key on your own machine"
+          commands={[
+            {
+              label: 'Key type and size, without printing the key',
+              command: "openssl pkey -in key.pem -noout -text | sed -n '1p'",
+            },
+          ]}
+        >
+          It was read only in this browser and is not stored or sent anywhere.
+          Only its type and size are shown. Clear the input when you are done.
+          Do not paste production private keys into any web page; inspect those
+          locally.
+        </ProductionUseNotice>
       </Stack>
     </Card>
   );

@@ -3,8 +3,8 @@ import {
   Card,
   EmptyState,
   LoadingDots,
-  Notice,
   Stack,
+  Text,
   TextArea,
 } from '@arshad-shah/cynosure';
 import { certificate, sparkles } from '@arshad-shah/cynosure/icons';
@@ -124,14 +124,13 @@ export default function CertDecoder() {
           accept={ACCEPT}
           onFile={onFile}
           maxBytes={MAX_BYTES}
-          onExample={tryExample}
           handoff={(p) => p.kind === 'text' && MIMES.includes(p.mime)}
           counts={false}
         />
-        <Notice tone="info" title="Stays on this device">
-          Decoding and signature checks run in this browser. Nothing is
-          uploaded, and OCSP, CRL and issuer URLs are never fetched.
-        </Notice>
+        <Text size="sm" tone="muted">
+          Decoded and checked in this browser. Nothing is uploaded, and OCSP,
+          CRL and issuer URLs are never fetched.
+        </Text>
       </Stack>
     </Card>
   );

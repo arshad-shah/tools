@@ -34,8 +34,15 @@ describe('CertDecoder', () => {
     expect(screen.getByText('Certificate 1 of 3')).toBeTruthy();
     expect(screen.getAllByText('Signature valid').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Self-signed').length).toBeGreaterThan(0);
-    // A badge and a notice title per certificate.
-    expect(screen.getAllByText(/^Expires in (89|90) days$/).length).toBe(6);
+    // One notice per certificate says it, not a badge as well.
+    expect(screen.getAllByText(/^Expires in (89|90) days$/).length).toBe(3);
+  });
+
+  it('offers Try an example once, in the empty state', () => {
+    renderTool();
+    expect(
+      screen.getAllByRole('button', { name: 'Try an example' }),
+    ).toHaveLength(1);
   });
 
   it('says what is wrong with bad input', async () => {

@@ -45,8 +45,9 @@ export function CertCard({
         <Inline gap="2" wrap>
           {position ? <Badge tone="neutral">{position}</Badge> : null}
           <Badge tone="accent">{role}</Badge>
-          <Badge tone={valid.tone}>{valid.label}</Badge>
-          {link ? <Badge tone={link.tone}>{link.label}</Badge> : null}
+          {link && !link.detail ? (
+            <Badge tone={link.tone}>{link.label}</Badge>
+          ) : null}
         </Inline>
         <Stack gap="3">
           <Notice tone={valid.tone} title={valid.label}>
@@ -89,7 +90,10 @@ export function CertCard({
             },
           ]}
         />
-        <Accordion type="multiple" defaultValue={['sans']}>
+        <Accordion
+          type="multiple"
+          defaultValue={v.ext.sans.length ? ['sans'] : []}
+        >
           <AccordionItem
             value="sans"
             summary={`Subject alternative names (${v.ext.sans.length})`}
