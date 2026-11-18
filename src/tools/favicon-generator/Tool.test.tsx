@@ -40,8 +40,8 @@ afterEach(() => {
 describe('FaviconGenerator', () => {
   it('a text source of one letter enables the download', async () => {
     render(<FaviconGenerator />);
-    const download = screen.getByRole('button', { name: 'Download ZIP' });
-    expect(download).toHaveProperty('disabled', true);
+    expect(screen.queryByRole('button', { name: 'Download ZIP' })).toBeNull();
+    expect(screen.getByText(/Choose a source above to download/)).toBeTruthy();
     fireEvent.change(
       screen.getByRole('textbox', { name: 'Text (1 to 3 characters)' }),
       { target: { value: 'T' } },

@@ -7,6 +7,7 @@ import {
   Inline,
   Notice,
   Stack,
+  Text,
   TextField,
 } from '@arshad-shah/cynosure';
 import { download as downloadIcon } from '@arshad-shah/cynosure/icons';
@@ -202,19 +203,24 @@ export default function FaviconGenerator() {
           {job.error ? (
             <Notice tone="danger">{job.error.message}</Notice>
           ) : null}
-          <Inline>
-            <Button
-              variant="solid"
-              tone="accent"
-              size="lg"
-              icon={downloadIcon}
-              disabled={!source}
-              loading={job.status === 'running'}
-              onClick={() => void download()}
-            >
-              Download ZIP
-            </Button>
-          </Inline>
+          {/* Hidden, not disabled, until there is an icon; the line says why. */}
+          {source ? (
+            <Inline>
+              <Button
+                variant="solid"
+                tone="accent"
+                icon={downloadIcon}
+                loading={job.status === 'running'}
+                onClick={() => void download()}
+              >
+                Download ZIP
+              </Button>
+            </Inline>
+          ) : (
+            <Text size="sm" tone="muted">
+              Choose a source above to download the icons and manifest.
+            </Text>
+          )}
           <CodeBlock
             title="HTML for the page head"
             code={snippet}

@@ -2,7 +2,7 @@ import {
   Card,
   ColorField,
   FileDrop,
-  Inline,
+  Grid,
   List,
   Notice,
   SegmentedControl,
@@ -123,7 +123,7 @@ function TextSource({
         onChange={(v) => update({ font: v as IconFont })}
         options={FONTS}
       />
-      <Inline gap="4" wrap>
+      <Grid columns={{ base: 1, sm: 2 }} gap="4">
         <ColorField
           label="Text colour"
           format="hex"
@@ -136,7 +136,7 @@ function TextSource({
           value={settings.bg}
           onChange={(bg) => update({ bg })}
         />
-      </Inline>
+      </Grid>
       <SegmentedControl
         label="Shape"
         value={settings.shape}
