@@ -9,24 +9,53 @@ const COLUMN_LABEL: Record<LogColumn, string> = {
   component: 'Component',
 };
 
+const WRAP = 'wrap';
+
 export interface ColumnMenuProps {
   columns: readonly LogColumn[];
   onColumns(columns: LogColumn[]): void;
+  wrap: boolean;
+  onWrap(wrap: boolean): void;
 }
 
-/** Which summary columns the entry rows show (persisted in settings). */
-export function ColumnMenu({ columns, onColumns }: ColumnMenuProps) {
+/**
+ * How the entries look (persisted in settings): which summary columns the
+ * rows show, and whether long lines wrap.
+ */
+export function ColumnMenu({
+  columns,
+  onColumns,
+  wrap,
+  onWrap,
+}: ColumnMenuProps) {
   return (
     <Menu
-      label="Columns"
-      items={LOG_COLUMNS.map((c) => ({
-        value: c,
-        label: COLUMN_LABEL[c],
-        kind: 'checkbox' as const,
-        checked: columns.includes(c),
-        keepOpen: true,
-      }))}
+      label="View"
+      items={[
+        {
+          label: 'Columns',
+          items: LOG_COLUMNS.map((c) => ({
+            value: c,
+            label: COLUMN_LABEL[c],
+            kind: 'checkbox' as const,
+            checked: columns.includes(c),
+            keepOpen: true,
+          })),
+        },
+        {
+          items: [
+            {
+              value: WRAP,
+              label: 'Wrap lines',
+              kind: 'checkbox' as const,
+              checked: wrap,
+              keepOpen: true,
+            },
+          ],
+        },
+      ]}
       onSelect={(v) => {
+        if (v === WRAP) return onWrap(!wrap);
         const c = v as LogColumn;
         const on = !columns.includes(c);
         onColumns(
@@ -35,7 +64,7 @@ export function ColumnMenu({ columns, onColumns }: ColumnMenuProps) {
       }}
       trigger={(props) => (
         <Button {...props} size="sm" variant="ghost" icon={columnsIcon}>
-          Columns
+          View
         </Button>
       )}
     />

@@ -44,12 +44,12 @@ test('log viewer filters by level', async ({ page }) => {
   await expect(page.getByText('4 of 4 entries')).toBeVisible();
 });
 
-test('log viewer hides a column from the Columns menu', async ({ page }) => {
+test('log viewer hides a column from the View menu', async ({ page }) => {
   await pasteLog(page);
   const log = page.getByRole('log', { name: 'Log entries' });
   const lineCells = log.locator('[data-column="line"]');
   await expect(lineCells).toHaveCount(4);
-  await page.getByRole('button', { name: 'Columns' }).click();
+  await page.getByRole('button', { name: 'View', exact: true }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Line number' }).click();
   await expect(lineCells).toHaveCount(0);
   await page.keyboard.press('Escape');
