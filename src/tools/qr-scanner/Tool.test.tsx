@@ -96,6 +96,14 @@ describe('QR Scanner results and camera', () => {
     expect(screen.getByText('Found 1 code.')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Link' })).toBeTruthy();
     expect(screen.getByText('https://example.com/a')).toBeTruthy();
+    // The hand-offs that fit a link share one Open in menu.
+    fireEvent.click(screen.getByRole('button', { name: 'Open in' }));
+    expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toEqual(
+      expect.arrayContaining(['URL Inspector', 'QR Code Generator']),
+    );
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: 'Escape',
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Open link' }));
     expect(
       screen.getByRole('dialog', { name: 'Open this link?' }),

@@ -499,7 +499,8 @@ test.describe('QR Scanner', () => {
 
   test('Open in URL Inspector', async ({ page }) => {
     await scan(page);
-    await page.getByRole('button', { name: 'Open in URL Inspector' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'URL Inspector' }).click();
     await atTool(page, 'url-parser');
     await expect(
       page
@@ -511,7 +512,8 @@ test.describe('QR Scanner', () => {
 
   test('Make QR', async ({ page }) => {
     await scan(page);
-    await page.getByRole('button', { name: 'Make QR' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
     await atTool(page, 'qr-code-generator');
     await expect(
       page.getByRole('textbox', { name: 'URL' }).filter({ visible: true }),
