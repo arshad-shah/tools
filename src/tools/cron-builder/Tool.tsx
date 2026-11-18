@@ -107,7 +107,11 @@ const CronBuilder: React.FC = () => {
 
   const input = (
     <Stack gap="6">
-      <Card as="section" title="Expression">
+      <Card
+        as="section"
+        title="Expression"
+        actions={<Presets flavour={flavour} onPick={setExpr} />}
+      >
         <Stack gap="5">
           <SegmentedControl
             label="Cron flavour"
@@ -142,18 +146,15 @@ const CronBuilder: React.FC = () => {
               {parsed.explanation}
             </Heading>
           ) : null}
-          <Presets flavour={flavour} onPick={setExpr} />
         </Stack>
       </Card>
-      <Card as="section" title="When it runs">
-        <NextRuns
-          ast={parsed.ok ? parsed.ast : null}
-          zone={zone}
-          onZone={(z) => update({ zone: z })}
-          count={count}
-          onCount={(c) => update({ count: c })}
-        />
-      </Card>
+      <NextRuns
+        ast={parsed.ok ? parsed.ast : null}
+        zone={zone}
+        onZone={(z) => update({ zone: z })}
+        count={count}
+        onCount={(c) => update({ count: c })}
+      />
     </Stack>
   );
 
