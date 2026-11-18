@@ -17,12 +17,12 @@ describe('HistoryPanel', () => {
   });
   afterEach(resetChartStubs);
 
-  it('shows an empty state and a disabled export with no history', () => {
+  it('shows an empty state and no export with no history', () => {
     render(<HistoryPanel />);
     expect(screen.getByText('No sessions yet')).toBeTruthy();
     expect(screen.queryByRole('img', { name: /sessions/i })).toBeNull();
-    const exportButton = screen.getByRole('button', { name: 'Export CSV' });
-    expect((exportButton as HTMLButtonElement).disabled).toBe(true);
+    // Nothing to export: the button is not shown at all.
+    expect(screen.queryByRole('button', { name: 'Export CSV' })).toBeNull();
   });
 
   it('draws the weekly bars and the 12-week heatmap, with data tables', () => {
