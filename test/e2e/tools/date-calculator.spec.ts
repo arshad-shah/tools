@@ -46,6 +46,7 @@ test.describe('Date & Time Calculator', () => {
     await expect(
       page.getByRole('heading', { name: '5 business days' }),
     ).toBeVisible();
+    await page.getByRole('button', { name: /^Holidays/ }).click();
     await page
       .getByRole('textbox', { name: 'Holidays (one date per line)' })
       .fill('2024-06-05');
@@ -65,6 +66,7 @@ test.describe('Date & Time Calculator', () => {
     await expect(
       page.getByRole('heading', { name: 'No difference' }),
     ).toBeVisible();
+    await page.getByRole('button', { name: /^More about end/ }).click();
     await page.getByRole('combobox', { name: 'End time zone' }).click();
     await page.getByRole('option', { name: /^America\/New York/ }).click();
     await expect(page.getByRole('heading', { name: '5 hours' })).toBeVisible();
@@ -101,6 +103,7 @@ test('a share link restores the tab, inputs and holidays', async ({
   await page
     .getByRole('textbox', { name: 'Until (not counted)', exact: true })
     .fill('2024-06-10');
+  await page.getByRole('button', { name: /^Holidays/ }).click();
   await page
     .getByRole('textbox', { name: 'Holidays (one date per line)' })
     .fill('2024-06-05');
