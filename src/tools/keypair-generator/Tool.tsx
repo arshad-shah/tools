@@ -144,13 +144,6 @@ export default function KeypairGenerator() {
             </Button>
           ) : null}
         </Inline>
-        <ProductionUseNotice commands={localCommands(spec, comment)}>
-          Made with Web Crypto in this browser, never stored or sent; save what
-          you need. Fine for development, testing and learning. This page's code
-          is fetched on every visit, so make production keys locally with the
-          commands below, or in a KMS or HSM where the private key never leaves
-          the hardware.
-        </ProductionUseNotice>
       </Stack>
     </Card>
   );
@@ -230,21 +223,22 @@ export default function KeypairGenerator() {
         <EmptyState
           icon={key}
           title="No key pair yet"
-          description="Choose a key type and generate: PEM, JWK and OpenSSH exports appear here."
-          actions={
-            <Button
-              variant="soft"
-              icon={key}
-              disabled={blocked}
-              onClick={generate}
-            >
-              Generate key pair
-            </Button>
-          }
+          description="Choose a key type and press Generate key pair: PEM, JWK and OpenSSH exports appear here."
         />
       )}
     </Card>
   );
 
-  return <TransformLayout start={options} end={output} defaultSize={38} />;
+  return (
+    <Stack gap="6">
+      <TransformLayout start={options} end={output} defaultSize={38} />
+      <ProductionUseNotice commands={localCommands(spec, comment)}>
+        Made with Web Crypto in this browser, never stored or sent; save what
+        you need. Fine for development, testing and learning. This page's code
+        is fetched on every visit, so make production keys locally with the
+        commands below, or in a KMS or HSM where the private key never leaves
+        the hardware.
+      </ProductionUseNotice>
+    </Stack>
+  );
 }

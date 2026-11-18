@@ -1,4 +1,4 @@
-import { Badge, Button, CodeBlock, Stack } from '@arshad-shah/cynosure';
+import { Badge, CodeBlock, IconButton, Stack } from '@arshad-shah/cynosure';
 import { download, lock } from '@arshad-shah/cynosure/icons';
 import { copyText } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
@@ -36,15 +36,14 @@ export function ExportList({ exports }: { exports: KeyExport[] }) {
                   Secret
                 </Badge>
               ) : null}
-              <Button
+              <IconButton
                 size="sm"
                 variant="ghost"
+                tone="neutral"
                 icon={download}
-                aria-label={`Download ${e.label.toLowerCase()} as ${e.filename}`}
+                label={`Download ${e.label.toLowerCase()} as ${e.filename}`}
                 onClick={() => saveBlob(utf8Encode(e.text), e.filename, e.mime)}
-              >
-                Download
-              </Button>
+              />
             </>
           }
         />

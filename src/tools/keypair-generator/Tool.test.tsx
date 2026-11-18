@@ -26,9 +26,7 @@ describe('KeypairGenerator', () => {
     fireEvent.change(screen.getByLabelText('OpenSSH comment'), {
       target: { value: 'me@host' },
     });
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Generate key pair' })[0],
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Generate key pair' }));
     expect(await screen.findByText('Private key (PKCS#8 PEM)')).toBeTruthy();
     expect(screen.getByText('OpenSSH public key')).toBeTruthy();
     expect(screen.getByText(/^ssh-ed25519 \S+ me@host$/)).toBeTruthy();
