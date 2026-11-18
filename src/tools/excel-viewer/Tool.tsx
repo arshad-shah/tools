@@ -21,7 +21,11 @@ import { notify } from '@/shared/lib/notify';
 import { useSendCommands } from '@/shared/lib/send-commands';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { OpenScreen } from './components/OpenScreen';
-import { SheetActions, type SheetAction } from './components/SheetActions';
+import {
+  HeaderRowSelect,
+  SheetActions,
+  type SheetAction,
+} from './components/SheetActions';
 import { SheetView } from './components/SheetView';
 import { useWorkbook } from './hooks/useWorkbook';
 import { sheetToCsv, sheetToJson } from './lib/export';
@@ -131,17 +135,11 @@ export default function ExcelViewer() {
             >
               Open another
             </Button>
-            <SheetActions
-              rowCount={sheet?.rowCount ?? 0}
-              header={header}
-              onHeader={setHeader}
-              onAction={act}
-              disabled={!sheet}
-            />
+            <SheetActions onAction={act} disabled={!sheet} />
           </Inline>
         }
       >
-        <Inline gap="2" wrap>
+        <Inline gap="2" align="center" wrap>
           <Badge size="sm" variant="soft" tone="accent">
             {`${workbook.sheets.length} ${workbook.sheets.length === 1 ? 'sheet' : 'sheets'}`}
           </Badge>
@@ -156,6 +154,12 @@ export default function ExcelViewer() {
               Has macros (not run)
             </Badge>
           ) : null}
+          <HeaderRowSelect
+            rowCount={sheet?.rowCount ?? 0}
+            header={header}
+            onHeader={setHeader}
+            disabled={!sheet}
+          />
         </Inline>
       </Card>
       <Tabs

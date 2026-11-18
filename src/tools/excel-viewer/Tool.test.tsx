@@ -27,7 +27,17 @@ describe('Excel Viewer', () => {
     expect(screen.getByRole('tab', { name: 'Orders' })).toBeTruthy();
     expect(screen.getByText('8 rows')).toBeTruthy();
     expect(screen.getByText('1 merged range')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Cell' })).toBeTruthy();
+    // No cell selected yet: a hint instead of an empty inspector card.
+    expect(
+      screen.getByText('Select a cell to see its value, type and formula.'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /^Cell/ })).toBeNull();
+    // Three header actions; the header row sits with the badges.
+    expect(
+      screen.getByRole('combobox', { name: 'Header row for exports' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Send to' })).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: /Lookup \(hidden\)/ }));
     expect(await screen.findByText('Hidden sheet')).toBeTruthy();
     expect(screen.getByText('1 row')).toBeTruthy();
