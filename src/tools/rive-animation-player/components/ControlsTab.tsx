@@ -1,12 +1,9 @@
 import {
-  Button,
   EmptyState,
-  Grid,
   SegmentedControl,
   Select,
   Stack,
 } from '@arshad-shah/cynosure';
-import { play } from '@arshad-shah/cynosure/icons';
 import React from 'react';
 import { StateMachineInput } from '@/shared/lib/rive-runtime';
 import {
@@ -79,31 +76,15 @@ export function ControlsTab({
             />
           ) : null}
           {animationList && animationList.animations.length > 0 ? (
-            <Grid
-              columns={{ base: 1, sm: 2 }}
-              gap="2"
-              role="group"
-              aria-label="Animations"
-            >
-              {animationList.animations.map((animation) => {
-                const on = animationList.active === animation;
-                return (
-                  <Button
-                    key={animation}
-                    // The playing animation is a selection: pressed, not primary.
-                    variant={on ? 'soft' : 'outline'}
-                    tone={on ? 'accent' : 'neutral'}
-                    icon={on ? play : undefined}
-                    aria-pressed={on}
-                    size="sm"
-                    onClick={() => setActiveAnimation(animation)}
-                    fullWidth
-                  >
-                    {animation}
-                  </Button>
-                );
-              })}
-            </Grid>
+            <Select
+              label="Animation"
+              value={animationList.active}
+              onChange={setActiveAnimation}
+              options={animationList.animations.map((a) => ({
+                value: a,
+                label: a,
+              }))}
+            />
           ) : (
             <EmptyState
               size="sm"
@@ -116,7 +97,7 @@ export function ControlsTab({
         <Stack gap="4">
           {stateMachineList && stateMachineList.stateMachines.length > 0 ? (
             <Select
-              label="Active state machine"
+              label="State machine"
               value={stateMachineList.active}
               onChange={setActiveStateMachine}
               options={stateMachineList.stateMachines.map((s) => ({
