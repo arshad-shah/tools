@@ -165,7 +165,6 @@ export default function CurlConverter() {
             onChange={setText}
             label="Command"
             maxBytes={MAX_BYTES}
-            onExample={() => setText(SAMPLE)}
             handoff={(p) => curlFromHandoff(p) !== null}
           />
           {parsed.ok ? (
@@ -219,16 +218,13 @@ export default function CurlConverter() {
 
   return (
     <Stack gap="6">
-      <ToolActions>
-        <Button
-          variant="soft"
-          icon={send}
-          disabled={!request}
-          onClick={sendHttp}
-        >
-          Send to HTTP Client
-        </Button>
-      </ToolActions>
+      {request ? (
+        <ToolActions>
+          <Button variant="soft" icon={send} onClick={sendHttp}>
+            Send to HTTP Client
+          </Button>
+        </ToolActions>
+      ) : null}
       <TransformLayout start={input} end={end} defaultSize={48} />
     </Stack>
   );

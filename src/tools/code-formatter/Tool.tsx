@@ -24,7 +24,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextSourceActions } from '@/app/ui/text-source';
 import { TransformLayout } from '@/app/ui/transform';
-import { CodeEditor, type LanguageId } from '@/shared/editor';
+import { CodeEditor } from '@/shared/editor';
 import { useClipboard } from '@/shared/lib/clipboard';
 import { saveBlob } from '@/shared/lib/download';
 import { toToolError, type ToolError } from '@/shared/lib/errors';
@@ -42,7 +42,9 @@ import {
   LANGUAGE_LABEL,
   type FormatLanguage,
 } from './lib/languages';
+import { EDITOR_LANGUAGE } from './lib/editor-language';
 import { isMinifyLanguage } from './lib/minify';
+import { SAMPLES } from './lib/samples';
 import {
   formatterSettings,
   optionsFor,
@@ -51,41 +53,7 @@ import {
 } from './settings';
 
 const TOOL_ID = 'code-formatter';
-/** The editor's highlighting for each formatter language. */
-const EDITOR_LANGUAGE: Record<FormatLanguage, LanguageId> = {
-  json: 'json',
-  javascript: 'js',
-  jsx: 'js',
-  typescript: 'ts',
-  tsx: 'ts',
-  css: 'css',
-  scss: 'css',
-  less: 'css',
-  html: 'html',
-  markdown: 'markdown',
-  yaml: 'yaml',
-  graphql: 'plain',
-  sql: 'sql',
-  xml: 'xml',
-};
-
 const MAX_BYTES = 10 * 1024 * 1024;
-
-const SAMPLES = [
-  {
-    label: 'JavaScript',
-    value:
-      'const greet=(name)=>{if(!name){return "Hello"}return `Hello ${name}`};export default greet',
-  },
-  {
-    label: 'SQL',
-    value: 'select id,name from users where active=1 order by name',
-  },
-  {
-    label: 'CSS',
-    value: '.card{padding:8px 16px;color:#333}.card:hover{color:#000}',
-  },
-];
 
 interface Result {
   code: string;
@@ -280,9 +248,7 @@ export default function CodeFormatter() {
             setFileName(file.name);
           }}
           handoff={(p) => p.kind === 'text'}
-        >
-          {examples}
-        </TextSourceActions>
+        />
       </Stack>
     </Card>
   );
@@ -308,7 +274,15 @@ export default function CodeFormatter() {
             lineNumbers
             copyable={false}
             actions={
-              <Inline gap="1">
+              <Inline gap="1" align="center">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={compare}
+                  onClick={showChanges}
+                >
+                  Show changes
+                </Button>
                 <CopyButton
                   size="sm"
                   value={result.code}
@@ -330,16 +304,6 @@ export default function CodeFormatter() {
               </Inline>
             }
           />
-          <Inline>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={compare}
-              onClick={showChanges}
-            >
-              Show changes
-            </Button>
-          </Inline>
         </Stack>
       ) : (
         <EmptyState
@@ -386,15 +350,17 @@ export default function CodeFormatter() {
           mangle={settings.mangle}
           onMangleChange={(mangle) => update({ mangle })}
         />
-        <Button
-          variant="soft"
-          icon={minimize}
-          onClick={() => void run('minify')}
-          disabled={!input.trim() || !canMinify}
-          aria-keyshortcuts="Control+Shift+M"
-        >
-          Minify
-        </Button>
+        {canMinify ? (
+          <Button
+            variant="soft"
+            icon={minimize}
+            onClick={() => void run('minify')}
+            disabled={!input.trim()}
+            aria-keyshortcuts="Control+Shift+M"
+          >
+            Minify
+          </Button>
+        ) : null}
         <Button
           variant="solid"
           tone="accent"

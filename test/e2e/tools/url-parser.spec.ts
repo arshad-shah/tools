@@ -27,7 +27,10 @@ test('Clean URL removes utm_* params', async ({ page }) => {
 test('starts empty and inspects the example', async ({ page }) => {
   await page.goto(pathOf('url-parser'));
   await expect(page.getByRole('heading', { name: 'No URL yet' })).toBeVisible();
-  await page.getByRole('button', { name: 'Try an example' }).first().click();
+  // Nothing to open yet; the example is offered once, in the empty state.
+  await expect(page.getByRole('button', { name: 'Open in' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Try an example' }).click();
+  await expect(page.getByRole('button', { name: 'Open in' })).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Copy host www.example.com' }),
   ).toBeVisible();

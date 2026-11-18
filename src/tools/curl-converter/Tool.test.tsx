@@ -25,9 +25,11 @@ describe('CurlConverter', () => {
     expect(
       screen.getByRole('heading', { name: 'No command yet' }),
     ).toBeTruthy();
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Try an example' })[0],
-    );
+    // Nothing to send yet, and the example is offered once (empty state).
+    expect(
+      screen.queryByRole('button', { name: 'Send to HTTP Client' }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
     expect(await screen.findByText(/1 option not converted/)).toBeTruthy();
     expect(screen.getByText('-s')).toBeTruthy();
     expect(

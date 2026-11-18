@@ -45,6 +45,18 @@ describe('IpCalculator', () => {
     ).toBeTruthy();
   });
 
+  it('offers the examples in one menu, and clears', () => {
+    render(<IpCalculator />);
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: '2001:db8:abcd:12::1/64' }),
+    );
+    expect(field('Address and prefix').value).toBe('2001:db8:abcd:12::1/64');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(field('Address and prefix').value).toBe('');
+    expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
+  });
+
   it('splits, plans and summarises', () => {
     render(<IpCalculator />);
     tab('Split and plan');

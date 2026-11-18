@@ -3,14 +3,16 @@ import {
   Button,
   Card,
   EmptyState,
+  IconButton,
   Inline,
   List,
+  Menu,
   Notice,
   Stack,
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
-import { close, network } from '@arshad-shah/cynosure/icons';
+import { close, network, sparkles } from '@arshad-shah/cynosure/icons';
 import { useMemo } from 'react';
 import { TransformLayout } from '@/app/ui/transform';
 import { toToolError } from '@/shared/lib/errors';
@@ -100,33 +102,28 @@ export function SubnetPanel({
           onChange={onText}
           error={parsed?.error?.message}
         />
-        <Stack gap="2">
-          <Text size="sm" tone="muted">
-            Examples
-          </Text>
-          <Inline gap="2" wrap>
-            {EXAMPLES.map((ex) => (
-              <Button
-                key={ex}
-                size="sm"
-                variant="soft"
-                onClick={() => onText(ex)}
-              >
-                {ex}
+        <Inline gap="2" align="center">
+          <Menu
+            label="Examples"
+            items={EXAMPLES.map((ex) => ({ value: ex, label: ex }))}
+            onSelect={onText}
+            trigger={(props) => (
+              <Button {...props} size="sm" variant="soft" icon={sparkles}>
+                Try an example
               </Button>
-            ))}
-            {text ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                icon={close}
-                onClick={() => onText('')}
-              >
-                Clear
-              </Button>
-            ) : null}
-          </Inline>
-        </Stack>
+            )}
+          />
+          {text ? (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              icon={close}
+              label="Clear"
+              onClick={() => onText('')}
+            />
+          ) : null}
+        </Inline>
       </Stack>
     </Card>
   );

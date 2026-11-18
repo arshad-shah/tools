@@ -3,9 +3,9 @@ import {
   Dialog,
   EmptyState,
   Grid,
-  IconButton,
   Inline,
   KeyValueEditor,
+  Menu,
   Notice,
   Select,
   Stack,
@@ -14,7 +14,13 @@ import {
   TextField,
   type KeyValuePair,
 } from '@arshad-shah/cynosure';
-import { plus, settings, trash, variable } from '@arshad-shah/cynosure/icons';
+import {
+  chevronDown,
+  plus,
+  settings,
+  trash,
+  variable,
+} from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
 import { newId } from '@/shared/lib/id';
 import { clearSessionSecrets, type Environment } from '../lib/env';
@@ -72,26 +78,46 @@ export function EnvironmentMenu({
     if (!activeId) onActiveChange(env.id);
   };
 
+  const MANAGE = '__manage';
+  const activeName =
+    environments.find((e) => e.id === activeId)?.name ?? 'No environment';
+
   return (
-    <Inline gap="1" align="center">
-      <Select
+    <>
+      <Menu
         label="Environment"
-        labelHidden
-        size="sm"
-        value={activeId}
-        onChange={onActiveChange}
-        options={[
-          { value: '', label: 'No environment' },
-          ...environments.map((e) => ({ value: e.id, label: e.name })),
+        items={[
+          {
+            label: 'Environment',
+            items: [
+              { value: '', label: 'No environment' },
+              ...environments.map((e) => ({ value: e.id, label: e.name })),
+            ].map((o) => ({
+              ...o,
+              kind: 'radio' as const,
+              checked: o.value === activeId,
+              keepOpen: false,
+            })),
+          },
+          {
+            items: [
+              { value: MANAGE, label: 'Manage environments', icon: settings },
+            ],
+          },
         ]}
-      />
-      <IconButton
-        size="sm"
-        variant="ghost"
-        tone="neutral"
-        label="Environments"
-        icon={settings}
-        onClick={() => setOpen(true)}
+        onSelect={(v) => (v === MANAGE ? setOpen(true) : onActiveChange(v))}
+        trigger={(props) => (
+          <Button
+            {...props}
+            variant="soft"
+            tone="neutral"
+            icon={variable}
+            iconEnd={chevronDown}
+            aria-label={`Environment: ${activeName}`}
+          >
+            {activeName}
+          </Button>
+        )}
       />
       <Dialog
         open={open}
@@ -204,6 +230,6 @@ export function EnvironmentMenu({
           )}
         </Stack>
       </Dialog>
-    </Inline>
+    </>
   );
 }
