@@ -31,9 +31,8 @@ describe('OpenApiViewer', () => {
   it('loads the example, groups endpoints and filters them', async () => {
     renderTool();
     expect(screen.getByRole('heading', { name: 'No API yet' })).toBeTruthy();
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Try an example' })[0],
-    );
+    // Offered once, in the empty state.
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
     expect(
       await screen.findByRole('heading', { name: 'Pet Store' }),
     ).toBeTruthy();

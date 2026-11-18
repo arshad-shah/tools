@@ -154,7 +154,6 @@ export default function OpenApiViewer() {
           label="Document"
           accept=".json,.yaml,.yml,application/json,application/yaml,text/yaml"
           maxBytes={MAX_BYTES}
-          onExample={() => changeText(SAMPLE_OPENAPI)}
           handoff={takesText}
         />
       </Stack>
