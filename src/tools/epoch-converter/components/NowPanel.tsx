@@ -19,9 +19,12 @@ export const NowPanel: React.FC<{
       title="Now"
       actions={
         <Inline gap="2" wrap>
-          <Button size="sm" variant="ghost" onClick={() => onUse(now)}>
-            Convert this time
-          </Button>
+          {/* Live, the input's Now button does the same: offer it paused. */}
+          {paused ? (
+            <Button size="sm" variant="ghost" onClick={() => onUse(now)}>
+              Convert this time
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="soft"

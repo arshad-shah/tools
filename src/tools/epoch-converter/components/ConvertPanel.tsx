@@ -2,9 +2,8 @@ import {
   Badge,
   Button,
   Card,
+  Disclosure,
   EmptyState,
-  Grid,
-  Inline,
   Notice,
   Select,
   Stack,
@@ -73,32 +72,44 @@ export const ConvertPanel: React.FC<ConvertPanelProps> = ({
     <Stack gap="6">
       <Card as="section" title="Time to convert">
         <Stack gap="5">
-          <Inline gap="2" align="end">
-            <Stack grow minSize="0">
-              <TextField
-                label="Timestamp or date"
-                value={text}
-                onChange={onText}
-                placeholder="1700000000000, 2024-05-01T12:00Z or now"
-                spellCheck={false}
-                autoComplete="off"
-                clearable
-                error={result && 'error' in result ? result.error : undefined}
+          <TextField
+            label="Timestamp or date"
+            value={text}
+            onChange={onText}
+            placeholder="1700000000000, 2024-05-01T12:00Z or now"
+            spellCheck={false}
+            autoComplete="off"
+            clearable
+            error={result && 'error' in result ? result.error : undefined}
+            addonEnd={
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onText(String(Date.now()))}
+              >
+                Now
+              </Button>
+            }
+          />
+          <ZoneField label="Time zone" value={zone} onChange={onZone} />
+          {/* Numbers are detected; forcing a unit is rare. The summary names
+              the unit in use so a forced one stays in sight. */}
+          <Disclosure
+            summary="Number units"
+            trailing={READ_AS.find((r) => r.value === readAs)?.label}
+            variant="line"
+            size="sm"
+            defaultOpen={readAs !== 'auto'}
+          >
+            <Stack paddingBlock="2">
+              <Select
+                label="Read numbers as"
+                value={readAs}
+                onChange={(v) => onReadAs(v as ReadAs)}
+                options={READ_AS}
               />
             </Stack>
-            <Button variant="soft" onClick={() => onText(String(Date.now()))}>
-              Now
-            </Button>
-          </Inline>
-          <Grid minItemWidth="13rem" gap="4">
-            <Select
-              label="Read numbers as"
-              value={readAs}
-              onChange={(v) => onReadAs(v as ReadAs)}
-              options={READ_AS}
-            />
-            <ZoneField label="Time zone" value={zone} onChange={onZone} />
-          </Grid>
+          </Disclosure>
         </Stack>
       </Card>
       {wide ? nowCard : null}
