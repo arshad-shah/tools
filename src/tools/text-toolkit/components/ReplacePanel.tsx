@@ -149,9 +149,7 @@ export function ReplacePanel({
         </Inline>
         <Inline gap="3" align="center" wrap>
           <Button
-            variant="solid"
-            tone="accent"
-            size="sm"
+            variant="soft"
             disabled={find === '' || busy}
             loading={busy}
             onClick={replaceAll}
