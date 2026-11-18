@@ -1,6 +1,7 @@
 import {
   Button,
   CodeBlock,
+  Disclosure,
   Inline,
   Notice,
   Stack,
@@ -41,35 +42,41 @@ export function CleanPanel({
         </Notice>
       )}
       <CodeBlock title="Clean link" code={result.url} wrap />
-      <Inline>
-        <Button icon={eraser} disabled={!n} onClick={() => onApply(result.url)}>
-          Clean URL
-        </Button>
-      </Inline>
-      <TextArea
-        label="Tracking parameters"
-        description="One per line; * at the end matches any ending."
-        rows={5}
-        spellCheck={false}
-        value={patterns.join('\n')}
-        onChange={(v) =>
-          onPatternsChange(
-            v
-              .split('\n')
-              .map((s) => s.trim())
-              .filter(Boolean),
-          )
-        }
-      />
-      <Inline>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onPatternsChange(DEFAULT_TRACKING)}
-        >
-          Reset list
-        </Button>
-      </Inline>
+      {n ? (
+        <Inline>
+          <Button icon={eraser} onClick={() => onApply(result.url)}>
+            Clean URL
+          </Button>
+        </Inline>
+      ) : null}
+      <Disclosure summary="Tracking parameters" size="sm">
+        <Stack gap="3">
+          <TextArea
+            label="Tracking parameters to remove"
+            description="One per line; * at the end matches any ending."
+            rows={5}
+            spellCheck={false}
+            value={patterns.join('\n')}
+            onChange={(v) =>
+              onPatternsChange(
+                v
+                  .split('\n')
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+              )
+            }
+          />
+          <Inline>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onPatternsChange(DEFAULT_TRACKING)}
+            >
+              Reset list
+            </Button>
+          </Inline>
+        </Stack>
+      </Disclosure>
     </Stack>
   );
 }
