@@ -49,6 +49,20 @@ describe('HashGenerator', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'BLAKE3' }));
   });
 
+  it('offers Try an example once, in the empty state', () => {
+    render(<HashGenerator />);
+    const examples = screen.getAllByRole('button', { name: 'Try an example' });
+    expect(examples).toHaveLength(1);
+    fireEvent.click(examples[0]);
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: 'Text to hash',
+        }) as HTMLTextAreaElement
+      ).value,
+    ).toMatch(/quick brown fox/);
+  });
+
   it('the verify field names the matching algorithm', async () => {
     render(<HashGenerator />);
     typeMessage('abc');
@@ -66,8 +80,12 @@ describe('HashGenerator', () => {
     render(<HashGenerator />);
     typeMessage('abc');
     await findDigest('sha256');
-    fireEvent.click(screen.getByRole('radio', { name: 'HEX' }));
+    const pick = (name: string) => {
+      fireEvent.click(screen.getByRole('combobox', { name: 'Output format' }));
+      fireEvent.click(screen.getByRole('option', { name }));
+    };
+    pick('Hex uppercase');
     expect(digestOf('sha256')?.textContent).toBe(ABC_SHA256.toUpperCase());
-    fireEvent.click(screen.getByRole('radio', { name: 'hex' }));
+    pick('Hex');
   });
 });

@@ -211,10 +211,11 @@ export const FileHashes: React.FC<FileHashesProps> = ({
       ) : null}
       {rows.length > 0 ? (
         <Stack gap="4">
-          <Inline gap="3" align="end" wrap>
+          <Inline gap="2" align="center" wrap>
             <Select
               label="Checksum file algorithm"
-              width="sm"
+              labelHidden
+              size="sm"
               value={alg}
               onChange={(v) => setExportAlg(v as DigestId)}
               options={selected.map((d) => ({
@@ -223,6 +224,7 @@ export const FileHashes: React.FC<FileHashesProps> = ({
               }))}
             />
             <Button
+              size="sm"
               variant="soft"
               icon={copy}
               disabled={!checksums}
@@ -235,6 +237,7 @@ export const FileHashes: React.FC<FileHashesProps> = ({
               Copy all
             </Button>
             <Button
+              size="sm"
               variant="soft"
               icon={download}
               disabled={!checksums}
@@ -248,7 +251,7 @@ export const FileHashes: React.FC<FileHashesProps> = ({
             >
               Download checksums
             </Button>
-            <Button variant="ghost" onClick={() => setRows([])}>
+            <Button size="sm" variant="ghost" onClick={() => setRows([])}>
               Clear list
             </Button>
           </Inline>

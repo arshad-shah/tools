@@ -3,8 +3,8 @@ import { bytesToBase64 } from '@/shared/lib/encoding';
 export type DigestFormat = 'hex' | 'HEX' | 'base64' | 'base64url';
 
 export const DIGEST_FORMATS: { value: DigestFormat; label: string }[] = [
-  { value: 'hex', label: 'hex' },
-  { value: 'HEX', label: 'HEX' },
+  { value: 'hex', label: 'Hex' },
+  { value: 'HEX', label: 'Hex uppercase' },
   { value: 'base64', label: 'Base64' },
   { value: 'base64url', label: 'Base64url' },
 ];

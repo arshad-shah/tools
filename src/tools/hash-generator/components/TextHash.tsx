@@ -124,7 +124,6 @@ export const TextHash: React.FC<TextHashProps> = ({
           onChange={setInput}
           label="Text to hash"
           handoff={acceptsText}
-          onExample={() => setInput(EXAMPLE)}
         />
         <Inline gap="5" align="end" wrap>
           <Select
@@ -152,11 +151,6 @@ export const TextHash: React.FC<TextHashProps> = ({
         <Stack gap="5">
           {shown.length > 0 ? (
             <>
-              <VerifyField
-                value={expected}
-                onChange={setExpected}
-                results={results}
-              />
               <ResultList
                 results={shown.map((id) => ({
                   id,
@@ -169,6 +163,11 @@ export const TextHash: React.FC<TextHashProps> = ({
                       ? true
                       : undefined,
                 }))}
+              />
+              <VerifyField
+                value={expected}
+                onChange={setExpected}
+                results={results}
               />
             </>
           ) : (
