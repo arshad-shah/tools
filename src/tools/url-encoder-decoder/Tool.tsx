@@ -20,7 +20,6 @@ import {
   download,
   link,
   refreshCw,
-  sparkles,
   swap as swapIcon,
 } from '@arshad-shah/cynosure/icons';
 import React, { useMemo, useState } from 'react';
@@ -150,7 +149,7 @@ const TextEncoderTool: React.FC = () => {
           value={input}
           onChange={edit}
           label={label}
-          onExample={tryExample}
+          onExample={input ? undefined : tryExample}
           handoff={(p) =>
             p.kind === 'text' &&
             (p.mime === 'text/plain' || p.mime === 'text/uri-list')
@@ -166,15 +165,11 @@ const TextEncoderTool: React.FC = () => {
       as="section"
       title="Output"
       actions={
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={swapIcon}
-          disabled={!output}
-          onClick={swap}
-        >
-          Swap
-        </Button>
+        output ? (
+          <Button size="sm" variant="ghost" icon={swapIcon} onClick={swap}>
+            Swap
+          </Button>
+        ) : undefined
       }
     >
       {!input ? (
@@ -182,11 +177,6 @@ const TextEncoderTool: React.FC = () => {
           icon={link}
           title={encoding ? 'Nothing to encode yet' : 'Nothing to decode yet'}
           description={`Type or paste text to ${direction} it with ${codec.label}.`}
-          actions={
-            <Button variant="soft" icon={sparkles} onClick={tryExample}>
-              Try an example
-            </Button>
-          }
         />
       ) : result.error ? (
         <Notice
@@ -222,40 +212,30 @@ const TextEncoderTool: React.FC = () => {
               </Inline>
             }
           />
-          {!encoding || shownStable ? (
+          {!encoding || shownStable || url ? (
             <Inline gap="3" align="center" wrap>
               {!encoding ? (
-                <Button
-                  size="sm"
-                  variant="soft"
-                  icon={refreshCw}
-                  onClick={runStable}
-                >
+                <Button variant="soft" icon={refreshCw} onClick={runStable}>
                   Decode until stable
                 </Button>
               ) : null}
               {shownStable ? (
-                <Badge tone="accent" size="sm">
+                <Badge tone="accent">
                   {`Decoded in ${shownStable.rounds} round${shownStable.rounds === 1 ? '' : 's'}`}
                 </Badge>
               ) : null}
-            </Inline>
-          ) : null}
-          {url ? (
-            <Inline gap="3" align="center" wrap>
-              <Text size="sm" tone="muted">
-                The output is a URL.
-              </Text>
-              <SendToMenu
-                label="Open URL in"
-                sourceTool="url-encoder-decoder"
-                payload={() => ({
-                  kind: 'text',
-                  mime: 'text/uri-list',
-                  text: url,
-                  sourceTool: 'url-encoder-decoder',
-                })}
-              />
+              {url ? (
+                <SendToMenu
+                  label="Open URL in"
+                  sourceTool="url-encoder-decoder"
+                  payload={() => ({
+                    kind: 'text',
+                    mime: 'text/uri-list',
+                    text: url,
+                    sourceTool: 'url-encoder-decoder',
+                  })}
+                />
+              ) : null}
             </Inline>
           ) : null}
         </Stack>
