@@ -27,6 +27,8 @@ interface PatternBarProps {
   highlight: { start: number; end: number } | null;
   /** `/pattern/flags`, for its copy button. */
   literal: string;
+  /** The card header's actions. */
+  actions?: React.ReactNode;
 }
 
 /** The pattern editor, its flags, validity and an inline syntax error. */
@@ -38,6 +40,7 @@ export const PatternBar: React.FC<PatternBarProps> = ({
   syntax,
   highlight,
   literal,
+  actions,
 }) => {
   const errorId = useId();
   const markers: EditorDiagnostic[] =
@@ -58,7 +61,7 @@ export const PatternBar: React.FC<PatternBarProps> = ({
       : [];
 
   return (
-    <Card as="section" title="Pattern" headingLevel={2}>
+    <Card as="section" title="Pattern" headingLevel={2} actions={actions}>
       <Stack gap="4">
         <Inline gap="3" align="center">
           <Inline aria-hidden>

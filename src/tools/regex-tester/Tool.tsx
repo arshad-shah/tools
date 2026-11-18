@@ -43,6 +43,7 @@ import { REGEX_MODES, regexSettings, type RegexMode } from './settings';
 import { parseRegexShare, REGEX_SHARE_VERSION, type RegexShare } from './share';
 import type { RegexTemplate } from './types';
 import { CodeEditor } from '@/shared/editor';
+import { ShareButton, ToolActions } from '@/app/ui/transform';
 
 const isMode = (v: string): v is RegexMode =>
   (REGEX_MODES as readonly string[]).includes(v);
@@ -226,22 +227,9 @@ export default function RegexTester() {
 
   return (
     <Stack gap="6">
-      <RegexToolbar
-        share={share}
-        onOpenTemplates={() => setTemplatesOpen(true)}
-        cheatSheetOpen={cheatSheetOpen}
-        onToggleCheatSheet={() =>
-          updateSettings({ cheatSheetOpen: !cheatSheetOpen })
-        }
-        canCopyJs={valid && !!pattern}
-        onCopyAsJs={() =>
-          copyText(toJsSnippet(pattern, flags, text), 'JavaScript')
-        }
-        onLoadSample={loadSample}
-        canUseAsLogFormat={logPayload !== null}
-        onUseAsLogFormat={sendLogFormat}
-        onClearAll={clearAll}
-      />
+      <ToolActions>
+        <ShareButton share={share} />
+      </ToolActions>
       <PatternBar
         pattern={pattern}
         onPatternChange={setPattern}
@@ -250,6 +238,23 @@ export default function RegexTester() {
         syntax={syntax}
         highlight={selected}
         literal={toRegexLiteral(pattern, flags)}
+        actions={
+          <RegexToolbar
+            onOpenTemplates={() => setTemplatesOpen(true)}
+            cheatSheetOpen={cheatSheetOpen}
+            onToggleCheatSheet={() =>
+              updateSettings({ cheatSheetOpen: !cheatSheetOpen })
+            }
+            canCopyJs={valid && !!pattern}
+            onCopyAsJs={() =>
+              copyText(toJsSnippet(pattern, flags, text), 'JavaScript')
+            }
+            onLoadSample={loadSample}
+            canUseAsLogFormat={logPayload !== null}
+            onUseAsLogFormat={sendLogFormat}
+            onClearAll={clearAll}
+          />
+        }
       />
       <Grid columns={{ base: 1, lg: 2 }} gap="6" align="start">
         <Card as="section" title="Test text" headingLevel={2}>

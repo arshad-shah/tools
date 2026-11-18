@@ -41,7 +41,7 @@ test('regex-tester copies working JavaScript for a pattern with a slash', async 
   await show(page, 'Results');
   await expect(page.getByText('2 matches').first()).toBeVisible();
 
-  await page.getByRole('button', { name: 'Actions' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Copy as JavaScript' }).click();
   const count = await page.evaluate(async () => {
     const code = await navigator.clipboard.readText();

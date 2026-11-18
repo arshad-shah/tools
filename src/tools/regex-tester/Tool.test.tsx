@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findMatches } from './lib/match';
@@ -127,5 +133,22 @@ describe('RegexTester', () => {
       expect.stringMatching(/^Passxyzshould not match$/),
       expect.stringMatching(/^Fail456should not match, but matched$/),
     ]);
+  });
+
+  it('keeps Templates, the cheat sheet and More in the Pattern card, Share apart', () => {
+    renderTool();
+    const card = screen.getByRole('region', { name: 'Pattern' });
+    for (const name of ['Templates', 'Cheat sheet', 'More'])
+      expect(within(card).getByRole('button', { name })).toBeTruthy();
+    expect(within(card).queryByRole('button', { name: 'Share' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Share' })).toBeTruthy();
+    fireEvent.click(within(card).getByRole('button', { name: 'More' }));
+    for (const name of [
+      'Copy as JavaScript',
+      'Load sample text',
+      'Use as log format',
+      'Clear all',
+    ])
+      expect(screen.getByRole('menuitem', { name })).toBeTruthy();
   });
 });
