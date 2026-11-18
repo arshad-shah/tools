@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useImperativeHandle } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DiagramCanvasProps } from '@/shared/surfaces/diagram-canvas/DiagramCanvas';
@@ -83,8 +83,13 @@ describe('MapTab', () => {
     render(
       <MapTab doc={big} selectedId={null} onSelect={vi.fn()} fileBase="data" />,
     );
-    fireEvent.click(screen.getByRole('combobox', { name: 'Node cap' }));
-    fireEvent.click(screen.getByRole('option', { name: '500' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Options' }));
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Node cap' })).getByRole(
+        'menuitemradio',
+        { name: '500' },
+      ),
+    );
     expect(screen.getByText('Showing 501 of 801 objects')).toBeTruthy();
     expect(last.diagram.nodes[0].rows.at(-1)).toMatchObject({
       kind: 'more',

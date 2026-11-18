@@ -2,8 +2,8 @@ import {
   Button,
   IconButton,
   Inline,
+  Menu,
   SearchField,
-  Select,
   Stack,
   Switch,
   Text,
@@ -48,8 +48,8 @@ export interface TreeTabProps {
 }
 
 /**
- * The Tree tab (spec §7.2): a virtualised, code-like tree with expand
- * controls and search. A selection made elsewhere expands its ancestors
+ * The Tree tab (spec §7.2): a virtualised, code-like tree with search and
+ * one Expand menu (all, none, to a depth). A selection made elsewhere expands its ancestors
  * and scrolls into view.
  */
 export function TreeTab({
@@ -103,72 +103,91 @@ export function TreeTab({
 
   return (
     <Stack gap="3" fill minSize="0">
-      <Inline gap="2" align="end" wrap>
-        <Button
-          size="sm"
-          variant="soft"
-          onClick={() => setExpanded(allExpandable(doc))}
-        >
-          Expand all
-        </Button>
-        <Button size="sm" variant="soft" onClick={() => setExpanded(new Set())}>
-          Collapse all
-        </Button>
-        <Select
-          label="Expand to depth"
-          size="sm"
-          layout="split"
-          value={depth}
-          onChange={(v) => {
-            setDepth(v);
-            setExpanded(expandToDepth(doc, Number(v)));
-          }}
-          options={DEPTHS.map((d) => ({ value: String(d), label: String(d) }))}
-        />
-      </Inline>
-      <Inline gap="2" align="center" wrap>
-        <SearchField
-          ref={searchRef}
-          size="sm"
-          label="Search the tree"
-          labelHidden
-          placeholder="Search keys and values"
-          value={search.term}
-          onChange={(term) => onSearchChange({ ...search, term, active: 0 })}
-          onKeyDown={(e) => {
-            if (e.key !== 'Enter') return;
-            e.preventDefault();
-            step(e.shiftKey ? -1 : 1);
-          }}
-          error={result.error ? result.error : undefined}
-        />
-        <IconButton
-          label="Previous match"
-          icon={chevronUp}
-          size="sm"
-          variant="ghost"
-          disabled={!matches.length}
-          onClick={() => step(-1)}
-        />
-        <IconButton
-          label="Next match"
-          icon={chevronDown}
-          size="sm"
-          variant="ghost"
-          disabled={!matches.length}
-          onClick={() => step(1)}
-        />
-        <Switch
-          size="sm"
-          label="Regex"
-          checked={search.regex}
-          onChange={(regex) => onSearchChange({ ...search, regex, active: 0 })}
-        />
-        {result.error ? null : (
-          <Text size="sm" tone="muted" numeric aria-live="polite">
-            {status}
-          </Text>
-        )}
+      <Inline gap="2" align="center" justify="between" wrap>
+        <Inline gap="2" align="center" wrap>
+          <SearchField
+            ref={searchRef}
+            size="sm"
+            label="Search the tree"
+            labelHidden
+            placeholder="Search keys and values"
+            value={search.term}
+            onChange={(term) => onSearchChange({ ...search, term, active: 0 })}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              step(e.shiftKey ? -1 : 1);
+            }}
+            error={result.error ? result.error : undefined}
+          />
+          {/* Stepping only means something once there are matches. */}
+          {matches.length ? (
+            <Inline gap="0" wrap={false}>
+              <IconButton
+                label="Previous match"
+                icon={chevronUp}
+                size="sm"
+                variant="ghost"
+                onClick={() => step(-1)}
+              />
+              <IconButton
+                label="Next match"
+                icon={chevronDown}
+                size="sm"
+                variant="ghost"
+                onClick={() => step(1)}
+              />
+            </Inline>
+          ) : null}
+          {result.error ? null : (
+            <Text size="sm" tone="muted" numeric aria-live="polite">
+              {status}
+            </Text>
+          )}
+        </Inline>
+        <Inline gap="2" align="center" wrap={false}>
+          <Switch
+            size="sm"
+            label="Regex"
+            checked={search.regex}
+            onChange={(regex) =>
+              onSearchChange({ ...search, regex, active: 0 })
+            }
+          />
+          <Menu
+            label="Expand"
+            items={[
+              {
+                items: [
+                  { value: 'all', label: 'Expand all' },
+                  { value: 'none', label: 'Collapse all' },
+                ],
+              },
+              {
+                label: 'Expand to depth',
+                items: DEPTHS.map((d) => ({
+                  value: String(d),
+                  label: String(d),
+                  kind: 'radio' as const,
+                  checked: depth === String(d),
+                })),
+              },
+            ]}
+            onSelect={(v) => {
+              if (v === 'all') setExpanded(allExpandable(doc));
+              else if (v === 'none') setExpanded(new Set());
+              else {
+                setDepth(v);
+                setExpanded(expandToDepth(doc, Number(v)));
+              }
+            }}
+            trigger={(props) => (
+              <Button {...props} size="sm" variant="soft" iconEnd={chevronDown}>
+                Expand
+              </Button>
+            )}
+          />
+        </Inline>
       </Inline>
       <CodeTree
         ref={tree}
