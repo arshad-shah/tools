@@ -132,11 +132,12 @@ export function OutputPanel({ tables }: OutputPanelProps) {
 
   return (
     <Stack gap="3">
-      <Inline gap="3" align="end" wrap>
+      <Inline gap="2" align="center" wrap>
         {names.length > 1 && (
           <Select
             size="sm"
             label="Output table"
+            labelHidden
             value={name}
             onChange={setPick}
             options={names.map((n) => ({ value: n, label: n }))}
@@ -145,6 +146,7 @@ export function OutputPanel({ tables }: OutputPanelProps) {
         <Select
           size="sm"
           label="Format"
+          labelHidden
           value={format}
           onChange={(v) => setFormat(v as MockExportFormat)}
           options={MOCK_EXPORT_FORMATS.map((f) => ({
@@ -156,6 +158,7 @@ export function OutputPanel({ tables }: OutputPanelProps) {
           <Select
             size="sm"
             label="Dialect"
+            labelHidden
             value={dialect}
             onChange={(v) => setDialect(v as SqlDialect)}
             options={[
