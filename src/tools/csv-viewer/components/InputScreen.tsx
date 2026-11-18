@@ -121,34 +121,39 @@ export function InputScreen({
             {fileError}
           </Notice>
         ) : null}
-        <Inline gap="3" align="center" wrap>
-          <Button
-            variant="solid"
-            icon={tableIcon}
-            onClick={onOpenText}
-            disabled={!paste.trim() || running}
-          >
-            Open as table
-          </Button>
-          {running && (
-            <>
-              <Text size="sm" tone="muted">
-                {progress?.label ?? 'Reading'}
-              </Text>
-              {progress && (
-                <ProgressBar
-                  label="Loading progress"
-                  labelHidden
-                  value={progress.done}
-                  max={progress.total}
-                />
-              )}
-              <Button size="sm" variant="ghost" onClick={job.cancel}>
-                Cancel
+        {/* Typed text opens on demand; a paste, sample or file opens at once. */}
+        {paste.trim() || running ? (
+          <Inline gap="3" align="center" wrap>
+            {paste.trim() ? (
+              <Button
+                variant="solid"
+                icon={tableIcon}
+                onClick={onOpenText}
+                disabled={running}
+              >
+                Open as table
               </Button>
-            </>
-          )}
-        </Inline>
+            ) : null}
+            {running && (
+              <>
+                <Text size="sm" tone="muted">
+                  {progress?.label ?? 'Reading'}
+                </Text>
+                {progress && (
+                  <ProgressBar
+                    label="Loading progress"
+                    labelHidden
+                    value={progress.done}
+                    max={progress.total}
+                  />
+                )}
+                <Button variant="ghost" onClick={job.cancel}>
+                  Cancel
+                </Button>
+              </>
+            )}
+          </Inline>
+        ) : null}
         {job.error && (
           <Notice tone="danger" title="Could not read the data">
             {job.error.message}
