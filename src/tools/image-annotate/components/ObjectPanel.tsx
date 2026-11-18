@@ -2,6 +2,7 @@ import {
   Button,
   Grid,
   Inline,
+  Menu,
   NumberField,
   Select,
   Slider,
@@ -9,7 +10,12 @@ import {
   Text,
   TextArea,
 } from '@arshad-shah/cynosure';
-import { bringToFront, sendToBack, trash } from '@arshad-shah/cynosure/icons';
+import {
+  bringToFront,
+  chevronDown,
+  sendToBack,
+  trash,
+} from '@arshad-shah/cynosure/icons';
 import type { Measure } from '../lib/draft';
 import type { Rect } from '../lib/geometry';
 import {
@@ -51,8 +57,8 @@ export function ObjectPanel({
   if (!objects.length)
     return (
       <Text tone="muted" size="sm">
-        Nothing drawn yet. Drag on the image with a tool, or use Add in the
-        middle and move it with the arrow keys.
+        Nothing drawn yet. Drag on the image with a tool, or use the add button
+        beside the tools and move the object with the arrow keys.
       </Text>
     );
   const box = selected ? boundsOfObject(selected) : null;
@@ -127,23 +133,32 @@ export function ObjectPanel({
             {field('width', 'Width')}
             {field('height', 'Height')}
           </Grid>
-          <Inline gap="2" wrap>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={bringToFront}
-              onClick={() => onOrder(selected.id, 'forward')}
-            >
-              Bring forward
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={sendToBack}
-              onClick={() => onOrder(selected.id, 'backward')}
-            >
-              Send backward
-            </Button>
+          <Inline gap="2" align="center" wrap>
+            <Menu
+              label="Arrange"
+              items={[
+                {
+                  value: 'forward',
+                  label: 'Bring forward',
+                  icon: bringToFront,
+                },
+                { value: 'backward', label: 'Send backward', icon: sendToBack },
+              ]}
+              onSelect={(to) =>
+                onOrder(selected.id, to as 'forward' | 'backward')
+              }
+              trigger={(props) => (
+                <Button
+                  {...props}
+                  size="sm"
+                  variant="ghost"
+                  icon={bringToFront}
+                  iconEnd={chevronDown}
+                >
+                  Arrange
+                </Button>
+              )}
+            />
             <Button
               size="sm"
               variant="ghost"

@@ -1,5 +1,6 @@
 import {
   Button,
+  IconButton,
   Inline,
   Menu,
   SegmentedControl,
@@ -148,7 +149,7 @@ export function ExportPanel({
           labels={{ value: (v) => `${v}%` }}
         />
       ) : null}
-      <Inline gap="2" wrap>
+      <Inline gap="2" align="center" wrap>
         <Button
           variant="solid"
           tone="accent"
@@ -158,14 +159,16 @@ export function ExportPanel({
         >
           Download
         </Button>
-        <Button
-          variant="soft"
-          icon={copy}
-          disabled={disabled || busy || !canCopy}
-          onClick={() => void copyImage()}
-        >
-          Copy image
-        </Button>
+        {canCopy ? (
+          <IconButton
+            variant="soft"
+            tone="neutral"
+            icon={copy}
+            label="Copy image"
+            disabled={disabled || busy}
+            onClick={() => void copyImage()}
+          />
+        ) : null}
         {targets.length ? (
           <Menu
             label="Open in"

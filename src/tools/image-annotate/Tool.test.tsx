@@ -54,16 +54,38 @@ describe('ImageAnnotate', () => {
     );
     expect(stage.getAttribute('aria-label')).toMatch(/1 objects/);
     expect(screen.getByRole('group', { name: 'Arrow 1' })).toBeTruthy();
+    // Reordering sits in the Arrange menu; Delete stays a button.
+    fireEvent.click(screen.getByRole('button', { name: 'Arrange' }));
+    expect(
+      screen.getByRole('menuitem', { name: 'Bring forward' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('menuitem', { name: 'Send backward' }),
+    ).toBeTruthy();
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: 'Escape',
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(stage.getAttribute('aria-label')).toMatch(/0 objects/);
     fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
     expect(stage.getAttribute('aria-label')).toMatch(/1 objects/);
   });
 
+  it('deletes the selected object from its panel', async () => {
+    renderTool();
+    const stage = await openImage();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Add arrow in the middle' }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(stage.getAttribute('aria-label')).toMatch(/0 objects/);
+  });
+
   it('rotates and crops through the panel fields', async () => {
     renderTool();
     await openImage();
-    fireEvent.click(screen.getByRole('button', { name: 'Rotate right' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate and flip' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rotate right' }));
     expect(screen.getByRole('img', { name: /200 by 400 pixels/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Crop' }));
     expect(screen.getByRole('group', { name: 'Crop area' })).toBeTruthy();
@@ -80,17 +102,24 @@ describe('ImageAnnotate', () => {
     for (const name of [
       'Select and move',
       'Arrow',
-      'Line',
       'Rectangle',
-      'Ellipse',
-      'Pen',
       'Text',
       'Numbered step',
       'Highlighter',
       'Blur (redact)',
-      'Pixelate (redact)',
     ])
       expect(screen.getByRole('radio', { name })).toBeTruthy();
+    // The rarer tools sit in the More tools menu, as checkable items.
+    fireEvent.click(screen.getByRole('button', { name: 'More tools' }));
+    for (const name of ['Line', 'Ellipse', 'Pen', 'Pixelate (redact)'])
+      expect(screen.getByRole('menuitemradio', { name })).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Pen' }));
+    expect(
+      screen.getByRole('button', { name: 'More tools, Pen in use' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Add pen in the middle' }),
+    ).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Download' })).toBeTruthy();
   });
 });
