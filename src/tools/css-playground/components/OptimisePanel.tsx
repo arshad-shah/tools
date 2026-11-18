@@ -1,6 +1,7 @@
 import {
   Button,
   CodeBlock,
+  Disclosure,
   Grid,
   Inline,
   LoadingDots,
@@ -44,31 +45,36 @@ export function OptimisePanel({
   const r = job.value;
   return (
     <Stack gap="5">
-      <Inline gap="5" wrap>
-        <Switch
-          size="sm"
-          label="Merge and reorder rules"
-          checked={options.restructure}
-          onChange={(restructure) => onOptions({ restructure })}
-        />
-        <Switch
-          size="sm"
-          label="Merge media queries (can change the cascade)"
-          checked={options.forceMediaMerge}
-          onChange={(forceMediaMerge) => onOptions({ forceMediaMerge })}
-        />
-        <Switch
-          size="sm"
-          label="Keep licence comments"
-          checked={options.keepLicenceComments}
-          onChange={(keepLicenceComments) => onOptions({ keepLicenceComments })}
-        />
-      </Inline>
-      <Text size="sm" tone="muted">
-        Removes whitespace and comments, shortens colours, numbers and units,
-        drops repeated and overridden declarations, merges shorthand properties
-        and, with merging on, joins rules that share selectors or declarations.
-      </Text>
+      <Disclosure summary="Optimiser options" size="sm">
+        <Stack gap="4">
+          <Text size="sm" tone="muted">
+            Removes whitespace and comments, shortens colours, numbers and
+            units, drops repeated and overridden declarations, merges shorthand
+            properties and, with merging on, joins rules that share selectors or
+            declarations.
+          </Text>
+          <Switch
+            size="sm"
+            label="Merge and reorder rules"
+            checked={options.restructure}
+            onChange={(restructure) => onOptions({ restructure })}
+          />
+          <Switch
+            size="sm"
+            label="Merge media queries (can change the cascade)"
+            checked={options.forceMediaMerge}
+            onChange={(forceMediaMerge) => onOptions({ forceMediaMerge })}
+          />
+          <Switch
+            size="sm"
+            label="Keep licence comments"
+            checked={options.keepLicenceComments}
+            onChange={(keepLicenceComments) =>
+              onOptions({ keepLicenceComments })
+            }
+          />
+        </Stack>
+      </Disclosure>
       {job.error ? (
         <Notice tone="danger" title="Could not optimise">
           {job.error.message}

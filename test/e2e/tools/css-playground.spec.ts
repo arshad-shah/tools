@@ -57,3 +57,18 @@ test('formats the stylesheet in place', async ({ page }) => {
   await page.getByRole('button', { name: 'Format', exact: true }).click();
   await expectEditorValue(css(page), '.a {\n  color: red;\n}\n');
 });
+
+test('the indent for Format sits behind Options', async ({ page }) => {
+  // Format and Clear show once there is CSS.
+  await expect(
+    page.getByRole('button', { name: 'Format', exact: true }),
+  ).toHaveCount(0);
+  await css(page).fill('.a{color:red}');
+  await page.getByRole('button', { name: 'Options' }).click();
+  await page.getByRole('radio', { name: '4 spaces' }).click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Format', exact: true }).click();
+  await expectEditorValue(css(page), '.a {\n    color: red;\n}\n');
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expectEditorValue(css(page), '');
+});
