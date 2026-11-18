@@ -224,7 +224,8 @@ test.describe('HTTP Client', () => {
 
   test('Open response in JSON Viewer', async ({ page }) => {
     await respond(page);
-    await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Open in JSON Viewer' }).click();
     await atTool(page, 'json-and-xml-viewer');
     await expectEditorValue(
       page.getByRole('textbox', { name: 'Document' }),
@@ -234,14 +235,16 @@ test.describe('HTTP Client', () => {
 
   test('Decode token', async ({ page }) => {
     await respond(page);
-    await page.getByRole('button', { name: 'Decode token' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Decode token' }).click();
     await atTool(page, 'jwt-decode');
     await expect(page.getByText('workflow-user').first()).toBeVisible();
   });
 
   test('Inspect URL', async ({ page }) => {
     await respond(page);
-    await page.getByRole('button', { name: 'Inspect URL' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Inspect URL' }).click();
     await atTool(page, 'url-parser');
     await expect(
       page.getByRole('textbox', { name: /URL/ }).first(),
