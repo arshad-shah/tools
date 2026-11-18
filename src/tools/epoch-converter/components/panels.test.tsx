@@ -47,4 +47,13 @@ describe('epoch panels', () => {
       screen.getAllByRole('heading', { name: 'No zones yet' }),
     ).toHaveLength(2);
   });
+
+  it('adds a zone from the one search list', () => {
+    const onZones = vi.fn();
+    render(<WorldClock instant={0} zones={['UTC']} onZones={onZones} />);
+    const add = screen.getByRole('combobox', { name: 'Add a zone or city' });
+    fireEvent.change(add, { target: { value: 'Dublin' } });
+    fireEvent.click(screen.getByRole('option', { name: /Europe\/Dublin/ }));
+    expect(onZones).toHaveBeenCalledWith(['UTC', 'Europe/Dublin']);
+  });
 });

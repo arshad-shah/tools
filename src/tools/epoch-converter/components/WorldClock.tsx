@@ -1,16 +1,15 @@
 import {
-  Button,
   Card,
+  Combobox,
   EmptyState,
   IconButton,
   Inline,
-  SearchField,
   SortableList,
   Stack,
   Text,
 } from '@arshad-shah/cynosure';
 import { globe, plus, trash } from '@arshad-shah/cynosure/icons';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   formatIso,
   listZones,
@@ -27,8 +26,8 @@ export interface WorldClockProps {
 }
 
 /**
- * The world clock: the instant in each listed zone. Zones are added by
- * search (ids, cities and aliases), removed, and reordered by dragging or
+ * The world clock: the instant in each listed zone. Zones are added from
+ * one search list (ids, cities and aliases), removed, and reordered by dragging or
  * from the keyboard (SortableList).
  */
 export const WorldClock: React.FC<WorldClockProps> = ({
@@ -37,6 +36,7 @@ export const WorldClock: React.FC<WorldClockProps> = ({
   onZones,
 }) => {
   const [query, setQuery] = useState('');
+  const added = useRef(false);
   const all = useMemo(() => listZones(), []);
   const matches = useMemo(
     () => searchZones(query, all).filter((z) => !zones.includes(z.id)),
@@ -46,36 +46,37 @@ export const WorldClock: React.FC<WorldClockProps> = ({
   return (
     <Card as="section" title="World clock">
       <Stack gap="5">
-        <SearchField
+        <Combobox
           label="Add a zone or city"
           labelHidden
-          value={query}
-          onChange={setQuery}
+          iconStart={plus}
           placeholder="Add a zone or city, such as Dublin"
+          options={matches.map((z) => ({ value: z.id, label: z.label }))}
+          // searchZones already matched ids, cities and aliases.
+          filter={false}
+          value=""
+          onChange={(id) => {
+            if (!id) return;
+            added.current = true;
+            onZones([...zones, id]);
+            setQuery('');
+          }}
+          inputValue={query}
+          onInputChange={(text) => {
+            // The list fills the input with the chosen label: start afresh.
+            if (added.current) {
+              added.current = false;
+              setQuery('');
+              return;
+            }
+            setQuery(text);
+          }}
+          labels={{
+            empty: query.trim()
+              ? 'No other zone matches that search.'
+              : 'Type a zone, city or country.',
+          }}
         />
-        {matches.length > 0 ? (
-          <Inline gap="2" wrap>
-            {matches.map((z) => (
-              <Button
-                key={z.id}
-                size="sm"
-                variant="soft"
-                icon={plus}
-                onClick={() => {
-                  onZones([...zones, z.id]);
-                  setQuery('');
-                }}
-              >
-                {z.label}
-              </Button>
-            ))}
-          </Inline>
-        ) : null}
-        {query.trim() && matches.length === 0 ? (
-          <Text size="sm" tone="muted">
-            No other zone matches that search.
-          </Text>
-        ) : null}
         {zones.length === 0 ? (
           <EmptyState
             size="sm"

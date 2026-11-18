@@ -1,4 +1,5 @@
-import { Button, Inline } from '@arshad-shah/cynosure';
+import { Button, Menu } from '@arshad-shah/cynosure';
+import { chevronDown } from '@arshad-shah/cynosure/icons';
 import React from 'react';
 import { fromUnix } from '../lib/flavour';
 import type { CronFlavour } from '../lib/parse';
@@ -13,20 +14,21 @@ const PRESETS = [
   { label: 'First of month', unix: '0 0 1 * *' },
 ] as const;
 
+/** Common schedules in one menu, for the Expression card's header. */
 export const Presets: React.FC<{
   flavour: CronFlavour;
   onPick(expr: string): void;
 }> = ({ flavour, onPick }) => (
-  <Inline gap="2" wrap role="group" aria-label="Presets">
-    {PRESETS.map((p) => (
-      <Button
-        key={p.label}
-        size="sm"
-        variant="soft"
-        onClick={() => onPick(fromUnix(p.unix, flavour))}
-      >
-        {p.label}
+  <Menu
+    label="Presets"
+    placement="bottom"
+    align="end"
+    items={PRESETS.map((p) => ({ value: p.unix, label: p.label }))}
+    onSelect={(unix) => onPick(fromUnix(unix, flavour))}
+    trigger={(props) => (
+      <Button {...props} size="sm" variant="ghost" iconEnd={chevronDown}>
+        Presets
       </Button>
-    ))}
-  </Inline>
+    )}
+  />
 );

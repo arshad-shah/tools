@@ -147,32 +147,32 @@ export const HistoryPanel: React.FC = () => {
         </>
       )}
 
-      <Inline justify="between" align="center" gap="3" wrap>
-        <Stack gap="1">
-          <Text size="sm" weight="medium">
-            Session log
-          </Text>
-          <Text size="sm" tone="muted">
-            {history.length === 0
-              ? 'Nothing to export yet'
-              : `${history.length} ${history.length === 1 ? 'day' : 'days'} logged (up to 365)`}
-          </Text>
-        </Stack>
-        <Button
-          variant="soft"
-          size="sm"
-          icon={download}
-          disabled={history.length === 0}
-          onClick={() =>
-            saveBlob(
-              new Blob([historyToCsv(history)], { type: 'text/csv' }),
-              'pomodoro-history.csv',
-            )
-          }
-        >
-          Export CSV
-        </Button>
-      </Inline>
+      {/* The log and its export show once there is something logged. */}
+      {history.length > 0 ? (
+        <Inline justify="between" align="center" gap="3" wrap>
+          <Stack gap="1">
+            <Text size="sm" weight="medium">
+              Session log
+            </Text>
+            <Text size="sm" tone="muted">
+              {`${history.length} ${history.length === 1 ? 'day' : 'days'} logged (up to 365)`}
+            </Text>
+          </Stack>
+          <Button
+            variant="soft"
+            size="sm"
+            icon={download}
+            onClick={() =>
+              saveBlob(
+                new Blob([historyToCsv(history)], { type: 'text/csv' }),
+                'pomodoro-history.csv',
+              )
+            }
+          >
+            Export CSV
+          </Button>
+        </Inline>
+      ) : null}
     </Stack>
   );
 };

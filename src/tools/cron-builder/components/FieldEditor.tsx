@@ -6,7 +6,7 @@ import {
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
-import React, { useState } from 'react';
+import React from 'react';
 import {
   buildField,
   fieldToSpec,
@@ -64,51 +64,10 @@ const Num: React.FC<{
   />
 );
 
-const readValues = (text: string, min: number, max: number) =>
-  [
-    ...new Set(
-      text
-        .split(/[\s,]+/)
-        .filter(Boolean)
-        .map(Number)
-        .filter((n) => Number.isInteger(n) && n >= min && n <= max),
-    ),
-  ].sort((a, b) => a - b);
-
-/**
- * The comma-separated values, kept as typed while they mean the same
- * values (so "1," can become "1,15").
- */
-const SpecificValues: React.FC<{
-  label: string;
-  values: number[];
-  min: number;
-  max: number;
-  onValues(values: number[]): void;
-}> = ({ label, values, min, max, onValues }) => {
-  const joined = values.join(',');
-  const [draft, setDraft] = useState(joined);
-  const [seen, setSeen] = useState(joined);
-  if (joined !== seen) {
-    setSeen(joined);
-    if (readValues(draft, min, max).join(',') !== joined) setDraft(joined);
-  }
-  return (
-    <TextField
-      label={label}
-      value={draft}
-      placeholder={`For example ${min},${Math.min(max, min + 15)}`}
-      onChange={(v) => {
-        setDraft(v);
-        onValues(readValues(v, min, max));
-      }}
-    />
-  );
-};
-
 /**
  * One field's editor (spec §9.7): Every, Specific, Range or Step, two-way
- * with the field's text. Text the editor cannot show (L, W, #, mixed
+ * with the field's text. Specific values are typed in the field itself
+ * (such as 0,15,30), so no second box repeats them. Text the editor cannot show (L, W, #, mixed
  * lists) is edited as text only.
  */
 export const FieldEditor: React.FC<FieldEditorProps> = ({
@@ -149,21 +108,11 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         />
         <SegmentedControl
           label={`${label} mode`}
-          size="sm"
           value={spec?.mode ?? ''}
           onChange={(v) => pickMode(v as FieldMode)}
           options={MODES}
         />
       </Inline>
-      {spec?.mode === 'specific' ? (
-        <SpecificValues
-          label={`${label} values`}
-          values={spec.values ?? []}
-          min={min}
-          max={max}
-          onValues={(values) => build({ mode: 'specific', values })}
-        />
-      ) : null}
       {spec?.mode === 'range' ? (
         <Inline gap="3" wrap>
           <Num

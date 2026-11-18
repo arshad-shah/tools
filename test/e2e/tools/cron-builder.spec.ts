@@ -10,7 +10,8 @@ test.describe('Cron Expression Builder', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Cron Expression Builder' }),
     ).toBeVisible();
-    await page.getByRole('button', { name: 'Weekdays at 9' }).click();
+    await page.getByRole('button', { name: 'Presets' }).click();
+    await page.getByRole('menuitem', { name: 'Weekdays at 9' }).click();
     await expect(expression(page)).toHaveValue('0 9 * * 1-5');
     await expect(
       page.getByText('At 09:00 on every weekday from Monday to Friday'),

@@ -30,6 +30,7 @@ test.describe('Epoch & Time Zone Converter', () => {
     await page.goto(pathOf('epoch-converter'));
     await timeInput(page).fill('1700000000');
     await expect(page.getByText('Detected: Unix seconds')).toBeVisible();
+    await page.getByRole('button', { name: /^Number units/ }).click();
     await page.getByRole('combobox', { name: 'Read numbers as' }).click();
     await page.getByRole('option', { name: 'Unix milliseconds' }).click();
     await expect(page.getByText('Detected: Unix milliseconds')).toBeVisible();
@@ -65,6 +66,9 @@ test.describe('Epoch & Time Zone Converter', () => {
     await page.waitForTimeout(1200);
     expect(await cell.textContent()).toBe(first);
     await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
+    // Paused, the frozen moment can be converted.
+    await page.getByRole('button', { name: 'Convert this time' }).click();
+    await expect(timeInput(page)).not.toHaveValue('');
   });
 });
 
@@ -84,9 +88,12 @@ test.describe('Epoch zones', () => {
     await page.goto(pathOf('epoch-converter'));
     await page.getByRole('radio', { name: 'World clock' }).click();
     await page
-      .getByRole('searchbox', { name: 'Add a zone or city' })
+      .getByRole('combobox', { name: 'Add a zone or city' })
       .fill('Dublin');
-    await page.getByRole('button', { name: /Europe\/Dublin/ }).click();
+    await page.getByRole('option', { name: /Europe\/Dublin/ }).click();
+    await expect(
+      page.getByRole('combobox', { name: 'Add a zone or city' }),
+    ).toHaveValue('');
     const clock = page.getByRole('list', { name: 'World clock' });
     await expect(
       clock.getByText('Europe/Dublin', { exact: true }),

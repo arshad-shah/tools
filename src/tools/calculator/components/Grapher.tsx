@@ -4,24 +4,17 @@ import {
   Card,
   EmptyState,
   Grid,
+  Icon,
   IconButton,
   Inline,
+  ListRow,
+  ListRows,
   NumberField,
   Stack,
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
-import {
-  chevronLeft,
-  chevronRight,
-  download,
-  plus,
-  rotateCcw,
-  target,
-  trash,
-  zoomIn,
-  zoomOut,
-} from '@arshad-shah/cynosure/icons';
+import { download, plus, target, trash } from '@arshad-shah/cynosure/icons';
 import { useDrag } from '@arshad-shah/cynosure';
 import { Line, type ChartRef } from '@arshad-shah/swift-chart/react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -34,6 +27,7 @@ import { toToolError } from '@/shared/lib/errors';
 import { compileFunction } from '../lib/evaluate';
 import { findIntersections, findRoots } from '../lib/roots';
 import type { AngleUnit } from '../types';
+import { GraphControls } from './GraphControls';
 
 const MAX_FUNCTIONS = 6;
 /** A plotted function's series colour (swift-chart's theme uses the same). */
@@ -312,26 +306,28 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
         title="Functions"
         actions={
           <Inline gap="2">
-            <Button
-              size="sm"
-              variant="soft"
-              icon={plus}
-              disabled={rows.length >= MAX_FUNCTIONS}
-              onClick={() =>
-                setRows((rs) => [...rs, { id: nextId.current++, expr: '' }])
-              }
-            >
-              Add function
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={download}
-              disabled={fns.length === 0}
-              onClick={exportPng}
-            >
-              Export PNG
-            </Button>
+            {rows.length < MAX_FUNCTIONS ? (
+              <Button
+                size="sm"
+                variant="soft"
+                icon={plus}
+                onClick={() =>
+                  setRows((rs) => [...rs, { id: nextId.current++, expr: '' }])
+                }
+              >
+                Add function
+              </Button>
+            ) : null}
+            {fns.length > 0 ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={download}
+                onClick={exportPng}
+              >
+                Export PNG
+              </Button>
+            ) : null}
           </Inline>
         }
       >
@@ -360,17 +356,17 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
                   spellCheck={false}
                   autoComplete="off"
                 />
-                <IconButton
-                  size="sm"
-                  variant="ghost"
-                  tone="neutral"
-                  label={`Remove f${row.id}`}
-                  icon={trash}
-                  disabled={rows.length === 1}
-                  onClick={() =>
-                    setRows((rs) => rs.filter((r) => r.id !== row.id))
-                  }
-                />
+                {rows.length > 1 ? (
+                  <IconButton
+                    variant="ghost"
+                    tone="neutral"
+                    label={`Remove f${row.id}`}
+                    icon={trash}
+                    onClick={() =>
+                      setRows((rs) => rs.filter((r) => r.id !== row.id))
+                    }
+                  />
+                ) : null}
               </Grid>
             );
           })}
@@ -395,48 +391,11 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
         as="section"
         title="Graph"
         actions={
-          <Inline gap="1" role="group" aria-label="Pan and zoom">
-            <IconButton
-              size="sm"
-              variant="ghost"
-              tone="neutral"
-              icon={chevronLeft}
-              label="Pan left"
-              onClick={() => pan(-0.25)}
-            />
-            <IconButton
-              size="sm"
-              variant="ghost"
-              tone="neutral"
-              icon={chevronRight}
-              label="Pan right"
-              onClick={() => pan(0.25)}
-            />
-            <IconButton
-              size="sm"
-              variant="ghost"
-              tone="neutral"
-              icon={zoomIn}
-              label="Zoom in"
-              onClick={() => zoom(1 / 1.5)}
-            />
-            <IconButton
-              size="sm"
-              variant="ghost"
-              tone="neutral"
-              icon={zoomOut}
-              label="Zoom out"
-              onClick={() => zoom(1.5)}
-            />
-            <IconButton
-              size="sm"
-              variant="ghost"
-              tone="neutral"
-              icon={rotateCcw}
-              label="Reset view"
-              onClick={() => setRange(DEFAULT_RANGE)}
-            />
-          </Inline>
+          <GraphControls
+            onPan={pan}
+            onZoom={(f) => zoom(f)}
+            onReset={() => setRange(DEFAULT_RANGE)}
+          />
         }
       >
         <Stack gap="4">
@@ -488,26 +447,21 @@ export const Grapher: React.FC<GrapherProps> = ({ angle }) => {
             description="Pan or zoom the graph to look elsewhere."
           />
         ) : (
-          <Inline
-            gap="2"
-            wrap
-            role="group"
-            aria-label="Roots and intersections"
-          >
-            {points.map((p) => (
-              <Button
-                key={p.label}
-                size="sm"
-                variant="outline"
-                tone="neutral"
-                icon={target}
-                aria-label={`${p.label}, centre the graph here`}
-                onClick={() => centre(p.x)}
-              >
-                {p.label}
-              </Button>
-            ))}
-          </Inline>
+          <Stack gap="2">
+            <Text size="sm" tone="muted">
+              Press one to centre the graph on it.
+            </Text>
+            <ListRows label="Roots and intersections" size="sm" divided>
+              {points.map((p) => (
+                <ListRow
+                  key={p.label}
+                  label={p.label}
+                  leading={<Icon icon={target} tone="muted" />}
+                  onClick={() => centre(p.x)}
+                />
+              ))}
+            </ListRows>
+          </Stack>
         )}
       </Card>
     </Stack>

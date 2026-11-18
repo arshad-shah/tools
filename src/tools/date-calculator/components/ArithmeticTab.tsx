@@ -3,6 +3,7 @@ import {
   Card,
   DescriptionList,
   EmptyState,
+  Grid,
   Heading,
   IconButton,
   Inline,
@@ -91,35 +92,35 @@ export const ArithmeticTab: React.FC<ArithmeticTabProps> = ({
         <Stack gap="3" role="group" aria-label="Steps, applied in order">
           <Text weight="medium">Steps, applied in order</Text>
           {ops.map((op, i) => (
-            <Inline key={i} gap="2" align="center">
-              <Stack grow minSize="0">
-                <NumberField
-                  label={`Step ${i + 1} amount`}
-                  labelHidden
-                  value={op.amount}
-                  min={-100000}
-                  max={100000}
-                  onChange={(amount) => amount !== null && setOp(i, { amount })}
-                />
-              </Stack>
-              <Stack grow minSize="0">
-                <Select
-                  label={`Step ${i + 1} unit`}
-                  labelHidden
-                  value={op.unit}
-                  onChange={(unit) => setOp(i, { unit: unit as OpUnit })}
-                  options={OP_UNITS}
-                />
-              </Stack>
+            <Grid
+              key={i}
+              columns="minmax(0, 2fr) minmax(0, 3fr) auto"
+              gap="2"
+              align="center"
+            >
+              <NumberField
+                label={`Step ${i + 1} amount`}
+                labelHidden
+                value={op.amount}
+                min={-100000}
+                max={100000}
+                onChange={(amount) => amount !== null && setOp(i, { amount })}
+              />
+              <Select
+                label={`Step ${i + 1} unit`}
+                labelHidden
+                value={op.unit}
+                onChange={(unit) => setOp(i, { unit: unit as OpUnit })}
+                options={OP_UNITS}
+              />
               <IconButton
                 variant="ghost"
                 tone="neutral"
-                size="sm"
                 icon={trash}
                 label={`Remove step ${i + 1}`}
                 onClick={() => onOps(ops.filter((_, j) => j !== i))}
               />
-            </Inline>
+            </Grid>
           ))}
           <Inline>
             <Button
@@ -132,19 +133,22 @@ export const ArithmeticTab: React.FC<ArithmeticTabProps> = ({
             </Button>
           </Inline>
         </Stack>
-        <Stack gap="2">
-          <Text weight="medium">Past the end of a month</Text>
-          <SegmentedControl
-            label="Past the end of a month"
-            size="sm"
-            value={overflow}
-            onChange={(v) => onOverflow(v as 'clamp' | 'roll')}
-            options={[
-              { value: 'clamp', label: 'Keep the last day' },
-              { value: 'roll', label: 'Roll into next month' },
-            ]}
-          />
-        </Stack>
+        {/* Only month and year steps can land past the end of a month. */}
+        {ops.some((o) => o.unit === 'month' || o.unit === 'year') ? (
+          <Stack gap="2">
+            <Text weight="medium">Past the end of a month</Text>
+            <SegmentedControl
+              label="Past the end of a month"
+              size="sm"
+              value={overflow}
+              onChange={(v) => onOverflow(v as 'clamp' | 'roll')}
+              options={[
+                { value: 'clamp', label: 'Keep the last day' },
+                { value: 'roll', label: 'Roll into next month' },
+              ]}
+            />
+          </Stack>
+        ) : null}
       </Stack>
     </Card>
   );

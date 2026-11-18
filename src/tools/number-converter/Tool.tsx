@@ -162,15 +162,8 @@ const NumberConverter: React.FC = () => {
           base32={derived?.base32 ?? ''}
           base58={derived?.base58 ?? ''}
         />
+        {/* One action at a time: an example while empty, Clear once filled. */}
         <Inline gap="2" wrap>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={sparkles}
-            onClick={() => setSource({ key: 'hex', text: '0xCAFE' })}
-          >
-            Try an example
-          </Button>
           {source.text ? (
             <Button
               size="sm"
@@ -181,7 +174,16 @@ const NumberConverter: React.FC = () => {
             >
               Clear
             </Button>
-          ) : null}
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={sparkles}
+              onClick={() => setSource({ key: 'hex', text: '0xCAFE' })}
+            >
+              Try an example
+            </Button>
+          )}
         </Inline>
       </Stack>
     </Card>
