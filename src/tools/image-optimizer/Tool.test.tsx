@@ -175,6 +175,12 @@ describe('ImageCompressor', () => {
     expect(screen.getByRole('list', { name: 'Files' }).contains(download)).toBe(
       true,
     );
+    // The row is the only place to download one file (no second button).
+    expect(
+      screen.getAllByRole('button', {
+        name: /^Download (small\.png|this file)/,
+      }),
+    ).toHaveLength(1);
     fireEvent.click(download);
     expect(saveBlob).toHaveBeenCalledWith(
       expect.any(File),

@@ -302,7 +302,6 @@ export default function ImageCompressor() {
                   entries={done}
                   selected={selected}
                   onSelect={setSelectedId}
-                  onDownload={downloadOne}
                 />
               ) : null}
             </Stack>

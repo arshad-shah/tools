@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Button,
   Card,
   CompareSlider,
   Select,
@@ -8,7 +7,6 @@ import {
   ZoomControls,
   type ZoomSetting,
 } from '@arshad-shah/cynosure';
-import { download } from '@arshad-shah/cynosure/icons';
 import { useBlobUrl, useObjectUrl } from '@/shared/lib/object-url';
 import type { BatchEntry } from '../useBatch';
 
@@ -17,15 +15,13 @@ export interface ComparePanelProps {
   entries: readonly BatchEntry[];
   selected: BatchEntry;
   onSelect(id: string): void;
-  onDownload(entry: BatchEntry): void;
 }
 
-/** Before and after for one file, with its own download. */
+/** Before and after for one file (its download is on its row in Files). */
 export function ComparePanel({
   entries,
   selected,
   onSelect,
-  onDownload,
 }: ComparePanelProps) {
   const { row, result, file } = selected;
   // Fit the frame by default; 100% is the picture's actual size (gap 16).
@@ -69,13 +65,6 @@ export function ComparePanel({
             />
           </Stack>
         ) : null}
-        <Button
-          variant="soft"
-          icon={download}
-          onClick={() => onDownload(selected)}
-        >
-          Download this file
-        </Button>
       </Stack>
     </Card>
   );
