@@ -97,6 +97,18 @@ describe('TextEncrypt', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Text' }));
   });
 
+  it('keeps key derivation behind a closed disclosure that names it', () => {
+    renderTool();
+    const toggle = screen.getByRole('button', { name: 'Key derivation' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getAllByText('PBKDF2').length).toBeGreaterThan(0);
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(screen.getByRole('radio', { name: 'Argon2id' }));
+    expect(screen.getByText(/Argon2id with 64 MiB/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('radio', { name: 'PBKDF2' }));
+  });
+
   it('a mismatched confirmation blocks encrypt', () => {
     renderTool();
     fireEvent.change(box('Message'), { target: { value: 'x' } });

@@ -136,8 +136,10 @@ export const TextMode: React.FC<TextModeProps> = ({
           }}
           label={label}
           handoff={acceptsText}
+          // Only while there is nothing to replace: one fewer button once
+          // the message is written.
           onExample={
-            encrypting
+            encrypting && input === ''
               ? () => setInput('Meet at the north gate at noon. Bring the map.')
               : undefined
           }
