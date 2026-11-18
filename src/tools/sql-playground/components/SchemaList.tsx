@@ -8,7 +8,7 @@ import {
   ListRows,
   Stack,
 } from '@arshad-shah/cynosure';
-import { database, play } from '@arshad-shah/cynosure/icons';
+import { database, play, sparkles } from '@arshad-shah/cynosure/icons';
 import type { SchemaTable } from '../lib/engine';
 import { plural } from '../lib/results';
 
@@ -16,10 +16,12 @@ interface SchemaListProps {
   tables: SchemaTable[];
   /** Puts a query of the table in the editor and runs it. */
   onQuery(table: SchemaTable): void;
+  /** Loads the sample tables (the empty state's one action). */
+  onSample(): void;
 }
 
 /** The tables and views of the database, each with its columns. */
-export function SchemaList({ tables, onQuery }: SchemaListProps) {
+export function SchemaList({ tables, onQuery, onSample }: SchemaListProps) {
   if (tables.length === 0)
     return (
       <EmptyState
@@ -28,6 +30,11 @@ export function SchemaList({ tables, onQuery }: SchemaListProps) {
         title="No tables yet"
         description="Load a file above, or create tables with SQL."
         headingLevel={3}
+        actions={
+          <Button size="sm" variant="soft" icon={sparkles} onClick={onSample}>
+            Load sample tables
+          </Button>
+        }
       />
     );
   return (

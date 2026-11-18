@@ -34,6 +34,7 @@ export function DatabasePanel({
 }: DatabasePanelProps) {
   const { load } = db;
   const running = load.status === 'running';
+  const empty = db.tables.length === 0;
   return (
     <Card
       as="section"
@@ -41,24 +42,29 @@ export function DatabasePanel({
       headingLevel={2}
       padding="sm"
       actions={
-        <Menu
-          label="Database actions"
-          items={[
-            { value: 'sample', label: 'Load sample tables' },
-            { value: 'new', label: 'New empty database' },
-            {
-              value: 'download',
-              label: 'Download database (.sqlite)',
-              disabled: db.tables.length === 0,
-            },
-          ]}
-          onSelect={(v) => onMenu(v as 'sample' | 'new' | 'download')}
-          trigger={(props) => (
-            <Button {...props} size="sm" variant="ghost" icon={moreHorizontal}>
-              More
-            </Button>
-          )}
-        />
+        // An empty database has nothing to reset or download; its empty
+        // state offers the sample tables instead.
+        empty ? undefined : (
+          <Menu
+            label="Database actions"
+            items={[
+              { value: 'sample', label: 'Load sample tables' },
+              { value: 'new', label: 'New empty database' },
+              { value: 'download', label: 'Download database (.sqlite)' },
+            ]}
+            onSelect={(v) => onMenu(v as 'sample' | 'new' | 'download')}
+            trigger={(props) => (
+              <Button
+                {...props}
+                size="sm"
+                variant="ghost"
+                icon={moreHorizontal}
+              >
+                More
+              </Button>
+            )}
+          />
+        )
       }
     >
       <Stack gap="3">
@@ -103,7 +109,11 @@ export function DatabasePanel({
             {load.error.message}
           </Notice>
         ) : null}
-        <SchemaList tables={db.tables} onQuery={onQuery} />
+        <SchemaList
+          tables={db.tables}
+          onQuery={onQuery}
+          onSample={() => onMenu('sample')}
+        />
       </Stack>
     </Card>
   );
