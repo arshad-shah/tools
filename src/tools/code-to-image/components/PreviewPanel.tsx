@@ -86,34 +86,26 @@ export function PreviewPanel({
             </Text>
           </Stack>
         ) : null}
-        <Inline gap="2" wrap>
-          <Button
-            variant="solid"
-            tone="accent"
-            icon={download}
-            disabled={!ready}
-            onClick={onPng}
-          >
-            Download PNG
-          </Button>
-          <Button
-            variant="soft"
-            icon={fileCode}
-            disabled={!ready}
-            onClick={onSvg}
-          >
-            Download SVG
-          </Button>
-          <Button
-            variant="soft"
-            icon={copyIcon}
-            disabled={!ready}
-            onClick={onCopy}
-          >
-            Copy image
-          </Button>
-        </Inline>
-        {!canCopy ? (
+        {/* The exports appear with the image they save. */}
+        {ready ? (
+          <Inline gap="2" wrap>
+            <Button
+              variant="solid"
+              tone="accent"
+              icon={download}
+              onClick={onPng}
+            >
+              Download PNG
+            </Button>
+            <Button variant="soft" icon={fileCode} onClick={onSvg}>
+              Download SVG
+            </Button>
+            <Button variant="soft" icon={copyIcon} onClick={onCopy}>
+              Copy image
+            </Button>
+          </Inline>
+        ) : null}
+        {ready && !canCopy ? (
           <Text size="sm" tone="muted">
             This browser cannot copy images; download the PNG instead.
           </Text>
