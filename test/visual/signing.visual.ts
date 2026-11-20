@@ -127,7 +127,7 @@ for (const theme of ['light', 'dark'] as const) {
       await dialog.getByRole('radio', { name: 'Block' }).click();
       await expect(dialog).toHaveScreenshot(`signing-block-${theme}.png`, {
         // The date preview shows today's date.
-        mask: [dialog.getByText(/\d{4}/)],
+        mask: [dialog.getByText(/\d{4}/).filter({ visible: true })],
       });
       await expectAxeClean(page);
     });
@@ -177,7 +177,7 @@ for (const theme of ['light', 'dark'] as const) {
           {
             // Signing time and certificate dates come from the run: mask
             // every line that states a year.
-            mask: [dialog.getByText(/\d{4}/)],
+            mask: [dialog.getByText(/\d{4}/).filter({ visible: true })],
           },
         );
         await expectAxeClean(page);
