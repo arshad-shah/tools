@@ -123,10 +123,19 @@ async function moveResizeDeleteUndo(
     const p2 = await pageBox(page, obj);
     expect(p2.width - p1.width).toBeGreaterThan(5);
   } else {
-    // No resize handles (a rotatable object keeps its rotate handle).
+    // A small object's frame is compact (Cynosure's compactBelow): the
+    // handles across its short side are hidden and the rest sit just outside
+    // it, so its body stays free to drag.
     await expect(
-      frame.locator('[data-handle]:not([data-handle="rotate"])'),
-    ).toHaveCount(0);
+      frame.locator('[aria-roledescription="selection"]'),
+    ).toHaveAttribute('data-compact', /.+/);
+    const body = centre(await boxOf(obj));
+    const onHandle = await page.evaluate(
+      ([px, py]) =>
+        !!document.elementFromPoint(px, py)?.closest('[data-handle]'),
+      [body.x, body.y],
+    );
+    expect(onHandle).toBe(false);
   }
   const p2 = await pageBox(page, obj);
   await obj.focus();
@@ -367,7 +376,8 @@ test.describe('Fill & Sign objects', () => {
       await fillTool(page, name).click();
       await page.mouse.click(...xy(await at(page, 300, 560)));
       await fillTool(page, name).click();
-      // Too small for handles: it moves, and is deleted and restored.
+      // Smaller than its handles: a compact frame leaves the body free, so
+      // it moves, and is deleted and restored.
       await moveResizeDeleteUndo(
         page,
         objectOn(page, `Tick field: ${name}, filled`),
@@ -402,8 +412,8 @@ test.describe('Fill & Sign objects', () => {
       await expect(sig).toHaveAttribute('style', /rotate\(15deg\)/);
       await page.keyboard.press('ControlOrMeta+z');
       await expect(sig).not.toHaveAttribute('style', /rotate/);
-      // Initials are smaller than the frame's handles: they move, and are
-      // resized from the keyboard or by placing them again.
+      // Initials are smaller than the frame's handles: a compact frame keeps
+      // the handles off their body, so they move by dragging the body.
       await moveResizeDeleteUndo(page, sig, { resize: role === 'Signature' });
     });
   }
@@ -548,6 +558,9 @@ test.describe('touch', () => {
         touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
       });
     await touch('touchStart', from.x, from.y);
+    // A finger drags only after a short press (Cynosure's touch delay): a
+    // quicker swipe scrolls the page instead.
+    await page.waitForTimeout(300);
     for (let i = 1; i <= 8; i++)
       await touch('touchMove', from.x + i * 5, from.y + i * 4);
     await touch('touchEnd', from.x + 40, from.y + 32);
