@@ -12,7 +12,6 @@ export default defineTool({
   keywords: ['convert', 'photos', 'jpg', 'png', 'combine'],
   accepts: [{ kinds: ['png', 'jpeg', 'webp', 'gif'], multiple: true }],
   version: '1.0.0',
-  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

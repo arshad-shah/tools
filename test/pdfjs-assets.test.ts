@@ -68,8 +68,8 @@ describe('syncPdfjsAssets', () => {
     expect(await stamp()).toBe('2.0.0');
   });
 
-  it.each(['EBUSY', 'EPERM', 'EACCES'])(
-    'overwrites in place when the folder is locked (%s) instead of throwing',
+  it.each(['EBUSY', 'EPERM', 'EACCES', 'EXDEV'])(
+    'overwrites in place when the folder is locked or on another filesystem (%s) instead of throwing',
     async (code) => {
       await sync('1.0.0');
       await writeSrc('v2');

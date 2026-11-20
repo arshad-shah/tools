@@ -13,7 +13,6 @@ export default defineTool({
   keywords: ['shrink', 'reduce', 'size', 'optimize'],
   accepts: [{ kinds: ['pdf'] }],
   version: '2.0.0',
-  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

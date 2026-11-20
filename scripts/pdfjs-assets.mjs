@@ -19,8 +19,13 @@ export const PDFJS_ASSET_DIRS = ['standard_fonts', 'cmaps', 'iccs', 'wasm'];
  */
 export const PDFJS_STAMP_FILE = 'pdfjs-version';
 
-/** Codes Windows reports when another process holds a file in the folder. */
-const LOCKED = new Set(['EBUSY', 'EPERM', 'EACCES']);
+/**
+ * Swap errors that fall back to copying in place: Windows reports EBUSY,
+ * EPERM or EACCES when another process holds a file in the folder, and EXDEV
+ * means the work and served folders sit on different filesystems (a Docker
+ * run with node_modules on its own volume), where rename cannot move them.
+ */
+const LOCKED = new Set(['EBUSY', 'EPERM', 'EACCES', 'EXDEV']);
 
 const exists = async (path) => {
   try {
@@ -95,7 +100,8 @@ const sweepLeftovers = async (workDir) => {
  *   the folder never sees it change.
  * - Otherwise copies into a fresh folder under `workDir` and swaps it in with
  *   two renames. If the live folder is locked (Windows EBUSY/EPERM/EACCES
- *   while another process holds a file), it overwrites in place instead.
+ *   while another process holds a file) or on another filesystem (EXDEV),
+ *   it overwrites in place instead.
  *   Nothing in use is ever deleted, so files that a newer pdfjs-dist dropped
  *   stay behind on that path; they are unused and go on the next clean swap.
  * - Any other swap error is rethrown, with the previous copy and stamp kept.
