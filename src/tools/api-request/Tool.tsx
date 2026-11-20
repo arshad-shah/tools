@@ -3,7 +3,9 @@ import {
   Card,
   EmptyState,
   IconButton,
+  Inline,
   KeyValueEditor,
+  Menu,
   Notice,
   NumberField,
   ProgressBar,
@@ -15,8 +17,11 @@ import {
   Text,
 } from '@arshad-shah/cynosure';
 import {
+  clipboardPaste,
   code,
+  filePlus,
   folder,
+  moreHorizontal,
   save as saveIcon,
   send as sendIcon,
 } from '@arshad-shah/cynosure/icons';
@@ -96,6 +101,12 @@ export default function HttpClient() {
     setSideOpen(false);
   };
   const send = () => void c.send();
+  const importCurl = () =>
+    void readClipboardText().then(
+      (t) => c.importCurl(t),
+      (e: unknown) =>
+        notify.error(toToolError(e, 'Could not read the clipboard')),
+    );
   const save = () => {
     if (!c.saveCurrent()) {
       setSaveName(
@@ -118,12 +129,7 @@ export default function HttpClient() {
     {
       id: 'curl',
       label: 'Import cURL from clipboard',
-      run: () =>
-        void readClipboardText().then(
-          (t) => c.importCurl(t),
-          (e: unknown) =>
-            notify.error(toToolError(e, 'Could not read the clipboard')),
-        ),
+      run: importCurl,
     },
     { id: 'new', label: 'New request', run: newRequest },
   ]);
@@ -142,18 +148,52 @@ export default function HttpClient() {
       as="section"
       title="Request"
       actions={
-        <SegmentedControl
-          label="Request type"
-          size="sm"
-          value={request.mode}
-          onChange={(mode) =>
-            setRequest({ ...request, mode: mode as 'rest' | 'graphql' })
-          }
-          options={[
-            { value: 'rest', label: 'REST' },
-            { value: 'graphql', label: 'GraphQL' },
-          ]}
-        />
+        <Inline gap="1" align="center">
+          <SegmentedControl
+            label="Request type"
+            size="sm"
+            value={request.mode}
+            onChange={(mode) =>
+              setRequest({ ...request, mode: mode as 'rest' | 'graphql' })
+            }
+            options={[
+              { value: 'rest', label: 'REST' },
+              { value: 'graphql', label: 'GraphQL' },
+            ]}
+          />
+          <Button size="sm" variant="soft" icon={saveIcon} onClick={save}>
+            Save
+          </Button>
+          <Menu
+            label="More request actions"
+            items={[
+              { value: 'snippet', label: 'Copy as code', icon: code },
+              {
+                value: 'curl',
+                label: 'Import cURL from clipboard',
+                icon: clipboardPaste,
+              },
+              { value: 'new', label: 'New request', icon: filePlus },
+            ]}
+            onSelect={(v) =>
+              v === 'snippet'
+                ? setSnippetOpen(true)
+                : v === 'curl'
+                  ? importCurl()
+                  : newRequest()
+            }
+            trigger={(props) => (
+              <IconButton
+                {...props}
+                size="sm"
+                variant="ghost"
+                tone="neutral"
+                label="More request actions"
+                icon={moreHorizontal}
+              />
+            )}
+          />
+        </Inline>
       }
     >
       <Stack gap="5">
@@ -165,6 +205,7 @@ export default function HttpClient() {
           onCancel={job.cancel}
           running={job.status === 'running'}
           unresolved={unresolved}
+          stacked={phone}
         />
         {unresolved.length > 0 ? (
           <Notice tone="warning">
@@ -276,18 +317,8 @@ export default function HttpClient() {
           onActiveChange={(activeEnv) => c.update({ activeEnv })}
           onSave={c.saveEnvironments}
         />
-        <Button variant="ghost" icon={folder} onClick={() => setSideOpen(true)}>
+        <Button variant="soft" icon={folder} onClick={() => setSideOpen(true)}>
           Collections
-        </Button>
-        <IconButton
-          variant="ghost"
-          tone="neutral"
-          icon={code}
-          label="Copy as code"
-          onClick={() => setSnippetOpen(true)}
-        />
-        <Button variant="soft" icon={saveIcon} onClick={save}>
-          Save
         </Button>
       </ToolActions>
       <Text size="sm" tone="muted">

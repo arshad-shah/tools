@@ -1,6 +1,8 @@
 import {
+  Badge,
   Card,
   Checkbox,
+  Disclosure,
   EmptyState,
   FileDrop,
   Grid,
@@ -136,27 +138,42 @@ export const BusinessTab: React.FC<BusinessTabProps> = ({
               })}
             </Inline>
           </Stack>
-          <TextArea
-            label="Holidays (one date per line)"
-            description={`${holidays.length} ${holidays.length === 1 ? 'holiday' : 'holidays'}. Holidays are not saved; share a link to keep them.`}
-            rows={5}
-            placeholder="2024-12-25"
-            spellCheck={false}
-            value={holidayText}
-            onChange={setText}
-          />
-          <FileDrop
-            size="sm"
-            accept=".ics,text/calendar"
-            multiple
-            hint="Import holidays from a calendar (.ics)."
-            labels={{
-              choose: 'Import a calendar',
-              chooseOne: 'Import a calendar',
-            }}
-            onFiles={(files) => void importIcs(files)}
-          />
-          {importError ? <Notice tone="danger">{importError}</Notice> : null}
+          <Disclosure
+            summary="Holidays"
+            trailing={
+              holidays.length ? (
+                <Badge tone="accent">{holidays.length}</Badge>
+              ) : undefined
+            }
+            variant="line"
+            defaultOpen={holidays.length > 0}
+          >
+            <Stack gap="4" paddingBlock="3">
+              <TextArea
+                label="Holidays (one date per line)"
+                description={`${holidays.length} ${holidays.length === 1 ? 'holiday' : 'holidays'}. Holidays are not saved; share a link to keep them.`}
+                rows={5}
+                placeholder="2024-12-25"
+                spellCheck={false}
+                value={holidayText}
+                onChange={setText}
+              />
+              <FileDrop
+                size="sm"
+                accept=".ics,text/calendar"
+                multiple
+                hint="Import holidays from a calendar (.ics)."
+                labels={{
+                  choose: 'Import a calendar',
+                  chooseOne: 'Import a calendar',
+                }}
+                onFiles={(files) => void importIcs(files)}
+              />
+              {importError ? (
+                <Notice tone="danger">{importError}</Notice>
+              ) : null}
+            </Stack>
+          </Disclosure>
         </Stack>
       </Card>
     </Stack>

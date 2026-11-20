@@ -93,6 +93,10 @@ describe('ExifTool', () => {
   it('remove metadata produces a done row', async () => {
     drop([toFile(jpegWithMetadata(), 'photo.jpg', 'image/jpeg')]);
     await screen.findByRole('heading', { name: 'GPS' }, { timeout: 5000 });
+    expect(screen.queryByRole('button', { name: 'Download ZIP' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Send to Image Compressor' }),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /^Remove metadata/ }));
     const grid = screen.getByRole('list', { name: 'Photos' });
     await waitFor(
@@ -132,9 +136,7 @@ describe('ExifTool', () => {
     });
     expect(alert.textContent).toMatch(/cannot be removed from HEIC/);
     expect(alert.textContent).toMatch(/Image Compressor/);
-    expect(screen.getByRole('button', { name: 'Download ZIP' })).toHaveProperty(
-      'disabled',
-      true,
-    );
+    // Nothing was cleaned, so there is no ZIP to offer.
+    expect(screen.queryByRole('button', { name: 'Download ZIP' })).toBeNull();
   });
 });

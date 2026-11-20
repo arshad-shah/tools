@@ -13,7 +13,6 @@ export default defineTool({
   accepts: [{ kinds: ['pdf'] }],
   alsoIn: ['security'],
   version: '1.0.0',
-  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

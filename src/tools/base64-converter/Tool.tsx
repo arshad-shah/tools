@@ -4,7 +4,6 @@ import {
   CodeBlock,
   CopyButton,
   EmptyState,
-  FileDrop,
   IconButton,
   Inline,
   Notice,
@@ -18,7 +17,6 @@ import {
   close,
   download,
   fileCode,
-  sparkles,
   swap as swapIcon,
 } from '@arshad-shah/cynosure/icons';
 import React, { useMemo, useState } from 'react';
@@ -261,6 +259,11 @@ const Base64Converter: React.FC = () => {
             rows={6}
             maxRows={18}
             spellCheck={false}
+            description={
+              encoding
+                ? 'Or open or drop any file to encode it as Base64 and a data URI.'
+                : undefined
+            }
             placeholder={
               encoding
                 ? 'Type or paste text to encode.'
@@ -275,7 +278,7 @@ const Base64Converter: React.FC = () => {
             value={inputText}
             onChange={setInputText}
             label={encoding ? 'Text to encode' : 'Base64 to decode'}
-            onExample={tryExample}
+            onExample={inputText ? undefined : tryExample}
             onFile={(f) => {
               if (!encoding) return false;
               void loadFile(f);
@@ -283,14 +286,6 @@ const Base64Converter: React.FC = () => {
             }}
           />
         )}
-        {encoding && !file ? (
-          <FileDrop
-            size="sm"
-            hint="Or drop any file: it is encoded as Base64 and a data URI."
-            labels={{ chooseOne: 'Encode a file' }}
-            onFiles={(files) => files[0] && void loadFile(files[0])}
-          />
-        ) : null}
       </Stack>
     </Card>
   );
@@ -347,15 +342,11 @@ const Base64Converter: React.FC = () => {
       as="section"
       title={encoding ? 'Encoded' : 'Decoded'}
       actions={
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={swapIcon}
-          disabled={!output.text}
-          onClick={swap}
-        >
-          Swap
-        </Button>
+        output.text ? (
+          <Button size="sm" variant="ghost" icon={swapIcon} onClick={swap}>
+            Swap
+          </Button>
+        ) : undefined
       }
     >
       <Stack gap="5">
@@ -368,11 +359,6 @@ const Base64Converter: React.FC = () => {
               encoding
                 ? 'Type text or drop a file to see its Base64 and data URI.'
                 : 'Paste Base64 or a data URI to see the bytes and what they are.'
-            }
-            actions={
-              <Button variant="soft" icon={sparkles} onClick={tryExample}>
-                Try an example
-              </Button>
             }
           />
         ) : (

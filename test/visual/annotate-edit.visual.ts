@@ -29,7 +29,7 @@ async function open(
     .setInputFiles(await file);
   // A cold dev server compiles the workspace on first use: a budget, not a retry.
   await expect(rendered(page)).toBeAttached({ timeout: 60_000 });
-  await page.getByRole('tab', { name: mode }).click();
+  await page.getByRole('radio', { name: mode }).click();
   await page.waitForFunction(() => !!window.__workspaceTest);
 }
 
@@ -160,7 +160,7 @@ test.beforeAll(async ({ browser }, info) => {
         .first()
         .setInputFiles(await pdf('warm.pdf', makeTextPdf({ pages: 1 })));
       await expect(rendered(page)).toBeAttached({ timeout: 90_000 });
-      await page.getByRole('tab', { name: mode }).click();
+      await page.getByRole('radio', { name: mode }).click();
       await page.waitForLoadState('networkidle');
     }
   } finally {

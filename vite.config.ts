@@ -62,6 +62,7 @@ export default defineConfig({
       'prettier/plugins/yaml',
       'prettier/standalone',
       'sql-formatter',
+      'sql.js',
       'terser',
       'upng-js',
     ],

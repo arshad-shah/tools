@@ -88,6 +88,12 @@ export const LICENCES: LicenceEntry[] = [
     note: 'Code Formatter (SQL)',
   },
   {
+    name: 'sql.js',
+    licence: 'MIT',
+    url: 'https://github.com/sql-js/sql.js',
+    note: 'SQL Playground (SQLite itself is in the public domain)',
+  },
+  {
     name: 'terser',
     licence: 'BSD-2-Clause',
     url: 'https://github.com/terser/terser',

@@ -289,7 +289,10 @@ function CertificateDialogBody({
         {error ? <Notice tone="danger">{error.message}</Notice> : null}
         <Text as="p" size="sm" tone="muted">
           Your certificate and password stay in this browser tab and are
-          forgotten after the export.
+          forgotten after the export.{' '}
+          {source === 'create'
+            ? 'A self-signed certificate proves the file has not changed since signing, not who signed it: for contracts and regulated documents, use a certificate from a trusted provider.'
+            : "For contracts and regulated documents, prefer your organisation's signing service or a hardware token, which keep the private key off any web page."}
         </Text>
       </Stack>
     </Dialog>

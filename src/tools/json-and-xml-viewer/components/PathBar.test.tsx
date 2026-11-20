@@ -13,8 +13,14 @@ beforeEach(() => {
   Object.assign(navigator, { clipboard: { writeText } });
 });
 
+/** The path has its own button; the other copies are in a menu. */
 const copied = async (name: string) => {
-  fireEvent.click(screen.getByRole('button', { name }));
+  if (/^Copy (JSONPath|XPath)$/.test(name))
+    fireEvent.click(screen.getByRole('button', { name }));
+  else {
+    fireEvent.click(screen.getByRole('button', { name: 'More copy options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name }));
+  }
   await waitFor(() => expect(writeText).toHaveBeenCalled());
   return writeText.mock.calls.at(-1)![0];
 };
@@ -62,9 +68,11 @@ describe('PathBar', () => {
       <PathBar node={findById(xdoc, '/r/b[2]')} value={undefined} xml={xml} />,
     );
     expect(await copied('Copy XPath')).toBe('/r/b[2]');
+    fireEvent.click(screen.getByRole('button', { name: 'More copy options' }));
     expect(
-      screen.queryByRole('button', { name: 'Copy JS accessor' }),
+      screen.queryByRole('menuitem', { name: 'Copy JS accessor' }),
     ).toBeNull();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     expect(JSON.parse(await copied('Copy subtree as JSON'))).toEqual({
       b: { '@id': '2', '#text': 'y' },
     });

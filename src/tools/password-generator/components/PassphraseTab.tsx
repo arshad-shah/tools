@@ -89,13 +89,12 @@ export const PassphraseTab: React.FC<PassphraseTabProps> = ({
         <Text weight="medium">Capitalise</Text>
         <SegmentedControl
           label="Capitalise"
-          size="sm"
           value={s.capitalise}
           onChange={(v) =>
             update({ capitalise: v as PasswordSettings['capitalise'] })
           }
           options={[
-            { value: 'none', label: 'none' },
+            { value: 'none', label: 'None' },
             { value: 'first', label: 'First letter' },
             { value: 'all', label: 'ALL' },
           ]}

@@ -6,6 +6,10 @@ import {
   Stack,
 } from '@arshad-shah/cynosure';
 import React, { useState } from 'react';
+import {
+  ProductionUseNotice,
+  type LocalCommand,
+} from '@/app/ui/production-use';
 import { TransformLayout } from '@/app/ui/transform';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import { BulkPanel } from './components/BulkPanel';
@@ -17,6 +21,12 @@ import { optionsFrom } from './lib/options';
 import { generatePassword } from './lib/generate';
 import { generatePassphrase } from './lib/passphrase';
 import { passwordSettings, type PasswordSettings } from './settings';
+
+/** 32 random bytes, as most secret managers and frameworks expect. */
+const SERVICE_SECRET_COMMANDS: readonly LocalCommand[] = [
+  { label: 'Random secret (Base64)', command: 'openssl rand -base64 32' },
+  { label: 'Random secret (hex)', command: 'openssl rand -hex 32' },
+];
 
 type Tab = PasswordSettings['mode'] | 'check';
 
@@ -66,29 +76,25 @@ const PasswordGenerator: React.FC = () => {
     <TransformLayout
       defaultSize={55}
       start={
-        <Stack gap="6">
-          <Card
-            as="section"
-            title={`Your ${settings.mode === 'pin' ? 'PIN' : settings.mode}`}
-          >
-            {result}
-          </Card>
-        </Stack>
+        <Card
+          as="section"
+          title={`Your ${settings.mode === 'pin' ? 'PIN' : settings.mode}`}
+        >
+          {result}
+        </Card>
       }
       end={
         <Stack gap="6">
           <Card as="section" title="Options">
             {options}
           </Card>
-          <Card as="section">
-            <Disclosure summary="Generate many" variant="plain">
-              <BulkPanel
-                count={settings.bulkCount}
-                onCount={(n) => update({ bulkCount: n })}
-                make={make}
-              />
-            </Disclosure>
-          </Card>
+          <Disclosure summary="Generate many" variant="card">
+            <BulkPanel
+              count={settings.bulkCount}
+              onCount={(n) => update({ bulkCount: n })}
+              make={make}
+            />
+          </Disclosure>
         </Stack>
       }
     />
@@ -138,6 +144,19 @@ const PasswordGenerator: React.FC = () => {
         />
       </Inline>
       {tab === 'check' ? <CheckerTab /> : generator}
+      {tab === 'check' ? null : (
+        <ProductionUseNotice
+          title="For real accounts and services"
+          commandsLabel="Make a service secret on your own machine"
+          commands={SERVICE_SECRET_COMMANDS}
+        >
+          Made with your browser's secure random generator and never stored. For
+          a real account, let your password manager generate and save it, so it
+          is never pasted around. For production service secrets (database
+          passwords, API keys) use your secret manager, or make them locally
+          with the commands below.
+        </ProductionUseNotice>
+      )}
     </Stack>
   );
 };

@@ -147,11 +147,14 @@ const UuidGenerator: React.FC = () => {
       EXPORT_MIME[format],
     );
 
+  // v5 follows its name, and Nil and Max never change: no Generate then.
+  const random = s.kind !== 'v5' && s.kind !== 'nil' && s.kind !== 'max';
   useToolCommands('uuid-generator', [
     {
       id: 'generate',
       label: 'Generate new IDs',
       shortcut: 'Mod+Enter',
+      enabled: random,
       run: () => setNonce((n) => n + 1),
     },
   ]);
@@ -269,26 +272,28 @@ const UuidGenerator: React.FC = () => {
             onChange={(f) => update({ format: f })}
           />
         ) : null}
-        <Inline>
-          <Tooltip
-            content={
-              <Inline gap="2" align="center" as="span">
-                Generate new IDs
-                <Kbd keys="mod+enter" size="sm" />
-              </Inline>
-            }
-          >
-            <Button
-              variant="solid"
-              tone="accent"
-              icon={refreshCw}
-              aria-keyshortcuts="Control+Enter"
-              onClick={generate}
+        {random ? (
+          <Inline>
+            <Tooltip
+              content={
+                <Inline gap="2" align="center" as="span">
+                  Generate new IDs
+                  <Kbd keys="mod+enter" size="sm" />
+                </Inline>
+              }
             >
-              Generate
-            </Button>
-          </Tooltip>
-        </Inline>
+              <Button
+                variant="solid"
+                tone="accent"
+                icon={refreshCw}
+                aria-keyshortcuts="Control+Enter"
+                onClick={generate}
+              >
+                Generate
+              </Button>
+            </Tooltip>
+          </Inline>
+        ) : null}
       </Stack>
     </Card>
   );

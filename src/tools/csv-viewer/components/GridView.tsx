@@ -11,7 +11,6 @@ import {
   ScrollArea,
   SearchField,
   Stack,
-  Switch,
   Text,
   TextField,
   type DataGridColumn,
@@ -47,6 +46,7 @@ export interface GridViewProps {
   toolbar?: React.ReactNode;
 }
 
+const COLUMN_TYPES = Object.keys(COLUMN_TYPE_LABEL) as ColumnType[];
 const numeric = (t: ColumnType | undefined) =>
   t === 'integer' || t === 'decimal';
 const text = (v: unknown) => (v === null || v === undefined ? '' : String(v));
@@ -65,7 +65,8 @@ function parseInput(draft: string, type: ColumnType | undefined): unknown {
 
 /**
  * The table (redesign: Cynosure DataGrid): search, column filters, column
- * visibility and density above it; a row opens in a dialog to edit.
+ * visibility (grouped by type) and density above it; a row opens in a
+ * dialog to edit.
  */
 export function GridView({
   table,
@@ -155,46 +156,52 @@ export function GridView({
           </Popover>
           <Menu
             label="Columns"
-            items={table.columns.map((c) => ({
-              value: c,
-              label: c,
-              kind: 'checkbox' as const,
-              checked: !hidden.includes(c),
-              keepOpen: true,
-              disabled: !hidden.includes(c) && visible.length === 1,
-            }))}
-            onSelect={(c) =>
+            items={[
+              // Grouped by inferred type, so the menu also shows the types.
+              ...COLUMN_TYPES.map((t) => ({
+                label: COLUMN_TYPE_LABEL[t],
+                items: table.columns
+                  .filter((c) => (types[c] ?? 'text') === t)
+                  .map((c) => ({
+                    value: `col:${c}`,
+                    label: c,
+                    kind: 'checkbox' as const,
+                    checked: !hidden.includes(c),
+                    keepOpen: true,
+                    disabled: !hidden.includes(c) && visible.length === 1,
+                  })),
+              })).filter((s) => s.items.length > 0),
+              {
+                label: 'Display',
+                items: [
+                  {
+                    value: 'compact',
+                    label: 'Compact rows',
+                    kind: 'checkbox' as const,
+                    checked: compact,
+                  },
+                ],
+              },
+            ]}
+            onSelect={(v) => {
+              if (v === 'compact') {
+                onCompactChange(!compact);
+                return;
+              }
+              const c = v.slice('col:'.length);
               onHiddenChange(
                 hidden.includes(c)
                   ? hidden.filter((h) => h !== c)
                   : [...hidden, c],
-              )
-            }
+              );
+            }}
             trigger={(props) => (
-              <Button {...props} size="sm" variant="ghost" icon={columnsIcon}>
+              <Button {...props} size="sm" variant="soft" icon={columnsIcon}>
                 Columns
               </Button>
             )}
           />
-          <Switch
-            size="sm"
-            label="Compact rows"
-            checked={compact}
-            onChange={onCompactChange}
-          />
         </Inline>
-      </Inline>
-      <Inline gap="3" align="center" justify="between" wrap>
-        <Inline gap="1" wrap>
-          {table.columns.map((c) => (
-            <Badge key={c} variant="outline" size="sm">
-              {`${c}: ${COLUMN_TYPE_LABEL[types[c] ?? 'text']}`}
-            </Badge>
-          ))}
-        </Inline>
-        <Text size="sm" tone="muted" numeric aria-live="polite">
-          {`${indices.length.toLocaleString('en-US')} of ${table.rows.length.toLocaleString('en-US')} rows`}
-        </Text>
       </Inline>
       {errors.length > 0 && (
         <Notice tone="warning">
@@ -234,10 +241,15 @@ export function GridView({
         onAction={(r) => setEditing(r.i)}
         labels={{ empty: 'No rows match' }}
       />
-      <Text size="xs" tone="muted">
-        Enter or double-click a row to edit it. Ctrl or Cmd+C copies the
-        selected rows.
-      </Text>
+      <Inline gap="3" align="center" justify="between" wrap>
+        <Text size="sm" tone="muted" numeric aria-live="polite">
+          {`${indices.length.toLocaleString('en-US')} of ${table.rows.length.toLocaleString('en-US')} rows`}
+        </Text>
+        <Text size="xs" tone="muted">
+          Enter or double-click a row to edit it. Ctrl or Cmd+C copies the
+          selected rows.
+        </Text>
+      </Inline>
       {editing !== null && table.rows[editing] ? (
         <RowEditor
           index={editing}

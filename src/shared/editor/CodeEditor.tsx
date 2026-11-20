@@ -315,6 +315,10 @@ export function CodeEditor({
       spellcheck: 'false',
       autocapitalize: 'off',
       autocorrect: 'off',
+      // contenteditable is already in the tab order; saying so makes the
+      // scrolling region it sits in keyboard-reachable to checkers (axe
+      // scrollable-region-focusable) when long lines scroll sideways.
+      tabindex: '0',
     };
     if (ariaLabelledBy) {
       delete attrs['aria-label'];

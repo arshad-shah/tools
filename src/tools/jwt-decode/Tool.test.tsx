@@ -40,10 +40,16 @@ describe('JWTDecoder', () => {
   it('starts empty and decodes the example on request', () => {
     renderTool();
     expect(screen.getByRole('heading', { name: 'No token yet' })).toBeTruthy();
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Try an example' })[0]!,
-    );
+    // One example button, by the empty input.
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
     expect(screen.getByRole('tablist', { name: 'JWT sections' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Try an example' })).toBeNull();
+    // The sample has exp and iat: one menu opens either in Epoch Converter.
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Open in Epoch Converter' }),
+    );
+    for (const name of ['Expiry (exp)', 'Issued at (iat)'])
+      expect(screen.getByRole('menuitem', { name })).toBeTruthy();
     expect(screen.getByText('user-12345')).toBeTruthy();
   });
 
@@ -93,9 +99,13 @@ describe('JWTDecoder', () => {
     enter(token({ exp: T0 / 1000 - 1 }));
     act(() => void vi.advanceTimersByTime(1000));
     expect(screen.getAllByText('Expired').length).toBeGreaterThan(0);
+    // The skew is behind the Decoded token card's Clock skew button.
+    expect(screen.queryByRole('combobox', { name: 'Clock skew' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Clock skew' }));
     fireEvent.click(screen.getByRole('combobox', { name: 'Clock skew' }));
     fireEvent.click(screen.getByRole('option', { name: '30 s' }));
     expect(screen.getByText('Within validity window')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Skew 30 s' })).toBeTruthy();
     // Saved for next time (a setting, never the token).
     expect(localStorage.getItem('kit:store:tool:jwt-decode')).toContain('30');
   });

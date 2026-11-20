@@ -228,24 +228,7 @@ export default function QrCodeGenerator() {
   );
 
   const previewCard = (
-    <Card
-      as="section"
-      title="Preview"
-      actions={
-        <SegmentedControl
-          label="Preview render"
-          size="sm"
-          value={settings.renderAs}
-          onChange={(renderAs) =>
-            update({ renderAs: renderAs as 'svg' | 'canvas' })
-          }
-          options={[
-            { value: 'svg', label: 'SVG' },
-            { value: 'canvas', label: 'Canvas' },
-          ]}
-        />
-      }
-    >
+    <Card as="section" title="Preview">
       <Stack gap="5">
         {problem ? <Notice tone="danger">{problem}</Notice> : null}
         {empty ? (
@@ -269,7 +252,9 @@ export default function QrCodeGenerator() {
             )}
           </Inline>
         )}
-        <CodeBlock title="Encoded text" code={value || ' '} wrap size="sm" />
+        {value ? (
+          <CodeBlock title="Encoded text" code={value} wrap size="sm" />
+        ) : null}
         <ScanCheck value={empty ? '' : value} qrStyle={style} />
       </Stack>
     </Card>
@@ -317,7 +302,7 @@ export default function QrCodeGenerator() {
             end={
               <Stack gap="6">
                 {previewCard}
-                {exportCard}
+                {empty ? null : exportCard}
               </Stack>
             }
           />
@@ -327,7 +312,7 @@ export default function QrCodeGenerator() {
             {contentCard}
             {previewCard}
             {styleCard}
-            {exportCard}
+            {empty ? null : exportCard}
           </Stack>
         )
       ) : (

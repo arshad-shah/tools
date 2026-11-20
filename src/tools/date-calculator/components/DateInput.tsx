@@ -2,7 +2,6 @@ import {
   Button,
   DescriptionList,
   Disclosure,
-  Inline,
   Select,
   Stack,
   Text,
@@ -20,9 +19,14 @@ export interface DateInputProps {
   now: number;
 }
 
+/** "America/New_York" as "New York", for the summary of the zone. */
+const zoneName = (zone: string) =>
+  (zone.split('/').pop() ?? zone).replace(/_/g, ' ');
+
 /**
  * A flexible date field: ISO 8601, Unix seconds or milliseconds, RFC 2822,
- * "now" or "today + 3w", read in the chosen zone, with its read-outs.
+ * "now" or "today + 3w", read in the chosen zone, with its read-outs. Now
+ * sits inside the field; the zone and the other formats behind "More about".
  */
 export const DateInput: React.FC<DateInputProps> = ({
   label,
@@ -41,40 +45,46 @@ export const DateInput: React.FC<DateInputProps> = ({
       ? dateOutputs(result.epochMs, input.zone, now)
       : null;
   return (
-    <Stack gap="3">
-      <Inline gap="2" align="end">
-        <Stack grow minSize="0">
-          <TextField
-            label={label}
-            value={input.text}
-            onChange={(text) => onInput({ ...input, text })}
-            placeholder="2024-05-01 09:00, 1714550400 or today + 3w"
-            spellCheck={false}
-            autoComplete="off"
-            error={error}
-          />
-        </Stack>
-        <Button
-          variant="soft"
-          aria-label={`${label}: now`}
-          onClick={() => onInput({ ...input, text: 'now' })}
-        >
-          Now
-        </Button>
-      </Inline>
-      <Select
-        label={`${label} time zone`}
-        size="sm"
-        value={input.zone}
-        onChange={(zone) => onInput({ ...input, zone })}
-        options={zones}
+    <Stack gap="2">
+      <TextField
+        label={label}
+        value={input.text}
+        onChange={(text) => onInput({ ...input, text })}
+        placeholder="2024-05-01 09:00, 1714550400 or today + 3w"
+        spellCheck={false}
+        autoComplete="off"
+        error={error}
+        addonEnd={
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={`${label}: now`}
+            onClick={() => onInput({ ...input, text: 'now' })}
+          >
+            Now
+          </Button>
+        }
       />
       {outputs ? (
-        <Stack gap="2">
-          <Text size="sm" tone="muted">
-            {outputs[0].value}
-          </Text>
-          <Disclosure summary={`More about ${label.toLowerCase()}`} size="sm">
+        <Text size="sm" tone="muted">
+          {outputs[0].value}
+        </Text>
+      ) : null}
+      {/* The zone is rarely changed: it waits with the other formats, and
+          the summary names it so a changed zone is never out of sight. */}
+      <Disclosure
+        summary={`More about ${label.toLowerCase()}`}
+        trailing={zoneName(input.zone)}
+        size="sm"
+      >
+        <Stack gap="4" paddingBlock="2">
+          <Select
+            label={`${label} time zone`}
+            value={input.zone}
+            onChange={(zone) => onInput({ ...input, zone })}
+            options={zones}
+          />
+          {outputs ? (
             <DescriptionList
               size="sm"
               layout="inline"
@@ -88,9 +98,9 @@ export const DateInput: React.FC<DateInputProps> = ({
                 ),
               }))}
             />
-          </Disclosure>
+          ) : null}
         </Stack>
-      ) : null}
+      </Disclosure>
     </Stack>
   );
 };

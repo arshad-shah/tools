@@ -2,25 +2,22 @@ import {
   Button,
   Card,
   Disclosure,
-  FileDrop,
   Grid,
   IconButton,
   Inline,
-  Kbd,
   Notice,
   SegmentedControl,
   Stack,
   StatusBar,
   StatusBarSegment,
-  Text,
 } from '@arshad-shah/cynosure';
 import {
   chevronDown,
   chevronUp,
-  share as shareIcon,
   sparkles,
   swap as swapIcon,
 } from '@arshad-shah/cynosure/icons';
+import { ShareButton, ToolActions } from '@/app/ui/transform';
 import { useMemo, useRef, useState } from 'react';
 import { readText } from '@/shared/lib/files';
 import { formatBytes } from '@/shared/lib/format';
@@ -30,11 +27,13 @@ import { useShareableState } from '@/shared/lib/use-shareable-state';
 import { useToolCommands } from '@/shared/lib/tool-commands';
 import type { LanguageId } from '@/shared/lib/syntax/tokenize';
 import { ChangeStrip } from './components/ChangeStrip';
-import { DiffOptions } from './components/DiffOptions';
+import { DiffOptions, ViewControl } from './components/DiffOptions';
 import { DiffView, type DiffViewHandle } from './components/DiffView';
 import { ExportMenu } from './components/ExportMenu';
 import { MergePanel } from './components/MergePanel';
+import { NavHint } from './components/NavHint';
 import { SemanticView } from './components/SemanticView';
+import { SideCard } from './components/SideCard';
 import { useDiffJob } from './hooks/useDiffJob';
 import { detectLanguage } from './lib/detect';
 import { isIdentical, type DiffOptions as EngineOptions } from './lib/engine';
@@ -43,10 +42,7 @@ import { normaliseJson } from './lib/semantic';
 import { buildViewModel, stepAnchor } from './lib/view-model';
 import { diffSettings, type DiffMode } from './settings';
 import { DIFF_SHARE_VERSION, parseDiffShare, type DiffShare } from './share';
-import { CodeEditor } from '@/shared/editor';
 
-const TEXT_ACCEPT =
-  '.txt,.md,.json,.html,.css,.js,.ts,.jsx,.tsx,.xml,.yaml,.yml,.log,.csv,.patch,.diff,text/plain';
 const MAX_BYTES = 20 * 1024 * 1024;
 const SAMPLE = {
   left: 'The quick brown fox\njumps over the lazy dog.\nLine three stays.\nA line that goes away.',
@@ -183,6 +179,10 @@ export default function TextDiff() {
     setRight(left);
     setNames({ left: names.right, right: names.left });
   };
+  const loadSample = () => {
+    setLeft(SAMPLE.left);
+    setRight(SAMPLE.right);
+  };
   const clear = () => {
     setLeft('');
     setRight('');
@@ -218,14 +218,7 @@ export default function TextDiff() {
       shortcut: 'Mod+Shift+X',
       run: clear,
     },
-    {
-      id: 'sample',
-      label: 'Load sample',
-      run: () => {
-        setLeft(SAMPLE.left);
-        setRight(SAMPLE.right);
-      },
-    },
+    { id: 'sample', label: 'Load sample', run: loadSample },
   ]);
 
   const open = (which: 'left' | 'right', file: File) => {
@@ -244,69 +237,24 @@ export default function TextDiff() {
     );
   };
 
-  const side = (which: 'left' | 'right') => {
-    const value = which === 'left' ? left : right;
-    const label = which === 'left' ? 'Original text' : 'Changed text';
-    return (
-      <Card
-        as="section"
-        title={which === 'left' ? 'Original' : 'Changed'}
-        description={
-          names[which] === (which === 'left' ? 'original' : 'changed')
-            ? undefined
-            : names[which]
-        }
-        headingLevel={2}
-        padding="sm"
-        actions={
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={sparkles}
-            onClick={() =>
-              (which === 'left' ? setLeft : setRight)(SAMPLE[which])
-            }
-          >
-            Sample
-          </Button>
-        }
-      >
-        <Stack gap="3">
-          <CodeEditor
-            value={value}
-            onChange={which === 'left' ? setLeft : setRight}
-            language={
-              settings.syntaxHighlighting
-                ? detectLanguage(value, names[which])
-                : 'plain'
-            }
-            aria-label={label}
-            placeholder="Paste or type text"
-            minHeight={160}
-            maxHeight={280}
-          />
-          {value === '' ? (
-            <FileDrop
-              size="sm"
-              accept={TEXT_ACCEPT}
-              labels={{
-                prompt: 'Drop a text file here, or',
-                chooseOne: 'Open a file',
-              }}
-              onFiles={(files) => files[0] && open(which, files[0])}
-            />
-          ) : null}
-        </Stack>
-      </Card>
-    );
-  };
-
   const stats = job.result?.stats;
   return (
     <Stack gap="6">
+      <ToolActions>
+        <ShareButton share={share} />
+      </ToolActions>
       <Grid columns={{ base: 1, lg: 2 }} gap="5">
-        {side('left')}
-        {side('right')}
+        {(['left', 'right'] as const).map((which) => (
+          <SideCard
+            key={which}
+            side={which}
+            value={which === 'left' ? left : right}
+            onChange={which === 'left' ? setLeft : setRight}
+            name={names[which]}
+            syntaxHighlighting={settings.syntaxHighlighting}
+            onOpen={(file) => open(which, file)}
+          />
+        ))}
       </Grid>
       {fileError ? (
         <Notice tone="danger" dismissible onDismiss={() => setFileError(null)}>
@@ -331,27 +279,20 @@ export default function TextDiff() {
             <DiffOptions settings={settings} update={update} />
           ) : null}
         </Inline>
-        <Inline gap="2" wrap>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={swapIcon}
-            onClick={swap}
-            disabled={!left && !right}
-          >
+        {left || right ? (
+          <Button size="sm" variant="ghost" icon={swapIcon} onClick={swap}>
             Swap
           </Button>
-          <ExportMenu result={job.result} texts={texts} names={names} />
+        ) : (
           <Button
             size="sm"
             variant="ghost"
-            icon={shareIcon}
-            disabled={!share.canShare}
-            onClick={() => void share.share().catch(() => {})}
+            icon={sparkles}
+            onClick={loadSample}
           >
-            Share
+            Try an example
           </Button>
-        </Inline>
+        )}
       </Inline>
       {textMode ? (
         <>
@@ -361,7 +302,17 @@ export default function TextDiff() {
             </Notice>
           ) : null}
           {vm && job.result && stats ? (
-            <Card as="section" title="Differences" headingLevel={2}>
+            <Card
+              as="section"
+              title="Differences"
+              headingLevel={2}
+              actions={
+                <Inline gap="2" align="center" wrap>
+                  <ViewControl settings={settings} update={update} />
+                  <ExportMenu result={job.result} texts={texts} names={names} />
+                </Inline>
+              }
+            >
               <Stack gap="4" aria-busy={job.pending}>
                 <StatusBar
                   label="Comparison"
@@ -433,19 +384,7 @@ export default function TextDiff() {
           onSortKeys={(sortKeys) => update({ sortKeys })}
         />
       ) : null}
-      <Inline gap="2" align="center" wrap>
-        <Text size="sm" tone="muted">
-          Press
-        </Text>
-        <Kbd keys="n" size="sm" />
-        <Text size="sm" tone="muted">
-          and
-        </Text>
-        <Kbd keys="p" size="sm" />
-        <Text size="sm" tone="muted">
-          to move between changes.
-        </Text>
-      </Inline>
+      {anchors.length > 0 ? <NavHint /> : null}
     </Stack>
   );
 }

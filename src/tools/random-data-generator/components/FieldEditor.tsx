@@ -4,21 +4,23 @@ import {
   Card,
   IconButton,
   Inline,
+  Menu,
+  Popover,
   Select,
   Stack,
   Text,
   TextField,
 } from '@arshad-shah/cynosure';
 import {
-  arrowDown,
-  arrowUp,
   chevronDown,
   chevronRight,
+  moreHorizontal,
   plus,
-  trash,
+  sliders,
 } from '@arshad-shah/cynosure/icons';
 import type { MockTable } from '@/shared/lib/data-formats/mock-schema';
 import { fieldDescriptions, fieldTypes } from '../lib/field-types';
+import { changedOptions } from '../lib/options';
 import type { FieldSchema } from '../types';
 import { FieldOptions } from './FieldOptions';
 
@@ -43,7 +45,10 @@ const TYPE_OPTIONS = fieldTypes.map((t) => ({
   label: t.label,
 }));
 
-/** One field: name, type, options; objects and arrays hold more fields. */
+/**
+ * One field on one row: name, type, its options behind a popover and the
+ * move and remove actions in a menu. Objects and arrays hold more fields.
+ */
 export function FieldEditor({
   field,
   index,
@@ -63,58 +68,24 @@ export function FieldEditor({
   // Expand state is keyed by the stable id so a rename keeps it open.
   const expandKey = field.id ?? fullPath;
   const isExpanded = expandedFields[expandKey] || false;
+  // A plain object has no options of its own.
+  const hasOptions = field.type !== 'object';
+  const changed = changedOptions(field);
 
   return (
     <Card padding="sm" variant={level > 0 ? 'outline' : undefined}>
       <Stack gap="3">
-        <Inline justify="between" align="center" gap="2" wrap={false}>
-          <Inline align="center" gap="2" wrap={false}>
-            {isNested ? (
-              <IconButton
-                variant="ghost"
-                size="sm"
-                label={isExpanded ? 'Collapse field' : 'Expand field'}
-                aria-expanded={isExpanded}
-                icon={isExpanded ? chevronDown : chevronRight}
-                onClick={() => onToggleExpanded(expandKey)}
-              />
-            ) : null}
-            <Badge variant="soft" tone="accent" size="sm">
-              {`#${index + 1}`}
-            </Badge>
-          </Inline>
-          <Inline gap="1" wrap={false}>
-            {level === 0 && (
-              <>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  label="Move up"
-                  icon={arrowUp}
-                  disabled={index === 0}
-                  onClick={() => onMoveField(`${index}`, 'up')}
-                />
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  label="Move down"
-                  icon={arrowDown}
-                  disabled={index === totalFields - 1}
-                  onClick={() => onMoveField(`${index}`, 'down')}
-                />
-              </>
-            )}
+        <Inline gap="2" align="center" wrap>
+          {isNested ? (
             <IconButton
               variant="ghost"
-              tone="danger"
               size="sm"
-              label="Remove field"
-              icon={trash}
-              onClick={() => onRemoveField(fullPath)}
+              label={isExpanded ? 'Collapse field' : 'Expand field'}
+              aria-expanded={isExpanded}
+              icon={isExpanded ? chevronDown : chevronRight}
+              onClick={() => onToggleExpanded(expandKey)}
             />
-          </Inline>
-        </Inline>
-        <Inline gap="2" align="start" wrap>
+          ) : null}
           <Stack grow minSize="0">
             <TextField
               size="sm"
@@ -125,26 +96,86 @@ export function FieldEditor({
               onChange={(value) => onUpdateField(fullPath, { name: value })}
             />
           </Stack>
-          <Select
-            size="sm"
-            label="Data type"
-            labelHidden
-            value={field.type}
-            onChange={(v) =>
-              onUpdateField(fullPath, { type: v as FieldSchema['type'] })
-            }
-            options={TYPE_OPTIONS}
-          />
+          <Inline gap="2" align="center" wrap={false}>
+            <Select
+              size="sm"
+              label="Data type"
+              labelHidden
+              value={field.type}
+              onChange={(v) =>
+                onUpdateField(fullPath, { type: v as FieldSchema['type'] })
+              }
+              options={TYPE_OPTIONS}
+            />
+            {hasOptions ? (
+              <Popover
+                label={`Options for ${field.name || 'this field'}`}
+                size="lg"
+                width="fixed"
+                trigger={(props) => (
+                  <Button {...props} size="sm" variant="ghost" icon={sliders}>
+                    Options
+                    {changed ? (
+                      <Badge size="sm" tone="accent">
+                        {String(changed)}
+                      </Badge>
+                    ) : null}
+                  </Button>
+                )}
+              >
+                <Stack gap="3">
+                  <Text size="sm" tone="muted">
+                    {fieldDescriptions[field.type] ??
+                      'Field type description not available'}
+                  </Text>
+                  <FieldOptions
+                    field={field}
+                    tables={tables}
+                    onChange={(patch) => onUpdateField(fullPath, patch)}
+                  />
+                </Stack>
+              </Popover>
+            ) : null}
+            <Menu
+              label={`Actions for ${field.name || 'this field'}`}
+              items={[
+                ...(level === 0
+                  ? [
+                      {
+                        value: 'up',
+                        label: 'Move up',
+                        disabled: index === 0,
+                      },
+                      {
+                        value: 'down',
+                        label: 'Move down',
+                        disabled: index === totalFields - 1,
+                      },
+                    ]
+                  : []),
+                {
+                  value: 'remove',
+                  label: 'Remove field',
+                  tone: 'danger' as const,
+                },
+              ]}
+              onSelect={(v) =>
+                v === 'remove'
+                  ? onRemoveField(fullPath)
+                  : onMoveField(`${index}`, v as 'up' | 'down')
+              }
+              trigger={(props) => (
+                <IconButton
+                  {...props}
+                  size="sm"
+                  variant="ghost"
+                  label="Field actions"
+                  icon={moreHorizontal}
+                />
+              )}
+            />
+          </Inline>
         </Inline>
-        <FieldOptions
-          field={field}
-          tables={tables}
-          onChange={(patch) => onUpdateField(fullPath, patch)}
-        />
-        <Text size="xs" tone="muted">
-          {fieldDescriptions[field.type] ||
-            'Field type description not available'}
-        </Text>
         {isNested && isExpanded && (
           <Stack gap="3" paddingInline="3">
             {field.fields?.map((nestedField, nestedIndex) => (

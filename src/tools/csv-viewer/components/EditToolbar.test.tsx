@@ -12,23 +12,35 @@ const props = {
   rowCount: 5,
 };
 
+const openEdit = () =>
+  fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
 describe('EditToolbar', () => {
-  it('deletes the selected rows', () => {
+  it('deletes the selected rows from the Edit menu', () => {
     const onEdit = vi.fn(() => true);
     render(<EditToolbar {...props} onEdit={onEdit} selectedRows={[3, 1]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Delete 2 rows' }));
+    openEdit();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete 2 rows' }));
     expect(onEdit).toHaveBeenCalledWith({ kind: 'delete-rows', rows: [3, 1] });
   });
 
-  it('names a single row and is disabled with none selected', () => {
-    const { rerender } = render(
+  it('names a single row and offers no delete with none selected', () => {
+    const { unmount } = render(
       <EditToolbar {...props} onEdit={() => true} selectedRows={[0]} />,
     );
-    expect(screen.getByRole('button', { name: 'Delete row' })).toBeTruthy();
-    rerender(<EditToolbar {...props} onEdit={() => true} selectedRows={[]} />);
-    expect(
-      (screen.getByRole('button', { name: 'Delete row' }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
+    openEdit();
+    expect(screen.getByRole('menuitem', { name: 'Delete row' })).toBeTruthy();
+    unmount();
+    render(<EditToolbar {...props} onEdit={() => true} selectedRows={[]} />);
+    openEdit();
+    expect(screen.queryByRole('menuitem', { name: /Delete row/ })).toBeNull();
+  });
+
+  it('adds a row at the end from the Edit menu', () => {
+    const onEdit = vi.fn(() => true);
+    render(<EditToolbar {...props} onEdit={onEdit} selectedRows={[]} />);
+    openEdit();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Add row' }));
+    expect(onEdit).toHaveBeenCalledWith({ kind: 'add-row', at: 5 });
   });
 });

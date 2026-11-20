@@ -6,7 +6,9 @@ import {
   Card,
   CodeBlock,
   Inline,
+  Menu,
   Notice,
+  Popover,
   Select,
   Stack,
   Tab,
@@ -15,7 +17,7 @@ import {
   Tabs,
   Text,
 } from '@arshad-shah/cynosure';
-import { clock } from '@arshad-shah/cynosure/icons';
+import { chevronDown, clock } from '@arshad-shah/cynosure/icons';
 import type { HandoffPayload } from '@/shared/lib/handoff';
 import type { CategorizedClaims } from '../lib/categorize';
 import { claimToEpoch } from '../lib/handoffs';
@@ -36,6 +38,39 @@ const GROUPS: { id: keyof CategorizedClaims; label: string }[] = [
 ];
 
 const json = (v: unknown) => JSON.stringify(v, null, 2);
+
+const CLAIM_NAME = { exp: 'Expiry (exp)', iat: 'Issued at (iat)' } as const;
+
+/** Clock skew, behind a header button: rarely changed, saved as a setting. */
+function SkewPopover({
+  skewSec,
+  onSkew,
+}: {
+  skewSec: number;
+  onSkew(sec: number): void;
+}) {
+  return (
+    <Popover
+      label="Clock skew"
+      trigger={(props) => (
+        <Button {...props} size="sm" variant="ghost" icon={clock}>
+          {skewSec ? `Skew ${skewSec} s` : 'Clock skew'}
+        </Button>
+      )}
+    >
+      <Select
+        label="Clock skew"
+        description="Leeway for exp, nbf and iat when clocks differ."
+        value={String(skewSec)}
+        onChange={(v) => onSkew(Number(v))}
+        options={SKEW_OPTIONS.map((n) => ({
+          value: String(n),
+          label: n === 0 ? 'None' : `${n} s`,
+        }))}
+      />
+    </Popover>
+  );
+}
 
 export interface DecodedCardProps {
   decoded: DecodedJWT;
@@ -83,42 +118,55 @@ export function DecodedCard({
   ).map((g) => g.id);
 
   return (
-    <Card as="section" title="Decoded token">
+    <Card
+      as="section"
+      title="Decoded token"
+      actions={<SkewPopover skewSec={skewSec} onSkew={onSkew} />}
+    >
       <Stack gap="6">
         <Stack gap="4" role="group" aria-label="Token status">
           <Notice tone={time.tone} title={time.title}>
-            <Stack gap="4">
-              <Text as="p">{time.detail}</Text>
-              <Select
-                label="Clock skew"
-                description="Leeway for exp, nbf and iat when clocks differ."
-                size="sm"
-                value={String(skewSec)}
-                onChange={(v) => onSkew(Number(v))}
-                options={SKEW_OPTIONS.map((n) => ({
-                  value: String(n),
-                  label: n === 0 ? 'None' : `${n} s`,
-                }))}
-              />
-            </Stack>
+            <Text as="p">{time.detail}</Text>
           </Notice>
           <Notice tone={sig.tone} title={sig.title}>
             {sigDetail}
           </Notice>
         </Stack>
-        {epochs.length ? (
-          <Inline gap="2" wrap>
-            {epochs.map(({ claim, payload }) => (
-              <Button
-                key={claim}
-                size="sm"
-                variant="soft"
-                icon={clock}
-                onClick={() => onEpoch(payload)}
-              >
-                {`Open ${claim} in Epoch Converter`}
-              </Button>
-            ))}
+        {epochs.length === 1 ? (
+          <Inline>
+            <Button
+              size="sm"
+              variant="soft"
+              icon={clock}
+              onClick={() => onEpoch(epochs[0]!.payload)}
+            >
+              {`Open ${epochs[0]!.claim} in Epoch Converter`}
+            </Button>
+          </Inline>
+        ) : epochs.length > 1 ? (
+          <Inline>
+            <Menu
+              label="Open in Epoch Converter"
+              items={epochs.map(({ claim }) => ({
+                value: claim,
+                label: CLAIM_NAME[claim],
+              }))}
+              onSelect={(v) => {
+                const e = epochs.find((x) => x.claim === v);
+                if (e) onEpoch(e.payload);
+              }}
+              trigger={(props) => (
+                <Button
+                  {...props}
+                  size="sm"
+                  variant="soft"
+                  icon={clock}
+                  iconEnd={chevronDown}
+                >
+                  Open in Epoch Converter
+                </Button>
+              )}
+            />
           </Inline>
         ) : null}
         <Tabs value={tab} onChange={(v) => onTab(v as JwtTab)}>

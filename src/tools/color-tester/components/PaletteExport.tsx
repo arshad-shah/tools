@@ -68,7 +68,11 @@ export function PaletteExport({ scale, palette }: PaletteExportProps) {
       <Heading level={3} size="sm">
         Export
       </Heading>
-      <Grid columns={{ base: 1, md: 3 }} gap="4" align="end">
+      <Grid
+        columns={{ base: 1, md: palette.length ? 3 : 2 }}
+        gap="4"
+        align="end"
+      >
         <TextField
           label="Token name"
           size="sm"
@@ -77,21 +81,20 @@ export function PaletteExport({ scale, palette }: PaletteExportProps) {
           autoComplete="off"
           spellCheck={false}
         />
-        <SegmentedControl
-          label="Export source"
-          size="sm"
-          fullWidth
-          value={from}
-          onChange={(v) => setSource(v as Source)}
-          options={[
-            { value: 'scale', label: 'Scale' },
-            {
-              value: 'palette',
-              label: 'Working palette',
-              disabled: palette.length === 0,
-            },
-          ]}
-        />
+        {/* With an empty working palette the scale is the only source. */}
+        {palette.length ? (
+          <SegmentedControl
+            label="Export source"
+            size="sm"
+            fullWidth
+            value={from}
+            onChange={(v) => setSource(v as Source)}
+            options={[
+              { value: 'scale', label: 'Scale' },
+              { value: 'palette', label: 'Working palette' },
+            ]}
+          />
+        ) : null}
         <SegmentedControl
           label="Export format"
           size="sm"

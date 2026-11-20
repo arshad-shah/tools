@@ -101,12 +101,12 @@ test('the Map lays out 5,000 cards in the worker without blocking', async ({
       return document.getElementById(id)?.textContent ?? '';
     });
   const before = await summary();
-  // Open the cap's listbox first; the option is then found by CSS.
-  await page.getByRole('combobox', { name: 'Node cap' }).click();
+  // Open the Options menu first; the cap item is then found by CSS.
+  await page.getByRole('button', { name: 'Options', exact: true }).click();
   const longTasks = await observeLongTasks(page);
   // CSS and in-page checks only while observing: a text or label locator
   // walks the whole DOM on the main thread and would count as a long task.
-  await page.locator('[role="option"]', { hasText: '5,000' }).click();
+  await page.locator('[role="menuitemradio"]', { hasText: '5,000' }).click();
   await expect.poll(summary).not.toBe(before);
   await page.waitForTimeout(500);
   const long = await longTasks();

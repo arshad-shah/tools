@@ -29,9 +29,11 @@ export const PresetBar: React.FC = () => {
             shortBreakDuration: p.rest,
           });
       }}
+      // Custom is a state, not a choice: it shows only when the durations
+      // set in Settings match no preset.
       options={[
         ...PRESETS.map((p) => ({ value: p.value, label: p.label })),
-        { value: 'custom', label: 'Custom', disabled: current !== 'custom' },
+        ...(current === 'custom' ? [{ value: 'custom', label: 'Custom' }] : []),
       ]}
     />
   );

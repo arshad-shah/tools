@@ -19,17 +19,39 @@ type Patch = Partial<
 interface SheetSettingsProps {
   settings: CalculatorSettings;
   onChange(patch: Patch): void;
+  /**
+   * Scientific mode: the angle unit up front, beside Options. Standard mode
+   * has no trigonometry keys, so the unit waits inside Options.
+   */
+  angleUpFront: boolean;
 }
 
 const DEFAULT_PRECISION = 14;
 
+/** The angle unit: degrees or radians. */
+export const AngleControl: React.FC<{
+  value: CalculatorSettings['angle'];
+  onChange(angle: CalculatorSettings['angle']): void;
+}> = ({ value, onChange }) => (
+  <SegmentedControl
+    label="Angle unit"
+    value={value}
+    onChange={(angle) => onChange(angle as 'deg' | 'rad')}
+    options={[
+      { value: 'deg', label: 'Degrees' },
+      { value: 'rad', label: 'Radians' },
+    ]}
+  />
+);
+
 /**
- * Angle unit up front (it changes answers often); significant digits, exact
- * decimals and digit grouping behind the Options button.
+ * The angle unit up front in Scientific mode (it changes answers often);
+ * significant digits, exact decimals and digit grouping behind Options.
  */
 export const SheetSettings: React.FC<SheetSettingsProps> = ({
   settings,
   onChange,
+  angleUpFront,
 }) => {
   const changed =
     Number(settings.precision !== DEFAULT_PRECISION) +
@@ -37,23 +59,18 @@ export const SheetSettings: React.FC<SheetSettingsProps> = ({
     Number(settings.thousands);
   return (
     <Inline gap="2" align="center" wrap>
-      <SegmentedControl
-        label="Angle unit"
-        size="sm"
-        value={settings.angle}
-        onChange={(angle) => onChange({ angle: angle as 'deg' | 'rad' })}
-        options={[
-          { value: 'deg', label: 'Degrees' },
-          { value: 'rad', label: 'Radians' },
-        ]}
-      />
+      {angleUpFront ? (
+        <AngleControl
+          value={settings.angle}
+          onChange={(angle) => onChange({ angle })}
+        />
+      ) : null}
       <Popover
         label="Calculator options"
         placement="bottom"
         trigger={(props) => (
           <Button
             {...props}
-            size="sm"
             variant="ghost"
             icon={sliders}
             aria-label={changed ? `Options, ${changed} changed` : 'Options'}
@@ -70,6 +87,12 @@ export const SheetSettings: React.FC<SheetSettingsProps> = ({
         )}
       >
         <Stack gap="5" padding="4">
+          {angleUpFront ? null : (
+            <AngleControl
+              value={settings.angle}
+              onChange={(angle) => onChange({ angle })}
+            />
+          )}
           <NumberField
             label="Significant digits"
             min={4}

@@ -38,30 +38,33 @@ export function StagePanel({
 }) {
   return (
     <Stack gap="5">
-      <ColorField
-        label="Background colour"
-        value={background}
-        onChange={(css) => onChange({ background: css })}
-        alpha
-        disabled={checkerboard}
-      />
-      <ColorSwatches
-        label="Background presets"
-        size="sm"
-        swatches={PRESETS}
-        value={background}
-        disabled={checkerboard}
-        onChange={(c) =>
-          onChange({
-            background: PRESETS.find((p) => p.value === c)?.value ?? c,
-          })
-        }
-      />
       <Switch
         label="Checkerboard (shows transparency)"
         checked={checkerboard}
         onChange={(v) => onChange({ checkerboard: v })}
       />
+      {/* The colour is hidden, not disabled, while the checkerboard covers it. */}
+      {checkerboard ? null : (
+        <>
+          <ColorField
+            label="Background colour"
+            value={background}
+            onChange={(css) => onChange({ background: css })}
+            alpha
+          />
+          <ColorSwatches
+            label="Background presets"
+            size="sm"
+            swatches={PRESETS}
+            value={background}
+            onChange={(c) =>
+              onChange({
+                background: PRESETS.find((p) => p.value === c)?.value ?? c,
+              })
+            }
+          />
+        </>
+      )}
       <Stack gap="2">
         <Text size="sm" weight="medium">
           Device frame

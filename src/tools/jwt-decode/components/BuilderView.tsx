@@ -4,6 +4,7 @@ import {
   CodeBlock,
   EmptyState,
   Inline,
+  Menu,
   Notice,
   Select,
   Stack,
@@ -11,8 +12,14 @@ import {
   TextArea,
   TextField,
 } from '@arshad-shah/cynosure';
-import { arrowRight, clock, key } from '@arshad-shah/cynosure/icons';
+import {
+  arrowRight,
+  chevronDown,
+  clock,
+  key,
+} from '@arshad-shah/cynosure/icons';
 import { useEffect, useMemo, useState } from 'react';
+import { ProductionUseNotice } from '@/app/ui/production-use';
 import { toToolError } from '@/shared/lib/errors';
 import { SECRET_ENCODINGS } from '../lib/constants';
 import {
@@ -148,17 +155,26 @@ export function BuilderView({
           >
             Set iat to now
           </Button>
-          {EXP_PRESETS.map((e) => (
-            <Button
-              key={e.label}
-              size="sm"
-              variant="soft"
-              disabled={!p.value}
-              onClick={() => setClaim('exp', nowSeconds() + e.seconds)}
-            >
-              exp {e.label}
-            </Button>
-          ))}
+          <Menu
+            label="Set exp"
+            items={EXP_PRESETS.map((e) => ({
+              value: String(e.seconds),
+              label: `exp ${e.label}`,
+            }))}
+            onSelect={(v) => setClaim('exp', nowSeconds() + Number(v))}
+            trigger={(props) => (
+              <Button
+                {...props}
+                size="sm"
+                variant="soft"
+                icon={clock}
+                iconEnd={chevronDown}
+                disabled={!p.value}
+              >
+                Set exp
+              </Button>
+            )}
+          />
         </Inline>
         {hmac ? (
           <Stack gap="4">
@@ -174,7 +190,6 @@ export function BuilderView({
             />
             <Select
               label="Secret encoding"
-              size="sm"
               value={encoding}
               onChange={(v) => setEncoding(v as SecretEncoding)}
               options={SECRET_ENCODINGS}
@@ -208,6 +223,13 @@ export function BuilderView({
             ) : null}
           </Stack>
         )}
+        <ProductionUseNotice title="For test tokens">
+          Sign test and development tokens here. Do not paste a production
+          signing secret or key: anyone holding it can mint valid tokens for
+          your users. Production tokens should come from your auth server or a
+          KMS-backed signer. Decoding and verifying production tokens with a
+          public key is fine.
+        </ProductionUseNotice>
       </Stack>
     </Card>
   );

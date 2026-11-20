@@ -102,7 +102,7 @@ for (const theme of ['light', 'dark'] as const) {
         pdf('form.pdf', (await makeFlatFormWord()).bytes),
       );
       const dialog = await signaturePanel(page);
-      await dialog.getByRole('tab', { name: 'Draw' }).click();
+      await dialog.getByRole('radio', { name: 'Draw' }).click();
       await drawStroke(
         page,
         dialog.getByRole('img', { name: 'Draw your signature' }),
@@ -110,7 +110,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(dialog).toHaveScreenshot(`signing-draw-${theme}.png`);
       await expectAxeClean(page);
 
-      await dialog.getByRole('tab', { name: 'Type' }).click();
+      await dialog.getByRole('radio', { name: 'Type' }).click();
       await dialog.getByLabel('Your name').fill('Jane Doe');
       await expect(dialog.getByText(/^Loading /)).toHaveCount(0, {
         timeout: 15_000,
@@ -118,16 +118,16 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(dialog).toHaveScreenshot(`signing-type-${theme}.png`);
       await expectAxeClean(page);
 
-      await dialog.getByRole('tab', { name: 'Photo' }).click();
+      await dialog.getByRole('radio', { name: 'Photo' }).click();
       await expect(dialog).toHaveScreenshot(`signing-photo-${theme}.png`);
 
-      await dialog.getByRole('tab', { name: 'Initials' }).click();
+      await dialog.getByRole('radio', { name: 'Initials' }).click();
       await expect(dialog).toHaveScreenshot(`signing-initials-${theme}.png`);
 
-      await dialog.getByRole('tab', { name: 'Block' }).click();
+      await dialog.getByRole('radio', { name: 'Block' }).click();
       await expect(dialog).toHaveScreenshot(`signing-block-${theme}.png`, {
         // The date preview shows today's date.
-        mask: [dialog.getByText(/\d{4}/)],
+        mask: [dialog.getByText(/\d{4}/).filter({ visible: true })],
       });
       await expectAxeClean(page);
     });
@@ -175,10 +175,9 @@ for (const theme of ['light', 'dark'] as const) {
         await expect(dialog).toHaveScreenshot(
           `signing-signatures-${name}-${theme}.png`,
           {
-            // Signing time and certificate dates come from the run.
-            mask: [
-              dialog.locator('[data-separator]').locator('..').locator('..'),
-            ],
+            // Signing time and certificate dates come from the run: mask
+            // every line that states a year.
+            mask: [dialog.getByText(/\d{4}/).filter({ visible: true })],
           },
         );
         await expectAxeClean(page);

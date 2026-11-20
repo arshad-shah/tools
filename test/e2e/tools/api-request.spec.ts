@@ -141,7 +141,8 @@ test('opens the response in the JSON Viewer', async ({ page }) => {
   await page.goto(pathOf('api-request'));
   await urlBox(page).fill(`${API}/doc`);
   await send(page);
-  await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
+  await page.getByRole('button', { name: 'Open in', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Open in JSON Viewer' }).click();
   await expect(page).toHaveURL(new RegExp(`${pathOf('json-and-xml-viewer')}`));
   await expectEditorValue(
     page.getByRole('textbox', { name: 'Document' }),
@@ -195,5 +196,32 @@ test('the old /web/api-request route is gone and search finds HTTP Client', asyn
     page
       .getByRole('region', { name: 'Search results' })
       .getByRole('link', { name: /HTTP Client/ }),
+  ).toBeVisible();
+});
+
+test('the header and request menus reach environments, Save and code', async ({
+  page,
+}) => {
+  await page.goto(pathOf('api-request'));
+  await page
+    .getByRole('button', { name: 'Environment: No environment' })
+    .click();
+  await page.getByRole('menuitem', { name: 'Manage environments' }).click();
+  const envs = page.getByRole('dialog', { name: 'Environments' });
+  await envs.getByRole('button', { name: 'New environment' }).click();
+  await envs.getByRole('button', { name: 'Done' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Environment: Environment 1' }),
+  ).toBeVisible();
+  await urlBox(page).fill(`${API}/items`);
+  await page.getByRole('button', { name: 'More request actions' }).click();
+  await page.getByRole('menuitem', { name: 'Copy as code' }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'Code snippet' }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'Save request' }),
   ).toBeVisible();
 });

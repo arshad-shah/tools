@@ -107,6 +107,7 @@
     "react-router-dom": "^7.18.4",
     "smol-toml": "^1.9.0",
     "sql-formatter": "^15.9.0",
+    "sql.js": "1.15.2",
     "terser": "^5.51.2",
     "tesseract.js": "^7.0.0",
     "tesseract.js-core": "^7.0.0",

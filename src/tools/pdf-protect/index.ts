@@ -14,7 +14,6 @@ export default defineTool({
   accepts: [{ kinds: ['pdf'] }, { mimes: ['application/vnd.tools.secret'] }],
   alsoIn: ['security'],
   version: '1.0.0',
-  isNew: true,
   enabled: true,
   load: () => import('./Tool'),
 });

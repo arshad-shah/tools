@@ -106,6 +106,22 @@ describe('Color & Contrast', () => {
       screen.getByRole('button', { name: 'Suggest passing foreground' }),
     );
     expect(within(results).getByText('AA normal: pass')).toBeTruthy();
+    // Once the pair passes there is nothing to suggest, so no buttons.
+    expect(
+      screen.queryByRole('button', { name: /^Suggest passing/ }),
+    ).toBeNull();
+    expect(screen.getByText(/nothing to suggest/)).toBeTruthy();
+  });
+
+  it('offers the export source only once the working palette has colours', () => {
+    renderTool();
+    expect(
+      screen.queryByRole('radiogroup', { name: 'Export source' }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Add base colour' }));
+    expect(
+      screen.getByRole('radiogroup', { name: 'Export source' }),
+    ).toBeTruthy();
   });
 
   it('simulates colour vision on the samples and swatches', () => {

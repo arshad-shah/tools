@@ -1,14 +1,14 @@
 import {
   Badge,
   Button,
-  Grid,
-  GridItem,
   Inline,
+  Popover,
   SearchField,
   Stack,
   Switch,
   TextField,
 } from '@arshad-shah/cynosure';
+import { filter as filterIcon } from '@arshad-shah/cynosure/icons';
 import type { FieldFilter, LogFilter } from '../lib/filter';
 import { levelLabel, levelTone, orderLevels } from '../lib/level-style';
 import { rowTime } from '../lib/progress';
@@ -24,7 +24,10 @@ export interface FilterBarProps {
 const fieldLabel = (f: FieldFilter) =>
   `${f.mode === 'include' ? '' : 'not '}${f.key}=${f.value}`;
 
-/** Level toggles, search, exclude and component filters, active chips. */
+/**
+ * Level toggles, search (with Regex), the rarer exclude and component
+ * filters behind More filters, and the active chips.
+ */
 export function FilterBar({
   filter,
   onChange,
@@ -61,51 +64,70 @@ export function FilterBar({
           );
         })}
       </Inline>
-      <Grid columns={{ base: 1, md: 4 }} gap="3">
-        <GridItem span={{ base: 1, md: 2 }}>
-          <Inline gap="3" align="start" wrap={false}>
-            <Stack grow minSize="0">
-              <SearchField
-                size="sm"
-                label="Search entries"
-                labelHidden
-                placeholder={text.regex ? 'Regular expression' : 'Search text'}
-                value={text.value}
-                onChange={(value) => set({ text: { ...text, value } })}
-                error={
-                  searchError ? `Invalid regex: ${searchError}` : undefined
-                }
-              />
-            </Stack>
-            <Switch
-              size="sm"
-              label="Regex"
-              checked={text.regex}
-              onChange={(regex) => set({ text: { ...text, regex } })}
-            />
-          </Inline>
-        </GridItem>
-        <TextField
+      <Inline gap="3" align="start" wrap={false}>
+        <Stack grow minSize="0">
+          <SearchField
+            size="sm"
+            label="Search entries"
+            labelHidden
+            placeholder={text.regex ? 'Regular expression' : 'Search text'}
+            value={text.value}
+            onChange={(value) => set({ text: { ...text, value } })}
+            error={searchError ? `Invalid regex: ${searchError}` : undefined}
+          />
+        </Stack>
+        <Switch
           size="sm"
+          label="Regex"
+          checked={text.regex}
+          onChange={(regex) => set({ text: { ...text, regex } })}
+        />
+        <MoreFilters filter={filter} set={set} />
+      </Inline>
+      <ActiveChips filter={filter} onChange={onChange} />
+    </Stack>
+  );
+}
+
+function MoreFilters({
+  filter,
+  set,
+}: {
+  filter: LogFilter;
+  set(patch: Partial<LogFilter>): void;
+}) {
+  const active =
+    (filter.exclude.some((t) => t.trim()) ? 1 : 0) + (filter.component ? 1 : 0);
+  return (
+    <Popover
+      label="More filters"
+      trigger={(props) => (
+        <Button {...props} size="sm" variant="ghost" icon={filterIcon}>
+          Filters
+          {active ? (
+            <Badge size="sm" tone="accent">
+              {active}
+            </Badge>
+          ) : null}
+        </Button>
+      )}
+    >
+      <Stack gap="4">
+        <TextField
           label="Exclude terms"
-          labelHidden
-          placeholder="Exclude terms, comma separated"
+          description="Comma separated."
           clearable
           value={filter.exclude.join(',')}
           onChange={(v) => set({ exclude: v.split(',') })}
         />
         <TextField
-          size="sm"
           label="Component"
-          labelHidden
-          placeholder="Component"
           clearable
           value={filter.component ?? ''}
           onChange={(v) => set({ component: v || undefined })}
         />
-      </Grid>
-      <ActiveChips filter={filter} onChange={onChange} />
-    </Stack>
+      </Stack>
+    </Popover>
   );
 }
 

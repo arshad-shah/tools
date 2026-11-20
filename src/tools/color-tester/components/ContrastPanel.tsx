@@ -172,26 +172,31 @@ export function ContrastPanel({
               onChange={(v) => setTarget(v as `${ContrastTarget}`)}
               options={TARGETS}
             />
-            <Inline gap="2" wrap>
-              <Button
-                size="sm"
-                variant="soft"
-                icon={wand}
-                disabled={!view.fgFix}
-                onClick={() => view.fgFix && onFg(view.fgFix)}
-              >
-                Suggest passing foreground
-              </Button>
-              <Button
-                size="sm"
-                variant="soft"
-                icon={wand}
-                disabled={!view.bgFix}
-                onClick={() => view.bgFix && onBg(view.bgFix)}
-              >
-                Suggest passing background
-              </Button>
-            </Inline>
+            {/* Only the suggestions that exist; the line below says why not. */}
+            {view.fgFix || view.bgFix ? (
+              <Inline gap="2" wrap>
+                {view.fgFix ? (
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    icon={wand}
+                    onClick={() => view.fgFix && onFg(view.fgFix)}
+                  >
+                    Suggest passing foreground
+                  </Button>
+                ) : null}
+                {view.bgFix ? (
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    icon={wand}
+                    onClick={() => view.bgFix && onBg(view.bgFix)}
+                  >
+                    Suggest passing background
+                  </Button>
+                ) : null}
+              </Inline>
+            ) : null}
             {view.passes ? (
               <Text size="sm" tone="muted">
                 {`Already meets ${target}:1; nothing to suggest.`}

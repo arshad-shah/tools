@@ -1,10 +1,12 @@
 import {
   Button,
   ColorField,
+  Disclosure,
   FileDrop,
   Grid,
   Image,
   Inline,
+  SegmentedControl,
   Select,
   Slider,
   Stack,
@@ -59,7 +61,7 @@ export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
   const hex = (v: string) => (/^#[0-9a-f]{6}$/i.test(v) ? v : null);
   return (
     <Stack gap="5">
-      <Grid minItemWidth="12rem" gap="4">
+      <Grid columns={{ base: 1, sm: 2 }} gap="4">
         <ColorField
           label="Code colour"
           format="hex"
@@ -72,27 +74,7 @@ export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
           value={s.bg}
           onChange={(v) => hex(v) && update({ bg: v })}
         />
-        <Select
-          label="Error correction"
-          value={s.ecc}
-          onChange={(v) => update({ ecc: v as EccLevel })}
-          options={ECC_ITEMS}
-        />
       </Grid>
-      <Slider
-        label="Preview size (px)"
-        showValue
-        value={s.size}
-        min={128}
-        max={512}
-        step={16}
-        onChange={(size) => update({ size: size as number })}
-      />
-      <Switch
-        label="Quiet zone (4 modules)"
-        checked={s.margin}
-        onChange={(margin) => update({ margin })}
-      />
       <Stack gap="3">
         <Text weight="medium">Logo (stays on this device)</Text>
         {logo ? (
@@ -130,6 +112,42 @@ export function StylePanel({ settings: s, update, logo, onLogoChange }: Props) {
           </Stack>
         ) : null}
       </Stack>
+      {/* Rarely changed: error correction, quiet zone and how the preview draws. */}
+      <Disclosure summary="More options" variant="line">
+        <Stack gap="5">
+          <Select
+            label="Error correction"
+            value={s.ecc}
+            onChange={(v) => update({ ecc: v as EccLevel })}
+            options={ECC_ITEMS}
+          />
+          <Switch
+            label="Quiet zone (4 modules)"
+            checked={s.margin}
+            onChange={(margin) => update({ margin })}
+          />
+          <Slider
+            label="Preview size (px)"
+            showValue
+            value={s.size}
+            min={128}
+            max={512}
+            step={16}
+            onChange={(size) => update({ size: size as number })}
+          />
+          <SegmentedControl
+            label="Preview render"
+            value={s.renderAs}
+            onChange={(renderAs) =>
+              update({ renderAs: renderAs as 'svg' | 'canvas' })
+            }
+            options={[
+              { value: 'svg', label: 'SVG' },
+              { value: 'canvas', label: 'Canvas' },
+            ]}
+          />
+        </Stack>
+      </Disclosure>
     </Stack>
   );
 }

@@ -1,14 +1,13 @@
 import {
   Button,
   Card,
-  Inline,
   NumberField,
   Popover,
   SegmentedControl,
   Select,
   Stack,
 } from '@arshad-shah/cynosure';
-import { settings as settingsIcon } from '@arshad-shah/cynosure/icons';
+import { sliders } from '@arshad-shah/cynosure/icons';
 import React, { useRef, useState } from 'react';
 import { ShareButton, ToolActions, TransformLayout } from '@/app/ui/transform';
 import { useToolCommands } from '@/shared/lib/tool-commands';
@@ -84,7 +83,7 @@ const UnitConverter: React.FC = () => {
     <Popover
       label="Number display"
       trigger={(props) => (
-        <Button {...props} variant="soft" icon={settingsIcon}>
+        <Button {...props} size="sm" variant="ghost" icon={sliders}>
           Display
         </Button>
       )}
@@ -126,18 +125,15 @@ const UnitConverter: React.FC = () => {
   );
 
   const units = (
-    <Card as="section" title={`${category.label} units`}>
+    <Card as="section" title={`${category.label} units`} actions={display}>
       <Stack gap="5">
-        <Inline gap="3" align="end" wrap>
-          <Select
-            label="Category"
-            width="md"
-            value={category.id}
-            onChange={(id) => s.setCategory(id)}
-            options={CATEGORIES.map((c) => ({ value: c.id, label: c.label }))}
-          />
-          {display}
-        </Inline>
+        <Select
+          label="Category"
+          width="md"
+          value={category.id}
+          onChange={(id) => s.setCategory(id)}
+          options={CATEGORIES.map((c) => ({ value: c.id, label: c.label }))}
+        />
         <AllUnits
           category={category}
           values={s.values}

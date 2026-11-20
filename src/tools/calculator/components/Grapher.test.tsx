@@ -42,8 +42,15 @@ describe('Grapher', () => {
     const max = () => screen.getByLabelText('Max X');
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     expect(Number((min() as HTMLInputElement).value)).toBeCloseTo(-10 / 1.5);
-    fireEvent.click(screen.getByRole('button', { name: 'Reset view' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Pan right' }));
+    // Pan by a step and Reset view live in the More menu.
+    const more = () =>
+      fireEvent.click(
+        screen.getByRole('button', { name: 'More view controls' }),
+      );
+    more();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Reset view' }));
+    more();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Pan right' }));
     expect(min()).toHaveProperty('value', '-5');
     expect(max()).toHaveProperty('value', '15');
     fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
@@ -106,10 +113,13 @@ describe('Grapher', () => {
 
   it('caps the list at six functions', () => {
     render(<Grapher angle="rad" />);
-    const add = screen.getByText('Add function').closest('button')!;
-    for (let i = 0; i < 6; i++) fireEvent.click(add);
+    // A lone function cannot be removed, so it has no Remove button.
+    expect(screen.queryByLabelText('Remove f1')).toBeNull();
+    for (let i = 0; i < 5; i++)
+      fireEvent.click(screen.getByText('Add function'));
     expect(screen.getAllByLabelText(/^Remove f/)).toHaveLength(6);
-    expect(add.disabled).toBe(true);
+    // At the cap, Add function is gone rather than disabled.
+    expect(screen.queryByText('Add function')).toBeNull();
   });
 
   it('reports a function it cannot plot', () => {

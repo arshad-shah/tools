@@ -25,10 +25,12 @@ describe('Base64 Converter', () => {
     expect(
       screen.getByRole('heading', { name: 'Nothing to encode yet' }),
     ).toBeTruthy();
-    fireEvent.click(
-      screen.getAllByRole('button', { name: 'Try an example' })[0]!,
-    );
+    // One example button (by the input), and no Swap while there is no output.
+    expect(screen.queryByRole('button', { name: 'Swap' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
     expect(block('Base64').textContent).toContain('SGVsbG8s');
+    expect(screen.queryByRole('button', { name: 'Try an example' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Swap' })).toBeTruthy();
   });
 
   it('encodes text beside the input, with copy and download', () => {

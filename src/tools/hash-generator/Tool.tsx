@@ -4,6 +4,7 @@ import {
   Inline,
   Popover,
   SegmentedControl,
+  Select,
   Stack,
   Text,
 } from '@arshad-shah/cynosure';
@@ -113,9 +114,9 @@ const HashGenerator: React.FC = () => {
           ]}
         />
         <Inline gap="3" align="center" wrap>
-          <SegmentedControl
+          <Select
             label="Output format"
-            size="sm"
+            labelHidden
             value={settings.output}
             onChange={(v) => update({ output: v as DigestFormat })}
             options={DIGEST_FORMATS}

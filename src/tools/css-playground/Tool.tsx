@@ -11,13 +11,12 @@ import {
   Stack,
   StatusBar,
   StatusBarSegment,
-  Switch,
   Tab,
   TabList,
   TabPanel,
   Tabs,
 } from '@arshad-shah/cynosure';
-import { alignLeft, sparkles } from '@arshad-shah/cynosure/icons';
+import { sparkles } from '@arshad-shah/cynosure/icons';
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import type { ToolProps } from '@/app/tool';
 import { PANES_STACK_BELOW } from '@/app/ui/transform';
@@ -31,6 +30,7 @@ import { useHandoff } from '@/shared/lib/handoff';
 import { notify } from '@/shared/lib/notify';
 import { useToolCommands, type ToolCommand } from '@/shared/lib/tool-commands';
 import { ColoursPanel } from './components/ColoursPanel';
+import { EditorActions } from './components/EditorActions';
 import { IssuesPanel } from './components/IssuesPanel';
 import { OptimisePanel } from './components/OptimisePanel';
 import { OverviewPanel } from './components/OverviewPanel';
@@ -199,44 +199,25 @@ export default function CssPlayground({ definition }: ToolProps) {
   useToolCommands(definition.id, commands);
 
   const editorCard = (
-    <Card as="section" title="CSS" headingLevel={2} padding="sm">
+    <Card
+      as="section"
+      title="CSS"
+      headingLevel={2}
+      padding="sm"
+      actions={
+        <EditorActions
+          hasCss={css.trim() !== ''}
+          formatting={formatting}
+          onFormat={format}
+          onClear={() => setCss('')}
+          indent={settings.indent}
+          onIndent={(indent) => update({ indent })}
+          wrap={settings.wrap}
+          onWrap={(wrap) => update({ wrap })}
+        />
+      }
+    >
       <Stack gap="3">
-        <Inline gap="3" align="center" justify="between" wrap>
-          <Inline gap="2" wrap>
-            <Button
-              size="sm"
-              variant="soft"
-              icon={alignLeft}
-              onClick={format}
-              disabled={css.trim() === '' || formatting}
-            >
-              Format
-            </Button>
-            <SegmentedControl
-              size="sm"
-              label="Indent"
-              value={String(settings.indent)}
-              onChange={(v) => update({ indent: v === '4' ? 4 : 2 })}
-              options={[
-                { value: '2', label: '2 spaces' },
-                { value: '4', label: '4 spaces' },
-              ]}
-            />
-          </Inline>
-          <Inline gap="3" align="center">
-            {css ? (
-              <Button size="sm" variant="ghost" onClick={() => setCss('')}>
-                Clear
-              </Button>
-            ) : null}
-            <Switch
-              size="sm"
-              label="Wrap lines"
-              checked={settings.wrap}
-              onChange={(wrap) => update({ wrap })}
-            />
-          </Inline>
-        </Inline>
         <CodeEditor
           ref={editor}
           value={css}

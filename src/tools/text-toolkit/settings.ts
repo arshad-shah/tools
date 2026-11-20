@@ -2,6 +2,8 @@ import { createToolSettings } from '@/shared/lib/tool-settings';
 import type { SortMode } from './lib/lines';
 
 export interface ToolkitSettings {
+  /** The operation chosen in the Operations card. */
+  operation: string;
   locale: string;
   stopWords: boolean;
   sortMode: SortMode;
@@ -22,6 +24,7 @@ export interface ToolkitSettings {
 }
 
 export const TOOLKIT_SETTINGS_DEFAULTS: ToolkitSettings = {
+  operation: 'case-lower',
   locale: 'en',
   stopWords: false,
   sortMode: 'az',

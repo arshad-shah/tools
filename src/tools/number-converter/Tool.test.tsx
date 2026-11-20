@@ -101,10 +101,34 @@ describe('NumberConverter', () => {
     );
   });
 
-  it('each base field has a copy button', () => {
+  it('each base field has a copy button once it has a value', () => {
     setup();
+    expect(screen.queryByLabelText('Copy Binary')).toBeNull();
     fireEvent.change(field('Decimal'), { target: { value: '7' } });
     const copy = screen.getByLabelText('Copy Binary') as HTMLButtonElement;
     expect(copy.disabled).toBe(false);
+  });
+
+  it('offers an example while empty and Clear once filled', () => {
+    setup();
+    expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Try an example' }));
+    expect(field('Hexadecimal').value).toBe('0xCAFE');
+    expect(field('Decimal').value).toBe('51966');
+    expect(screen.queryByRole('button', { name: 'Try an example' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(field('Decimal').value).toBe('');
+  });
+
+  it('keeps the custom base and byte encodings under More bases', () => {
+    setup();
+    fireEvent.change(field('Decimal'), { target: { value: '35' } });
+    fireEvent.click(screen.getByRole('button', { name: 'More bases' }));
+    expect(field('Base 36').value).toBe('Z');
+    const base = field('Custom base (2 to 36)');
+    fireEvent.change(base, { target: { value: '16' } });
+    fireEvent.blur(base);
+    expect(field('Base 16').value).toBe('23');
+    expect(field('Base58 (bytes, Bitcoin alphabet)').value).not.toBe('');
   });
 });

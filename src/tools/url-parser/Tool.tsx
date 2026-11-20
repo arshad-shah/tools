@@ -2,6 +2,7 @@ import {
   Button,
   Card,
   CopyButton,
+  Disclosure,
   EmptyState,
   IconButton,
   Inline,
@@ -188,7 +189,7 @@ export default function UrlInspector() {
         v === 'http' ? sendHttp() : v === 'qr' ? makeQr() : openEncoder()
       }
       trigger={(props) => (
-        <Button {...props} variant="soft" icon={send} disabled={!text}>
+        <Button {...props} variant="soft" icon={send}>
           Open in
         </Button>
       )}
@@ -220,14 +221,6 @@ export default function UrlInspector() {
           >
             Paste
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={sparkles}
-            onClick={() => fromText(SAMPLE)}
-          >
-            Try an example
-          </Button>
           {text ? (
             <>
               <CopyButton
@@ -246,20 +239,6 @@ export default function UrlInspector() {
             </>
           ) : null}
         </Inline>
-        <TextField
-          label="Base URL for relative input"
-          description="Optional: resolves paths such as /docs/intro."
-          inputMode="url"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder="https://example.com/docs/"
-          value={settings.base}
-          onChange={(v) => {
-            update({ base: v });
-            setParsed((p) => parse(text, v, p.model));
-          }}
-        />
         {secrets.length > 0 ? (
           <Notice tone="warning" title="This URL may hold secrets">
             {`Query keys that look secret: ${secrets.join(', ')}. Check before sharing the link; any password in the user info is removed from shared links.`}
@@ -270,6 +249,26 @@ export default function UrlInspector() {
             <AnatomyStrip segments={segments} />
           </Stack>
         ) : null}
+        <Disclosure
+          summary="Base URL for relative links"
+          size="sm"
+          defaultOpen={settings.base !== ''}
+        >
+          <TextField
+            label="Base URL for relative input"
+            description="Optional: resolves paths such as /docs/intro."
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="https://example.com/docs/"
+            value={settings.base}
+            onChange={(v) => {
+              update({ base: v });
+              setParsed((p) => parse(text, v, p.model));
+            }}
+          />
+        </Disclosure>
       </Stack>
     </Card>
   );
@@ -337,7 +336,7 @@ export default function UrlInspector() {
   return (
     <Stack gap="6">
       <ToolActions>
-        {openIn}
+        {text ? openIn : null}
         <ShareButton share={share} />
       </ToolActions>
       <TransformLayout start={input} end={output} defaultSize={42} />

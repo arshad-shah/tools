@@ -224,7 +224,8 @@ test.describe('HTTP Client', () => {
 
   test('Open response in JSON Viewer', async ({ page }) => {
     await respond(page);
-    await page.getByRole('button', { name: 'Open in JSON Viewer' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Open in JSON Viewer' }).click();
     await atTool(page, 'json-and-xml-viewer');
     await expectEditorValue(
       page.getByRole('textbox', { name: 'Document' }),
@@ -234,14 +235,16 @@ test.describe('HTTP Client', () => {
 
   test('Decode token', async ({ page }) => {
     await respond(page);
-    await page.getByRole('button', { name: 'Decode token' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Decode token' }).click();
     await atTool(page, 'jwt-decode');
     await expect(page.getByText('workflow-user').first()).toBeVisible();
   });
 
   test('Inspect URL', async ({ page }) => {
     await respond(page);
-    await page.getByRole('button', { name: 'Inspect URL' }).click();
+    await page.getByRole('button', { name: 'Open in', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Inspect URL' }).click();
     await atTool(page, 'url-parser');
     await expect(
       page.getByRole('textbox', { name: /URL/ }).first(),
@@ -302,7 +305,7 @@ test('Regex Use as log format opens the Log Viewer format dialog', async ({
   await page
     .getByRole('textbox', { name: 'Regex pattern' })
     .fill('(?<level>[A-Z]+) (?<message>.*)');
-  await page.getByRole('button', { name: 'Actions' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Use as log format' }).click();
   await atTool(page, 'log-parser');
   await expect(page.getByRole('dialog')).toBeVisible();
@@ -499,7 +502,8 @@ test.describe('QR Scanner', () => {
 
   test('Open in URL Inspector', async ({ page }) => {
     await scan(page);
-    await page.getByRole('button', { name: 'Open in URL Inspector' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'URL Inspector' }).click();
     await atTool(page, 'url-parser');
     await expect(
       page
@@ -511,7 +515,8 @@ test.describe('QR Scanner', () => {
 
   test('Make QR', async ({ page }) => {
     await scan(page);
-    await page.getByRole('button', { name: 'Make QR' }).click();
+    await page.getByRole('button', { name: 'Open in' }).click();
+    await page.getByRole('menuitem', { name: 'QR Code Generator' }).click();
     await atTool(page, 'qr-code-generator');
     await expect(
       page.getByRole('textbox', { name: 'URL' }).filter({ visible: true }),

@@ -28,6 +28,7 @@ test('a .riv plays from this site only, at 2x, and exports the current frame as 
     timeout: 15_000,
   });
 
+  await page.getByRole('button', { name: 'Playback options' }).click();
   await page.getByRole('radio', { name: '2x' }).click();
   const t0 = await currentTime(page);
   await page.waitForTimeout(500);
@@ -35,7 +36,8 @@ test('a .riv plays from this site only, at 2x, and exports the current frame as 
   // Loops wrap, so only check that time moves and at well over real time.
   expect(t1).not.toBe(t0);
 
-  await page.getByRole('radio', { name: 'Export' }).click();
+  await page.keyboard.press('Escape');
+  await page.getByRole('tab', { name: 'Export' }).click();
   const download = page.waitForEvent('download');
   await page
     .getByRole('button', { name: 'Download current frame (PNG)' })
@@ -57,7 +59,8 @@ test('switching artboards follows a multi-artboard file', async ({ page }) => {
   await expect(artboard).toHaveText(/Truck/);
   await pick('Jeep');
   await pick('Truck');
-  await expect(page.getByRole('button', { name: 'curves' })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Animation' }).click();
+  await expect(page.getByRole('option', { name: 'curves' })).toBeVisible();
 });
 
 test('rejects a non-Rive file with a toast', async ({ page }) => {
@@ -78,7 +81,7 @@ test('rejects a non-Rive file with a toast', async ({ page }) => {
 test('the settings sections fit their card at 1400 px', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto(pathOf('rive-animation-player'));
-  const list = page.getByRole('radiogroup', { name: 'Settings' });
+  const list = page.getByRole('tablist', { name: 'Settings' });
   await expect(list).toBeVisible();
   const { listRight, cardRight, listWidth, cardWidth } = await list.evaluate(
     (el) => {

@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { act, render, renderHook, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toolsAccepting } from '@/app/registry';
@@ -65,5 +71,48 @@ describe('QR Code Generator colours hand-off (Color "Use colours in QR")', () =>
     await act(async () => {});
     expect(qrSettings.getSettings().fg).toBe(before.fg);
     expect(qrSettings.getSettings().bg).toBe(before.bg);
+  });
+});
+
+describe('QR Code Generator layout', () => {
+  const renderTool = () =>
+    render(
+      <MemoryRouter>
+        <QrCodeGenerator />
+      </MemoryRouter>,
+    );
+
+  it('shows Export and the encoded text only once there is something to encode', async () => {
+    renderTool();
+    await act(async () => {});
+    const url = screen.getByRole('textbox', { name: 'URL' });
+    await act(async () => {
+      fireEvent.change(url, { target: { value: '' } });
+    });
+    expect(screen.getByText('Nothing to encode yet')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Export' })).toBeNull();
+    expect(screen.queryByRole('figure', { name: 'Encoded text' })).toBeNull();
+    await act(async () => {
+      fireEvent.change(url, { target: { value: 'https://example.org' } });
+    });
+    expect(screen.getByRole('region', { name: 'Export' })).toBeTruthy();
+  });
+
+  it('keeps the rarely changed style options in More options', async () => {
+    renderTool();
+    await act(async () => {});
+    const more = screen.getByRole('button', { name: 'More options' });
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(more);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    expect(
+      screen.getByRole('radiogroup', { name: 'Preview render' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('combobox', { name: 'Error correction' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('switch', { name: 'Quiet zone (4 modules)' }),
+    ).toBeTruthy();
   });
 });

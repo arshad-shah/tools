@@ -57,6 +57,20 @@ describe('CodeEditor', () => {
     expect(textbox('Schema JSON').getAttribute('contenteditable')).toBe('true');
   });
 
+  it('is in the tab order, read-only too, so its scroller is keyboard-reachable', () => {
+    const { unmount } = render(<CodeEditor aria-label="Editable" />);
+    expect(
+      screen
+        .getByRole('textbox', { name: 'Editable' })
+        .getAttribute('tabindex'),
+    ).toBe('0');
+    unmount();
+    render(<CodeEditor aria-label="Read" readOnly defaultValue="x" />);
+    expect(
+      screen.getByRole('textbox', { name: 'Read' }).getAttribute('tabindex'),
+    ).toBe('0');
+  });
+
   it('typing changes the value (controlled)', () => {
     const onValue = vi.fn();
     render(<Controlled initial="ab" onValue={onValue} />);

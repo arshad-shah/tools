@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The first test pays for a cold import of the whole card.
@@ -98,5 +98,17 @@ describe('TimerCard shortcuts', { timeout: 20_000 }, () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Start' }));
     expect(store.getState().timer.isActive).toBe(true);
     expect(within(dialog).getByRole('button', { name: 'Pause' })).toBeTruthy();
+  });
+
+  it('shows Custom in the presets only when no preset matches', async () => {
+    const store = await setup();
+    const presets = screen.getByRole('radiogroup', { name: 'Session preset' });
+    expect(within(presets).queryByRole('radio', { name: 'Custom' })).toBeNull();
+    act(() => store.getState().updateSettings({ workDuration: 40 }));
+    expect(
+      within(presets).getByRole('radio', { name: 'Custom' }),
+    ).toHaveProperty('checked', true);
+    fireEvent.click(within(presets).getByRole('radio', { name: '50 / 10' }));
+    expect(within(presets).queryByRole('radio', { name: 'Custom' })).toBeNull();
   });
 });

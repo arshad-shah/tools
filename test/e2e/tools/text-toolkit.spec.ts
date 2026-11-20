@@ -4,10 +4,17 @@ import { pathOf } from '../tool-routes';
 const editor = (page: Page) =>
   page.getByRole('textbox', { name: 'Text', exact: true });
 
+/** Picks an operation in the Operations card and applies it. */
+async function runOp(page: Page, name: string) {
+  await page.getByRole('combobox', { name: 'Operation' }).click();
+  await page.getByRole('option', { name, exact: true }).click();
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+}
+
 test('text-toolkit sorts lines and Mod+Z restores them', async ({ page }) => {
   await page.goto(pathOf('text-toolkit'));
   await editor(page).fill('pear\napple\nfig');
-  await page.getByRole('button', { name: 'Sort A to Z' }).click();
+  await runOp(page, 'Sort A to Z');
   await expect(editor(page)).toHaveValue('apple\nfig\npear');
   await page.keyboard.press('ControlOrMeta+z');
   await expect(editor(page)).toHaveValue('pear\napple\nfig');
@@ -35,7 +42,7 @@ test('text-toolkit survives catastrophic backtracking', async ({ page }) => {
     timeout: 5000,
   });
   // The tab stays responsive.
-  await page.getByRole('button', { name: 'Upper case' }).click();
+  await runOp(page, 'Upper case');
   await expect(editor(page)).toHaveValue('A'.repeat(40) + 'B');
 });
 

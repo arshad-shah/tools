@@ -1,6 +1,6 @@
 # Tools
 
-Free, private browser tools: a PDF workspace and 32 everyday tools for text, data, encoding, security, maths, time, media and the web. Everything runs on your device; files and text never leave the browser. Built with React 19, TypeScript and Vite, and deployed to Cloudflare.
+Free, private browser tools: a PDF workspace and 43 everyday tools for text, data, encoding, security, maths, time, media and the web. Everything runs on your device; files and text never leave the browser. Built with React 19, TypeScript and Vite, and deployed to Cloudflare.
 
 ![CI](https://github.com/arshad-shah/tools/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -11,13 +11,13 @@ Free, private browser tools: a PDF workspace and 32 everyday tools for text, dat
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | PDF       | PDF workspace (organise, fill and sign, redact, convert, protect, optimise), PDF Merger, PDF Splitter, PDF Compressor, Images to PDF, PDF to Images, PDF to Text, Protect PDF, Unlock PDF, Watermark PDF, Add Page Numbers |
 | Text      | Regex Tester, Text Diff, Log Viewer, Text Toolkit, Markdown Editor & Preview                                                                                                                                               |
-| Data      | CSV Viewer & Converter, JSON & XML Viewer, Mock Data Generator                                                                                                                                                             |
+| Data      | CSV Viewer & Converter, JSON & XML Viewer, Mock Data Generator, Excel Viewer, JSON to Types, SQL Playground                                                                                                                |
 | Encoding  | Base64 Encoder / Decoder, JWT Decoder, Text Encoder / Decoder                                                                                                                                                              |
-| Security  | Hash & Checksum, Password Generator, Text & File Encrypt, UUID / ULID / NanoID Generator                                                                                                                                   |
+| Security  | Hash & Checksum, Password Generator, Text & File Encrypt, UUID / ULID / NanoID Generator, Certificate Decoder, Key Pair Generator                                                                                          |
 | Math      | Calculator & Grapher, Number Base Converter, Unit Converter                                                                                                                                                                |
 | Time      | Cron Expression Builder, Date & Time Calculator, Epoch & Time Zone Converter, Pomodoro Timer                                                                                                                               |
-| Media     | Color & Contrast, EXIF Viewer & Remover, Favicon & App Icon Generator, Image Compressor & Resizer, Rive Animation Player                                                                                                   |
-| Web & dev | HTTP Client, Code Formatter & Minifier, CSS Playground & Optimizer, QR Code Generator, QR & Barcode Scanner, URL Inspector & Builder                                                                                       |
+| Media     | Color & Contrast, EXIF Viewer & Remover, Favicon & App Icon Generator, Image Compressor & Resizer, Rive Animation Player, Code to Image, Image Editor                                                                      |
+| Web & dev | HTTP Client, Code Formatter & Minifier, CSS Playground & Optimizer, QR Code Generator, QR & Barcode Scanner, URL Inspector & Builder, curl Converter, IP & Subnet Calculator, OpenAPI Viewer                               |
 
 Tools hand results to each other ("Send to", and "Send result to" in the Mod+K palette), and several can share their state as a link (the state lives in the URL fragment, which browsers never send to a server).
 

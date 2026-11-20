@@ -10,7 +10,7 @@ import {
   Text,
 } from '@arshad-shah/cynosure';
 import { sparkles, table as tableIcon } from '@arshad-shah/cynosure/icons';
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { formatBytes } from '@/shared/lib/format';
 import { useHandoff, type HandoffPayload } from '@/shared/lib/handoff';
@@ -43,13 +43,17 @@ export function InputScreen({
   const progress = job.status === 'running' ? job.progress : null;
   const [fileError, setFileError] = useState<string | null>(null);
 
-  // CSV text handed over (Send to) opens like a paste.
+  // CSV text handed over (Send to) opens like a paste. Delivered from an
+  // effect: the paste updates the parent, which must not happen while this
+  // component renders.
   const handed = useHandoff(isCsvText);
-  const [taken, setTaken] = useState<HandoffPayload | null>(null);
-  if (handed !== taken) {
-    setTaken(handed);
-    if (handed?.kind === 'text') onPasteChange(handed.text);
-  }
+  const taken = useRef<HandoffPayload | null>(null);
+  const deliver = useEffectEvent((text: string) => onPasteChange(text));
+  useEffect(() => {
+    if (!handed || taken.current === handed) return;
+    taken.current = handed;
+    if (handed.kind === 'text') deliver(handed.text);
+  }, [handed]);
 
   const open = (file: File) => {
     setFileError(null);
@@ -117,34 +121,39 @@ export function InputScreen({
             {fileError}
           </Notice>
         ) : null}
-        <Inline gap="3" align="center" wrap>
-          <Button
-            variant="solid"
-            icon={tableIcon}
-            onClick={onOpenText}
-            disabled={!paste.trim() || running}
-          >
-            Open as table
-          </Button>
-          {running && (
-            <>
-              <Text size="sm" tone="muted">
-                {progress?.label ?? 'Reading'}
-              </Text>
-              {progress && (
-                <ProgressBar
-                  label="Loading progress"
-                  labelHidden
-                  value={progress.done}
-                  max={progress.total}
-                />
-              )}
-              <Button size="sm" variant="ghost" onClick={job.cancel}>
-                Cancel
+        {/* Typed text opens on demand; a paste, sample or file opens at once. */}
+        {paste.trim() || running ? (
+          <Inline gap="3" align="center" wrap>
+            {paste.trim() ? (
+              <Button
+                variant="solid"
+                icon={tableIcon}
+                onClick={onOpenText}
+                disabled={running}
+              >
+                Open as table
               </Button>
-            </>
-          )}
-        </Inline>
+            ) : null}
+            {running && (
+              <>
+                <Text size="sm" tone="muted">
+                  {progress?.label ?? 'Reading'}
+                </Text>
+                {progress && (
+                  <ProgressBar
+                    label="Loading progress"
+                    labelHidden
+                    value={progress.done}
+                    max={progress.total}
+                  />
+                )}
+                <Button variant="ghost" onClick={job.cancel}>
+                  Cancel
+                </Button>
+              </>
+            )}
+          </Inline>
+        ) : null}
         {job.error && (
           <Notice tone="danger" title="Could not read the data">
             {job.error.message}

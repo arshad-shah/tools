@@ -4,7 +4,9 @@ import {
   Card,
   CopyButton,
   EmptyState,
+  IconButton,
   Inline,
+  Menu,
   SegmentedControl,
   Stack,
   StatusBar,
@@ -19,6 +21,7 @@ import {
   hardDrive,
   key,
   link,
+  send,
   split,
 } from '@arshad-shah/cynosure/icons';
 import { useState } from 'react';
@@ -113,8 +116,71 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
   // Phones: the status bar's segments would be cut short.
   const phone = useMediaQuery('(max-width: 40rem)');
   const status = `${res.status} ${reasonPhrase(res.status, res.statusText)}`;
+  const openIn = [
+    ...(view === 'json'
+      ? [{ value: 'json', label: 'Open in JSON Viewer', icon: fileJson }]
+      : []),
+    ...(canCompare
+      ? [
+          {
+            value: 'compare',
+            label: 'Compare with previous response',
+            icon: split,
+          },
+        ]
+      : []),
+    ...(tokens[0]
+      ? [{ value: 'token', label: 'Decode token', icon: key }]
+      : []),
+    { value: 'url', label: 'Inspect URL', icon: link },
+  ];
+  const actions = (
+    <Inline gap="1" align="center">
+      <CopyButton
+        size="sm"
+        value={res.text ?? ''}
+        disabled={res.text === undefined}
+        labels={{ copy: 'Copy body', copied: 'Body copied' }}
+      />
+      {res.size ? (
+        <IconButton
+          size="sm"
+          variant="ghost"
+          tone="neutral"
+          icon={download}
+          label="Download body"
+          onClick={() =>
+            saveBlob(
+              res.bytes,
+              deriveFilename('response', '', EXT[res.contentType] ?? 'bin'),
+              res.contentType || 'application/octet-stream',
+            )
+          }
+        />
+      ) : null}
+      <Menu
+        label="Open the response in"
+        items={openIn}
+        onSelect={(v) =>
+          v === 'json'
+            ? openJson()
+            : v === 'compare'
+              ? comparePrevious()
+              : v === 'token'
+                ? decodeToken()
+                : inspectUrl()
+        }
+        trigger={(props) => (
+          <Button {...props} size="sm" variant="soft" icon={send}>
+            Open in
+          </Button>
+        )}
+      />
+    </Inline>
+  );
+
   return (
-    <Card as="section" title="Response">
+    <Card as="section" title="Response" actions={actions}>
       <Stack gap="5">
         {phone ? (
           <Inline gap="2" align="center" wrap>
@@ -162,53 +228,6 @@ export function ResponsePanel({ sent }: { sent: Sent }) {
             {`DNS ${t.dns} ms, connect ${t.connect} ms, TLS ${t.tls} ms, wait ${t.wait} ms, download ${t.download} ms`}
           </Text>
         ) : null}
-        <Inline gap="2" wrap>
-          <CopyButton
-            size="sm"
-            variant="soft"
-            value={res.text ?? ''}
-            disabled={res.text === undefined}
-            labels={{ copy: 'Copy body', copied: 'Body copied' }}
-          />
-          <Button
-            size="sm"
-            variant="soft"
-            icon={download}
-            disabled={!res.size}
-            onClick={() =>
-              saveBlob(
-                res.bytes,
-                deriveFilename('response', '', EXT[res.contentType] ?? 'bin'),
-                res.contentType || 'application/octet-stream',
-              )
-            }
-          >
-            Download body
-          </Button>
-          {view === 'json' ? (
-            <Button size="sm" variant="soft" icon={fileJson} onClick={openJson}>
-              Open in JSON Viewer
-            </Button>
-          ) : null}
-          {canCompare ? (
-            <Button
-              size="sm"
-              variant="soft"
-              icon={split}
-              onClick={comparePrevious}
-            >
-              Compare with previous response
-            </Button>
-          ) : null}
-          {tokens[0] ? (
-            <Button size="sm" variant="soft" icon={key} onClick={decodeToken}>
-              Decode token
-            </Button>
-          ) : null}
-          <Button size="sm" variant="ghost" icon={link} onClick={inspectUrl}>
-            Inspect URL
-          </Button>
-        </Inline>
         <SegmentedControl
           label="Response views"
           size="sm"

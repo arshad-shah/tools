@@ -11,7 +11,7 @@ const OPTIONS: { value: CvdMode; label: string }[] = [
 
 /**
  * Simulated colour vision for the previews, palette and contrast pair: one
- * compact select in the page header, at every width.
+ * select in the page header, the same height as Share beside it.
  */
 export function CvdToggle({
   value,
@@ -24,7 +24,6 @@ export function CvdToggle({
     <Select
       label="Simulate colour vision"
       labelHidden
-      size="sm"
       value={value}
       onChange={(v) => onChange(v as CvdMode)}
       options={OPTIONS}

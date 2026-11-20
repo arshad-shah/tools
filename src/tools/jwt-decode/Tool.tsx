@@ -208,14 +208,16 @@ export default function JWTDecoder() {
           >
             Paste
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={sparkles}
-            onClick={tryExample}
-          >
-            Try an example
-          </Button>
+          {jwt ? null : (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={sparkles}
+              onClick={tryExample}
+            >
+              Try an example
+            </Button>
+          )}
           {jwt ? (
             <IconButton
               size="sm"
@@ -279,11 +281,6 @@ export default function JWTDecoder() {
           error
             ? 'Fix the token on the left: what is wrong is shown under it.'
             : 'Paste a JWT to see its header, claims, expiry and signature.'
-        }
-        actions={
-          <Button variant="soft" icon={sparkles} onClick={tryExample}>
-            Try an example
-          </Button>
         }
       />
     </Card>

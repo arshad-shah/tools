@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import type { MockField } from '@/shared/lib/data-formats/mock-schema';
 import { generateMock } from './engine';
+import { changedOptions } from './options';
+
+describe('changedOptions', () => {
+  it('counts the options that differ from the defaults', () => {
+    expect(changedOptions({ name: 'id', type: 'uuid' })).toBe(0);
+    expect(
+      changedOptions({
+        name: 'n',
+        type: 'int',
+        unique: true,
+        nullablePct: 10,
+        min: 1,
+      }),
+    ).toBe(3);
+    expect(
+      changedOptions({ name: 'n', type: 'int', unique: false, nullablePct: 0 }),
+    ).toBe(0);
+  });
+});
 
 const column = (field: MockField, count: number, seed = 'opts') =>
   generateMock(

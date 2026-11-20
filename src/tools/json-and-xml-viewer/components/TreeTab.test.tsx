@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fromValue } from '../lib/doc-model';
@@ -89,20 +89,31 @@ describe('TreeTab', () => {
 
   it('Expand to depth 2 expands exactly the first two levels', () => {
     render(<Harness />);
-    const depth = (n: string) => {
+    const expandMenu = (item: string, group?: string) => {
+      if (!screen.queryByRole('menu'))
+        fireEvent.click(screen.getByRole('button', { name: 'Expand' }));
+      const scope = group
+        ? within(screen.getByRole('group', { name: group }))
+        : screen;
       fireEvent.click(
-        screen.getByRole('combobox', { name: 'Expand to depth' }),
+        scope.getByRole(group ? 'menuitemradio' : 'menuitem', {
+          name: item,
+        }),
       );
-      fireEvent.click(screen.getByRole('option', { name: n }));
     };
-    depth('1');
+    expandMenu('1', 'Expand to depth');
     expect([...seen.expanded]).toEqual(['$']);
-    depth('2');
+    expandMenu('2', 'Expand to depth');
     expect([...seen.expanded].sort()).toEqual(
       [...expandToDepth(doc, 2)].sort(),
     );
     expect([...seen.expanded].sort()).toEqual(['$', '$.a', '$.b', '$.e']);
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
+    expandMenu('Collapse all');
     expect(seen.expanded.size).toBe(0);
+  });
+
+  it('hides match stepping until the search has matches', () => {
+    render(<Harness />);
+    expect(screen.queryByRole('button', { name: 'Next match' })).toBeNull();
   });
 });

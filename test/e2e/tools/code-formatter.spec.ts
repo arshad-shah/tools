@@ -62,8 +62,15 @@ test('formats SQL with the keyboard shortcut', async ({ page }) => {
   );
 });
 
+test('Minify shows only for languages it can minify', async ({ page }) => {
+  await expect(page.getByRole('button', { name: 'Minify' })).toBeVisible();
+  await language(page, 'Markdown');
+  await expect(page.getByRole('button', { name: 'Minify' })).toHaveCount(0);
+});
+
 test('an example loads from the menu', async ({ page }) => {
-  await page.getByRole('button', { name: 'Try an example' }).first().click();
+  // Offered once, in the empty Output card.
+  await page.getByRole('button', { name: 'Try an example' }).click();
   await page.getByRole('menuitem', { name: 'SQL' }).click();
   await expectEditorValue(input(page), /^select id,name from users/);
 });

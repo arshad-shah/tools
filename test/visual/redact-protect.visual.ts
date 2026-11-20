@@ -49,7 +49,7 @@ async function markTerm(page: Page) {
   await page.getByRole('button', { name: 'Find and mark' }).first().click();
   await page.getByRole('textbox', { name: 'Find' }).fill(REDACT_TERM);
   await expect(
-    page.getByRole('list', { name: 'Matches' }).getByRole('checkbox').first(),
+    page.getByRole('region', { name: 'Matches' }).getByRole('checkbox').first(),
   ).toBeVisible();
 }
 
@@ -126,7 +126,7 @@ for (const theme of ['light', 'dark'] as const) {
         .setInputFiles(await pdf('images-heavy.pdf', makeImageHeavyPdf()));
       await page.getByRole('button', { name: 'Compress PDF' }).click();
       await expect(
-        page.getByRole('button', { name: 'Open result in workspace' }),
+        page.getByRole('button', { name: 'Open in the workspace' }),
       ).toBeVisible({ timeout: 60_000 });
       await stabilise(page);
       await expect(page).toHaveScreenshot(`quick-task-result-${theme}.png`);

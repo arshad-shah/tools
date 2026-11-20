@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, renderHook, screen } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  within,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { mockSettings } from './settings';
 import RandomDataGenerator from './Tool';
@@ -98,6 +104,43 @@ describe('RandomDataGenerator schema editor', () => {
       'avatar',
       'createdAt',
     ]);
+  });
+
+  it('moves and removes a field from its actions menu', () => {
+    render(<RandomDataGenerator />);
+    const actions = () =>
+      screen.getAllByRole('button', { name: 'Field actions' });
+    fireEvent.click(actions()[0]);
+    // The first field cannot move up.
+    expect(
+      screen
+        .getByRole('menuitem', { name: 'Move up' })
+        .getAttribute('aria-disabled'),
+    ).toBe('true');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Move down' }));
+    expect(
+      nameInputs()
+        .map((el) => el.value)
+        .slice(0, 2),
+    ).toEqual(['name', 'id']);
+    fireEvent.click(actions()[0]);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Remove field' }));
+    expect(nameInputs().map((el) => el.value)[0]).toBe('id');
+  });
+
+  it('opens a field options popover with its description and options', () => {
+    render(<RandomDataGenerator />);
+    // The first field, id (UUID), is unique: one changed option.
+    fireEvent.click(screen.getAllByRole('button', { name: /^Options/ })[0]);
+    const dialog = screen.getByRole('dialog', { name: 'Options for id' });
+    expect(within(dialog).getByText('Version 4 UUID')).toBeTruthy();
+    expect(
+      (
+        within(dialog).getByRole('checkbox', {
+          name: 'Unique',
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
   });
 
   it('narrow, shows the schema or the preview, the preview empty before a run', () => {

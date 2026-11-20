@@ -34,7 +34,8 @@ describe('CronBuilder', () => {
 
   it('a preset fills the expression and explains it', () => {
     setup();
-    fireEvent.click(inGroup('Presets').getByText('Weekdays at 9'));
+    fireEvent.click(screen.getByRole('button', { name: 'Presets' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Weekdays at 9' }));
     expect(expression().value).toBe('0 9 * * 1-5');
     expect(
       screen.getByText('At 09:00 on every weekday from Monday to Friday'),
@@ -63,6 +64,20 @@ describe('CronBuilder', () => {
     expect(expression().value).toBe('*/5 9 * * *');
   });
 
+  it('specific values are typed in the field, with no second box', () => {
+    setup();
+    fireEvent.change(expression(), { target: { value: '0 9 * * *' } });
+    expect(screen.queryByLabelText('Minute values')).toBeNull();
+    const minute = screen.getByLabelText('Minute', {
+      selector: 'input',
+    }) as HTMLInputElement;
+    fireEvent.change(minute, { target: { value: '0,15,30' } });
+    expect(expression().value).toBe('0,15,30 9 * * *');
+    expect(
+      inGroup('Minute mode').getByRole('radio', { name: 'Specific' }),
+    ).toHaveProperty('checked', true);
+  });
+
   it('switching flavour carries the expression over', () => {
     const settings = setup();
     fireEvent.change(expression(), { target: { value: '0 9 * * 1-5' } });
@@ -75,5 +90,8 @@ describe('CronBuilder', () => {
     setup();
     expect(screen.getByLabelText('Copy expression')).toBeTruthy();
     expect(screen.getByLabelText('Copy runs')).toBeTruthy();
+    // No runs, nothing to copy: the button goes rather than sit disabled.
+    fireEvent.change(expression(), { target: { value: '61 * * * *' } });
+    expect(screen.queryByLabelText('Copy runs')).toBeNull();
   });
 });
