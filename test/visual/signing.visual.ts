@@ -175,10 +175,9 @@ for (const theme of ['light', 'dark'] as const) {
         await expect(dialog).toHaveScreenshot(
           `signing-signatures-${name}-${theme}.png`,
           {
-            // Signing time and certificate dates come from the run.
-            mask: [
-              dialog.locator('[data-separator]').locator('..').locator('..'),
-            ],
+            // Signing time and certificate dates come from the run: mask
+            // every line that states a year.
+            mask: [dialog.getByText(/\d{4}/)],
           },
         );
         await expectAxeClean(page);

@@ -78,7 +78,11 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(
         dialog.getByRole('img', { name: 'Page 1 as exported' }),
       ).toHaveAttribute('data-rendered', 'true');
-      await expect(page).toHaveScreenshot(`workspace-export-${theme}.png`);
+      // The preview is a page rasterised in a worker; anti-aliasing of its
+      // text differs by a few hundred pixels between machines.
+      await expect(page).toHaveScreenshot(`workspace-export-${theme}.png`, {
+        maxDiffPixels: 400,
+      });
       await expectAxeClean(page);
     });
 
