@@ -18,7 +18,7 @@ async function open(page: Page, theme: Theme) {
   await page.getByRole('button', { name: 'Load a sample' }).click();
   await page.getByRole('menuitem', { name: 'JSON bookstore' }).click();
   // One pane at a time (R41): the sample lands in Source.
-  await page.getByRole('tab', { name: 'Tree', exact: true }).click();
+  await page.getByRole('radio', { name: 'Tree', exact: true }).click();
   await expect(page.getByRole('tree', { name: 'Document tree' })).toBeVisible();
   await stabilise(page);
 }
@@ -38,7 +38,7 @@ for (const theme of ['light', 'dark'] as const)
 
       test('map', async ({ page }) => {
         await open(page, theme);
-        await page.getByRole('tab', { name: 'Map' }).click();
+        await page.getByRole('radio', { name: 'Map' }).click();
         await expect(page.getByTestId('diagram-canvas')).toBeVisible();
         await expect(
           page.getByText('8 objects', { exact: true }),

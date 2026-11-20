@@ -76,7 +76,7 @@ for (const theme of ['light', 'dark'] as const) {
         .getByRole('button', { name: 'Signature', exact: true })
         .click();
       const dialog = page.getByRole('dialog', { name: 'Signature' });
-      await dialog.getByRole('tab', { name: 'Type' }).click();
+      await dialog.getByRole('radio', { name: 'Type' }).click();
       await dialog.getByLabel('Your name').fill('Jane Doe');
       await expect(dialog).toHaveScreenshot(`fill-sign-signature-${theme}.png`);
       await expectAxeClean(page);
